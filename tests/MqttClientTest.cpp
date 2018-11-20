@@ -13,6 +13,9 @@
  * permissions and limitations under the License.
  */
 #include <aws/crt/Api.h>
+#include <aws/crt/mqtt/MqttClient.h>
+#include <aws/crt/io/Bootstrap.h>
+#include <aws/crt/io/TLSOptions.h>
 
 #include <aws/testing/aws_test_harness.h>
 #include <utility>
@@ -23,16 +26,22 @@ static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator* allocator, void *
     Aws::Crt::Io::TLSCtxOptions tlsCtxOptions;
     Aws::Crt::Io::InitDefaultClient(tlsCtxOptions);
 
+    Aws::Crt::Io::TLSContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TLSMode::CLIENT, allocator);
+    ASSERT_TRUE(tlsContext);
+
     Aws::Crt::Io::SocketOptions socketOptions;
     AWS_ZERO_STRUCT(socketOptions);
     socketOptions.type = AWS_SOCKET_STREAM;
     socketOptions.domain = AWS_SOCKET_IPV4;
     socketOptions.connect_timeout_ms = 3000;
 
-    Aws::Crt::Io::EventLoopGroup eventLoopGroup(allocator, 0);
+    Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
 
-    Aws::Crt::Mqtt::MqttClient mqttClient(*allocator, eventLoopGroup);
+    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, allocator);
+    ASSERT_TRUE(allocator);
+
+    Aws::Crt::Mqtt::MqttClient mqttClient(clientBootstrap, allocator);
     ASSERT_TRUE(mqttClient);
 
     /* uncomment this once the connection clean-up stuff has been properly added to the client

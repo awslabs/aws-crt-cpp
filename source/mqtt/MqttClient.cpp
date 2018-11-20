@@ -14,7 +14,7 @@
  */
 #include <aws/crt/mqtt/MqttClient.h>
 
-#include <aws/crt/io/EventLoopGroup.h>
+#include <aws/crt/io/Bootstrap.h>
 
 #include <utility>
 
@@ -107,7 +107,7 @@ namespace Aws
             MqttConnection::MqttConnection(MqttClient* client,
                         const std::string& hostName, uint16_t port,
                         const Io::SocketOptions& socketOptions,
-                        const Io::TLSCtxOptions& tlsCtxOptions) noexcept :
+                        Io::TlSConnectionOptions&& tlsConnOptions) noexcept :
                            m_owningClient(client),
                            m_lastError(AWS_ERROR_SUCCESS),
                            m_isInit(false)
@@ -124,7 +124,7 @@ namespace Aws
                 m_underlyingConnection =
                         aws_mqtt_client_connection_new(&m_owningClient->m_client, callbacks,
                                 &hostNameCur, port,
-                                (Io::SocketOptions*)&socketOptions, (Io::TLSCtxOptions*)&tlsCtxOptions);
+                                (Io::SocketOptions*)&socketOptions, &tlsConnOptions);
 
                 if (!m_underlyingConnection)
                 {
@@ -305,28 +305,13 @@ namespace Aws
                 aws_mqtt_client_connection_ping(m_underlyingConnection);
             }
 
-            MqttClient::MqttClient(const Aws::Crt::Io::EventLoopGroup &elGroup) noexcept :
+            MqttClient::MqttClient(const Io::ClientBootstrap &bootstrap, Allocator *allocator) noexcept :
                     m_lastError(AWS_ERROR_SUCCESS),
                     m_isInit(false)
             {
                 AWS_ZERO_STRUCT(m_client);
-                if (aws_mqtt_client_init(&m_client, aws_default_allocator(),
-                        (aws_event_loop_group* )elGroup.GetUnderlyingHandle()))
-                {
-                    m_lastError = aws_last_error();
-                }
-                else
-                {
-                    m_isInit = true;
-                }
-            }
-
-            MqttClient::MqttClient(Allocator& allocator, const Io::EventLoopGroup& elGroup) noexcept :
-                    m_lastError(AWS_ERROR_SUCCESS),
-                    m_isInit(false)
-            {
-                AWS_ZERO_STRUCT(m_client);
-                if (aws_mqtt_client_init(&m_client, &allocator, (aws_event_loop_group* )elGroup.GetUnderlyingHandle()))
+                if (aws_mqtt_client_init(&m_client, allocator,
+                        (aws_client_bootstrap* )bootstrap.GetUnderlyingHandle()))
                 {
                     m_lastError = aws_last_error();
                 }
@@ -380,9 +365,9 @@ namespace Aws
 
             MqttConnection MqttClient::NewConnection(const std::string& hostName, uint16_t port,
                                          const Io::SocketOptions& socketOptions,
-                                         const Io::TLSCtxOptions& tlsCtxOptions) noexcept
+                                         Io::TlSConnectionOptions&& tlsConnOptions) noexcept
             {
-                return MqttConnection(this, hostName, port, socketOptions, tlsCtxOptions);
+                return MqttConnection(this, hostName, port, socketOptions, std::move(tlsConnOptions));
             }
         }
     }

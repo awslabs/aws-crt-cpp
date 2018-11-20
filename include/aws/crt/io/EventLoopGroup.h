@@ -13,8 +13,9 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-#include <aws/io/event_loop.h>
+#include <aws/crt/Api.h>
 
+#include <aws/io/event_loop.h>
 #include <aws/crt/Exports.h>
 
 namespace Aws
@@ -38,9 +39,8 @@ namespace Aws
             class AWS_CRT_CPP_API EventLoopGroup final
             {
             public:
-                EventLoopGroup() noexcept;
-                EventLoopGroup(uint16_t threadCount) noexcept;
-                EventLoopGroup(aws_allocator* allocator, uint16_t threadCount) noexcept;
+                EventLoopGroup(Allocator* allocator = DefaultAllocator()) noexcept;
+                EventLoopGroup(uint16_t threadCount, Allocator* allocator = DefaultAllocator()) noexcept;
                 ~EventLoopGroup();
                 EventLoopGroup(const EventLoopGroup&) = delete;
                 EventLoopGroup(EventLoopGroup&&) noexcept;
@@ -50,7 +50,7 @@ namespace Aws
                 operator bool() const;
                 int LastError() const;
 
-                const aws_event_loop_group *GetUnderlyingHandle() const;
+                const aws_event_loop_group* GetUnderlyingHandle() const;
 
             private:
                 aws_event_loop_group m_eventLoopGroup;

@@ -14,6 +14,7 @@
  * permissions and limitations under the License.
  */
 
+#include <aws/crt/Api.h>
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
 
@@ -28,6 +29,33 @@ namespace Aws
         namespace Io
         {
             using TLSCtxOptions = aws_tls_ctx_options;
+            using TlSConnectionOptions = aws_tls_connection_options;
+
+            enum class TLSMode
+            {
+                CLIENT,
+                SERVER,
+            };
+
+            class AWS_CRT_CPP_API TLSContext final
+            {
+            public:
+                TLSContext(TLSCtxOptions& options, TLSMode mode, Allocator* allocator = DefaultAllocator()) noexcept;
+                ~TLSContext();
+                TLSContext(const TLSContext&) = delete;
+                TLSContext& operator=(const TLSContext&) = delete;
+                TLSContext(TLSContext&&) noexcept;
+                TLSContext& operator=(TLSContext&&) noexcept;
+
+                TlSConnectionOptions NewConnectionOptions() const noexcept;
+
+                operator bool() const noexcept;
+                int LastError() const noexcept;
+
+            private:
+                aws_tls_ctx* m_ctx;
+                int m_lastError;
+            };
 
             AWS_CRT_CPP_API void InitDefaultClient(TLSCtxOptions& options) noexcept;
             AWS_CRT_CPP_API void InitClientWithMTLS(TLSCtxOptions& options, 

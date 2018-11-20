@@ -1,5 +1,7 @@
 project(aws-crt-cpp-mqtt-pub-sub CXX)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_INSTALL_PREFIX}/lib/cmake")
+
 file(GLOB MQTT_PUB_SUB_SRC
        "*.cpp"
 )
@@ -25,14 +27,5 @@ target_include_directories(${PUB_SUB_PROJECT_NAME} PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>)
 
-find_package(aws-c-common REQUIRED)
-find_package(aws-c-io REQUIRED)
-
-if (UNIX AND NOT APPLE)
-    find_package(s2n REQUIRED)
-endif()
-
-find_package(aws-c-mqtt REQUIRED)
-
-target_link_libraries(${PUB_SUB_PROJECT_NAME} AWS::aws-c-common aws-c-io aws-c-mqtt aws-crt-cpp ${PLATFORM_LIBS})
+target_link_libraries(${PUB_SUB_PROJECT_NAME} aws-crt-cpp)
 

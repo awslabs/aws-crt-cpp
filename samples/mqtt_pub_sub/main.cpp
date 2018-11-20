@@ -13,10 +13,15 @@
  * permissions and limitations under the License.
  */
 #include <aws/crt/Api.h>
+#include <aws/crt/io/EventLoopGroup.h>
+#include <aws/crt/io/TLSOptions.h>
+#include <aws/crt/mqtt/MqttClient.h>
 
 #include <iostream>
 #include <mutex>
 #include <condition_variable>
+#include <algorithm>
+#include <aws/crt/io/Bootstrap.h>
 
 using namespace Aws::Crt;
 
@@ -101,7 +106,6 @@ int main(int argc, char* argv[])
      */
     Io::TLSCtxOptions tlsCtxOptions;
     Io::InitClientWithMTLS(tlsCtxOptions, certificatePath.c_str(), keyPath.c_str());
-
     /*
      * If we have a custom CA, set that up here.
      */
@@ -121,6 +125,15 @@ int main(int argc, char* argv[])
         port = 443;
     }
 
+    Io::TLSContext tlsCtx(tlsCtxOptions, Io::TLSMode::CLIENT);
+
+    if (!tlsCtx)
+    {
+        fprintf(stderr, "Tls Context creation failed with error %s\n",
+                ErrorDebugString(tlsCtx.LastError()));
+        exit(-1);
+    }
+
     /*
      * Default Socket options to use. IPV4 will be ignored based on what DNS
      * tells us.
@@ -133,12 +146,21 @@ int main(int argc, char* argv[])
     socketOptions.keep_alive_timeout_sec = 0;
     socketOptions.keepalive = false;
 
+    Io::ClientBootstrap bootstrap(eventLoopGroup);
+
+    if (!bootstrap)
+    {
+        fprintf(stderr, "ClientBootstrap failed with error %s\n",
+                ErrorDebugString(bootstrap.LastError()));
+        exit(-1);
+    }
+
     /*
      * Now Create a client. This can not throw.
      * An instance of a client must outlive its connections.
      * It is the users responsibility to make sure of this.
      */
-    Mqtt::MqttClient mqttClient(eventLoopGroup);
+    Mqtt::MqttClient mqttClient(bootstrap);
 
     /*
      * Since no exceptions are used, always check the bool operator
@@ -156,7 +178,7 @@ int main(int argc, char* argv[])
      * and its underlying memory is managed by the client.
      */
     Mqtt::MqttConnection connection =
-        mqttClient.NewConnection(endpoint, port, socketOptions, tlsCtxOptions);
+        mqttClient.NewConnection(endpoint, port, socketOptions, tlsCtx.NewConnectionOptions());
 
     if (!connection)
     {

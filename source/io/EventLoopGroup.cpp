@@ -20,27 +20,18 @@ namespace Aws
     {
         namespace Io
         {
-            EventLoopGroup::EventLoopGroup() noexcept : m_lastError(AWS_ERROR_SUCCESS)
+            EventLoopGroup::EventLoopGroup(Allocator* allocator) noexcept : m_lastError(AWS_ERROR_SUCCESS)
             {
                 AWS_ZERO_STRUCT(m_eventLoopGroup);
 
-                if (aws_event_loop_group_default_init(&m_eventLoopGroup, aws_default_allocator(), 0))
+                if (aws_event_loop_group_default_init(&m_eventLoopGroup, allocator, 0))
                 {
                     m_lastError = aws_last_error();
                 }
             }
 
-            EventLoopGroup::EventLoopGroup(uint16_t threadCount) noexcept : m_lastError(AWS_ERROR_SUCCESS)
-            {
-                AWS_ZERO_STRUCT(m_eventLoopGroup);
 
-                if (aws_event_loop_group_default_init(&m_eventLoopGroup, aws_default_allocator(), threadCount))
-                {
-                    m_lastError = aws_last_error();
-                }
-            }
-
-            EventLoopGroup::EventLoopGroup(aws_allocator* allocator, uint16_t threadCount) noexcept:
+            EventLoopGroup::EventLoopGroup( uint16_t threadCount, Allocator* allocator) noexcept:
                 m_lastError(AWS_ERROR_SUCCESS)
             {
                 AWS_ZERO_STRUCT(m_eventLoopGroup);

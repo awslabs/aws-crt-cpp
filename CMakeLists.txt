@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.1)
 project(aws-crt-cpp CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_INSTALL_PREFIX}/lib/cmake")
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 if (NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 11)
@@ -75,30 +74,30 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>)
 
-find_package(aws-c-common REQUIRED)
-find_package(aws-c-io REQUIRED)
-
-if (UNIX AND NOT APPLE)
-    find_package(s2n REQUIRED)
-endif()
-
 find_package(aws-c-mqtt REQUIRED)
-target_link_libraries(${CMAKE_PROJECT_NAME} AWS::aws-c-common aws-c-io aws-c-mqtt ${PLATFORM_LIBS})
+target_link_libraries(${CMAKE_PROJECT_NAME} AWS::aws-c-mqtt)
 
 install(FILES ${AWS_CRT_HEADERS} DESTINATION "include/aws/crt")
 install(FILES ${AWS_CRT_IO_HEADERS} DESTINATION "include/aws/crt/io")
 install(FILES ${AWS_CRT_MQTT_HEADERS} DESTINATION "include/aws/crt/mqtt")
 
-
 install(
-        TARGETS ${CMAKE_PROJECT_NAME} EXPORT ${CMAKE_PROJECT_NAME}-config
+        TARGETS ${CMAKE_PROJECT_NAME}
+        EXPORT ${CMAKE_PROJECT_NAME}-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
         LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-        COMPONENT library
 )
 
-export(TARGETS ${CMAKE_PROJECT_NAME} FILE ${CMAKE_PROJECT_NAME}-config.cmake)
-install(EXPORT ${CMAKE_PROJECT_NAME}-config DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_PROJECT_NAME}/cmake/")
+install(EXPORT "${CMAKE_PROJECT_NAME}-targets"
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_PROJECT_NAME}/cmake/"
+        NAMESPACE AWS::)
+
+configure_file("cmake/${CMAKE_PROJECT_NAME}-config.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}-config.cmake"
+        @ONLY)
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}-config.cmake"
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_PROJECT_NAME}/cmake/")
 
 enable_testing()
 add_subdirectory(tests)

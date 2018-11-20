@@ -14,6 +14,8 @@
 */
 #include <aws/crt/Api.h>
 
+#include <aws/crt/io/TLSOptions.h>
+
 namespace Aws
 {
     namespace Crt

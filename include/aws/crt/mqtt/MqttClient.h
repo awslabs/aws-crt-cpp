@@ -17,7 +17,6 @@
 #include <aws/crt/Types.h>
 
 #include <aws/crt/io/TLSOptions.h>
-
 #include <aws/mqtt/client.h>
 
 #include <functional>
@@ -29,7 +28,7 @@ namespace Aws
     {
         namespace Io
         {
-            class EventLoopGroup;
+            class ClientBootstrap;
         }
 
         namespace Mqtt
@@ -146,7 +145,7 @@ namespace Aws
             private:
                 MqttConnection(MqttClient* client, const std::string& hostName, uint16_t port,
                                const Io::SocketOptions& socketOptions,
-                               const Io::TLSCtxOptions& tlsCtxOptions) noexcept;
+                               Io::TlSConnectionOptions&& tlsConnOptions) noexcept;
 
                 MqttClient *m_owningClient;
                 aws_mqtt_client_connection *m_underlyingConnection;
@@ -179,14 +178,10 @@ namespace Aws
 
             public:
                 /**
-                 * Initialize an MqttClient using eventLoopGroup. The default
-                 * allocator will be used.
+                 * Initialize an MqttClient using bootstrap and allocator
                  */
-                MqttClient(const Io::EventLoopGroup& eventLoopGroup) noexcept;
-                /**
-                 * Inialize an MqttClient using allocator and  eventLoopGroup.
-                 */
-                MqttClient(Allocator& allocator, const Io::EventLoopGroup& eventLoopGroup) noexcept;
+                MqttClient(const Io::ClientBootstrap& bootstrap, Allocator* allocator = DefaultAllocator()) noexcept;
+
                 ~MqttClient();
                 MqttClient(const MqttClient&) = delete;
                 MqttClient(MqttClient&&) noexcept;
@@ -201,7 +196,7 @@ namespace Aws
                  * all of its connection instances.
                  */
                 MqttConnection NewConnection(const std::string& hostName, uint16_t port,
-                        const Io::SocketOptions& socketOptions, const Io::TLSCtxOptions& tlsCtxOptions) noexcept;
+                        const Io::SocketOptions& socketOptions, Io::TlSConnectionOptions&& tlsConnOptions) noexcept;
 
             private:
                 aws_mqtt_client m_client;

@@ -69,6 +69,72 @@ namespace Aws
             {
                 return aws_tls_is_alpn_available();
             }
+
+            TLSContext::TLSContext(TLSCtxOptions& options, TLSMode mode, Allocator* allocator) noexcept :
+                m_ctx(nullptr), m_lastError(AWS_OP_SUCCESS)
+            {
+                if (mode == TLSMode::CLIENT)
+                {
+                    m_ctx = aws_tls_client_ctx_new(allocator, &options);
+                }
+                else
+                {
+                    m_ctx = aws_tls_server_ctx_new(allocator, &options);
+                }
+
+                if (!m_ctx)
+                {
+                    m_lastError = aws_last_error();
+                }
+            }
+
+            TLSContext::~TLSContext()
+            {
+                if (*this)
+                {
+                    aws_tls_ctx_destroy(m_ctx);
+                }
+            }
+
+            TLSContext::TLSContext(TLSContext&& toMove) noexcept :
+                m_ctx(toMove.m_ctx),
+                m_lastError(toMove.m_lastError)
+            {
+                toMove.m_ctx = nullptr;
+                toMove.m_lastError = AWS_ERROR_UNKNOWN;
+            }
+
+            TLSContext& TLSContext::operator=(TLSContext&& toMove) noexcept
+            {
+                if (this == &toMove)
+                {
+                    return *this;
+                }
+
+                m_ctx = toMove.m_ctx;
+                m_lastError = toMove.m_lastError;
+                toMove.m_ctx = nullptr;
+                toMove.m_lastError = AWS_ERROR_UNKNOWN;
+
+                return *this;
+            }
+
+            TLSContext::operator bool() const noexcept
+            {
+                return m_ctx && m_lastError == AWS_ERROR_SUCCESS;
+            }
+
+            int TLSContext::LastError() const noexcept
+            {
+                return m_lastError;
+            }
+
+            TlSConnectionOptions TLSContext::NewConnectionOptions() const noexcept
+            {
+                TlSConnectionOptions options;
+                aws_tls_connection_options_init_from_ctx(&options, m_ctx);
+                return options;
+            }
         }
     }
 }

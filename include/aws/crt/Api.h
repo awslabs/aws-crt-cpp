@@ -14,9 +14,7 @@
 * permissions and limitations under the License.
 */
 #include <aws/crt/Types.h>
-#include <aws/crt/io/EventLoopGroup.h>
-#include <aws/crt/io/TLSOptions.h>
-#include <aws/crt/mqtt/MqttClient.h>
+#include <aws/crt/Exports.h>
 
 #include <aws/io/socket.h>
 
