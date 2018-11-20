@@ -49,15 +49,17 @@ namespace Aws
                 }
             }
 
-            void MqttConnection::s_onDisconnect(aws_mqtt_client_connection*, int errorCode, void* userData)
+            bool MqttConnection::s_onDisconnect(aws_mqtt_client_connection*, int errorCode, void* userData)
             {
                 auto connWrapper = reinterpret_cast<MqttConnection*>(userData);
                 connWrapper->m_lastError = errorCode;
 
                 if (connWrapper->m_onDisconnect)
                 {
-                    connWrapper->m_onDisconnect(*connWrapper);
+                    return connWrapper->m_onDisconnect(*connWrapper);
                 }
+
+                return false;
             }
 
             struct PubCallbackData
@@ -77,9 +79,9 @@ namespace Aws
 
                 if (callbackData->onPublishReceived)
                 {
-                    std::string topicStr((const char*)topic->ptr, topic->len);
+                    ByteBuf topicBuf = aws_byte_buf_from_array(topic->ptr, topic->len);
                     ByteBuf payloadBuf = aws_byte_buf_from_array(payload->ptr, payload->len);
-                    callbackData->onPublishReceived(*(callbackData->connection), topicStr, payloadBuf);
+                    callbackData->onPublishReceived(*(callbackData->connection), topicBuf, payloadBuf);
                 }
             }
 
@@ -87,7 +89,7 @@ namespace Aws
             {
                 MqttConnection* connection;
                 OnOperationCompleteHandler onOperationComplete;
-                std::string topic;
+                const char* topic;
                 Allocator* allocator;
             };
 
@@ -101,13 +103,20 @@ namespace Aws
                     callbackData->onOperationComplete(*callbackData->connection, packetId);
                 }
 
-                aws_mem_release(callbackData->allocator, (void *)callbackData);
+                if (callbackData->topic)
+                {
+                    aws_mem_release(callbackData->allocator,
+                            reinterpret_cast<void*>(const_cast<char*>(callbackData->topic)));
+
+                }
+                callbackData->~OpCompleteCallbackData();
+                aws_mem_release(callbackData->allocator, reinterpret_cast<void *>(callbackData));
             }
 
             MqttConnection::MqttConnection(MqttClient* client,
-                        const std::string& hostName, uint16_t port,
+                        const char* hostName, uint16_t port,
                         const Io::SocketOptions& socketOptions,
-                        Io::TlSConnectionOptions&& tlsConnOptions) noexcept :
+                        Io::TlsConnectionOptions&& tlsConnOptions) noexcept :
                            m_owningClient(client),
                            m_lastError(AWS_ERROR_SUCCESS),
                            m_isInit(false)
@@ -119,7 +128,8 @@ namespace Aws
                 callbacks.on_connection_failed = s_onConnectionFailed;
                 callbacks.on_disconnect = s_onDisconnect;
 
-                ByteCursor hostNameCur = aws_byte_cursor_from_array(hostName.c_str(), hostName.length());
+                ByteBuf hostNameBuf = aws_byte_buf_from_c_str(hostName);
+                ByteCursor hostNameCur = aws_byte_cursor_from_buf(&hostNameBuf);
 
                 m_underlyingConnection =
                         aws_mqtt_client_connection_new(&m_owningClient->m_client, callbacks,
@@ -138,7 +148,7 @@ namespace Aws
 
             MqttConnection::operator bool() const noexcept
             {
-                return m_isInit && m_lastError == AWS_ERROR_SUCCESS;
+                return m_isInit;
             }
 
             int MqttConnection::LastError() const noexcept
@@ -146,10 +156,11 @@ namespace Aws
                 return m_lastError;
             }
 
-            void MqttConnection::SetWill(const std::string& topic, QOS qos, bool retain,
+            void MqttConnection::SetWill(const char* topic, QOS qos, bool retain,
                          const ByteBuf& payload) noexcept
             {
-                ByteCursor topicCur = aws_byte_cursor_from_array(topic.c_str(), topic.length());
+                ByteBuf topicBuf = aws_byte_buf_from_c_str(topic);
+                ByteCursor topicCur = aws_byte_cursor_from_buf(&topicBuf);
                 ByteCursor payloadCur = aws_byte_cursor_from_buf(&payload);
 
                 if (aws_mqtt_client_connection_set_will(m_underlyingConnection, &topicCur, qos, retain, &payloadCur))
@@ -158,22 +169,26 @@ namespace Aws
                 }
             }
 
-            void MqttConnection::SetLogin(const std::string& userName, const std::string& password) noexcept
+            void MqttConnection::SetLogin(const char* userName, const char* password) noexcept
             {
-                ByteCursor userNameCur = aws_byte_cursor_from_array(userName.c_str(), userName.length());
-                ByteCursor pwdCur = aws_byte_cursor_from_array(password.c_str(), password.length());
+                ByteBuf userNameBuf = aws_byte_buf_from_c_str(userName);
+                ByteCursor userNameCur = aws_byte_cursor_from_buf(&userNameBuf);
+                ByteBuf pwdBuf = aws_byte_buf_from_c_str(password);
+                ByteCursor pwdCur = aws_byte_cursor_from_buf(&pwdBuf);
                 if (aws_mqtt_client_connection_set_login(m_underlyingConnection, &userNameCur, &pwdCur))
                 {
                     m_lastError = aws_last_error();
                 }
             }
 
-            void MqttConnection::Connect(const std::string& clientId, bool cleanSession,
+            void MqttConnection::Connect(const char* clientId, bool cleanSession,
                     uint16_t keepAliveTime) noexcept
             {
-                ByteCursor clientIdCur = aws_byte_cursor_from_array(clientId.c_str(), clientId.length());
+                ByteBuf clientIdBuf = aws_byte_buf_from_c_str(clientId);
+                ByteCursor clientIdCur = aws_byte_cursor_from_buf(&clientIdBuf);
 
-                if (aws_mqtt_client_connection_connect(m_underlyingConnection, &clientIdCur, cleanSession, keepAliveTime))
+                if (aws_mqtt_client_connection_connect(m_underlyingConnection,
+                        &clientIdCur, cleanSession, keepAliveTime))
                 {
                     m_lastError = aws_last_error();
                 }
@@ -187,13 +202,14 @@ namespace Aws
                 }
             }
 
-            uint16_t MqttConnection::Subscribe(const std::string& topicFilter, QOS qos,
+            uint16_t MqttConnection::Subscribe(const char* topicFilter, QOS qos,
                                OnPublishReceivedHandler&& onPublish,
                                OnOperationCompleteHandler&& onOpComplete) noexcept
             {                
 
                 PubCallbackData* pubCallbackData =
-                        (PubCallbackData*)aws_mem_acquire(m_owningClient->m_client.allocator, sizeof(PubCallbackData));
+                        reinterpret_cast<PubCallbackData*>(aws_mem_acquire(m_owningClient->m_client.allocator,
+                                sizeof(PubCallbackData)));
 
                 if (!pubCallbackData)
                 {
@@ -206,12 +222,13 @@ namespace Aws
                 pubCallbackData->onPublishReceived = std::move(onPublish);
 
                 OpCompleteCallbackData *opCompleteCallbackData =
-                        (OpCompleteCallbackData*)aws_mem_acquire(m_owningClient->m_client.allocator,
-                                sizeof(OpCompleteCallbackData));
+                        reinterpret_cast<OpCompleteCallbackData*>(aws_mem_acquire(m_owningClient->m_client.allocator,
+                                sizeof(OpCompleteCallbackData)));
 
                 if (!opCompleteCallbackData)
                 {
-                    aws_mem_release(m_owningClient->m_client.allocator, pubCallbackData);
+                    pubCallbackData->~PubCallbackData();
+                    aws_mem_release(m_owningClient->m_client.allocator, reinterpret_cast<void*>(pubCallbackData));
                     m_lastError = aws_last_error();
                     return 0;
                 }
@@ -220,9 +237,11 @@ namespace Aws
                 opCompleteCallbackData->connection = this;
                 opCompleteCallbackData->allocator = m_owningClient->m_client.allocator;
                 opCompleteCallbackData->onOperationComplete = std::move(onOpComplete);
-                opCompleteCallbackData->topic = topicFilter;
-                ByteCursor topicFilterCur = aws_byte_cursor_from_array(opCompleteCallbackData->topic.c_str(), 
-                    opCompleteCallbackData->topic.length());
+                opCompleteCallbackData->topic = nullptr;
+                opCompleteCallbackData->allocator = m_owningClient->m_client.allocator;
+
+                ByteBuf topicFilterBuf = aws_byte_buf_from_c_str(topicFilter);
+                ByteCursor topicFilterCur = aws_byte_cursor_from_buf(&topicFilterBuf);
 
                 uint16_t packetId = aws_mqtt_client_connection_subscribe(m_underlyingConnection,
                         &topicFilterCur, qos, s_onPublish,
@@ -230,50 +249,59 @@ namespace Aws
 
                 if (!packetId)
                 {
+                    pubCallbackData->~PubCallbackData();
+                    aws_mem_release(m_owningClient->m_client.allocator, reinterpret_cast<void*>(pubCallbackData));
+                    opCompleteCallbackData->~OpCompleteCallbackData();
+                    aws_mem_release(m_owningClient->m_client.allocator,
+                            reinterpret_cast<void*>(opCompleteCallbackData));
                     m_lastError = aws_last_error();
                 }
 
                 return packetId;
             }
 
-            uint16_t MqttConnection::Unsubscribe(const std::string& topicFilter,
+            uint16_t MqttConnection::Unsubscribe(const char* topicFilter,
                     OnOperationCompleteHandler&& onOpComplete) noexcept
             {
                 OpCompleteCallbackData *opCompleteCallbackData =
-                        (OpCompleteCallbackData*)aws_mem_acquire(m_owningClient->m_client.allocator,
-                                                                 sizeof(OpCompleteCallbackData));
+                        reinterpret_cast<OpCompleteCallbackData*>(aws_mem_acquire(m_owningClient->m_client.allocator,
+                                                                 sizeof(OpCompleteCallbackData)));
                 if (!opCompleteCallbackData)
                 {
                     m_lastError = aws_last_error();
                     return 0;
                 }
+
                 opCompleteCallbackData = new(opCompleteCallbackData)OpCompleteCallbackData;
 
                 opCompleteCallbackData->connection = this;
                 opCompleteCallbackData->allocator = m_owningClient->m_client.allocator;
                 opCompleteCallbackData->onOperationComplete = std::move(onOpComplete);
-                opCompleteCallbackData->topic = topicFilter;
-                ByteCursor topicFilterCur = aws_byte_cursor_from_array(opCompleteCallbackData->topic.c_str(), 
-                    opCompleteCallbackData->topic.length());
+                opCompleteCallbackData->topic = nullptr;
+                ByteBuf topicFilterBuf = aws_byte_buf_from_c_str(topicFilter);
+                ByteCursor topicFilterCur = aws_byte_cursor_from_buf(&topicFilterBuf);
 
                 uint16_t packetId = aws_mqtt_client_connection_unsubscribe(m_underlyingConnection, &topicFilterCur,
                                                                            s_onOpComplete, opCompleteCallbackData);
 
                 if (!packetId)
                 {
+                    opCompleteCallbackData->~OpCompleteCallbackData();
+                    aws_mem_release(m_owningClient->m_client.allocator,
+                            reinterpret_cast<void*>(opCompleteCallbackData));
                     m_lastError = aws_last_error();
                 }
 
                 return packetId;
             }
 
-            uint16_t MqttConnection::Publish(const std::string& topic, QOS qos, bool retain, const ByteBuf& payload,
+            uint16_t MqttConnection::Publish(const char* topic, QOS qos, bool retain, const ByteBuf& payload,
                              OnOperationCompleteHandler&& onOpComplete) noexcept
             {
 
                 OpCompleteCallbackData *opCompleteCallbackData =
-                        (OpCompleteCallbackData*)aws_mem_acquire(m_owningClient->m_client.allocator,
-                                                                 sizeof(OpCompleteCallbackData));
+                        reinterpret_cast<OpCompleteCallbackData*>(aws_mem_acquire(m_owningClient->m_client.allocator,
+                                                                 sizeof(OpCompleteCallbackData)));
                 if (!opCompleteCallbackData)
                 {
                     m_lastError = aws_last_error();
@@ -281,12 +309,24 @@ namespace Aws
                 }
                 opCompleteCallbackData = new(opCompleteCallbackData)OpCompleteCallbackData;
 
+                size_t topicLen = strlen(topic) + 1;
+                char* topicCpy =
+                        reinterpret_cast<char*>(aws_mem_acquire(m_owningClient->m_client.allocator,
+                                sizeof(char) * (topicLen)));
+
+                if (!topicCpy)
+                {
+                    opCompleteCallbackData->~OpCompleteCallbackData();
+                    aws_mem_release(m_owningClient->m_client.allocator, opCompleteCallbackData);
+                }
+
+                memcpy(topicCpy, topic, topicLen);
+
                 opCompleteCallbackData->connection = this;
                 opCompleteCallbackData->allocator = m_owningClient->m_client.allocator;
                 opCompleteCallbackData->onOperationComplete = std::move(onOpComplete);
-                opCompleteCallbackData->topic = topic;
-                ByteCursor topicCur = aws_byte_cursor_from_array(opCompleteCallbackData->topic.c_str(), 
-                    opCompleteCallbackData->topic.length());
+                opCompleteCallbackData->topic = topicCpy;
+                ByteCursor topicCur = aws_byte_cursor_from_array(topicCpy, topicLen - 1);
 
                 ByteCursor payloadCur = aws_byte_cursor_from_buf(&payload);
                 uint16_t packetId = aws_mqtt_client_connection_publish(m_underlyingConnection, &topicCur, qos,
@@ -294,6 +334,10 @@ namespace Aws
 
                 if (!packetId)
                 {
+                    aws_mem_release(m_owningClient->m_client.allocator, reinterpret_cast<void*>(topicCpy));
+                    opCompleteCallbackData->~OpCompleteCallbackData();
+                    aws_mem_release(m_owningClient->m_client.allocator,
+                            reinterpret_cast<void*>(opCompleteCallbackData));
                     m_lastError = aws_last_error();
                 }
 
@@ -311,7 +355,7 @@ namespace Aws
             {
                 AWS_ZERO_STRUCT(m_client);
                 if (aws_mqtt_client_init(&m_client, allocator,
-                        (aws_client_bootstrap* )bootstrap.GetUnderlyingHandle()))
+                                         const_cast<aws_client_bootstrap*>(bootstrap.GetUnderlyingHandle())))
                 {
                     m_lastError = aws_last_error();
                 }
@@ -363,9 +407,9 @@ namespace Aws
                 return m_lastError;
             }
 
-            MqttConnection MqttClient::NewConnection(const std::string& hostName, uint16_t port,
+            MqttConnection MqttClient::NewConnection(const char* hostName, uint16_t port,
                                          const Io::SocketOptions& socketOptions,
-                                         Io::TlSConnectionOptions&& tlsConnOptions) noexcept
+                                         Io::TlsConnectionOptions&& tlsConnOptions) noexcept
             {
                 return MqttConnection(this, hostName, port, socketOptions, std::move(tlsConnOptions));
             }

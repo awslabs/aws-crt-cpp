@@ -14,14 +14,11 @@
  * permissions and limitations under the License.
  */
 
-#include <aws/crt/Api.h>
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
 #include <aws/crt/io/EventLoopGroup.h>
 
 #include <aws/io/channel_bootstrap.h>
-
-class EventLoopGroup;
 
 namespace Aws
 {
@@ -40,8 +37,8 @@ namespace Aws
                 ClientBootstrap(ClientBootstrap&&) noexcept;
                 ClientBootstrap& operator=(ClientBootstrap&&) noexcept;
 
-                operator bool() noexcept;
-                int LastError() noexcept;
+                operator bool() const noexcept;
+                int LastError() const noexcept;
 
                 const aws_client_bootstrap* GetUnderlyingHandle() const;
             private:

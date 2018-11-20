@@ -16,12 +16,11 @@
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
 
-#include <aws/crt/io/TLSOptions.h>
+#include <aws/crt/io/TlsOptions.h>
 #include <aws/mqtt/client.h>
 
 #include <functional>
 #include <memory>
-#include <string>
 
 namespace Aws
 {
@@ -51,13 +50,13 @@ namespace Aws
             /**
              * Invoked when a disconnect message has been sent.
              */
-            using OnDisconnectHandler = std::function<void(MqttConnection& connection)>;
+            using OnDisconnectHandler = std::function<bool(MqttConnection& connection)>;
 
             /**
              * Invoked upon receipt of a Publish message on a subscribed topic.
              */
             using OnPublishReceivedHandler = std::function<void(MqttConnection& connection, 
-                const std::string& topic, const ByteBuf& payload)>;
+                const ByteBuf& topic, const ByteBuf& payload)>;
             using OnOperationCompleteHandler = std::function<void(MqttConnection& connection, uint16_t packetId)>;
 
             /**
@@ -95,20 +94,20 @@ namespace Aws
                 /**
                  * Sets LastWill for the connection. The memory backing payload must outlive the connection.
                  */
-                void SetWill(const std::string& topic, QOS qos, bool retain,
+                void SetWill(const char* topic, QOS qos, bool retain,
                         const ByteBuf& payload) noexcept;
 
                 /**
                  * Sets login credentials for the connection. The must get set before the Connect call
                  * if it is to be used. 
                  */
-                void SetLogin(const std::string& userName, const std::string& password) noexcept;
+                void SetLogin(const char* userName, const char* password) noexcept;
 
                 /**
                  * Initiates the connection, OnConnectionFailedHandler and/or OnConnAckHandler will
                  * be invoked in an event-loop thread.
                  */
-                void Connect(const std::string& clientId, bool cleanSession, uint16_t keepAliveTime) noexcept;
+                void Connect(const char* clientId, bool cleanSession, uint16_t keepAliveTime) noexcept;
 
                 /**
                  * Initiates disconnect, OnDisconnectHandler will be invoked in an event-loop thread.
@@ -120,7 +119,7 @@ namespace Aws
                  * thread upon an incoming Publish message. OnOperationCompleteHandler will be invoked
                  * upon receipt of a suback message.
                  */
-                uint16_t Subscribe(const std::string& topicFilter, QOS qos,
+                uint16_t Subscribe(const char* topicFilter, QOS qos,
                         OnPublishReceivedHandler&& onPublish,
                         OnOperationCompleteHandler&& onOpComplete) noexcept;
 
@@ -128,14 +127,14 @@ namespace Aws
                  * Unsubscribes from topicFilter. OnOperationCompleteHandler will be invoked upon receipt of
                  * an unsuback message.
                  */
-                uint16_t Unsubscribe(const std::string& topicFilter,
+                uint16_t Unsubscribe(const char* topicFilter,
                         OnOperationCompleteHandler&& onOpComplete) noexcept;
 
                 /**
                  * Publishes to topic. The backing memory for payload must stay available until the 
                  * OnOperationCompleteHandler has been invoked.
                  */
-                uint16_t Publish(const std::string& topic, QOS qos, bool retain, const ByteBuf& payload,
+                uint16_t Publish(const char* topic, QOS qos, bool retain, const ByteBuf& payload,
                                  OnOperationCompleteHandler&& onOpComplete) noexcept;
 
                 /**
@@ -144,9 +143,9 @@ namespace Aws
                 void Ping();
 
             private:
-                MqttConnection(MqttClient* client, const std::string& hostName, uint16_t port,
+                MqttConnection(MqttClient* client, const char* hostName, uint16_t port,
                                const Io::SocketOptions& socketOptions,
-                               Io::TlSConnectionOptions&& tlsConnOptions) noexcept;
+                               Io::TlsConnectionOptions&& tlsConnOptions) noexcept;
 
                 MqttClient *m_owningClient;
                 aws_mqtt_client_connection *m_underlyingConnection;
@@ -162,7 +161,7 @@ namespace Aws
                     enum aws_mqtt_connect_return_code return_code,
                     bool session_present,
                     void* user_data);
-                static void s_onDisconnect(aws_mqtt_client_connection* connection, int errorCode, void* userData);
+                static bool s_onDisconnect(aws_mqtt_client_connection* connection, int errorCode, void* userData);
                 static void s_onPublish(aws_mqtt_client_connection*connection,
                                         const aws_byte_cursor* topic,
                                         const aws_byte_cursor* payload,
@@ -196,8 +195,8 @@ namespace Aws
                  * Create a new connection object from the client. The client must outlive
                  * all of its connection instances.
                  */
-                MqttConnection NewConnection(const std::string& hostName, uint16_t port,
-                        const Io::SocketOptions& socketOptions, Io::TlSConnectionOptions&& tlsConnOptions) noexcept;
+                MqttConnection NewConnection(const char* hostName, uint16_t port,
+                        const Io::SocketOptions& socketOptions, Io::TlsConnectionOptions&& tlsConnOptions) noexcept;
 
             private:
                 aws_mqtt_client m_client;

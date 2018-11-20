@@ -13,10 +13,9 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-#include <aws/crt/Api.h>
+#include <aws/crt/Types.h>
 
 #include <aws/io/event_loop.h>
-#include <aws/crt/Exports.h>
 
 namespace Aws
 {
@@ -44,8 +43,8 @@ namespace Aws
                 ~EventLoopGroup();
                 EventLoopGroup(const EventLoopGroup&) = delete;
                 EventLoopGroup(EventLoopGroup&&) noexcept;
-                EventLoopGroup&operator =(const EventLoopGroup&) = delete;
-                EventLoopGroup&operator =(EventLoopGroup&&) noexcept;
+                EventLoopGroup& operator =(const EventLoopGroup&) = delete;
+                EventLoopGroup& operator =(EventLoopGroup&&) noexcept;
 
                 operator bool() const;
                 int LastError() const;

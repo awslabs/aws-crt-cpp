@@ -12,7 +12,7 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-#include <aws/crt/io/TLSOptions.h>
+#include <aws/crt/io/TlsOptions.h>
 
 #include <aws/io/tls_channel_handler.h>
 
@@ -22,55 +22,55 @@ namespace Aws
     {
         namespace Io
         {
-            void InitDefaultClient(TLSCtxOptions& options) noexcept
+            void InitDefaultClient(TlsContextOptions& options) noexcept
             {
                 aws_tls_ctx_options_init_default_client(&options);
             }
 
-            void InitClientWithMTLS(TLSCtxOptions& options, 
-                const char* certPath, const char* pKeyPath) noexcept
+            void InitClientWithMtls(TlsContextOptions &options,
+                                    const char *certPath, const char *pKeyPath) noexcept
             {
                 aws_tls_ctx_options_init_client_mtls(&options, certPath, pKeyPath);
             }
 
-            void InitClientWithMTLSPkcs12(TLSCtxOptions& options, 
-                const char* pkcs12Path, const char* pkcs12Pwd) noexcept
+            void InitClientWithMtlsPkcs12(TlsContextOptions &options,
+                                          const char *pkcs12Path, const char *pkcs12Pwd) noexcept
             {
                 aws_tls_ctx_options_init_client_mtls_pkcs12(&options, pkcs12Path, pkcs12Pwd);
             }
 
-            void SetALPNList(TLSCtxOptions& options, const char* alpn_list) noexcept
+            void SetALPNList(TlsContextOptions& options, const char* alpn_list) noexcept
             {
                 aws_tls_ctx_options_set_alpn_list(&options, alpn_list);
             }
 
-            void SetVerifyPeer(TLSCtxOptions& options, bool verify_peer) noexcept
+            void SetVerifyPeer(TlsContextOptions& options, bool verify_peer) noexcept
             {
                 aws_tls_ctx_options_set_verify_peer(&options, verify_peer);
             }
 
-            void OverrideDefaultTrustStore(TLSCtxOptions& options, 
+            void OverrideDefaultTrustStore(TlsContextOptions& options,
                 const char* caPath, const char* caFile) noexcept
             {
                 aws_tls_ctx_options_override_default_trust_store(&options, caPath, caFile);
             }
 
-            void InitTLSStaticState(Aws::Crt::Allocator* alloc) noexcept
+            void InitTlsStaticState(Aws::Crt::Allocator *alloc) noexcept
             {
                 aws_tls_init_static_state(alloc);
             }
 
-            void CleanUpTLSStaticState() noexcept
+            void CleanUpTlsStaticState() noexcept
             {
                 aws_tls_clean_up_static_state();
             }
 
-            bool IsALPNSupported() noexcept
+            bool IsAlpnSupported() noexcept
             {
                 return aws_tls_is_alpn_available();
             }
 
-            TLSContext::TLSContext(TLSCtxOptions& options, TLSMode mode, Allocator* allocator) noexcept :
+            TlsContext::TlsContext(TlsContextOptions& options, TLSMode mode, Allocator* allocator) noexcept :
                 m_ctx(nullptr), m_lastError(AWS_OP_SUCCESS)
             {
                 if (mode == TLSMode::CLIENT)
@@ -88,7 +88,7 @@ namespace Aws
                 }
             }
 
-            TLSContext::~TLSContext()
+            TlsContext::~TlsContext()
             {
                 if (*this)
                 {
@@ -96,7 +96,7 @@ namespace Aws
                 }
             }
 
-            TLSContext::TLSContext(TLSContext&& toMove) noexcept :
+            TlsContext::TlsContext(TlsContext&& toMove) noexcept :
                 m_ctx(toMove.m_ctx),
                 m_lastError(toMove.m_lastError)
             {
@@ -104,7 +104,7 @@ namespace Aws
                 toMove.m_lastError = AWS_ERROR_UNKNOWN;
             }
 
-            TLSContext& TLSContext::operator=(TLSContext&& toMove) noexcept
+            TlsContext& TlsContext::operator=(TlsContext&& toMove) noexcept
             {
                 if (this == &toMove)
                 {
@@ -119,19 +119,19 @@ namespace Aws
                 return *this;
             }
 
-            TLSContext::operator bool() const noexcept
+            TlsContext::operator bool() const noexcept
             {
                 return m_ctx && m_lastError == AWS_ERROR_SUCCESS;
             }
 
-            int TLSContext::LastError() const noexcept
+            int TlsContext::LastError() const noexcept
             {
                 return m_lastError;
             }
 
-            TlSConnectionOptions TLSContext::NewConnectionOptions() const noexcept
+            TlsConnectionOptions TlsContext::NewConnectionOptions() const noexcept
             {
-                TlSConnectionOptions options;
+                TlsConnectionOptions options;
                 aws_tls_connection_options_init_from_ctx(&options, m_ctx);
                 return options;
             }

@@ -55,6 +55,12 @@ if (WIN32)
 endif()
 
 add_library(${CMAKE_PROJECT_NAME} ${AWS_CRT_CPP_SRC})
+
+if (BUILD_SHARED_LIBS AND WIN32)
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC -DUSE_IMPORT_EXPORT)
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE -DAWS_CRT_CPP_EXPORTS)
+endif()
+
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 
 set(CMAKE_C_FLAGS_DEBUGOPT "")
@@ -102,4 +108,3 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}-config.cmake"
 enable_testing()
 add_subdirectory(tests)
 add_subdirectory(samples/mqtt_pub_sub)
-

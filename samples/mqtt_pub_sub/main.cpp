@@ -13,15 +13,11 @@
  * permissions and limitations under the License.
  */
 #include <aws/crt/Api.h>
-#include <aws/crt/io/EventLoopGroup.h>
-#include <aws/crt/io/TLSOptions.h>
-#include <aws/crt/mqtt/MqttClient.h>
 
 #include <iostream>
 #include <mutex>
 #include <condition_variable>
 #include <algorithm>
-#include <aws/crt/io/Bootstrap.h>
 
 using namespace Aws::Crt;
 
@@ -104,8 +100,8 @@ int main(int argc, char* argv[])
     /*
      * We're using Mutual TLS for Mqtt, so we need to load our client certificates
      */
-    Io::TLSCtxOptions tlsCtxOptions;
-    Io::InitClientWithMTLS(tlsCtxOptions, certificatePath.c_str(), keyPath.c_str());
+    Io::TlsContextOptions tlsCtxOptions;
+    Io::InitClientWithMtls(tlsCtxOptions, certificatePath.c_str(), keyPath.c_str());
     /*
      * If we have a custom CA, set that up here.
      */
@@ -115,7 +111,7 @@ int main(int argc, char* argv[])
     }
 
     uint16_t port = 8883;
-    if (aws_tls_is_alpn_available())
+    if (Io::IsAlpnSupported())
     {
         /*
         * Use ALPN to negotiate the mqtt protocol on a normal
@@ -125,7 +121,7 @@ int main(int argc, char* argv[])
         port = 443;
     }
 
-    Io::TLSContext tlsCtx(tlsCtxOptions, Io::TLSMode::CLIENT);
+    Io::TlsContext tlsCtx(tlsCtxOptions, Io::TLSMode::CLIENT);
 
     if (!tlsCtx)
     {
@@ -178,7 +174,7 @@ int main(int argc, char* argv[])
      * and its underlying memory is managed by the client.
      */
     Mqtt::MqttConnection connection =
-        mqttClient.NewConnection(endpoint, port, socketOptions, tlsCtx.NewConnectionOptions());
+        mqttClient.NewConnection(endpoint.c_str(), port, socketOptions, tlsCtx.NewConnectionOptions());
 
     if (!connection)
     {
@@ -226,7 +222,7 @@ int main(int argc, char* argv[])
     /*
      * Invoked when a disconnect message has completed.
      */
-    auto onDisconnect = [&](Mqtt::MqttConnection&)
+    auto onDisconnect = [&](Mqtt::MqttConnection&) -> bool
     {
         {
             fprintf(stdout, "Connection closed\n");
@@ -234,6 +230,7 @@ int main(int argc, char* argv[])
             connectionClosed = true;
         }
         conditionVariable.notify_one();
+        return false;
     };
 
     connection.SetOnConnAckHandler(std::move(onConAck));
@@ -286,9 +283,11 @@ int main(int argc, char* argv[])
         /*
          * This is invoked upon the receipt of a Publish on a subscribed topic.
          */
-        auto onPublish = [&](Mqtt::MqttConnection&, const std::string& topic, const ByteBuf& byteBuf)
+        auto onPublish = [&](Mqtt::MqttConnection&, const ByteBuf& topic, const ByteBuf& byteBuf)
         {
-            fprintf(stdout, "Publish recieved on %s\n Message:\n", topic.c_str());
+            fprintf(stdout, "Publish recieved on ");
+            fwrite(topic.buffer, 1, topic.len, stdout);
+            fprintf(stdout, "\n Message:\n");
             fwrite(byteBuf.buffer, 1, byteBuf.len, stdout);
             fprintf(stdout, "\n");
             conditionVariable.notify_one();
@@ -309,8 +308,10 @@ int main(int argc, char* argv[])
         conditionVariable.wait(uniqueLock);
     }
 
-    /* Disconnect */
-    connection.Disconnect();
-    conditionVariable.wait(uniqueLock, [&]() {return connectionClosed; });
+    if (!connectionClosed) {
+        /* Disconnect */
+        connection.Disconnect();
+        conditionVariable.wait(uniqueLock, [&]() { return connectionClosed; });
+    }
     return 0;
 }

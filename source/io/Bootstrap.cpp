@@ -64,19 +64,24 @@ namespace Aws
                 return *this;
             }
 
-            ClientBootstrap::operator bool() noexcept
+            ClientBootstrap::operator bool() const noexcept
             {
                 return m_lastError == AWS_ERROR_SUCCESS;
             }
 
-            int ClientBootstrap::LastError() noexcept
+            int ClientBootstrap::LastError() const noexcept
             {
                 return m_lastError;
             }
 
             const aws_client_bootstrap* ClientBootstrap::GetUnderlyingHandle() const
             {
-                return &m_bootstrap;
+                if (*this)
+                {
+                    return &m_bootstrap;
+                }
+
+                return nullptr;
             }
         }
     }

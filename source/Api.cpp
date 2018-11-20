@@ -14,7 +14,7 @@
 */
 #include <aws/crt/Api.h>
 
-#include <aws/crt/io/TLSOptions.h>
+#include <aws/crt/io/TlsOptions.h>
 
 namespace Aws
 {
@@ -22,12 +22,12 @@ namespace Aws
     {
         static void s_initApi(Allocator* allocator)
         {
-            Io::InitTLSStaticState(allocator);
+            Io::InitTlsStaticState(allocator);
         }
 
         static void s_cleanUpApi()
         {
-            Io::CleanUpTLSStaticState();
+            Io::CleanUpTlsStaticState();
         }
 
         ApiHandle::ApiHandle(Allocator* allocator) noexcept
@@ -45,13 +45,6 @@ namespace Aws
             s_cleanUpApi();
         }
 
-        Allocator* DefaultAllocator() noexcept
-        {
-            return aws_default_allocator();
-        }
-
- 
-
         void LoadErrorStrings() noexcept
         {
             aws_load_error_strings();
@@ -62,16 +55,6 @@ namespace Aws
         const char* ErrorDebugString(int error) noexcept
         {
             return aws_error_debug_str(error);
-        }
-
-        ByteBuf ByteBufFromCString(const char* str) noexcept
-        {
-            return aws_byte_buf_from_c_str(str);
-        }
-
-        ByteBuf ByteBufFromArray(const uint8_t *array, size_t len) noexcept
-        {
-            return aws_byte_buf_from_array(array, len);
         }
     }
 }

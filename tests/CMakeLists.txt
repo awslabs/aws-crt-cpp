@@ -10,6 +10,8 @@ set(TEST_BINARY_NAME ${CMAKE_PROJECT_NAME}-tests)
 
 add_test_case(EventLoopResourceSafety)
 add_test_case(MqttClientResourceSafety)
+add_test_case(ClientBootstrapResourceSafety)
+add_test_case(TLSContextResourceSafety)
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 

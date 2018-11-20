@@ -83,7 +83,12 @@ namespace Aws
 
             const aws_event_loop_group *EventLoopGroup::GetUnderlyingHandle() const
             {
-                return &m_eventLoopGroup;
+                if (*this)
+                {
+                    return &m_eventLoopGroup;
+                }
+
+                return nullptr;
             }
 
         }

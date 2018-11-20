@@ -13,9 +13,6 @@
  * permissions and limitations under the License.
  */
 #include <aws/crt/Api.h>
-#include <aws/crt/mqtt/MqttClient.h>
-#include <aws/crt/io/Bootstrap.h>
-#include <aws/crt/io/TLSOptions.h>
 
 #include <aws/testing/aws_test_harness.h>
 #include <utility>
@@ -23,10 +20,10 @@
 static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator* allocator, void *)
 {
     Aws::Crt::ApiHandle apiHandle(allocator);
-    Aws::Crt::Io::TLSCtxOptions tlsCtxOptions;
+    Aws::Crt::Io::TlsContextOptions tlsCtxOptions;
     Aws::Crt::Io::InitDefaultClient(tlsCtxOptions);
 
-    Aws::Crt::Io::TLSContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TLSMode::CLIENT, allocator);
+    Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TLSMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
 
     Aws::Crt::Io::SocketOptions socketOptions;
@@ -44,12 +41,18 @@ static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator* allocator, void *
     Aws::Crt::Mqtt::MqttClient mqttClient(clientBootstrap, allocator);
     ASSERT_TRUE(mqttClient);
 
-    /* uncomment this once the connection clean-up stuff has been properly added to the client
-    Aws::Crt::Mqtt::MqttConnection mqttConnection = mqttClient.NewConnection("www.example.com", 443,
-        socketOptions, tlsCtxOptions);
-    mqttConnection.Disconnect();
+    //Uncomment the next section once connection clean up code in the underlying c lib has been updated.
+    //Aws::Crt::Mqtt::MqttConnection mqttConnection = mqttClient.NewConnection("www.example.com", 443,
+    //    socketOptions, tlsContext.NewConnectionOptions());
+    //mqttConnection.Disconnect();
+    //
+    //ASSERT_TRUE(mqttConnection);
 
-    ASSERT_TRUE(mqttConnection);*/
+    Aws::Crt::Mqtt::MqttClient mqttClientMoved = std::move(mqttClient);
+    ASSERT_TRUE(mqttClientMoved);
+
+    // NOLINTNEXTLINE
+    ASSERT_FALSE(mqttClient);
 
     return AWS_ERROR_SUCCESS;
 }

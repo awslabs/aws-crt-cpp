@@ -13,7 +13,11 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
+#include <aws/crt/Exports.h>
+
+#include <aws/common/common.h>
 #include <aws/mqtt/mqtt.h>
+#include <aws/io/socket.h>
 
 struct aws_allocator;
 struct aws_byte_buf;
@@ -27,6 +31,10 @@ namespace Aws
         using Allocator = aws_allocator;
         using ByteBuf = aws_byte_buf;
         using ByteCursor = aws_byte_cursor;
+
+        AWS_CRT_CPP_API Allocator* DefaultAllocator() noexcept;
+        AWS_CRT_CPP_API ByteBuf ByteBufFromCString(const char* str) noexcept;
+        AWS_CRT_CPP_API ByteBuf ByteBufFromArray(const uint8_t *array, size_t len) noexcept;
 
         namespace Io
         {

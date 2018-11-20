@@ -17,20 +17,24 @@
 
 #include <utility>
 
-static int s_TestEventLoopResourceSafety(struct aws_allocator *allocator, void *)
+static int s_TestClientBootstrapResourceSafety(struct aws_allocator *allocator, void *)
 {
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
     ASSERT_NOT_NULL(eventLoopGroup.GetUnderlyingHandle());
 
-    Aws::Crt::Io::EventLoopGroup eventLoopGroupPostMove(std::move(eventLoopGroup));
-    ASSERT_TRUE(eventLoopGroupPostMove);
-    ASSERT_NOT_NULL(eventLoopGroupPostMove.GetUnderlyingHandle());
+    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, allocator);
+    ASSERT_TRUE(clientBootstrap);
+    ASSERT_NOT_NULL(clientBootstrap.GetUnderlyingHandle());
+
+    Aws::Crt::Io::ClientBootstrap clientBootstrapMoved = std::move(clientBootstrap);
+    ASSERT_TRUE(clientBootstrapMoved);
+    ASSERT_NOT_NULL(clientBootstrapMoved.GetUnderlyingHandle());
 
     // NOLINTNEXTLINE
-    ASSERT_FALSE(eventLoopGroup);
+    ASSERT_FALSE(clientBootstrap);
 
     return AWS_ERROR_SUCCESS;
 }
 
-AWS_TEST_CASE(EventLoopResourceSafety, s_TestEventLoopResourceSafety)
+AWS_TEST_CASE(ClientBootstrapResourceSafety, s_TestClientBootstrapResourceSafety)

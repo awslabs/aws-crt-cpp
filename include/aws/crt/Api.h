@@ -14,9 +14,10 @@
 * permissions and limitations under the License.
 */
 #include <aws/crt/Types.h>
-#include <aws/crt/Exports.h>
-
-#include <aws/io/socket.h>
+#include <aws/crt/io/Bootstrap.h>
+#include <aws/crt/io/EventLoopGroup.h>
+#include <aws/crt/io/TlsOptions.h>
+#include <aws/crt/mqtt/MqttClient.h>
 
 namespace Aws
 {
@@ -34,12 +35,7 @@ namespace Aws
             ApiHandle& operator =(ApiHandle&&) = delete;
         };
 
-        AWS_CRT_CPP_API Allocator* DefaultAllocator() noexcept;
         AWS_CRT_CPP_API void LoadErrorStrings() noexcept;
         AWS_CRT_CPP_API const char* ErrorDebugString(int error) noexcept;
-
-        AWS_CRT_CPP_API ByteBuf ByteBufFromCString(const char* str) noexcept;
-        AWS_CRT_CPP_API ByteBuf ByteBufFromArray(const uint8_t *array, size_t len) noexcept;
-
     }
 }

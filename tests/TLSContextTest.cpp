@@ -13,24 +13,28 @@
  * permissions and limitations under the License.
  */
 #include <aws/crt/Api.h>
-#include <aws/testing/aws_test_harness.h>
 
+#include <aws/testing/aws_test_harness.h>
 #include <utility>
 
-static int s_TestEventLoopResourceSafety(struct aws_allocator *allocator, void *)
+static int s_TestTLSContextResourceSafety(Aws::Crt::Allocator* allocator, void *)
 {
-    Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
-    ASSERT_TRUE(eventLoopGroup);
-    ASSERT_NOT_NULL(eventLoopGroup.GetUnderlyingHandle());
+    Aws::Crt::ApiHandle apiHandle(allocator);
+    Aws::Crt::Io::TlsContextOptions tlsCtxOptions;
+    Aws::Crt::Io::InitDefaultClient(tlsCtxOptions);
 
-    Aws::Crt::Io::EventLoopGroup eventLoopGroupPostMove(std::move(eventLoopGroup));
-    ASSERT_TRUE(eventLoopGroupPostMove);
-    ASSERT_NOT_NULL(eventLoopGroupPostMove.GetUnderlyingHandle());
+    Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TLSMode::CLIENT, allocator);
+    ASSERT_TRUE(tlsContext);
+
+    auto tlsContextPostMove = std::move(tlsContext);
+    ASSERT_TRUE(tlsContextPostMove);
 
     // NOLINTNEXTLINE
-    ASSERT_FALSE(eventLoopGroup);
+    ASSERT_FALSE(tlsContext);
+
+    auto tlsConnectionOptions = tlsContextPostMove.NewConnectionOptions();
 
     return AWS_ERROR_SUCCESS;
 }
 
-AWS_TEST_CASE(EventLoopResourceSafety, s_TestEventLoopResourceSafety)
+AWS_TEST_CASE(TLSContextResourceSafety, s_TestTLSContextResourceSafety)
