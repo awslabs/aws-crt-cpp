@@ -21,6 +21,7 @@
 
 #include <functional>
 #include <memory>
+#include <atomic>
 
 namespace Aws
 {
@@ -163,8 +164,8 @@ namespace Aws
                 OnConnectionFailedHandler m_onConnectionFailed;
                 OnConnAckHandler m_onConnAck;
                 OnDisconnectHandler m_onDisconnect;
-                int m_lastError;
-                ConnectionState m_connectionState;
+                std::atomic<int> m_lastError;
+                std::atomic<ConnectionState> m_connectionState;
 
                 static void s_onConnectionFailed(aws_mqtt_client_connection* connection, int errorCode, void* userData);
                 static void s_onConnAck(aws_mqtt_client_connection* connection,

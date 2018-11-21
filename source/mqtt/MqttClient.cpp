@@ -181,9 +181,10 @@ namespace Aws
                 m_onConnectionFailed(std::move(toMove.m_onConnectionFailed)),
                 m_onConnAck(std::move(toMove.m_onConnAck)),
                 m_onDisconnect(std::move(toMove.m_onDisconnect)),
-                m_lastError(toMove.m_lastError),
-                m_connectionState(toMove.m_connectionState)
+                m_lastError(toMove.m_lastError.load()),
+                m_connectionState(toMove.m_connectionState.load())
             {
+
                 toMove.m_owningClient = nullptr;
                 toMove.m_underlyingConnection = nullptr;
                 toMove.m_lastError = AWS_ERROR_UNKNOWN;
@@ -202,8 +203,8 @@ namespace Aws
                 m_onConnectionFailed = std::move(toMove.m_onConnectionFailed);
                 m_onConnAck = std::move(toMove.m_onConnAck);
                 m_onDisconnect = std::move(toMove.m_onDisconnect);
-                m_lastError = toMove.m_lastError;
-                m_connectionState = toMove.m_connectionState;
+                m_lastError = toMove.m_lastError.load();
+                m_connectionState = toMove.m_connectionState.load();
 
                 toMove.m_owningClient = nullptr;
                 toMove.m_underlyingConnection = nullptr;
