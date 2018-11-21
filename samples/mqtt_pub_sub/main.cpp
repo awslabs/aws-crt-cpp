@@ -242,7 +242,13 @@ int main(int argc, char* argv[])
     /*
      * Actually perform the connect dance.
      */
-    connection.Connect("client_id12335456", true, 0);
+    if (!connection.Connect("client_id12335456", true, 0))
+    {
+        fprintf(stderr, "MQTT Connection failed with error %s\n",
+            ErrorDebugString(connection.LastError()));
+        exit(-1);
+    }
+
     std::unique_lock<std::mutex> uniqueLock(mutex);
     conditionVariable.wait(uniqueLock, [&]() {return connectionSucceeded || connectionClosed; });
 

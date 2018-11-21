@@ -224,7 +224,7 @@ namespace Aws
                 return m_lastError;
             }
 
-            void MqttConnection::SetWill(const char* topic, QOS qos, bool retain,
+            bool MqttConnection::SetWill(const char* topic, QOS qos, bool retain,
                          const ByteBuf& payload) noexcept
             {
                 ByteBuf topicBuf = aws_byte_buf_from_c_str(topic);
@@ -234,10 +234,13 @@ namespace Aws
                 if (aws_mqtt_client_connection_set_will(m_underlyingConnection, &topicCur, qos, retain, &payloadCur))
                 {
                     m_lastError = aws_last_error();
+                    return false;
                 }
+
+                return true;
             }
 
-            void MqttConnection::SetLogin(const char* userName, const char* password) noexcept
+            bool MqttConnection::SetLogin(const char* userName, const char* password) noexcept
             {
                 ByteBuf userNameBuf = aws_byte_buf_from_c_str(userName);
                 ByteCursor userNameCur = aws_byte_cursor_from_buf(&userNameBuf);
@@ -246,10 +249,13 @@ namespace Aws
                 if (aws_mqtt_client_connection_set_login(m_underlyingConnection, &userNameCur, &pwdCur))
                 {
                     m_lastError = aws_last_error();
+                    return false;
                 }
+
+                return true;
             }
 
-            void MqttConnection::Connect(const char* clientId, bool cleanSession,
+            bool MqttConnection::Connect(const char* clientId, bool cleanSession,
                     uint16_t keepAliveTime) noexcept
             {
                 ByteBuf clientIdBuf = aws_byte_buf_from_c_str(clientId);
@@ -259,19 +265,21 @@ namespace Aws
                         &clientIdCur, cleanSession, keepAliveTime))
                 {
                     m_lastError = aws_last_error();
+                    return false;
                 }
-                else
-                {
-                    m_connectionState = ConnectionState::Connecting;
-                }
+                m_connectionState = ConnectionState::Connecting;
+                return true;             
             }
 
-            void MqttConnection::Disconnect() noexcept
+            bool MqttConnection::Disconnect() noexcept
             {
                 if (aws_mqtt_client_connection_disconnect(m_underlyingConnection))
                 {
                     m_lastError = aws_last_error();
+                    return false;
                 }
+
+                return true;
             }
 
             uint16_t MqttConnection::Subscribe(const char* topicFilter, QOS qos,

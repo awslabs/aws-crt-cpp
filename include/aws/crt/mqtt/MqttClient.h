@@ -104,25 +104,25 @@ namespace Aws
                 /**
                  * Sets LastWill for the connection. The memory backing payload must outlive the connection.
                  */
-                void SetWill(const char* topic, QOS qos, bool retain,
+                bool SetWill(const char* topic, QOS qos, bool retain,
                         const ByteBuf& payload) noexcept;
 
                 /**
                  * Sets login credentials for the connection. The must get set before the Connect call
                  * if it is to be used. 
                  */
-                void SetLogin(const char* userName, const char* password) noexcept;
+                bool SetLogin(const char* userName, const char* password) noexcept;
 
                 /**
                  * Initiates the connection, OnConnectionFailedHandler and/or OnConnAckHandler will
                  * be invoked in an event-loop thread.
                  */
-                void Connect(const char* clientId, bool cleanSession, uint16_t keepAliveTime) noexcept;
+                bool Connect(const char* clientId, bool cleanSession, uint16_t keepAliveTime) noexcept;
 
                 /**
                  * Initiates disconnect, OnDisconnectHandler will be invoked in an event-loop thread.
                  */
-                void Disconnect() noexcept;
+                bool Disconnect() noexcept;
 
                 /**
                  * Subcribes to topicFilter. OnPublishRecievedHandler will be invoked from an event-loop
@@ -185,7 +185,6 @@ namespace Aws
             class AWS_CRT_CPP_API MqttClient final
             {
                 friend class MqttConnection;
-
             public:
                 /**
                  * Initialize an MqttClient using bootstrap and allocator
