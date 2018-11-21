@@ -67,7 +67,7 @@ namespace Aws
             {
                 friend class MqttClient;
             public:
-                ~MqttConnection() = default;
+                ~MqttConnection();
                 MqttConnection(const MqttConnection&) = delete;
                 MqttConnection(MqttConnection&&) = default;
                 MqttConnection& operator =(const MqttConnection&) = delete;

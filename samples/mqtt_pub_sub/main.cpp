@@ -100,24 +100,24 @@ int main(int argc, char* argv[])
     /*
      * We're using Mutual TLS for Mqtt, so we need to load our client certificates
      */
-    Io::TlsContextOptions tlsCtxOptions;
-    Io::InitClientWithMtls(tlsCtxOptions, certificatePath.c_str(), keyPath.c_str());
+    Io::TlsContextOptions tlsCtxOptions =
+            Io::TlsContextOptions::InitClientWithMtls(certificatePath.c_str(), keyPath.c_str());
     /*
      * If we have a custom CA, set that up here.
      */
     if (!caFile.empty())
     {
-        Io::OverrideDefaultTrustStore(tlsCtxOptions, nullptr, caFile.c_str());
+        tlsCtxOptions.OverrideDefaultTrustStore(nullptr, caFile.c_str());
     }
 
     uint16_t port = 8883;
-    if (Io::IsAlpnSupported())
+    if (Io::TlsContextOptions::IsAlpnSupported())
     {
         /*
         * Use ALPN to negotiate the mqtt protocol on a normal
         * TLS port if possible.
         */
-        Io::SetALPNList(tlsCtxOptions, "x-amzn-mqtt-ca");
+        tlsCtxOptions.SetAlpnList("x-amzn-mqtt-ca");
         port = 443;
     }
 

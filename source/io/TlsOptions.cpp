@@ -22,37 +22,51 @@ namespace Aws
     {
         namespace Io
         {
-            void InitDefaultClient(TlsContextOptions& options) noexcept
+            TlsContextOptions::TlsContextOptions() noexcept
             {
-                aws_tls_ctx_options_init_default_client(&options);
+                AWS_ZERO_STRUCT(m_options);
             }
 
-            void InitClientWithMtls(TlsContextOptions &options,
-                                    const char *certPath, const char *pKeyPath) noexcept
+            TlsContextOptions TlsContextOptions::InitDefaultClient() noexcept
             {
-                aws_tls_ctx_options_init_client_mtls(&options, certPath, pKeyPath);
+                TlsContextOptions ctxOptions;
+                aws_tls_ctx_options_init_default_client(&ctxOptions.m_options);
+                return ctxOptions;
             }
 
-            void InitClientWithMtlsPkcs12(TlsContextOptions &options,
-                                          const char *pkcs12Path, const char *pkcs12Pwd) noexcept
+            TlsContextOptions TlsContextOptions::InitClientWithMtls(const char *certPath, const char *pKeyPath) noexcept
             {
-                aws_tls_ctx_options_init_client_mtls_pkcs12(&options, pkcs12Path, pkcs12Pwd);
+                TlsContextOptions ctxOptions;
+                aws_tls_ctx_options_init_client_mtls(&ctxOptions.m_options, certPath, pKeyPath);
+                return ctxOptions;
             }
 
-            void SetALPNList(TlsContextOptions& options, const char* alpn_list) noexcept
+            TlsContextOptions TlsContextOptions::InitClientWithMtlsPkcs12(const char *pkcs12Path,
+                    const char *pkcs12Pwd) noexcept
             {
-                aws_tls_ctx_options_set_alpn_list(&options, alpn_list);
+                TlsContextOptions ctxOptions;
+                aws_tls_ctx_options_init_client_mtls_pkcs12(&ctxOptions.m_options, pkcs12Path, pkcs12Pwd);
+                return ctxOptions;
             }
 
-            void SetVerifyPeer(TlsContextOptions& options, bool verify_peer) noexcept
+            bool TlsContextOptions::IsAlpnSupported() noexcept
             {
-                aws_tls_ctx_options_set_verify_peer(&options, verify_peer);
+                return aws_tls_is_alpn_available();
             }
 
-            void OverrideDefaultTrustStore(TlsContextOptions& options,
-                const char* caPath, const char* caFile) noexcept
+            void TlsContextOptions::SetAlpnList(const char* alpn_list) noexcept
             {
-                aws_tls_ctx_options_override_default_trust_store(&options, caPath, caFile);
+                aws_tls_ctx_options_set_alpn_list(&m_options, alpn_list);
+            }
+
+            void TlsContextOptions::SetVerifyPeer(bool verify_peer) noexcept
+            {
+                aws_tls_ctx_options_set_verify_peer(&m_options, verify_peer);
+            }
+
+            void TlsContextOptions::OverrideDefaultTrustStore(const char* caPath, const char* caFile) noexcept
+            {
+                aws_tls_ctx_options_override_default_trust_store(&m_options, caPath, caFile);
             }
 
             void InitTlsStaticState(Aws::Crt::Allocator *alloc) noexcept
@@ -65,21 +79,17 @@ namespace Aws
                 aws_tls_clean_up_static_state();
             }
 
-            bool IsAlpnSupported() noexcept
-            {
-                return aws_tls_is_alpn_available();
-            }
 
             TlsContext::TlsContext(TlsContextOptions& options, TLSMode mode, Allocator* allocator) noexcept :
                 m_ctx(nullptr), m_lastError(AWS_OP_SUCCESS)
             {
                 if (mode == TLSMode::CLIENT)
                 {
-                    m_ctx = aws_tls_client_ctx_new(allocator, &options);
+                    m_ctx = aws_tls_client_ctx_new(allocator, &options.m_options);
                 }
                 else
                 {
-                    m_ctx = aws_tls_server_ctx_new(allocator, &options);
+                    m_ctx = aws_tls_server_ctx_new(allocator, &options.m_options);
                 }
 
                 if (!m_ctx)

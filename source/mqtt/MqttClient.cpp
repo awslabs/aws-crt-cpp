@@ -66,7 +66,15 @@ namespace Aws
             {
                 MqttConnection* connection;
                 OnPublishReceivedHandler onPublishReceived;
+                Allocator* allocator;
             };
+
+            static void s_cleanUpOnPublishData(void *userData)
+            {
+                auto callbackData = reinterpret_cast<PubCallbackData*>(userData);
+                callbackData->~PubCallbackData();
+                aws_mem_release(callbackData->allocator, reinterpret_cast<void*>(callbackData));
+            }
 
             void MqttConnection::s_onPublish(aws_mqtt_client_connection*,
                                     const aws_byte_cursor* topic,
@@ -74,8 +82,6 @@ namespace Aws
                                     void* userData)
             {
                 auto callbackData = reinterpret_cast<PubCallbackData*>(userData);
-                //TODO:
-                // SDK-5312 gives us a callback to free this, for now let it leak. When it's fixed comeback and handle.
 
                 if (callbackData->onPublishReceived)
                 {
@@ -143,6 +149,14 @@ namespace Aws
                 else
                 {
                     m_isInit = true;
+                }
+            }
+
+            MqttConnection::~MqttConnection()
+            {
+                if (*this)
+                {
+                    aws_mqtt_client_connection_destroy(m_underlyingConnection);
                 }
             }
 
@@ -220,6 +234,7 @@ namespace Aws
 
                 pubCallbackData->connection = this;
                 pubCallbackData->onPublishReceived = std::move(onPublish);
+                pubCallbackData->allocator = m_owningClient->m_client.allocator;
 
                 OpCompleteCallbackData *opCompleteCallbackData =
                         reinterpret_cast<OpCompleteCallbackData*>(aws_mem_acquire(m_owningClient->m_client.allocator,
@@ -232,6 +247,7 @@ namespace Aws
                     m_lastError = aws_last_error();
                     return 0;
                 }
+
                 opCompleteCallbackData = new(opCompleteCallbackData)OpCompleteCallbackData;
 
                 opCompleteCallbackData->connection = this;
@@ -245,7 +261,7 @@ namespace Aws
 
                 uint16_t packetId = aws_mqtt_client_connection_subscribe(m_underlyingConnection,
                         &topicFilterCur, qos, s_onPublish,
-                        pubCallbackData, s_onOpComplete, opCompleteCallbackData);
+                        pubCallbackData, s_cleanUpOnPublishData, s_onOpComplete, opCompleteCallbackData);
 
                 if (!packetId)
                 {

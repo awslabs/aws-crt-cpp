@@ -26,13 +26,35 @@ namespace Aws
     {
         namespace Io
         {
-            using TlsContextOptions = aws_tls_ctx_options;
             using TlsConnectionOptions = aws_tls_connection_options;
 
             enum class TLSMode
             {
                 CLIENT,
                 SERVER,
+            };
+
+            class AWS_CRT_CPP_API TlsContextOptions final
+            {
+                friend class TlsContext;
+            public:
+                TlsContextOptions(const TlsContextOptions&) noexcept = default;
+                TlsContextOptions& operator=(const TlsContextOptions&) noexcept = default;
+
+                static TlsContextOptions InitDefaultClient() noexcept;
+                static TlsContextOptions InitClientWithMtls(const char *cert_path, const char *pkey_path) noexcept;
+                static TlsContextOptions InitClientWithMtlsPkcs12(const char *pkcs12_path,
+                        const char *pkcs12_pwd) noexcept;
+                static bool IsAlpnSupported() noexcept;
+
+                void SetAlpnList(const char* alpnList) noexcept;
+                void SetVerifyPeer(bool verifyPeer) noexcept;
+                void OverrideDefaultTrustStore(const char* caPath, const char*caFile) noexcept;
+
+            private:
+                aws_tls_ctx_options m_options;
+
+                TlsContextOptions() noexcept;
             };
 
             class AWS_CRT_CPP_API TlsContext final
@@ -55,20 +77,9 @@ namespace Aws
                 int m_lastError;
             };
 
-            AWS_CRT_CPP_API void InitDefaultClient(TlsContextOptions& options) noexcept;
-            AWS_CRT_CPP_API void InitClientWithMtls(TlsContextOptions &options,
-                                                    const char *cert_path, const char *pkey_path) noexcept;
-            AWS_CRT_CPP_API void InitClientWithMtlsPkcs12(TlsContextOptions &options,
-                                                          const char *pkcs12_path, const char *pkcs12_pwd) noexcept;
-            AWS_CRT_CPP_API void SetALPNList(TlsContextOptions& options, const char* alpn_list) noexcept;
-            AWS_CRT_CPP_API void SetVerifyPeer(TlsContextOptions& options, bool verify_peer) noexcept;
-            AWS_CRT_CPP_API void OverrideDefaultTrustStore(TlsContextOptions& options,
-                const char* caPath, const char* caFile) noexcept;
-
             AWS_CRT_CPP_API void InitTlsStaticState(Allocator *alloc) noexcept;
             AWS_CRT_CPP_API void CleanUpTlsStaticState() noexcept;
 
-            AWS_CRT_CPP_API bool IsAlpnSupported() noexcept;
         }
     }
 }
