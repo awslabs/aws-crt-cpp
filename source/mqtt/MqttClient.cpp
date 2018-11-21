@@ -135,6 +135,31 @@ namespace Aws
                 aws_mem_release(callbackData->allocator, reinterpret_cast<void *>(callbackData));
             }
 
+            void MqttConnection::s_connectionInit(MqttConnection* self,
+                const char* hostName, uint16_t port, const Io::SocketOptions& socketOptions, 
+                Io::TlsConnectionOptions* tlsConnOptions)
+            {
+                aws_mqtt_client_connection_callbacks callbacks;
+                AWS_ZERO_STRUCT(callbacks);
+                callbacks.user_data = self;
+                callbacks.on_connack = s_onConnAck;
+                callbacks.on_connection_failed = s_onConnectionFailed;
+                callbacks.on_disconnect = s_onDisconnect;
+
+                ByteBuf hostNameBuf = aws_byte_buf_from_c_str(hostName);
+                ByteCursor hostNameCur = aws_byte_cursor_from_buf(&hostNameBuf);
+
+                self->m_underlyingConnection = aws_mqtt_client_connection_new(&self->m_owningClient->m_client, 
+                                                  callbacks, &hostNameCur, port,
+                                                  const_cast<Io::SocketOptions*>(&socketOptions), tlsConnOptions);
+
+                if (!self->m_underlyingConnection)
+                {
+                    self->m_connectionState = ConnectionState::Error;
+                    self->m_lastError = aws_last_error();
+                }
+            }
+
             MqttConnection::MqttConnection(MqttClient* client,
                         const char* hostName, uint16_t port,
                         const Io::SocketOptions& socketOptions,
@@ -143,26 +168,17 @@ namespace Aws
                            m_lastError(AWS_ERROR_SUCCESS),
                            m_connectionState(ConnectionState::Init)
             {
-                aws_mqtt_client_connection_callbacks callbacks;
-                AWS_ZERO_STRUCT(callbacks);
-                callbacks.user_data = this;
-                callbacks.on_connack = s_onConnAck;
-                callbacks.on_connection_failed = s_onConnectionFailed;
-                callbacks.on_disconnect = s_onDisconnect;
+                s_connectionInit(this, hostName, port, socketOptions, &tlsConnOptions);
+            } 
 
-                ByteBuf hostNameBuf = aws_byte_buf_from_c_str(hostName);
-                ByteCursor hostNameCur = aws_byte_cursor_from_buf(&hostNameBuf);
-
-                m_underlyingConnection =
-                        aws_mqtt_client_connection_new(&m_owningClient->m_client, callbacks,
-                                &hostNameCur, port,
-                                (Io::SocketOptions*)&socketOptions, &tlsConnOptions);
-
-                if (!m_underlyingConnection)
-                {
-                    m_connectionState = ConnectionState::Error;
-                    m_lastError = aws_last_error();
-                }                
+            MqttConnection::MqttConnection(MqttClient* client,
+                    const char* hostName, uint16_t port,
+                    const Io::SocketOptions& socketOptions) noexcept :
+                m_owningClient(client),
+                m_lastError(AWS_ERROR_SUCCESS),
+                m_connectionState(ConnectionState::Init)
+            {
+                s_connectionInit(this, hostName, port, socketOptions, nullptr);
             }
 
             MqttConnection::~MqttConnection()
@@ -494,6 +510,13 @@ namespace Aws
                                          Io::TlsConnectionOptions&& tlsConnOptions) noexcept
             {
                 return MqttConnection(this, hostName, port, socketOptions, std::move(tlsConnOptions));
+            }
+
+            MqttConnection MqttClient::NewConnection(const char* hostName, uint16_t port,
+                const Io::SocketOptions& socketOptions) noexcept
+
+            {
+                return MqttConnection(this, hostName, port, socketOptions);
             }
         }
     }

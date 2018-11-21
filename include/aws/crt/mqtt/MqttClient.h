@@ -157,6 +157,8 @@ namespace Aws
                 MqttConnection(MqttClient* client, const char* hostName, uint16_t port,
                                const Io::SocketOptions& socketOptions,
                                Io::TlsConnectionOptions&& tlsConnOptions) noexcept;
+                MqttConnection(MqttClient* client, const char* hostName, uint16_t port,
+                               const Io::SocketOptions& socketOptions) noexcept;
 
                 MqttClient *m_owningClient;
                 aws_mqtt_client_connection *m_underlyingConnection;
@@ -178,6 +180,8 @@ namespace Aws
                                         const aws_byte_cursor* payload,
                                         void* user_data);
                 static void s_onOpComplete(aws_mqtt_client_connection* connection, uint16_t packetId, void* userdata);
+                static void s_connectionInit(MqttConnection* self, const char* hostName, uint16_t port,
+                    const Io::SocketOptions& socketOptions, Io::TlsConnectionOptions* tlsConnOptions);
             };
 
             /**
@@ -202,11 +206,17 @@ namespace Aws
                 int LastError() const noexcept;
 
                 /**
-                 * Create a new connection object from the client. The client must outlive
+                 * Create a new connection object using TLS from the client. The client must outlive
                  * all of its connection instances.
                  */
                 MqttConnection NewConnection(const char* hostName, uint16_t port,
                         const Io::SocketOptions& socketOptions, Io::TlsConnectionOptions&& tlsConnOptions) noexcept;
+                /**
+                * Create a new connection object over plain text from the client. The client must outlive
+                * all of its connection instances.
+                */
+                MqttConnection NewConnection(const char* hostName, uint16_t port,
+                    const Io::SocketOptions& socketOptions) noexcept;
 
             private:
                 aws_mqtt_client m_client;
