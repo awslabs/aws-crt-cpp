@@ -20,12 +20,12 @@ namespace Aws
     {
         namespace Io
         {
-            ClientBootstrap::ClientBootstrap(const EventLoopGroup& elGroup, Allocator* allocator) noexcept :
+            ClientBootstrap::ClientBootstrap(EventLoopGroup& elGroup, Allocator* allocator) noexcept :
                 m_lastError(AWS_ERROR_SUCCESS)
             {
                 AWS_ZERO_STRUCT(m_bootstrap);
                 if (aws_client_bootstrap_init(&m_bootstrap, allocator,
-                        (aws_event_loop_group*)elGroup.GetUnderlyingHandle(), nullptr, nullptr))
+                        elGroup.GetUnderlyingHandle(), nullptr, nullptr))
                 {
                     m_lastError = aws_last_error();
                 }
@@ -74,7 +74,7 @@ namespace Aws
                 return m_lastError;
             }
 
-            const aws_client_bootstrap* ClientBootstrap::GetUnderlyingHandle() const
+            aws_client_bootstrap* ClientBootstrap::GetUnderlyingHandle() noexcept
             {
                 if (*this)
                 {

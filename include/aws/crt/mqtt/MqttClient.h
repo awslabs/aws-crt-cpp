@@ -36,6 +36,15 @@ namespace Aws
             class MqttClient;
             class MqttConnection;
 
+            enum class ConnectionState
+            {
+                Init,
+                Connecting,
+                Connected,
+                Disconnected,
+                Error,
+            };
+
             /**
              * Invoked Upon Connection failure.
              */
@@ -69,12 +78,13 @@ namespace Aws
             public:
                 ~MqttConnection();
                 MqttConnection(const MqttConnection&) = delete;
-                MqttConnection(MqttConnection&&) = default;
+                MqttConnection(MqttConnection&&);
                 MqttConnection& operator =(const MqttConnection&) = delete;
-                MqttConnection& operator =(MqttConnection&&) = default;
+                MqttConnection& operator =(MqttConnection&&);
 
                 operator bool() const noexcept;
                 int LastError() const noexcept;
+                inline ConnectionState GetConnectionState() const noexcept { return m_connectionState; }
 
                 inline void SetOnConnectionFailedHandler(OnConnectionFailedHandler&& onConnectionFailed) noexcept
                 {
@@ -154,7 +164,7 @@ namespace Aws
                 OnConnAckHandler m_onConnAck;
                 OnDisconnectHandler m_onDisconnect;
                 int m_lastError;
-                bool m_isInit;
+                ConnectionState m_connectionState;
 
                 static void s_onConnectionFailed(aws_mqtt_client_connection* connection, int errorCode, void* userData);
                 static void s_onConnAck(aws_mqtt_client_connection* connection,
@@ -180,7 +190,7 @@ namespace Aws
                 /**
                  * Initialize an MqttClient using bootstrap and allocator
                  */
-                MqttClient(const Io::ClientBootstrap& bootstrap, Allocator* allocator = DefaultAllocator()) noexcept;
+                MqttClient(Io::ClientBootstrap& bootstrap, Allocator* allocator = DefaultAllocator()) noexcept;
 
                 ~MqttClient();
                 MqttClient(const MqttClient&) = delete;

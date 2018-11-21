@@ -30,6 +30,7 @@ namespace Aws
                 auto connWrapper = reinterpret_cast<MqttConnection*>(userData);
                 connWrapper->m_lastError = errorCode;
 
+                connWrapper->m_connectionState = ConnectionState::Disconnected;
                 if (connWrapper->m_onConnectionFailed)
                 {
                     connWrapper->m_onConnectionFailed(*connWrapper);
@@ -43,6 +44,15 @@ namespace Aws
             {
                 auto connWrapper = reinterpret_cast<MqttConnection*>(userData);
 
+                if (returnCode == AWS_MQTT_CONNECT_ACCEPTED)
+                {
+                    connWrapper->m_connectionState = ConnectionState::Connected;
+                }
+                else
+                {
+                    connWrapper->m_connectionState = ConnectionState::Error;
+                }
+
                 if (connWrapper->m_onConnAck)
                 {
                     connWrapper->m_onConnAck(*connWrapper, returnCode, sessionPresent);
@@ -54,9 +64,15 @@ namespace Aws
                 auto connWrapper = reinterpret_cast<MqttConnection*>(userData);
                 connWrapper->m_lastError = errorCode;
 
+                connWrapper->m_connectionState = ConnectionState::Disconnected;
+
                 if (connWrapper->m_onDisconnect)
                 {
-                    return connWrapper->m_onDisconnect(*connWrapper);
+                    if (connWrapper->m_onDisconnect(*connWrapper))
+                    {
+                        connWrapper->m_connectionState = ConnectionState::Connecting;
+                        return true;
+                    }                    
                 }
 
                 return false;
@@ -125,7 +141,7 @@ namespace Aws
                         Io::TlsConnectionOptions&& tlsConnOptions) noexcept :
                            m_owningClient(client),
                            m_lastError(AWS_ERROR_SUCCESS),
-                           m_isInit(false)
+                           m_connectionState(ConnectionState::Init)
             {
                 aws_mqtt_client_connection_callbacks callbacks;
                 AWS_ZERO_STRUCT(callbacks);
@@ -144,12 +160,9 @@ namespace Aws
 
                 if (!m_underlyingConnection)
                 {
+                    m_connectionState = ConnectionState::Error;
                     m_lastError = aws_last_error();
-                }
-                else
-                {
-                    m_isInit = true;
-                }
+                }                
             }
 
             MqttConnection::~MqttConnection()
@@ -158,11 +171,52 @@ namespace Aws
                 {
                     aws_mqtt_client_connection_destroy(m_underlyingConnection);
                 }
+
+                AWS_ZERO_STRUCT(*this);
             }
+
+            MqttConnection::MqttConnection(MqttConnection&& toMove) :
+                m_owningClient(toMove.m_owningClient),
+                m_underlyingConnection(toMove.m_underlyingConnection),
+                m_onConnectionFailed(std::move(toMove.m_onConnectionFailed)),
+                m_onConnAck(std::move(toMove.m_onConnAck)),
+                m_onDisconnect(std::move(toMove.m_onDisconnect)),
+                m_lastError(toMove.m_lastError),
+                m_connectionState(toMove.m_connectionState)
+            {
+                toMove.m_owningClient = nullptr;
+                toMove.m_underlyingConnection = nullptr;
+                toMove.m_lastError = AWS_ERROR_UNKNOWN;
+                toMove.m_connectionState = ConnectionState::Error;
+            }
+
+            MqttConnection& MqttConnection::operator =(MqttConnection&& toMove)
+            {
+                if (this == &toMove)
+                {
+                    return *this;
+                }
+
+                m_owningClient = toMove.m_owningClient;
+                m_underlyingConnection = toMove.m_underlyingConnection;
+                m_onConnectionFailed = std::move(toMove.m_onConnectionFailed);
+                m_onConnAck = std::move(toMove.m_onConnAck);
+                m_onDisconnect = std::move(toMove.m_onDisconnect);
+                m_lastError = toMove.m_lastError;
+                m_connectionState = toMove.m_connectionState;
+
+                toMove.m_owningClient = nullptr;
+                toMove.m_underlyingConnection = nullptr;
+                toMove.m_lastError = AWS_ERROR_UNKNOWN;
+                toMove.m_connectionState = ConnectionState::Error;
+
+                return *this;
+            }
+
 
             MqttConnection::operator bool() const noexcept
             {
-                return m_isInit;
+                return m_connectionState != ConnectionState::Error;
             }
 
             int MqttConnection::LastError() const noexcept
@@ -205,6 +259,10 @@ namespace Aws
                         &clientIdCur, cleanSession, keepAliveTime))
                 {
                     m_lastError = aws_last_error();
+                }
+                else
+                {
+                    m_connectionState = ConnectionState::Connecting;
                 }
             }
 
@@ -365,13 +423,12 @@ namespace Aws
                 aws_mqtt_client_connection_ping(m_underlyingConnection);
             }
 
-            MqttClient::MqttClient(const Io::ClientBootstrap &bootstrap, Allocator *allocator) noexcept :
+            MqttClient::MqttClient(Io::ClientBootstrap &bootstrap, Allocator *allocator) noexcept :
                     m_lastError(AWS_ERROR_SUCCESS),
                     m_isInit(false)
             {
                 AWS_ZERO_STRUCT(m_client);
-                if (aws_mqtt_client_init(&m_client, allocator,
-                                         const_cast<aws_client_bootstrap*>(bootstrap.GetUnderlyingHandle())))
+                if (aws_mqtt_client_init(&m_client, allocator,  bootstrap.GetUnderlyingHandle()))
                 {
                     m_lastError = aws_last_error();
                 }

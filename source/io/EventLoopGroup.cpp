@@ -81,7 +81,7 @@ namespace Aws
                 return m_lastError == AWS_ERROR_SUCCESS;
             }
 
-            const aws_event_loop_group *EventLoopGroup::GetUnderlyingHandle() const
+            aws_event_loop_group *EventLoopGroup::GetUnderlyingHandle() noexcept
             {
                 if (*this)
                 {

@@ -29,7 +29,7 @@ namespace Aws
             class AWS_CRT_CPP_API ClientBootstrap final
             {
             public:
-                ClientBootstrap(const EventLoopGroup& elGroup = EventLoopGroup(),
+                ClientBootstrap(EventLoopGroup& elGroup,
                         Allocator* allocator = DefaultAllocator()) noexcept;
                 ~ClientBootstrap();
                 ClientBootstrap(const ClientBootstrap&) = delete;
@@ -40,7 +40,7 @@ namespace Aws
                 operator bool() const noexcept;
                 int LastError() const noexcept;
 
-                const aws_client_bootstrap* GetUnderlyingHandle() const;
+                aws_client_bootstrap* GetUnderlyingHandle() noexcept;
             private:
                 aws_client_bootstrap m_bootstrap;
                 int m_lastError;
