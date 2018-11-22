@@ -189,7 +189,7 @@ namespace Aws
 
             MqttConnection::operator bool() const noexcept
             {
-                return m_connectionState != ConnectionState::Error;
+                return m_underlyingConnection != nullptr;
             }
 
             int MqttConnection::LastError() const noexcept
