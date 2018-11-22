@@ -163,7 +163,7 @@ namespace Aws
                                const Io::SocketOptions& socketOptions) noexcept;
 
                 aws_mqtt_client* m_owningClient;
-                aws_mqtt_client_connection *m_underlyingConnection;
+                aws_mqtt_client_connection* m_underlyingConnection;
 
                 OnConnectionFailedHandler m_onConnectionFailed;
                 OnConnAckHandler m_onConnAck;
