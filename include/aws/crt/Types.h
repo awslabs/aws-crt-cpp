@@ -35,7 +35,7 @@ namespace Aws
         AWS_CRT_CPP_API Allocator* DefaultAllocator() noexcept;
         AWS_CRT_CPP_API ByteBuf ByteBufFromCString(const char* str) noexcept;
         AWS_CRT_CPP_API ByteBuf ByteBufFromArray(const uint8_t *array, size_t len) noexcept;
-
+        
         namespace Io
         {
            using SocketOptions = aws_socket_options;

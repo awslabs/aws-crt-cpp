@@ -20,14 +20,8 @@ namespace Aws
     {
         namespace Io
         {
-            EventLoopGroup::EventLoopGroup(Allocator* allocator) noexcept : m_lastError(AWS_ERROR_SUCCESS)
-            {
-                AWS_ZERO_STRUCT(m_eventLoopGroup);
-
-                if (aws_event_loop_group_default_init(&m_eventLoopGroup, allocator, 0))
-                {
-                    m_lastError = aws_last_error();
-                }
+            EventLoopGroup::EventLoopGroup(Allocator* allocator) noexcept : EventLoopGroup(0, allocator)
+            {                
             }
 
 

@@ -49,7 +49,7 @@ namespace Aws
             /**
              * Invoked Upon Connection failure.
              */
-            using OnConnectionFailedHandler = std::function<void(MqttConnection& connection)>;
+            using OnConnectionFailedHandler = std::function<void(MqttConnection& connection, int error)>;
 
             /**
              * Invoked when a connack message is received.
@@ -60,7 +60,7 @@ namespace Aws
             /**
              * Invoked when a disconnect message has been sent.
              */
-            using OnDisconnectHandler = std::function<bool(MqttConnection& connection)>;
+            using OnDisconnectHandler = std::function<bool(MqttConnection& connection, int error)>;
 
             /**
              * Invoked upon receipt of a Publish message on a subscribed topic.
@@ -70,8 +70,10 @@ namespace Aws
             using OnOperationCompleteHandler = std::function<void(MqttConnection& connection, uint16_t packetId)>;
 
             /**
-             * Represents a persistent Mqtt Connection. The memory is owned by MqttClient. This is a move only type.
-             * To get a new instance of this class, see MqttClient::NewConnection.
+             * Represents a persistent Mqtt Connection. The memory is owned by MqttClient.
+             * To get a new instance of this class, see MqttClient::NewConnection. Unless
+             * specified all function arguments need only to live through the duration of the 
+             * function call.
              */
             class AWS_CRT_CPP_API MqttConnection final
             {
@@ -79,9 +81,9 @@ namespace Aws
             public:
                 ~MqttConnection();
                 MqttConnection(const MqttConnection&) = delete;
-                MqttConnection(MqttConnection&&);
+                MqttConnection(MqttConnection&&) = delete;
                 MqttConnection& operator =(const MqttConnection&) = delete;
-                MqttConnection& operator =(MqttConnection&&);
+                MqttConnection& operator =(MqttConnection&&) = delete;
 
                 operator bool() const noexcept;
                 int LastError() const noexcept;
@@ -154,19 +156,18 @@ namespace Aws
                 void Ping();
 
             private:
-                MqttConnection(MqttClient* client, const char* hostName, uint16_t port,
+                MqttConnection(aws_mqtt_client* client, const char* hostName, uint16_t port,
                                const Io::SocketOptions& socketOptions,
                                Io::TlsConnectionOptions&& tlsConnOptions) noexcept;
-                MqttConnection(MqttClient* client, const char* hostName, uint16_t port,
+                MqttConnection(aws_mqtt_client* client, const char* hostName, uint16_t port,
                                const Io::SocketOptions& socketOptions) noexcept;
 
-                MqttClient *m_owningClient;
+                aws_mqtt_client* m_owningClient;
                 aws_mqtt_client_connection *m_underlyingConnection;
 
                 OnConnectionFailedHandler m_onConnectionFailed;
                 OnConnAckHandler m_onConnAck;
                 OnDisconnectHandler m_onDisconnect;
-                std::atomic<int> m_lastError;
                 std::atomic<ConnectionState> m_connectionState;
 
                 static void s_onConnectionFailed(aws_mqtt_client_connection* connection, int errorCode, void* userData);
@@ -185,11 +186,12 @@ namespace Aws
             };
 
             /**
-             * An MQTT client. This is a move-only type.
+             * An MQTT client. This is a move-only type. Unless otherwise specified,  
+             * all function arguments need only to live through the duration of the 
+             * function call.
              */
             class AWS_CRT_CPP_API MqttClient final
             {
-                friend class MqttConnection;
             public:
                 /**
                  * Initialize an MqttClient using bootstrap and allocator
@@ -209,19 +211,17 @@ namespace Aws
                  * Create a new connection object using TLS from the client. The client must outlive
                  * all of its connection instances.
                  */
-                MqttConnection NewConnection(const char* hostName, uint16_t port,
+                std::shared_ptr<MqttConnection> NewConnection(const char* hostName, uint16_t port,
                         const Io::SocketOptions& socketOptions, Io::TlsConnectionOptions&& tlsConnOptions) noexcept;
                 /**
                 * Create a new connection object over plain text from the client. The client must outlive
                 * all of its connection instances.
                 */
-                MqttConnection NewConnection(const char* hostName, uint16_t port,
+                std::shared_ptr<MqttConnection> NewConnection(const char* hostName, uint16_t port,
                     const Io::SocketOptions& socketOptions) noexcept;
 
             private:
-                aws_mqtt_client m_client;
-                int m_lastError;
-                bool m_isInit;
+                aws_mqtt_client* m_client;
             };
         }
     }

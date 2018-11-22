@@ -14,6 +14,7 @@
  */
 #include <aws/crt/mqtt/MqttClient.h>
 
+#include <aws/crt/StlAllocator.h>
 #include <aws/crt/io/Bootstrap.h>
 
 #include <utility>
@@ -28,12 +29,11 @@ namespace Aws
                     int errorCode, void* userData)
             {
                 auto connWrapper = reinterpret_cast<MqttConnection*>(userData);
-                connWrapper->m_lastError = errorCode;
 
                 connWrapper->m_connectionState = ConnectionState::Disconnected;
                 if (connWrapper->m_onConnectionFailed)
                 {
-                    connWrapper->m_onConnectionFailed(*connWrapper);
+                    connWrapper->m_onConnectionFailed(*connWrapper, errorCode);
                 }
             }
 
@@ -62,13 +62,12 @@ namespace Aws
             bool MqttConnection::s_onDisconnect(aws_mqtt_client_connection*, int errorCode, void* userData)
             {
                 auto connWrapper = reinterpret_cast<MqttConnection*>(userData);
-                connWrapper->m_lastError = errorCode;
 
                 connWrapper->m_connectionState = ConnectionState::Disconnected;
 
                 if (connWrapper->m_onDisconnect)
                 {
-                    if (connWrapper->m_onDisconnect(*connWrapper))
+                    if (connWrapper->m_onDisconnect(*connWrapper, errorCode))
                     {
                         connWrapper->m_connectionState = ConnectionState::Connecting;
                         return true;
@@ -149,33 +148,30 @@ namespace Aws
                 ByteBuf hostNameBuf = aws_byte_buf_from_c_str(hostName);
                 ByteCursor hostNameCur = aws_byte_cursor_from_buf(&hostNameBuf);
 
-                self->m_underlyingConnection = aws_mqtt_client_connection_new(&self->m_owningClient->m_client, 
+                self->m_underlyingConnection = aws_mqtt_client_connection_new(self->m_owningClient, 
                                                   callbacks, &hostNameCur, port,
                                                   const_cast<Io::SocketOptions*>(&socketOptions), tlsConnOptions);
 
                 if (!self->m_underlyingConnection)
                 {
                     self->m_connectionState = ConnectionState::Error;
-                    self->m_lastError = aws_last_error();
                 }
             }
 
-            MqttConnection::MqttConnection(MqttClient* client,
+            MqttConnection::MqttConnection(aws_mqtt_client* client,
                         const char* hostName, uint16_t port,
                         const Io::SocketOptions& socketOptions,
                         Io::TlsConnectionOptions&& tlsConnOptions) noexcept :
                            m_owningClient(client),
-                           m_lastError(AWS_ERROR_SUCCESS),
                            m_connectionState(ConnectionState::Init)
             {
                 s_connectionInit(this, hostName, port, socketOptions, &tlsConnOptions);
             } 
 
-            MqttConnection::MqttConnection(MqttClient* client,
+            MqttConnection::MqttConnection(aws_mqtt_client* client,
                     const char* hostName, uint16_t port,
                     const Io::SocketOptions& socketOptions) noexcept :
                 m_owningClient(client),
-                m_lastError(AWS_ERROR_SUCCESS),
                 m_connectionState(ConnectionState::Init)
             {
                 s_connectionInit(this, hostName, port, socketOptions, nullptr);
@@ -189,47 +185,7 @@ namespace Aws
                 }
 
                 AWS_ZERO_STRUCT(*this);
-            }
-
-            MqttConnection::MqttConnection(MqttConnection&& toMove) :
-                m_owningClient(toMove.m_owningClient),
-                m_underlyingConnection(toMove.m_underlyingConnection),
-                m_onConnectionFailed(std::move(toMove.m_onConnectionFailed)),
-                m_onConnAck(std::move(toMove.m_onConnAck)),
-                m_onDisconnect(std::move(toMove.m_onDisconnect)),
-                m_lastError(toMove.m_lastError.load()),
-                m_connectionState(toMove.m_connectionState.load())
-            {
-
-                toMove.m_owningClient = nullptr;
-                toMove.m_underlyingConnection = nullptr;
-                toMove.m_lastError = AWS_ERROR_UNKNOWN;
-                toMove.m_connectionState = ConnectionState::Error;
-            }
-
-            MqttConnection& MqttConnection::operator =(MqttConnection&& toMove)
-            {
-                if (this == &toMove)
-                {
-                    return *this;
-                }
-
-                m_owningClient = toMove.m_owningClient;
-                m_underlyingConnection = toMove.m_underlyingConnection;
-                m_onConnectionFailed = std::move(toMove.m_onConnectionFailed);
-                m_onConnAck = std::move(toMove.m_onConnAck);
-                m_onDisconnect = std::move(toMove.m_onDisconnect);
-                m_lastError = toMove.m_lastError.load();
-                m_connectionState = toMove.m_connectionState.load();
-
-                toMove.m_owningClient = nullptr;
-                toMove.m_underlyingConnection = nullptr;
-                toMove.m_lastError = AWS_ERROR_UNKNOWN;
-                toMove.m_connectionState = ConnectionState::Error;
-
-                return *this;
-            }
-
+            }           
 
             MqttConnection::operator bool() const noexcept
             {
@@ -238,7 +194,7 @@ namespace Aws
 
             int MqttConnection::LastError() const noexcept
             {
-                return m_lastError;
+                return aws_last_error();
             }
 
             bool MqttConnection::SetWill(const char* topic, QOS qos, bool retain,
@@ -249,8 +205,7 @@ namespace Aws
                 ByteCursor payloadCur = aws_byte_cursor_from_buf(&payload);
 
                 if (aws_mqtt_client_connection_set_will(m_underlyingConnection, &topicCur, qos, retain, &payloadCur))
-                {
-                    m_lastError = aws_last_error();
+                {                    
                     return false;
                 }
 
@@ -265,7 +220,6 @@ namespace Aws
                 ByteCursor pwdCur = aws_byte_cursor_from_buf(&pwdBuf);
                 if (aws_mqtt_client_connection_set_login(m_underlyingConnection, &userNameCur, &pwdCur))
                 {
-                    m_lastError = aws_last_error();
                     return false;
                 }
 
@@ -281,7 +235,6 @@ namespace Aws
                 if (aws_mqtt_client_connection_connect(m_underlyingConnection,
                         &clientIdCur, cleanSession, keepAliveTime))
                 {
-                    m_lastError = aws_last_error();
                     return false;
                 }
                 m_connectionState = ConnectionState::Connecting;
@@ -292,7 +245,6 @@ namespace Aws
             {
                 if (aws_mqtt_client_connection_disconnect(m_underlyingConnection))
                 {
-                    m_lastError = aws_last_error();
                     return false;
                 }
 
@@ -305,39 +257,37 @@ namespace Aws
             {                
 
                 PubCallbackData* pubCallbackData =
-                        reinterpret_cast<PubCallbackData*>(aws_mem_acquire(m_owningClient->m_client.allocator,
+                        reinterpret_cast<PubCallbackData*>(aws_mem_acquire(m_owningClient->allocator,
                                 sizeof(PubCallbackData)));
 
                 if (!pubCallbackData)
                 {
-                    m_lastError = aws_last_error();
                     return 0;
                 }
                 pubCallbackData = new(pubCallbackData)PubCallbackData;
 
                 pubCallbackData->connection = this;
                 pubCallbackData->onPublishReceived = std::move(onPublish);
-                pubCallbackData->allocator = m_owningClient->m_client.allocator;
+                pubCallbackData->allocator = m_owningClient->allocator;
 
                 OpCompleteCallbackData *opCompleteCallbackData =
-                        reinterpret_cast<OpCompleteCallbackData*>(aws_mem_acquire(m_owningClient->m_client.allocator,
+                        reinterpret_cast<OpCompleteCallbackData*>(aws_mem_acquire(m_owningClient->allocator,
                                 sizeof(OpCompleteCallbackData)));
 
                 if (!opCompleteCallbackData)
                 {
                     pubCallbackData->~PubCallbackData();
-                    aws_mem_release(m_owningClient->m_client.allocator, reinterpret_cast<void*>(pubCallbackData));
-                    m_lastError = aws_last_error();
+                    aws_mem_release(m_owningClient->allocator, reinterpret_cast<void*>(pubCallbackData));
                     return 0;
                 }
 
                 opCompleteCallbackData = new(opCompleteCallbackData)OpCompleteCallbackData;
 
                 opCompleteCallbackData->connection = this;
-                opCompleteCallbackData->allocator = m_owningClient->m_client.allocator;
+                opCompleteCallbackData->allocator = m_owningClient->allocator;
                 opCompleteCallbackData->onOperationComplete = std::move(onOpComplete);
                 opCompleteCallbackData->topic = nullptr;
-                opCompleteCallbackData->allocator = m_owningClient->m_client.allocator;
+                opCompleteCallbackData->allocator = m_owningClient->allocator;
 
                 ByteBuf topicFilterBuf = aws_byte_buf_from_c_str(topicFilter);
                 ByteCursor topicFilterCur = aws_byte_cursor_from_buf(&topicFilterBuf);
@@ -349,11 +299,10 @@ namespace Aws
                 if (!packetId)
                 {
                     pubCallbackData->~PubCallbackData();
-                    aws_mem_release(m_owningClient->m_client.allocator, reinterpret_cast<void*>(pubCallbackData));
+                    aws_mem_release(m_owningClient->allocator, reinterpret_cast<void*>(pubCallbackData));
                     opCompleteCallbackData->~OpCompleteCallbackData();
-                    aws_mem_release(m_owningClient->m_client.allocator,
+                    aws_mem_release(m_owningClient->allocator,
                             reinterpret_cast<void*>(opCompleteCallbackData));
-                    m_lastError = aws_last_error();
                 }
 
                 return packetId;
@@ -363,18 +312,17 @@ namespace Aws
                     OnOperationCompleteHandler&& onOpComplete) noexcept
             {
                 OpCompleteCallbackData *opCompleteCallbackData =
-                        reinterpret_cast<OpCompleteCallbackData*>(aws_mem_acquire(m_owningClient->m_client.allocator,
+                        reinterpret_cast<OpCompleteCallbackData*>(aws_mem_acquire(m_owningClient->allocator,
                                                                  sizeof(OpCompleteCallbackData)));
                 if (!opCompleteCallbackData)
                 {
-                    m_lastError = aws_last_error();
                     return 0;
                 }
 
                 opCompleteCallbackData = new(opCompleteCallbackData)OpCompleteCallbackData;
 
                 opCompleteCallbackData->connection = this;
-                opCompleteCallbackData->allocator = m_owningClient->m_client.allocator;
+                opCompleteCallbackData->allocator = m_owningClient->allocator;
                 opCompleteCallbackData->onOperationComplete = std::move(onOpComplete);
                 opCompleteCallbackData->topic = nullptr;
                 ByteBuf topicFilterBuf = aws_byte_buf_from_c_str(topicFilter);
@@ -386,9 +334,8 @@ namespace Aws
                 if (!packetId)
                 {
                     opCompleteCallbackData->~OpCompleteCallbackData();
-                    aws_mem_release(m_owningClient->m_client.allocator,
+                    aws_mem_release(m_owningClient->allocator,
                             reinterpret_cast<void*>(opCompleteCallbackData));
-                    m_lastError = aws_last_error();
                 }
 
                 return packetId;
@@ -399,30 +346,29 @@ namespace Aws
             {
 
                 OpCompleteCallbackData *opCompleteCallbackData =
-                        reinterpret_cast<OpCompleteCallbackData*>(aws_mem_acquire(m_owningClient->m_client.allocator,
+                        reinterpret_cast<OpCompleteCallbackData*>(aws_mem_acquire(m_owningClient->allocator,
                                                                  sizeof(OpCompleteCallbackData)));
                 if (!opCompleteCallbackData)
                 {
-                    m_lastError = aws_last_error();
                     return 0;
                 }
                 opCompleteCallbackData = new(opCompleteCallbackData)OpCompleteCallbackData;
 
                 size_t topicLen = strlen(topic) + 1;
                 char* topicCpy =
-                        reinterpret_cast<char*>(aws_mem_acquire(m_owningClient->m_client.allocator,
+                        reinterpret_cast<char*>(aws_mem_acquire(m_owningClient->allocator,
                                 sizeof(char) * (topicLen)));
 
                 if (!topicCpy)
                 {
                     opCompleteCallbackData->~OpCompleteCallbackData();
-                    aws_mem_release(m_owningClient->m_client.allocator, opCompleteCallbackData);
+                    aws_mem_release(m_owningClient->allocator, opCompleteCallbackData);
                 }
 
                 memcpy(topicCpy, topic, topicLen);
 
                 opCompleteCallbackData->connection = this;
-                opCompleteCallbackData->allocator = m_owningClient->m_client.allocator;
+                opCompleteCallbackData->allocator = m_owningClient->allocator;
                 opCompleteCallbackData->onOperationComplete = std::move(onOpComplete);
                 opCompleteCallbackData->topic = topicCpy;
                 ByteCursor topicCur = aws_byte_cursor_from_array(topicCpy, topicLen - 1);
@@ -433,11 +379,10 @@ namespace Aws
 
                 if (!packetId)
                 {
-                    aws_mem_release(m_owningClient->m_client.allocator, reinterpret_cast<void*>(topicCpy));
+                    aws_mem_release(m_owningClient->allocator, reinterpret_cast<void*>(topicCpy));
                     opCompleteCallbackData->~OpCompleteCallbackData();
-                    aws_mem_release(m_owningClient->m_client.allocator,
+                    aws_mem_release(m_owningClient->allocator,
                             reinterpret_cast<void*>(opCompleteCallbackData));
-                    m_lastError = aws_last_error();
                 }
 
                 return packetId;
@@ -449,36 +394,36 @@ namespace Aws
             }
 
             MqttClient::MqttClient(Io::ClientBootstrap &bootstrap, Allocator *allocator) noexcept :
-                    m_lastError(AWS_ERROR_SUCCESS),
-                    m_isInit(false)
+                    m_client(nullptr)
             {
-                AWS_ZERO_STRUCT(m_client);
-                if (aws_mqtt_client_init(&m_client, allocator,  bootstrap.GetUnderlyingHandle()))
+                m_client = reinterpret_cast<aws_mqtt_client*>(aws_mem_acquire(allocator, sizeof(struct aws_mqtt_client)));
+                if (!m_client)
                 {
-                    m_lastError = aws_last_error();
+                    return;
                 }
-                else
+                
+                if (aws_mqtt_client_init(m_client, allocator, bootstrap.GetUnderlyingHandle()))
                 {
-                    m_isInit = true;
+                    aws_mem_release(allocator, reinterpret_cast<void*>(m_client));
+                    m_client = nullptr;
                 }
             }
 
             MqttClient::~MqttClient()
             {
-                if (m_isInit)
+                if (m_client)
                 {
-                    aws_mqtt_client_clean_up(&m_client);
-                    m_isInit = false;
+                    Allocator* allocator = m_client->allocator;
+                    aws_mqtt_client_clean_up(m_client);
+                    aws_mem_release(allocator, reinterpret_cast<void*>(m_client));
+                    m_client = nullptr;
                 }
             }
 
             MqttClient::MqttClient(MqttClient&& toMove) noexcept :
-                m_client(toMove.m_client),
-                m_lastError(toMove.m_lastError),
-                m_isInit(toMove.m_isInit)
+                m_client(toMove.m_client)
             {
-                toMove.m_isInit = false;
-                AWS_ZERO_STRUCT(toMove.m_client);
+                toMove.m_client = nullptr;
             }
 
             MqttClient& MqttClient::operator =(MqttClient&& toMove) noexcept
@@ -486,10 +431,7 @@ namespace Aws
                 if (&toMove != this)
                 {
                     m_client = toMove.m_client;
-                    m_lastError = toMove.m_lastError;
-                    m_isInit = toMove.m_isInit;
-                    toMove.m_isInit = false;
-                    AWS_ZERO_STRUCT(toMove.m_client);
+                    toMove.m_client = nullptr;
                 }
 
                 return *this;
@@ -497,26 +439,63 @@ namespace Aws
 
             MqttClient::operator bool() const noexcept
             {
-                return m_isInit && !m_lastError;
+                return m_client != nullptr;
             }
 
             int MqttClient::LastError() const noexcept
             {
-                return m_lastError;
+                return aws_last_error();
             }
-
-            MqttConnection MqttClient::NewConnection(const char* hostName, uint16_t port,
+           
+            std::shared_ptr<MqttConnection> MqttClient::NewConnection(const char* hostName, uint16_t port,
                                          const Io::SocketOptions& socketOptions,
                                          Io::TlsConnectionOptions&& tlsConnOptions) noexcept
             {
-                return MqttConnection(this, hostName, port, socketOptions, std::move(tlsConnOptions));
+                // If you're reading this and asking.... why is this so complicated? Why not use make_shared
+                // or allocate_shared? Well, MqttConnection constructors are private and stl is dumb like that.
+                // so, we do it manually.
+                Allocator* allocator = m_client->allocator;
+                MqttConnection* toSeat = 
+                    reinterpret_cast<MqttConnection*>(aws_mem_acquire(allocator, sizeof(MqttConnection)));
+                if (!toSeat)
+                {
+                    return nullptr;
+                }
+
+                toSeat = new(toSeat)MqttConnection(m_client, hostName, port, socketOptions,
+                    std::forward<Io::TlsConnectionOptions>(tlsConnOptions));
+                return std::shared_ptr<MqttConnection>(toSeat, 
+                    [allocator](MqttConnection* connection)
+                    {   
+                        connection->~MqttConnection();
+                        aws_mem_release(allocator, reinterpret_cast<void*>(connection)); 
+                    }
+                );
             }
 
-            MqttConnection MqttClient::NewConnection(const char* hostName, uint16_t port,
+            std::shared_ptr<MqttConnection> MqttClient::NewConnection(const char* hostName, uint16_t port,
                 const Io::SocketOptions& socketOptions) noexcept
 
             {
-                return MqttConnection(this, hostName, port, socketOptions);
+                // If you're reading this and asking.... why is this so complicated? Why not use make_shared
+                // or allocate_shared? Well, MqttConnection constructors are private and stl is dumb like that.
+                // so, we do it manually.
+                Allocator* allocator = m_client->allocator;
+                MqttConnection* toSeat =
+                    reinterpret_cast<MqttConnection*>(aws_mem_acquire(m_client->allocator, sizeof(MqttConnection)));
+                if (!toSeat)
+                {
+                    return nullptr;
+                }
+
+                toSeat = new(toSeat)MqttConnection(m_client, hostName, port, socketOptions);
+                return std::shared_ptr<MqttConnection>(toSeat,
+                    [allocator](MqttConnection* connection)
+                    {  
+                        connection->~MqttConnection();
+                        aws_mem_release(allocator, reinterpret_cast<void*>(connection));
+                    }
+                );
             }
         }
     }

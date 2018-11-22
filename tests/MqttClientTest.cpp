@@ -22,7 +22,7 @@ static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator* allocator, void *
     Aws::Crt::ApiHandle apiHandle(allocator);
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
 
-    Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TLSMode::CLIENT, allocator);
+    Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
 
     Aws::Crt::Io::SocketOptions socketOptions;
@@ -43,12 +43,10 @@ static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator* allocator, void *
     Aws::Crt::Mqtt::MqttClient mqttClientMoved = std::move(mqttClient);
     ASSERT_TRUE(mqttClientMoved);
 
-    Aws::Crt::Mqtt::MqttConnection mqttConnection = mqttClientMoved.NewConnection("www.example.com", 443,
+    auto mqttConnection = mqttClientMoved.NewConnection("www.example.com", 443,
         socketOptions, tlsContext.NewConnectionOptions());
-    mqttConnection.Disconnect();
-
+    mqttConnection->Disconnect();
     ASSERT_TRUE(mqttConnection);
-
 
     // NOLINTNEXTLINE
     ASSERT_FALSE(mqttClient);

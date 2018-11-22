@@ -121,7 +121,7 @@ int main(int argc, char* argv[])
         port = 443;
     }
 
-    Io::TlsContext tlsCtx(tlsCtxOptions, Io::TLSMode::CLIENT);
+    Io::TlsContext tlsCtx(tlsCtxOptions, Io::TlsMode::CLIENT);
 
     if (!tlsCtx)
     {
@@ -173,13 +173,13 @@ int main(int argc, char* argv[])
      * Now create a connection object. Note: This type is move only
      * and its underlying memory is managed by the client.
      */
-    Mqtt::MqttConnection connection =
+    auto connection =
         mqttClient.NewConnection(endpoint.c_str(), port, socketOptions, tlsCtx.NewConnectionOptions());
 
-    if (!connection)
+    if (!*connection)
     {
         fprintf(stderr, "MQTT Connection Creation failed with error %s\n",
-            ErrorDebugString(connection.LastError()));
+            ErrorDebugString(connection->LastError()));
         exit(-1);
     }
 
@@ -200,7 +200,7 @@ int main(int argc, char* argv[])
     {
         {
             fprintf(stdout, "Connection completed with return code %d\n", returnCode);
-            fprintf(stdout, "Conneciton state %d\n", connection.GetConnectionState());
+            fprintf(stdout, "Conneciton state %d\n", connection->GetConnectionState());
             std::lock_guard<std::mutex> lockGuard(mutex);
             connectionSucceeded = true;
         }
@@ -210,10 +210,10 @@ int main(int argc, char* argv[])
     /*
      * This will be invoked when the TCP connection fails.
      */
-    auto onConFailure = [&](Mqtt::MqttConnection& connection)
+    auto onConFailure = [&](Mqtt::MqttConnection&, int error)
     {
         {
-            fprintf(stdout, "Connection failed with %s\n", ErrorDebugString(connection.LastError()));
+            fprintf(stdout, "Connection failed with %s\n", ErrorDebugString(error));
             std::lock_guard<std::mutex> lockGuard(mutex);
             connectionClosed = true;
         }
@@ -223,11 +223,11 @@ int main(int argc, char* argv[])
     /*
      * Invoked when a disconnect message has completed.
      */
-    auto onDisconnect = [&](Mqtt::MqttConnection&) -> bool
+    auto onDisconnect = [&](Mqtt::MqttConnection& conn, int error) -> bool
     {
         {
-            fprintf(stdout, "Connection closed\n");
-            fprintf(stdout, "Conneciton state %d\n", connection.GetConnectionState());
+            fprintf(stdout, "Connection closed with error %s\n", ErrorDebugString(error));
+            fprintf(stdout, "Conneciton state %d\n", conn.GetConnectionState());
             std::lock_guard<std::mutex> lockGuard(mutex);
             connectionClosed = true;
         }
@@ -235,17 +235,17 @@ int main(int argc, char* argv[])
         return false;
     };
 
-    connection.SetOnConnAckHandler(std::move(onConAck));
-    connection.SetOnConnectionFailedHandler(std::move(onConFailure));
-    connection.SetOnDisconnectHandler(std::move(onDisconnect));
+    connection->SetOnConnAckHandler(std::move(onConAck));
+    connection->SetOnConnectionFailedHandler(std::move(onConFailure));
+    connection->SetOnDisconnectHandler(std::move(onDisconnect));
 
     /*
      * Actually perform the connect dance.
      */
-    if (!connection.Connect("client_id12335456", true, 0))
+    if (!connection->Connect("client_id12335456", true, 0))
     {
         fprintf(stderr, "MQTT Connection failed with error %s\n",
-            ErrorDebugString(connection.LastError()));
+            ErrorDebugString(connection->LastError()));
         exit(-1);
     }
 
@@ -283,7 +283,7 @@ int main(int argc, char* argv[])
         /*
          * Publish our message.
          */
-        auto packetId = connection.Publish("a/b", AWS_MQTT_QOS_AT_LEAST_ONCE,
+        auto packetId = connection->Publish("a/b", AWS_MQTT_QOS_AT_LEAST_ONCE,
             false, helloWorldPayload, onOpComplete);
         (void)packetId;
         conditionVariable.wait(uniqueLock);
@@ -305,20 +305,20 @@ int main(int argc, char* argv[])
         /*
          * Subscribe for incoming publish messages on topic.
          */
-        packetId = connection.Subscribe("a/b", AWS_MQTT_QOS_AT_LEAST_ONCE, onPublish, onOpComplete);
+        packetId = connection->Subscribe("a/b", AWS_MQTT_QOS_AT_LEAST_ONCE, onPublish, onOpComplete);
         conditionVariable.wait(uniqueLock);
 
         waitForSub = false;
         /*
          * Unsubscribe from the topic.
          */
-        connection.Unsubscribe("a/b", onOpComplete);
+        connection->Unsubscribe("a/b", onOpComplete);
         conditionVariable.wait(uniqueLock);
     }
 
     if (!connectionClosed) {
         /* Disconnect */
-        connection.Disconnect();
+        connection->Disconnect();
         conditionVariable.wait(uniqueLock, [&]() { return connectionClosed; });
     }
     return 0;

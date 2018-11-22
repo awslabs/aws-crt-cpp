@@ -80,10 +80,10 @@ namespace Aws
             }
 
 
-            TlsContext::TlsContext(TlsContextOptions& options, TLSMode mode, Allocator* allocator) noexcept :
+            TlsContext::TlsContext(TlsContextOptions& options, TlsMode mode, Allocator* allocator) noexcept :
                 m_ctx(nullptr), m_lastError(AWS_OP_SUCCESS)
             {
-                if (mode == TLSMode::CLIENT)
+                if (mode == TlsMode::CLIENT)
                 {
                     m_ctx = aws_tls_client_ctx_new(allocator, &options.m_options);
                 }

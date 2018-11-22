@@ -13,6 +13,7 @@
 * permissions and limitations under the License.
 */
 #include <aws/crt/Api.h>
+#include <aws/crt/StlAllocator.h>
 
 #include <aws/crt/io/TlsOptions.h>
 
@@ -20,13 +21,18 @@ namespace Aws
 {
     namespace Crt
     {
+        Allocator* g_allocator = nullptr;
+
         static void s_initApi(Allocator* allocator)
         {
+            // sets up the StlAllocator for use.
+            g_allocator = allocator;
             Io::InitTlsStaticState(allocator);
         }
 
         static void s_cleanUpApi()
         {
+            g_allocator = nullptr;
             Io::CleanUpTlsStaticState();
         }
 
