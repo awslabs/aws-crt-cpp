@@ -38,7 +38,7 @@ namespace Aws
 
             ~StlAllocator() {}
 
-            using sizeType = std::size_t;
+            using size_type = std::size_t;
 
             template<typename U>
             struct rebind

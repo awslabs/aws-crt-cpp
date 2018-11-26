@@ -200,7 +200,7 @@ int main(int argc, char* argv[])
     {
         {
             fprintf(stdout, "Connection completed with return code %d\n", returnCode);
-            fprintf(stdout, "Conneciton state %d\n", connection->GetConnectionState());
+            fprintf(stdout, "Conneciton state %d\n", static_cast<int>(connection->GetConnectionState()));
             std::lock_guard<std::mutex> lockGuard(mutex);
             connectionSucceeded = true;
         }
@@ -227,7 +227,7 @@ int main(int argc, char* argv[])
     {
         {
             fprintf(stdout, "Connection closed with error %s\n", ErrorDebugString(error));
-            fprintf(stdout, "Conneciton state %d\n", conn.GetConnectionState());
+            fprintf(stdout, "Conneciton state %d\n", static_cast<int>(conn.GetConnectionState()));
             std::lock_guard<std::mutex> lockGuard(mutex);
             connectionClosed = true;
         }
