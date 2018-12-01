@@ -17,6 +17,7 @@
 #include <aws/crt/Types.h>
 
 #include <memory>
+#include <assert.h>
 
 namespace Aws
 {
@@ -25,7 +26,7 @@ namespace Aws
         extern Allocator* g_allocator;
 
         template<typename T>
-        class StlAllocator final : public std::allocator<T>
+        class StlAllocator : public std::allocator<T>
         {
         public:
             using Base = std::allocator<T>;

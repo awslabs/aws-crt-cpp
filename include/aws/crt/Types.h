@@ -19,6 +19,11 @@
 #include <aws/mqtt/mqtt.h>
 #include <aws/io/socket.h>
 
+#include <string>
+#include <map>
+#include <unordered_map>
+#include <vector>
+
 struct aws_allocator;
 struct aws_byte_buf;
 struct aws_byte_cursor;
@@ -46,5 +51,17 @@ namespace Aws
             using QOS = aws_mqtt_qos;
             using ReturnCode = aws_mqtt_connect_return_code;
         }
+
+        template<typename T>
+        class StlAllocator;
+        using String = std::basic_string<char, std::char_traits<char>, StlAllocator<char>>;
+        template<typename K, typename V> using Map = std::map<K, V, std::less<K>, StlAllocator<std::pair<const K, V>>>;
+        template<typename K, typename V> using UnorderedMap =
+        std::unordered_map< K, V, std::hash<K>, std::equal_to<K>, StlAllocator<std::pair<const K, V>>>;
+        template<typename K, typename V> using MultiMap =
+        std::multimap<K, V, std::less<K>, StlAllocator<std::pair<const K, V>>>;
+        template<typename T> using Vector = std::vector< T, StlAllocator<T>>;
+
+
     }
 }
