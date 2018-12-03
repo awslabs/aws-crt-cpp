@@ -12,6 +12,7 @@ add_test_case(EventLoopResourceSafety)
 add_test_case(MqttClientResourceSafety)
 add_test_case(ClientBootstrapResourceSafety)
 add_test_case(TLSContextResourceSafety)
+add_test_case(DateTimeBinding)
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 
