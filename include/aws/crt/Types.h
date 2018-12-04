@@ -15,6 +15,8 @@
  */
 #include <aws/crt/Exports.h>
 
+#include <aws/crt/Optional.h>
+
 #include <aws/common/common.h>
 #include <aws/mqtt/mqtt.h>
 #include <aws/io/socket.h>
