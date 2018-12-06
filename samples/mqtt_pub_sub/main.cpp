@@ -227,7 +227,7 @@ int main(int argc, char* argv[])
     {
         {
             fprintf(stdout, "Connection closed with error %s\n", ErrorDebugString(error));
-            fprintf(stdout, "Conneciton state %d\n", static_cast<int>(conn.GetConnectionState()));
+            fprintf(stdout, "Connection state %d\n", static_cast<int>(conn.GetConnectionState()));
             std::lock_guard<std::mutex> lockGuard(mutex);
             connectionClosed = true;
         }
@@ -235,9 +235,9 @@ int main(int argc, char* argv[])
         return false;
     };
 
-    connection->SetOnConnAckHandler(std::move(onConAck));
-    connection->SetOnConnectionFailedHandler(std::move(onConFailure));
-    connection->SetOnDisconnectHandler(std::move(onDisconnect));
+    connection->OnConnAck = std::move(onConAck);
+    connection->OnConnectionFailed = std::move(onConFailure);
+    connection->OnDisconnect = std::move(onDisconnect);
 
     /*
      * Actually perform the connect dance.

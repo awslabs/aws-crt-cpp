@@ -19,6 +19,10 @@ file(GLOB AWS_CRT_MQTT_HEADERS
         "include/aws/crt/mqtt/*.h"
 )
 
+file(GLOB AWS_CRT_EXTERNAL_HEADERS
+        "include/aws/crt/external/*.h"
+)
+
 file(GLOB AWS_CRT_CPP_HEADERS
         ${AWS_CRT_HEADERS}
 	    ${AWS_CRT_IO_HEADERS}
@@ -37,10 +41,15 @@ file (GLOB AWS_CRT_MQTT_SRC
        "source/mqtt/*.cpp"
 )
 
+file(GLOB AWS_CRT_EXTERNAL_CRC
+        "source/external/*.cpp"
+)
+
 file(GLOB AWS_CRT_CPP_SRC
         ${AWS_CRT_SRC}
         ${AWS_CRT_IO_SRC}
-        ${AWS_CRT_MQTT_SRC}        
+        ${AWS_CRT_MQTT_SRC}
+        ${AWS_CRT_EXTERNAL_CRC}
 )
 
 if (WIN32)
@@ -48,9 +57,12 @@ if (WIN32)
         source_group("Header Files\\aws\\crt" FILES ${AWS_CRT_HEADERS})
         source_group("Header Files\\aws\\crt\\io" FILES ${AWS_CRT_IO_HEADERS})
         source_group("Header Files\\aws\\crt\\mqtt" FILES ${AWS_CRT_MQTT_HEADERS})
+        source_group("Header Files\\aws\\crt\\external" FILES ${AWS_CRT_EXTERNAL_HEADERS})
+
         source_group("Source Files" FILES ${AWS_CRT_SRC})
         source_group("Source Files\\io" FILES ${AWS_CRT_IO_SRC})
         source_group("Source Files\\mqtt" FILES ${AWS_CRT_MQTT_SRC})
+        source_group("Source Files\\external" FILES ${AWS_CRT_EXTERNAL_SRC})
     endif ()
 endif()
 
@@ -86,6 +98,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME} AWS::aws-c-mqtt)
 install(FILES ${AWS_CRT_HEADERS} DESTINATION "include/aws/crt")
 install(FILES ${AWS_CRT_IO_HEADERS} DESTINATION "include/aws/crt/io")
 install(FILES ${AWS_CRT_MQTT_HEADERS} DESTINATION "include/aws/crt/mqtt")
+install(FILES ${AWS_CRT_EXTERNAL_HEADERS} DESTINATION "include/aws/crt/external")
 
 install(
         TARGETS ${CMAKE_PROJECT_NAME}

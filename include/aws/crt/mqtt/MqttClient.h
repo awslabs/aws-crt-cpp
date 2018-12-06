@@ -89,21 +89,6 @@ namespace Aws
                 int LastError() const noexcept;
                 inline ConnectionState GetConnectionState() const noexcept { return m_connectionState; }
 
-                inline void SetOnConnectionFailedHandler(OnConnectionFailedHandler&& onConnectionFailed) noexcept
-                {
-                    m_onConnectionFailed = std::move(onConnectionFailed);
-                }
-
-                inline void SetOnConnAckHandler(OnConnAckHandler&& onConnAck) noexcept
-                {
-                    m_onConnAck = std::move(onConnAck);
-                }
-
-                inline void SetOnDisconnectHandler(OnDisconnectHandler&& onDisconnect) noexcept
-                {
-                    m_onDisconnect = std::move(onDisconnect);
-                }
-
                 /**
                  * Sets LastWill for the connection. The memory backing payload must outlive the connection.
                  */
@@ -155,6 +140,10 @@ namespace Aws
                  */
                 void Ping();
 
+                OnConnectionFailedHandler OnConnectionFailed;
+                OnConnAckHandler OnConnAck;
+                OnDisconnectHandler OnDisconnect;
+
             private:
                 MqttConnection(aws_mqtt_client* client, const char* hostName, uint16_t port,
                                const Io::SocketOptions& socketOptions,
@@ -164,10 +153,6 @@ namespace Aws
 
                 aws_mqtt_client* m_owningClient;
                 aws_mqtt_client_connection* m_underlyingConnection;
-
-                OnConnectionFailedHandler m_onConnectionFailed;
-                OnConnAckHandler m_onConnAck;
-                OnDisconnectHandler m_onDisconnect;
                 std::atomic<ConnectionState> m_connectionState;
 
                 static void s_onConnectionFailed(aws_mqtt_client_connection* connection, int errorCode, void* userData);

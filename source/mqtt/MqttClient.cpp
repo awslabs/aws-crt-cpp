@@ -31,9 +31,9 @@ namespace Aws
                 auto connWrapper = reinterpret_cast<MqttConnection*>(userData);
 
                 connWrapper->m_connectionState = ConnectionState::Disconnected;
-                if (connWrapper->m_onConnectionFailed)
+                if (connWrapper->OnConnectionFailed)
                 {
-                    connWrapper->m_onConnectionFailed(*connWrapper, errorCode);
+                    connWrapper->OnConnectionFailed(*connWrapper, errorCode);
                 }
             }
 
@@ -53,9 +53,9 @@ namespace Aws
                     connWrapper->m_connectionState = ConnectionState::Error;
                 }
 
-                if (connWrapper->m_onConnAck)
+                if (connWrapper->OnConnAck)
                 {
-                    connWrapper->m_onConnAck(*connWrapper, returnCode, sessionPresent);
+                    connWrapper->OnConnAck(*connWrapper, returnCode, sessionPresent);
                 }
             }
 
@@ -65,9 +65,9 @@ namespace Aws
 
                 connWrapper->m_connectionState = ConnectionState::Disconnected;
 
-                if (connWrapper->m_onDisconnect)
+                if (connWrapper->OnDisconnect)
                 {
-                    if (connWrapper->m_onDisconnect(*connWrapper, errorCode))
+                    if (connWrapper->OnDisconnect(*connWrapper, errorCode))
                     {
                         connWrapper->m_connectionState = ConnectionState::Connecting;
                         return true;
