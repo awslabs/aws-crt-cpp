@@ -14,6 +14,7 @@
  */
 #include <aws/crt/Api.h>
 
+#include <aws/crt/StlAllocator.h>
 #include <iostream>
 #include <mutex>
 #include <condition_variable>
@@ -34,12 +35,12 @@ static void s_printHelp()
     fprintf(stdout, "\tIt's the path to a CA file in PEM format\n");
 }
 
-bool s_cmdOptionExists(char** begin, char** end, const std::string& option)
+bool s_cmdOptionExists(char** begin, char** end, const String& option)
 {
     return std::find(begin, end, option) != end;
 }
 
-char* s_getCmdOption(char ** begin, char ** end, const std::string & option)
+char* s_getCmdOption(char ** begin, char ** end, const String & option)
 {
     char ** itr = std::find(begin, end, option);
     if (itr != end && ++itr != end)
@@ -51,10 +52,22 @@ char* s_getCmdOption(char ** begin, char ** end, const std::string & option)
 
 int main(int argc, char* argv[])
 {
-    std::string endpoint;
-    std::string certificatePath;
-    std::string keyPath;
-    std::string caFile;
+
+    /************************ Setup the Lib ****************************/
+    /*
+     * These make debug output via ErrorDebugString() work.
+     */
+    LoadErrorStrings();
+
+    /*
+     * Do the global initialization for the API.
+     */
+    ApiHandle apiHandle;
+
+    String endpoint;
+    String certificatePath;
+    String keyPath;
+    String caFile;
 
     /*********************** Parse Arguments ***************************/
     if (!(s_cmdOptionExists(argv, argv + argc, "--endpoint") &&
@@ -73,17 +86,6 @@ int main(int argc, char* argv[])
     {
         caFile = s_getCmdOption(argv, argv + argc, "--ca_file");
     }
-
-    /************************ Setup the Lib ****************************/
-    /*
-     * These make debug output via ErrorDebugString() work.
-     */
-    LoadErrorStrings();
-
-    /*
-     * Do the global initialization for the API.
-     */
-    ApiHandle apiHandle;
 
     /********************** Now Setup an Mqtt Client ******************/
     /*
