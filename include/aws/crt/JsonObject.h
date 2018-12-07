@@ -320,6 +320,10 @@ namespace Aws
              */
             JsonView GetObject(const char* key) const;
 
+            JsonObject GetObjectCopy(const String& key) const;
+
+            JsonObject GetObjectCopy(const char* key) const;
+
             /**
              * Returns the value of this node as a JsonView object.
              */

@@ -495,6 +495,18 @@ namespace Aws
             return item;
         }
 
+        JsonObject JsonView::GetObjectCopy(const String& key) const
+        {
+            return GetObjectCopy(key.c_str());
+        }
+
+        JsonObject JsonView::GetObjectCopy(const char* key) const
+        {
+            assert(m_value);
+            /* force a deep copy */
+            return JsonObject(JsonObject(m_value));
+        }
+
         JsonView JsonView::AsObject() const
         {
             assert(cJSON_IsObject(m_value));
