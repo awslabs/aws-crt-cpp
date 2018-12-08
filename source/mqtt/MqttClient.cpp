@@ -136,7 +136,7 @@ namespace Aws
 
             void MqttConnection::s_connectionInit(MqttConnection* self,
                 const char* hostName, uint16_t port, const Io::SocketOptions& socketOptions, 
-                Io::TlsConnectionOptions* tlsConnOptions)
+                const Io::TlsConnectionOptions* tlsConnOptions)
             {
                 aws_mqtt_client_connection_callbacks callbacks;
                 AWS_ZERO_STRUCT(callbacks);
@@ -150,7 +150,8 @@ namespace Aws
 
                 self->m_underlyingConnection = aws_mqtt_client_connection_new(self->m_owningClient, 
                                                   callbacks, &hostNameCur, port,
-                                                  const_cast<Io::SocketOptions*>(&socketOptions), tlsConnOptions);
+                                                  const_cast<Io::SocketOptions*>(&socketOptions),
+                                                  const_cast<Io::TlsConnectionOptions*>(tlsConnOptions));
 
                 if (!self->m_underlyingConnection)
                 {
@@ -161,7 +162,7 @@ namespace Aws
             MqttConnection::MqttConnection(aws_mqtt_client* client,
                         const char* hostName, uint16_t port,
                         const Io::SocketOptions& socketOptions,
-                        Io::TlsConnectionOptions&& tlsConnOptions) noexcept :
+                        const Io::TlsConnectionOptions& tlsConnOptions) noexcept :
                            m_owningClient(client),
                            m_connectionState(ConnectionState::Init)
             {
@@ -449,7 +450,7 @@ namespace Aws
            
             std::shared_ptr<MqttConnection> MqttClient::NewConnection(const char* hostName, uint16_t port,
                                          const Io::SocketOptions& socketOptions,
-                                         Io::TlsConnectionOptions&& tlsConnOptions) noexcept
+                                         const Io::TlsConnectionOptions& tlsConnOptions) noexcept
             {
                 // If you're reading this and asking.... why is this so complicated? Why not use make_shared
                 // or allocate_shared? Well, MqttConnection constructors are private and stl is dumb like that.
@@ -462,8 +463,7 @@ namespace Aws
                     return nullptr;
                 }
 
-                toSeat = new(toSeat)MqttConnection(m_client, hostName, port, socketOptions,
-                    std::forward<Io::TlsConnectionOptions>(tlsConnOptions));
+                toSeat = new(toSeat)MqttConnection(m_client, hostName, port, socketOptions, tlsConnOptions);
                 return std::shared_ptr<MqttConnection>(toSeat, 
                     [allocator](MqttConnection* connection)
                     {   

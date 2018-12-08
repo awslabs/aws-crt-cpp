@@ -171,12 +171,13 @@ int main(int argc, char* argv[])
         exit(-1);
     }
 
+    auto connectionOptions = tlsCtx.NewConnectionOptions();
     /*
      * Now create a connection object. Note: This type is move only
      * and its underlying memory is managed by the client.
      */
     auto connection =
-        mqttClient.NewConnection(endpoint.c_str(), port, socketOptions, tlsCtx.NewConnectionOptions());
+        mqttClient.NewConnection(endpoint.c_str(), port, socketOptions, connectionOptions);
 
     if (!*connection)
     {

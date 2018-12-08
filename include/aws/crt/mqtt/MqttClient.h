@@ -147,7 +147,7 @@ namespace Aws
             private:
                 MqttConnection(aws_mqtt_client* client, const char* hostName, uint16_t port,
                                const Io::SocketOptions& socketOptions,
-                               Io::TlsConnectionOptions&& tlsConnOptions) noexcept;
+                               const Io::TlsConnectionOptions& tlsConnOptions) noexcept;
                 MqttConnection(aws_mqtt_client* client, const char* hostName, uint16_t port,
                                const Io::SocketOptions& socketOptions) noexcept;
 
@@ -167,7 +167,7 @@ namespace Aws
                                         void* user_data);
                 static void s_onOpComplete(aws_mqtt_client_connection* connection, uint16_t packetId, void* userdata);
                 static void s_connectionInit(MqttConnection* self, const char* hostName, uint16_t port,
-                    const Io::SocketOptions& socketOptions, Io::TlsConnectionOptions* tlsConnOptions);
+                    const Io::SocketOptions& socketOptions, const Io::TlsConnectionOptions* tlsConnOptions);
             };
 
             /**
@@ -197,7 +197,7 @@ namespace Aws
                  * all of its connection instances.
                  */
                 std::shared_ptr<MqttConnection> NewConnection(const char* hostName, uint16_t port,
-                        const Io::SocketOptions& socketOptions, Io::TlsConnectionOptions&& tlsConnOptions) noexcept;
+                        const Io::SocketOptions& socketOptions, const Io::TlsConnectionOptions& tlsConnOptions) noexcept;
                 /**
                 * Create a new connection object over plain text from the client. The client must outlive
                 * all of its connection instances.
