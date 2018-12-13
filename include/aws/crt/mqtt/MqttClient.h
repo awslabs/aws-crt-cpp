@@ -58,6 +58,18 @@ namespace Aws
                     ReturnCode returnCode, bool sessionPresent)>;
 
             /**
+             * Invoked when a suback message is received.
+             */
+            using OnSubAckHandler = std::function<void(MqttConnection& connection, uint16_t packetId,
+                const String& topic, QOS qos, int errorCode)>;
+
+            /**
+             * Invoked when a suback message for multiple topics is received.
+             */
+            using OnMultiSubAckHandler = std::function<void(MqttConnection& connection, uint16_t packetId,
+                    const Vector<String>& topics, QOS qos, int errorCode)>;
+
+            /**
              * Invoked when a disconnect message has been sent.
              */
             using OnDisconnectHandler = std::function<bool(MqttConnection& connection, int error)>;
@@ -66,8 +78,9 @@ namespace Aws
              * Invoked upon receipt of a Publish message on a subscribed topic.
              */
             using OnPublishReceivedHandler = std::function<void(MqttConnection& connection, 
-                const ByteBuf& topic, const ByteBuf& payload)>;
-            using OnOperationCompleteHandler = std::function<void(MqttConnection& connection, uint16_t packetId)>;
+                const String& topic, const ByteBuf& payload)>;
+
+            using OnOperationCompleteHandler = std::function<void(MqttConnection& connection, uint16_t packetId, int errorCode)>;
 
             /**
              * Represents a persistent Mqtt Connection. The memory is owned by MqttClient.
@@ -114,12 +127,21 @@ namespace Aws
 
                 /**
                  * Subcribes to topicFilter. OnPublishRecievedHandler will be invoked from an event-loop
-                 * thread upon an incoming Publish message. OnOperationCompleteHandler will be invoked
+                 * thread upon an incoming Publish message. OnSubAckHandler will be invoked
                  * upon receipt of a suback message.
                  */
                 uint16_t Subscribe(const char* topicFilter, QOS qos,
                         OnPublishReceivedHandler&& onPublish,
-                        OnOperationCompleteHandler&& onOpComplete) noexcept;
+                        OnSubAckHandler&& onSubAck) noexcept;
+
+                /**
+                 * Subcribes to multiple topicFilters. OnPublishRecievedHandler will be invoked from an event-loop
+                 * thread upon an incoming Publish message. OnMultiSubAckHandler will be invoked
+                 * upon receipt of a suback message.
+                 */
+                uint16_t Subscribe(const Vector<const char*> topicFilters, QOS qos,
+                    OnPublishReceivedHandler&& onPublish,
+                    OnMultiSubAckHandler&& onOpComplete) noexcept;
 
                 /**
                  * Unsubscribes from topicFilter. OnOperationCompleteHandler will be invoked upon receipt of
@@ -166,6 +188,12 @@ namespace Aws
                                         const aws_byte_cursor* payload,
                                         void* user_data);
                 static void s_onOpComplete(aws_mqtt_client_connection* connection, uint16_t packetId, void* userdata);
+                static void s_onSubAck(aws_mqtt_client_connection* connection, uint16_t packetId, 
+                    const struct aws_byte_cursor *topic, enum aws_mqtt_qos qos,  int error_code, void* userdata);
+                static void s_onMultiSubAck(aws_mqtt_client_connection* connection, uint16_t packetId, 
+                    const struct aws_array_list *topic_subacks, int error_code, void* userdata);
+                static void s_onOpComplete(aws_mqtt_client_connection* connection, uint16_t packetId, int errorCode, void* userdata);
+
                 static void s_connectionInit(MqttConnection* self, const char* hostName, uint16_t port,
                     const Io::SocketOptions& socketOptions, const Io::TlsConnectionOptions* tlsConnOptions);
             };

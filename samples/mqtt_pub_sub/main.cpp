@@ -103,7 +103,7 @@ int main(int argc, char* argv[])
      * We're using Mutual TLS for Mqtt, so we need to load our client certificates
      */
     Io::TlsContextOptions tlsCtxOptions =
-            Io::TlsContextOptions::InitClientWithMtls(certificatePath.c_str(), keyPath.c_str());
+        Io::TlsContextOptions::InitClientWithMtls(certificatePath.c_str(), keyPath.c_str());
     /*
      * If we have a custom CA, set that up here.
      */
@@ -128,7 +128,7 @@ int main(int argc, char* argv[])
     if (!tlsCtx)
     {
         fprintf(stderr, "Tls Context creation failed with error %s\n",
-                ErrorDebugString(tlsCtx.LastError()));
+            ErrorDebugString(tlsCtx.LastError()));
         exit(-1);
     }
 
@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
     if (!bootstrap)
     {
         fprintf(stderr, "ClientBootstrap failed with error %s\n",
-                ErrorDebugString(bootstrap.LastError()));
+            ErrorDebugString(bootstrap.LastError()));
         exit(-1);
     }
 
@@ -263,20 +263,19 @@ int main(int argc, char* argv[])
         /*
          * This will be invoked upon the completion of Publish, Subscribe, and Unsubscribe.
          */
-        auto onOpComplete = [&](Mqtt::MqttConnection&, uint16_t packetId)
+        auto onOpComplete = [&](Mqtt::MqttConnection&, uint16_t packetId, int errorCode)
         {
+            if (packetId)
             {
-                if (packetId)
-                {
-                    fprintf(stdout, "Operation on packetId %d Succeeded\n", (int)packetId);
-                }
-                else
-                {
-                    fprintf(stdout, "Operation failed\n");
-
-                }
-                std::lock_guard<std::mutex> lockGuard(mutex);
+                fprintf(stdout, "Operation on packetId %d Succeeded\n", (int)packetId);
             }
+            else
+            {
+                fprintf(stdout, "Operation failed with error %s\n", aws_error_debug_str(errorCode));
+
+            }
+            std::lock_guard<std::mutex> lockGuard(mutex);
+
             if (!waitForSub)
             {
                 conditionVariable.notify_one();
@@ -294,21 +293,41 @@ int main(int argc, char* argv[])
         /*
          * This is invoked upon the receipt of a Publish on a subscribed topic.
          */
-        auto onPublish = [&](Mqtt::MqttConnection&, const ByteBuf& topic, const ByteBuf& byteBuf)
+        auto onPublish = [&](Mqtt::MqttConnection&, const String& topic, const ByteBuf& byteBuf)
         {
-            fprintf(stdout, "Publish recieved on ");
-            fwrite(topic.buffer, 1, topic.len, stdout);
-            fprintf(stdout, "\n Message:\n");
-            fwrite(byteBuf.buffer, 1, byteBuf.len, stdout);
-            fprintf(stdout, "\n");
-            conditionVariable.notify_one();
+             fprintf(stdout, "Publish recieved on topic %s\n", topic.c_str());               
+             fprintf(stdout, "\n Message:\n");
+             fwrite(byteBuf.buffer, 1, byteBuf.len, stdout);
+             fprintf(stdout, "\n");
+          
+             conditionVariable.notify_one();
         };
 
         waitForSub = true;
         /*
          * Subscribe for incoming publish messages on topic.
          */
-        packetId = connection->Subscribe("a/b", AWS_MQTT_QOS_AT_LEAST_ONCE, onPublish, onOpComplete);
+        auto onSubAck = [&](Mqtt::MqttConnection&, uint16_t packetId,
+            const String& topic, Mqtt::QOS, int errorCode)
+        {
+            if (packetId)
+            {
+                fprintf(stdout, "Subscribe on topic %s on packetId %d Succeeded\n", topic.c_str(), (int)packetId);
+            }
+            else
+            {
+                fprintf(stdout, "Subscribe failed with error %s\n", aws_error_debug_str(errorCode));
+
+            }
+            std::lock_guard<std::mutex> lockGuard(mutex);
+
+            if (!waitForSub)
+            {
+                conditionVariable.notify_one();
+            }
+        };
+
+        packetId = connection->Subscribe("a/b", AWS_MQTT_QOS_AT_LEAST_ONCE, onPublish, onSubAck);
         conditionVariable.wait(uniqueLock);
 
         waitForSub = false;

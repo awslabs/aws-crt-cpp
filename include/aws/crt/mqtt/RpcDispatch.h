@@ -17,6 +17,7 @@
 #include <aws/crt/Types.h>
 
 #include <mutex>
+#include <functional>
 
 namespace Aws
 {

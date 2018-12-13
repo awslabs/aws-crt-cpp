@@ -504,7 +504,7 @@ namespace Aws
         {
             assert(m_value);
             /* force a deep copy */
-            return JsonObject(JsonObject(m_value));
+            return JsonObject(cJSON_GetObjectItemCaseSensitive(m_value, key));
         }
 
         JsonView JsonView::AsObject() const

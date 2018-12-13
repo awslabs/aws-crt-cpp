@@ -100,9 +100,9 @@ namespace Aws
 
                 if (callbackData->onPublishReceived)
                 {
-                    ByteBuf topicBuf = aws_byte_buf_from_array(topic->ptr, topic->len);
+                    String topicStr(reinterpret_cast<char*>(topic->ptr), topic->len);
                     ByteBuf payloadBuf = aws_byte_buf_from_array(payload->ptr, payload->len);
-                    callbackData->onPublishReceived(*(callbackData->connection), topicBuf, payloadBuf);
+                    callbackData->onPublishReceived(*(callbackData->connection), topicStr, payloadBuf);
                 }
             }
 
@@ -115,13 +115,13 @@ namespace Aws
             };
 
             void MqttConnection::s_onOpComplete(aws_mqtt_client_connection*,
-                    uint16_t packetId, void* userData)
+                    uint16_t packetId, int errorCode, void* userData)
             {
                 auto callbackData = reinterpret_cast<OpCompleteCallbackData*>(userData);
 
                 if (callbackData->onOperationComplete)
                 {
-                    callbackData->onOperationComplete(*callbackData->connection, packetId);
+                    callbackData->onOperationComplete(*callbackData->connection, packetId, errorCode);
                 }
 
                 if (callbackData->topic)
@@ -132,6 +132,74 @@ namespace Aws
                 }
                 callbackData->~OpCompleteCallbackData();
                 aws_mem_release(callbackData->allocator, reinterpret_cast<void *>(callbackData));
+            }
+
+            struct SubAckCallbackData
+            {
+                MqttConnection* connection;
+                OnSubAckHandler onSubAck;
+                const char* topic;
+                Allocator* allocator;
+            };
+
+            void MqttConnection::s_onSubAck(aws_mqtt_client_connection*, uint16_t packetId,
+                const struct aws_byte_cursor *topic, enum aws_mqtt_qos qos, int errorCode, void* userData)
+            {
+                auto callbackData = reinterpret_cast<SubAckCallbackData*>(userData);
+
+                if (callbackData->onSubAck)
+                {
+                    String topicStr(reinterpret_cast<char*>(topic->ptr), topic->len);
+                    callbackData->onSubAck(*callbackData->connection, packetId, topicStr, qos, errorCode);
+                }
+
+                if (callbackData->topic)
+                {
+                    aws_mem_release(callbackData->allocator,
+                        reinterpret_cast<void*>(const_cast<char*>(callbackData->topic)));
+
+                }
+                callbackData->~SubAckCallbackData();
+                aws_mem_release(callbackData->allocator, reinterpret_cast<void*>(callbackData));
+            }
+
+            struct MultiSubAckCallbackData
+            {
+                MqttConnection* connection;
+                OnMultiSubAckHandler onSubAck;
+                const char* topic;
+                Allocator* allocator;
+            };
+
+            void MqttConnection::s_onMultiSubAck(aws_mqtt_client_connection*, uint16_t packetId,
+                const struct aws_array_list *topicSubacks, int errorCode, void* userData)
+            {
+                auto callbackData = reinterpret_cast<MultiSubAckCallbackData*>(userData);
+
+                if (callbackData->onSubAck)
+                {
+                    size_t length = aws_array_list_length(topicSubacks);
+                    Vector<String> topics(length);
+                    QOS qos = AWS_MQTT_QOS_AT_MOST_ONCE;
+                    for (size_t i = 0; i < length; ++i)
+                    {
+                        aws_mqtt_topic_subscription *subscription = NULL;
+                        aws_array_list_get_at_ptr(topicSubacks, reinterpret_cast<void**>(&subscription), i);
+                        topics.push_back(String(reinterpret_cast<char*>(subscription->topic.ptr), subscription->topic.len));
+                        qos = subscription->qos;
+                    }
+
+                    callbackData->onSubAck(*callbackData->connection, packetId, topics, qos, errorCode);
+                }
+
+                if (callbackData->topic)
+                {
+                    aws_mem_release(callbackData->allocator,
+                        reinterpret_cast<void*>(const_cast<char*>(callbackData->topic)));
+
+                }
+                callbackData->~MultiSubAckCallbackData();
+                aws_mem_release(callbackData->allocator, reinterpret_cast<void*>(callbackData));
             }
 
             void MqttConnection::s_connectionInit(MqttConnection* self,
@@ -254,7 +322,7 @@ namespace Aws
 
             uint16_t MqttConnection::Subscribe(const char* topicFilter, QOS qos,
                                OnPublishReceivedHandler&& onPublish,
-                               OnOperationCompleteHandler&& onOpComplete) noexcept
+                               OnSubAckHandler&& onSubAck) noexcept
             {                
 
                 PubCallbackData* pubCallbackData =
@@ -265,46 +333,133 @@ namespace Aws
                 {
                     return 0;
                 }
+
                 pubCallbackData = new(pubCallbackData)PubCallbackData;
 
                 pubCallbackData->connection = this;
                 pubCallbackData->onPublishReceived = std::move(onPublish);
                 pubCallbackData->allocator = m_owningClient->allocator;
 
-                OpCompleteCallbackData *opCompleteCallbackData =
-                        reinterpret_cast<OpCompleteCallbackData*>(aws_mem_acquire(m_owningClient->allocator,
-                                sizeof(OpCompleteCallbackData)));
+                SubAckCallbackData *subAckCallbackData =
+                        reinterpret_cast<SubAckCallbackData*>(aws_mem_acquire(m_owningClient->allocator,
+                                sizeof(SubAckCallbackData)));
 
-                if (!opCompleteCallbackData)
+                if (!subAckCallbackData)
                 {
                     pubCallbackData->~PubCallbackData();
                     aws_mem_release(m_owningClient->allocator, reinterpret_cast<void*>(pubCallbackData));
                     return 0;
                 }
 
-                opCompleteCallbackData = new(opCompleteCallbackData)OpCompleteCallbackData;
+                subAckCallbackData = new(subAckCallbackData)SubAckCallbackData;
 
-                opCompleteCallbackData->connection = this;
-                opCompleteCallbackData->allocator = m_owningClient->allocator;
-                opCompleteCallbackData->onOperationComplete = std::move(onOpComplete);
-                opCompleteCallbackData->topic = nullptr;
-                opCompleteCallbackData->allocator = m_owningClient->allocator;
+                subAckCallbackData->connection = this;
+                subAckCallbackData->allocator = m_owningClient->allocator;
+                subAckCallbackData->onSubAck = std::move(onSubAck);
+                subAckCallbackData->topic = nullptr;
+                subAckCallbackData->allocator = m_owningClient->allocator;
 
                 ByteBuf topicFilterBuf = aws_byte_buf_from_c_str(topicFilter);
                 ByteCursor topicFilterCur = aws_byte_cursor_from_buf(&topicFilterBuf);
 
                 uint16_t packetId = aws_mqtt_client_connection_subscribe(m_underlyingConnection,
                         &topicFilterCur, qos, s_onPublish,
-                        pubCallbackData, s_cleanUpOnPublishData, s_onOpComplete, opCompleteCallbackData);
+                        pubCallbackData, s_cleanUpOnPublishData, s_onSubAck, subAckCallbackData);
 
                 if (!packetId)
                 {
                     pubCallbackData->~PubCallbackData();
                     aws_mem_release(m_owningClient->allocator, reinterpret_cast<void*>(pubCallbackData));
-                    opCompleteCallbackData->~OpCompleteCallbackData();
+                    subAckCallbackData->~SubAckCallbackData();
                     aws_mem_release(m_owningClient->allocator,
-                            reinterpret_cast<void*>(opCompleteCallbackData));
+                            reinterpret_cast<void*>(subAckCallbackData));
                 }
+
+                return packetId;
+            }
+
+            uint16_t MqttConnection::Subscribe(const Vector<const char*> topicFilters, QOS qos,
+                OnPublishReceivedHandler&& onPublish,
+                OnMultiSubAckHandler&& onSubAck) noexcept
+            {
+                uint16_t packetId = 0;
+                MultiSubAckCallbackData *subAckCallbackData =
+                    reinterpret_cast<MultiSubAckCallbackData*>(aws_mem_acquire(m_owningClient->allocator,
+                        sizeof(MultiSubAckCallbackData)));
+
+                if (!subAckCallbackData)
+                {                   
+                    return 0;
+                }
+
+                subAckCallbackData = new(subAckCallbackData)MultiSubAckCallbackData;
+
+                aws_array_list multiPub;
+                if (aws_array_list_init_dynamic(&multiPub, m_owningClient->allocator, topicFilters.size(), sizeof(aws_mqtt_topic_subscription)))
+                {
+                    subAckCallbackData->~MultiSubAckCallbackData();
+                    aws_mem_release(m_owningClient->allocator, reinterpret_cast<void*>(subAckCallbackData));
+                    return 0;
+                }
+
+                for (auto& topicFilter : topicFilters)
+                {
+                    PubCallbackData* pubCallbackData =
+                        reinterpret_cast<PubCallbackData*>(aws_mem_acquire(m_owningClient->allocator,
+                            sizeof(PubCallbackData)));
+
+                    if (!pubCallbackData)
+                    {
+                        goto clean_up;
+                    }
+
+                    pubCallbackData = new(pubCallbackData)PubCallbackData;
+
+                    pubCallbackData->connection = this;
+                    pubCallbackData->onPublishReceived = std::move(onPublish);
+                    pubCallbackData->allocator = m_owningClient->allocator;                   
+
+                    ByteBuf topicFilterBuf = aws_byte_buf_from_c_str(topicFilter);
+                    ByteCursor topicFilterCur = aws_byte_cursor_from_buf(&topicFilterBuf);
+
+                    aws_mqtt_topic_subscription subscription;
+                    subscription.on_cleanup = s_cleanUpOnPublishData;
+                    subscription.on_publish = s_onPublish;
+                    subscription.on_publish_ud = pubCallbackData;
+                    subscription.qos = qos;
+                    subscription.topic = topicFilterCur;
+
+                    aws_array_list_push_back(&multiPub, reinterpret_cast<const void*>(&subscription));                    
+                }
+
+                subAckCallbackData->connection = this;
+                subAckCallbackData->allocator = m_owningClient->allocator;
+                subAckCallbackData->onSubAck = std::move(onSubAck);
+                subAckCallbackData->topic = nullptr;
+                subAckCallbackData->allocator = m_owningClient->allocator;
+
+                packetId = aws_mqtt_client_connection_subscribe_multiple(m_underlyingConnection,
+                    &multiPub, s_onMultiSubAck, subAckCallbackData);
+
+clean_up:
+                if (!packetId)
+                {
+                    size_t length = aws_array_list_length(&multiPub);
+                    for (size_t i = 0; i < length; ++i)
+                    {
+                        aws_mqtt_topic_subscription *subscription = NULL;
+                        aws_array_list_get_at_ptr(&multiPub, reinterpret_cast<void**>(&subscription), i);
+                        PubCallbackData* pubCallbackData = reinterpret_cast<PubCallbackData*>(subscription->on_publish_ud);
+                        pubCallbackData->~PubCallbackData();
+                        aws_mem_release(m_owningClient->allocator, reinterpret_cast<void*>(pubCallbackData));
+                    }
+                                       
+                    subAckCallbackData->~MultiSubAckCallbackData();
+                    aws_mem_release(m_owningClient->allocator,
+                        reinterpret_cast<void*>(subAckCallbackData));
+                }
+
+                aws_array_list_clean_up(&multiPub);
 
                 return packetId;
             }
