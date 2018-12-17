@@ -117,8 +117,8 @@ namespace Aws
              */
             DateTime& operator=(const char* timestamp) noexcept;
 
-            operator bool() noexcept;
-            int GetLastError() noexcept;
+            explicit operator bool() const noexcept;
+            int GetLastError() const noexcept;
 
             /**
              * Convert dateTime to local time string using predefined format.
@@ -191,25 +191,9 @@ namespace Aws
             static DateTime Now() noexcept;
 
             /**
-             * Get the millis since epoch representing this very instant.
+             * Computes the difference between two DateTime instances and returns the difference
+             * in milliseconds.
              */
-            static uint64_t CurrentTimeMillis() noexcept;
-
-            /**
-             * Calculates the current hour of the day in localtime.
-             */
-            static uint8_t CalculateCurrentHour() noexcept;
-
-            /**
-             * The amazon timestamp format is a double with seconds.milliseconds
-             */
-            static double ComputeCurrentTimestampSecondsMillis() noexcept;
-
-            /**
-             * Compute the difference between two timestamps.
-             */
-            static std::chrono::milliseconds Diff(const DateTime& a, const DateTime& b) noexcept;
-
             std::chrono::milliseconds operator - (const DateTime& other) const noexcept;
 
         private:

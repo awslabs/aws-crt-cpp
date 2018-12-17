@@ -131,12 +131,12 @@ namespace Aws
             return *this;
         }
 
-        DateTime::operator bool() noexcept
+        DateTime::operator bool() const noexcept
         {
             return m_good;
         }
 
-        int DateTime::GetLastError() noexcept
+        int DateTime::GetLastError() const noexcept
         {
             return aws_last_error();
         }
@@ -213,26 +213,6 @@ namespace Aws
             DateTime dateTime;
             aws_date_time_init_now(&dateTime.m_date_time);
             return dateTime;
-        }
-
-        uint64_t DateTime::CurrentTimeMillis() noexcept
-        {
-            return DateTime::Now().Millis();
-        }
-
-        uint8_t DateTime::CalculateCurrentHour() noexcept
-        {
-            return DateTime::Now().GetHour(true);
-        }
-
-        double DateTime::ComputeCurrentTimestampSecondsMillis() noexcept
-        {
-            return DateTime::Now().SecondsWithMSPrecision();
-        }
-
-        std::chrono::milliseconds DateTime::Diff(const DateTime& a, const DateTime& b) noexcept
-        {
-            return (a - b);
         }
 
         std::chrono::milliseconds DateTime::operator-(const DateTime& other) const noexcept
