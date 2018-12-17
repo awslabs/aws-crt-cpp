@@ -15,7 +15,7 @@
  */
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
-
+#include <aws/crt/StlAllocator.h>
 #include <aws/crt/io/TlsOptions.h>
 #include <aws/mqtt/client.h>
 
@@ -139,8 +139,7 @@ namespace Aws
                  * thread upon an incoming Publish message. OnMultiSubAckHandler will be invoked
                  * upon receipt of a suback message.
                  */
-                uint16_t Subscribe(const Vector<const char*> topicFilters, QOS qos,
-                    OnPublishReceivedHandler&& onPublish,
+                uint16_t Subscribe(const Vector<std::pair<const char*, OnPublishReceivedHandler>> topicFilters, QOS qos,
                     OnMultiSubAckHandler&& onOpComplete) noexcept;
 
                 /**

@@ -378,8 +378,7 @@ namespace Aws
                 return packetId;
             }
 
-            uint16_t MqttConnection::Subscribe(const Vector<const char*> topicFilters, QOS qos,
-                OnPublishReceivedHandler&& onPublish,
+            uint16_t MqttConnection::Subscribe(const Vector<std::pair<const char*, OnPublishReceivedHandler>> topicFilters, QOS qos,
                 OnMultiSubAckHandler&& onSubAck) noexcept
             {
                 uint16_t packetId = 0;
@@ -416,10 +415,10 @@ namespace Aws
                     pubCallbackData = new(pubCallbackData)PubCallbackData;
 
                     pubCallbackData->connection = this;
-                    pubCallbackData->onPublishReceived = std::move(onPublish);
+                    pubCallbackData->onPublishReceived = topicFilter.second;
                     pubCallbackData->allocator = m_owningClient->allocator;                   
 
-                    ByteBuf topicFilterBuf = aws_byte_buf_from_c_str(topicFilter);
+                    ByteBuf topicFilterBuf = aws_byte_buf_from_c_str(topicFilter.first);
                     ByteCursor topicFilterCur = aws_byte_cursor_from_buf(&topicFilterBuf);
 
                     aws_mqtt_topic_subscription subscription;

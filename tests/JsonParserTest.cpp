@@ -32,10 +32,12 @@ static int s_BasicJsonParsing(struct aws_allocator *allocator, void *)
     ASSERT_TRUE("testStringValue" == view.GetString("testStringKey"));
     ASSERT_INT_EQUALS(10, view.GetInteger("testIntKey"));
     ASSERT_FALSE(view.GetBool("testBoolKey"));
-    ASSERT_TRUE(view.GetObject("object").AsString().empty());
+    ASSERT_TRUE(view.GetJsonObject("object").AsString().empty());
     ASSERT_TRUE("stringArrayEntry1" == view.GetArray("array")[0].AsString());
     ASSERT_TRUE("stringArrayEntry2" == view.GetArray("array")[1].AsString());
-    ASSERT_TRUE("testObjectStringValue" == view.GetObject("object").GetString("testObjectStringKey"));
+    ASSERT_TRUE("testObjectStringValue" == view.GetJsonObject("object").GetString("testObjectStringKey"));
+
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(BasicJsonParsing, s_BasicJsonParsing)

@@ -483,24 +483,24 @@ namespace Aws
             return m_value->valuedouble;
         }
 
-        JsonView JsonView::GetObject(const String& key) const
+        JsonView JsonView::GetJsonObject(const String& key) const
         {
-            return GetObject(key.c_str());
+            return GetJsonObject(key.c_str());
         }
 
-        JsonView JsonView::GetObject(const char* key) const
+        JsonView JsonView::GetJsonObject(const char* key) const
         {
             assert(m_value);
             auto item = cJSON_GetObjectItemCaseSensitive(m_value, key);
             return item;
         }
 
-        JsonObject JsonView::GetObjectCopy(const String& key) const
+        JsonObject JsonView::GetJsonObjectCopy(const String& key) const
         {
-            return GetObjectCopy(key.c_str());
+            return GetJsonObjectCopy(key.c_str());
         }
 
-        JsonObject JsonView::GetObjectCopy(const char* key) const
+        JsonObject JsonView::GetJsonObjectCopy(const char* key) const
         {
             assert(m_value);
             /* force a deep copy */

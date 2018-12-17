@@ -314,15 +314,15 @@ namespace Aws
             /**
              * Gets a JsonView object from this node by its key.
              */
-            JsonView GetObject(const String& key) const;
+            JsonView GetJsonObject(const String& key) const;
             /**
              * Gets a JsonView object from this node by its key.
              */
-            JsonView GetObject(const char* key) const;
+            JsonView GetJsonObject(const char* key) const;
 
-            JsonObject GetObjectCopy(const String& key) const;
+            JsonObject GetJsonObjectCopy(const String& key) const;
 
-            JsonObject GetObjectCopy(const char* key) const;
+            JsonObject GetJsonObjectCopy(const char* key) const;
 
             /**
              * Returns the value of this node as a JsonView object.
