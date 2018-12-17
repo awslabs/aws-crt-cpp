@@ -14,20 +14,35 @@
 */
 #include <aws/crt/Api.h>
 #include <aws/crt/StlAllocator.h>
-
 #include <aws/crt/io/TlsOptions.h>
+#include <aws/crt/external/cJSON.h>
 
 namespace Aws
 {
     namespace Crt
     {
-        Allocator* g_allocator = nullptr;
+        Allocator* g_allocator = Aws::Crt::DefaultAllocator();
+
+        static void* s_cJSONAlloc(size_t sz)
+        {
+            return aws_mem_acquire(g_allocator, sz);
+        }
+
+        static void s_cJSONFree(void *ptr)
+        {
+            return aws_mem_release(g_allocator, ptr);
+        }
 
         static void s_initApi(Allocator* allocator)
         {
             // sets up the StlAllocator for use.
             g_allocator = allocator;
             Io::InitTlsStaticState(allocator);
+
+            cJSON_Hooks hooks;
+            hooks.malloc_fn = s_cJSONAlloc;
+            hooks.free_fn = s_cJSONFree;
+            cJSON_InitHooks(&hooks);
         }
 
         static void s_cleanUpApi()

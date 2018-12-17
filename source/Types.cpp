@@ -32,5 +32,19 @@ namespace Aws
         {
             return aws_byte_buf_from_array(array, len);
         }
+
+        ByteBuf ByteBufNewCopy(Allocator* alloc, const uint8_t *array, size_t len)
+        {
+            ByteBuf retVal;
+            ByteBuf src = aws_byte_buf_from_array(array, len);
+            aws_byte_buf_init_copy(&retVal, alloc, &src);
+            return retVal;
+        }
+
+        void ByteBufDelete(ByteBuf& buf)
+        {
+            aws_byte_buf_clean_up(&buf);
+        }
+
     }
 }

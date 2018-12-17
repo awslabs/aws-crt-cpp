@@ -15,7 +15,7 @@
  */
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
-
+#include <aws/crt/StlAllocator.h>
 #include <aws/crt/io/TlsOptions.h>
 #include <aws/mqtt/client.h>
 
@@ -58,6 +58,18 @@ namespace Aws
                     ReturnCode returnCode, bool sessionPresent)>;
 
             /**
+             * Invoked when a suback message is received.
+             */
+            using OnSubAckHandler = std::function<void(MqttConnection& connection, uint16_t packetId,
+                const String& topic, QOS qos, int errorCode)>;
+
+            /**
+             * Invoked when a suback message for multiple topics is received.
+             */
+            using OnMultiSubAckHandler = std::function<void(MqttConnection& connection, uint16_t packetId,
+                    const Vector<String>& topics, QOS qos, int errorCode)>;
+
+            /**
              * Invoked when a disconnect message has been sent.
              */
             using OnDisconnectHandler = std::function<bool(MqttConnection& connection, int error)>;
@@ -66,8 +78,9 @@ namespace Aws
              * Invoked upon receipt of a Publish message on a subscribed topic.
              */
             using OnPublishReceivedHandler = std::function<void(MqttConnection& connection, 
-                const ByteBuf& topic, const ByteBuf& payload)>;
-            using OnOperationCompleteHandler = std::function<void(MqttConnection& connection, uint16_t packetId)>;
+                const String& topic, const ByteBuf& payload)>;
+
+            using OnOperationCompleteHandler = std::function<void(MqttConnection& connection, uint16_t packetId, int errorCode)>;
 
             /**
              * Represents a persistent Mqtt Connection. The memory is owned by MqttClient.
@@ -88,21 +101,6 @@ namespace Aws
                 operator bool() const noexcept;
                 int LastError() const noexcept;
                 inline ConnectionState GetConnectionState() const noexcept { return m_connectionState; }
-
-                inline void SetOnConnectionFailedHandler(OnConnectionFailedHandler&& onConnectionFailed) noexcept
-                {
-                    m_onConnectionFailed = std::move(onConnectionFailed);
-                }
-
-                inline void SetOnConnAckHandler(OnConnAckHandler&& onConnAck) noexcept
-                {
-                    m_onConnAck = std::move(onConnAck);
-                }
-
-                inline void SetOnDisconnectHandler(OnDisconnectHandler&& onDisconnect) noexcept
-                {
-                    m_onDisconnect = std::move(onDisconnect);
-                }
 
                 /**
                  * Sets LastWill for the connection. The memory backing payload must outlive the connection.
@@ -129,12 +127,20 @@ namespace Aws
 
                 /**
                  * Subcribes to topicFilter. OnPublishRecievedHandler will be invoked from an event-loop
-                 * thread upon an incoming Publish message. OnOperationCompleteHandler will be invoked
+                 * thread upon an incoming Publish message. OnSubAckHandler will be invoked
                  * upon receipt of a suback message.
                  */
                 uint16_t Subscribe(const char* topicFilter, QOS qos,
                         OnPublishReceivedHandler&& onPublish,
-                        OnOperationCompleteHandler&& onOpComplete) noexcept;
+                        OnSubAckHandler&& onSubAck) noexcept;
+
+                /**
+                 * Subcribes to multiple topicFilters. OnPublishRecievedHandler will be invoked from an event-loop
+                 * thread upon an incoming Publish message. OnMultiSubAckHandler will be invoked
+                 * upon receipt of a suback message.
+                 */
+                uint16_t Subscribe(const Vector<std::pair<const char*, OnPublishReceivedHandler>> topicFilters, QOS qos,
+                    OnMultiSubAckHandler&& onOpComplete) noexcept;
 
                 /**
                  * Unsubscribes from topicFilter. OnOperationCompleteHandler will be invoked upon receipt of
@@ -155,19 +161,19 @@ namespace Aws
                  */
                 void Ping();
 
+                OnConnectionFailedHandler OnConnectionFailed;
+                OnConnAckHandler OnConnAck;
+                OnDisconnectHandler OnDisconnect;
+
             private:
                 MqttConnection(aws_mqtt_client* client, const char* hostName, uint16_t port,
                                const Io::SocketOptions& socketOptions,
-                               Io::TlsConnectionOptions&& tlsConnOptions) noexcept;
+                               const Io::TlsConnectionOptions& tlsConnOptions) noexcept;
                 MqttConnection(aws_mqtt_client* client, const char* hostName, uint16_t port,
                                const Io::SocketOptions& socketOptions) noexcept;
 
                 aws_mqtt_client* m_owningClient;
                 aws_mqtt_client_connection* m_underlyingConnection;
-
-                OnConnectionFailedHandler m_onConnectionFailed;
-                OnConnAckHandler m_onConnAck;
-                OnDisconnectHandler m_onDisconnect;
                 std::atomic<ConnectionState> m_connectionState;
 
                 static void s_onConnectionFailed(aws_mqtt_client_connection* connection, int errorCode, void* userData);
@@ -181,8 +187,14 @@ namespace Aws
                                         const aws_byte_cursor* payload,
                                         void* user_data);
                 static void s_onOpComplete(aws_mqtt_client_connection* connection, uint16_t packetId, void* userdata);
+                static void s_onSubAck(aws_mqtt_client_connection* connection, uint16_t packetId, 
+                    const struct aws_byte_cursor *topic, enum aws_mqtt_qos qos,  int error_code, void* userdata);
+                static void s_onMultiSubAck(aws_mqtt_client_connection* connection, uint16_t packetId, 
+                    const struct aws_array_list *topic_subacks, int error_code, void* userdata);
+                static void s_onOpComplete(aws_mqtt_client_connection* connection, uint16_t packetId, int errorCode, void* userdata);
+
                 static void s_connectionInit(MqttConnection* self, const char* hostName, uint16_t port,
-                    const Io::SocketOptions& socketOptions, Io::TlsConnectionOptions* tlsConnOptions);
+                    const Io::SocketOptions& socketOptions, const Io::TlsConnectionOptions* tlsConnOptions);
             };
 
             /**
@@ -212,7 +224,7 @@ namespace Aws
                  * all of its connection instances.
                  */
                 std::shared_ptr<MqttConnection> NewConnection(const char* hostName, uint16_t port,
-                        const Io::SocketOptions& socketOptions, Io::TlsConnectionOptions&& tlsConnOptions) noexcept;
+                        const Io::SocketOptions& socketOptions, const Io::TlsConnectionOptions& tlsConnOptions) noexcept;
                 /**
                 * Create a new connection object over plain text from the client. The client must outlive
                 * all of its connection instances.

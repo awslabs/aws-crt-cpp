@@ -14,6 +14,7 @@
  */
 #include <aws/crt/Api.h>
 
+#include <aws/crt/StlAllocator.h>
 #include <iostream>
 #include <mutex>
 #include <condition_variable>
@@ -34,12 +35,12 @@ static void s_printHelp()
     fprintf(stdout, "\tIt's the path to a CA file in PEM format\n");
 }
 
-bool s_cmdOptionExists(char** begin, char** end, const std::string& option)
+bool s_cmdOptionExists(char** begin, char** end, const String& option)
 {
     return std::find(begin, end, option) != end;
 }
 
-char* s_getCmdOption(char ** begin, char ** end, const std::string & option)
+char* s_getCmdOption(char ** begin, char ** end, const String & option)
 {
     char ** itr = std::find(begin, end, option);
     if (itr != end && ++itr != end)
@@ -51,10 +52,22 @@ char* s_getCmdOption(char ** begin, char ** end, const std::string & option)
 
 int main(int argc, char* argv[])
 {
-    std::string endpoint;
-    std::string certificatePath;
-    std::string keyPath;
-    std::string caFile;
+
+    /************************ Setup the Lib ****************************/
+    /*
+     * These make debug output via ErrorDebugString() work.
+     */
+    LoadErrorStrings();
+
+    /*
+     * Do the global initialization for the API.
+     */
+    ApiHandle apiHandle;
+
+    String endpoint;
+    String certificatePath;
+    String keyPath;
+    String caFile;
 
     /*********************** Parse Arguments ***************************/
     if (!(s_cmdOptionExists(argv, argv + argc, "--endpoint") &&
@@ -74,17 +87,6 @@ int main(int argc, char* argv[])
         caFile = s_getCmdOption(argv, argv + argc, "--ca_file");
     }
 
-    /************************ Setup the Lib ****************************/
-    /*
-     * These make debug output via ErrorDebugString() work.
-     */
-    LoadErrorStrings();
-
-    /*
-     * Do the global initialization for the API.
-     */
-    ApiHandle apiHandle;
-
     /********************** Now Setup an Mqtt Client ******************/
     /*
      * You need an event loop group to process IO events.
@@ -101,7 +103,7 @@ int main(int argc, char* argv[])
      * We're using Mutual TLS for Mqtt, so we need to load our client certificates
      */
     Io::TlsContextOptions tlsCtxOptions =
-            Io::TlsContextOptions::InitClientWithMtls(certificatePath.c_str(), keyPath.c_str());
+        Io::TlsContextOptions::InitClientWithMtls(certificatePath.c_str(), keyPath.c_str());
     /*
      * If we have a custom CA, set that up here.
      */
@@ -126,7 +128,7 @@ int main(int argc, char* argv[])
     if (!tlsCtx)
     {
         fprintf(stderr, "Tls Context creation failed with error %s\n",
-                ErrorDebugString(tlsCtx.LastError()));
+            ErrorDebugString(tlsCtx.LastError()));
         exit(-1);
     }
 
@@ -147,7 +149,7 @@ int main(int argc, char* argv[])
     if (!bootstrap)
     {
         fprintf(stderr, "ClientBootstrap failed with error %s\n",
-                ErrorDebugString(bootstrap.LastError()));
+            ErrorDebugString(bootstrap.LastError()));
         exit(-1);
     }
 
@@ -169,12 +171,13 @@ int main(int argc, char* argv[])
         exit(-1);
     }
 
+    auto connectionOptions = tlsCtx.NewConnectionOptions();
     /*
      * Now create a connection object. Note: This type is move only
      * and its underlying memory is managed by the client.
      */
     auto connection =
-        mqttClient.NewConnection(endpoint.c_str(), port, socketOptions, tlsCtx.NewConnectionOptions());
+        mqttClient.NewConnection(endpoint.c_str(), port, socketOptions, connectionOptions);
 
     if (!*connection)
     {
@@ -227,7 +230,7 @@ int main(int argc, char* argv[])
     {
         {
             fprintf(stdout, "Connection closed with error %s\n", ErrorDebugString(error));
-            fprintf(stdout, "Conneciton state %d\n", static_cast<int>(conn.GetConnectionState()));
+            fprintf(stdout, "Connection state %d\n", static_cast<int>(conn.GetConnectionState()));
             std::lock_guard<std::mutex> lockGuard(mutex);
             connectionClosed = true;
         }
@@ -235,9 +238,9 @@ int main(int argc, char* argv[])
         return false;
     };
 
-    connection->SetOnConnAckHandler(std::move(onConAck));
-    connection->SetOnConnectionFailedHandler(std::move(onConFailure));
-    connection->SetOnDisconnectHandler(std::move(onDisconnect));
+    connection->OnConnAck = std::move(onConAck);
+    connection->OnConnectionFailed = std::move(onConFailure);
+    connection->OnDisconnect = std::move(onDisconnect);
 
     /*
      * Actually perform the connect dance.
@@ -260,20 +263,19 @@ int main(int argc, char* argv[])
         /*
          * This will be invoked upon the completion of Publish, Subscribe, and Unsubscribe.
          */
-        auto onOpComplete = [&](Mqtt::MqttConnection&, uint16_t packetId)
+        auto onOpComplete = [&](Mqtt::MqttConnection&, uint16_t packetId, int errorCode)
         {
+            if (packetId)
             {
-                if (packetId)
-                {
-                    fprintf(stdout, "Operation on packetId %d Succeeded\n", (int)packetId);
-                }
-                else
-                {
-                    fprintf(stdout, "Operation failed\n");
-
-                }
-                std::lock_guard<std::mutex> lockGuard(mutex);
+                fprintf(stdout, "Operation on packetId %d Succeeded\n", (int)packetId);
             }
+            else
+            {
+                fprintf(stdout, "Operation failed with error %s\n", aws_error_debug_str(errorCode));
+
+            }
+            std::lock_guard<std::mutex> lockGuard(mutex);
+
             if (!waitForSub)
             {
                 conditionVariable.notify_one();
@@ -291,21 +293,41 @@ int main(int argc, char* argv[])
         /*
          * This is invoked upon the receipt of a Publish on a subscribed topic.
          */
-        auto onPublish = [&](Mqtt::MqttConnection&, const ByteBuf& topic, const ByteBuf& byteBuf)
+        auto onPublish = [&](Mqtt::MqttConnection&, const String& topic, const ByteBuf& byteBuf)
         {
-            fprintf(stdout, "Publish recieved on ");
-            fwrite(topic.buffer, 1, topic.len, stdout);
-            fprintf(stdout, "\n Message:\n");
-            fwrite(byteBuf.buffer, 1, byteBuf.len, stdout);
-            fprintf(stdout, "\n");
-            conditionVariable.notify_one();
+             fprintf(stdout, "Publish recieved on topic %s\n", topic.c_str());               
+             fprintf(stdout, "\n Message:\n");
+             fwrite(byteBuf.buffer, 1, byteBuf.len, stdout);
+             fprintf(stdout, "\n");
+          
+             conditionVariable.notify_one();
         };
 
         waitForSub = true;
         /*
          * Subscribe for incoming publish messages on topic.
          */
-        packetId = connection->Subscribe("a/b", AWS_MQTT_QOS_AT_LEAST_ONCE, onPublish, onOpComplete);
+        auto onSubAck = [&](Mqtt::MqttConnection&, uint16_t packetId,
+            const String& topic, Mqtt::QOS, int errorCode)
+        {
+            if (packetId)
+            {
+                fprintf(stdout, "Subscribe on topic %s on packetId %d Succeeded\n", topic.c_str(), (int)packetId);
+            }
+            else
+            {
+                fprintf(stdout, "Subscribe failed with error %s\n", aws_error_debug_str(errorCode));
+
+            }
+            std::lock_guard<std::mutex> lockGuard(mutex);
+
+            if (!waitForSub)
+            {
+                conditionVariable.notify_one();
+            }
+        };
+
+        packetId = connection->Subscribe("a/b", AWS_MQTT_QOS_AT_LEAST_ONCE, onPublish, onSubAck);
         conditionVariable.wait(uniqueLock);
 
         waitForSub = false;
