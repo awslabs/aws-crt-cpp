@@ -30,36 +30,32 @@ namespace Aws
              * threadCount.
              *
              * There should only be one instance of an EventLoopGroup per application and it
-             * should be passed to all network clients. One exception to this is if you 
-             * want to peg different types of IO to different threads. In that case, you 
+             * should be passed to all network clients. One exception to this is if you
+             * want to peg different types of IO to different threads. In that case, you
              * may want to have one event loop group dedicated to one IO activity and another
              * dedicated to another type.
              */
             class AWS_CRT_CPP_API EventLoopGroup final
             {
-            public:
-                EventLoopGroup(Allocator* allocator = DefaultAllocator()) noexcept;
-                EventLoopGroup(uint16_t threadCount, Allocator* allocator = DefaultAllocator()) noexcept;
+              public:
+                EventLoopGroup(Allocator *allocator = DefaultAllocator()) noexcept;
+                EventLoopGroup(uint16_t threadCount, Allocator *allocator = DefaultAllocator()) noexcept;
                 ~EventLoopGroup();
-                EventLoopGroup(const EventLoopGroup&) = delete;
-                EventLoopGroup(EventLoopGroup&&) noexcept;
-                EventLoopGroup& operator =(const EventLoopGroup&) = delete;
-                EventLoopGroup& operator =(EventLoopGroup&&) noexcept;
+                EventLoopGroup(const EventLoopGroup &) = delete;
+                EventLoopGroup(EventLoopGroup &&) noexcept;
+                EventLoopGroup &operator=(const EventLoopGroup &) = delete;
+                EventLoopGroup &operator=(EventLoopGroup &&) noexcept;
 
                 operator bool() const;
                 int LastError() const;
 
-                aws_event_loop_group* GetUnderlyingHandle() noexcept;
+                aws_event_loop_group *GetUnderlyingHandle() noexcept;
 
-            private:
+              private:
                 aws_event_loop_group m_eventLoopGroup;
                 int m_lastError;
             };
-        }
+        } // namespace Io
 
-    }
-}
-
-
-
-
+    } // namespace Crt
+} // namespace Aws

@@ -26,7 +26,7 @@ namespace Aws
             }
         }
 
-        UUID::UUID(const String& str) noexcept : m_good(false)
+        UUID::UUID(const String &str) noexcept : m_good(false)
         {
             auto strCur = aws_byte_cursor_from_c_str(str.c_str());
             if (!aws_uuid_init_from_str(&m_uuid, &strCur))
@@ -35,21 +35,15 @@ namespace Aws
             }
         }
 
-        UUID& UUID::operator=(const String& str) noexcept
+        UUID &UUID::operator=(const String &str) noexcept
         {
             *this = UUID(str);
             return *this;
         }
 
-        bool UUID::operator==(const UUID& other) noexcept
-        {
-            return aws_uuid_equals(&m_uuid, &other.m_uuid);
-        }
+        bool UUID::operator==(const UUID &other) noexcept { return aws_uuid_equals(&m_uuid, &other.m_uuid); }
 
-        bool UUID::operator!=(const UUID& other) noexcept
-        {
-            return !aws_uuid_equals(&m_uuid, &other.m_uuid);
-        }
+        bool UUID::operator!=(const UUID &other) noexcept { return !aws_uuid_equals(&m_uuid, &other.m_uuid); }
 
         String UUID::ToString() const
         {
@@ -62,19 +56,10 @@ namespace Aws
             return uuidStr;
         }
 
-        UUID::operator String() const
-        {
-            return ToString();
-        }
+        UUID::operator String() const { return ToString(); }
 
-        UUID::operator ByteBuf() const noexcept
-        {
-            return ByteBufFromArray(m_uuid.uuid_data, sizeof(m_uuid.uuid_data));
-        }
+        UUID::operator ByteBuf() const noexcept { return ByteBufFromArray(m_uuid.uuid_data, sizeof(m_uuid.uuid_data)); }
 
-        int UUID::GetLastError() const noexcept
-        {
-            return aws_last_error();
-        }
-    }
-}
+        int UUID::GetLastError() const noexcept { return aws_last_error(); }
+    } // namespace Crt
+} // namespace Aws

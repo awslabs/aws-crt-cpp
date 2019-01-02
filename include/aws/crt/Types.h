@@ -18,12 +18,12 @@
 #include <aws/crt/Optional.h>
 
 #include <aws/common/common.h>
-#include <aws/mqtt/mqtt.h>
 #include <aws/io/socket.h>
+#include <aws/mqtt/mqtt.h>
 
-#include <string>
-#include <sstream>
 #include <map>
+#include <sstream>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -40,35 +40,33 @@ namespace Aws
         using ByteBuf = aws_byte_buf;
         using ByteCursor = aws_byte_cursor;
 
-        AWS_CRT_CPP_API Allocator* DefaultAllocator() noexcept;
-        AWS_CRT_CPP_API ByteBuf ByteBufFromCString(const char* str) noexcept;
+        AWS_CRT_CPP_API Allocator *DefaultAllocator() noexcept;
+        AWS_CRT_CPP_API ByteBuf ByteBufFromCString(const char *str) noexcept;
         AWS_CRT_CPP_API ByteBuf ByteBufFromArray(const uint8_t *array, size_t len) noexcept;
-        AWS_CRT_CPP_API ByteBuf ByteBufNewCopy(Allocator* alloc, const uint8_t *array, size_t len);
-        AWS_CRT_CPP_API void ByteBufDelete(ByteBuf&);
-
+        AWS_CRT_CPP_API ByteBuf ByteBufNewCopy(Allocator *alloc, const uint8_t *array, size_t len);
+        AWS_CRT_CPP_API void ByteBufDelete(ByteBuf &);
 
         namespace Io
         {
-           using SocketOptions = aws_socket_options;
+            using SocketOptions = aws_socket_options;
         }
 
         namespace Mqtt
         {
             using QOS = aws_mqtt_qos;
             using ReturnCode = aws_mqtt_connect_return_code;
-        }
+        } // namespace Mqtt
 
-        template<typename T>
-        class StlAllocator;
+        template <typename T> class StlAllocator;
         using String = std::basic_string<char, std::char_traits<char>, StlAllocator<char>>;
         using StringStream = std::basic_stringstream<char, std::char_traits<char>, StlAllocator<char>>;
-        template<typename K, typename V> using Map = std::map<K, V, std::less<K>, StlAllocator<std::pair<const K, V>>>;
-        template<typename K, typename V> using UnorderedMap =
-        std::unordered_map< K, V, std::hash<K>, std::equal_to<K>, StlAllocator<std::pair<const K, V>>>;
-        template<typename K, typename V> using MultiMap =
-        std::multimap<K, V, std::less<K>, StlAllocator<std::pair<const K, V>>>;
-        template<typename T> using Vector = std::vector< T, StlAllocator<T>>;
+        template <typename K, typename V> using Map = std::map<K, V, std::less<K>, StlAllocator<std::pair<const K, V>>>;
+        template <typename K, typename V>
+        using UnorderedMap =
+            std::unordered_map<K, V, std::hash<K>, std::equal_to<K>, StlAllocator<std::pair<const K, V>>>;
+        template <typename K, typename V>
+        using MultiMap = std::multimap<K, V, std::less<K>, StlAllocator<std::pair<const K, V>>>;
+        template <typename T> using Vector = std::vector<T, StlAllocator<T>>;
 
-
-    }
-}
+    } // namespace Crt
+} // namespace Aws

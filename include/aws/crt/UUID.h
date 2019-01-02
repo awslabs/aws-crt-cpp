@@ -24,29 +24,26 @@ namespace Aws
     {
         class UUID final
         {
-        public:
+          public:
             UUID() noexcept;
-            UUID(const String& str) noexcept;
+            UUID(const String &str) noexcept;
 
-            UUID& operator=(const String& str) noexcept;
+            UUID &operator=(const String &str) noexcept;
 
-            bool operator==(const UUID& other) noexcept;
-            bool operator!=(const UUID& other) noexcept;
+            bool operator==(const UUID &other) noexcept;
+            bool operator!=(const UUID &other) noexcept;
             operator String() const;
             operator ByteBuf() const noexcept;
 
-            inline operator bool() const noexcept
-            {
-                return m_good;
-            }
+            inline operator bool() const noexcept { return m_good; }
 
             int GetLastError() const noexcept;
 
             String ToString() const;
 
-        private:
+          private:
             aws_uuid m_uuid;
             bool m_good;
         };
-    }
-}
+    } // namespace Crt
+} // namespace Aws

@@ -1,43 +1,39 @@
 /*
-  * Copyright 2010-2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-  *
-  * Licensed under the Apache License, Version 2.0 (the "License").
-  * You may not use this file except in compliance with the License.
-  * A copy of the License is located at
-  *
-  *  http://aws.amazon.com/apache2.0
-  *
-  * or in the "license" file accompanying this file. This file is distributed
-  * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-  * express or implied. See the License for the specific language governing
-  * permissions and limitations under the License.
-  */
+ * Copyright 2010-2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *  http://aws.amazon.com/apache2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
 
 #include <aws/crt/JsonObject.h>
 
 #include <aws/crt/external/cJSON.h>
 
-#include <iterator>
 #include <algorithm>
+#include <iterator>
 
 namespace Aws
 {
     namespace Crt
     {
-        JsonObject::JsonObject() : m_wasParseSuccessful(true)
-        {
-            m_value = nullptr;
-        }
+        JsonObject::JsonObject() : m_wasParseSuccessful(true) { m_value = nullptr; }
 
-        JsonObject::JsonObject(cJSON* value) :
-                m_value(cJSON_Duplicate(value, true /* recurse */)),
-                m_wasParseSuccessful(true)
+        JsonObject::JsonObject(cJSON *value)
+            : m_value(cJSON_Duplicate(value, true /* recurse */)), m_wasParseSuccessful(true)
         {
         }
 
-        JsonObject::JsonObject(const String& value) : m_wasParseSuccessful(true)
+        JsonObject::JsonObject(const String &value) : m_wasParseSuccessful(true)
         {
-            const char* return_parse_end;
+            const char *return_parse_end;
             m_value = cJSON_ParseWithOpts(value.c_str(), value.length(), &return_parse_end);
 
             if (!m_value || cJSON_IsInvalid(m_value))
@@ -48,32 +44,24 @@ namespace Aws
             }
         }
 
-        JsonObject::JsonObject(const JsonObject& value) :
-                m_value(cJSON_Duplicate(value.m_value, true/*recurse*/)),
-                m_wasParseSuccessful(value.m_wasParseSuccessful),
-                m_errorMessage(value.m_errorMessage)
+        JsonObject::JsonObject(const JsonObject &value)
+            : m_value(cJSON_Duplicate(value.m_value, true /*recurse*/)),
+              m_wasParseSuccessful(value.m_wasParseSuccessful), m_errorMessage(value.m_errorMessage)
         {
         }
 
-        JsonObject::JsonObject(JsonObject&& value) :
-                m_value(value.m_value),
-                m_wasParseSuccessful(value.m_wasParseSuccessful),
-                m_errorMessage(std::move(value.m_errorMessage))
+        JsonObject::JsonObject(JsonObject &&value)
+            : m_value(value.m_value), m_wasParseSuccessful(value.m_wasParseSuccessful),
+              m_errorMessage(std::move(value.m_errorMessage))
         {
             value.m_value = nullptr;
         }
 
-        void JsonObject::Destroy()
-        {
-            cJSON_Delete(m_value);
-        }
+        void JsonObject::Destroy() { cJSON_Delete(m_value); }
 
-        JsonObject::~JsonObject()
-        {
-            Destroy();
-        }
+        JsonObject::~JsonObject() { Destroy(); }
 
-        JsonObject& JsonObject::operator=(const JsonObject& other)
+        JsonObject &JsonObject::operator=(const JsonObject &other)
         {
             if (this == &other)
             {
@@ -87,7 +75,7 @@ namespace Aws
             return *this;
         }
 
-        JsonObject& JsonObject::operator=(JsonObject&& other)
+        JsonObject &JsonObject::operator=(JsonObject &&other)
         {
             if (this == &other)
             {
@@ -101,7 +89,7 @@ namespace Aws
             return *this;
         }
 
-        static void AddOrReplace(cJSON* root, const char* key, cJSON* value)
+        static void AddOrReplace(cJSON *root, const char *key, cJSON *value)
         {
             const auto existing = cJSON_GetObjectItemCaseSensitive(root, key);
             if (existing)
@@ -114,7 +102,7 @@ namespace Aws
             }
         }
 
-        JsonObject& JsonObject::WithString(const char* key, const String& value)
+        JsonObject &JsonObject::WithString(const char *key, const String &value)
         {
             if (!m_value)
             {
@@ -126,19 +114,19 @@ namespace Aws
             return *this;
         }
 
-        JsonObject& JsonObject::WithString(const String& key, const String& value)
+        JsonObject &JsonObject::WithString(const String &key, const String &value)
         {
             return WithString(key.c_str(), value);
         }
 
-        JsonObject& JsonObject::AsString(const String& value)
+        JsonObject &JsonObject::AsString(const String &value)
         {
             Destroy();
             m_value = cJSON_CreateString(value.c_str());
             return *this;
         }
 
-        JsonObject& JsonObject::WithBool(const char* key, bool value)
+        JsonObject &JsonObject::WithBool(const char *key, bool value)
         {
             if (!m_value)
             {
@@ -150,51 +138,45 @@ namespace Aws
             return *this;
         }
 
-        JsonObject& JsonObject::WithBool(const String& key, bool value)
-        {
-            return WithBool(key.c_str(), value);
-        }
+        JsonObject &JsonObject::WithBool(const String &key, bool value) { return WithBool(key.c_str(), value); }
 
-        JsonObject& JsonObject::AsBool(bool value)
+        JsonObject &JsonObject::AsBool(bool value)
         {
             Destroy();
             m_value = cJSON_CreateBool(value);
             return *this;
         }
 
-        JsonObject& JsonObject::WithInteger(const char* key, int value)
+        JsonObject &JsonObject::WithInteger(const char *key, int value)
         {
             return WithDouble(key, static_cast<double>(value));
         }
 
-        JsonObject& JsonObject::WithInteger(const String& key, int value)
+        JsonObject &JsonObject::WithInteger(const String &key, int value)
         {
             return WithDouble(key.c_str(), static_cast<double>(value));
         }
 
-        JsonObject& JsonObject::AsInteger(int value)
+        JsonObject &JsonObject::AsInteger(int value)
         {
             Destroy();
             m_value = cJSON_CreateNumber(static_cast<double>(value));
             return *this;
         }
 
-        JsonObject& JsonObject::WithInt64(const char* key, long long value)
+        JsonObject &JsonObject::WithInt64(const char *key, long long value)
         {
             return WithDouble(key, static_cast<double>(value));
         }
 
-        JsonObject& JsonObject::WithInt64(const String& key, long long value)
+        JsonObject &JsonObject::WithInt64(const String &key, long long value)
         {
             return WithDouble(key.c_str(), static_cast<double>(value));
         }
 
-        JsonObject& JsonObject::AsInt64(long long value)
-        {
-            return AsDouble(static_cast<double>(value));
-        }
+        JsonObject &JsonObject::AsInt64(long long value) { return AsDouble(static_cast<double>(value)); }
 
-        JsonObject& JsonObject::WithDouble(const char* key, double value)
+        JsonObject &JsonObject::WithDouble(const char *key, double value)
         {
             if (!m_value)
             {
@@ -206,19 +188,16 @@ namespace Aws
             return *this;
         }
 
-        JsonObject& JsonObject::WithDouble(const String& key, double value)
-        {
-            return WithDouble(key.c_str(), value);
-        }
+        JsonObject &JsonObject::WithDouble(const String &key, double value) { return WithDouble(key.c_str(), value); }
 
-        JsonObject& JsonObject::AsDouble(double value)
+        JsonObject &JsonObject::AsDouble(double value)
         {
             Destroy();
             m_value = cJSON_CreateNumber(value);
             return *this;
         }
 
-        JsonObject& JsonObject::WithArray(const char* key, const Vector<String>& array)
+        JsonObject &JsonObject::WithArray(const char *key, const Vector<String> &array)
         {
             if (!m_value)
             {
@@ -235,12 +214,12 @@ namespace Aws
             return *this;
         }
 
-        JsonObject& JsonObject::WithArray(const String& key, const Vector<String>& array)
+        JsonObject &JsonObject::WithArray(const String &key, const Vector<String> &array)
         {
             return WithArray(key.c_str(), array);
         }
 
-        JsonObject& JsonObject::WithArray(const String& key, const Vector<JsonObject>& array)
+        JsonObject &JsonObject::WithArray(const String &key, const Vector<JsonObject> &array)
         {
             if (!m_value)
             {
@@ -257,7 +236,7 @@ namespace Aws
             return *this;
         }
 
-        JsonObject& JsonObject::WithArray(const String& key, Vector<JsonObject>&& array)
+        JsonObject &JsonObject::WithArray(const String &key, Vector<JsonObject> &&array)
         {
             if (!m_value)
             {
@@ -275,7 +254,7 @@ namespace Aws
             return *this;
         }
 
-        JsonObject& JsonObject::AsArray(const Vector<JsonObject>& array)
+        JsonObject &JsonObject::AsArray(const Vector<JsonObject> &array)
         {
             auto arrayValue = cJSON_CreateArray();
             for (unsigned i = 0; i < array.size(); ++i)
@@ -288,7 +267,7 @@ namespace Aws
             return *this;
         }
 
-        JsonObject& JsonObject::AsArray(Vector<JsonObject>&& array)
+        JsonObject &JsonObject::AsArray(Vector<JsonObject> &&array)
         {
             auto arrayValue = cJSON_CreateArray();
             for (unsigned i = 0; i < array.size(); ++i)
@@ -302,24 +281,25 @@ namespace Aws
             return *this;
         }
 
-        JsonObject& JsonObject::WithObject(const char* key, const JsonObject& value)
+        JsonObject &JsonObject::WithObject(const char *key, const JsonObject &value)
         {
             if (!m_value)
             {
                 m_value = cJSON_CreateObject();
             }
 
-            const auto copy = value.m_value == nullptr ? cJSON_CreateObject() : cJSON_Duplicate(value.m_value, true /*recurse*/);
+            const auto copy =
+                value.m_value == nullptr ? cJSON_CreateObject() : cJSON_Duplicate(value.m_value, true /*recurse*/);
             AddOrReplace(m_value, key, copy);
             return *this;
         }
 
-        JsonObject& JsonObject::WithObject(const String& key, const JsonObject& value)
+        JsonObject &JsonObject::WithObject(const String &key, const JsonObject &value)
         {
             return WithObject(key.c_str(), value);
         }
 
-        JsonObject& JsonObject::WithObject(const char* key, JsonObject&& value)
+        JsonObject &JsonObject::WithObject(const char *key, JsonObject &&value)
         {
             if (!m_value)
             {
@@ -331,68 +311,53 @@ namespace Aws
             return *this;
         }
 
-        JsonObject& JsonObject::WithObject(const String& key, JsonObject&& value)
+        JsonObject &JsonObject::WithObject(const String &key, JsonObject &&value)
         {
             return WithObject(key.c_str(), std::move(value));
         }
 
-        JsonObject& JsonObject::AsObject(const JsonObject& value)
+        JsonObject &JsonObject::AsObject(const JsonObject &value)
         {
             *this = value;
             return *this;
         }
 
-        JsonObject& JsonObject::AsObject(JsonObject && value)
+        JsonObject &JsonObject::AsObject(JsonObject &&value)
         {
             *this = std::move(value);
             return *this;
         }
 
-        bool JsonObject::operator==(const JsonObject& other) const
+        bool JsonObject::operator==(const JsonObject &other) const
         {
             return cJSON_Compare(m_value, other.m_value, true /*case-sensitive*/) != 0;
         }
 
-        bool JsonObject::operator!=(const JsonObject& other) const
-        {
-            return !(*this == other);
-        }
+        bool JsonObject::operator!=(const JsonObject &other) const { return !(*this == other); }
 
-        JsonView JsonObject::View() const
-        {
-            return *this;
-        }
+        JsonView JsonObject::View() const { return *this; }
 
-        JsonView::JsonView() : m_value(nullptr)
-        {
-        }
+        JsonView::JsonView() : m_value(nullptr) {}
 
-        JsonView::JsonView(const JsonObject& val) : m_value(val.m_value)
-        {
-        }
+        JsonView::JsonView(const JsonObject &val) : m_value(val.m_value) {}
 
-        JsonView::JsonView(cJSON* val) : m_value(val)
-        {
-        }
+        JsonView::JsonView(cJSON *val) : m_value(val) {}
 
-        JsonView& JsonView::operator=(const JsonObject& v)
+        JsonView &JsonView::operator=(const JsonObject &v)
         {
             m_value = v.m_value;
             return *this;
         }
 
-        JsonView& JsonView::operator=(cJSON* val)
+        JsonView &JsonView::operator=(cJSON *val)
         {
             m_value = val;
             return *this;
         }
 
-        String JsonView::GetString(const String& key) const
-        {
-           return GetString(key.c_str());
-        }
+        String JsonView::GetString(const String &key) const { return GetString(key.c_str()); }
 
-        String JsonView::GetString(const char* key) const
+        String JsonView::GetString(const char *key) const
         {
             assert(m_value);
             auto item = cJSON_GetObjectItemCaseSensitive(m_value, key);
@@ -402,7 +367,7 @@ namespace Aws
 
         String JsonView::AsString() const
         {
-            const char* str = cJSON_GetStringValue(m_value);
+            const char *str = cJSON_GetStringValue(m_value);
             if (str == nullptr)
             {
                 return {};
@@ -410,12 +375,9 @@ namespace Aws
             return str;
         }
 
-        bool JsonView::GetBool(const String& key) const
-        {
-            return GetBool(key.c_str());
-        }
+        bool JsonView::GetBool(const String &key) const { return GetBool(key.c_str()); }
 
-        bool JsonView::GetBool(const char* key) const
+        bool JsonView::GetBool(const char *key) const
         {
             assert(m_value);
             auto item = cJSON_GetObjectItemCaseSensitive(m_value, key);
@@ -429,12 +391,9 @@ namespace Aws
             return cJSON_IsTrue(m_value) != 0;
         }
 
-        int JsonView::GetInteger(const String& key) const
-        {
-            return GetInteger(key.c_str());
-        }
+        int JsonView::GetInteger(const String &key) const { return GetInteger(key.c_str()); }
 
-        int JsonView::GetInteger(const char* key) const
+        int JsonView::GetInteger(const char *key) const
         {
             assert(m_value);
             auto item = cJSON_GetObjectItemCaseSensitive(m_value, key);
@@ -448,15 +407,9 @@ namespace Aws
             return m_value->valueint;
         }
 
-        int64_t JsonView::GetInt64(const String& key) const
-        {
-            return static_cast<int64_t>(GetDouble(key));
-        }
+        int64_t JsonView::GetInt64(const String &key) const { return static_cast<int64_t>(GetDouble(key)); }
 
-        int64_t JsonView::GetInt64(const char* key) const
-        {
-            return static_cast<int64_t>(GetDouble(key));
-        }
+        int64_t JsonView::GetInt64(const char *key) const { return static_cast<int64_t>(GetDouble(key)); }
 
         int64_t JsonView::AsInt64() const
         {
@@ -464,12 +417,9 @@ namespace Aws
             return static_cast<long long>(m_value->valuedouble);
         }
 
-        double JsonView::GetDouble(const String& key) const
-        {
-            return GetDouble(key.c_str());
-        }
+        double JsonView::GetDouble(const String &key) const { return GetDouble(key.c_str()); }
 
-        double JsonView::GetDouble(const char* key) const
+        double JsonView::GetDouble(const char *key) const
         {
             assert(m_value);
             auto item = cJSON_GetObjectItemCaseSensitive(m_value, key);
@@ -483,24 +433,18 @@ namespace Aws
             return m_value->valuedouble;
         }
 
-        JsonView JsonView::GetJsonObject(const String& key) const
-        {
-            return GetJsonObject(key.c_str());
-        }
+        JsonView JsonView::GetJsonObject(const String &key) const { return GetJsonObject(key.c_str()); }
 
-        JsonView JsonView::GetJsonObject(const char* key) const
+        JsonView JsonView::GetJsonObject(const char *key) const
         {
             assert(m_value);
             auto item = cJSON_GetObjectItemCaseSensitive(m_value, key);
             return item;
         }
 
-        JsonObject JsonView::GetJsonObjectCopy(const String& key) const
-        {
-            return GetJsonObjectCopy(key.c_str());
-        }
+        JsonObject JsonView::GetJsonObjectCopy(const String &key) const { return GetJsonObjectCopy(key.c_str()); }
 
-        JsonObject JsonView::GetJsonObjectCopy(const char* key) const
+        JsonObject JsonView::GetJsonObjectCopy(const char *key) const
         {
             assert(m_value);
             /* force a deep copy */
@@ -513,12 +457,9 @@ namespace Aws
             return m_value;
         }
 
-        Vector<JsonView> JsonView::GetArray(const String& key) const
-        {
-            return GetArray(key.c_str());
-        }
+        Vector<JsonView> JsonView::GetArray(const String &key) const { return GetArray(key.c_str()); }
 
-        Vector<JsonView> JsonView::GetArray(const char* key) const
+        Vector<JsonView> JsonView::GetArray(const char *key) const
         {
             assert(m_value);
             auto array = cJSON_GetObjectItemCaseSensitive(m_value, key);
@@ -565,12 +506,9 @@ namespace Aws
             return valueMap;
         }
 
-        bool JsonView::ValueExists(const String& key) const
-        {
-            return ValueExists(key.c_str());
-        }
+        bool JsonView::ValueExists(const String &key) const { return ValueExists(key.c_str()); }
 
-        bool JsonView::ValueExists(const char* key) const
+        bool JsonView::ValueExists(const char *key) const
         {
             if (!cJSON_IsObject(m_value))
             {
@@ -581,12 +519,9 @@ namespace Aws
             return !(item == nullptr || cJSON_IsNull(item));
         }
 
-        bool JsonView::KeyExists(const String& key) const
-        {
-            return KeyExists(key.c_str());
-        }
+        bool JsonView::KeyExists(const String &key) const { return KeyExists(key.c_str()); }
 
-        bool JsonView::KeyExists(const char* key) const
+        bool JsonView::KeyExists(const char *key) const
         {
             if (!cJSON_IsObject(m_value))
             {
@@ -596,20 +531,11 @@ namespace Aws
             return cJSON_GetObjectItemCaseSensitive(m_value, key) != nullptr;
         }
 
-        bool JsonView::IsObject() const
-        {
-            return cJSON_IsObject(m_value) != 0;
-        }
+        bool JsonView::IsObject() const { return cJSON_IsObject(m_value) != 0; }
 
-        bool JsonView::IsBool() const
-        {
-            return cJSON_IsBool(m_value) != 0;
-        }
+        bool JsonView::IsBool() const { return cJSON_IsBool(m_value) != 0; }
 
-        bool JsonView::IsString() const
-        {
-            return cJSON_IsString(m_value) != 0;
-        }
+        bool JsonView::IsString() const { return cJSON_IsString(m_value) != 0; }
 
         bool JsonView::IsIntegerType() const
         {
@@ -631,15 +557,9 @@ namespace Aws
             return m_value->valuedouble != static_cast<long long>(m_value->valuedouble);
         }
 
-        bool JsonView::IsListType() const
-        {
-            return cJSON_IsArray(m_value) != 0;
-        }
+        bool JsonView::IsListType() const { return cJSON_IsArray(m_value) != 0; }
 
-        bool JsonView::IsNull() const
-        {
-            return cJSON_IsNull(m_value) != 0;
-        }
+        bool JsonView::IsNull() const { return cJSON_IsNull(m_value) != 0; }
 
         String JsonView::WriteCompact(bool treatAsObject) const
         {
@@ -675,9 +595,6 @@ namespace Aws
             return out;
         }
 
-        JsonObject JsonView::Materialize() const
-        {
-            return m_value;
-        }
-    }
-}
+        JsonObject JsonView::Materialize() const { return m_value; }
+    } // namespace Crt
+} // namespace Aws

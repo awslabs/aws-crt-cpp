@@ -17,7 +17,7 @@
 #include <aws/testing/aws_test_harness.h>
 #include <utility>
 
-static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator* allocator, void *)
+static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator *allocator, void *)
 {
     Aws::Crt::ApiHandle apiHandle(allocator);
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
@@ -43,8 +43,8 @@ static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator* allocator, void *
     Aws::Crt::Mqtt::MqttClient mqttClientMoved = std::move(mqttClient);
     ASSERT_TRUE(mqttClientMoved);
 
-    auto mqttConnection = mqttClientMoved.NewConnection("www.example.com", 443,
-        socketOptions, tlsContext.NewConnectionOptions());
+    auto mqttConnection =
+        mqttClientMoved.NewConnection("www.example.com", 443, socketOptions, tlsContext.NewConnectionOptions());
     mqttConnection->Disconnect();
     ASSERT_TRUE(mqttConnection);
 

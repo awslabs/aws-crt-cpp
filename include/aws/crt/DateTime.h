@@ -1,18 +1,18 @@
 #pragma once
 /*
-* Copyright 2010-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-*
-* Licensed under the Apache License, Version 2.0 (the "License").
-* You may not use this file except in compliance with the License.
-* A copy of the License is located at
-*
-*  http://aws.amazon.com/apache2.0
-*
-* or in the "license" file accompanying this file. This file is distributed
-* on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-* express or implied. See the License for the specific language governing
-* permissions and limitations under the License.
-*/
+ * Copyright 2010-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *  http://aws.amazon.com/apache2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
 #include <aws/crt/Exports.h>
 
 #include <aws/crt/Types.h>
@@ -61,16 +61,16 @@ namespace Aws
 
         class AWS_CRT_CPP_API DateTime final
         {
-        public:
+          public:
             /**
              *  Initializes time point to epoch
              */
             DateTime() noexcept;
 
             /**
-            *  Initializes time point to any other arbirtrary timepoint
-            */
-            DateTime(const std::chrono::system_clock::time_point& timepointToAssign) noexcept;
+             *  Initializes time point to any other arbirtrary timepoint
+             */
+            DateTime(const std::chrono::system_clock::time_point &timepointToAssign) noexcept;
 
             /**
              * Initializes time point to millis Since epoch
@@ -85,37 +85,37 @@ namespace Aws
             /**
              * Initializes time point to value represented by timestamp and format.
              */
-            DateTime(const char* timestamp, DateFormat format) noexcept;
+            DateTime(const char *timestamp, DateFormat format) noexcept;
 
-            bool operator == (const DateTime& other) const noexcept;
-            bool operator < (const DateTime& other) const noexcept;
-            bool operator > (const DateTime& other) const noexcept;
-            bool operator != (const DateTime& other) const noexcept;
-            bool operator <= (const DateTime& other) const noexcept;
-            bool operator >= (const DateTime& other) const noexcept;
+            bool operator==(const DateTime &other) const noexcept;
+            bool operator<(const DateTime &other) const noexcept;
+            bool operator>(const DateTime &other) const noexcept;
+            bool operator!=(const DateTime &other) const noexcept;
+            bool operator<=(const DateTime &other) const noexcept;
+            bool operator>=(const DateTime &other) const noexcept;
 
-            DateTime operator+(const std::chrono::milliseconds& a) const noexcept;
-            DateTime operator-(const std::chrono::milliseconds& a) const noexcept;
+            DateTime operator+(const std::chrono::milliseconds &a) const noexcept;
+            DateTime operator-(const std::chrono::milliseconds &a) const noexcept;
 
             /**
              * Assign from seconds.millis since epoch.
              */
-            DateTime& operator=(double secondsSinceEpoch) noexcept;
+            DateTime &operator=(double secondsSinceEpoch) noexcept;
 
             /**
              * Assign from millis since epoch.
              */
-            DateTime& operator=(uint64_t millisSinceEpoch) noexcept;
+            DateTime &operator=(uint64_t millisSinceEpoch) noexcept;
 
             /**
-            * Assign from another time_point
-            */
-            DateTime& operator=(const std::chrono::system_clock::time_point& timepointToAssign) noexcept;
+             * Assign from another time_point
+             */
+            DateTime &operator=(const std::chrono::system_clock::time_point &timepointToAssign) noexcept;
 
             /**
              * Assign from an ISO8601 or RFC822 formatted string
              */
-            DateTime& operator=(const char* timestamp) noexcept;
+            DateTime &operator=(const char *timestamp) noexcept;
 
             explicit operator bool() const noexcept;
             int GetLastError() const noexcept;
@@ -123,12 +123,12 @@ namespace Aws
             /**
              * Convert dateTime to local time string using predefined format.
              */
-            bool ToLocalTimeString(DateFormat format, ByteBuf& outputBuf) const noexcept;
+            bool ToLocalTimeString(DateFormat format, ByteBuf &outputBuf) const noexcept;
 
             /**
-            * Convert dateTime to GMT time string using predefined format.
-            */
-            bool ToGmtString(DateFormat format, ByteBuf& outputBuf) const noexcept;
+             * Convert dateTime to GMT time string using predefined format.
+             */
+            bool ToGmtString(DateFormat format, ByteBuf &outputBuf) const noexcept;
 
             /**
              * Get the representation of this datetime as seconds.milliseconds since epoch
@@ -141,7 +141,8 @@ namespace Aws
             uint64_t Millis() const noexcept;
 
             /**
-             *  In the likely case this class doesn't do everything you need to do, here's a copy of the time_point structure. Have fun.
+             *  In the likely case this class doesn't do everything you need to do, here's a copy of the time_point
+             * structure. Have fun.
              */
             std::chrono::system_clock::time_point UnderlyingTimestamp() const noexcept;
 
@@ -151,38 +152,41 @@ namespace Aws
             uint16_t GetYear(bool localTime = false) const noexcept;
 
             /**
-            * Get the Month portion of this dateTime. localTime if true, return local time, otherwise return UTC
-            */
+             * Get the Month portion of this dateTime. localTime if true, return local time, otherwise return UTC
+             */
             Month GetMonth(bool localTime = false) const noexcept;
 
             /**
-            * Get the Day of the Month portion of this dateTime. localTime if true, return local time, otherwise return UTC
-            */
+             * Get the Day of the Month portion of this dateTime. localTime if true, return local time, otherwise return
+             * UTC
+             */
             uint8_t GetDay(bool localTime = false) const noexcept;
 
             /**
-            * Get the Day of the Week portion of this dateTime. localTime if true, return local time, otherwise return UTC
-            */
+             * Get the Day of the Week portion of this dateTime. localTime if true, return local time, otherwise return
+             * UTC
+             */
             DayOfWeek GetDayOfWeek(bool localTime = false) const noexcept;
 
             /**
-            * Get the Hour portion of this dateTime. localTime if true, return local time, otherwise return UTC
-            */
+             * Get the Hour portion of this dateTime. localTime if true, return local time, otherwise return UTC
+             */
             uint8_t GetHour(bool localTime = false) const noexcept;
 
             /**
-            * Get the Minute portion of this dateTime. localTime if true, return local time, otherwise return UTC
-            */
+             * Get the Minute portion of this dateTime. localTime if true, return local time, otherwise return UTC
+             */
             uint8_t GetMinute(bool localTime = false) const noexcept;
 
             /**
-            * Get the Second portion of this dateTime. localTime if true, return local time, otherwise return UTC
-            */
+             * Get the Second portion of this dateTime. localTime if true, return local time, otherwise return UTC
+             */
             uint8_t GetSecond(bool localTime = false) const noexcept;
 
             /**
-            * Get whether or not this dateTime is in Daylight savings time. localTime if true, return local time, otherwise return UTC
-            */
+             * Get whether or not this dateTime is in Daylight savings time. localTime if true, return local time,
+             * otherwise return UTC
+             */
             bool IsDST(bool localTime = false) const noexcept;
 
             /**
@@ -194,11 +198,11 @@ namespace Aws
              * Computes the difference between two DateTime instances and returns the difference
              * in milliseconds.
              */
-            std::chrono::milliseconds operator - (const DateTime& other) const noexcept;
+            std::chrono::milliseconds operator-(const DateTime &other) const noexcept;
 
-        private:
+          private:
             aws_date_time m_date_time;
             bool m_good;
         };
-    }
-}
+    } // namespace Crt
+} // namespace Aws

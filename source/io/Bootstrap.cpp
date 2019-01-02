@@ -20,36 +20,31 @@ namespace Aws
     {
         namespace Io
         {
-            ClientBootstrap::ClientBootstrap(EventLoopGroup& elGroup, Allocator* allocator) noexcept :
-                m_lastError(AWS_ERROR_SUCCESS)
+            ClientBootstrap::ClientBootstrap(EventLoopGroup &elGroup, Allocator *allocator) noexcept
+                : m_lastError(AWS_ERROR_SUCCESS)
             {
-                AWS_ZERO_STRUCT(m_bootstrap);
-                if (aws_client_bootstrap_init(&m_bootstrap, allocator,
-                        elGroup.GetUnderlyingHandle(), nullptr, nullptr))
-                {
-                    m_lastError = aws_last_error();
-                }
+                m_bootstrap = aws_client_bootstrap_new(allocator, elGroup.GetUnderlyingHandle(), nullptr, nullptr);
             }
 
             ClientBootstrap::~ClientBootstrap()
             {
                 if (*this)
                 {
-                    aws_client_bootstrap_clean_up(&m_bootstrap);
+                    aws_client_bootstrap_destroy(m_bootstrap);
+                    m_bootstrap = nullptr;
                     m_lastError = AWS_ERROR_UNKNOWN;
                     AWS_ZERO_STRUCT(m_bootstrap);
                 }
             }
 
-            ClientBootstrap::ClientBootstrap(ClientBootstrap&& toMove) noexcept :
-                m_bootstrap(toMove.m_bootstrap),
-                m_lastError(toMove.m_lastError)
+            ClientBootstrap::ClientBootstrap(ClientBootstrap &&toMove) noexcept
+                : m_bootstrap(toMove.m_bootstrap), m_lastError(toMove.m_lastError)
             {
                 toMove.m_lastError = AWS_ERROR_UNKNOWN;
                 AWS_ZERO_STRUCT(toMove.m_bootstrap);
             }
 
-            ClientBootstrap& ClientBootstrap::operator=(ClientBootstrap&& toMove) noexcept
+            ClientBootstrap &ClientBootstrap::operator=(ClientBootstrap &&toMove) noexcept
             {
                 if (this == &toMove)
                 {
@@ -64,25 +59,19 @@ namespace Aws
                 return *this;
             }
 
-            ClientBootstrap::operator bool() const noexcept
-            {
-                return m_lastError == AWS_ERROR_SUCCESS;
-            }
+            ClientBootstrap::operator bool() const noexcept { return m_lastError == AWS_ERROR_SUCCESS; }
 
-            int ClientBootstrap::LastError() const noexcept
-            {
-                return m_lastError;
-            }
+            int ClientBootstrap::LastError() const noexcept { return m_lastError; }
 
-            aws_client_bootstrap* ClientBootstrap::GetUnderlyingHandle() noexcept
+            aws_client_bootstrap *ClientBootstrap::GetUnderlyingHandle() noexcept
             {
                 if (*this)
                 {
-                    return &m_bootstrap;
+                    return m_bootstrap;
                 }
 
                 return nullptr;
             }
-        }
-    }
-}
+        } // namespace Io
+    }     // namespace Crt
+} // namespace Aws
