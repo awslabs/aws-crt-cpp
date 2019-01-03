@@ -53,12 +53,16 @@ if (BUILD_DEPS)
         message(FATAL_ERROR "Failed to build aws crt libraries.")
     endif()
     message(STATUS "AWS Common Runtime is installed at: ${AWS_DEPS_INSTALL_DIR}")
+
+    #the following two lines are done in this branch intentionally, don't move it. project() does some magic that
+    #we don't want happening until we're done with the above code.
     list(APPEND CMAKE_PREFIX_PATH "${AWS_DEPS_INSTALL_DIR}")
     project(aws-crt-cpp CXX)
 
 else()
+    #the following two lines are done in this branch intentionally, don't move it. project() does some magic that
+    #we want happening exactly right now.
     project(aws-crt-cpp CXX)
-
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_INSTALL_PREFIX}/lib/cmake")
 endif()
 

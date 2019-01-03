@@ -19,7 +19,7 @@ static int s_TestDateTimeBinding(struct aws_allocator *allocator, void *ctx)
 {
     (void)allocator;
     (void)ctx;
-    
+
     const char *validUtcDates[] = {
         "Wed, 02 Oct 2002 08:05:09 GMT",
         "Wed, 02 Oct 2002 08:05:09 UT",

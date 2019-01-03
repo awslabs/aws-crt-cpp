@@ -45,8 +45,8 @@ namespace Aws
         }
 
         JsonObject::JsonObject(const JsonObject &value)
-            : m_value(cJSON_Duplicate(value.m_value, 1 /*recurse*/)),
-              m_wasParseSuccessful(value.m_wasParseSuccessful), m_errorMessage(value.m_errorMessage)
+            : m_value(cJSON_Duplicate(value.m_value, 1 /*recurse*/)), m_wasParseSuccessful(value.m_wasParseSuccessful),
+              m_errorMessage(value.m_errorMessage)
         {
         }
 
@@ -174,10 +174,7 @@ namespace Aws
             return WithDouble(key.c_str(), static_cast<double>(value));
         }
 
-        JsonObject &JsonObject::AsInt64(int64_t value)
-        {
-            return AsDouble(static_cast<double>(value));
-        }
+        JsonObject &JsonObject::AsInt64(int64_t value) { return AsDouble(static_cast<double>(value)); }
 
         JsonObject &JsonObject::WithDouble(const char *key, double value)
         {
@@ -208,7 +205,8 @@ namespace Aws
             }
 
             auto arrayValue = cJSON_CreateArray();
-            for (const auto &i : array) {
+            for (const auto &i : array)
+            {
                 cJSON_AddItemToArray(arrayValue, cJSON_CreateString(i.c_str()));
             }
 
@@ -229,7 +227,8 @@ namespace Aws
             }
 
             auto arrayValue = cJSON_CreateArray();
-            for (const auto &i : array) {
+            for (const auto &i : array)
+            {
                 cJSON_AddItemToArray(arrayValue, cJSON_Duplicate(i.m_value, 1 /*recurse*/));
             }
 
@@ -245,7 +244,8 @@ namespace Aws
             }
 
             auto arrayValue = cJSON_CreateArray();
-            for (auto &i : array) {
+            for (auto &i : array)
+            {
                 cJSON_AddItemToArray(arrayValue, i.m_value);
                 i.m_value = nullptr;
             }
@@ -257,7 +257,8 @@ namespace Aws
         JsonObject &JsonObject::AsArray(const Vector<JsonObject> &array)
         {
             auto arrayValue = cJSON_CreateArray();
-            for (const auto &i : array) {
+            for (const auto &i : array)
+            {
                 cJSON_AddItemToArray(arrayValue, cJSON_Duplicate(i.m_value, 1 /*recurse*/));
             }
 
@@ -269,7 +270,8 @@ namespace Aws
         JsonObject &JsonObject::AsArray(Vector<JsonObject> &&array)
         {
             auto arrayValue = cJSON_CreateArray();
-            for (auto &i : array) {
+            for (auto &i : array)
+            {
                 cJSON_AddItemToArray(arrayValue, i.m_value);
                 i.m_value = nullptr;
             }
