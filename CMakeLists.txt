@@ -1,18 +1,4 @@
 cmake_minimum_required(VERSION 3.1)
-project(aws-crt-cpp CXX)
-
-if(POLICY CMP0028)
-    cmake_policy(SET CMP0028 NEW)
-endif()
-if(POLICY CMP0048)
-    cmake_policy(SET CMP0048 NEW)
-endif()
-if(POLICY CMP0054)
-    cmake_policy(SET CMP0054 NEW)
-endif()
-if(POLICY CMP0056)
-    cmake_policy(SET CMP0056 NEW)
-endif()
 
 option(BUILD_DEPS "Builds aws common runtime dependencies as part of build, only do this if you don't want to control your dependency chain." OFF)
 
@@ -23,6 +9,9 @@ if (BUILD_DEPS)
     else()
         set(AWS_DEPS_INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/deps/install)
     endif()
+
+    list(APPEND CMAKE_MODULE_PATH "${AWS_DEPS_INSTALL_DIR}/lib/cmake")
+
     file(MAKE_DIRECTORY ${AWS_DEPS_BUILD_DIR})
     if(TARGET_ARCH STREQUAL "ANDROID")
         execute_process(
@@ -65,9 +54,14 @@ if (BUILD_DEPS)
     endif()
     message(STATUS "AWS Common Runtime is installed at: ${AWS_DEPS_INSTALL_DIR}")
     list(APPEND CMAKE_PREFIX_PATH "${AWS_DEPS_INSTALL_DIR}")
+    project(aws-crt-cpp CXX)
+
+else()
+    project(aws-crt-cpp CXX)
+
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_INSTALL_PREFIX}/lib/cmake")
 endif()
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_INSTALL_PREFIX}/lib/cmake")
 
 if (NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 11)
