@@ -17,6 +17,7 @@ if("${TARGET_ARCH}" STREQUAL ANDROID)
             -DANDROID_STL=${ANDROID_STL}
             -DENABLE_HW_OPTIMIZATION=OFF
             -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+            -DCMAKE_LINK_FLAGS=${CMAKE_LINK_FLAGS}
             )
 elseif(MSVC)
     ExternalProject_Add(AwsCMqtt
@@ -32,6 +33,7 @@ elseif(MSVC)
             -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
             -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
             -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+            -DCMAKE_LINK_FLAGS=${CMAKE_LINK_FLAGS}
             )
 else()
     ExternalProject_Add(AwsCMqtt
@@ -46,5 +48,6 @@ else()
             -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
             -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
             -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+            -DCMAKE_LINK_FLAGS=${CMAKE_LINK_FLAGS}
             )
 endif()
