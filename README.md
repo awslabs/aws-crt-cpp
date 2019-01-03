@@ -19,7 +19,7 @@ C++ wrapper around the aws-c-* libraries. Provides Cross-Platform Transport Prot
 
 ## Building
 
-The C99 libraries are already included for your convenience when you specify the `-DBUILD_DEPS=ON` cmake argument.
+The C99 libraries are already included for your convenience when you specify the `-DBUILD_DEPS=ON` CMake argument.
 
 If you want to manage these dependencies manually (e.g. you're using them in other projects), simply specify 
 `-DCMAKE_INSTALL_PREFIX` to point to the directory where you have them installed.
@@ -30,7 +30,7 @@ If you want to manage these dependencies manually (e.g. you're using them in oth
 There are no non-OS dependencies that AWS does not own, maintain, and ship.
 
 ### Unix
-The most likely answer is no. 
+The most likely answer is: none that you should care about. 
 
 We do depend on an openssl compatible libcrypto implementation being in your path if you are on a
 unix system. Note: we do not actually use libssl. The most likely scenario is that libcrypto is already installed on your system. However, since
@@ -58,9 +58,9 @@ This performs one-time static initialization of the library. You'll need it to d
 ````
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(<number of threads you want>);
 ````
-To use any of our APIs that perform IO you'll need at least one event loop. An event-loop group is a collection of event-loops that
+To use any of our APIs that perform IO you'll need at least one event-loop. An event-loop group is a collection of event-loops that
 protocol implementations will load balance across. If you won't have very many connections (say, more than 100 or so), then you
-most likely only want 1 thread. You will likely want to pass a single instance of this to every client or server implementation of a protocol
+most likely only want 1 thread. In this case, you want to pass a single instance of this to every client or server implementation of a protocol
 you use in your application. In some advanced use cases, you may want to reserve a thread for different types of IO tasks. In that case, you can have an
 instance of this class for each reservation.
 
@@ -97,7 +97,7 @@ instance for the entire application.
 Aws::Crt::Io::ClientBootstrap bootstrap(eventLoopGroup);
 ````
 
-Lastly, you will need a Client or Server Bootstrap to use a client or server protocol implementation. Since everything is
+Lastly, you will need a client or server bootstrap to use a client or server protocol implementation. Since everything is
 non-blocking and event driven, this handles most of the "callback hell" inherent in the design. Assuming you aren't partitioning
 threads for particular use-cases, you can have a single instance of this that you pass to multiple clients.
 
