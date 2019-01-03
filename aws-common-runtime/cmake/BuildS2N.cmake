@@ -1,3 +1,4 @@
+message("Using c-flags ${CMAKE_C_FLAGS}")
 if("${TARGET_ARCH}" STREQUAL ANDROID)
     ExternalProject_Add(S2N
             PREFIX ${AWS_DEPS_BUILD_DIR}
