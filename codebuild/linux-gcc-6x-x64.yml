@@ -9,7 +9,7 @@ phases:
   pre_build:
     commands:
       - export CC=gcc-6
-      - export CXX-g++-6
+      - export CXX=g++-6
   build:
     commands:
       - echo Build started on `date`
