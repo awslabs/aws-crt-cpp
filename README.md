@@ -4,18 +4,11 @@ C++ wrapper around the aws-c-* libraries. Provides Cross-Platform Transport Prot
 
 ### Currently Included:
 
-* Non-blocking sockets
-* Platform specific event-loop implementations.
-* Non-blocking pipes
-* Non-blocking dns resolution with ipv6 support and happy eyeballs implementation.
-* Platform specific SSL/TLS implementations.
-* Light-weight data structures.
-* Mqtt implementation.
+* aws-c-common: Cross-platform primitives and data structures.
+* aws-c-io: Cross-platform event-loops, non-blocking I/O, and TLS implementations.
+* aws-c-mqtt: MQTT client.
 
-### Coming Soon:
-* Http 1.1
-* H2
-* AWS Auth
+More protocols and utilities are coming soon, so stay tuned.
 
 ## Building
 
