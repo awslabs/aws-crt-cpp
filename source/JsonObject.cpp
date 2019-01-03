@@ -467,7 +467,7 @@ namespace Aws
             Vector<JsonView> returnArray(static_cast<size_t>(cJSON_GetArraySize(array)));
 
             auto element = array->child;
-            for (auto i = 0; element != nullptr && i < returnArray.size(); ++i, element = element->next)
+            for (size_t i = 0; element != nullptr && i < returnArray.size(); ++i, element = element->next)
             {
                 returnArray[i] = element;
             }
@@ -482,7 +482,7 @@ namespace Aws
 
             auto element = m_value->child;
 
-            for (auto i = 0; element != nullptr && i < returnArray.size(); ++i, element = element->next)
+            for (size_t i = 0; element != nullptr && i < returnArray.size(); ++i, element = element->next)
             {
                 returnArray[i] = element;
             }
