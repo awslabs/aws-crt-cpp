@@ -28,23 +28,23 @@ namespace Aws
         {
             class AWS_CRT_CPP_API ClientBootstrap final
             {
-            public:
-                ClientBootstrap(EventLoopGroup& elGroup,
-                        Allocator* allocator = DefaultAllocator()) noexcept;
+              public:
+                ClientBootstrap(EventLoopGroup &elGroup, Allocator *allocator = DefaultAllocator()) noexcept;
                 ~ClientBootstrap();
-                ClientBootstrap(const ClientBootstrap&) = delete;
-                ClientBootstrap& operator=(const ClientBootstrap&) = delete;
-                ClientBootstrap(ClientBootstrap&&) noexcept;
-                ClientBootstrap& operator=(ClientBootstrap&&) noexcept;
+                ClientBootstrap(const ClientBootstrap &) = delete;
+                ClientBootstrap &operator=(const ClientBootstrap &) = delete;
+                ClientBootstrap(ClientBootstrap &&) noexcept;
+                ClientBootstrap &operator=(ClientBootstrap &&) noexcept;
 
                 operator bool() const noexcept;
                 int LastError() const noexcept;
 
-                aws_client_bootstrap* GetUnderlyingHandle() noexcept;
-            private:
-                aws_client_bootstrap m_bootstrap;
+                aws_client_bootstrap *GetUnderlyingHandle() noexcept;
+
+              private:
+                aws_client_bootstrap *m_bootstrap;
                 int m_lastError;
             };
-        }
-    }
-}
+        } // namespace Io
+    }     // namespace Crt
+} // namespace Aws

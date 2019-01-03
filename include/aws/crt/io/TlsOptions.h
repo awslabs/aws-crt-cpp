@@ -37,9 +37,10 @@ namespace Aws
             class AWS_CRT_CPP_API TlsContextOptions final
             {
                 friend class TlsContext;
-            public:
-                TlsContextOptions(const TlsContextOptions&) noexcept = default;
-                TlsContextOptions& operator=(const TlsContextOptions&) noexcept = default;
+
+              public:
+                TlsContextOptions(const TlsContextOptions &) noexcept = default;
+                TlsContextOptions &operator=(const TlsContextOptions &) noexcept = default;
 
                 /**
                  * Initializes TlsContextOptions with secure by default options, with
@@ -55,13 +56,14 @@ namespace Aws
                 static TlsContextOptions InitClientWithMtls(const char *cert_path, const char *pkey_path) noexcept;
 
                 /**
-                * Initializes TlsContextOptions with secure by default options, with
-                * client certificateand private key in the PKCS#12 format. 
-                * This is a path to a file on disk. These
-                * strings must remain in memory for the lifetime of the returned object.
-                */
-                static TlsContextOptions InitClientWithMtlsPkcs12(const char *pkcs12_path,
-                        const char *pkcs12_pwd) noexcept;
+                 * Initializes TlsContextOptions with secure by default options, with
+                 * client certificateand private key in the PKCS#12 format.
+                 * This is a path to a file on disk. These
+                 * strings must remain in memory for the lifetime of the returned object.
+                 */
+                static TlsContextOptions InitClientWithMtlsPkcs12(
+                    const char *pkcs12_path,
+                    const char *pkcs12_pwd) noexcept;
 
                 /**
                  * Returns true if alpn is supported by the underlying security provider, false
@@ -73,14 +75,14 @@ namespace Aws
                  * Sets the list of alpn protocols, delimited by ';'. This string must remain in memory
                  * for the lifetime of this object.
                  */
-                void SetAlpnList(const char* alpnList) noexcept;
+                void SetAlpnList(const char *alpnList) noexcept;
 
                 /**
                  * In client mode, this turns off x.509 validation. Don't do this unless you're testing.
-                 * It's much better, to just override the default trust store and pass the self-signed 
+                 * It's much better, to just override the default trust store and pass the self-signed
                  * certificate as the caFile argument.
                  *
-                 * In server mode, this defaults to false. If you want to support mutual TLS from the server, 
+                 * In server mode, this defaults to false. If you want to support mutual TLS from the server,
                  * you'll want to set this to true.
                  */
                 void SetVerifyPeer(bool verifyPeer) noexcept;
@@ -88,13 +90,13 @@ namespace Aws
                 /**
                  * Overrides the default system trust store. caPath is only useful on Unix style systems where
                  * all anchors are stored in a directory (like /etc/ssl/certs). caFile is for a single file containing
-                 * all trusted CAs. caFile must be in the PEM format. 
+                 * all trusted CAs. caFile must be in the PEM format.
                  *
                  * These strings must remain in memory for the lifetime of this object.
                  */
-                void OverrideDefaultTrustStore(const char* caPath, const char* caFile) noexcept;
+                void OverrideDefaultTrustStore(const char *caPath, const char *caFile) noexcept;
 
-            private:
+              private:
                 aws_tls_ctx_options m_options;
 
                 TlsContextOptions() noexcept;
@@ -102,27 +104,30 @@ namespace Aws
 
             class AWS_CRT_CPP_API TlsContext final
             {
-            public:
-                TlsContext(TlsContextOptions& options, TlsMode mode, Allocator* allocator = DefaultAllocator()) noexcept;
+              public:
+                TlsContext(
+                    TlsContextOptions &options,
+                    TlsMode mode,
+                    Allocator *allocator = DefaultAllocator()) noexcept;
                 ~TlsContext();
-                TlsContext(const TlsContext&) = delete;
-                TlsContext& operator=(const TlsContext&) = delete;
-                TlsContext(TlsContext&&) noexcept;
-                TlsContext& operator=(TlsContext&&) noexcept;
+                TlsContext(const TlsContext &) = delete;
+                TlsContext &operator=(const TlsContext &) = delete;
+                TlsContext(TlsContext &&) noexcept;
+                TlsContext &operator=(TlsContext &&) noexcept;
 
                 TlsConnectionOptions NewConnectionOptions() const noexcept;
 
                 operator bool() const noexcept;
                 int LastError() const noexcept;
 
-            private:
-                aws_tls_ctx* m_ctx;
+              private:
+                aws_tls_ctx *m_ctx;
                 int m_lastError;
             };
 
             AWS_CRT_CPP_API void InitTlsStaticState(Allocator *alloc) noexcept;
             AWS_CRT_CPP_API void CleanUpTlsStaticState() noexcept;
 
-        }
-    }
-}
+        } // namespace Io
+    }     // namespace Crt
+} // namespace Aws

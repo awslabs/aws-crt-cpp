@@ -16,14 +16,15 @@
 #include <aws/crt/JsonObject.h>
 #include <aws/testing/aws_test_harness.h>
 
-static int s_BasicJsonParsing(struct aws_allocator *allocator, void *)
+static int s_BasicJsonParsing(struct aws_allocator *allocator, void *ctx)
 {
+    (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
 
     const Aws::Crt::String jsonValue =
-            "{\"testStringKey\":\"testStringValue\", \"testIntKey\":10, "
-            "\"testBoolKey\":false, \"array\": [\"stringArrayEntry1\", \"stringArrayEntry2\"], "
-            "\"object\": {\"testObjectStringKey\":\"testObjectStringValue\"}}";
+        "{\"testStringKey\":\"testStringValue\", \"testIntKey\":10, "
+        "\"testBoolKey\":false, \"array\": [\"stringArrayEntry1\", \"stringArrayEntry2\"], "
+        "\"object\": {\"testObjectStringKey\":\"testObjectStringValue\"}}";
 
     Aws::Crt::JsonObject value(jsonValue);
     ASSERT_TRUE(value.WasParseSuccessful());

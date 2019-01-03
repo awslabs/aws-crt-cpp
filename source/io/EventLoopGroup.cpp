@@ -20,13 +20,10 @@ namespace Aws
     {
         namespace Io
         {
-            EventLoopGroup::EventLoopGroup(Allocator* allocator) noexcept : EventLoopGroup(0, allocator)
-            {                
-            }
+            EventLoopGroup::EventLoopGroup(Allocator *allocator) noexcept : EventLoopGroup(0, allocator) {}
 
-
-            EventLoopGroup::EventLoopGroup( uint16_t threadCount, Allocator* allocator) noexcept:
-                m_lastError(AWS_ERROR_SUCCESS)
+            EventLoopGroup::EventLoopGroup(uint16_t threadCount, Allocator *allocator) noexcept
+                : m_lastError(AWS_ERROR_SUCCESS)
             {
                 AWS_ZERO_STRUCT(m_eventLoopGroup);
 
@@ -46,16 +43,14 @@ namespace Aws
                 AWS_ZERO_STRUCT(m_eventLoopGroup);
             }
 
-
-            EventLoopGroup::EventLoopGroup(EventLoopGroup&& toMove) noexcept:
-                m_eventLoopGroup(toMove.m_eventLoopGroup),
-                m_lastError(toMove.m_lastError)
+            EventLoopGroup::EventLoopGroup(EventLoopGroup &&toMove) noexcept
+                : m_eventLoopGroup(toMove.m_eventLoopGroup), m_lastError(toMove.m_lastError)
             {
                 toMove.m_lastError = AWS_ERROR_UNKNOWN;
                 AWS_ZERO_STRUCT(toMove.m_eventLoopGroup);
             }
 
-            EventLoopGroup& EventLoopGroup::operator =(EventLoopGroup&& toMove) noexcept
+            EventLoopGroup &EventLoopGroup::operator=(EventLoopGroup &&toMove) noexcept
             {
                 m_eventLoopGroup = toMove.m_eventLoopGroup;
                 m_lastError = toMove.m_lastError;
@@ -64,16 +59,9 @@ namespace Aws
                 return *this;
             }
 
-            int EventLoopGroup::LastError() const
-            {
-                return m_lastError;
-            }
+            int EventLoopGroup::LastError() const { return m_lastError; }
 
-
-            EventLoopGroup::operator bool() const
-            {
-                return m_lastError == AWS_ERROR_SUCCESS;
-            }
+            EventLoopGroup::operator bool() const { return m_lastError == AWS_ERROR_SUCCESS; }
 
             aws_event_loop_group *EventLoopGroup::GetUnderlyingHandle() noexcept
             {
@@ -85,7 +73,7 @@ namespace Aws
                 return nullptr;
             }
 
-        }
+        } // namespace Io
 
-    }
-}
+    } // namespace Crt
+} // namespace Aws
