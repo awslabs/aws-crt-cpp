@@ -17,8 +17,9 @@
 #include <aws/testing/aws_test_harness.h>
 #include <utility>
 
-static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator *allocator, void *)
+static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator *allocator, void *ctx)
 {
+    (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
 

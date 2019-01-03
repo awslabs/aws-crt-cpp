@@ -107,13 +107,13 @@ namespace Aws
             /**
              * Adds a 64-bit integer value at key to the top level of this node.
              */
-            JsonObject &WithInt64(const String &key, long long value);
-            JsonObject &WithInt64(const char *key, long long value);
+            JsonObject &WithInt64(const String &key, int64_t value);
+            JsonObject &WithInt64(const char *key, int64_t value);
 
             /**
              * Converts the current JSON node to a 64-bit integer.
              */
-            JsonObject &AsInt64(long long value);
+            JsonObject &AsInt64(int64_t value);
 
             /**
              * Adds a double value at key at the top level of this node.
@@ -213,8 +213,8 @@ namespace Aws
           public:
             /* constructors */
             JsonView();
-            JsonView(const JsonObject &v);
-            JsonView &operator=(const JsonObject &v);
+            JsonView(const JsonObject &val);
+            JsonView &operator=(const JsonObject &val);
 
             /**
              * Gets a string from this node by its key.

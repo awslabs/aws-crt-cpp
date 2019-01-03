@@ -20,7 +20,7 @@ namespace Aws
     {
         UUID::UUID() noexcept : m_good(false)
         {
-            if (!aws_uuid_init(&m_uuid))
+            if (aws_uuid_init(&m_uuid) == AWS_OP_SUCCESS)
             {
                 m_good = true;
             }
@@ -29,7 +29,7 @@ namespace Aws
         UUID::UUID(const String &str) noexcept : m_good(false)
         {
             auto strCur = aws_byte_cursor_from_c_str(str.c_str());
-            if (!aws_uuid_init_from_str(&m_uuid, &strCur))
+            if (aws_uuid_init_from_str(&m_uuid, &strCur) == AWS_OP_SUCCESS)
             {
                 m_good = true;
             }

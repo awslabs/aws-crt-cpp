@@ -17,8 +17,9 @@
 
 #include <utility>
 
-static int s_TestEventLoopResourceSafety(struct aws_allocator *allocator, void *)
+static int s_TestEventLoopResourceSafety(struct aws_allocator *allocator, void *ctx)
 {
+    (void)ctx;
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
     ASSERT_NOT_NULL(eventLoopGroup.GetUnderlyingHandle());

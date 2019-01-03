@@ -16,8 +16,9 @@
 #include <aws/crt/JsonObject.h>
 #include <aws/testing/aws_test_harness.h>
 
-static int s_BasicJsonParsing(struct aws_allocator *allocator, void *)
+static int s_BasicJsonParsing(struct aws_allocator *allocator, void *ctx)
 {
+    (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
 
     const Aws::Crt::String jsonValue =

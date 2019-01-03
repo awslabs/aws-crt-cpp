@@ -27,7 +27,7 @@ namespace Aws
         JsonObject::JsonObject() : m_wasParseSuccessful(true) { m_value = nullptr; }
 
         JsonObject::JsonObject(cJSON *value)
-            : m_value(cJSON_Duplicate(value, true /* recurse */)), m_wasParseSuccessful(true)
+            : m_value(cJSON_Duplicate(value, 1 /* recurse */)), m_wasParseSuccessful(true)
         {
         }
 
@@ -36,7 +36,7 @@ namespace Aws
             const char *return_parse_end;
             m_value = cJSON_ParseWithOpts(value.c_str(), value.length(), &return_parse_end);
 
-            if (!m_value || cJSON_IsInvalid(m_value))
+            if (m_value == nullptr || cJSON_IsInvalid(m_value) == 1)
             {
                 m_wasParseSuccessful = false;
                 m_errorMessage = "Failed to parse JSON at: ";
@@ -45,7 +45,7 @@ namespace Aws
         }
 
         JsonObject::JsonObject(const JsonObject &value)
-            : m_value(cJSON_Duplicate(value.m_value, true /*recurse*/)),
+            : m_value(cJSON_Duplicate(value.m_value, 1 /*recurse*/)),
               m_wasParseSuccessful(value.m_wasParseSuccessful), m_errorMessage(value.m_errorMessage)
         {
         }
@@ -69,7 +69,7 @@ namespace Aws
             }
 
             Destroy();
-            m_value = cJSON_Duplicate(other.m_value, true /*recurse*/);
+            m_value = cJSON_Duplicate(other.m_value, 1 /*recurse*/);
             m_wasParseSuccessful = other.m_wasParseSuccessful;
             m_errorMessage = other.m_errorMessage;
             return *this;
@@ -92,7 +92,7 @@ namespace Aws
         static void AddOrReplace(cJSON *root, const char *key, cJSON *value)
         {
             const auto existing = cJSON_GetObjectItemCaseSensitive(root, key);
-            if (existing)
+            if (existing != nullptr)
             {
                 cJSON_ReplaceItemInObjectCaseSensitive(root, key, value);
             }
@@ -104,7 +104,7 @@ namespace Aws
 
         JsonObject &JsonObject::WithString(const char *key, const String &value)
         {
-            if (!m_value)
+            if (m_value == nullptr)
             {
                 m_value = cJSON_CreateObject();
             }
@@ -128,12 +128,12 @@ namespace Aws
 
         JsonObject &JsonObject::WithBool(const char *key, bool value)
         {
-            if (!m_value)
+            if (m_value == nullptr)
             {
                 m_value = cJSON_CreateObject();
             }
 
-            const auto val = cJSON_CreateBool(value);
+            const auto val = cJSON_CreateBool((cJSON_bool)value);
             AddOrReplace(m_value, key, val);
             return *this;
         }
@@ -143,7 +143,7 @@ namespace Aws
         JsonObject &JsonObject::AsBool(bool value)
         {
             Destroy();
-            m_value = cJSON_CreateBool(value);
+            m_value = cJSON_CreateBool((cJSON_bool)value);
             return *this;
         }
 
@@ -164,21 +164,24 @@ namespace Aws
             return *this;
         }
 
-        JsonObject &JsonObject::WithInt64(const char *key, long long value)
+        JsonObject &JsonObject::WithInt64(const char *key, int64_t value)
         {
             return WithDouble(key, static_cast<double>(value));
         }
 
-        JsonObject &JsonObject::WithInt64(const String &key, long long value)
+        JsonObject &JsonObject::WithInt64(const String &key, int64_t value)
         {
             return WithDouble(key.c_str(), static_cast<double>(value));
         }
 
-        JsonObject &JsonObject::AsInt64(long long value) { return AsDouble(static_cast<double>(value)); }
+        JsonObject &JsonObject::AsInt64(int64_t value)
+        {
+            return AsDouble(static_cast<double>(value));
+        }
 
         JsonObject &JsonObject::WithDouble(const char *key, double value)
         {
-            if (!m_value)
+            if (m_value == nullptr)
             {
                 m_value = cJSON_CreateObject();
             }
@@ -199,15 +202,14 @@ namespace Aws
 
         JsonObject &JsonObject::WithArray(const char *key, const Vector<String> &array)
         {
-            if (!m_value)
+            if (m_value == nullptr)
             {
                 m_value = cJSON_CreateObject();
             }
 
             auto arrayValue = cJSON_CreateArray();
-            for (unsigned i = 0; i < array.size(); ++i)
-            {
-                cJSON_AddItemToArray(arrayValue, cJSON_CreateString(array[i].c_str()));
+            for (const auto &i : array) {
+                cJSON_AddItemToArray(arrayValue, cJSON_CreateString(i.c_str()));
             }
 
             AddOrReplace(m_value, key, arrayValue);
@@ -221,15 +223,14 @@ namespace Aws
 
         JsonObject &JsonObject::WithArray(const String &key, const Vector<JsonObject> &array)
         {
-            if (!m_value)
+            if (m_value == nullptr)
             {
                 m_value = cJSON_CreateObject();
             }
 
             auto arrayValue = cJSON_CreateArray();
-            for (unsigned i = 0; i < array.size(); ++i)
-            {
-                cJSON_AddItemToArray(arrayValue, cJSON_Duplicate(array[i].m_value, true /*recurse*/));
+            for (const auto &i : array) {
+                cJSON_AddItemToArray(arrayValue, cJSON_Duplicate(i.m_value, 1 /*recurse*/));
             }
 
             AddOrReplace(m_value, key.c_str(), arrayValue);
@@ -238,16 +239,15 @@ namespace Aws
 
         JsonObject &JsonObject::WithArray(const String &key, Vector<JsonObject> &&array)
         {
-            if (!m_value)
+            if (m_value == nullptr)
             {
                 m_value = cJSON_CreateObject();
             }
 
             auto arrayValue = cJSON_CreateArray();
-            for (unsigned i = 0; i < array.size(); ++i)
-            {
-                cJSON_AddItemToArray(arrayValue, array[i].m_value);
-                array[i].m_value = nullptr;
+            for (auto &i : array) {
+                cJSON_AddItemToArray(arrayValue, i.m_value);
+                i.m_value = nullptr;
             }
 
             AddOrReplace(m_value, key.c_str(), arrayValue);
@@ -257,9 +257,8 @@ namespace Aws
         JsonObject &JsonObject::AsArray(const Vector<JsonObject> &array)
         {
             auto arrayValue = cJSON_CreateArray();
-            for (unsigned i = 0; i < array.size(); ++i)
-            {
-                cJSON_AddItemToArray(arrayValue, cJSON_Duplicate(array[i].m_value, true /*recurse*/));
+            for (const auto &i : array) {
+                cJSON_AddItemToArray(arrayValue, cJSON_Duplicate(i.m_value, 1 /*recurse*/));
             }
 
             Destroy();
@@ -270,10 +269,9 @@ namespace Aws
         JsonObject &JsonObject::AsArray(Vector<JsonObject> &&array)
         {
             auto arrayValue = cJSON_CreateArray();
-            for (unsigned i = 0; i < array.size(); ++i)
-            {
-                cJSON_AddItemToArray(arrayValue, array[i].m_value);
-                array[i].m_value = nullptr;
+            for (auto &i : array) {
+                cJSON_AddItemToArray(arrayValue, i.m_value);
+                i.m_value = nullptr;
             }
 
             Destroy();
@@ -283,13 +281,13 @@ namespace Aws
 
         JsonObject &JsonObject::WithObject(const char *key, const JsonObject &value)
         {
-            if (!m_value)
+            if (m_value == nullptr)
             {
                 m_value = cJSON_CreateObject();
             }
 
             const auto copy =
-                value.m_value == nullptr ? cJSON_CreateObject() : cJSON_Duplicate(value.m_value, true /*recurse*/);
+                value.m_value == nullptr ? cJSON_CreateObject() : cJSON_Duplicate(value.m_value, 1 /*recurse*/);
             AddOrReplace(m_value, key, copy);
             return *this;
         }
@@ -301,7 +299,7 @@ namespace Aws
 
         JsonObject &JsonObject::WithObject(const char *key, JsonObject &&value)
         {
-            if (!m_value)
+            if (m_value == nullptr)
             {
                 m_value = cJSON_CreateObject();
             }
@@ -330,7 +328,7 @@ namespace Aws
 
         bool JsonObject::operator==(const JsonObject &other) const
         {
-            return cJSON_Compare(m_value, other.m_value, true /*case-sensitive*/) != 0;
+            return cJSON_Compare(m_value, other.m_value, 1 /*case-sensitive*/) != 0;
         }
 
         bool JsonObject::operator!=(const JsonObject &other) const { return !(*this == other); }
@@ -362,7 +360,7 @@ namespace Aws
             assert(m_value);
             auto item = cJSON_GetObjectItemCaseSensitive(m_value, key);
             auto str = cJSON_GetStringValue(item);
-            return str ? str : "";
+            return str != nullptr ? str : "";
         }
 
         String JsonView::AsString() const
@@ -414,7 +412,7 @@ namespace Aws
         int64_t JsonView::AsInt64() const
         {
             assert(cJSON_IsNumber(m_value));
-            return static_cast<long long>(m_value->valuedouble);
+            return static_cast<int64_t>(m_value->valuedouble);
         }
 
         double JsonView::GetDouble(const String &key) const { return GetDouble(key.c_str()); }
@@ -467,7 +465,7 @@ namespace Aws
             Vector<JsonView> returnArray(static_cast<size_t>(cJSON_GetArraySize(array)));
 
             auto element = array->child;
-            for (unsigned i = 0; element && i < returnArray.size(); ++i, element = element->next)
+            for (auto i = 0; element != nullptr && i < returnArray.size(); ++i, element = element->next)
             {
                 returnArray[i] = element;
             }
@@ -482,7 +480,7 @@ namespace Aws
 
             auto element = m_value->child;
 
-            for (unsigned i = 0; element && i < returnArray.size(); ++i, element = element->next)
+            for (auto i = 0; element != nullptr && i < returnArray.size(); ++i, element = element->next)
             {
                 returnArray[i] = element;
             }
@@ -493,12 +491,12 @@ namespace Aws
         Map<String, JsonView> JsonView::GetAllObjects() const
         {
             Map<String, JsonView> valueMap;
-            if (!m_value)
+            if (m_value == nullptr)
             {
                 return valueMap;
             }
 
-            for (auto iter = m_value->child; iter; iter = iter->next)
+            for (auto iter = m_value->child; iter != nullptr; iter = iter->next)
             {
                 valueMap.emplace(std::make_pair(String(iter->string), JsonView(iter)));
             }
@@ -510,20 +508,20 @@ namespace Aws
 
         bool JsonView::ValueExists(const char *key) const
         {
-            if (!cJSON_IsObject(m_value))
+            if (cJSON_IsObject(m_value) == 0)
             {
                 return false;
             }
 
             auto item = cJSON_GetObjectItemCaseSensitive(m_value, key);
-            return !(item == nullptr || cJSON_IsNull(item));
+            return !(item == nullptr || cJSON_IsNull(item) != 0);
         }
 
         bool JsonView::KeyExists(const String &key) const { return KeyExists(key.c_str()); }
 
         bool JsonView::KeyExists(const char *key) const
         {
-            if (!cJSON_IsObject(m_value))
+            if (cJSON_IsObject(m_value) == 0)
             {
                 return false;
             }
@@ -539,22 +537,22 @@ namespace Aws
 
         bool JsonView::IsIntegerType() const
         {
-            if (!cJSON_IsNumber(m_value))
+            if (cJSON_IsNumber(m_value) == 0)
             {
                 return false;
             }
 
-            return m_value->valuedouble == static_cast<long long>(m_value->valuedouble);
+            return m_value->valuedouble == static_cast<int64_t>(m_value->valuedouble);
         }
 
         bool JsonView::IsFloatingPointType() const
         {
-            if (!cJSON_IsNumber(m_value))
+            if (cJSON_IsNumber(m_value) == 0)
             {
                 return false;
             }
 
-            return m_value->valuedouble != static_cast<long long>(m_value->valuedouble);
+            return m_value->valuedouble != static_cast<int64_t>(m_value->valuedouble);
         }
 
         bool JsonView::IsListType() const { return cJSON_IsArray(m_value) != 0; }
@@ -563,7 +561,7 @@ namespace Aws
 
         String JsonView::WriteCompact(bool treatAsObject) const
         {
-            if (!m_value)
+            if (m_value == nullptr)
             {
                 if (treatAsObject)
                 {
@@ -580,7 +578,7 @@ namespace Aws
 
         String JsonView::WriteReadable(bool treatAsObject) const
         {
-            if (!m_value)
+            if (m_value == nullptr)
             {
                 if (treatAsObject)
                 {
