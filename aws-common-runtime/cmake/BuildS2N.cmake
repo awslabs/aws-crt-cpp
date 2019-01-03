@@ -1,4 +1,5 @@
 message("Using c-flags ${CMAKE_C_FLAGS}")
+
 if("${TARGET_ARCH}" STREQUAL ANDROID)
     ExternalProject_Add(S2N
             PREFIX ${AWS_DEPS_BUILD_DIR}
@@ -18,7 +19,6 @@ if("${TARGET_ARCH}" STREQUAL ANDROID)
             -DANDROID_STL=${ANDROID_STL}
             -DENABLE_HW_OPTIMIZATION=OFF
             -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-            -DCMAKE_LINK_FLAGS=${CMAKE_LINK_FLAGS}
             )
 else()
     ExternalProject_Add(S2N
@@ -33,6 +33,5 @@ else()
             -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
             -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
             -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-            -DCMAKE_LINK_FLAGS=${CMAKE_LINK_FLAGS}
             )
 endif()

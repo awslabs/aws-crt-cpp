@@ -27,8 +27,11 @@ if (BUILD_DEPS)
                 -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
                 -DCMAKE_INSTALL_PREFIX=${AWS_DEPS_INSTALL_DIR}
                 -DGIT_EXECUTABLE=${GIT_EXECUTABLE}
+                -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
                 ${CMAKE_CURRENT_SOURCE_DIR}/aws-common-runtime
-                WORKING_DIRECTORY ${AWS_DEPS_BUILD_DIR})
+                WORKING_DIRECTORY ${AWS_DEPS_BUILD_DIR}
+        )
+
     else()
         execute_process(
                 COMMAND ${CMAKE_COMMAND} -G ${CMAKE_GENERATOR}
@@ -38,9 +41,11 @@ if (BUILD_DEPS)
                 -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
                 -DCMAKE_INSTALL_PREFIX=${AWS_DEPS_INSTALL_DIR}
                 -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=${CMAKE_CURRENT_BINARY_DIR}/bin
+                -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
                 ${CMAKE_CURRENT_SOURCE_DIR}/aws-common-runtime
                 WORKING_DIRECTORY ${AWS_DEPS_BUILD_DIR}
-                RESULT_VARIABLE BUILD_AWSCRT_EXIT_CODE)
+                RESULT_VARIABLE BUILD_AWSCRT_EXIT_CODE
+        )
     endif()
 
     if (NOT ${BUILD_AWSCRT_EXIT_CODE} EQUAL 0)
