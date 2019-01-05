@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.1)
 
 option(BUILD_DEPS "Builds aws common runtime dependencies as part of build, only do this if you don't want to control your dependency chain." OFF)
 
+if (UNIX AND NOT APPLE)
+    include(GNUInstallDirs)
+elseif(NOT DEFINED CMAKE_INSTALL_LIBDIR)
+    set(CMAKE_INSTALL_LIBDIR "lib")
+endif()
+
 if (BUILD_DEPS)
     set(AWS_DEPS_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/deps)
     if (DEFINED CMAKE_INSTALL_PREFIX)
@@ -10,7 +16,7 @@ if (BUILD_DEPS)
         set(AWS_DEPS_INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/deps/install)
     endif()
 
-    list(APPEND CMAKE_MODULE_PATH "${AWS_DEPS_INSTALL_DIR}/lib/cmake")
+    list(APPEND CMAKE_MODULE_PATH "${AWS_DEPS_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/cmake")
 
     file(MAKE_DIRECTORY ${AWS_DEPS_BUILD_DIR})
     if(TARGET_ARCH STREQUAL "ANDROID")
@@ -68,7 +74,7 @@ else()
     #the following two lines are done in this branch intentionally, don't move it. project() does some magic that
     #we want happening exactly right now.
     project(aws-crt-cpp CXX)
-    list(APPEND CMAKE_MODULE_PATH "${CMAKE_INSTALL_PREFIX}/lib/cmake")
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake")
 endif()
 
 
@@ -94,7 +100,7 @@ file(GLOB AWS_CRT_EXTERNAL_HEADERS
 
 file(GLOB AWS_CRT_CPP_HEADERS
         ${AWS_CRT_HEADERS}
-	    ${AWS_CRT_IO_HEADERS}
+	${AWS_CRT_IO_HEADERS}
         ${AWS_CRT_MQTT_HEADERS}
 )
 
@@ -164,28 +170,29 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
 find_package(aws-c-mqtt REQUIRED)
 target_link_libraries(${CMAKE_PROJECT_NAME} AWS::aws-c-mqtt)
 
-install(FILES ${AWS_CRT_HEADERS} DESTINATION "include/aws/crt")
-install(FILES ${AWS_CRT_IO_HEADERS} DESTINATION "include/aws/crt/io")
-install(FILES ${AWS_CRT_MQTT_HEADERS} DESTINATION "include/aws/crt/mqtt")
-install(FILES ${AWS_CRT_EXTERNAL_HEADERS} DESTINATION "include/aws/crt/external")
+install(FILES ${AWS_CRT_HEADERS} DESTINATION "include/aws/crt" COMPONENT Development)
+install(FILES ${AWS_CRT_IO_HEADERS} DESTINATION "include/aws/crt/io" COMPONENT Development)
+install(FILES ${AWS_CRT_MQTT_HEADERS} DESTINATION "include/aws/crt/mqtt" COMPONENT Development)
+install(FILES ${AWS_CRT_EXTERNAL_HEADERS} DESTINATION "include/aws/crt/external" COMPONENT Development)
 
 install(
         TARGETS ${CMAKE_PROJECT_NAME}
         EXPORT ${CMAKE_PROJECT_NAME}-targets
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-        LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Development
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Runtime
 )
 
 install(EXPORT "${CMAKE_PROJECT_NAME}-targets"
-        DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_PROJECT_NAME}/cmake/"
-        NAMESPACE AWS::)
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/${CMAKE_PROJECT_NAME}/cmake/"
+        NAMESPACE AWS::
+        COMPONENT Development)
 
 configure_file("cmake/${CMAKE_PROJECT_NAME}-config.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}-config.cmake"
         @ONLY)
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}-config.cmake"
-        DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_PROJECT_NAME}/cmake/")
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/${CMAKE_PROJECT_NAME}/cmake/")
 
 enable_testing()
 add_subdirectory(tests)
