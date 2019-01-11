@@ -68,7 +68,7 @@ else()
     #the following two lines are done in this branch intentionally, don't move it. project() does some magic that
     #we want happening exactly right now.
     project(aws-crt-cpp CXX)
-    list(APPEND CMAKE_MODULE_PATH "${CMAKE_INSTALL_PREFIX}/lib/cmake")
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_PREFIX_PATH}/${CMAKE_INSTALL_LIBDIR}/cmake")
 endif()
 
 

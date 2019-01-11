@@ -47,15 +47,21 @@ namespace Aws
             };
 
             /**
-             * Invoked Upon Connection failure.
+             * Invoked Upon Connection loss.
              */
-            using OnConnectionFailedHandler = std::function<void(MqttConnection &connection, int error)>;
+            using OnConnectionInteruptedHandler = std::function<void(MqttConnection &connection, int error)>;
 
             /**
-             * Invoked when a connack message is received.
+             * Invoked Upon Connection resumed.
              */
-            using OnConnAckHandler =
-                std::function<void(MqttConnection &connection, ReturnCode returnCode, bool sessionPresent)>;
+            using OnConnectionResumedHandler =
+                    std::function<void(MqttConnection &connection,  ReturnCode connectCode, bool sessionPresent)>;
+
+            /**
+             * Invoked when a connack message is received, or an error occured.
+             */
+            using OnConnectionCompletedHandler =
+                std::function<void(MqttConnection &connection, int errorCode, ReturnCode returnCode, bool sessionPresent)>;
 
             /**
              * Invoked when a suback message is received.
@@ -76,7 +82,7 @@ namespace Aws
             /**
              * Invoked when a disconnect message has been sent.
              */
-            using OnDisconnectHandler = std::function<bool(MqttConnection &connection, int error)>;
+            using OnDisconnectHandler = std::function<void(MqttConnection &connection)>;
 
             /**
              * Invoked upon receipt of a Publish message on a subscribed topic.
@@ -120,7 +126,7 @@ namespace Aws
                 bool SetLogin(const char *userName, const char *password) noexcept;
 
                 /**
-                 * Initiates the connection, OnConnectionFailedHandler and/or OnConnAckHandler will
+                 * Initiates the connection, OnConnectionCompleted will
                  * be invoked in an event-loop thread.
                  */
                 bool Connect(const char *clientId, bool cleanSession, uint16_t keepAliveTime) noexcept;
@@ -147,7 +153,7 @@ namespace Aws
                  * upon receipt of a suback message.
                  */
                 uint16_t Subscribe(
-                    const Vector<std::pair<const char *, OnPublishReceivedHandler>> topicFilters,
+                    const Vector<std::pair<const char *, OnPublishReceivedHandler>>& topicFilters,
                     QOS qos,
                     OnMultiSubAckHandler &&onOpComplete) noexcept;
 
@@ -173,11 +179,21 @@ namespace Aws
                  */
                 void Ping();
 
-                OnConnectionFailedHandler OnConnectionFailed;
-                OnConnAckHandler OnConnAck;
+                OnConnectionInteruptedHandler OnConnectionInterupted;
+                OnConnectionResumedHandler  OnConnectionResumed;
+                OnConnectionCompletedHandler OnConnectionCompleted;
                 OnDisconnectHandler OnDisconnect;
 
               private:
+                aws_mqtt_client *m_owningClient;
+                aws_mqtt_client_connection *m_underlyingConnection;
+                std::atomic<ConnectionState> m_connectionState;
+                ByteBuf m_hostNameBuf;
+                uint16_t m_port;
+                Io::TlsConnectionOptions m_tlsOptions;
+                Io::SocketOptions m_socketOptions;
+                bool m_useTls;
+
                 MqttConnection(
                     aws_mqtt_client *client,
                     const char *hostName,
@@ -190,17 +206,18 @@ namespace Aws
                     uint16_t port,
                     const Io::SocketOptions &socketOptions) noexcept;
 
-                aws_mqtt_client *m_owningClient;
-                aws_mqtt_client_connection *m_underlyingConnection;
-                std::atomic<ConnectionState> m_connectionState;
+                static void s_onConnectionInterupted(aws_mqtt_client_connection *, int errorCode, void *userData);
+                static void s_onConnectionCompleted(
+                        aws_mqtt_client_connection *,
+                        int errorCode,
+                        enum aws_mqtt_connect_return_code returnCode,
+                        bool sessionPresent,
+                        void *userData);
+                static void s_onConnectionResumed(aws_mqtt_client_connection *, ReturnCode returnCode,
+                                                           bool sessionPresent,
+                                                           void *userData);
 
-                static void s_onConnectionFailed(aws_mqtt_client_connection *connection, int errorCode, void *userData);
-                static void s_onConnAck(
-                    aws_mqtt_client_connection *connection,
-                    enum aws_mqtt_connect_return_code return_code,
-                    bool session_present,
-                    void *user_data);
-                static bool s_onDisconnect(aws_mqtt_client_connection *connection, int errorCode, void *userData);
+                static void s_onDisconnect(aws_mqtt_client_connection *connection, void *userData);
                 static void s_onPublish(
                     aws_mqtt_client_connection *connection,
                     const aws_byte_cursor *topic,

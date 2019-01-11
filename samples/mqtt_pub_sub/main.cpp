@@ -194,31 +194,29 @@ int main(int argc, char* argv[])
     std::condition_variable conditionVariable;
     bool connectionSucceeded = false;
     bool connectionClosed = false;
+    bool connectionCompleted = false;
 
     /*
      * This will execute when an mqtt connect has completed or failed.
      */
-    auto onConAck = [&](Mqtt::MqttConnection&,
+    auto onConnectionCompleted = [&](Mqtt::MqttConnection&, int errorCode,
         Mqtt::ReturnCode returnCode, bool)
     {
+        if (errorCode)
+        {
+            fprintf(stdout, "Connection failed with error %s\n", ErrorDebugString(errorCode));
+            std::lock_guard<std::mutex> lockGuard(mutex);
+            connectionSucceeded = false;
+        }
+        else
         {
             fprintf(stdout, "Connection completed with return code %d\n", returnCode);
-            fprintf(stdout, "Conneciton state %d\n", static_cast<int>(connection->GetConnectionState()));
-            std::lock_guard<std::mutex> lockGuard(mutex);
+            fprintf(stdout, "Connection state %d\n", static_cast<int>(connection->GetConnectionState()));
             connectionSucceeded = true;
         }
-        conditionVariable.notify_one();
-    };
-
-    /*
-     * This will be invoked when the TCP connection fails.
-     */
-    auto onConFailure = [&](Mqtt::MqttConnection&, int error)
-    {
         {
-            fprintf(stdout, "Connection failed with %s\n", ErrorDebugString(error));
             std::lock_guard<std::mutex> lockGuard(mutex);
-            connectionClosed = true;
+            connectionCompleted = true;
         }
         conditionVariable.notify_one();
     };
@@ -226,20 +224,17 @@ int main(int argc, char* argv[])
     /*
      * Invoked when a disconnect message has completed.
      */
-    auto onDisconnect = [&](Mqtt::MqttConnection& conn, int error) -> bool
+    auto onDisconnect = [&](Mqtt::MqttConnection& conn)
     {
         {
-            fprintf(stdout, "Connection closed with error %s\n", ErrorDebugString(error));
             fprintf(stdout, "Connection state %d\n", static_cast<int>(conn.GetConnectionState()));
             std::lock_guard<std::mutex> lockGuard(mutex);
             connectionClosed = true;
         }
         conditionVariable.notify_one();
-        return false;
     };
 
-    connection->OnConnAck = std::move(onConAck);
-    connection->OnConnectionFailed = std::move(onConFailure);
+    connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
 
     /*
@@ -253,7 +248,7 @@ int main(int argc, char* argv[])
     }
 
     std::unique_lock<std::mutex> uniqueLock(mutex);
-    conditionVariable.wait(uniqueLock, [&]() {return connectionSucceeded || connectionClosed; });
+    conditionVariable.wait(uniqueLock, [&]() {return connectionCompleted; });
 
     if (connectionSucceeded)
     {
@@ -338,10 +333,10 @@ int main(int argc, char* argv[])
         conditionVariable.wait(uniqueLock);
     }
 
-    if (!connectionClosed) {
-        /* Disconnect */
-        connection->Disconnect();
-        conditionVariable.wait(uniqueLock, [&]() { return connectionClosed; });
+    /* Disconnect */
+    if (connection->Disconnect())
+    {
+       conditionVariable.wait(uniqueLock, [&]() { return connectionClosed; });
     }
     return 0;
 }
