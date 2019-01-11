@@ -2,12 +2,22 @@ cmake_minimum_required(VERSION 3.1)
 
 option(BUILD_DEPS "Builds aws common runtime dependencies as part of build, only do this if you don't want to control your dependency chain." OFF)
 
+if (UNIX AND NOT APPLE)
+    include(GNUInstallDirs)
+elseif(NOT DEFINED CMAKE_INSTALL_LIBDIR)
+    set(CMAKE_INSTALL_LIBDIR "lib")
+endif()
+
 if (BUILD_DEPS)
     set(AWS_DEPS_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/deps)
     if (DEFINED CMAKE_INSTALL_PREFIX)
         set(AWS_DEPS_INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
     else()
         set(AWS_DEPS_INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/deps/install)
+    endif()
+
+    if (NOT DEFINED CMAKE_PREFIX_PATH)
+        set(CMAKE_PREFIX_PATH ${AWS_DEPS_INSTALL_DIR})
     endif()
 
     list(APPEND CMAKE_MODULE_PATH "${AWS_DEPS_INSTALL_DIR}/lib/cmake")
@@ -26,6 +36,7 @@ if (BUILD_DEPS)
                 -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                 -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
                 -DCMAKE_INSTALL_PREFIX=${AWS_DEPS_INSTALL_DIR}
+                -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
                 -DGIT_EXECUTABLE=${GIT_EXECUTABLE}
                 -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
                 ${CMAKE_CURRENT_SOURCE_DIR}/aws-common-runtime
@@ -40,6 +51,7 @@ if (BUILD_DEPS)
                 -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                 -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
                 -DCMAKE_INSTALL_PREFIX=${AWS_DEPS_INSTALL_DIR}
+                -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
                 -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=${CMAKE_CURRENT_BINARY_DIR}/bin
                 -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
                 ${CMAKE_CURRENT_SOURCE_DIR}/aws-common-runtime
