@@ -68,10 +68,8 @@ namespace Aws
         AWS_CRT_CPP_API ByteBuf ByteBufNewCopy(Allocator *alloc, const uint8_t *array, size_t len);
         AWS_CRT_CPP_API void ByteBufDelete(ByteBuf &);
 
-
-        AWS_CRT_CPP_API Vector<uint8_t> Base64Decode(const String& decode);
-        AWS_CRT_CPP_API String Base64Encode(const Vector<uint8_t>& encode);
-
+        AWS_CRT_CPP_API Vector<uint8_t> Base64Decode(const String &decode);
+        AWS_CRT_CPP_API String Base64Encode(const Vector<uint8_t> &encode);
 
     } // namespace Crt
 } // namespace Aws

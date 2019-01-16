@@ -25,7 +25,7 @@ namespace Aws
     {
         namespace Mqtt
         {
-            void MqttConnection::s_onConnectionInterupted(aws_mqtt_client_connection *, int errorCode, void *userData)
+            void MqttConnection::s_onConnectionInterrupted(aws_mqtt_client_connection *, int errorCode, void *userData)
             {
                 auto connWrapper = reinterpret_cast<MqttConnection *>(userData);
                 connWrapper->m_connectionState = ConnectionState::Connecting;
@@ -35,9 +35,11 @@ namespace Aws
                 }
             }
 
-            void MqttConnection::s_onConnectionResumed(aws_mqtt_client_connection *, ReturnCode returnCode,
-                                                       bool sessionPresent,
-                                                       void *userData)
+            void MqttConnection::s_onConnectionResumed(
+                aws_mqtt_client_connection *,
+                ReturnCode returnCode,
+                bool sessionPresent,
+                void *userData)
             {
                 auto connWrapper = reinterpret_cast<MqttConnection *>(userData);
                 connWrapper->m_connectionState = ConnectionState::Connected;
@@ -230,7 +232,8 @@ namespace Aws
                 self->m_hostNameBuf = aws_byte_buf_from_c_str(hostName);
                 self->m_port = port;
 
-                if (tlsConnOptions) {
+                if (tlsConnOptions)
+                {
                     self->m_tlsOptions = *tlsConnOptions;
                 }
 
@@ -243,9 +246,12 @@ namespace Aws
                     self->m_connectionState = ConnectionState::Error;
                 }
 
-                aws_mqtt_client_connection_set_connection_interruption_handlers(self->m_underlyingConnection,
-                        MqttConnection::s_onConnectionInterupted, self, MqttConnection::s_onConnectionResumed, self);
-
+                aws_mqtt_client_connection_set_connection_interruption_handlers(
+                    self->m_underlyingConnection,
+                    MqttConnection::s_onConnectionInterrupted,
+                    self,
+                    MqttConnection::s_onConnectionResumed,
+                    self);
             }
 
             MqttConnection::MqttConnection(
@@ -289,9 +295,8 @@ namespace Aws
                 ByteCursor topicCur = aws_byte_cursor_from_buf(&topicBuf);
                 ByteCursor payloadCur = aws_byte_cursor_from_buf(&payload);
 
-                return aws_mqtt_client_connection_set_will(m_underlyingConnection, &topicCur, qos, retain, &payloadCur) ==
-                       0;
-
+                return aws_mqtt_client_connection_set_will(
+                           m_underlyingConnection, &topicCur, qos, retain, &payloadCur) == 0;
             }
 
             bool MqttConnection::SetLogin(const char *userName, const char *password) noexcept
@@ -301,7 +306,6 @@ namespace Aws
                 ByteBuf pwdBuf = aws_byte_buf_from_c_str(password);
                 ByteCursor pwdCur = aws_byte_cursor_from_buf(&pwdBuf);
                 return aws_mqtt_client_connection_set_login(m_underlyingConnection, &userNameCur, &pwdCur) == 0;
-
             }
 
             bool MqttConnection::Connect(const char *clientId, bool cleanSession, uint16_t keepAliveTime) noexcept
@@ -312,8 +316,16 @@ namespace Aws
                 ByteCursor hostNameCur = aws_byte_cursor_from_buf(&m_hostNameBuf);
                 aws_tls_connection_options *tlsOptions = m_useTls ? &m_tlsOptions : nullptr;
                 if (aws_mqtt_client_connection_connect(
-                        m_underlyingConnection, &hostNameCur, m_port, &m_socketOptions, tlsOptions,
-                        &clientIdCur, cleanSession, keepAliveTime, MqttConnection::s_onConnectionCompleted, this))
+                        m_underlyingConnection,
+                        &hostNameCur,
+                        m_port,
+                        &m_socketOptions,
+                        tlsOptions,
+                        &clientIdCur,
+                        cleanSession,
+                        keepAliveTime,
+                        MqttConnection::s_onConnectionCompleted,
+                        this))
                 {
                     return false;
                 }
@@ -324,8 +336,8 @@ namespace Aws
 
             bool MqttConnection::Disconnect() noexcept
             {
-                return aws_mqtt_client_connection_disconnect(m_underlyingConnection,
-                        MqttConnection::s_onDisconnect, this) == AWS_OP_SUCCESS;
+                return aws_mqtt_client_connection_disconnect(
+                           m_underlyingConnection, MqttConnection::s_onDisconnect, this) == AWS_OP_SUCCESS;
             }
 
             uint16_t MqttConnection::Subscribe(
@@ -392,7 +404,7 @@ namespace Aws
             }
 
             uint16_t MqttConnection::Subscribe(
-                const Vector<std::pair<const char *, OnPublishReceivedHandler>>& topicFilters,
+                const Vector<std::pair<const char *, OnPublishReceivedHandler>> &topicFilters,
                 QOS qos,
                 OnMultiSubAckHandler &&onSubAck) noexcept
             {

@@ -55,13 +55,13 @@ namespace Aws
              * Invoked Upon Connection resumed.
              */
             using OnConnectionResumedHandler =
-                    std::function<void(MqttConnection &connection,  ReturnCode connectCode, bool sessionPresent)>;
+                std::function<void(MqttConnection &connection, ReturnCode connectCode, bool sessionPresent)>;
 
             /**
              * Invoked when a connack message is received, or an error occured.
              */
-            using OnConnectionCompletedHandler =
-                std::function<void(MqttConnection &connection, int errorCode, ReturnCode returnCode, bool sessionPresent)>;
+            using OnConnectionCompletedHandler = std::function<
+                void(MqttConnection &connection, int errorCode, ReturnCode returnCode, bool sessionPresent)>;
 
             /**
              * Invoked when a suback message is received.
@@ -153,7 +153,7 @@ namespace Aws
                  * upon receipt of a suback message.
                  */
                 uint16_t Subscribe(
-                    const Vector<std::pair<const char *, OnPublishReceivedHandler>>& topicFilters,
+                    const Vector<std::pair<const char *, OnPublishReceivedHandler>> &topicFilters,
                     QOS qos,
                     OnMultiSubAckHandler &&onOpComplete) noexcept;
 
@@ -180,7 +180,7 @@ namespace Aws
                 void Ping();
 
                 OnConnectionInteruptedHandler OnConnectionInterupted;
-                OnConnectionResumedHandler  OnConnectionResumed;
+                OnConnectionResumedHandler OnConnectionResumed;
                 OnConnectionCompletedHandler OnConnectionCompleted;
                 OnDisconnectHandler OnDisconnect;
 
@@ -206,16 +206,18 @@ namespace Aws
                     uint16_t port,
                     const Io::SocketOptions &socketOptions) noexcept;
 
-                static void s_onConnectionInterupted(aws_mqtt_client_connection *, int errorCode, void *userData);
+                static void s_onConnectionInterrupted(aws_mqtt_client_connection *, int errorCode, void *userData);
                 static void s_onConnectionCompleted(
-                        aws_mqtt_client_connection *,
-                        int errorCode,
-                        enum aws_mqtt_connect_return_code returnCode,
-                        bool sessionPresent,
-                        void *userData);
-                static void s_onConnectionResumed(aws_mqtt_client_connection *, ReturnCode returnCode,
-                                                           bool sessionPresent,
-                                                           void *userData);
+                    aws_mqtt_client_connection *,
+                    int errorCode,
+                    enum aws_mqtt_connect_return_code returnCode,
+                    bool sessionPresent,
+                    void *userData);
+                static void s_onConnectionResumed(
+                    aws_mqtt_client_connection *,
+                    ReturnCode returnCode,
+                    bool sessionPresent,
+                    void *userData);
 
                 static void s_onDisconnect(aws_mqtt_client_connection *connection, void *userData);
                 static void s_onPublish(
