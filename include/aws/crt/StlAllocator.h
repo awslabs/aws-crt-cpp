@@ -14,15 +14,16 @@
  * permissions and limitations under the License.
  */
 
-#include <aws/crt/Types.h>
-
 #include <assert.h>
 #include <memory>
+
+#include <aws/common/common.h>
 
 namespace Aws
 {
     namespace Crt
     {
+        using Allocator = aws_allocator;
         extern Allocator *g_allocator;
 
         template <typename T> class StlAllocator : public std::allocator<T>

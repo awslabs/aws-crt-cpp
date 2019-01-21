@@ -14,6 +14,8 @@
  */
 #include <aws/crt/Types.h>
 
+#include <aws/common/encoding.h>
+
 namespace Aws
 {
     namespace Crt
@@ -36,6 +38,48 @@ namespace Aws
         }
 
         void ByteBufDelete(ByteBuf &buf) { aws_byte_buf_clean_up(&buf); }
+
+        Vector<uint8_t> Base64Decode(const String &decode)
+        {
+            ByteCursor toDecode = aws_byte_cursor_from_array((const void *)decode.data(), decode.length());
+
+            size_t allocation_size = 0;
+
+            if (aws_base64_compute_decoded_len(&toDecode, &allocation_size) == AWS_OP_SUCCESS)
+            {
+                Vector<uint8_t> output(allocation_size, 0x00);
+                ByteBuf tempBuf = aws_byte_buf_from_array(output.data(), output.size());
+                tempBuf.len = 0;
+
+                if (aws_base64_decode(&toDecode, &tempBuf))
+                {
+                    return output;
+                }
+            }
+
+            return {};
+        }
+
+        String Base64Encode(const Vector<uint8_t> &encode)
+        {
+            ByteCursor toEncode = aws_byte_cursor_from_array((const void *)encode.data(), encode.size());
+
+            size_t allocation_size = 0;
+
+            if (aws_base64_compute_encoded_len(encode.size(), &allocation_size) == AWS_OP_SUCCESS)
+            {
+                String output(allocation_size, 0x00);
+                ByteBuf tempBuf = aws_byte_buf_from_array(output.data(), output.size());
+                tempBuf.len = 0;
+
+                if (aws_base64_encode(&toEncode, &tempBuf))
+                {
+                    return output;
+                }
+            }
+
+            return {};
+        }
 
     } // namespace Crt
 } // namespace Aws

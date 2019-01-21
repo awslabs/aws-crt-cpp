@@ -6,9 +6,10 @@ if (UNIX AND NOT APPLE)
     include(GNUInstallDirs)
 elseif(NOT DEFINED CMAKE_INSTALL_LIBDIR)
     set(CMAKE_INSTALL_LIBDIR "lib")
-    if (${CMAKE_INSTALL_LIBDIR} STREQUAL "lib64")
-        set(FIND_LIBRARY_USE_LIB64_PATHS true)
-    endif()
+endif()
+
+if (${CMAKE_INSTALL_LIBDIR} STREQUAL "lib64")
+    set(FIND_LIBRARY_USE_LIB64_PATHS true)
 endif()
 
 if (BUILD_DEPS)
@@ -20,6 +21,10 @@ if (BUILD_DEPS)
     endif()
 
     list(APPEND CMAKE_MODULE_PATH "${AWS_DEPS_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/cmake")
+
+    if (NOT DEFINED CMAKE_PREFIX_PATH)
+        set(CMAKE_PREFIX_PATH ${AWS_DEPS_INSTALL_DIR})
+    endif()
 
     file(MAKE_DIRECTORY ${AWS_DEPS_BUILD_DIR})
     if(TARGET_ARCH STREQUAL "ANDROID")
@@ -36,6 +41,7 @@ if (BUILD_DEPS)
                 -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
                 -DCMAKE_PREFIX_PATH=${AWS_DEPS_INSTALL_DIR}
                 -DCMAKE_INSTALL_PREFIX=${AWS_DEPS_INSTALL_DIR}
+                -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
                 -DGIT_EXECUTABLE=${GIT_EXECUTABLE}
                 -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
                 ${CMAKE_CURRENT_SOURCE_DIR}/aws-common-runtime
@@ -51,6 +57,7 @@ if (BUILD_DEPS)
                 -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
                 -DCMAKE_PREFIX_PATH=${AWS_DEPS_INSTALL_DIR}
                 -DCMAKE_INSTALL_PREFIX=${AWS_DEPS_INSTALL_DIR}
+                -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
                 -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=${CMAKE_CURRENT_BINARY_DIR}/bin
                 -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
                 ${CMAKE_CURRENT_SOURCE_DIR}/aws-common-runtime
@@ -79,7 +86,8 @@ else()
     #the following two lines are done in this branch intentionally, don't move it. project() does some magic that
     #we want happening exactly right now.
     project(aws-crt-cpp CXX)
-    list(APPEND CMAKE_MODULE_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake")
+
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_PREFIX_PATH}/${CMAKE_INSTALL_LIBDIR}/cmake")
 endif()
 
 
@@ -184,7 +192,8 @@ install(
         TARGETS ${CMAKE_PROJECT_NAME}
         EXPORT ${CMAKE_PROJECT_NAME}-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Development
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Runtime
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Development
+        RUNTIME DESTINATION bin COMPONENT Runtime
 )
 
 install(EXPORT "${CMAKE_PROJECT_NAME}-targets"

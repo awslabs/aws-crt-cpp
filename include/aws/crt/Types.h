@@ -14,8 +14,8 @@
  * permissions and limitations under the License.
  */
 #include <aws/crt/Exports.h>
-
 #include <aws/crt/Optional.h>
+#include <aws/crt/StlAllocator.h>
 
 #include <aws/common/common.h>
 #include <aws/io/socket.h>
@@ -40,12 +40,6 @@ namespace Aws
         using ByteBuf = aws_byte_buf;
         using ByteCursor = aws_byte_cursor;
 
-        AWS_CRT_CPP_API Allocator *DefaultAllocator() noexcept;
-        AWS_CRT_CPP_API ByteBuf ByteBufFromCString(const char *str) noexcept;
-        AWS_CRT_CPP_API ByteBuf ByteBufFromArray(const uint8_t *array, size_t len) noexcept;
-        AWS_CRT_CPP_API ByteBuf ByteBufNewCopy(Allocator *alloc, const uint8_t *array, size_t len);
-        AWS_CRT_CPP_API void ByteBufDelete(ByteBuf &);
-
         namespace Io
         {
             using SocketOptions = aws_socket_options;
@@ -67,6 +61,15 @@ namespace Aws
         template <typename K, typename V>
         using MultiMap = std::multimap<K, V, std::less<K>, StlAllocator<std::pair<const K, V>>>;
         template <typename T> using Vector = std::vector<T, StlAllocator<T>>;
+
+        AWS_CRT_CPP_API Allocator *DefaultAllocator() noexcept;
+        AWS_CRT_CPP_API ByteBuf ByteBufFromCString(const char *str) noexcept;
+        AWS_CRT_CPP_API ByteBuf ByteBufFromArray(const uint8_t *array, size_t len) noexcept;
+        AWS_CRT_CPP_API ByteBuf ByteBufNewCopy(Allocator *alloc, const uint8_t *array, size_t len);
+        AWS_CRT_CPP_API void ByteBufDelete(ByteBuf &);
+
+        AWS_CRT_CPP_API Vector<uint8_t> Base64Decode(const String &decode);
+        AWS_CRT_CPP_API String Base64Encode(const Vector<uint8_t> &encode);
 
     } // namespace Crt
 } // namespace Aws
