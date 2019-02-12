@@ -94,7 +94,32 @@ Lastly, you will need a client or server bootstrap to use a client or server pro
 non-blocking and event driven, this handles most of the "callback hell" inherent in the design. Assuming you aren't partitioning
 threads for particular use-cases, you can have a single instance of this that you pass to multiple clients.
 
-For a working Mqtt example, see samples/mqtt_pub_sub/main.cpp.
+## Sample
+
+For a working Mqtt example, see samples/mqtt_pub_sub/main.cpp. To run the sample, ensure that you have added 
+iot:Publish, iot:Receive, and iot:Subscribe permissions to your Thing's policy for topic/a/b:
+
+```json
+{
+    "Effect": "Allow",
+    "Action": [
+        "iot:Receive",
+        "iot:Publish"
+    ],
+    "Resource": [
+        "arn:aws:iot:<your-region>:<your-id>:topic/a/b"
+    ],
+},
+{
+    "Effect": "Allow",
+    "Action": [
+        "iot:Subscribe"
+    ],
+    "Resource": [
+        "arn:aws:iot:<your-region>:<your-id>:topicfilter/a/b"
+    ]
+}
+```
 
 ## License
 
