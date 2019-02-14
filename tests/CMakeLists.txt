@@ -1,4 +1,3 @@
-message("module path ${CMAKE_MODULE_PATH}")
 include(AwsTestHarness)
 enable_testing()
 include(CTest)

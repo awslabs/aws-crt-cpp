@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
 
-project(aws-crt)
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 if(NOT CMAKE_BUILD_TYPE)
