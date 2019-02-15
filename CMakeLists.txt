@@ -20,8 +20,6 @@ if (BUILD_DEPS)
         set(AWS_DEPS_INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/deps/install)
     endif()
 
-    list(APPEND CMAKE_MODULE_PATH "${AWS_DEPS_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/cmake")
-
     if (NOT DEFINED CMAKE_PREFIX_PATH)
         set(CMAKE_PREFIX_PATH ${AWS_DEPS_INSTALL_DIR})
     endif()
@@ -39,9 +37,8 @@ if (BUILD_DEPS)
                 -DANDROID_STL=${ANDROID_STL}
                 -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                 -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
-                -DCMAKE_PREFIX_PATH=${AWS_DEPS_INSTALL_DIR}
                 -DCMAKE_INSTALL_PREFIX=${AWS_DEPS_INSTALL_DIR}
-                -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
+                -DCMAKE_PREFIX_PATH=${AWS_DEPS_INSTALL_DIR}
                 -DGIT_EXECUTABLE=${GIT_EXECUTABLE}
                 -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
                 ${CMAKE_CURRENT_SOURCE_DIR}/aws-common-runtime
@@ -80,6 +77,7 @@ if (BUILD_DEPS)
     #the following two lines are done in this branch intentionally, don't move it. project() does some magic that
     #we don't want happening until we're done with the above code.
     list(APPEND CMAKE_PREFIX_PATH "${AWS_DEPS_INSTALL_DIR}")
+
     project(aws-crt-cpp CXX)
 
 else()
@@ -87,9 +85,8 @@ else()
     #we want happening exactly right now.
     project(aws-crt-cpp CXX)
 
-    list(APPEND CMAKE_MODULE_PATH "${CMAKE_PREFIX_PATH}/${CMAKE_INSTALL_LIBDIR}/cmake")
 endif()
-
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_PREFIX_PATH}/${CMAKE_INSTALL_LIBDIR}/cmake")
 
 if (NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 11)
@@ -97,6 +94,10 @@ endif()
 
 file(GLOB AWS_CRT_HEADERS
         "include/aws/crt/*.h"
+)
+
+file(GLOB AWS_CRT_CRYPTO_HEADERS
+        "include/aws/crt/crypto/*.h"
 )
 
 file(GLOB AWS_CRT_IO_HEADERS
@@ -113,12 +114,17 @@ file(GLOB AWS_CRT_EXTERNAL_HEADERS
 
 file(GLOB AWS_CRT_CPP_HEADERS
         ${AWS_CRT_HEADERS}
-	${AWS_CRT_IO_HEADERS}
+        ${AWS_CRT_CRYPTO_HEADERS}
+        ${AWS_CRT_IO_HEADERS}
         ${AWS_CRT_MQTT_HEADERS}
 )
 
 file(GLOB AWS_CRT_SRC 
        "source/*.cpp"
+)
+
+file(GLOB AWS_CRT_CRYPTO_SRC
+       "source/crypto/*.cpp"
 )
 
 file (GLOB AWS_CRT_IO_SRC
@@ -135,6 +141,7 @@ file(GLOB AWS_CRT_EXTERNAL_CRC
 
 file(GLOB AWS_CRT_CPP_SRC
         ${AWS_CRT_SRC}
+        ${AWS_CRT_CRYPTO_SRC}
         ${AWS_CRT_IO_SRC}
         ${AWS_CRT_MQTT_SRC}
         ${AWS_CRT_EXTERNAL_CRC}
@@ -143,11 +150,13 @@ file(GLOB AWS_CRT_CPP_SRC
 if (WIN32)
     if (MSVC)
         source_group("Header Files\\aws\\crt" FILES ${AWS_CRT_HEADERS})
+        source_group("Header Files\\aws\\crt\\crypto" FILES ${AWS_CRT_CRYPTO_HEADERS})
         source_group("Header Files\\aws\\crt\\io" FILES ${AWS_CRT_IO_HEADERS})
         source_group("Header Files\\aws\\crt\\mqtt" FILES ${AWS_CRT_MQTT_HEADERS})
         source_group("Header Files\\aws\\crt\\external" FILES ${AWS_CRT_EXTERNAL_HEADERS})
 
         source_group("Source Files" FILES ${AWS_CRT_SRC})
+        source_group("Source Files\\crypto" FILES ${AWS_CRT_CRYPTO_SRC})
         source_group("Source Files\\io" FILES ${AWS_CRT_IO_SRC})
         source_group("Source Files\\mqtt" FILES ${AWS_CRT_MQTT_SRC})
         source_group("Source Files\\external" FILES ${AWS_CRT_EXTERNAL_SRC})
@@ -181,9 +190,11 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         $<INSTALL_INTERFACE:include>)
 
 find_package(aws-c-mqtt REQUIRED)
-target_link_libraries(${CMAKE_PROJECT_NAME} AWS::aws-c-mqtt)
+find_package(aws-c-cal REQUIRED)
+target_link_libraries(${CMAKE_PROJECT_NAME} AWS::aws-c-cal AWS::aws-c-mqtt)
 
 install(FILES ${AWS_CRT_HEADERS} DESTINATION "include/aws/crt" COMPONENT Development)
+install(FILES ${AWS_CRT_CRYPTO_HEADERS} DESTINATION "include/aws/crt/crypto" COMPONENT Development)
 install(FILES ${AWS_CRT_IO_HEADERS} DESTINATION "include/aws/crt/io" COMPONENT Development)
 install(FILES ${AWS_CRT_MQTT_HEADERS} DESTINATION "include/aws/crt/mqtt" COMPONENT Development)
 install(FILES ${AWS_CRT_EXTERNAL_HEADERS} DESTINATION "include/aws/crt/external" COMPONENT Development)
