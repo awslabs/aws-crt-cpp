@@ -27,14 +27,14 @@ namespace Aws
             TlsContextOptions TlsContextOptions::InitDefaultClient() noexcept
             {
                 TlsContextOptions ctxOptions;
-                aws_tls_ctx_options_init_default_client(&ctxOptions.m_options);
+                aws_tls_ctx_options_init_default_client(&ctxOptions.m_options, aws_default_allocator());
                 return ctxOptions;
             }
 
             TlsContextOptions TlsContextOptions::InitClientWithMtls(const char *certPath, const char *pKeyPath) noexcept
             {
                 TlsContextOptions ctxOptions;
-                aws_tls_ctx_options_init_client_mtls(&ctxOptions.m_options, certPath, pKeyPath);
+                aws_tls_ctx_options_init_client_mtls_from_path(&ctxOptions.m_options, aws_default_allocator(), certPath, pKeyPath);
                 return ctxOptions;
             }
 
@@ -43,7 +43,8 @@ namespace Aws
                 const char *pkcs12Pwd) noexcept
             {
                 TlsContextOptions ctxOptions;
-                aws_tls_ctx_options_init_client_mtls_pkcs12(&ctxOptions.m_options, pkcs12Path, pkcs12Pwd);
+                struct aws_byte_cursor password = aws_byte_cursor_from_c_str(pkcs12Pwd);
+                aws_tls_ctx_options_init_client_mtls_pkcs12_from_path(&ctxOptions.m_options, aws_default_allocator(), pkcs12Path, &password);
                 return ctxOptions;
             }
 
@@ -61,7 +62,7 @@ namespace Aws
 
             void TlsContextOptions::OverrideDefaultTrustStore(const char *caPath, const char *caFile) noexcept
             {
-                aws_tls_ctx_options_override_default_trust_store(&m_options, caPath, caFile);
+                aws_tls_ctx_options_override_default_trust_store_from_path(&m_options, caPath, caFile);
             }
 
             void InitTlsStaticState(Aws::Crt::Allocator *alloc) noexcept { aws_tls_init_static_state(alloc); }
