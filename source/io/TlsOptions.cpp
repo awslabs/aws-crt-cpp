@@ -37,7 +37,7 @@ namespace Aws
                 aws_tls_ctx_options_init_client_mtls_from_path(&ctxOptions.m_options, aws_default_allocator(), certPath, pKeyPath);
                 return ctxOptions;
             }
-
+#ifdef __APPLE__
             TlsContextOptions TlsContextOptions::InitClientWithMtlsPkcs12(
                 const char *pkcs12Path,
                 const char *pkcs12Pwd) noexcept
@@ -47,6 +47,7 @@ namespace Aws
                 aws_tls_ctx_options_init_client_mtls_pkcs12_from_path(&ctxOptions.m_options, aws_default_allocator(), pkcs12Path, &password);
                 return ctxOptions;
             }
+#endif
 
             bool TlsContextOptions::IsAlpnSupported() noexcept { return aws_tls_is_alpn_available(); }
 
