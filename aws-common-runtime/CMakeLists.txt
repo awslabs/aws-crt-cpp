@@ -17,7 +17,7 @@ set(AWS_DEPS_DOWNLOAD_DIR "${AWS_DEPS_BUILD_DIR}/downloads" CACHE PATH "Dependen
 
 message("install dir ${AWS_DEPS_INSTALL_DIR}")
 set(AWS_C_COMMON_URL "https://github.com/awslabs/aws-c-common.git")
-set(AWS_C_COMMON_SHA "v0.3.2")
+#set(AWS_C_COMMON_SHA "v0.3.2")
 include(BuildAwsCCommon)
 
 if (UNIX AND NOT APPLE)
@@ -27,11 +27,11 @@ if (UNIX AND NOT APPLE)
 endif()
 
 set(AWS_C_IO_URL "https://github.com/awslabs/aws-c-io.git")
-set(AWS_C_IO_SHA "v0.2.2")
+#set(AWS_C_IO_SHA "c109ffe3156f759723e0609b46182201c65a64e4")
 include(BuildAwsCIO)
 
 set(AWS_C_MQTT_URL "https://github.com/awslabs/aws-c-mqtt.git")
-set(AWS_C_MQTT_SHA "v0.2.1")
+set(AWS_C_MQTT_SHA "434f48d970dfa8a0a50eefeeaeaeb08b78bce0d9")
 include(BuildAwsCMqtt)
 
 set(AWS_C_CAL_URL "https://github.com/awslabs/aws-c-cal.git")
