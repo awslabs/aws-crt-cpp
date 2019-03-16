@@ -31,7 +31,7 @@ set(AWS_C_IO_SHA "c109ffe3156f759723e0609b46182201c65a64e4")
 include(BuildAwsCIO)
 
 set(AWS_C_MQTT_URL "https://github.com/awslabs/aws-c-mqtt.git")
-set(AWS_C_MQTT_SHA "434f48d970dfa8a0a50eefeeaeaeb08b78bce0d9")
+set(AWS_C_MQTT_SHA "v0.2.2")
 include(BuildAwsCMqtt)
 
 set(AWS_C_CAL_URL "https://github.com/awslabs/aws-c-cal.git")
