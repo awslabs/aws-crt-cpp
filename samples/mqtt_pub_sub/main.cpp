@@ -323,9 +323,8 @@ int main(int argc, char* argv[])
         };
 
         packetId = connection->Subscribe("a/b", AWS_MQTT_QOS_AT_LEAST_ONCE, onPublish, onSubAck);
-        conditionVariable.wait(uniqueLock);
-
         waitForSub = false;
+        conditionVariable.wait(uniqueLock);
         /*
          * Unsubscribe from the topic.
          */
