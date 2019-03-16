@@ -17,7 +17,7 @@ set(AWS_DEPS_DOWNLOAD_DIR "${AWS_DEPS_BUILD_DIR}/downloads" CACHE PATH "Dependen
 
 message("install dir ${AWS_DEPS_INSTALL_DIR}")
 set(AWS_C_COMMON_URL "https://github.com/awslabs/aws-c-common.git")
-set(AWS_C_COMMON_SHA "a09c1862277be957acfbf4f9de97632b07faf6f9")
+set(AWS_C_COMMON_SHA "v0.3.4")
 include(BuildAwsCCommon)
 
 if (UNIX AND NOT APPLE)
