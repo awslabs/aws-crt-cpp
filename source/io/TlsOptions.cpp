@@ -27,7 +27,7 @@ namespace Aws
             TlsContextOptions TlsContextOptions::InitDefaultClient() noexcept
             {
                 TlsContextOptions ctxOptions;
-                aws_tls_ctx_options_init_default_client(&ctxOptions.m_options, aws_default_allocator());
+                aws_tls_ctx_options_init_default_client(&ctxOptions.m_options, g_allocator);
                 return ctxOptions;
             }
 
@@ -35,7 +35,7 @@ namespace Aws
             {
                 TlsContextOptions ctxOptions;
                 aws_tls_ctx_options_init_client_mtls_from_path(
-                    &ctxOptions.m_options, aws_default_allocator(), certPath, pKeyPath);
+                    &ctxOptions.m_options, g_allocator, certPath, pKeyPath);
                 return ctxOptions;
             }
 #ifdef __APPLE__
@@ -46,7 +46,7 @@ namespace Aws
                 TlsContextOptions ctxOptions;
                 struct aws_byte_cursor password = aws_byte_cursor_from_c_str(pkcs12Pwd);
                 aws_tls_ctx_options_init_client_mtls_pkcs12_from_path(
-                    &ctxOptions.m_options, aws_default_allocator(), pkcs12Path, &password);
+                    &ctxOptions.m_options, g_allocator, pkcs12Path, &password);
                 return ctxOptions;
             }
 #endif
