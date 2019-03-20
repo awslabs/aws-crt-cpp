@@ -16,7 +16,7 @@
  */
 
 #if defined(USE_WINDOWS_DLL_SEMANTICS) || defined(WIN32)
-#    ifdef USE_IMPORT_EXPORT
+#    ifdef AWS_CRT_CPP_USE_IMPORT_EXPORT
 #        ifdef AWS_CRT_CPP_EXPORTS
 #            define AWS_CRT_CPP_API __declspec(dllexport)
 #        else
@@ -24,8 +24,12 @@
 #        endif /* AWS_CRT_CPP_API */
 #    else
 #        define AWS_CRT_CPP_API
-#    endif // USE_IMPORT_EXPORT
+#    endif // AWS_CRT_CPP_USE_IMPORT_EXPORT
 
 #else // defined (USE_WINDOWS_DLL_SEMANTICS) || defined (WIN32)
-#    define AWS_CRT_CPP_API
-#endif // defined (USE_WINDOWS_DLL_SEMANTICS) || defined (WIN32)
+#    if ((__GNUC__ >= 4) || defined(__clang__)) && defined(AWS_CRT_CPP_USE_IMPORT_EXPORT) && defined(AWS_CRT_CPP_EXPORTS)
+#        define AWS_CRT_CPP_API __attribute__((visibility("default")))
+#    else
+#        define AWS_CRT_CPP_API
+#    endif // __GNUC__ >= 4 || defined(__clang__)
+# endif

@@ -28,7 +28,7 @@ namespace Aws
 
             ClientBootstrap::~ClientBootstrap()
             {
-                if (*this)
+                if (m_bootstrap)
                 {
                     aws_client_bootstrap_destroy(m_bootstrap);
                     m_bootstrap = nullptr;

@@ -308,7 +308,7 @@ namespace Aws
                 return aws_mqtt_client_connection_set_login(m_underlyingConnection, &userNameCur, &pwdCur) == 0;
             }
 
-            bool MqttConnection::Connect(const char *clientId, bool cleanSession, uint16_t keepAliveTime) noexcept
+            bool MqttConnection::Connect(const char *clientId, bool cleanSession, uint16_t keepAliveTime, uint32_t requestTimeoutMs) noexcept
             {
                 ByteBuf clientIdBuf = aws_byte_buf_from_c_str(clientId);
                 ByteCursor clientIdCur = aws_byte_cursor_from_buf(&clientIdBuf);
@@ -324,6 +324,7 @@ namespace Aws
                         &clientIdCur,
                         cleanSession,
                         keepAliveTime,
+                        requestTimeoutMs,
                         MqttConnection::s_onConnectionCompleted,
                         this))
                 {

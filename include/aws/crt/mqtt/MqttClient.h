@@ -129,7 +129,7 @@ namespace Aws
                  * Initiates the connection, OnConnectionCompleted will
                  * be invoked in an event-loop thread.
                  */
-                bool Connect(const char *clientId, bool cleanSession, uint16_t keepAliveTime) noexcept;
+                bool Connect(const char *clientId, bool cleanSession, uint16_t keepAliveTime = 0, uint32_t requestTimeoutMs = 0) noexcept;
 
                 /**
                  * Initiates disconnect, OnDisconnectHandler will be invoked in an event-loop thread.

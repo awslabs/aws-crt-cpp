@@ -140,9 +140,9 @@ int main(int argc, char* argv[])
     socketOptions.connect_timeout_ms = 3000;
     socketOptions.domain = AWS_SOCKET_IPV4;
     socketOptions.type = AWS_SOCKET_STREAM;
-    socketOptions.keep_alive_interval_sec = 0;
-    socketOptions.keep_alive_timeout_sec = 0;
-    socketOptions.keepalive = false;
+    socketOptions.keep_alive_interval_sec = 1;
+    socketOptions.keep_alive_timeout_sec = 1;
+    socketOptions.keepalive = true;
 
     Io::ClientBootstrap bootstrap(eventLoopGroup);
 
@@ -221,6 +221,15 @@ int main(int argc, char* argv[])
         conditionVariable.notify_one();
     };
 
+    auto onInterupted = [&](Mqtt::MqttConnection &, int error)
+    {
+        fprintf(stdout, "Connection interrupted with error %s\n", ErrorDebugString(error));
+    };
+
+    auto onResumed = [&](Mqtt::MqttConnection &, Mqtt::ReturnCode, bool) {
+        fprintf(stdout, "Connection resumed\n");
+    };
+
     /*
      * Invoked when a disconnect message has completed.
      */
@@ -236,11 +245,13 @@ int main(int argc, char* argv[])
 
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
+    connection->OnConnectionInterupted = std::move(onInterupted);
+    connection->OnConnectionResumed = std::move(onResumed);
 
     /*
      * Actually perform the connect dance.
      */
-    if (!connection->Connect("client_id12335456", true, 0))
+    if (!connection->Connect("client_id12335456", true, 30, 250))
     {
         fprintf(stderr, "MQTT Connection failed with error %s\n",
             ErrorDebugString(connection->LastError()));
@@ -273,7 +284,7 @@ int main(int argc, char* argv[])
 
             if (!waitForSub)
             {
-                conditionVariable.notify_one();
+                //conditionVariable.notify_one();
             }
         };
 
@@ -295,7 +306,7 @@ int main(int argc, char* argv[])
              fwrite(byteBuf.buffer, 1, byteBuf.len, stdout);
              fprintf(stdout, "\n");
           
-             conditionVariable.notify_one();
+             //conditionVariable.notify_one();
         };
 
         waitForSub = true;
