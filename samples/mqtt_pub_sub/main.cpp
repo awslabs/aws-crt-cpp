@@ -144,11 +144,10 @@ int main(int argc, char *argv[])
     socketOptions.connect_timeout_ms = 3000;
     socketOptions.domain = AWS_SOCKET_IPV4;
     socketOptions.type = AWS_SOCKET_STREAM;
-    /* this section is just to show how you can use keep alive to detect disconnects quickly.
-     * it's usually a better practice not to break OSI layering for an application concern. This
-     * also isn't guranteed to work everywhere, but we've done a lot of work to make sure it works
-     * most of the time. The following keep alive values will tell you about a disconnect within 1 second
-     * of it occuring. Use Mqtt PING instead of this unless you have a compelling reason to do otherwise. */
+    /* Configuring the socket with low keep-alive values will detect disconnects quickly.
+     * Not every platform supports configuration of socket keep-alive,
+     * so if this does not work for you try configuring MQTT's keep-alive values
+     * in MqttClient.Connect() */
     socketOptions.keep_alive_interval_sec = 1;
     socketOptions.keep_alive_timeout_sec = 1;
     socketOptions.keep_alive_max_failed_probes = 1;
