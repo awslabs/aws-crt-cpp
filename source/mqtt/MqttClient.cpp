@@ -141,6 +141,7 @@ namespace Aws
                     aws_mem_release(
                         callbackData->allocator, reinterpret_cast<void *>(const_cast<char *>(callbackData->topic)));
                 }
+
                 callbackData->~OpCompleteCallbackData();
                 aws_mem_release(callbackData->allocator, reinterpret_cast<void *>(callbackData));
             }
@@ -308,24 +309,26 @@ namespace Aws
                 return aws_mqtt_client_connection_set_login(m_underlyingConnection, &userNameCur, &pwdCur) == 0;
             }
 
-            bool MqttConnection::Connect(const char *clientId, bool cleanSession, uint16_t keepAliveTime) noexcept
+            bool MqttConnection::Connect(
+                const char *clientId,
+                bool cleanSession,
+                uint16_t keepAliveTime,
+                uint32_t requestTimeoutMs) noexcept
             {
-                ByteBuf clientIdBuf = aws_byte_buf_from_c_str(clientId);
-                ByteCursor clientIdCur = aws_byte_cursor_from_buf(&clientIdBuf);
+                aws_mqtt_connection_options options;
+                AWS_ZERO_STRUCT(options);
+                options.client_id = aws_byte_cursor_from_c_str(clientId);
+                options.host_name = aws_byte_cursor_from_buf(&m_hostNameBuf);
+                options.tls_options = m_useTls ? &m_tlsOptions : nullptr;
+                options.port = m_port;
+                options.socket_options = &m_socketOptions;
+                options.clean_session = cleanSession;
+                options.keep_alive_time_secs = keepAliveTime;
+                options.ping_timeout_ms = requestTimeoutMs;
+                options.on_connection_complete = MqttConnection::s_onConnectionCompleted;
+                options.user_data = this;
 
-                ByteCursor hostNameCur = aws_byte_cursor_from_buf(&m_hostNameBuf);
-                aws_tls_connection_options *tlsOptions = m_useTls ? &m_tlsOptions : nullptr;
-                if (aws_mqtt_client_connection_connect(
-                        m_underlyingConnection,
-                        &hostNameCur,
-                        m_port,
-                        &m_socketOptions,
-                        tlsOptions,
-                        &clientIdCur,
-                        cleanSession,
-                        keepAliveTime,
-                        MqttConnection::s_onConnectionCompleted,
-                        this))
+                if (aws_mqtt_client_connection_connect(m_underlyingConnection, &options))
                 {
                     return false;
                 }

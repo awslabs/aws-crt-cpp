@@ -12,6 +12,10 @@ if (${CMAKE_INSTALL_LIBDIR} STREQUAL "lib64")
     set(FIND_LIBRARY_USE_LIB64_PATHS true)
 endif()
 
+if (NOT CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 11)
+endif()
+
 if (BUILD_DEPS)
     set(AWS_DEPS_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/deps)
     if (DEFINED CMAKE_INSTALL_PREFIX)
@@ -88,9 +92,8 @@ else()
 endif()
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_PREFIX_PATH}/${CMAKE_INSTALL_LIBDIR}/cmake")
 
-if (NOT CMAKE_CXX_STANDARD)
-    set(CMAKE_CXX_STANDARD 11)
-endif()
+include(AwsCFlags)
+include(AwsSharedLibSetup)
 
 file(GLOB AWS_CRT_HEADERS
         "include/aws/crt/*.h"
@@ -165,14 +168,15 @@ endif()
 
 add_library(${CMAKE_PROJECT_NAME} ${AWS_CRT_CPP_SRC})
 
-if (BUILD_SHARED_LIBS AND WIN32)
-    target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC -DUSE_IMPORT_EXPORT)
+if (BUILD_SHARED_LIBS)
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC -DAWS_CRT_CPP_USE_IMPORT_EXPORT)
     target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE -DAWS_CRT_CPP_EXPORTS)
 endif()
 
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
 
-set(CMAKE_C_FLAGS_DEBUGOPT "")
+aws_prepare_symbol_visibility_args(${CMAKE_PROJECT_NAME} "AWS_CRT_CPP")
 
 #set warnings
 if (MSVC)
