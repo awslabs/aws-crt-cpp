@@ -27,11 +27,11 @@ if (UNIX AND NOT APPLE)
 endif()
 
 set(AWS_C_IO_URL "https://github.com/awslabs/aws-c-io.git")
-set(AWS_C_IO_SHA "v0.2.3")
+set(AWS_C_IO_SHA "v0.2.4")
 include(BuildAwsCIO)
 
 set(AWS_C_MQTT_URL "https://github.com/awslabs/aws-c-mqtt.git")
-set(AWS_C_MQTT_SHA "v0.2.2")
+set(AWS_C_MQTT_SHA "v0.3.1")
 include(BuildAwsCMqtt)
 
 set(AWS_C_CAL_URL "https://github.com/awslabs/aws-c-cal.git")
@@ -46,3 +46,4 @@ if (UNIX AND NOT APPLE)
 else()
     add_dependencies(AwsCIO AwsCCommon )
 endif()
+
