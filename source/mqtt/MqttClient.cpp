@@ -29,9 +29,9 @@ namespace Aws
             {
                 auto connWrapper = reinterpret_cast<MqttConnection *>(userData);
                 connWrapper->m_connectionState = ConnectionState::Connecting;
-                if (connWrapper->OnConnectionInterupted)
+                if (connWrapper->OnConnectionInterrupted)
                 {
-                    connWrapper->OnConnectionInterupted(*connWrapper, errorCode);
+                    connWrapper->OnConnectionInterrupted(*connWrapper, errorCode);
                 }
             }
 

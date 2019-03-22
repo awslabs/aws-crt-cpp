@@ -28,7 +28,7 @@ namespace Aws
             /**
              * Computes a SHA256 HMAC with secret over input, and writes the digest to output. If truncateTo is
              * non-zero, the digest will be truncated to the value of truncateTo. Returns true on success. If this
-             * function fails, Aws::Crt::LastError() will contain the error that occured. Unless you're using
+             * function fails, Aws::Crt::LastError() will contain the error that occurred. Unless you're using
              * 'truncateTo', output should have a minimum capacity of SHA256_HMAC_DIGEST_SIZE.
              */
             bool AWS_CRT_CPP_API ComputeSHA256HMAC(
@@ -41,7 +41,7 @@ namespace Aws
             /**
              * Computes a SHA256 HMAC using the default allocator with secret over input, and writes the digest to
              * output. If truncateTo is non-zero, the digest will be truncated to the value of truncateTo. Returns true
-             * on success. If this function fails, Aws::Crt::LastError() will contain the error that occured. Unless
+             * on success. If this function fails, Aws::Crt::LastError() will contain the error that occurred. Unless
              * you're using 'truncateTo', output should have a minimum capacity of SHA256_HMAC_DIGEST_SIZE.
              */
             bool AWS_CRT_CPP_API ComputeSHA256HMAC(
@@ -51,7 +51,7 @@ namespace Aws
                 size_t truncateTo = 0) noexcept;
             /**
              * Streaming HMAC object. The typical use case is for computing the HMAC of an object that is too large to
-             * load into memory. You can call Update() mutliple times as you load chunks of data into memory. When
+             * load into memory. You can call Update() multiple times as you load chunks of data into memory. When
              * you're finished simply call Digest(). After Digest() is called, this object is no longer usable.
              */
             class AWS_CRT_CPP_API HMAC final
