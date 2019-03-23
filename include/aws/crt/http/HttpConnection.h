@@ -21,6 +21,7 @@
 #include <aws/crt/io/TlsOptions.h>
 
 #include <memory>
+#include <functional>
 
 namespace Aws
 {
@@ -68,6 +69,8 @@ namespace Aws
                 HttpStream& operator=(HttpStream&&) = delete;
 
                 const std::shared_ptr<HttpConnection> & GetConnection() const noexcept;
+                int GetIncommingResponseStatusCode() const noexcept;
+                void UpdateWindow(std::size_t incrementSize) noexcept;
 
             private:
                 HttpStream(const std::shared_ptr<HttpConnection> &connection) noexcept;
@@ -79,7 +82,6 @@ namespace Aws
                 OnIncomingHeadersBlockDone m_onIncomingHeadersBlockDone;
                 OnIncomingBody m_onIncomingBody;
                 OnStreamComplete m_onStreamComplete;
-                std::shared_ptr<HttpConnection> m_owningConnection;
 
                 static enum aws_http_outgoing_body_state s_onStreamOutgoingBody(struct aws_http_stream *stream, struct aws_byte_buf *buf, void *user_data) noexcept;
                 static void s_onIncomingHeaders(struct aws_http_stream *stream, const struct aws_http_header *header_array, size_t num_headers, void *user_data) noexcept;
