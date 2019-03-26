@@ -17,6 +17,10 @@ add_test_case(BasicJsonParsing)
 add_test_case(SHA256ResourceSafety)
 add_test_case(MD5ResourceSafety)
 add_test_case(SHA256HMACResourceSafety)
+add_test_case(HttpDownloadNoBackPressure)
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 
+add_custom_command(TARGET ${TEST_BINARY_NAME} PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources ${CMAKE_CURRENT_BINARY_DIR})

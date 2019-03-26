@@ -319,7 +319,8 @@ namespace Aws
                 AWS_ZERO_STRUCT(options);
                 options.client_id = aws_byte_cursor_from_c_str(clientId);
                 options.host_name = aws_byte_cursor_from_buf(&m_hostNameBuf);
-                options.tls_options = m_useTls ? &m_tlsOptions : nullptr;
+                options.tls_options =
+                    m_useTls ? const_cast<aws_tls_connection_options *>(m_tlsOptions.GetUnderlyingHandle()) : nullptr;
                 options.port = m_port;
                 options.socket_options = &m_socketOptions;
                 options.clean_session = cleanSession;
