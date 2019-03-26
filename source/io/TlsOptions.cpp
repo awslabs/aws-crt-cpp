@@ -23,6 +23,10 @@ namespace Aws
         namespace Io
         {
             TlsContextOptions::TlsContextOptions() noexcept { AWS_ZERO_STRUCT(m_options); }
+            TlsContextOptions::~TlsContextOptions()
+            {
+                aws_tls_ctx_options_clean_up(&m_options);
+            }
 
             TlsContextOptions TlsContextOptions::InitDefaultClient() noexcept
             {
