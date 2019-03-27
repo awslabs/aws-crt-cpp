@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
 
     /*
      * Since no exceptions are used, always check the bool operator
-     * when an error could have occured.
+     * when an error could have occurred.
      */
     if (!mqttClient)
     {
@@ -224,7 +224,7 @@ int main(int argc, char *argv[])
         conditionVariable.notify_one();
     };
 
-    auto onInterupted = [&](Mqtt::MqttConnection &, int error) {
+    auto onInterrupted = [&](Mqtt::MqttConnection &, int error) {
         fprintf(stdout, "Connection interrupted with error %s\n", ErrorDebugString(error));
     };
 
@@ -244,7 +244,7 @@ int main(int argc, char *argv[])
 
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
-    connection->OnConnectionInterupted = std::move(onInterupted);
+    connection->OnConnectionInterrupted = std::move(onInterrupted);
     connection->OnConnectionResumed = std::move(onResumed);
 
     /*
@@ -267,7 +267,7 @@ int main(int argc, char *argv[])
          * This is invoked upon the receipt of a Publish on a subscribed topic.
          */
         auto onPublish = [&](Mqtt::MqttConnection &, const String &topic, const ByteBuf &byteBuf) {
-            fprintf(stdout, "Publish recieved on topic %s\n", topic.c_str());
+            fprintf(stdout, "Publish received on topic %s\n", topic.c_str());
             fprintf(stdout, "\n Message:\n");
             fwrite(byteBuf.buffer, 1, byteBuf.len, stdout);
             fprintf(stdout, "\n");
