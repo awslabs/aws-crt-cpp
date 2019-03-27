@@ -24,11 +24,11 @@ namespace Aws
         {
             TlsContextOptions::~TlsContextOptions() { aws_tls_ctx_options_clean_up(&m_options); }
 
-            TlsContextOptions::TlsContextOptions(Allocator *allocator) noexcept { AWS_ZERO_STRUCT(m_options); }
+            TlsContextOptions::TlsContextOptions() noexcept { AWS_ZERO_STRUCT(m_options); }
 
             TlsContextOptions TlsContextOptions::InitDefaultClient(Allocator *allocator) noexcept
             {
-                TlsContextOptions ctxOptions(allocator);
+                TlsContextOptions ctxOptions;
                 aws_tls_ctx_options_init_default_client(&ctxOptions.m_options, allocator);
                 return ctxOptions;
             }
@@ -38,7 +38,7 @@ namespace Aws
                 const char *pKeyPath,
                 Allocator *allocator) noexcept
             {
-                TlsContextOptions ctxOptions(allocator);
+                TlsContextOptions ctxOptions;
                 aws_tls_ctx_options_init_client_mtls_from_path(&ctxOptions.m_options, allocator, certPath, pKeyPath);
                 return ctxOptions;
             }
@@ -48,7 +48,7 @@ namespace Aws
                 const char *pkcs12Pwd,
                 Allocator *allocator) noexcept
             {
-                TlsContextOptions ctxOptions(allocator);
+                TlsContextOptions ctxOptions;
                 struct aws_byte_cursor password = aws_byte_cursor_from_c_str(pkcs12Pwd);
                 aws_tls_ctx_options_init_client_mtls_pkcs12_from_path(
                     &ctxOptions.m_options, allocator, pkcs12Path, &password);
