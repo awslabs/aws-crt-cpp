@@ -29,7 +29,7 @@ namespace Aws
             /**
              * Computes a SHA256 Hash over input, and writes the digest to output. If truncateTo is non-zero, the digest
              * will be truncated to the value of truncateTo. Returns true on success. If this function fails,
-             * Aws::Crt::LastError() will contain the error that occured. Unless you're using 'truncateTo', output
+             * Aws::Crt::LastError() will contain the error that occurred. Unless you're using 'truncateTo', output
              * should have a minimum capacity of SHA256_DIGEST_SIZE.
              */
             bool AWS_CRT_CPP_API ComputeSHA256(
@@ -41,7 +41,7 @@ namespace Aws
             /**
              * Computes a SHA256 Hash using the default allocator over input, and writes the digest to output. If
              * truncateTo is non-zero, the digest will be truncated to the value of truncateTo. Returns true on success.
-             * If this function fails, Aws::Crt::LastError() will contain the error that occured. Unless you're using
+             * If this function fails, Aws::Crt::LastError() will contain the error that occurred. Unless you're using
              * 'truncateTo', output should have a minimum capacity of SHA256_DIGEST_SIZE.
              */
             bool AWS_CRT_CPP_API
@@ -50,7 +50,7 @@ namespace Aws
             /**
              * Computes a MD5 Hash over input, and writes the digest to output. If truncateTo is non-zero, the digest
              * will be truncated to the value of truncateTo. Returns true on success. If this function fails,
-             * Aws::Crt::LastError() will contain the error that occured. Unless you're using 'truncateTo',
+             * Aws::Crt::LastError() will contain the error that occurred. Unless you're using 'truncateTo',
              * output should have a minimum capacity of MD5_DIGEST_SIZE.
              */
             bool AWS_CRT_CPP_API ComputeMD5(
@@ -62,14 +62,14 @@ namespace Aws
             /**
              * Computes a MD5 Hash using the default allocator over input, and writes the digest to output. If
              * truncateTo is non-zero, the digest will be truncated to the value of truncateTo. Returns true on success.
-             * If this function fails, Aws::Crt::LastError() will contain the error that occured. Unless you're using
+             * If this function fails, Aws::Crt::LastError() will contain the error that occurred. Unless you're using
              * 'truncateTo', output should have a minimum capacity of MD5_DIGEST_SIZE.
              */
             bool AWS_CRT_CPP_API ComputeMD5(const ByteCursor &input, ByteBuf &output, size_t truncateTo = 0) noexcept;
 
             /**
              * Streaming Hash object. The typical use case is for computing the hash of an object that is too large to
-             * load into memory. You can call Update() mutliple times as you load chunks of data into memory. When
+             * load into memory. You can call Update() multiple times as you load chunks of data into memory. When
              * you're finished simply call Digest(). After Digest() is called, this object is no longer usable.
              */
             class AWS_CRT_CPP_API Hash final

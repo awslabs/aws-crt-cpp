@@ -49,7 +49,7 @@ namespace Aws
             /**
              * Invoked Upon Connection loss.
              */
-            using OnConnectionInteruptedHandler = std::function<void(MqttConnection &connection, int error)>;
+            using OnConnectionInterruptedHandler = std::function<void(MqttConnection &connection, int error)>;
 
             /**
              * Invoked Upon Connection resumed.
@@ -58,7 +58,7 @@ namespace Aws
                 std::function<void(MqttConnection &connection, ReturnCode connectCode, bool sessionPresent)>;
 
             /**
-             * Invoked when a connack message is received, or an error occured.
+             * Invoked when a connack message is received, or an error occurred.
              */
             using OnConnectionCompletedHandler = std::function<
                 void(MqttConnection &connection, int errorCode, ReturnCode returnCode, bool sessionPresent)>;
@@ -141,7 +141,7 @@ namespace Aws
                 bool Disconnect() noexcept;
 
                 /**
-                 * Subcribes to topicFilter. OnPublishRecievedHandler will be invoked from an event-loop
+                 * Subscribes to topicFilter. OnPublishReceivedHandler will be invoked from an event-loop
                  * thread upon an incoming Publish message. OnSubAckHandler will be invoked
                  * upon receipt of a suback message.
                  */
@@ -152,7 +152,7 @@ namespace Aws
                     OnSubAckHandler &&onSubAck) noexcept;
 
                 /**
-                 * Subcribes to multiple topicFilters. OnPublishRecievedHandler will be invoked from an event-loop
+                 * Subscribes to multiple topicFilters. OnPublishReceivedHandler will be invoked from an event-loop
                  * thread upon an incoming Publish message. OnMultiSubAckHandler will be invoked
                  * upon receipt of a suback message.
                  */
@@ -183,7 +183,7 @@ namespace Aws
                  */
                 void Ping();
 
-                OnConnectionInteruptedHandler OnConnectionInterupted;
+                OnConnectionInterruptedHandler OnConnectionInterrupted;
                 OnConnectionResumedHandler OnConnectionResumed;
                 OnConnectionCompletedHandler OnConnectionCompleted;
                 OnDisconnectHandler OnDisconnect;
