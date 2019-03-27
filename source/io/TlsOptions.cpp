@@ -24,10 +24,7 @@ namespace Aws
         {
             TlsContextOptions::~TlsContextOptions() { aws_tls_ctx_options_clean_up(&m_options); }
 
-            TlsContextOptions::TlsContextOptions(Allocator *allocator) noexcept : m_allocator(allocator)
-            {
-                AWS_ZERO_STRUCT(m_options);
-            }
+            TlsContextOptions::TlsContextOptions(Allocator *allocator) noexcept { AWS_ZERO_STRUCT(m_options); }
 
             TlsContextOptions TlsContextOptions::InitDefaultClient(Allocator *allocator) noexcept
             {

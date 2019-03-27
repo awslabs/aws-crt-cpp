@@ -103,7 +103,6 @@ namespace Aws
 
               private:
                 aws_tls_ctx_options m_options;
-                aws_allocator *m_allocator;
 
                 TlsContextOptions(Allocator *allocator) noexcept;
             };
