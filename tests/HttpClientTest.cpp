@@ -30,8 +30,10 @@ using namespace Aws::Crt;
 
 static int s_VerifyFilesAreTheSame(Allocator *allocator, const char *fileName1, const char *fileName2)
 {
-    std::ifstream file1(fileName1);
-    std::ifstream file2(fileName2);
+    /* why std::ios_base::binary here? The brilliant minds at MSVC thought it was a good
+       idea to transform \n under the covers, so prevent that here. */
+    std::ifstream file1(fileName1, std::ios_base::binary);
+    std::ifstream file2(fileName2, std::ios_base::binary);
 
     ASSERT_TRUE(file1);
     ASSERT_TRUE(file2);
@@ -150,6 +152,9 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     ASSERT_TRUE(connection);
 
     int responseCode = 0;
+    /* why not std::ios_base::binary here? Well..... git on windows will convert
+     * the one in the source code to use \r\n instead of \n. We don't control git
+     * configuration, so just let windows do the same thing here (when in Rome...) */
     std::ofstream downloadedFile("http_download_test_file.txt");
     ASSERT_TRUE(downloadedFile);
 
@@ -194,6 +199,8 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     connection->Close();
     semaphore.wait(semaphoreULock, [&]() { return connectionShutdown; });
 
+    downloadedFile.flush();
+    downloadedFile.close();
     return s_VerifyFilesAreTheSame(allocator, "http_download_test_file.txt", "http_test_doc.txt");
 }
 
