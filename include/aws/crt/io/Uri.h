@@ -23,12 +23,23 @@ namespace Aws
     {
         namespace Io
         {
+            /**
+             * Contains a URI used for networking application protocols. This type is move-only.
+             */
             class AWS_CRT_CPP_API Uri final
             {
               public:
                 Uri() noexcept;
                 ~Uri();
+                /**
+                 * Parses `cursor` as a URI. Upon failure the bool() operator will return false and LastError()
+                 * will contain the errorCode.
+                 */
                 Uri(const ByteCursor &cursor, Allocator *allocator = DefaultAllocator()) noexcept;
+                /**
+                 * builds a URI from `builderOptions`. Upon failure the bool() operator will return false and
+                 * LastError() will contain the errorCode.
+                 */
                 Uri(aws_uri_builder_options &builderOptions, Allocator *allocator = DefaultAllocator()) noexcept;
                 Uri(const Uri &) = delete;
                 Uri &operator=(const Uri &) = delete;
@@ -38,13 +49,47 @@ namespace Aws
                 operator bool() const noexcept { return m_isInit; }
                 int LastError() const noexcept { return m_lastError; }
 
+                /**
+                 * Returns the scheme portion of the URI if present (e.g. https, http, ftp etc....)
+                 */
                 ByteCursor GetScheme() const noexcept;
+
+                /**
+                 * Returns the authority portion of the URI if present. This will contain host name and port if
+                 * specified.
+                 * */
                 ByteCursor GetAuthority() const noexcept;
+
+                /**
+                 * Returns the path portion of the URI. If no path was present, this will be set to '/'.
+                 */
                 ByteCursor GetPath() const noexcept;
+
+                /**
+                 * Returns the query string portion of the URI if present.
+                 */
                 ByteCursor GetQueryString() const noexcept;
+
+                /**
+                 * Returns the host name portion of the authority. (port will not be in this value).
+                 */
                 ByteCursor GetHostName() const noexcept;
+
+                /**
+                 * Returns the port portion of the authority if a port was specified. If it was not, this will
+                 * be set to 0. In that case, it is your responsibility to determine the correct port
+                 * based on the protocol you're using.
+                 */
                 uint16_t GetPort() const noexcept;
+
+                /** Returns the Path and Query portion of the URI. In the case of Http, this likely the value for the
+                 * URI parameter.
+                 */
                 ByteCursor GetPathAndQuery() const noexcept;
+
+                /**
+                 * The full URI as it was passed to or parsed from the constructors.
+                 */
                 const ByteBuf &GetFullUri() const noexcept;
 
               private:

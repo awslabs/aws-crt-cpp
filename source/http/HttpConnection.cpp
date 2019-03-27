@@ -21,6 +21,8 @@ namespace Aws
     {
         namespace Http
         {
+            /* this exists so we can keep the shared_ptr for the connection around until the connection has actually
+             * shutdown. */
             struct ConnectionWrapper
             {
                 explicit ConnectionWrapper(const HttpClient *client) : connection(nullptr), client(client) {}
@@ -33,6 +35,9 @@ namespace Aws
                 int errorCode,
                 void *user_data) noexcept
             {
+                /**
+                 * Allocate an HttpConnection and seat it to `ConnectionWrapper`'s shared_ptr.
+                 */
                 auto *connectionWrapper = reinterpret_cast<ConnectionWrapper *>(user_data);
                 int retError = errorCode;
                 if (!errorCode)
@@ -68,6 +73,7 @@ namespace Aws
                 void *user_data) noexcept
             {
                 (void)connection;
+                /* now that we're shutting down, we can release the internal ref count. */
                 auto *connectionWrapper = reinterpret_cast<ConnectionWrapper *>(user_data);
                 connectionWrapper->client->onConnectionShutdown(connectionWrapper->connection, errorCode);
                 connectionWrapper->connection.reset();
@@ -89,13 +95,16 @@ namespace Aws
                 const Io::SocketOptions &socketOptions,
                 const Io::TlsConnectionOptions &tlsConnOptions) const noexcept
             {
+                assert(onConnectionShutdown);
+                assert(onConnectionSetup);
+
                 void *connectionWrapperMemory = aws_mem_acquire(m_allocator, sizeof(ConnectionWrapper));
                 if (!connectionWrapperMemory)
                 {
                     return false;
                 }
 
-                ConnectionWrapper *connectionWrapper = new (connectionWrapperMemory) ConnectionWrapper(this);
+                auto connectionWrapper = new (connectionWrapperMemory) ConnectionWrapper(this);
 
                 aws_http_client_connection_options options;
                 AWS_ZERO_STRUCT(options);
@@ -159,7 +168,7 @@ namespace Aws
             }
 
             HttpConnection::HttpConnection(aws_http_connection *connection, Allocator *allocator) noexcept
-                : m_connection(connection), m_allocator(allocator)
+                : m_connection(connection), m_allocator(allocator), m_lastError(AWS_ERROR_SUCCESS)
             {
             }
 
@@ -180,6 +189,9 @@ namespace Aws
 
             std::shared_ptr<HttpStream> HttpConnection::NewStream(const HttpRequestOptions &requestOptions) noexcept
             {
+                assert(requestOptions.onIncomingHeaders);
+                assert(requestOptions.onStreamComplete);
+
                 aws_http_request_options options;
                 AWS_ZERO_STRUCT(options);
                 options.self_size = sizeof(aws_http_request_options);
@@ -194,6 +206,8 @@ namespace Aws
                 options.on_complete = HttpStream::s_onStreamComplete;
                 options.client_connection = m_connection;
 
+                /* Do the same ref counting trick we did with HttpConnection. We need to maintain a reference
+                 * internally (regardless of what the user does), until the Stream shuts down. */
                 auto *toSeat = reinterpret_cast<HttpStream *>(aws_mem_acquire(m_allocator, sizeof(HttpStream)));
 
                 if (toSeat)
@@ -230,12 +244,14 @@ namespace Aws
                         wrapper->stream.reset();
                         wrapper->stream = nullptr;
                         aws_mem_release(m_allocator, reinterpret_cast<void *>(wrapper));
+                        m_lastError = aws_last_error();
                         return nullptr;
                     }
 
                     return wrapper->stream;
                 }
 
+                m_lastError = aws_last_error();
                 return nullptr;
             }
 
@@ -249,7 +265,7 @@ namespace Aws
                 struct aws_byte_buf *buf,
                 void *userData) noexcept
             {
-                StreamWrapper *streamWrapper = reinterpret_cast<StreamWrapper *>(userData);
+                auto streamWrapper = reinterpret_cast<StreamWrapper *>(userData);
 
                 if (streamWrapper->stream->m_onStreamOutgoingBody)
                 {
@@ -265,15 +281,8 @@ namespace Aws
                 std::size_t numHeaders,
                 void *userData) noexcept
             {
-                StreamWrapper *streamWrapper = reinterpret_cast<StreamWrapper *>(userData);
-
-                if (streamWrapper->stream->m_onIncomingHeaders)
-                {
-                    streamWrapper->stream->m_onIncomingHeaders(streamWrapper->stream, headerArray, numHeaders);
-                    return;
-                }
-
-                assert(0);
+                auto streamWrapper = reinterpret_cast<StreamWrapper *>(userData);
+                streamWrapper->stream->m_onIncomingHeaders(streamWrapper->stream, headerArray, numHeaders);
             }
 
             void HttpStream::s_onIncomingHeaderBlockDone(
@@ -281,7 +290,7 @@ namespace Aws
                 bool hasBody,
                 void *userData) noexcept
             {
-                StreamWrapper *streamWrapper = reinterpret_cast<StreamWrapper *>(userData);
+                auto streamWrapper = reinterpret_cast<StreamWrapper *>(userData);
 
                 if (streamWrapper->stream->m_onIncomingHeadersBlockDone)
                 {
@@ -295,7 +304,7 @@ namespace Aws
                 size_t *outWindowUpdateSize,
                 void *userData) noexcept
             {
-                StreamWrapper *streamWrapper = reinterpret_cast<StreamWrapper *>(userData);
+                auto streamWrapper = reinterpret_cast<StreamWrapper *>(userData);
 
                 if (streamWrapper->stream->m_onIncomingBody)
                 {
@@ -305,16 +314,8 @@ namespace Aws
 
             void HttpStream::s_onStreamComplete(struct aws_http_stream *, int errorCode, void *userData) noexcept
             {
-                StreamWrapper *streamWrapper = reinterpret_cast<StreamWrapper *>(userData);
-
-                if (streamWrapper->stream->m_onStreamComplete)
-                {
-                    streamWrapper->stream->m_onStreamComplete(streamWrapper->stream, errorCode);
-                }
-                else
-                {
-                    assert(0);
-                }
+                auto streamWrapper = reinterpret_cast<StreamWrapper *>(userData);
+                streamWrapper->stream->m_onStreamComplete(streamWrapper->stream, errorCode);
 
                 streamWrapper->stream.reset();
                 streamWrapper->stream = nullptr;

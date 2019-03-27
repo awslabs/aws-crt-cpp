@@ -263,27 +263,6 @@ int main(int argc, char *argv[])
 
     if (connectionSucceeded)
     {
-        bool waitForOpComplete = false;
-
-        /*
-         * This will be invoked upon the completion of Publish, Subscribe, and Unsubscribe.
-         */
-        auto onOpComplete = [&](Mqtt::MqttConnection &, uint16_t packetId, int errorCode) {
-            if (packetId)
-            {
-                fprintf(stdout, "Operation on packetId %d Succeeded\n", (int)packetId);
-            }
-            else
-            {
-                fprintf(stdout, "Operation failed with error %s\n", aws_error_debug_str(errorCode));
-            }
-
-            if (waitForOpComplete)
-            {
-                conditionVariable.notify_one();
-            }
-        };
-
         /*
          * This is invoked upon the receipt of a Publish on a subscribed topic.
          */
@@ -348,8 +327,8 @@ int main(int argc, char *argv[])
         /*
          * Unsubscribe from the topic.
          */
-        waitForOpComplete = true;
-        connection->Unsubscribe(topic.c_str(), onOpComplete);
+        connection->Unsubscribe(
+            topic.c_str(), [&](Mqtt::MqttConnection &, uint16_t, int) { conditionVariable.notify_one(); });
         conditionVariable.wait(uniqueLock);
     }
 

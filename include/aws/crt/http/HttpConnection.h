@@ -37,36 +37,146 @@ namespace Aws
             class HttpConnection;
             class HttpStream;
 
-            using OnConnectionSetup = std::function<void(const std::shared_ptr<HttpConnection> &, int errorCode)>;
-            using OnConnectionShutdown = std::function<void(const std::shared_ptr<HttpConnection> &, int errorCode)>;
+            /**
+             * Invoked upon connection setup, whether it was successful or not. If the connection was
+             * successfully established, `connection` will be valid and errorCode will be AWS_ERROR_SUCCESS.
+             * Upon an error, `connection` will not be valid, and errorCode will contain the cause of the connection
+             * failure.
+             *
+             * On HttpClient, this function cannot be empty.
+             */
+            using OnConnectionSetup =
+                std::function<void(const std::shared_ptr<HttpConnection> &connection, int errorCode)>;
 
+            /**
+             * Invoked upon connection shutdown. `connection` will always be a valid pointer. `errorCode` will specify
+             * shutdown reason. A graceful connection close will set `errorCode` to AWS_ERROR_SUCCESS.
+             * Internally, the connection pointer will be unreferenced immediately after this call; if you took a
+             * reference to it in OnConnectionSetup(), you'll need to release your reference before the underlying
+             * memory is released. If you never took a reference to it, the resources for the connection will be
+             * immediately released after completion of this callback.
+             *
+             * On HttpClient, this function cannot be empty.
+             */
+            using OnConnectionShutdown =
+                std::function<void(const std::shared_ptr<HttpConnection> &connection, int errorCode)>;
+
+            /**
+             * Called as part of the outgoing http message's body (request in client mode, and response in server mode).
+             * `buffer` contains the buffer for you to write into. Keep in mind, that `buffer` may already have
+             * pending data in it, so always append after buffer.buf + buffer.len. You can write up to buffer.capacity
+             * - buffer.len into the buffer.
+             *
+             * You need not write anything to the buffer to keep the stream alive. As long as you return:
+             * AWS_HTTP_OUTGOING_BODY_IN_PROGRESS, you will continue to receive this callback until you
+             * return AWS_HTTP_OUTGOING_BODY_DONE.
+             *
+             * This parameter can be unset on the HttpStream object if you will not be sending a body.
+             */
             using OnStreamOutgoingBody = std::function<
                 enum aws_http_outgoing_body_state(const std::shared_ptr<HttpStream> &stream, ByteBuf &buffer)>;
+
+            /**
+             * Called as headers are received from the peer. `headersArray` will contain the header value
+             * read from the wire. The number of entries in `headersArray` are specified in `headersCount`.
+             *
+             * Keep in mind that this function will likely be called multiple times until all headers are received.
+             *
+             * On HttpStream, this function must be set.
+             */
             using OnIncomingHeaders = std::function<void(
                 const std::shared_ptr<HttpStream> &stream,
                 const struct aws_http_header *headersArray,
                 std::size_t headersCount)>;
+
+            /**
+             * Invoked when the headers portion of the message has been completely received. `hasBody` will indicate
+             * if there is an incoming body.
+             *
+             * On HttpStream, this function can be unset.
+             */
             using OnIncomingHeadersBlockDone =
                 std::function<void(const std::shared_ptr<HttpStream> &stream, bool hasBody)>;
+
+            /**
+             * Invoked as chunks of the body are read. `data` contains the data read from the wire. If chunked encoding
+             * was used, it will already be decoded (TBD).
+             *
+             * `outWindowUpdateSize` is how much to increment the window once this data is processed.
+             * By default, it is the size of the data which has just come in.
+             * Leaving this value untouched will increment the window back to its original size.
+             * Setting this value to 0 will prevent the update and let the window shrink.
+             * The window can be manually updated via Aws::Crt::Http::HttpStream::UpdateWindow()
+             *
+             * On HttpStream, this function can be unset if you are not expecting a body (e.g. a HEAD request).
+             */
             using OnIncomingBody = std::function<void(
                 const std::shared_ptr<HttpStream> &stream,
                 const ByteCursor &data,
                 std::size_t &outWindowUpdateSize)>;
+
+            /**
+             * Invoked upon completion of the stream. This means the request has been sent and a completed response
+             * has been received (in client mode), or the request has been received and the response has been completed.
+             *
+             * In H2, this will mean RST_STREAM state has been reached for the stream.
+             *
+             * On HttpStream, this function must be set.
+             */
             using OnStreamComplete = std::function<void(const std::shared_ptr<HttpStream> &stream, int errorCode)>;
 
+            /**
+             * POD structure used for setting up an Http Request
+             */
             struct HttpRequestOptions
             {
+                /**
+                 * Http verb to use (e.g. GET, POST, PUT, DELETE, HEAD....). If you are using a custom verb, that
+                 * can be set here as well.
+                 *
+                 * this value is copied internally.
+                 */
                 ByteCursor method;
+                /**
+                 * Usually the Path and Query portion of the request uri (assuming the host header has been set).
+                 * There's not validation on this, it can also be the absolute uri if you want/need that.
+                 *
+                 * A helpful utility for setting this value can be found in Aws::Crt::Io::Uri
+                 *
+                 * this value is copied internally.
+                 */
                 ByteCursor uri;
+                /**
+                 * Array of headers to use for the Request. These values will be copied internally.
+                 */
                 aws_http_header *headerArray;
+                /**
+                 * Length of `headerArray`.
+                 */
                 std::size_t headerArrayLength;
+                /**
+                 * See `OnConnectionShutdown` for more info. This value can be unset if you don't need to send a body.
+                 */
                 OnStreamOutgoingBody onStreamOutgoingBody;
+                /**
+                 * See `OnIncomingHeaders` for more info. This value must be set.
+                 */
                 OnIncomingHeaders onIncomingHeaders;
                 OnIncomingHeadersBlockDone onIncomingHeadersBlockDone;
+                /**
+                 * See `OnIncomingBody` for more info. This value can be unset if you will not be receiving a body.
+                 */
                 OnIncomingBody onIncomingBody;
+                /**
+                 * See `OnStreamComplete` for more info. This value can be unset.
+                 */
                 OnStreamComplete onStreamComplete;
             };
 
+            /**
+             * Represents a single http message exchange (request/response) or in H2, it can also represent
+             * a PUSH_PROMISE followed by the accompanying Response.
+             */
             class AWS_CRT_CPP_API HttpStream final
             {
               public:
@@ -76,8 +186,26 @@ namespace Aws
                 HttpStream &operator=(const HttpStream &) = delete;
                 HttpStream &operator=(HttpStream &&) = delete;
 
+                /**
+                 * Get the underlying connection for the stream.
+                 */
                 const std::shared_ptr<HttpConnection> &GetConnection() const noexcept;
+
+                /**
+                 * If this stream was initiated as a request, assuming the headers of the response has been
+                 * received, this value contains the Http Response Code.                 *
+                 */
                 int GetIncommingResponseStatusCode() const noexcept;
+
+                /**
+                 * Updates the read window on the connection. In Http 1.1 this relieves TCP back pressure, in H2
+                 * this will trigger two WINDOW_UPDATE frames, one for the connection and one for the stream.
+                 *
+                 * You do not need to call this unless you utilized the `outWindowUpdateSize` in `OnIncomingBody`.
+                 * See `OnIncomingBody` for more information.
+                 *
+                 * `incrementSize` is the amount to update the read window by.
+                 */
                 void UpdateWindow(std::size_t incrementSize) noexcept;
 
               private:
@@ -117,6 +245,9 @@ namespace Aws
                 friend class HttpConnection;
             };
 
+            /**
+             * Represents a connection between an Http Client and Server.
+             */
             class AWS_CRT_CPP_API HttpConnection final : public std::enable_shared_from_this<HttpConnection>
             {
               public:
@@ -126,36 +257,84 @@ namespace Aws
                 HttpConnection &operator=(const HttpConnection &) = delete;
                 HttpConnection &operator=(HttpConnection &&) = delete;
 
+                /**
+                 * Make a new client initiated request on this connection.
+                 *
+                 * If you take a reference to the return value, the memory and resources for the connection
+                 * and stream will not be cleaned up until you release it. You can however, release the reference
+                 * as soon as you don't need it anymore. The internal reference count ensures the resources will
+                 * not be freed until the stream is completed.
+                 *
+                 * Returns an instance of HttpStream upon success and nullptr on failure.
+                 */
                 std::shared_ptr<HttpStream> NewStream(const HttpRequestOptions &requestOptions) noexcept;
+
+                /**
+                 * Initiate a shutdown of the connection. Sometimes, connections are persistent and you want
+                 * to close them before shutting down your application or whatever is consuming this interface.
+                 *
+                 * Assuming `OnConnectionShutdown` has not already been invoked, it will be invoked as a result of this
+                 * call. It is safe to release your reference to this object after calling this function.
+                 */
                 bool Close() noexcept;
+
+                int LastError() const noexcept { return m_lastError; }
 
               private:
                 HttpConnection(aws_http_connection *m_connection, Allocator *allocator) noexcept;
                 aws_http_connection *m_connection;
                 Allocator *m_allocator;
-                bool m_good;
                 int m_lastError;
 
                 friend class HttpClient;
             };
 
+            /**
+             * Represents an Http Client. `onConnectionSetup` will be invoked upon an outgoing connection,
+             * and `onConnectionShutdown` will be invoked when a connection is shutdown.
+             */
             class AWS_CRT_CPP_API HttpClient final
             {
               public:
+                /**
+                 * Initializes client with a bootstrap object. `initialWindowSize` will set the TCP read window
+                 * allowed for Http 1.1 connections and Initial Windows for H2 connections.
+                 */
                 HttpClient(
                     Io::ClientBootstrap *bootstrap,
                     std::size_t initialWindowSize = SIZE_MAX,
                     Allocator *allocator = DefaultAllocator()) noexcept;
 
+                /**
+                 * Establish a new Https Connection to hostName:port, using `socketOptions` for tcp options and
+                 * `tlsConnOptions` for TLS/SSL options.
+                 *
+                 * returns true on success, and false on failure. If false is returned, `onConnectionSetup` will not
+                 * be invoked.
+                 */
                 bool NewConnection(
                     const ByteCursor &hostName,
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
                     const Io::TlsConnectionOptions &tlsConnOptions) const noexcept;
+
+                /**
+                 * Establish a new Http (Plain-text) Connection to hostName:port, using `socketOptions` for tcp options.
+                 *
+                 * returns true on success, and false on failure. If false is returned, `onConnectionSetup` will not
+                 * be invoked.
+                 */
                 bool NewConnection(const ByteCursor &hostName, uint16_t port, const Io::SocketOptions &socketOptions)
                     const noexcept;
 
+                /**
+                 * See `OnConnectionSetup` for more info. This value cannot be empty.
+                 */
                 OnConnectionSetup onConnectionSetup;
+
+                /**
+                 * See `OnConnectionShutdown` for more info. This value cannot be empty.
+                 */
                 OnConnectionShutdown onConnectionShutdown;
 
               private:
