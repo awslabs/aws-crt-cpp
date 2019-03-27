@@ -1,5 +1,5 @@
 if("${TARGET_ARCH}" STREQUAL ANDROID)
-    ExternalProject_Add(AwsCHTTP
+    ExternalProject_Add(AwsCHttp
             PREFIX ${AWS_DEPS_BUILD_DIR}
             GIT_REPOSITORY ${AWS_C_HTTP_URL}
             GIT_TAG ${AWS_C_HTTP_SHA}
@@ -21,7 +21,7 @@ if("${TARGET_ARCH}" STREQUAL ANDROID)
             -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
             )
 elseif(MSVC)
-    ExternalProject_Add(AwsCHTTP
+    ExternalProject_Add(AwsCHttp
             PREFIX ${AWS_DEPS_BUILD_DIR}
             GIT_REPOSITORY ${AWS_C_HTTP_URL}
             GIT_TAG ${AWS_C_HTTP_SHA}
@@ -38,7 +38,7 @@ elseif(MSVC)
             -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
             )
 else()
-    ExternalProject_Add(AwsCHTTP
+    ExternalProject_Add(AwsCHttp
             PREFIX ${AWS_DEPS_BUILD_DIR}
             GIT_REPOSITORY ${AWS_C_HTTP_URL}
             GIT_TAG ${AWS_C_HTTP_SHA}

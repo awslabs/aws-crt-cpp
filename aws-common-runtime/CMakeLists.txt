@@ -32,7 +32,7 @@ include(BuildAwsCIO)
 
 set(AWS_C_HTTP_URL "https://github.com/awslabs/aws-c-http.git")
 set(AWS_C_HTTP_SHA "v0.1.0")
-include(BuildAwsCHTTP)
+include(BuildAwsCHttp)
 
 set(AWS_C_MQTT_URL "https://github.com/awslabs/aws-c-mqtt.git")
 set(AWS_C_MQTT_SHA "v0.3.1")
@@ -43,6 +43,7 @@ set(AWS_C_CAL_SHA "v0.1.4")
 include(BuildAwsCCal)
 
 add_dependencies(AwsCMqtt AwsCIO)
+add_dependencies(AwsCHttp AwsCIO)
 add_dependencies(AwsCCal AwsCCommon)
 
 if (UNIX AND NOT APPLE)
