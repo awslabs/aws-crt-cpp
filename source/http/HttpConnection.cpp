@@ -207,8 +207,10 @@ namespace Aws
                     }
 
                     toSeat = new (toSeat) HttpStream(this->shared_from_this());
+                    wrapper = new (wrapper) StreamWrapper;
+
                     Allocator *captureAllocator = m_allocator;
-                    auto retVal = std::shared_ptr<HttpStream>(toSeat, [captureAllocator](HttpStream *stream) {
+                    wrapper->stream = std::shared_ptr<HttpStream>(toSeat, [captureAllocator](HttpStream *stream) {
                         stream->~HttpStream();
                         aws_mem_release(captureAllocator, reinterpret_cast<void *>(stream));
                     });
@@ -220,10 +222,9 @@ namespace Aws
                     toSeat->m_onStreamOutgoingBody = requestOptions.onStreamOutgoingBody;
 
                     wrapper->allocator = m_allocator;
-                    wrapper->stream = retVal;
                     options.user_data = wrapper;
-
                     toSeat->m_stream = aws_http_stream_new_client_request(&options);
+
                     if (!toSeat->m_stream)
                     {
                         wrapper->stream.reset();
@@ -232,7 +233,7 @@ namespace Aws
                         return nullptr;
                     }
 
-                    return retVal;
+                    return wrapper->stream;
                 }
 
                 return nullptr;

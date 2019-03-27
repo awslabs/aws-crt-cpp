@@ -28,7 +28,7 @@
 
 using namespace Aws::Crt;
 
-static int s_TerifyFilesAreTheSame(Allocator *allocator, const char *fileName1, const char *fileName2)
+static int s_VerifyFilesAreTheSame(Allocator *allocator, const char *fileName1, const char *fileName2)
 {
     std::ifstream file1(fileName1);
     std::ifstream file2(fileName2);
@@ -43,7 +43,7 @@ static int s_TerifyFilesAreTheSame(Allocator *allocator, const char *fileName1, 
     while (file1.read((char *)buffer, sizeof(buffer)))
     {
         auto read = file1.gcount();
-        ByteCursor toHash = aws_byte_cursor_from_array(buffer, (size_t)read);
+        ByteCursor toHash = ByteCursorFromArray(buffer, (size_t)read);
         ASSERT_TRUE(file1Hash.Update(toHash));
     }
 
@@ -52,7 +52,7 @@ static int s_TerifyFilesAreTheSame(Allocator *allocator, const char *fileName1, 
     while (file2.read((char *)buffer, sizeof(buffer)))
     {
         auto read = file2.gcount();
-        ByteCursor toHash = aws_byte_cursor_from_array(buffer, (size_t)read);
+        ByteCursor toHash = ByteCursorFromArray(buffer, (size_t)read);
         ASSERT_TRUE(file2Hash.Update(toHash));
     }
 
@@ -83,7 +83,7 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
 
     Aws::Crt::Io::TlsConnectionOptions tlsConnectionOptions = tlsContext.NewConnectionOptions();
 
-    ByteCursor cursor = aws_byte_cursor_from_c_str("https://aws-crt-test-stuff.s3.amazonaws.com/http_test_doc.txt");
+    ByteCursor cursor = ByteCursorFromCString("https://aws-crt-test-stuff.s3.amazonaws.com/http_test_doc.txt");
     Io::Uri uri(cursor, allocator);
 
     auto hostName = uri.GetHostName();
@@ -105,25 +105,36 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
 
     std::shared_ptr<Http::HttpConnection> connection(nullptr);
     bool errorOccured = true;
+    bool connectionShutdown = false;
+
     std::condition_variable semaphore;
     std::mutex semaphoreLock;
 
     auto onConnectionSetup = [&](const std::shared_ptr<Http::HttpConnection> &newConnection, int errorCode) {
+        std::lock_guard<std::mutex> lockGuard(semaphoreLock);
+
         if (!errorCode)
         {
             connection = newConnection;
             errorOccured = false;
         }
-        std::lock_guard<std::mutex> lockGuard(semaphoreLock);
+        else
+        {
+            connectionShutdown = true;
+        }
+
         semaphore.notify_one();
     };
 
     auto onConnectionShutdown = [&](const std::shared_ptr<Http::HttpConnection> &newConnection, int errorCode) {
+        std::lock_guard<std::mutex> lockGuard(semaphoreLock);
+
+        connectionShutdown = true;
         if (errorCode)
         {
             errorOccured = true;
         }
-        std::lock_guard<std::mutex> lockGuard(semaphoreLock);
+
         semaphore.notify_one();
     };
 
@@ -132,9 +143,10 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
 
     std::unique_lock<std::mutex> semaphoreULock(semaphoreLock);
     ASSERT_TRUE(httpClient.NewConnection(hostName, 443, socketOptions, tlsConnectionOptions));
-    semaphore.wait(semaphoreULock);
+    semaphore.wait(semaphoreULock, [&]() { return connection || connectionShutdown; });
 
     ASSERT_FALSE(errorOccured);
+    ASSERT_FALSE(connectionShutdown);
     ASSERT_TRUE(connection);
 
     int responseCode = 0;
@@ -143,12 +155,17 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
 
     Http::HttpRequestOptions requestOptions;
     requestOptions.onStreamOutgoingBody = nullptr;
+
+    bool streamCompleted = false;
     requestOptions.onStreamComplete = [&](const std::shared_ptr<Http::HttpStream> &stream, int errorCode) {
+        std::lock_guard<std::mutex> lockGuard(semaphoreLock);
+
+        streamCompleted = true;
         if (errorCode)
         {
             errorOccured = true;
         }
-        std::lock_guard<std::mutex> lockGuard(semaphoreLock);
+
         semaphore.notify_one();
     };
     requestOptions.onIncomingHeadersBlockDone = nullptr;
@@ -161,22 +178,23 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
             downloadedFile.write((const char *)data.ptr, data.len);
         };
 
-    requestOptions.method = aws_byte_cursor_from_c_str("GET");
+    requestOptions.method = ByteCursorFromCString("GET");
     requestOptions.uri = uri.GetPathAndQuery();
 
     aws_http_header host_header;
-    host_header.name_str = aws_byte_cursor_from_c_str("host");
+    host_header.name_str = ByteCursorFromCString("host");
     host_header.value = uri.GetHostName();
     requestOptions.headerArray = &host_header;
     requestOptions.headerArrayLength = 1;
 
     connection->NewStream(requestOptions);
-    semaphore.wait(semaphoreULock);
+    semaphore.wait(semaphoreULock, [&]() { return streamCompleted; });
+    ASSERT_INT_EQUALS(200, responseCode);
 
     connection->Close();
-    semaphore.wait(semaphoreULock);
-    ASSERT_INT_EQUALS(200, responseCode);
-    return s_TerifyFilesAreTheSame(allocator, "http_download_test_file.txt", "http_test_doc.txt");
+    semaphore.wait(semaphoreULock, [&]() { return connectionShutdown; });
+
+    return s_VerifyFilesAreTheSame(allocator, "http_download_test_file.txt", "http_test_doc.txt");
 }
 
 AWS_TEST_CASE(HttpDownloadNoBackPressure, s_TestHttpDownloadNoBackPressure)

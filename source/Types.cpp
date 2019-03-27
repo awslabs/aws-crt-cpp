@@ -39,6 +39,15 @@ namespace Aws
 
         void ByteBufDelete(ByteBuf &buf) { aws_byte_buf_clean_up(&buf); }
 
+        ByteCursor ByteCursorFromCString(const char *str) noexcept { return aws_byte_cursor_from_c_str(str); }
+
+        ByteCursor ByteCursorFromByteBuf(ByteBuf &buf) noexcept { return aws_byte_cursor_from_buf(&buf); }
+
+        ByteCursor ByteCursorFromArray(const uint8_t *array, size_t len) noexcept
+        {
+            return aws_byte_cursor_from_array(array, len);
+        }
+
         Vector<uint8_t> Base64Decode(const String &decode)
         {
             ByteCursor toDecode = aws_byte_cursor_from_array((const void *)decode.data(), decode.length());

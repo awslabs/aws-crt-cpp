@@ -108,6 +108,9 @@ namespace Aws
                 TlsContextOptions(Allocator *allocator) noexcept;
             };
 
+            /**
+             * Options specific to a single connection.
+             */
             class AWS_CRT_CPP_API TlsConnectionOptions final
             {
               public:
@@ -118,10 +121,24 @@ namespace Aws
                 TlsConnectionOptions(TlsConnectionOptions &&options) noexcept;
                 TlsConnectionOptions &operator=(TlsConnectionOptions &&options) noexcept;
 
+                /**
+                 * Sets SNI extension, and also the name used for X.509 validation. serverName is copied.
+                 *
+                 * returns true if the copy succeeded, or false otherwise.
+                 */
                 bool SetServerName(ByteCursor &serverName) noexcept;
+
+                /**
+                 * Sets list of protocols (semi-colon delimited in priority order) used for ALPN extension.
+                 * alpnList is copied.
+                 *
+                 * returns true if the copy succeeded, or false otherwise.
+                 */
                 bool SetAlpnList(const char *alpnList) noexcept;
+
                 operator bool() const noexcept { return m_isInit; }
                 int LastError() const noexcept { return m_lastError; }
+
                 const aws_tls_connection_options *GetUnderlyingHandle() const noexcept
                 {
                     return &m_tls_connection_options;
