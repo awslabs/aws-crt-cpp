@@ -18,15 +18,14 @@
 #include <utility>
 
 #include <condition_variable>
-#include <mutex>
 #include <fstream>
+#include <mutex>
 
 #include <aws/io/logging.h>
 
 #define TEST_CERTIFICATE "/tmp/certificate.pem"
-#define TEST_PRIVATEKEY  "/tmp/privatekey.pem"
-#define TEST_ROOTCA      "/tmp/AmazonRootCA1.pem"
-
+#define TEST_PRIVATEKEY "/tmp/privatekey.pem"
+#define TEST_ROOTCA "/tmp/AmazonRootCA1.pem"
 
 static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
 {
@@ -34,11 +33,7 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
     using namespace Aws::Crt::Io;
     using namespace Aws::Crt::Mqtt;
 
-    const char* credentialFiles[] = {
-        TEST_CERTIFICATE,
-        TEST_PRIVATEKEY,
-        TEST_ROOTCA
-    };
+    const char *credentialFiles[] = {TEST_CERTIFICATE, TEST_PRIVATEKEY, TEST_ROOTCA};
 
     for (int fileIdx = 0; fileIdx < AWS_ARRAY_SIZE(credentialFiles); ++fileIdx)
     {
@@ -54,16 +49,8 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
     (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
 
-    aws_logger logger;
-    aws_logger_standard_options log_options;
-    log_options.level = AWS_LL_DEBUG;
-    log_options.file = stdout;
-
-    aws_logger_init_standard(&logger, allocator, &log_options);
-    //aws_logger_set(&logger);
-
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions =
-            Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(TEST_CERTIFICATE, TEST_PRIVATEKEY);
+        Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(TEST_CERTIFICATE, TEST_PRIVATEKEY);
     tlsCtxOptions.OverrideDefaultTrustStore(nullptr, TEST_ROOTCA);
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
@@ -84,10 +71,10 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
     ASSERT_TRUE(mqttClient);
 
     int tries = 0;
-    while (tries++ < 10) {
-        auto mqttConnection =
-                mqttClient.NewConnection("a16523t7iy5uyg-ats.iot.us-east-1.amazonaws.com", 8883, socketOptions,
-                                         tlsContext.NewConnectionOptions());
+    while (tries++ < 10)
+    {
+        auto mqttConnection = mqttClient.NewConnection(
+            "a16523t7iy5uyg-ats.iot.us-east-1.amazonaws.com", 8883, socketOptions, tlsContext.NewConnectionOptions());
 
         std::mutex mutex;
         std::condition_variable cv;
@@ -95,14 +82,17 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
         bool subscribed = false;
         bool published = false;
         bool received = false;
-        auto onConnectionCompleted = [&](MqttConnection &connection, int errorCode, ReturnCode returnCode,
-                                         bool sessionPresent) {
-            printf("%s errorCode=%d returnCode=%d sessionPresent=%d\n",
-                   (errorCode == 0) ? "CONNECTED" : "COMPLETED",
-                    errorCode, (int)returnCode, (int)sessionPresent);
-            connected = true;
-            cv.notify_one();
-        };
+        auto onConnectionCompleted =
+            [&](MqttConnection &connection, int errorCode, ReturnCode returnCode, bool sessionPresent) {
+                printf(
+                    "%s errorCode=%d returnCode=%d sessionPresent=%d\n",
+                    (errorCode == 0) ? "CONNECTED" : "COMPLETED",
+                    errorCode,
+                    (int)returnCode,
+                    (int)sessionPresent);
+                connected = true;
+                cv.notify_one();
+            };
         auto onDisconnect = [&](MqttConnection &connection) {
             printf("DISCONNECTED\n");
             connected = false;
@@ -113,12 +103,12 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
             received = true;
             cv.notify_one();
         };
-        auto onSubAck = [&](MqttConnection &connection, uint16_t packetId, const String &topic, QOS qos,
-                            int errorCode) {
-            printf("SUBACK id=%d topic=%s qos=%d\n", packetId, topic.c_str(), qos);
-            subscribed = true;
-            cv.notify_one();
-        };
+        auto onSubAck =
+            [&](MqttConnection &connection, uint16_t packetId, const String &topic, QOS qos, int errorCode) {
+                printf("SUBACK id=%d topic=%s qos=%d\n", packetId, topic.c_str(), qos);
+                subscribed = true;
+                cv.notify_one();
+            };
         auto onPubAck = [&](MqttConnection &connection, uint16_t packetId, int errorCode) {
             printf("PUBLISHED id=%d\n", packetId);
             published = true;
