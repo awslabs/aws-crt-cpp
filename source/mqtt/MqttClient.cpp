@@ -281,8 +281,6 @@ namespace Aws
                 if (*this)
                 {
                     aws_mqtt_client_connection_destroy(m_underlyingConnection);
-                    aws_tls_connection_options_clean_up(&m_tlsOptions);
-                    aws_byte_buf_clean_up(&m_hostNameBuf);
                 }
 
                 AWS_ZERO_STRUCT(*this);

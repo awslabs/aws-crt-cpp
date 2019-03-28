@@ -41,7 +41,6 @@ namespace Aws
               public:
                 TlsContextOptions(const TlsContextOptions &) noexcept = default;
                 TlsContextOptions &operator=(const TlsContextOptions &) noexcept = default;
-                ~TlsContextOptions();
 
                 /**
                  * Initializes TlsContextOptions with secure by default options, with
