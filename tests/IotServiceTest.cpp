@@ -19,8 +19,14 @@
 
 #include <condition_variable>
 #include <mutex>
+#include <fstream>
 
 #include <aws/io/logging.h>
+
+#define TEST_CERTIFICATE "/tmp/certificate.pem"
+#define TEST_PRIVATEKEY  "/tmp/privatekey.pem"
+#define TEST_ROOTCA      "/tmp/AmazonRootCA1.pem"
+
 
 static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
 {
@@ -28,20 +34,37 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
     using namespace Aws::Crt::Io;
     using namespace Aws::Crt::Mqtt;
 
+    const char* credentialFiles[] = {
+        TEST_CERTIFICATE,
+        TEST_PRIVATEKEY,
+        TEST_ROOTCA
+    };
+
+    for (int fileIdx = 0; fileIdx < AWS_ARRAY_SIZE(credentialFiles); ++fileIdx)
+    {
+        std::ifstream file;
+        file.open(credentialFiles[fileIdx]);
+        if (!file.is_open())
+        {
+            printf("Required credential file %s is missing or unreadable, skipping test\n", credentialFiles[fileIdx]);
+            return AWS_ERROR_SUCCESS;
+        }
+    }
+
     (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
 
-//    aws_logger logger;
-//    aws_logger_standard_options log_options;
-//    log_options.level = AWS_LL_TRACE;
-//    log_options.file = stdout;
-//
-//    aws_logger_init_standard(&logger, allocator, &log_options);
-//    aws_logger_set(&logger);
+    aws_logger logger;
+    aws_logger_standard_options log_options;
+    log_options.level = AWS_LL_DEBUG;
+    log_options.file = stdout;
+
+    aws_logger_init_standard(&logger, allocator, &log_options);
+    //aws_logger_set(&logger);
 
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions =
-            Aws::Crt::Io::TlsContextOptions::InitClientWithMtls("/tmp/certificate.pem", "/tmp/privatekey.pem");
-    tlsCtxOptions.OverrideDefaultTrustStore(nullptr, "/tmp/AmazonRootCA1.pem");
+            Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(TEST_CERTIFICATE, TEST_PRIVATEKEY);
+    tlsCtxOptions.OverrideDefaultTrustStore(nullptr, TEST_ROOTCA);
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
 
@@ -61,7 +84,7 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
     ASSERT_TRUE(mqttClient);
 
     int tries = 0;
-    while (tries++ < 1000) {
+    while (tries++ < 10) {
         auto mqttConnection =
                 mqttClient.NewConnection("a16523t7iy5uyg-ats.iot.us-east-1.amazonaws.com", 8883, socketOptions,
                                          tlsContext.NewConnectionOptions());
@@ -74,7 +97,9 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
         bool received = false;
         auto onConnectionCompleted = [&](MqttConnection &connection, int errorCode, ReturnCode returnCode,
                                          bool sessionPresent) {
-            printf("CONNECTED\n");
+            printf("%s errorCode=%d returnCode=%d sessionPresent=%d\n",
+                   (errorCode == 0) ? "CONNECTED" : "COMPLETED",
+                    errorCode, (int)returnCode, (int)sessionPresent);
             connected = true;
             cv.notify_one();
         };
@@ -102,14 +127,16 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
 
         mqttConnection->OnConnectionCompleted = onConnectionCompleted;
         mqttConnection->OnDisconnect = onDisconnect;
-        mqttConnection->Connect("aws-crt-cpp-v2", true);
+        char clientId[32];
+        sprintf(clientId, "aws-crt-cpp-v2-%d", tries);
+        mqttConnection->Connect(clientId, true);
 
         {
             std::unique_lock<std::mutex> lock(mutex);
             cv.wait(lock, [&]() { return connected; });
         }
 
-        mqttConnection->Subscribe("/test/me/senpai", QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, onTest, onSubAck);
+        mqttConnection->Subscribe("/publish/me/senpai", QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, onTest, onSubAck);
 
         {
             std::unique_lock<std::mutex> lock(mutex);
@@ -117,7 +144,7 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
         }
 
         Aws::Crt::ByteBuf payload = Aws::Crt::ByteBufFromCString("notice me pls");
-        mqttConnection->Publish("/test/me/senpai", QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, payload, onPubAck);
+        mqttConnection->Publish("/publish/me/senpai", QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, payload, onPubAck);
 
         // wait for publish
         {
