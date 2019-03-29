@@ -135,7 +135,7 @@ namespace Aws
                  */
                 bool SetAlpnList(const char *alpnList) noexcept;
 
-                operator bool() const noexcept { return m_isInit; }
+                explicit operator bool() const noexcept { return m_isInit; }
                 int LastError() const noexcept { return m_lastError; }
 
                 const aws_tls_connection_options *GetUnderlyingHandle() const noexcept
@@ -168,7 +168,7 @@ namespace Aws
 
                 TlsConnectionOptions NewConnectionOptions() const noexcept;
 
-                operator bool() const noexcept;
+                explicit operator bool() const noexcept;
                 int LastError() const noexcept;
 
               private:

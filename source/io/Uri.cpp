@@ -57,14 +57,13 @@ namespace Aws
                 }
             }
 
-            Uri::Uri(Uri &&uri) noexcept : m_lastError(AWS_ERROR_SUCCESS), m_isInit(false)
+            Uri::Uri(Uri &&uri) noexcept : m_lastError(AWS_ERROR_SUCCESS), m_isInit(uri.m_isInit)
             {
                 if (uri.m_isInit)
                 {
                     m_uri = uri.m_uri;
                     AWS_ZERO_STRUCT(uri.m_uri);
                     uri.m_isInit = false;
-                    m_isInit = true;
                 }
             }
 

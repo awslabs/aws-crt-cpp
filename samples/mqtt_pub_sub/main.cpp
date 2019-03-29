@@ -279,7 +279,7 @@ int main(int argc, char *argv[])
         auto onSubAck = [&](Mqtt::MqttConnection &, uint16_t packetId, const String &topic, Mqtt::QOS, int errorCode) {
             if (packetId)
             {
-                fprintf(stdout, "Subscribe on topic %s on packetId %d Succeeded\n", topic.c_str(), (int)packetId);
+                fprintf(stdout, "Subscribe on topic %s on packetId %d Succeeded\n", topic.c_str(), packetId);
             }
             else
             {
@@ -314,7 +314,7 @@ int main(int argc, char *argv[])
 
                 if (packetId)
                 {
-                    fprintf(stdout, "Operation on packetId %d Succeeded\n", (int)packetId);
+                    fprintf(stdout, "Operation on packetId %d Succeeded\n", packetId);
                 }
                 else
                 {

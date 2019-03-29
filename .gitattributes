@@ -1,0 +1,2 @@
+tests/resources/*.txt text=auto eol=lf
+

@@ -21,158 +21,120 @@ namespace Aws
     {
         namespace Http
         {
+            HttpClientConnectionOptions::HttpClientConnectionOptions()
+                : allocator(DefaultAllocator()), bootstrap(nullptr), initialWindowSize(SIZE_MAX), port(0),
+                  socketOptions(nullptr), tlsConnOptions(nullptr)
+            {
+                AWS_ZERO_STRUCT(hostName);
+            }
+
             /* this exists so we can keep the shared_ptr for the connection around until the connection has actually
              * shutdown. */
-            struct ConnectionWrapper
+            struct ConnectionCallbackData
             {
-                explicit ConnectionWrapper(const HttpClient *client) : connection(nullptr), client(client) {}
-                std::shared_ptr<HttpConnection> connection;
-                const HttpClient *client;
+                explicit ConnectionCallbackData(Allocator *allocator) : connection(nullptr), allocator(allocator) {}
+                std::shared_ptr<HttpClientConnection> connection;
+                Allocator *allocator;
+                OnConnectionSetup onConnectionSetup;
+                OnConnectionShutdown onConnectionShutdown;
             };
 
-            void HttpClient::s_onClientConnectionSetup(
+            void HttpClientConnection::s_onClientConnectionSetup(
                 struct aws_http_connection *connection,
                 int errorCode,
                 void *user_data) noexcept
             {
                 /**
-                 * Allocate an HttpConnection and seat it to `ConnectionWrapper`'s shared_ptr.
+                 * Allocate an HttpClientConnection and seat it to `ConnectionCallbackData`'s shared_ptr.
                  */
-                auto *connectionWrapper = reinterpret_cast<ConnectionWrapper *>(user_data);
-                int retError = errorCode;
+                auto *callbackData = static_cast<ConnectionCallbackData *>(user_data);
                 if (!errorCode)
                 {
-                    Allocator *allocator = connectionWrapper->client->m_allocator;
+                    Allocator *allocator = callbackData->allocator;
 
+                    /* Why aren't we using New...? Because the constructor is private and the C++ type system
+                     * isn't the boss of me. */
                     auto *toSeat =
-                        reinterpret_cast<HttpConnection *>(aws_mem_acquire(allocator, sizeof(HttpConnection)));
+                        static_cast<HttpClientConnection *>(aws_mem_acquire(allocator, sizeof(HttpClientConnection)));
                     if (toSeat)
                     {
-                        toSeat = new (toSeat) HttpConnection(connection, allocator);
-                        connectionWrapper->connection =
-                            std::shared_ptr<HttpConnection>(toSeat, [allocator](HttpConnection *connection) {
-                                connection->~HttpConnection();
-                                aws_mem_release(allocator, reinterpret_cast<void *>(connection));
-                            });
+                        toSeat = new (toSeat) HttpClientConnection(connection, allocator);
+                        callbackData->connection = std::shared_ptr<HttpClientConnection>(
+                            toSeat, [allocator](HttpClientConnection *connection) { Delete(connection, allocator); });
 
-                        connectionWrapper->client->onConnectionSetup(connectionWrapper->connection, errorCode);
+                        callbackData->onConnectionSetup(callbackData->connection, errorCode);
                         return;
                     }
 
-                    retError = aws_last_error();
+                    errorCode = aws_last_error();
                 }
 
-                connectionWrapper->client->onConnectionSetup(nullptr, retError);
-                connectionWrapper->~ConnectionWrapper();
-                aws_mem_release(connectionWrapper->client->m_allocator, reinterpret_cast<void *>(connectionWrapper));
+                callbackData->onConnectionSetup(nullptr, errorCode);
+                Delete(callbackData, callbackData->allocator);
             }
 
-            void HttpClient::s_onClientConnectionShutdown(
+            void HttpClientConnection::s_onClientConnectionShutdown(
                 struct aws_http_connection *connection,
                 int errorCode,
                 void *user_data) noexcept
             {
                 (void)connection;
                 /* now that we're shutting down, we can release the internal ref count. */
-                auto *connectionWrapper = reinterpret_cast<ConnectionWrapper *>(user_data);
-                connectionWrapper->client->onConnectionShutdown(connectionWrapper->connection, errorCode);
-                connectionWrapper->connection.reset();
-                connectionWrapper->~ConnectionWrapper();
-                aws_mem_release(connectionWrapper->client->m_allocator, reinterpret_cast<void *>(connectionWrapper));
+                auto *callbackData = static_cast<ConnectionCallbackData *>(user_data);
+                callbackData->onConnectionShutdown(*callbackData->connection, errorCode);
+                callbackData->connection = nullptr;
+                Delete(callbackData, callbackData->allocator);
             }
 
-            HttpClient::HttpClient(
-                Io::ClientBootstrap *bootstrap,
-                std::size_t initialWindowSize,
-                Allocator *allocator) noexcept
-                : m_allocator(allocator), m_bootstrap(bootstrap), m_initialWindowSize(initialWindowSize)
+            bool HttpClientConnection::CreateConnection(const HttpClientConnectionOptions &connectionOptions) noexcept
             {
-            }
+                assert(connectionOptions.onConnectionSetup);
+                assert(connectionOptions.onConnectionShutdown);
+                assert(connectionOptions.socketOptions);
 
-            bool HttpClient::NewConnection(
-                const ByteCursor &hostName,
-                uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                const Io::TlsConnectionOptions &tlsConnOptions) const noexcept
-            {
-                assert(onConnectionShutdown);
-                assert(onConnectionSetup);
+                auto *callbackData =
+                    New<ConnectionCallbackData>(connectionOptions.allocator, connectionOptions.allocator);
 
-                void *connectionWrapperMemory = aws_mem_acquire(m_allocator, sizeof(ConnectionWrapper));
-                if (!connectionWrapperMemory)
+                if (!callbackData)
                 {
                     return false;
                 }
-
-                auto connectionWrapper = new (connectionWrapperMemory) ConnectionWrapper(this);
+                callbackData->onConnectionShutdown = connectionOptions.onConnectionShutdown;
+                callbackData->onConnectionSetup = connectionOptions.onConnectionSetup;
 
                 aws_http_client_connection_options options;
                 AWS_ZERO_STRUCT(options);
                 options.self_size = sizeof(aws_http_client_connection_options);
-                options.bootstrap = m_bootstrap->GetUnderlyingHandle();
-                options.tls_options = const_cast<aws_tls_connection_options *>(tlsConnOptions.GetUnderlyingHandle());
-                options.allocator = m_allocator;
-                options.user_data = connectionWrapper;
-                options.host_name = hostName;
-                options.port = port;
-                options.initial_window_size = m_initialWindowSize;
-                options.socket_options = &const_cast<Io::SocketOptions &>(socketOptions);
-                options.on_setup = HttpClient::s_onClientConnectionSetup;
-                options.on_shutdown = HttpClient::s_onClientConnectionShutdown;
+                options.bootstrap = connectionOptions.bootstrap->GetUnderlyingHandle();
+                if (connectionOptions.tlsConnOptions)
+                {
+                    options.tls_options = const_cast<aws_tls_connection_options *>(
+                        connectionOptions.tlsConnOptions->GetUnderlyingHandle());
+                }
+                options.allocator = connectionOptions.allocator;
+                options.user_data = callbackData;
+                options.host_name = connectionOptions.hostName;
+                options.port = connectionOptions.port;
+                options.initial_window_size = connectionOptions.initialWindowSize;
+                options.socket_options = connectionOptions.socketOptions;
+                options.on_setup = HttpClientConnection::s_onClientConnectionSetup;
+                options.on_shutdown = HttpClientConnection::s_onClientConnectionShutdown;
 
                 if (aws_http_client_connect(&options))
                 {
-                    connectionWrapper->~ConnectionWrapper();
-                    aws_mem_release(m_allocator, connectionWrapperMemory);
+                    Delete(callbackData, connectionOptions.allocator);
                     return false;
                 }
 
                 return true;
             }
 
-            bool HttpClient::NewConnection(
-                const ByteCursor &hostName,
-                uint16_t port,
-                const Io::SocketOptions &socketOptions) const noexcept
-            {
-                void *connectionWrapperMemory = aws_mem_acquire(m_allocator, sizeof(ConnectionWrapper));
-                if (!connectionWrapperMemory)
-                {
-                    return false;
-                }
-
-                ConnectionWrapper *connectionWrapper = new (connectionWrapperMemory) ConnectionWrapper(this);
-
-                aws_http_client_connection_options options;
-                AWS_ZERO_STRUCT(options);
-                options.self_size = sizeof(aws_http_client_connection_options);
-                options.bootstrap = m_bootstrap->GetUnderlyingHandle();
-                options.tls_options = nullptr;
-                options.allocator = m_allocator;
-                options.user_data = connectionWrapper;
-                options.host_name = hostName;
-                options.port = port;
-                options.initial_window_size = m_initialWindowSize;
-                options.socket_options = &const_cast<Io::SocketOptions &>(socketOptions);
-                options.on_setup = HttpClient::s_onClientConnectionSetup;
-                options.on_shutdown = HttpClient::s_onClientConnectionShutdown;
-
-                if (aws_http_client_connect(&options))
-                {
-                    connectionWrapper->~ConnectionWrapper();
-                    aws_mem_release(m_allocator, connectionWrapperMemory);
-                    return false;
-                }
-
-                return true;
-            }
-
-            HttpConnection::HttpConnection(aws_http_connection *connection, Allocator *allocator) noexcept
+            HttpClientConnection::HttpClientConnection(aws_http_connection *connection, Allocator *allocator) noexcept
                 : m_connection(connection), m_allocator(allocator), m_lastError(AWS_ERROR_SUCCESS)
             {
             }
 
-            HttpConnection::~HttpConnection()
+            HttpClientConnection::~HttpClientConnection()
             {
                 if (m_connection)
                 {
@@ -181,13 +143,14 @@ namespace Aws
                 }
             }
 
-            struct StreamWrapper
+            struct ClientStreamCallbackData
             {
                 Allocator *allocator;
-                std::shared_ptr<HttpStream> stream;
+                std::shared_ptr<HttpClientStream> stream;
             };
 
-            std::shared_ptr<HttpStream> HttpConnection::NewStream(const HttpRequestOptions &requestOptions) noexcept
+            std::shared_ptr<HttpClientStream> HttpClientConnection::NewClientStream(
+                const HttpRequestOptions &requestOptions) noexcept
             {
                 assert(requestOptions.onIncomingHeaders);
                 assert(requestOptions.onStreamComplete);
@@ -206,28 +169,24 @@ namespace Aws
                 options.on_complete = HttpStream::s_onStreamComplete;
                 options.client_connection = m_connection;
 
-                /* Do the same ref counting trick we did with HttpConnection. We need to maintain a reference
+                /* Do the same ref counting trick we did with HttpClientConnection. We need to maintain a reference
                  * internally (regardless of what the user does), until the Stream shuts down. */
-                auto *toSeat = reinterpret_cast<HttpStream *>(aws_mem_acquire(m_allocator, sizeof(HttpStream)));
+                auto *toSeat = static_cast<HttpClientStream *>(aws_mem_acquire(m_allocator, sizeof(HttpStream)));
 
                 if (toSeat)
                 {
-                    auto *wrapper =
-                        reinterpret_cast<StreamWrapper *>(aws_mem_acquire(m_allocator, sizeof(StreamWrapper)));
-                    if (!wrapper)
+                    auto *callbackData = New<ClientStreamCallbackData>(m_allocator);
+                    if (!callbackData)
                     {
-                        aws_mem_release(m_allocator, reinterpret_cast<void *>(toSeat));
+                        aws_mem_release(m_allocator, toSeat);
                         return nullptr;
                     }
 
-                    toSeat = new (toSeat) HttpStream(this->shared_from_this());
-                    wrapper = new (wrapper) StreamWrapper;
+                    toSeat = new (toSeat) HttpClientStream(this->shared_from_this());
 
                     Allocator *captureAllocator = m_allocator;
-                    wrapper->stream = std::shared_ptr<HttpStream>(toSeat, [captureAllocator](HttpStream *stream) {
-                        stream->~HttpStream();
-                        aws_mem_release(captureAllocator, reinterpret_cast<void *>(stream));
-                    });
+                    callbackData->stream = std::shared_ptr<HttpClientStream>(
+                        toSeat, [captureAllocator](HttpStream *stream) { Delete(stream, captureAllocator); });
 
                     toSeat->m_onIncomingBody = requestOptions.onIncomingBody;
                     toSeat->m_onIncomingHeaders = requestOptions.onIncomingHeaders;
@@ -235,27 +194,26 @@ namespace Aws
                     toSeat->m_onStreamComplete = requestOptions.onStreamComplete;
                     toSeat->m_onStreamOutgoingBody = requestOptions.onStreamOutgoingBody;
 
-                    wrapper->allocator = m_allocator;
-                    options.user_data = wrapper;
+                    callbackData->allocator = m_allocator;
+                    options.user_data = callbackData;
                     toSeat->m_stream = aws_http_stream_new_client_request(&options);
 
                     if (!toSeat->m_stream)
                     {
-                        wrapper->stream.reset();
-                        wrapper->stream = nullptr;
-                        aws_mem_release(m_allocator, reinterpret_cast<void *>(wrapper));
+                        callbackData->stream = nullptr;
+                        Delete(callbackData, m_allocator);
                         m_lastError = aws_last_error();
                         return nullptr;
                     }
 
-                    return wrapper->stream;
+                    return callbackData->stream;
                 }
 
                 m_lastError = aws_last_error();
                 return nullptr;
             }
 
-            bool HttpConnection::Close() noexcept
+            bool HttpClientConnection::Close() noexcept
             {
                 return aws_http_client_connection_close(m_connection) == AWS_OP_SUCCESS;
             }
@@ -265,11 +223,11 @@ namespace Aws
                 struct aws_byte_buf *buf,
                 void *userData) noexcept
             {
-                auto streamWrapper = reinterpret_cast<StreamWrapper *>(userData);
+                auto callbackData = static_cast<ClientStreamCallbackData *>(userData);
 
-                if (streamWrapper->stream->m_onStreamOutgoingBody)
+                if (callbackData->stream->m_onStreamOutgoingBody)
                 {
-                    return streamWrapper->stream->m_onStreamOutgoingBody(streamWrapper->stream, *buf);
+                    return callbackData->stream->m_onStreamOutgoingBody(*callbackData->stream, *buf);
                 }
 
                 return AWS_HTTP_OUTGOING_BODY_DONE;
@@ -281,8 +239,8 @@ namespace Aws
                 std::size_t numHeaders,
                 void *userData) noexcept
             {
-                auto streamWrapper = reinterpret_cast<StreamWrapper *>(userData);
-                streamWrapper->stream->m_onIncomingHeaders(streamWrapper->stream, headerArray, numHeaders);
+                auto callbackData = static_cast<ClientStreamCallbackData *>(userData);
+                callbackData->stream->m_onIncomingHeaders(*callbackData->stream, headerArray, numHeaders);
             }
 
             void HttpStream::s_onIncomingHeaderBlockDone(
@@ -290,11 +248,11 @@ namespace Aws
                 bool hasBody,
                 void *userData) noexcept
             {
-                auto streamWrapper = reinterpret_cast<StreamWrapper *>(userData);
+                auto callbackData = static_cast<ClientStreamCallbackData *>(userData);
 
-                if (streamWrapper->stream->m_onIncomingHeadersBlockDone)
+                if (callbackData->stream->m_onIncomingHeadersBlockDone)
                 {
-                    streamWrapper->stream->m_onIncomingHeadersBlockDone(streamWrapper->stream, hasBody);
+                    callbackData->stream->m_onIncomingHeadersBlockDone(*callbackData->stream, hasBody);
                 }
             }
 
@@ -304,25 +262,24 @@ namespace Aws
                 size_t *outWindowUpdateSize,
                 void *userData) noexcept
             {
-                auto streamWrapper = reinterpret_cast<StreamWrapper *>(userData);
+                auto callbackData = static_cast<ClientStreamCallbackData *>(userData);
 
-                if (streamWrapper->stream->m_onIncomingBody)
+                if (callbackData->stream->m_onIncomingBody)
                 {
-                    streamWrapper->stream->m_onIncomingBody(streamWrapper->stream, *data, *outWindowUpdateSize);
+                    callbackData->stream->m_onIncomingBody(*callbackData->stream, *data, *outWindowUpdateSize);
                 }
             }
 
             void HttpStream::s_onStreamComplete(struct aws_http_stream *, int errorCode, void *userData) noexcept
             {
-                auto streamWrapper = reinterpret_cast<StreamWrapper *>(userData);
-                streamWrapper->stream->m_onStreamComplete(streamWrapper->stream, errorCode);
+                auto callbackData = static_cast<ClientStreamCallbackData *>(userData);
+                callbackData->stream->m_onStreamComplete(*callbackData->stream, errorCode);
 
-                streamWrapper->stream.reset();
-                streamWrapper->stream = nullptr;
-                aws_mem_release(streamWrapper->allocator, reinterpret_cast<void *>(streamWrapper));
+                callbackData->stream = nullptr;
+                Delete(callbackData, callbackData->allocator);
             }
 
-            HttpStream::HttpStream(const std::shared_ptr<HttpConnection> &connection) noexcept
+            HttpStream::HttpStream(const std::shared_ptr<HttpClientConnection> &connection) noexcept
                 : m_stream(nullptr), m_connection(connection)
             {
             }
@@ -336,14 +293,18 @@ namespace Aws
 
                 if (m_connection)
                 {
-                    m_connection.reset();
                     m_connection = nullptr;
                 }
             }
 
-            const std::shared_ptr<HttpConnection> &HttpStream::GetConnection() const noexcept { return m_connection; }
+            HttpClientConnection &HttpStream::GetConnection() const noexcept { return *m_connection; }
 
-            int HttpStream::GetIncommingResponseStatusCode() const noexcept
+            HttpClientStream::HttpClientStream(const std::shared_ptr<HttpClientConnection> &connection) noexcept
+                : HttpStream(connection)
+            {
+            }
+
+            int HttpClientStream::GetResponseStatusCode() const noexcept
             {
                 int status = 0;
                 if (!aws_http_stream_get_incoming_response_status(m_stream, &status))

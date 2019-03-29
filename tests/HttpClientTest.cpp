@@ -30,8 +30,6 @@ using namespace Aws::Crt;
 
 static int s_VerifyFilesAreTheSame(Allocator *allocator, const char *fileName1, const char *fileName2)
 {
-    /* why std::ios_base::binary here? The brilliant minds at MSVC thought it was a good
-       idea to transform \n under the covers, so prevent that here. */
     std::ifstream file1(fileName1, std::ios_base::binary);
     std::ifstream file2(fileName2, std::ios_base::binary);
 
@@ -103,16 +101,14 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, allocator);
     ASSERT_TRUE(allocator);
 
-    Http::HttpClient httpClient(&clientBootstrap, SIZE_MAX, allocator);
-
-    std::shared_ptr<Http::HttpConnection> connection(nullptr);
+    std::shared_ptr<Http::HttpClientConnection> connection(nullptr);
     bool errorOccured = true;
     bool connectionShutdown = false;
 
     std::condition_variable semaphore;
     std::mutex semaphoreLock;
 
-    auto onConnectionSetup = [&](const std::shared_ptr<Http::HttpConnection> &newConnection, int errorCode) {
+    auto onConnectionSetup = [&](const std::shared_ptr<Http::HttpClientConnection> &newConnection, int errorCode) {
         std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
         if (!errorCode)
@@ -128,7 +124,7 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
         semaphore.notify_one();
     };
 
-    auto onConnectionShutdown = [&](const std::shared_ptr<Http::HttpConnection> &newConnection, int errorCode) {
+    auto onConnectionShutdown = [&](Http::HttpClientConnection &newConnection, int errorCode) {
         std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
         connectionShutdown = true;
@@ -140,11 +136,19 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
         semaphore.notify_one();
     };
 
-    httpClient.onConnectionSetup = onConnectionSetup;
-    httpClient.onConnectionShutdown = onConnectionShutdown;
+    Http::HttpClientConnectionOptions httpClientConnectionOptions;
+    httpClientConnectionOptions.allocator = allocator;
+    httpClientConnectionOptions.bootstrap = &clientBootstrap;
+    httpClientConnectionOptions.onConnectionSetup = onConnectionSetup;
+    httpClientConnectionOptions.onConnectionShutdown = onConnectionShutdown;
+    httpClientConnectionOptions.socketOptions = &socketOptions;
+    httpClientConnectionOptions.tlsConnOptions = &tlsConnectionOptions;
+    httpClientConnectionOptions.initialWindowSize = SIZE_MAX;
+    httpClientConnectionOptions.hostName = hostName;
+    httpClientConnectionOptions.port = 443;
 
     std::unique_lock<std::mutex> semaphoreULock(semaphoreLock);
-    ASSERT_TRUE(httpClient.NewConnection(hostName, 443, socketOptions, tlsConnectionOptions));
+    ASSERT_TRUE(Http::HttpClientConnection::CreateConnection(httpClientConnectionOptions));
     semaphore.wait(semaphoreULock, [&]() { return connection || connectionShutdown; });
 
     ASSERT_FALSE(errorOccured);
@@ -152,17 +156,14 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     ASSERT_TRUE(connection);
 
     int responseCode = 0;
-    /* why not std::ios_base::binary here? Well..... git on windows will convert
-     * the one in the source code to use \r\n instead of \n. We don't control git
-     * configuration, so just let windows do the same thing here (when in Rome...) */
-    std::ofstream downloadedFile("http_download_test_file.txt");
+    std::ofstream downloadedFile("http_download_test_file.txt", std::ios_base::binary);
     ASSERT_TRUE(downloadedFile);
 
     Http::HttpRequestOptions requestOptions;
     requestOptions.onStreamOutgoingBody = nullptr;
 
     bool streamCompleted = false;
-    requestOptions.onStreamComplete = [&](const std::shared_ptr<Http::HttpStream> &stream, int errorCode) {
+    requestOptions.onStreamComplete = [&](Http::HttpStream &stream, int errorCode) {
         std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
         streamCompleted = true;
@@ -174,25 +175,23 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
         semaphore.notify_one();
     };
     requestOptions.onIncomingHeadersBlockDone = nullptr;
-    requestOptions.onIncomingHeaders =
-        [&](const std::shared_ptr<Http::HttpStream> &stream, const struct aws_http_header *header, std::size_t len) {
-            responseCode = stream->GetIncommingResponseStatusCode();
-        };
-    requestOptions.onIncomingBody =
-        [&](const std::shared_ptr<Http::HttpStream> &, const ByteCursor &data, std::size_t &outWindowUpdateSize) {
-            downloadedFile.write((const char *)data.ptr, data.len);
-        };
+    requestOptions.onIncomingHeaders = [&](Http::HttpStream &stream, const Http::HttpHeader *header, std::size_t len) {
+        responseCode = stream.GetResponseStatusCode();
+    };
+    requestOptions.onIncomingBody = [&](Http::HttpStream &, const ByteCursor &data, std::size_t &outWindowUpdateSize) {
+        downloadedFile.write((const char *)data.ptr, data.len);
+    };
 
     requestOptions.method = ByteCursorFromCString("GET");
     requestOptions.uri = uri.GetPathAndQuery();
 
-    aws_http_header host_header;
+    Http::HttpHeader host_header;
     host_header.name_str = ByteCursorFromCString("host");
     host_header.value = uri.GetHostName();
     requestOptions.headerArray = &host_header;
     requestOptions.headerArrayLength = 1;
 
-    connection->NewStream(requestOptions);
+    connection->NewClientStream(requestOptions);
     semaphore.wait(semaphoreULock, [&]() { return streamCompleted; });
     ASSERT_INT_EQUALS(200, responseCode);
 

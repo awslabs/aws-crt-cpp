@@ -41,7 +41,7 @@ namespace Aws
 
         ByteCursor ByteCursorFromCString(const char *str) noexcept { return aws_byte_cursor_from_c_str(str); }
 
-        ByteCursor ByteCursorFromByteBuf(ByteBuf &buf) noexcept { return aws_byte_cursor_from_buf(&buf); }
+        ByteCursor ByteCursorFromByteBuf(const ByteBuf &buf) noexcept { return aws_byte_cursor_from_buf(&buf); }
 
         ByteCursor ByteCursorFromArray(const uint8_t *array, size_t len) noexcept
         {
