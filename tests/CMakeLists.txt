@@ -18,6 +18,7 @@ add_test_case(SHA256ResourceSafety)
 add_test_case(MD5ResourceSafety)
 add_test_case(SHA256HMACResourceSafety)
 add_test_case(HttpDownloadNoBackPressure)
+add_test_case(IotPublishSubscribe)
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 
