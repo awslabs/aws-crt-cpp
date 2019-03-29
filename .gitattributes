@@ -1,2 +1,2 @@
-tests/resources/*.txt text=auto eol=lf
+tests/resources/* text=auto eol=lf
 

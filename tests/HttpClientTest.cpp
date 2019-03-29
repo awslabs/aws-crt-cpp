@@ -77,6 +77,7 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
+    tlsCtxOptions.OverrideDefaultTrustStore(nullptr, "ca-certificates.crt");
 
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
