@@ -44,8 +44,6 @@ namespace Aws
              * successfully established, `connection` will be valid and errorCode will be AWS_ERROR_SUCCESS.
              * Upon an error, `connection` will not be valid, and errorCode will contain the cause of the connection
              * failure.
-             *
-             * On HttpClient, this function cannot be empty.
              */
             using OnConnectionSetup =
                 std::function<void(const std::shared_ptr<HttpClientConnection> &connection, int errorCode)>;
@@ -57,8 +55,6 @@ namespace Aws
              * reference to it in OnConnectionSetup(), you'll need to release your reference before the underlying
              * memory is released. If you never took a reference to it, the resources for the connection will be
              * immediately released after completion of this callback.
-             *
-             * On HttpClient, this function cannot be empty.
              */
             using OnConnectionShutdown = std::function<void(HttpClientConnection &connection, int errorCode)>;
 
