@@ -77,7 +77,13 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
+
+/* okay so, we do this here because custom libcrypto builds on 32-bit unix do not have the correct default paths
+ * setup, so we bundled a CA for running this test on those platforms.
+ */
+#if defined(__i386__) && !defined(__APPLE__)
     tlsCtxOptions.OverrideDefaultTrustStore(nullptr, "ca-certificates.crt");
+#endif
 
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
