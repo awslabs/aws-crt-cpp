@@ -41,8 +41,8 @@ namespace Aws
                  * LastError() will contain the errorCode.
                  */
                 Uri(aws_uri_builder_options &builderOptions, Allocator *allocator = DefaultAllocator()) noexcept;
-                Uri(const Uri &) = delete;
-                Uri &operator=(const Uri &) = delete;
+                Uri(const Uri &);
+                Uri &operator=(const Uri &);
                 Uri(Uri &&uri) noexcept;
                 Uri &operator=(Uri &&) noexcept;
 
@@ -90,7 +90,7 @@ namespace Aws
                 /**
                  * The full URI as it was passed to or parsed from the constructors.
                  */
-                const ByteBuf &GetFullUri() const noexcept;
+                ByteCursor GetFullUri() const noexcept;
 
               private:
                 aws_uri m_uri;

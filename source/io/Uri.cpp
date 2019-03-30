@@ -57,6 +57,48 @@ namespace Aws
                 }
             }
 
+            Uri::Uri(const Uri &other) : m_lastError(AWS_ERROR_SUCCESS), m_isInit(false)
+            {
+                if (other.m_isInit)
+                {
+                    ByteCursor uriCursor = other.GetFullUri();
+
+                    if (!aws_uri_init_parse(&m_uri, other.m_uri.allocator, &uriCursor))
+                    {
+                        m_isInit = true;
+                    }
+                    else
+                    {
+                        m_lastError = aws_last_error();
+                    }
+                }
+            }
+
+            Uri &Uri::operator=(const Uri &other)
+            {
+                if (this != &other)
+                {
+                    m_isInit = false;
+                    m_lastError = AWS_ERROR_SUCCESS;
+
+                    if (other.m_isInit)
+                    {
+                        ByteCursor uriCursor = other.GetFullUri();
+
+                        if (!aws_uri_init_parse(&m_uri, other.m_uri.allocator, &uriCursor))
+                        {
+                            m_isInit = true;
+                        }
+                        else
+                        {
+                            m_lastError = aws_last_error();
+                        }
+                    }
+                }
+
+                return *this;
+            }
+
             Uri::Uri(Uri &&uri) noexcept : m_lastError(AWS_ERROR_SUCCESS), m_isInit(uri.m_isInit)
             {
                 if (uri.m_isInit)
@@ -71,6 +113,11 @@ namespace Aws
             {
                 if (this != &uri)
                 {
+                    if (m_isInit)
+                    {
+                        aws_uri_clean_up(&m_uri);
+                    }
+
                     if (uri.m_isInit)
                     {
                         m_uri = uri.m_uri;
@@ -98,7 +145,7 @@ namespace Aws
 
             ByteCursor Uri::GetPathAndQuery() const noexcept { return m_uri.path_and_query; }
 
-            const ByteBuf &Uri::GetFullUri() const noexcept { return m_uri.uri_str; }
+            ByteCursor Uri::GetFullUri() const noexcept { return ByteCursorFromByteBuf(m_uri.uri_str); }
         } // namespace Io
     }     // namespace Crt
 } // namespace Aws
