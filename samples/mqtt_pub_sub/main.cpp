@@ -263,27 +263,6 @@ int main(int argc, char *argv[])
 
     if (connectionSucceeded)
     {
-        bool waitForOpComplete = false;
-
-        /*
-         * This will be invoked upon the completion of Publish, Subscribe, and Unsubscribe.
-         */
-        auto onOpComplete = [&](Mqtt::MqttConnection &, uint16_t packetId, int errorCode) {
-            if (packetId)
-            {
-                fprintf(stdout, "Operation on packetId %d Succeeded\n", (int)packetId);
-            }
-            else
-            {
-                fprintf(stdout, "Operation failed with error %s\n", aws_error_debug_str(errorCode));
-            }
-
-            if (waitForOpComplete)
-            {
-                conditionVariable.notify_one();
-            }
-        };
-
         /*
          * This is invoked upon the receipt of a Publish on a subscribed topic.
          */
@@ -300,7 +279,7 @@ int main(int argc, char *argv[])
         auto onSubAck = [&](Mqtt::MqttConnection &, uint16_t packetId, const String &topic, Mqtt::QOS, int errorCode) {
             if (packetId)
             {
-                fprintf(stdout, "Subscribe on topic %s on packetId %d Succeeded\n", topic.c_str(), (int)packetId);
+                fprintf(stdout, "Subscribe on topic %s on packetId %d Succeeded\n", topic.c_str(), packetId);
             }
             else
             {
@@ -312,9 +291,9 @@ int main(int argc, char *argv[])
         connection->Subscribe(topic.c_str(), AWS_MQTT_QOS_AT_LEAST_ONCE, onPublish, onSubAck);
         conditionVariable.wait(uniqueLock);
 
-        String input;
         while (true)
         {
+            String input;
             fprintf(
                 stdout,
                 "Enter the message you want to publish to topic %s and press enter. Enter 'exit' to exit this "
@@ -327,15 +306,29 @@ int main(int argc, char *argv[])
                 break;
             }
 
-            ByteBuf payload = ByteBufFromCString(input.c_str());
-            connection->Publish(topic.c_str(), AWS_MQTT_QOS_AT_LEAST_ONCE, false, payload, onOpComplete);
+            ByteBuf payload = ByteBufNewCopy(DefaultAllocator(), (const uint8_t *)input.data(), input.length());
+            ByteBuf *payloadPtr = &payload;
+
+            auto onPublishComplete = [payloadPtr](Mqtt::MqttConnection &, uint16_t packetId, int errorCode) {
+                aws_byte_buf_clean_up(payloadPtr);
+
+                if (packetId)
+                {
+                    fprintf(stdout, "Operation on packetId %d Succeeded\n", packetId);
+                }
+                else
+                {
+                    fprintf(stdout, "Operation failed with error %s\n", aws_error_debug_str(errorCode));
+                }
+            };
+            connection->Publish(topic.c_str(), AWS_MQTT_QOS_AT_LEAST_ONCE, false, payload, onPublishComplete);
         }
 
         /*
          * Unsubscribe from the topic.
          */
-        waitForOpComplete = true;
-        connection->Unsubscribe(topic.c_str(), onOpComplete);
+        connection->Unsubscribe(
+            topic.c_str(), [&](Mqtt::MqttConnection &, uint16_t, int) { conditionVariable.notify_one(); });
         conditionVariable.wait(uniqueLock);
     }
 

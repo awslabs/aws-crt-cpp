@@ -26,8 +26,6 @@ namespace Aws
     {
         namespace Io
         {
-            using TlsConnectionOptions = aws_tls_connection_options;
-
             enum class TlsMode
             {
                 CLIENT,
@@ -39,6 +37,7 @@ namespace Aws
                 friend class TlsContext;
 
               public:
+                ~TlsContextOptions();
                 TlsContextOptions(const TlsContextOptions &) noexcept = default;
                 TlsContextOptions &operator=(const TlsContextOptions &) noexcept = default;
 
@@ -46,15 +45,19 @@ namespace Aws
                  * Initializes TlsContextOptions with secure by default options, with
                  * no client certificates.
                  */
-                static TlsContextOptions InitDefaultClient() noexcept;
+                static TlsContextOptions InitDefaultClient(Allocator *allocator = DefaultAllocator()) noexcept;
                 /**
                  * Initializes TlsContextOptions with secure by default options, with
                  * client certificate and private key. These are paths to a file on disk. These
                  * strings must remain in memory for the lifetime of the returned object. These files
                  * must be in the PEM format.
                  */
-                static TlsContextOptions InitClientWithMtls(const char *cert_path, const char *pkey_path) noexcept;
+                static TlsContextOptions InitClientWithMtls(
+                    const char *cert_path,
+                    const char *pkey_path,
+                    Allocator *allocator = DefaultAllocator()) noexcept;
 
+#ifdef __APPLE__
                 /**
                  * Initializes TlsContextOptions with secure by default options, with
                  * client certificateand private key in the PKCS#12 format.
@@ -63,7 +66,9 @@ namespace Aws
                  */
                 static TlsContextOptions InitClientWithMtlsPkcs12(
                     const char *pkcs12_path,
-                    const char *pkcs12_pwd) noexcept;
+                    const char *pkcs12_pwd,
+                    Allocator *allocator = DefaultAllocator) noexcept;
+#endif
 
                 /**
                  * Returns true if alpn is supported by the underlying security provider, false
@@ -102,6 +107,52 @@ namespace Aws
                 TlsContextOptions() noexcept;
             };
 
+            /**
+             * Options specific to a single connection.
+             */
+            class AWS_CRT_CPP_API TlsConnectionOptions final
+            {
+              public:
+                TlsConnectionOptions() noexcept;
+                ~TlsConnectionOptions();
+                TlsConnectionOptions(const TlsConnectionOptions &) noexcept;
+                TlsConnectionOptions &operator=(const TlsConnectionOptions &) noexcept;
+                TlsConnectionOptions(TlsConnectionOptions &&options) noexcept;
+                TlsConnectionOptions &operator=(TlsConnectionOptions &&options) noexcept;
+
+                /**
+                 * Sets SNI extension, and also the name used for X.509 validation. serverName is copied.
+                 *
+                 * returns true if the copy succeeded, or false otherwise.
+                 */
+                bool SetServerName(ByteCursor &serverName) noexcept;
+
+                /**
+                 * Sets list of protocols (semi-colon delimited in priority order) used for ALPN extension.
+                 * alpnList is copied.
+                 *
+                 * returns true if the copy succeeded, or false otherwise.
+                 */
+                bool SetAlpnList(const char *alpnList) noexcept;
+
+                explicit operator bool() const noexcept { return m_isInit; }
+                int LastError() const noexcept { return m_lastError; }
+
+                const aws_tls_connection_options *GetUnderlyingHandle() const noexcept
+                {
+                    return &m_tls_connection_options;
+                }
+
+              private:
+                TlsConnectionOptions(aws_tls_ctx *ctx, Allocator *allocator) noexcept;
+                aws_tls_connection_options m_tls_connection_options;
+                aws_allocator *m_allocator;
+                int m_lastError;
+                bool m_isInit;
+
+                friend class TlsContext;
+            };
+
             class AWS_CRT_CPP_API TlsContext final
             {
               public:
@@ -117,7 +168,7 @@ namespace Aws
 
                 TlsConnectionOptions NewConnectionOptions() const noexcept;
 
-                operator bool() const noexcept;
+                explicit operator bool() const noexcept;
                 int LastError() const noexcept;
 
               private:

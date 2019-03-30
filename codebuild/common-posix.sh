@@ -7,6 +7,6 @@ cd build
 
 cmake -DBUILD_DEPS=ON $@ ../
 make
-make test
+ctest -V
 
 cd ..

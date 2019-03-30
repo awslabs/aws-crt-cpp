@@ -22,30 +22,36 @@ namespace Aws
     {
         namespace Io
         {
+            TlsContextOptions::~TlsContextOptions() { aws_tls_ctx_options_clean_up(&m_options); }
+
             TlsContextOptions::TlsContextOptions() noexcept { AWS_ZERO_STRUCT(m_options); }
 
-            TlsContextOptions TlsContextOptions::InitDefaultClient() noexcept
+            TlsContextOptions TlsContextOptions::InitDefaultClient(Allocator *allocator) noexcept
             {
                 TlsContextOptions ctxOptions;
-                aws_tls_ctx_options_init_default_client(&ctxOptions.m_options, g_allocator);
+                aws_tls_ctx_options_init_default_client(&ctxOptions.m_options, allocator);
                 return ctxOptions;
             }
 
-            TlsContextOptions TlsContextOptions::InitClientWithMtls(const char *certPath, const char *pKeyPath) noexcept
+            TlsContextOptions TlsContextOptions::InitClientWithMtls(
+                const char *certPath,
+                const char *pKeyPath,
+                Allocator *allocator) noexcept
             {
                 TlsContextOptions ctxOptions;
-                aws_tls_ctx_options_init_client_mtls_from_path(&ctxOptions.m_options, g_allocator, certPath, pKeyPath);
+                aws_tls_ctx_options_init_client_mtls_from_path(&ctxOptions.m_options, allocator, certPath, pKeyPath);
                 return ctxOptions;
             }
 #ifdef __APPLE__
             TlsContextOptions TlsContextOptions::InitClientWithMtlsPkcs12(
                 const char *pkcs12Path,
-                const char *pkcs12Pwd) noexcept
+                const char *pkcs12Pwd,
+                Allocator *allocator) noexcept
             {
                 TlsContextOptions ctxOptions;
                 struct aws_byte_cursor password = aws_byte_cursor_from_c_str(pkcs12Pwd);
                 aws_tls_ctx_options_init_client_mtls_pkcs12_from_path(
-                    &ctxOptions.m_options, g_allocator, pkcs12Path, &password);
+                    &ctxOptions.m_options, allocator, pkcs12Path, &password);
                 return ctxOptions;
             }
 #endif
@@ -70,6 +76,126 @@ namespace Aws
             void InitTlsStaticState(Aws::Crt::Allocator *alloc) noexcept { aws_tls_init_static_state(alloc); }
 
             void CleanUpTlsStaticState() noexcept { aws_tls_clean_up_static_state(); }
+
+            TlsConnectionOptions::TlsConnectionOptions() noexcept : m_lastError(AWS_ERROR_SUCCESS), m_isInit(false) {}
+
+            TlsConnectionOptions::TlsConnectionOptions(aws_tls_ctx *ctx, Allocator *allocator) noexcept
+                : m_allocator(allocator), m_lastError(AWS_ERROR_SUCCESS), m_isInit(true)
+            {
+                aws_tls_connection_options_init_from_ctx(&m_tls_connection_options, ctx);
+            }
+
+            TlsConnectionOptions::~TlsConnectionOptions()
+            {
+                if (m_isInit)
+                {
+                    aws_tls_connection_options_clean_up(&m_tls_connection_options);
+                    m_isInit = false;
+                }
+            }
+
+            TlsConnectionOptions::TlsConnectionOptions(const TlsConnectionOptions &options) noexcept
+            {
+                if (m_isInit)
+                {
+                    aws_tls_connection_options_clean_up(&m_tls_connection_options);
+                }
+
+                m_isInit = false;
+
+                if (options.m_isInit)
+                {
+                    m_allocator = options.m_allocator;
+                    if (!aws_tls_connection_options_copy(&m_tls_connection_options, &options.m_tls_connection_options))
+                    {
+                        m_isInit = true;
+                    }
+                    else
+                    {
+                        m_lastError = aws_last_error();
+                    }
+                }
+            }
+
+            TlsConnectionOptions &TlsConnectionOptions::operator=(const TlsConnectionOptions &options) noexcept
+            {
+                if (this != &options)
+                {
+                    if (m_isInit)
+                    {
+                        aws_tls_connection_options_clean_up(&m_tls_connection_options);
+                    }
+
+                    m_isInit = false;
+
+                    if (options.m_isInit)
+                    {
+                        m_allocator = options.m_allocator;
+                        if (!aws_tls_connection_options_copy(
+                                &m_tls_connection_options, &options.m_tls_connection_options))
+                        {
+                            m_isInit = true;
+                        }
+                        else
+                        {
+                            m_lastError = aws_last_error();
+                        }
+                    }
+                }
+
+                return *this;
+            }
+
+            TlsConnectionOptions::TlsConnectionOptions(TlsConnectionOptions &&options) noexcept
+                : m_isInit(options.m_isInit)
+            {
+                if (options.m_isInit)
+                {
+                    m_tls_connection_options = options.m_tls_connection_options;
+                    AWS_ZERO_STRUCT(options.m_tls_connection_options);
+                    options.m_isInit = false;
+                    options.m_allocator = options.m_allocator;
+                }
+            }
+
+            TlsConnectionOptions &TlsConnectionOptions::operator=(TlsConnectionOptions &&options) noexcept
+            {
+                if (this != &options)
+                {
+                    if (options.m_isInit)
+                    {
+                        m_tls_connection_options = options.m_tls_connection_options;
+                        AWS_ZERO_STRUCT(options.m_tls_connection_options);
+                        options.m_isInit = false;
+                        m_isInit = true;
+                        options.m_allocator = options.m_allocator;
+                    }
+                }
+
+                return *this;
+            }
+
+            bool TlsConnectionOptions::SetServerName(ByteCursor &serverName) noexcept
+            {
+                if (aws_tls_connection_options_set_server_name(&m_tls_connection_options, m_allocator, &serverName))
+                {
+                    m_lastError = aws_last_error();
+                    return false;
+                }
+
+                return true;
+            }
+
+            bool TlsConnectionOptions::SetAlpnList(const char *alpnList) noexcept
+            {
+                if (aws_tls_connection_options_set_alpn_list(&m_tls_connection_options, m_allocator, alpnList))
+                {
+                    m_lastError = aws_last_error();
+                    return false;
+                }
+
+                return true;
+            }
 
             TlsContext::TlsContext(TlsContextOptions &options, TlsMode mode, Allocator *allocator) noexcept
                 : m_ctx(nullptr), m_lastError(AWS_OP_SUCCESS)
@@ -124,9 +250,7 @@ namespace Aws
 
             TlsConnectionOptions TlsContext::NewConnectionOptions() const noexcept
             {
-                TlsConnectionOptions options;
-                aws_tls_connection_options_init_from_ctx(&options, m_ctx);
-                return options;
+                return TlsConnectionOptions(m_ctx, m_ctx->alloc);
             }
         } // namespace Io
     }     // namespace Crt

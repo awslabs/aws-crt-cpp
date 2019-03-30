@@ -111,6 +111,10 @@ file(GLOB AWS_CRT_MQTT_HEADERS
         "include/aws/crt/mqtt/*.h"
 )
 
+file(GLOB AWS_CRT_HTTP_HEADERS
+        "include/aws/crt/http/*.h"
+)
+
 file(GLOB AWS_CRT_EXTERNAL_HEADERS
         "include/aws/crt/external/*.h"
 )
@@ -120,6 +124,8 @@ file(GLOB AWS_CRT_CPP_HEADERS
         ${AWS_CRT_CRYPTO_HEADERS}
         ${AWS_CRT_IO_HEADERS}
         ${AWS_CRT_MQTT_HEADERS}
+        ${AWS_CRT_HTTP_HEADERS}
+        ${AWS_CRT_EXTERNAL_HEADERS}
 )
 
 file(GLOB AWS_CRT_SRC 
@@ -138,6 +144,10 @@ file (GLOB AWS_CRT_MQTT_SRC
        "source/mqtt/*.cpp"
 )
 
+file (GLOB AWS_CRT_HTTP_SRC
+        "source/http/*.cpp"
+)
+
 file(GLOB AWS_CRT_EXTERNAL_CRC
         "source/external/*.cpp"
 )
@@ -147,6 +157,7 @@ file(GLOB AWS_CRT_CPP_SRC
         ${AWS_CRT_CRYPTO_SRC}
         ${AWS_CRT_IO_SRC}
         ${AWS_CRT_MQTT_SRC}
+        ${AWS_CRT_HTTP_SRC}
         ${AWS_CRT_EXTERNAL_CRC}
 )
 
@@ -156,12 +167,14 @@ if (WIN32)
         source_group("Header Files\\aws\\crt\\crypto" FILES ${AWS_CRT_CRYPTO_HEADERS})
         source_group("Header Files\\aws\\crt\\io" FILES ${AWS_CRT_IO_HEADERS})
         source_group("Header Files\\aws\\crt\\mqtt" FILES ${AWS_CRT_MQTT_HEADERS})
+        source_group("Header Files\\aws\\crt\\http" FILES ${AWS_CRT_HTTP_HEADERS})
         source_group("Header Files\\aws\\crt\\external" FILES ${AWS_CRT_EXTERNAL_HEADERS})
 
         source_group("Source Files" FILES ${AWS_CRT_SRC})
         source_group("Source Files\\crypto" FILES ${AWS_CRT_CRYPTO_SRC})
         source_group("Source Files\\io" FILES ${AWS_CRT_IO_SRC})
         source_group("Source Files\\mqtt" FILES ${AWS_CRT_MQTT_SRC})
+        source_group("Source Files\\http" FILES ${AWS_CRT_HTTP_SRC})
         source_group("Source Files\\external" FILES ${AWS_CRT_EXTERNAL_SRC})
     endif ()
 endif()
@@ -193,14 +206,16 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>)
 
+find_package(aws-c-http REQUIRED)
 find_package(aws-c-mqtt REQUIRED)
 find_package(aws-c-cal REQUIRED)
-target_link_libraries(${CMAKE_PROJECT_NAME} AWS::aws-c-cal AWS::aws-c-mqtt)
+target_link_libraries(${CMAKE_PROJECT_NAME} AWS::aws-c-cal AWS::aws-c-http AWS::aws-c-mqtt)
 
 install(FILES ${AWS_CRT_HEADERS} DESTINATION "include/aws/crt" COMPONENT Development)
 install(FILES ${AWS_CRT_CRYPTO_HEADERS} DESTINATION "include/aws/crt/crypto" COMPONENT Development)
 install(FILES ${AWS_CRT_IO_HEADERS} DESTINATION "include/aws/crt/io" COMPONENT Development)
 install(FILES ${AWS_CRT_MQTT_HEADERS} DESTINATION "include/aws/crt/mqtt" COMPONENT Development)
+install(FILES ${AWS_CRT_HTTP_HEADERS} DESTINATION "include/aws/crt/http" COMPONENT Development)
 install(FILES ${AWS_CRT_EXTERNAL_HEADERS} DESTINATION "include/aws/crt/external" COMPONENT Development)
 
 install(
