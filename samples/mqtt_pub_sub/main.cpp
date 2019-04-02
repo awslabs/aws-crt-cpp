@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
     String keyPath;
     String caFile;
     String topic;
-    String clientId("client_12345");
+    String clientId("samples-client-id");
 
     /*********************** Parse Arguments ***************************/
     if (!(s_cmdOptionExists(argv, argv + argc, "--endpoint") && s_cmdOptionExists(argv, argv + argc, "--cert") &&
