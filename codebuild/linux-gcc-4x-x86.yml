@@ -15,10 +15,10 @@ phases:
         no-hw no-mdc2 no-seed no-idea no-camellia\
         no-bf no-ripemd no-dsa no-ssl2 no-ssl3 no-capieng     \
         -DSSL_FORBID_ENULL -DOPENSSL_NO_DTLS1 -DOPENSSL_NO_HEARTBEATS   \
-        --prefix=`pwd`/../../../install/
+        --prefix=/tmp/builds/install
       - make -j 12
       - make install_sw
-      - cd ../../
+      - cd $CODEBUILD_SRC_DIR
 
   pre_build:
     commands:
@@ -27,7 +27,7 @@ phases:
   build:
     commands:
       - echo Build started on `date`
-      - setarch i386 ./codebuild/common-posix.sh -DCMAKE_INSTALL_PREFIX=`pwd`/../install -DCMAKE_C_FLAGS="-m32" -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_LINK_FLAGS="-m32"
+      - setarch i386 ./codebuild/common-posix.sh -DCMAKE_INSTALL_PREFIX=/tmp/builds/install -DCMAKE_C_FLAGS="-m32" -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_LINK_FLAGS="-m32"
   post_build:
     commands:
       - echo Build completed on `date`

@@ -33,6 +33,7 @@ static void s_printHelp()
     fprintf(stdout, "cert: path to your client certificate in PEM format\n");
     fprintf(stdout, "key: path to your key in PEM format\n");
     fprintf(stdout, "topic: topic to publish, subscribe to.\n");
+    fprintf(stdout, "client_id: client id to use (optional)\n");
     fprintf(
         stdout,
         "ca_file: Optional, if the mqtt server uses a certificate that's not already"
@@ -74,6 +75,7 @@ int main(int argc, char *argv[])
     String keyPath;
     String caFile;
     String topic;
+    String clientId("samples-client-id");
 
     /*********************** Parse Arguments ***************************/
     if (!(s_cmdOptionExists(argv, argv + argc, "--endpoint") && s_cmdOptionExists(argv, argv + argc, "--cert") &&
@@ -90,6 +92,10 @@ int main(int argc, char *argv[])
     if (s_cmdOptionExists(argv, argv + argc, "--ca_file"))
     {
         caFile = s_getCmdOption(argv, argv + argc, "--ca_file");
+    }
+    if (s_cmdOptionExists(argv, argv + argc, "--client_id"))
+    {
+        clientId = s_getCmdOption(argv, argv + argc, "--client_id");
     }
 
     /********************** Now Setup an Mqtt Client ******************/
@@ -252,7 +258,7 @@ int main(int argc, char *argv[])
      * This will use default ping behavior of 1 hour and 3 second timeouts.
      * If you want different behavior, those arguments go into slots 3 & 4.
      */
-    if (!connection->Connect("client_id12335456", false))
+    if (!connection->Connect(clientId.c_str(), false))
     {
         fprintf(stderr, "MQTT Connection failed with error %s\n", ErrorDebugString(connection->LastError()));
         exit(-1);
@@ -288,7 +294,7 @@ int main(int argc, char *argv[])
             conditionVariable.notify_one();
         };
 
-        connection->Subscribe(topic.c_str(), AWS_MQTT_QOS_AT_LEAST_ONCE, onPublish, onSubAck);
+        connection->Subscribe(topic.c_str(), AWS_MQTT_QOS_AT_MOST_ONCE, onPublish, onSubAck);
         conditionVariable.wait(uniqueLock);
 
         while (true)
@@ -321,7 +327,7 @@ int main(int argc, char *argv[])
                     fprintf(stdout, "Operation failed with error %s\n", aws_error_debug_str(errorCode));
                 }
             };
-            connection->Publish(topic.c_str(), AWS_MQTT_QOS_AT_LEAST_ONCE, false, payload, onPublishComplete);
+            connection->Publish(topic.c_str(), AWS_MQTT_QOS_AT_MOST_ONCE, false, payload, onPublishComplete);
         }
 
         /*

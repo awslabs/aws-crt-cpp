@@ -22,7 +22,7 @@ include(BuildAwsCCommon)
 
 if (UNIX AND NOT APPLE)
     set(S2N_URL "https://github.com/awslabs/s2n.git")
-    set(s2N_SHA "ff1a8b2187ded17ee5570fd54f15c58f2175ce51")
+    set(S2N_SHA "ff1a8b2187ded17ee5570fd54f15c58f2175ce51")
     include(BuildS2N)
 endif()
 
@@ -35,7 +35,7 @@ set(AWS_C_HTTP_SHA "v0.1.0")
 include(BuildAwsCHttp)
 
 set(AWS_C_MQTT_URL "https://github.com/awslabs/aws-c-mqtt.git")
-set(AWS_C_MQTT_SHA "v0.3.2")
+set(AWS_C_MQTT_SHA "v0.3.3")
 include(BuildAwsCMqtt)
 
 set(AWS_C_CAL_URL "https://github.com/awslabs/aws-c-cal.git")
