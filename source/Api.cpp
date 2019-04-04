@@ -17,6 +17,8 @@
 #include <aws/crt/external/cJSON.h>
 #include <aws/crt/io/TlsOptions.h>
 
+#include <aws/http/http.h>
+
 namespace Aws
 {
     namespace Crt
@@ -32,6 +34,7 @@ namespace Aws
             // sets up the StlAllocator for use.
             g_allocator = allocator;
             Io::InitTlsStaticState(allocator);
+            aws_http_library_init(allocator);
 
             cJSON_Hooks hooks;
             hooks.malloc_fn = s_cJSONAlloc;
@@ -42,6 +45,7 @@ namespace Aws
         static void s_cleanUpApi()
         {
             g_allocator = nullptr;
+            aws_http_library_clean_up();
             Io::CleanUpTlsStaticState();
         }
 

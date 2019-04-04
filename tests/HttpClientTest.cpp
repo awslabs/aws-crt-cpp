@@ -14,10 +14,8 @@
  */
 #include <aws/crt/Api.h>
 #include <aws/crt/crypto/Hash.h>
-#include <aws/crt/http/HttpConnection.h>
+#include <aws/crt/http/HttpConnectionManager.h>
 #include <aws/crt/io/Uri.h>
-
-#include <aws/io/uri.h>
 
 #include <aws/testing/aws_test_harness.h>
 
@@ -69,7 +67,8 @@ static int s_VerifyFilesAreTheSame(Allocator *allocator, const char *fileName1, 
     ASSERT_TRUE(file1Hash.Digest(file1DigestBuf));
     ASSERT_TRUE(file2Hash.Digest(file2DigestBuf));
 
-    return aws_byte_buf_eq(&file1DigestBuf, &file2DigestBuf) ? AWS_OP_SUCCESS : AWS_OP_ERR;
+    ASSERT_BIN_ARRAYS_EQUALS(file1DigestBuf.buffer, file1DigestBuf.len, file2DigestBuf.buffer, file2DigestBuf.len);
+    return AWS_OP_SUCCESS;
 }
 
 static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, void *ctx)
@@ -77,13 +76,6 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
-
-/* okay so, we do this here because custom libcrypto builds on 32-bit unix do not have the correct default paths
- * setup, so we bundled a CA for running this test on those platforms.
- */
-#if defined(__i386__) && !defined(__APPLE__)
-    tlsCtxOptions.OverrideDefaultTrustStore(nullptr, "ca-certificates.crt");
-#endif
 
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
@@ -108,105 +100,94 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, allocator);
     ASSERT_TRUE(allocator);
 
-    std::shared_ptr<Http::HttpClientConnection> connection(nullptr);
-    bool errorOccured = true;
-    bool connectionShutdown = false;
+    {
+        std::shared_ptr<Http::HttpClientConnection> connection(nullptr);
+        bool errorOccured = true;
+        bool connectionShutdown = false;
 
-    std::condition_variable semaphore;
-    std::mutex semaphoreLock;
+        std::condition_variable semaphore;
+        std::mutex semaphoreLock;
 
-    auto onConnectionSetup = [&](const std::shared_ptr<Http::HttpClientConnection> &newConnection, int errorCode) {
-        std::lock_guard<std::mutex> lockGuard(semaphoreLock);
+        auto onConnectionAvailable = [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode) {
+            std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
-        if (!errorCode)
-        {
-            connection = newConnection;
-            errorOccured = false;
-        }
-        else
-        {
-            connectionShutdown = true;
-        }
+            if (!errorCode)
+            {
+                connection = newConnection;
+                errorOccured = false;
+            }
+            else
+            {
+                connectionShutdown = true;
+            }
 
-        semaphore.notify_one();
-    };
+            semaphore.notify_one();
+        };
 
-    auto onConnectionShutdown = [&](Http::HttpClientConnection &newConnection, int errorCode) {
-        std::lock_guard<std::mutex> lockGuard(semaphoreLock);
+        std::ofstream downloadedFile("http_download_test_file.txt", std::ios_base::binary);
+        ASSERT_TRUE(downloadedFile);
 
-        connectionShutdown = true;
-        if (errorCode)
-        {
-            errorOccured = true;
-        }
+        Http::HttpClientConnectionManagerOptions connectionManagerOptions;
+        connectionManagerOptions.bootstrap = &clientBootstrap;
+        connectionManagerOptions.initialWindowSize = SIZE_MAX;
+        connectionManagerOptions.socketOptions = &socketOptions;
+        connectionManagerOptions.tlsConnectionOptions = &tlsConnectionOptions;
+        connectionManagerOptions.hostName = hostName;
+        connectionManagerOptions.port = 443;
 
-        semaphore.notify_one();
-    };
+        Http::HttpClientConnectionManager connectionManager(connectionManagerOptions, allocator);
+        std::unique_lock<std::mutex> semaphoreULock(semaphoreLock);
+        ASSERT_TRUE(connectionManager.AcquireConnection(onConnectionAvailable));
+        semaphore.wait(semaphoreULock, [&]() { return connection || connectionShutdown; });
 
-    Http::HttpClientConnectionOptions httpClientConnectionOptions;
-    httpClientConnectionOptions.allocator = allocator;
-    httpClientConnectionOptions.bootstrap = &clientBootstrap;
-    httpClientConnectionOptions.onConnectionSetup = onConnectionSetup;
-    httpClientConnectionOptions.onConnectionShutdown = onConnectionShutdown;
-    httpClientConnectionOptions.socketOptions = &socketOptions;
-    httpClientConnectionOptions.tlsConnOptions = &tlsConnectionOptions;
-    httpClientConnectionOptions.initialWindowSize = SIZE_MAX;
-    httpClientConnectionOptions.hostName = hostName;
-    httpClientConnectionOptions.port = 443;
+        ASSERT_FALSE(errorOccured);
+        ASSERT_FALSE(connectionShutdown);
+        ASSERT_TRUE(connection);
 
-    std::unique_lock<std::mutex> semaphoreULock(semaphoreLock);
-    ASSERT_TRUE(Http::HttpClientConnection::CreateConnection(httpClientConnectionOptions));
-    semaphore.wait(semaphoreULock, [&]() { return connection || connectionShutdown; });
+        int responseCode = 0;
 
-    ASSERT_FALSE(errorOccured);
-    ASSERT_FALSE(connectionShutdown);
-    ASSERT_TRUE(connection);
+        Http::HttpRequestOptions requestOptions;
+        requestOptions.onStreamOutgoingBody = nullptr;
 
-    int responseCode = 0;
-    std::ofstream downloadedFile("http_download_test_file.txt", std::ios_base::binary);
-    ASSERT_TRUE(downloadedFile);
+        bool streamCompleted = false;
+        requestOptions.onStreamComplete = [&](Http::HttpStream &stream, int errorCode) {
+            std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
-    Http::HttpRequestOptions requestOptions;
-    requestOptions.onStreamOutgoingBody = nullptr;
+            streamCompleted = true;
+            if (errorCode)
+            {
+                errorOccured = true;
+            }
 
-    bool streamCompleted = false;
-    requestOptions.onStreamComplete = [&](Http::HttpStream &stream, int errorCode) {
-        std::lock_guard<std::mutex> lockGuard(semaphoreLock);
+            semaphore.notify_one();
+        };
+        requestOptions.onIncomingHeadersBlockDone = nullptr;
+        requestOptions.onIncomingHeaders = [&](Http::HttpStream &stream,
+                                               const Http::HttpHeader *header,
+                                               std::size_t len) { responseCode = stream.GetResponseStatusCode(); };
+        requestOptions.onIncomingBody =
+            [&](Http::HttpStream &, const ByteCursor &data, std::size_t &outWindowUpdateSize) {
+                downloadedFile.write((const char *)data.ptr, data.len);
+            };
 
-        streamCompleted = true;
-        if (errorCode)
-        {
-            errorOccured = true;
-        }
+        requestOptions.method = ByteCursorFromCString("GET");
+        requestOptions.uri = uri.GetPathAndQuery();
 
-        semaphore.notify_one();
-    };
-    requestOptions.onIncomingHeadersBlockDone = nullptr;
-    requestOptions.onIncomingHeaders = [&](Http::HttpStream &stream, const Http::HttpHeader *header, std::size_t len) {
-        responseCode = stream.GetResponseStatusCode();
-    };
-    requestOptions.onIncomingBody = [&](Http::HttpStream &, const ByteCursor &data, std::size_t &outWindowUpdateSize) {
-        downloadedFile.write((const char *)data.ptr, data.len);
-    };
+        Http::HttpHeader host_header;
+        host_header.name = ByteCursorFromCString("host");
+        host_header.value = uri.GetHostName();
+        requestOptions.headerArray = &host_header;
+        requestOptions.headerArrayLength = 1;
 
-    requestOptions.method = ByteCursorFromCString("GET");
-    requestOptions.uri = uri.GetPathAndQuery();
+        connection->NewClientStream(requestOptions);
+        semaphore.wait(semaphoreULock, [&]() { return streamCompleted; });
+        ASSERT_INT_EQUALS(200, responseCode);
 
-    Http::HttpHeader host_header;
-    host_header.name_str = ByteCursorFromCString("host");
-    host_header.value = uri.GetHostName();
-    requestOptions.headerArray = &host_header;
-    requestOptions.headerArrayLength = 1;
+        connectionManager.ReleaseConnection(connection);
+        downloadedFile.flush();
+        downloadedFile.close();
+    }
 
-    connection->NewClientStream(requestOptions);
-    semaphore.wait(semaphoreULock, [&]() { return streamCompleted; });
-    ASSERT_INT_EQUALS(200, responseCode);
-
-    connection->Close();
-    semaphore.wait(semaphoreULock, [&]() { return connectionShutdown; });
-
-    downloadedFile.flush();
-    downloadedFile.close();
     return s_VerifyFilesAreTheSame(allocator, "http_download_test_file.txt", "http_test_doc.txt");
 }
 

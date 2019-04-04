@@ -20,6 +20,7 @@
 #include <aws/crt/io/Bootstrap.h>
 #include <aws/crt/io/TlsOptions.h>
 
+#include <atomic>
 #include <functional>
 #include <memory>
 
@@ -331,9 +332,10 @@ namespace Aws
                  * Assuming `OnConnectionShutdown` has not already been invoked, it will be invoked as a result of this
                  * call. It is safe to release your reference to this object after calling this function.
                  */
-                bool Close() noexcept;
+                void Close() noexcept;
 
                 int LastError() const noexcept { return m_lastError; }
+                explicit operator bool() const noexcept { return m_good; }
 
                 /**
                  * Create a new Https Connection to hostName:port, using `socketOptions` for tcp options and
@@ -350,6 +352,7 @@ namespace Aws
                 aws_http_connection *m_connection;
                 Allocator *m_allocator;
                 int m_lastError;
+                std::atomic<bool> m_good;
 
                 static void s_onClientConnectionSetup(
                     struct aws_http_connection *connection,

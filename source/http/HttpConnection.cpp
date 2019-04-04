@@ -81,6 +81,7 @@ namespace Aws
                 (void)connection;
                 /* now that we're shutting down, we can release the internal ref count. */
                 auto *callbackData = static_cast<ConnectionCallbackData *>(user_data);
+                callbackData->connection->m_good = false;
                 callbackData->onConnectionShutdown(*callbackData->connection, errorCode);
                 callbackData->connection = nullptr;
                 Delete(callbackData, callbackData->allocator);
@@ -130,7 +131,7 @@ namespace Aws
             }
 
             HttpClientConnection::HttpClientConnection(aws_http_connection *connection, Allocator *allocator) noexcept
-                : m_connection(connection), m_allocator(allocator), m_lastError(AWS_ERROR_SUCCESS)
+                : m_connection(connection), m_allocator(allocator), m_lastError(AWS_ERROR_SUCCESS), m_good(true)
             {
             }
 
@@ -159,7 +160,7 @@ namespace Aws
                 AWS_ZERO_STRUCT(options);
                 options.self_size = sizeof(aws_http_request_options);
                 options.uri = requestOptions.uri;
-                options.method_str = requestOptions.method;
+                options.method = requestOptions.method;
                 options.header_array = requestOptions.headerArray;
                 options.num_headers = requestOptions.headerArrayLength;
                 options.stream_outgoing_body = HttpStream::s_onStreamOutgoingBody;
@@ -213,9 +214,10 @@ namespace Aws
                 return nullptr;
             }
 
-            bool HttpClientConnection::Close() noexcept
+            void HttpClientConnection::Close() noexcept
             {
-                return aws_http_client_connection_close(m_connection) == AWS_OP_SUCCESS;
+                m_good = false;
+                aws_http_connection_close(m_connection);
             }
 
             enum aws_http_outgoing_body_state HttpStream::s_onStreamOutgoingBody(

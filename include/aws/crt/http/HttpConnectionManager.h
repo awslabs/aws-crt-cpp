@@ -14,6 +14,7 @@
  * permissions and limitations under the License.
  */
 #include <aws/crt/http/HttpConnection.h>
+#include <condition_variable>
 #include <mutex>
 
 namespace Aws
@@ -22,11 +23,17 @@ namespace Aws
     {
         namespace Http
         {
+            /**
+             * Invoked when a connection from the pool is available. If a connection was successfully obtained
+             * the connection shared_ptr can be seated into your own copy of connection. If it failed, errorCode
+             * will be non-zero. It is your responsibility to release the connection when you are finished with it.
+             */
             using OnClientConnectionAvailable =
-            std::function<void(std::shared_ptr<HttpClientConnection> connection, int errorCode)>;
+                std::function<void(std::shared_ptr<HttpClientConnection> connection, int errorCode)>;
 
-            struct HttpConnectionManagerOptions
+            struct HttpClientConnectionManagerOptions
             {
+                HttpClientConnectionManagerOptions();
                 Io::ClientBootstrap *bootstrap;
                 size_t initialWindowSize;
                 Io::SocketOptions *socketOptions;
@@ -36,16 +43,34 @@ namespace Aws
                 size_t max_connections;
             };
 
-            class HttpConnectionManager final
+            /**
+             * Manages a pool of connections to a specific endpoint using the same socket and tls options.
+             */
+            class HttpClientConnectionManager final
             {
-            public:
-                HttpConnectionManager(const HttpConnectionManagerOptions& connectionManagerOptions, Allocator *allocator = DefaultAllocator()) noexcept;
-                ~HttpConnectionManager();
+              public:
+                HttpClientConnectionManager(
+                    const HttpClientConnectionManagerOptions &connectionManagerOptions,
+                    Allocator *allocator = DefaultAllocator()) noexcept;
+                ~HttpClientConnectionManager();
 
-                bool AcquireConnection(const OnClientConnectionAvailable & onClientConnectionAvailable);
-                void ReleaseConnection(std::shared_ptr<HttpClientConnection> connection);
+                /**
+                 * Acquires a connection from the pool. onClientConnectionAvailable will be invoked upon an available
+                 * connection. Returns true if the connection request was successfully pooled, returns false if it
+                 * failed. On failure, onClientConnectionAvailable will not be invoked. After receiving a connection,
+                 * you must invoke ReleaseConnection().
+                 */
+                bool AcquireConnection(const OnClientConnectionAvailable &onClientConnectionAvailable) noexcept;
 
-            private:
+                /**
+                 * Releases a connection back to the pool. This will cause queued consumers to be serviced, or the
+                 * connection will be pooled waiting on another call to AcquireConnection */
+                void ReleaseConnection(std::shared_ptr<HttpClientConnection> connection) noexcept;
+
+                int LastError() const noexcept { return m_lastError; }
+                explicit operator bool() const noexcept { return m_good; }
+
+              private:
                 Vector<std::shared_ptr<HttpClientConnection>> m_connections;
                 List<OnClientConnectionAvailable> m_pendingConnectionRequests;
                 Allocator *m_allocator;
@@ -59,11 +84,18 @@ namespace Aws
                 bool m_good;
                 int m_lastError;
                 size_t m_max_size;
+                size_t m_outstandingVendedConnections;
+                size_t m_pendingConnections;
                 std::mutex m_connectionsLock;
+                std::condition_variable m_shutdownSemaphore;
 
-                void s_onConnectionSetup(const std::shared_ptr<HttpClientConnection> &connection, int errorCode);
-                void s_onConnectionShutdown(HttpClientConnection &connection, int errorCode);
+                void s_onConnectionSetup(
+                    const std::shared_ptr<HttpClientConnection> &connection,
+                    int errorCode) noexcept;
+                void s_onConnectionShutdown(HttpClientConnection &connection, int errorCode) noexcept;
+                bool s_createConnection() noexcept;
+                void s_poolOrVendConnection(std::shared_ptr<HttpClientConnection> connection, bool isRelease) noexcept;
             };
-        }
-    }
-}
+        } // namespace Http
+    }     // namespace Crt
+} // namespace Aws
