@@ -37,7 +37,7 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
 
     Aws::Crt::Io::TlsConnectionOptions tlsConnectionOptions = tlsContext.NewConnectionOptions();
 
-    ByteCursor cursor = ByteCursorFromCString("https://aws-crt-test-stuff.s3.amazonaws.com");
+    ByteCursor cursor = ByteCursorFromCString("https://s3.amazonaws.com");
     Io::Uri uri(cursor, allocator);
 
     auto hostName = uri.GetHostName();
@@ -47,7 +47,7 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
     AWS_ZERO_STRUCT(socketOptions);
     socketOptions.type = AWS_SOCKET_STREAM;
     socketOptions.domain = AWS_SOCKET_IPV4;
-    socketOptions.connect_timeout_ms = 3000;
+    socketOptions.connect_timeout_ms = 1000;
 
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
@@ -127,7 +127,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
 
     Aws::Crt::Io::TlsConnectionOptions tlsConnectionOptions = tlsContext.NewConnectionOptions();
 
-    ByteCursor cursor = ByteCursorFromCString("https://aws-crt-test-stuff.s3.amazonaws.com");
+    ByteCursor cursor = ByteCursorFromCString("https://s3.amazonaws.com");
     Io::Uri uri(cursor, allocator);
 
     auto hostName = uri.GetHostName();
@@ -137,7 +137,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     AWS_ZERO_STRUCT(socketOptions);
     socketOptions.type = AWS_SOCKET_STREAM;
     socketOptions.domain = AWS_SOCKET_IPV4;
-    socketOptions.connect_timeout_ms = 3000;
+    socketOptions.connect_timeout_ms = 1000;
 
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
@@ -230,7 +230,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
 
     Aws::Crt::Io::TlsConnectionOptions tlsConnectionOptions = tlsContext.NewConnectionOptions();
 
-    ByteCursor cursor = ByteCursorFromCString("https://aws-crt-test-stuff.s3.amazonaws.com");
+    ByteCursor cursor = ByteCursorFromCString("https://s3.amazonaws.com");
     Io::Uri uri(cursor, allocator);
 
     auto hostName = uri.GetHostName();
@@ -240,7 +240,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
     AWS_ZERO_STRUCT(socketOptions);
     socketOptions.type = AWS_SOCKET_STREAM;
     socketOptions.domain = AWS_SOCKET_IPV4;
-    socketOptions.connect_timeout_ms = 3000;
+    socketOptions.connect_timeout_ms = 1000;
 
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
@@ -305,7 +305,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
     size_t i = 0;
     for (auto &connection : connectionsCpy)
     {
-        if (i++ & 0x01)
+        if (i++ & 0x01 && *connection)
         {
             connection->Close();
         }

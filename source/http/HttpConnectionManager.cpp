@@ -309,9 +309,7 @@ namespace Aws
                 }
             }
 
-            void HttpClientConnectionManager::onConnectionShutdown(
-                HttpClientConnection &connection,
-                int) noexcept
+            void HttpClientConnectionManager::onConnectionShutdown(HttpClientConnection &connection, int) noexcept
             {
                 {
                     std::lock_guard<std::mutex> connectionsLock(m_connectionsLock);
