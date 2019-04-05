@@ -225,6 +225,9 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
     (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
 
+    aws_io_load_error_strings();
+    aws_io_load_log_subject_strings();
+
     aws_logger_standard_options logOptions;
     AWS_ZERO_STRUCT(logOptions);
     logOptions.file = stderr;
