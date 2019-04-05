@@ -95,11 +95,11 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
         semaphore.notify_one();
     };
 
-    std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
     for (size_t i = 0; i < totalExpectedConnections; ++i)
     {
         ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
     }
+    std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
     semaphore.wait(uniqueLock, [&]() { return connectionCount + connectionsFailed == totalExpectedConnections; });
 
     /* make sure the test was actually meaningful. */
@@ -186,11 +186,11 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     };
 
     {
-        std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
         for (size_t i = 0; i < totalExpectedConnections; ++i)
         {
             ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
         }
+        std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
         semaphore.wait(uniqueLock, [&]() {
             return connectionCount + connectionsFailed == connectionManagerOptions.maxConnections;
         });
@@ -300,10 +300,10 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
         };
 
         {
-            std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
             for (size_t i = 0; i < totalExpectedConnections; ++i) {
                 ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
             }
+            std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
             semaphore.wait(uniqueLock, [&]() {
                 return connectionCount + connectionsFailed == connectionManagerOptions.maxConnections;
             });
