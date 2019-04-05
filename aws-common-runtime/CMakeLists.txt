@@ -31,7 +31,7 @@ set(AWS_C_IO_SHA "v0.2.7")
 include(BuildAwsCIO)
 
 set(AWS_C_HTTP_URL "https://github.com/awslabs/aws-c-http.git")
-set(AWS_C_HTTP_SHA "v0.1.0")
+set(AWS_C_HTTP_SHA "v0.2.0")
 include(BuildAwsCHttp)
 
 set(AWS_C_MQTT_URL "https://github.com/awslabs/aws-c-mqtt.git")
