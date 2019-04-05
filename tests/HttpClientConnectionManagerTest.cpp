@@ -19,6 +19,8 @@
 
 #include <aws/testing/aws_test_harness.h>
 
+#include <aws/io/logging.h>
+
 #include <condition_variable>
 #include <mutex>
 
@@ -223,105 +225,112 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
     (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
 
-    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
+    aws_logger_standard_options logOptions;
+    AWS_ZERO_STRUCT(logOptions);
+    logOptions.file = stderr;
+    logOptions.level = AWS_LL_TRACE;
 
-    Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
-    ASSERT_TRUE(tlsContext);
+    aws_logger logger;
+    aws_logger_init_standard(&logger, DefaultAllocator(), &logOptions);
 
-    Aws::Crt::Io::TlsConnectionOptions tlsConnectionOptions = tlsContext.NewConnectionOptions();
+    aws_logger_set(&logger);
 
-    ByteCursor cursor = ByteCursorFromCString("https://aws-crt-test-stuff.s3.amazonaws.com");
-    Io::Uri uri(cursor, allocator);
+    {
+        Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
 
-    auto hostName = uri.GetHostName();
-    tlsConnectionOptions.SetServerName(hostName);
+        Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+        ASSERT_TRUE(tlsContext);
 
-    Aws::Crt::Io::SocketOptions socketOptions;
-    AWS_ZERO_STRUCT(socketOptions);
-    socketOptions.type = AWS_SOCKET_STREAM;
-    socketOptions.domain = AWS_SOCKET_IPV4;
-    socketOptions.connect_timeout_ms = 3000;
+        Aws::Crt::Io::TlsConnectionOptions tlsConnectionOptions = tlsContext.NewConnectionOptions();
 
-    Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
-    ASSERT_TRUE(eventLoopGroup);
+        ByteCursor cursor = ByteCursorFromCString("https://aws-crt-test-stuff.s3.amazonaws.com");
+        Io::Uri uri(cursor, allocator);
 
-    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, allocator);
-    ASSERT_TRUE(clientBootstrap);
+        auto hostName = uri.GetHostName();
+        tlsConnectionOptions.SetServerName(hostName);
 
-    std::condition_variable semaphore;
-    std::mutex semaphoreLock;
-    size_t connectionCount = 0;
-    size_t connectionsFailed = 0;
-    size_t totalExpectedConnections = 30;
+        Aws::Crt::Io::SocketOptions socketOptions;
+        AWS_ZERO_STRUCT(socketOptions);
+        socketOptions.type = AWS_SOCKET_STREAM;
+        socketOptions.domain = AWS_SOCKET_IPV4;
+        socketOptions.connect_timeout_ms = 3000;
 
-    Http::HttpClientConnectionManagerOptions connectionManagerOptions;
-    connectionManagerOptions.bootstrap = &clientBootstrap;
-    connectionManagerOptions.initialWindowSize = SIZE_MAX;
-    connectionManagerOptions.socketOptions = &socketOptions;
-    connectionManagerOptions.tlsConnectionOptions = &tlsConnectionOptions;
-    connectionManagerOptions.hostName = hostName;
-    connectionManagerOptions.port = 443;
-    connectionManagerOptions.maxConnections = totalExpectedConnections / 2;
+        Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+        ASSERT_TRUE(eventLoopGroup);
 
-    auto connectionManager =
-        Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
-    ASSERT_TRUE(connectionManager);
+        Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, allocator);
+        ASSERT_TRUE(clientBootstrap);
 
-    Vector<std::shared_ptr<Http::HttpClientConnection>> connections;
+        std::condition_variable semaphore;
+        std::mutex semaphoreLock;
+        size_t connectionCount = 0;
+        size_t connectionsFailed = 0;
+        size_t totalExpectedConnections = 30;
 
-    auto onConnectionAvailable = [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode) {
-        {
-            std::lock_guard<std::mutex> lockGuard(semaphoreLock);
+        Http::HttpClientConnectionManagerOptions connectionManagerOptions;
+        connectionManagerOptions.bootstrap = &clientBootstrap;
+        connectionManagerOptions.initialWindowSize = SIZE_MAX;
+        connectionManagerOptions.socketOptions = &socketOptions;
+        connectionManagerOptions.tlsConnectionOptions = &tlsConnectionOptions;
+        connectionManagerOptions.hostName = hostName;
+        connectionManagerOptions.port = 443;
+        connectionManagerOptions.maxConnections = totalExpectedConnections / 2;
 
-            if (!errorCode)
+        auto connectionManager =
+                Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
+        ASSERT_TRUE(connectionManager);
+
+        Vector<std::shared_ptr<Http::HttpClientConnection>> connections;
+
+        auto onConnectionAvailable = [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode) {
             {
-                connections.push_back(newConnection);
-                connectionCount++;
+                std::lock_guard<std::mutex> lockGuard(semaphoreLock);
+
+                if (!errorCode) {
+                    connections.push_back(newConnection);
+                    connectionCount++;
+                } else {
+                    connectionsFailed++;
+                }
             }
-            else
-            {
-                connectionsFailed++;
+            semaphore.notify_one();
+        };
+
+        {
+            std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
+            for (size_t i = 0; i < totalExpectedConnections; ++i) {
+                ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
             }
+            semaphore.wait(uniqueLock, [&]() {
+                return connectionCount + connectionsFailed == connectionManagerOptions.maxConnections;
+            });
         }
-        semaphore.notify_one();
-    };
 
-    {
-        std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
-        for (size_t i = 0; i < totalExpectedConnections; ++i)
+        /* make sure the test was actually meaningful. */
+        ASSERT_TRUE(connectionCount > 0);
+
+        Vector<std::shared_ptr<Http::HttpClientConnection>> connectionsCpy = connections;
+        connections.clear();
+        size_t i = 0;
+        for (auto &connection : connectionsCpy) {
+            if (i++ & 0x01) {
+                connection->Close();
+            }
+            connectionManager->ReleaseConnection(connection);
+        }
+        /* new connections will have to be made in this case, wait for them to setup. */
         {
-            ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
+            std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
+            semaphore.wait(uniqueLock,
+                           [&]() { return connectionCount + connectionsFailed == totalExpectedConnections; });
         }
-        semaphore.wait(uniqueLock, [&]() {
-            return connectionCount + connectionsFailed == connectionManagerOptions.maxConnections;
-        });
-    }
-
-    /* make sure the test was actually meaningful. */
-    ASSERT_TRUE(connectionCount > 0);
-
-    Vector<std::shared_ptr<Http::HttpClientConnection>> connectionsCpy = connections;
-    connections.clear();
-    size_t i = 0;
-    for (auto &connection : connectionsCpy)
-    {
-        if (i++ & 0x01)
-        {
-            connection->Close();
+        /* release should have given us more connections. */
+        ASSERT_FALSE(connections.empty());
+        for (auto &connection : connections) {
+            connectionManager->ReleaseConnection(connection);
         }
-        connectionManager->ReleaseConnection(connection);
     }
-    /* new connections will have to be made in this case, wait for them to setup. */
-    {
-        std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
-        semaphore.wait(uniqueLock, [&]() { return connectionCount + connectionsFailed == totalExpectedConnections; });
-    }
-    /* release should have given us more connections. */
-    ASSERT_FALSE(connections.empty());
-    for (auto &connection : connections)
-    {
-        connectionManager->ReleaseConnection(connection);
-    }
+    aws_logger_clean_up(&logger);
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/
     return AWS_OP_SUCCESS;
