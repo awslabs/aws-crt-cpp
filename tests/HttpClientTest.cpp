@@ -135,9 +135,12 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
         connectionManagerOptions.hostName = hostName;
         connectionManagerOptions.port = 443;
 
-        Http::HttpClientConnectionManager connectionManager(connectionManagerOptions, allocator);
+        auto connectionManager =
+            Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
+        ASSERT_TRUE(connectionManager);
+
         std::unique_lock<std::mutex> semaphoreULock(semaphoreLock);
-        ASSERT_TRUE(connectionManager.AcquireConnection(onConnectionAvailable));
+        ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
         semaphore.wait(semaphoreULock, [&]() { return connection || connectionShutdown; });
 
         ASSERT_FALSE(errorOccured);
@@ -183,7 +186,7 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
         semaphore.wait(semaphoreULock, [&]() { return streamCompleted; });
         ASSERT_INT_EQUALS(200, responseCode);
 
-        connectionManager.ReleaseConnection(connection);
+        connectionManager->ReleaseConnection(connection);
         downloadedFile.flush();
         downloadedFile.close();
     }

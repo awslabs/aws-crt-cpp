@@ -81,7 +81,7 @@ namespace Aws
                 (void)connection;
                 /* now that we're shutting down, we can release the internal ref count. */
                 auto *callbackData = static_cast<ConnectionCallbackData *>(user_data);
-                callbackData->connection->m_good = false;
+                callbackData->connection->m_open = false;
                 callbackData->onConnectionShutdown(*callbackData->connection, errorCode);
                 callbackData->connection = nullptr;
                 Delete(callbackData, callbackData->allocator);
@@ -131,7 +131,7 @@ namespace Aws
             }
 
             HttpClientConnection::HttpClientConnection(aws_http_connection *connection, Allocator *allocator) noexcept
-                : m_connection(connection), m_allocator(allocator), m_lastError(AWS_ERROR_SUCCESS), m_good(true)
+                : m_connection(connection), m_allocator(allocator), m_lastError(AWS_ERROR_SUCCESS), m_open(true)
             {
             }
 
@@ -216,7 +216,7 @@ namespace Aws
 
             void HttpClientConnection::Close() noexcept
             {
-                m_good = false;
+                m_open = false;
                 aws_http_connection_close(m_connection);
             }
 

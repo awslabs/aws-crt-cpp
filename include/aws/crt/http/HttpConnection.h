@@ -335,7 +335,7 @@ namespace Aws
                 void Close() noexcept;
 
                 int LastError() const noexcept { return m_lastError; }
-                explicit operator bool() const noexcept { return m_good; }
+                explicit operator bool() const noexcept { return m_open; }
 
                 /**
                  * Create a new Https Connection to hostName:port, using `socketOptions` for tcp options and
@@ -352,7 +352,7 @@ namespace Aws
                 aws_http_connection *m_connection;
                 Allocator *m_allocator;
                 int m_lastError;
-                std::atomic<bool> m_good;
+                std::atomic<bool> m_open;
 
                 static void s_onClientConnectionSetup(
                     struct aws_http_connection *connection,

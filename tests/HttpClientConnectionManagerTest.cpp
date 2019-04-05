@@ -55,9 +55,6 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
     Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, allocator);
     ASSERT_TRUE(clientBootstrap);
 
-    bool errorOccured = true;
-    bool connectionShutdown = false;
-
     std::condition_variable semaphore;
     std::mutex semaphoreLock;
     size_t connectionCount = 0;
@@ -73,7 +70,9 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
     connectionManagerOptions.port = 443;
     connectionManagerOptions.max_connections = totalExpectedConnections;
 
-    Http::HttpClientConnectionManager connectionManager(connectionManagerOptions, allocator);
+    auto connectionManager =
+        Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
+    ASSERT_TRUE(connectionManager);
 
     Vector<std::shared_ptr<Http::HttpClientConnection>> connections;
 
@@ -97,7 +96,7 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
     std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
     for (size_t i = 0; i < totalExpectedConnections; ++i)
     {
-        ASSERT_TRUE(connectionManager.AcquireConnection(onConnectionAvailable));
+        ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
     }
     semaphore.wait(uniqueLock, [&]() { return connectionCount + connectionsFailed == totalExpectedConnections; });
 
@@ -106,7 +105,7 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
 
     for (auto &connection : connections)
     {
-        connectionManager.ReleaseConnection(connection);
+        connectionManager->ReleaseConnection(connection);
     }
     connections.clear();
 
@@ -146,9 +145,6 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, allocator);
     ASSERT_TRUE(clientBootstrap);
 
-    bool errorOccured = true;
-    bool connectionShutdown = false;
-
     std::condition_variable semaphore;
     std::mutex semaphoreLock;
     size_t connectionCount = 0;
@@ -164,7 +160,9 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     connectionManagerOptions.port = 443;
     connectionManagerOptions.max_connections = totalExpectedConnections / 2;
 
-    Http::HttpClientConnectionManager connectionManager(connectionManagerOptions, allocator);
+    auto connectionManager =
+        Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
+    ASSERT_TRUE(connectionManager);
 
     Vector<std::shared_ptr<Http::HttpClientConnection>> connections;
 
@@ -189,7 +187,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
         std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
         for (size_t i = 0; i < totalExpectedConnections; ++i)
         {
-            ASSERT_TRUE(connectionManager.AcquireConnection(onConnectionAvailable));
+            ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
         }
         semaphore.wait(uniqueLock, [&]() {
             return connectionCount + connectionsFailed == connectionManagerOptions.max_connections;
@@ -203,13 +201,13 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     connections.clear();
     for (auto &connection : connectionsCpy)
     {
-        connectionManager.ReleaseConnection(connection);
+        connectionManager->ReleaseConnection(connection);
     }
     /* release should have given us more connections. */
     ASSERT_FALSE(connections.empty());
     for (auto &connection : connections)
     {
-        connectionManager.ReleaseConnection(connection);
+        connectionManager->ReleaseConnection(connection);
     }
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/
@@ -250,9 +248,6 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
     Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, allocator);
     ASSERT_TRUE(clientBootstrap);
 
-    bool errorOccured = true;
-    bool connectionShutdown = false;
-
     std::condition_variable semaphore;
     std::mutex semaphoreLock;
     size_t connectionCount = 0;
@@ -268,7 +263,9 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
     connectionManagerOptions.port = 443;
     connectionManagerOptions.max_connections = totalExpectedConnections / 2;
 
-    Http::HttpClientConnectionManager connectionManager(connectionManagerOptions, allocator);
+    auto connectionManager =
+        Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
+    ASSERT_TRUE(connectionManager);
 
     Vector<std::shared_ptr<Http::HttpClientConnection>> connections;
 
@@ -293,7 +290,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
         std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
         for (size_t i = 0; i < totalExpectedConnections; ++i)
         {
-            ASSERT_TRUE(connectionManager.AcquireConnection(onConnectionAvailable));
+            ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
         }
         semaphore.wait(uniqueLock, [&]() {
             return connectionCount + connectionsFailed == connectionManagerOptions.max_connections;
@@ -312,7 +309,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
         {
             connection->Close();
         }
-        connectionManager.ReleaseConnection(connection);
+        connectionManager->ReleaseConnection(connection);
     }
     /* new connections will have to be made in this case, wait for them to setup. */
     {
@@ -323,7 +320,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
     ASSERT_FALSE(connections.empty());
     for (auto &connection : connections)
     {
-        connectionManager.ReleaseConnection(connection);
+        connectionManager->ReleaseConnection(connection);
     }
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/

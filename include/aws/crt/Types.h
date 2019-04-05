@@ -21,13 +21,13 @@
 #include <aws/io/socket.h>
 #include <aws/mqtt/mqtt.h>
 
+#include <list>
 #include <map>
 #include <sstream>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <list>
 
 struct aws_allocator;
 struct aws_byte_buf;

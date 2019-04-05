@@ -28,6 +28,22 @@ namespace Aws
                 AWS_ZERO_STRUCT(hostName);
             }
 
+            std::shared_ptr<HttpClientConnectionManager> HttpClientConnectionManager::NewClientConnectionManager(
+                const HttpClientConnectionManagerOptions &connectionManagerOptions,
+                Allocator *allocator) noexcept
+            {
+                auto *toSeat = static_cast<HttpClientConnectionManager *>(
+                    aws_mem_acquire(allocator, sizeof(HttpClientConnectionManager)));
+                if (toSeat)
+                {
+                    toSeat = new (toSeat) HttpClientConnectionManager(connectionManagerOptions, allocator);
+                    return std::shared_ptr<HttpClientConnectionManager>(
+                        toSeat, [allocator](HttpClientConnectionManager *manager) { Delete(manager, allocator); });
+                }
+
+                return nullptr;
+            }
+
             HttpClientConnectionManager::HttpClientConnectionManager(
                 const HttpClientConnectionManagerOptions &connectionManagerOptions,
                 Allocator *allocator) noexcept
@@ -64,12 +80,6 @@ namespace Aws
                     connection->Close();
                 }
 
-                {
-                    /* wait for the last one to shutdown so the memory will be cleaned up. */
-                    std::unique_lock<std::mutex> m_semaphoreLock(m_connectionsLock);
-                    m_shutdownSemaphore.wait(m_semaphoreLock, [this] { return m_connections.empty(); });
-                }
-
                 /*
                  * This would be really screwy if this ever happened. I don't even know what error to report, but in
                  * case someone is waiting for a connection, AT LEAST let them know so they can not deadlock.
@@ -81,7 +91,7 @@ namespace Aws
             }
 
             /* Asssumption: Whoever calls this already holds the lock. */
-            bool HttpClientConnectionManager::s_createConnection() noexcept
+            bool HttpClientConnectionManager::createConnection() noexcept
             {
                 if (m_connections.size() + m_outstandingVendedConnections + m_pendingConnections < m_max_size)
                 {
@@ -92,13 +102,23 @@ namespace Aws
                     connectionOptions.bootstrap = m_bootstrap;
                     connectionOptions.initialWindowSize = m_initialWindowSize;
                     connectionOptions.allocator = m_allocator;
+
+                    std::weak_ptr<HttpClientConnectionManager> weakRef(shared_from_this());
+
                     connectionOptions.onConnectionSetup =
-                        [this](const std::shared_ptr<HttpClientConnection> &connection, int errorCode) {
-                            s_onConnectionSetup(connection, errorCode);
+                        [weakRef](const std::shared_ptr<HttpClientConnection> &connection, int errorCode) {
+                            if (auto connManager = weakRef.lock())
+                            {
+                                connManager->onConnectionSetup(connection, errorCode);
+                            }
                         };
-                    connectionOptions.onConnectionShutdown = [this](HttpClientConnection &connection, int errorCode) {
-                        s_onConnectionShutdown(connection, errorCode);
-                    };
+                    connectionOptions.onConnectionShutdown =
+                        [weakRef](HttpClientConnection &connection, int errorCode) {
+                            if (auto connManager = weakRef.lock())
+                            {
+                                connManager->onConnectionShutdown(connection, errorCode);
+                            }
+                        };
 
                     if (m_tlsConnOptions)
                     {
@@ -131,42 +151,49 @@ namespace Aws
             bool HttpClientConnectionManager::AcquireConnection(
                 const OnClientConnectionAvailable &onClientConnectionAvailable) noexcept
             {
-                /** Locking logic:
-                 *  We can't hold the lock during the callback since a user may call back into the connection manager
-                 *  from the callbacks. We don't use a scoped lock because we need finer grain control.
-                 *  All unlocks, should either be followed immediately by a callback and then a return, or
-                 *  a return only. If you see anything else, it's a bug.
-                 */
-                m_connectionsLock.lock();
+                OnClientConnectionAvailable userCallback;
+                std::shared_ptr<HttpClientConnection> connection(nullptr);
+                int callbackError = AWS_ERROR_SUCCESS;
+                bool retVal = true;
 
-                /* Case 1 */
-                if (!m_connections.empty())
                 {
-                    auto connection = m_connections.back();
-                    m_connections.pop_back();
-                    ++m_outstandingVendedConnections;
-                    m_connectionsLock.unlock();
-                    onClientConnectionAvailable(connection, AWS_ERROR_SUCCESS);
-                    return true;
+                    std::lock_guard<std::mutex> connectionsLock(m_connectionsLock);
+
+                    /* Case 1 */
+                    if (!m_connections.empty())
+                    {
+                        connection = m_connections.back();
+                        m_connections.pop_back();
+                        ++m_outstandingVendedConnections;
+                        userCallback = onClientConnectionAvailable;
+                        callbackError = AWS_ERROR_SUCCESS;
+                        retVal = true;
+                    }
+                    else
+                    {
+                        /* case 2 or 3, we don't know yet. */
+                        m_pendingConnectionRequests.push_back(onClientConnectionAvailable);
+
+                        /* if we have available space, case 2, otherwise case 3 */
+                        if (!createConnection())
+                        {
+                            /* case 2 and the connection creation failed, pop back, because in this rare case, we want
+                             * to just tell the caller that our entire attempt at this failed. */
+                            m_pendingConnectionRequests.pop_back();
+                            m_lastError = aws_last_error();
+                            userCallback = onClientConnectionAvailable;
+                            callbackError = m_lastError;
+                            retVal = false;
+                        }
+                    }
                 }
 
-                /* case 2 or 3, we don't know yet. */
-                m_pendingConnectionRequests.push_back(onClientConnectionAvailable);
-
-                /* if we have available space, case 2, otherwise case 3 */
-                if (!s_createConnection())
+                if (userCallback)
                 {
-                    /* case 2 and the connection creation failed, pop back, because in this rare case, we want to just
-                     * tell the caller that our entire attempt at this failed. */
-                    m_pendingConnectionRequests.pop_back();
-                    m_lastError = aws_last_error();
-                    m_connectionsLock.unlock();
-                    onClientConnectionAvailable(nullptr, m_lastError);
-                    return false;
+                    userCallback(connection, callbackError);
                 }
 
-                m_connectionsLock.unlock();
-                return true;
+                return retVal;
             }
 
             /*
@@ -182,93 +209,108 @@ namespace Aws
              *      Case 2.1 We have pending acquisitions. Just give it to the top of the queue.
              *      Case 2.2 We don't have pending acquisitions, push it to the pool.
              */
-            void HttpClientConnectionManager::s_poolOrVendConnection(
+            void HttpClientConnectionManager::poolOrVendConnection(
                 std::shared_ptr<HttpClientConnection> connection,
                 bool isRelease) noexcept
             {
-                /** Locking logic:
-                 *  We can't hold the lock during the callback since a user may call back into the connection manager
-                 *  from the callbacks. We don't use a scoped lock because we need finer grain control.
-                 *  All unlocks, should either be followed immediately by a callback and then a return, or
-                 *  a return only. If you see anything else, it's a bug.
-                 */
-                m_connectionsLock.lock();
-                if (isRelease)
-                {
-                    --m_outstandingVendedConnections;
-                }
-                else
-                {
-                    --m_pendingConnections;
-                }
+                OnClientConnectionAvailable userCallback;
+                int callbackError = AWS_ERROR_SUCCESS;
+                std::shared_ptr<HttpClientConnection> vendedConnection(nullptr);
+                bool poolOrVend = true;
 
-                /* Case 1 */
-                if (!*connection)
                 {
-                    /* Case 1.2 */
-                    if (!m_pendingConnectionRequests.empty())
+                    std::lock_guard<std::mutex> connectionsLock(m_connectionsLock);
+
+                    if (isRelease)
                     {
-                        if (!s_createConnection())
-                        {
-                            auto onClientConnectionAvailable = m_pendingConnectionRequests.front();
-                            m_pendingConnectionRequests.pop_front();
-                            m_lastError = aws_last_error();
-                            m_connectionsLock.unlock();
-                            onClientConnectionAvailable(nullptr, m_lastError);
-                            return;
-                        }
+                        --m_outstandingVendedConnections;
                     }
-                    /* Case 1.1 */
-                    m_connectionsLock.unlock();
-                    return;
+                    else
+                    {
+                        --m_pendingConnections;
+                    }
+
+                    /* Case 1 */
+                    /* TODO: Let's make this better when aws-c-http exposes a faster way to know, come back to this. */
+                    if (!connection->operator bool())
+                    {
+                        poolOrVend = false;
+                        /* Case 1.2 */
+                        if (!m_pendingConnectionRequests.empty())
+                        {
+                            /* if connection fails, tell the front of the pendingConnectionRequests queue
+                             * that their connection failed so they can retry. */
+                            if (!createConnection())
+                            {
+                                userCallback = m_pendingConnectionRequests.front();
+                                m_pendingConnectionRequests.pop_front();
+                                m_lastError = aws_last_error();
+                                callbackError = m_lastError;
+                            }
+                        }
+                        /* Case 1.1 */
+                    }
+
+                    /* Case 2.1*/
+                    if (poolOrVend && !m_pendingConnectionRequests.empty())
+                    {
+                        userCallback = m_pendingConnectionRequests.front();
+                        m_pendingConnectionRequests.pop_front();
+                        ++m_outstandingVendedConnections;
+                        callbackError = AWS_ERROR_SUCCESS;
+                        vendedConnection = std::move(connection);
+                    }
+                    else if (poolOrVend)
+                    {
+                        /* Case 2.2 */
+                        m_connections.push_back(std::move(connection));
+                    }
                 }
 
-                /* Case 2.1*/
-                if (!m_pendingConnectionRequests.empty())
+                if (userCallback)
                 {
-                    auto pendingConnectionRequest = m_pendingConnectionRequests.front();
-                    m_pendingConnectionRequests.pop_front();
-                    ++m_outstandingVendedConnections;
-                    m_connectionsLock.unlock();
-                    pendingConnectionRequest(std::move(connection), AWS_ERROR_SUCCESS);
-                    return;
+                    userCallback(vendedConnection, callbackError);
                 }
-
-                /* Case 2.2 */
-                m_connections.push_back(std::move(connection));
-                m_connectionsLock.unlock();
             }
 
             void HttpClientConnectionManager::ReleaseConnection(
                 std::shared_ptr<HttpClientConnection> connection) noexcept
             {
-                s_poolOrVendConnection(connection, true);
+                poolOrVendConnection(connection, true);
             }
 
-            void HttpClientConnectionManager::s_onConnectionSetup(
+            void HttpClientConnectionManager::onConnectionSetup(
                 const std::shared_ptr<HttpClientConnection> &connection,
                 int errorCode) noexcept
             {
                 if (!errorCode && connection)
                 {
-                    s_poolOrVendConnection(connection, false);
+                    poolOrVendConnection(connection, false);
                     return;
                 }
 
-                m_connectionsLock.lock();
-                if (!m_pendingConnectionRequests.empty())
+                /* this only gets hit if the connection setup failed. */
+                OnClientConnectionAvailable userCallback;
+
                 {
-                    auto pendingConnectionRequest = m_pendingConnectionRequests.front();
-                    m_pendingConnectionRequests.pop_front();
-                    m_connectionsLock.unlock();
-                    pendingConnectionRequest(nullptr, errorCode);
-                    return;
+                    std::lock_guard<std::mutex> connectionsLock(m_connectionsLock);
+
+                    if (!m_pendingConnectionRequests.empty())
+                    {
+                        userCallback = m_pendingConnectionRequests.front();
+                        m_pendingConnectionRequests.pop_front();
+                    }
                 }
 
-                m_connectionsLock.unlock();
+                if (userCallback)
+                {
+                    userCallback(connection, errorCode);
+                }
             }
 
-            void HttpClientConnectionManager::s_onConnectionShutdown(HttpClientConnection &connection, int) noexcept
+            void HttpClientConnectionManager::onConnectionShutdown(
+                HttpClientConnection &connection,
+                int errorCode) noexcept
             {
                 {
                     std::lock_guard<std::mutex> connectionsLock(m_connectionsLock);
@@ -286,8 +328,6 @@ namespace Aws
                         }
                     }
                 }
-                /* This is here for the destructor so we don't leak memory and break RAII. */
-                m_shutdownSemaphore.notify_one();
             }
         } // namespace Http
     }     // namespace Crt
