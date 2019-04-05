@@ -68,7 +68,7 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
     connectionManagerOptions.tlsConnectionOptions = &tlsConnectionOptions;
     connectionManagerOptions.hostName = hostName;
     connectionManagerOptions.port = 443;
-    connectionManagerOptions.max_connections = totalExpectedConnections;
+    connectionManagerOptions.maxConnections = totalExpectedConnections;
 
     auto connectionManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
@@ -158,7 +158,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     connectionManagerOptions.tlsConnectionOptions = &tlsConnectionOptions;
     connectionManagerOptions.hostName = hostName;
     connectionManagerOptions.port = 443;
-    connectionManagerOptions.max_connections = totalExpectedConnections / 2;
+    connectionManagerOptions.maxConnections = totalExpectedConnections / 2;
 
     auto connectionManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
@@ -190,7 +190,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
             ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
         }
         semaphore.wait(uniqueLock, [&]() {
-            return connectionCount + connectionsFailed == connectionManagerOptions.max_connections;
+            return connectionCount + connectionsFailed == connectionManagerOptions.maxConnections;
         });
     }
 
@@ -261,7 +261,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
     connectionManagerOptions.tlsConnectionOptions = &tlsConnectionOptions;
     connectionManagerOptions.hostName = hostName;
     connectionManagerOptions.port = 443;
-    connectionManagerOptions.max_connections = totalExpectedConnections / 2;
+    connectionManagerOptions.maxConnections = totalExpectedConnections / 2;
 
     auto connectionManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
@@ -293,7 +293,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
             ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
         }
         semaphore.wait(uniqueLock, [&]() {
-            return connectionCount + connectionsFailed == connectionManagerOptions.max_connections;
+            return connectionCount + connectionsFailed == connectionManagerOptions.maxConnections;
         });
     }
 

@@ -40,7 +40,7 @@ namespace Aws
                 Io::TlsConnectionOptions *tlsConnectionOptions;
                 ByteCursor hostName;
                 uint16_t port;
-                size_t max_connections;
+                size_t maxConnections;
             };
 
             /**
@@ -88,11 +88,10 @@ namespace Aws
 
                 bool m_good;
                 int m_lastError;
-                size_t m_max_size;
+                size_t m_maxSize;
                 size_t m_outstandingVendedConnections;
                 size_t m_pendingConnections;
                 std::mutex m_connectionsLock;
-                std::condition_variable m_shutdownSemaphore;
 
                 void onConnectionSetup(const std::shared_ptr<HttpClientConnection> &connection, int errorCode) noexcept;
                 void onConnectionShutdown(HttpClientConnection &connection, int errorCode) noexcept;

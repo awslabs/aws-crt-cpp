@@ -12,8 +12,9 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-#include <algorithm>
 #include <aws/crt/http/HttpConnectionManager.h>
+
+#include <algorithm>
 
 namespace Aws
 {
@@ -22,7 +23,7 @@ namespace Aws
         namespace Http
         {
             HttpClientConnectionManagerOptions::HttpClientConnectionManagerOptions()
-                : bootstrap(nullptr), initialWindowSize(SIZE_MAX), port(0), max_connections(2)
+                : bootstrap(nullptr), initialWindowSize(SIZE_MAX), port(0), maxConnections(2)
             {
                 AWS_ZERO_STRUCT(socketOptions);
                 AWS_ZERO_STRUCT(hostName);
@@ -55,7 +56,7 @@ namespace Aws
                 assert(connectionManagerOptions.hostName.ptr && connectionManagerOptions.hostName.len);
                 m_hostName =
                     String((const char *)connectionManagerOptions.hostName.ptr, connectionManagerOptions.hostName.len);
-                m_max_size = connectionManagerOptions.max_connections;
+                m_maxSize = connectionManagerOptions.maxConnections;
                 m_port = connectionManagerOptions.port;
                 m_socketOptions = *connectionManagerOptions.socketOptions;
 
@@ -93,7 +94,7 @@ namespace Aws
             /* Asssumption: Whoever calls this already holds the lock. */
             bool HttpClientConnectionManager::createConnection() noexcept
             {
-                if (m_connections.size() + m_outstandingVendedConnections + m_pendingConnections < m_max_size)
+                if (m_connections.size() + m_outstandingVendedConnections + m_pendingConnections < m_maxSize)
                 {
                     HttpClientConnectionOptions connectionOptions;
                     connectionOptions.socketOptions = &m_socketOptions;
