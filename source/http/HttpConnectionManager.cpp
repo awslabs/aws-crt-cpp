@@ -277,7 +277,7 @@ namespace Aws
             void HttpClientConnectionManager::ReleaseConnection(
                 std::shared_ptr<HttpClientConnection> connection) noexcept
             {
-                poolOrVendConnection(connection, true);
+                poolOrVendConnection(std::move(connection), true);
             }
 
             void HttpClientConnectionManager::onConnectionSetup(
@@ -309,9 +309,7 @@ namespace Aws
                 }
             }
 
-            void HttpClientConnectionManager::onConnectionShutdown(
-                HttpClientConnection &connection,
-                int) noexcept
+            void HttpClientConnectionManager::onConnectionShutdown(HttpClientConnection &connection, int) noexcept
             {
                 {
                     std::lock_guard<std::mutex> connectionsLock(m_connectionsLock);
