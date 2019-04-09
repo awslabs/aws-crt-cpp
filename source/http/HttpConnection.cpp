@@ -28,12 +28,12 @@ namespace Aws
                 AWS_ZERO_STRUCT(hostName);
             }
 
-            /* this exists so we can keep the shared_ptr for the connection around until the connection has actually
-             * shutdown. */
+            /* This exists to handle aws_http_connection's shutdown callback, which might fire after
+             * HttpClientConnection has been destroyed. */
             struct ConnectionCallbackData
             {
-                explicit ConnectionCallbackData(Allocator *allocator) : connection(nullptr), allocator(allocator) {}
-                std::shared_ptr<HttpClientConnection> connection;
+                explicit ConnectionCallbackData(Allocator *allocator) : allocator(allocator) {}
+                std::weak_ptr<HttpClientConnection> connection;
                 Allocator *allocator;
                 OnConnectionSetup onConnectionSetup;
                 OnConnectionShutdown onConnectionShutdown;
@@ -59,10 +59,12 @@ namespace Aws
                     if (toSeat)
                     {
                         toSeat = new (toSeat) HttpClientConnection(connection, allocator);
-                        callbackData->connection = std::shared_ptr<HttpClientConnection>(
+                        auto sharedPtr = std::shared_ptr<HttpClientConnection>(
                             toSeat, [allocator](HttpClientConnection *connection) { Delete(connection, allocator); });
 
-                        callbackData->onConnectionSetup(callbackData->connection, errorCode);
+                        callbackData->connection = sharedPtr;
+
+                        callbackData->onConnectionSetup(std::move(sharedPtr), errorCode);
                         return;
                     }
 
@@ -79,11 +81,14 @@ namespace Aws
                 void *user_data) noexcept
             {
                 (void)connection;
-                /* now that we're shutting down, we can release the internal ref count. */
                 auto *callbackData = static_cast<ConnectionCallbackData *>(user_data);
-                callbackData->connection->m_open = false;
-                callbackData->onConnectionShutdown(*callbackData->connection, errorCode);
-                callbackData->connection = nullptr;
+
+                /* Don't invoke callback if the connection object has expired. */
+                if (auto connectionPtr = callbackData->connection.lock())
+                {
+                    callbackData->onConnectionShutdown(*connectionPtr, errorCode);
+                }
+
                 Delete(callbackData, callbackData->allocator);
             }
 
@@ -131,7 +136,7 @@ namespace Aws
             }
 
             HttpClientConnection::HttpClientConnection(aws_http_connection *connection, Allocator *allocator) noexcept
-                : m_connection(connection), m_allocator(allocator), m_lastError(AWS_ERROR_SUCCESS), m_open(true)
+                : m_connection(connection), m_allocator(allocator), m_lastError(AWS_ERROR_SUCCESS)
             {
             }
 
@@ -139,6 +144,7 @@ namespace Aws
             {
                 if (m_connection)
                 {
+                    /* TODO: invoke shutdown callback from here if it hasn't fired yet */
                     aws_http_connection_release(m_connection);
                     m_connection = nullptr;
                 }
@@ -214,11 +220,9 @@ namespace Aws
                 return nullptr;
             }
 
-            void HttpClientConnection::Close() noexcept
-            {
-                m_open = false;
-                aws_http_connection_close(m_connection);
-            }
+            bool HttpClientConnection::IsOpen() const noexcept { return aws_http_connection_is_open(m_connection); }
+
+            void HttpClientConnection::Close() noexcept { aws_http_connection_close(m_connection); }
 
             enum aws_http_outgoing_body_state HttpStream::s_onStreamOutgoingBody(
                 struct aws_http_stream *,
