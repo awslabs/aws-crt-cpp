@@ -61,7 +61,7 @@ namespace Aws
 
                 /**
                  * Releases a connection back to the pool. This will cause queued consumers to be serviced, or the
-                 * connection will be pooled waiting on another call to AcquireConnection 
+                 * connection will be pooled waiting on another call to AcquireConnection
                  */
                 void ReleaseConnection(std::shared_ptr<HttpClientConnection> connection) noexcept;
 
