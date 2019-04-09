@@ -254,8 +254,8 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
 
     std::condition_variable semaphore;
     std::mutex semaphoreLock;
-    std::atomic<size_t> connectionCount = 0;
-    std::atomic<size_t> connectionsFailed = 0;
+    size_t connectionCount = 0;
+    size_t connectionsFailed = 0;
     size_t totalExpectedConnections = 30;
 
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
