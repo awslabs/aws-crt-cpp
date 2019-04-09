@@ -23,40 +23,24 @@ namespace Aws
             ClientBootstrap::ClientBootstrap(EventLoopGroup &elGroup, Allocator *allocator) noexcept
                 : m_lastError(AWS_ERROR_SUCCESS)
             {
-                m_bootstrap = aws_client_bootstrap_new(allocator, elGroup.GetUnderlyingHandle(), nullptr, nullptr);
+                aws_host_resolver_init_default(&m_resolver, allocator, 64);
+                m_resolve_config.impl = aws_default_dns_resolve;
+                m_resolve_config.impl_data = nullptr;
+                m_resolve_config.max_ttl = 30;
+                m_bootstrap =
+                    aws_client_bootstrap_new(allocator, elGroup.GetUnderlyingHandle(), &m_resolver, &m_resolve_config);
             }
 
             ClientBootstrap::~ClientBootstrap()
             {
                 if (m_bootstrap)
                 {
-                    aws_client_bootstrap_destroy(m_bootstrap);
+                    aws_host_resolver_clean_up(&m_resolver);
+                    aws_client_bootstrap_release(m_bootstrap);
                     m_bootstrap = nullptr;
                     m_lastError = AWS_ERROR_UNKNOWN;
                     AWS_ZERO_STRUCT(m_bootstrap);
                 }
-            }
-
-            ClientBootstrap::ClientBootstrap(ClientBootstrap &&toMove) noexcept
-                : m_bootstrap(toMove.m_bootstrap), m_lastError(toMove.m_lastError)
-            {
-                toMove.m_lastError = AWS_ERROR_UNKNOWN;
-                AWS_ZERO_STRUCT(toMove.m_bootstrap);
-            }
-
-            ClientBootstrap &ClientBootstrap::operator=(ClientBootstrap &&toMove) noexcept
-            {
-                if (this == &toMove)
-                {
-                    return *this;
-                }
-
-                m_bootstrap = toMove.m_bootstrap;
-                m_lastError = toMove.m_lastError;
-                toMove.m_lastError = AWS_ERROR_UNKNOWN;
-                AWS_ZERO_STRUCT(toMove.m_bootstrap);
-
-                return *this;
             }
 
             ClientBootstrap::operator bool() const noexcept { return m_lastError == AWS_ERROR_SUCCESS; }

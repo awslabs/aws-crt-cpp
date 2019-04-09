@@ -93,7 +93,7 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     AWS_ZERO_STRUCT(socketOptions);
     socketOptions.type = AWS_SOCKET_STREAM;
     socketOptions.domain = AWS_SOCKET_IPV4;
-    socketOptions.connect_timeout_ms = 3000;
+    socketOptions.connect_timeout_ms = 1000;
 
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);

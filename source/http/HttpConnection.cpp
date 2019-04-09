@@ -68,7 +68,10 @@ namespace Aws
                         return;
                     }
 
+                    aws_http_connection_release(connection);
                     errorCode = aws_last_error();
+                    callbackData->onConnectionSetup(nullptr, errorCode);
+                    return;
                 }
 
                 callbackData->onConnectionSetup(nullptr, errorCode);

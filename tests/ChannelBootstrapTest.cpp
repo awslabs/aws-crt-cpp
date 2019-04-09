@@ -27,13 +27,6 @@ static int s_TestClientBootstrapResourceSafety(struct aws_allocator *allocator, 
     ASSERT_TRUE(clientBootstrap);
     ASSERT_NOT_NULL(clientBootstrap.GetUnderlyingHandle());
 
-    Aws::Crt::Io::ClientBootstrap clientBootstrapMoved = std::move(clientBootstrap);
-    ASSERT_TRUE(clientBootstrapMoved);
-    ASSERT_NOT_NULL(clientBootstrapMoved.GetUnderlyingHandle());
-
-    // NOLINTNEXTLINE
-    ASSERT_FALSE(clientBootstrap);
-
     return AWS_ERROR_SUCCESS;
 }
 

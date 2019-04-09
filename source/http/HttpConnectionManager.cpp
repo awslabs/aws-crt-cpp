@@ -74,6 +74,13 @@ namespace Aws
 
             HttpClientConnectionManager::~HttpClientConnectionManager()
             {
+                Vector<std::shared_ptr<HttpClientConnection>> connectionsCopy = m_connections;
+                /* make sure all connections we know about are closed. */
+                for (auto &connection : connectionsCopy)
+                {
+                    connection->Close();
+                }
+
                 /*
                  * This would be really screwy if this ever happened. I don't even know what error to report, but in
                  * case someone is waiting for a connection, AT LEAST let them know so they can not deadlock.
