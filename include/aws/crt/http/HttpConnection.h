@@ -20,7 +20,6 @@
 #include <aws/crt/io/Bootstrap.h>
 #include <aws/crt/io/TlsOptions.h>
 
-#include <atomic>
 #include <functional>
 #include <memory>
 
@@ -326,16 +325,20 @@ namespace Aws
                 std::shared_ptr<HttpClientStream> NewClientStream(const HttpRequestOptions &requestOptions) noexcept;
 
                 /**
+                 * Returns true unless the connection is closed or closing.
+                 */
+                bool IsOpen() const noexcept;
+
+                /**
                  * Initiate a shutdown of the connection. Sometimes, connections are persistent and you want
                  * to close them before shutting down your application or whatever is consuming this interface.
                  *
                  * Assuming `OnConnectionShutdown` has not already been invoked, it will be invoked as a result of this
-                 * call. It is safe to release your reference to this object after calling this function.
+                 * call.
                  */
                 void Close() noexcept;
 
                 int LastError() const noexcept { return m_lastError; }
-                explicit operator bool() const noexcept { return m_open; }
 
                 /**
                  * Create a new Https Connection to hostName:port, using `socketOptions` for tcp options and
@@ -352,7 +355,6 @@ namespace Aws
                 aws_http_connection *m_connection;
                 Allocator *m_allocator;
                 int m_lastError;
-                std::atomic<bool> m_open;
 
                 static void s_onClientConnectionSetup(
                     struct aws_http_connection *connection,
@@ -362,8 +364,6 @@ namespace Aws
                     struct aws_http_connection *connection,
                     int error_code,
                     void *user_data) noexcept;
-
-                friend class HttpClient;
             };
 
         } // namespace Http
