@@ -61,7 +61,8 @@ namespace Aws
 
                 /**
                  * Releases a connection back to the pool. This will cause queued consumers to be serviced, or the
-                 * connection will be pooled waiting on another call to AcquireConnection */
+                 * connection will be pooled waiting on another call to AcquireConnection 
+                 */
                 void ReleaseConnection(std::shared_ptr<HttpClientConnection> connection) noexcept;
 
                 int LastError() const noexcept { return m_lastError; }
@@ -85,7 +86,6 @@ namespace Aws
                 Io::TlsConnectionOptions m_tlsConnOptions;
                 String m_hostName;
                 uint16_t m_port;
-
                 bool m_good;
                 int m_lastError;
                 size_t m_maxSize;

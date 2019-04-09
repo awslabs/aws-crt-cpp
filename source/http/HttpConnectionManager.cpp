@@ -249,6 +249,7 @@ namespace Aws
                                 callbackError = m_lastError;
                             }
                         }
+                        connection = nullptr;
                         /* Case 1.1 */
                     }
 
@@ -277,7 +278,7 @@ namespace Aws
             void HttpClientConnectionManager::ReleaseConnection(
                 std::shared_ptr<HttpClientConnection> connection) noexcept
             {
-                poolOrVendConnection(connection, true);
+                poolOrVendConnection(std::move(connection), true);
             }
 
             void HttpClientConnectionManager::onConnectionSetup(
@@ -291,29 +292,45 @@ namespace Aws
                 }
 
                 /* this only gets hit if the connection setup failed. */
-                OnClientConnectionAvailable userCallback;
-
+                Vector<std::pair<OnClientConnectionAvailable, int>> userCallbackNewConnectionFailures;
                 {
                     std::lock_guard<std::mutex> connectionsLock(m_connectionsLock);
-
+                    --m_pendingConnections;
                     if (!m_pendingConnectionRequests.empty())
                     {
-                        userCallback = m_pendingConnectionRequests.front();
+                        userCallbackNewConnectionFailures.push_back(std::pair<OnClientConnectionAvailable, int>(
+                            m_pendingConnectionRequests.front(), errorCode));
                         m_pendingConnectionRequests.pop_front();
+                    }
+
+                    /* if we had more pending connection requests than the pool size, we need to replace this
+                       connection. Just loop until we've matched either the connectionRequest to the max amount of
+                       connections in flight, or when run out of pending connection requests. */
+                    while (m_pendingConnectionRequests.size() > m_pendingConnections &&
+                           m_connections.size() + m_pendingConnections + m_outstandingVendedConnections < m_maxSize)
+                    {
+                        if (!createConnection())
+                        {
+                            userCallbackNewConnectionFailures.push_back(std::pair<OnClientConnectionAvailable, int>(
+                                m_pendingConnectionRequests.front(), aws_last_error()));
+                            m_pendingConnectionRequests.pop_front();
+                            m_lastError = aws_last_error();
+                        }
                     }
                 }
 
-                if (userCallback)
+                for (auto &failures : userCallbackNewConnectionFailures)
                 {
-                    userCallback(connection, errorCode);
+                    failures.first(nullptr, failures.second);
                 }
+
+                userCallbackNewConnectionFailures.clear();
             }
 
             void HttpClientConnectionManager::onConnectionShutdown(HttpClientConnection &connection, int) noexcept
             {
                 {
                     std::lock_guard<std::mutex> connectionsLock(m_connectionsLock);
-
                     if (!m_connections.empty())
                     {
                         auto toRemove = std::remove_if(

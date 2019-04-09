@@ -19,6 +19,8 @@
 
 #include <aws/testing/aws_test_harness.h>
 
+#include <aws/io/logging.h>
+
 #include <condition_variable>
 #include <mutex>
 
@@ -93,20 +95,21 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
         semaphore.notify_one();
     };
 
-    std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
     for (size_t i = 0; i < totalExpectedConnections; ++i)
     {
         ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
     }
+    std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
     semaphore.wait(uniqueLock, [&]() { return connectionCount + connectionsFailed == totalExpectedConnections; });
 
     /* make sure the test was actually meaningful. */
     ASSERT_TRUE(connectionCount > 0);
-
-    for (auto &connection : connections)
+    Vector<std::shared_ptr<Http::HttpClientConnection>> connectionsCpy = connections;
+    for (auto &connection : connectionsCpy)
     {
         connectionManager->ReleaseConnection(connection);
     }
+    connectionsCpy.clear();
     connections.clear();
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/
@@ -184,11 +187,11 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     };
 
     {
-        std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
         for (size_t i = 0; i < totalExpectedConnections; ++i)
         {
             ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
         }
+        std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
         semaphore.wait(uniqueLock, [&]() {
             return connectionCount + connectionsFailed == connectionManagerOptions.maxConnections;
         });
@@ -205,11 +208,14 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     }
     /* release should have given us more connections. */
     ASSERT_FALSE(connections.empty());
-    for (auto &connection : connections)
+    connectionsCpy.clear();
+    connectionsCpy = connections;
+    for (auto &connection : connectionsCpy)
     {
         connectionManager->ReleaseConnection(connection);
     }
-
+    connectionsCpy.clear();
+    connections.clear();
     /* now let everything tear down and make sure we don't leak or deadlock.*/
     return AWS_OP_SUCCESS;
 }
@@ -222,25 +228,23 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
 {
     (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
-
-    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
-
-    Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
-    ASSERT_TRUE(tlsContext);
-
-    Aws::Crt::Io::TlsConnectionOptions tlsConnectionOptions = tlsContext.NewConnectionOptions();
-
     ByteCursor cursor = ByteCursorFromCString("https://s3.amazonaws.com");
     Io::Uri uri(cursor, allocator);
 
-    auto hostName = uri.GetHostName();
-    tlsConnectionOptions.SetServerName(hostName);
+    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
 
     Aws::Crt::Io::SocketOptions socketOptions;
     AWS_ZERO_STRUCT(socketOptions);
     socketOptions.type = AWS_SOCKET_STREAM;
     socketOptions.domain = AWS_SOCKET_IPV4;
     socketOptions.connect_timeout_ms = 1000;
+    Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+    ASSERT_TRUE(tlsContext);
+
+    Aws::Crt::Io::TlsConnectionOptions tlsConnectionOptions = tlsContext.NewConnectionOptions();
+
+    auto hostName = uri.GetHostName();
+    tlsConnectionOptions.SetServerName(hostName);
 
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
@@ -250,8 +254,8 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
 
     std::condition_variable semaphore;
     std::mutex semaphoreLock;
-    size_t connectionCount = 0;
-    size_t connectionsFailed = 0;
+    std::atomic<size_t> connectionCount = 0;
+    std::atomic<size_t> connectionsFailed = 0;
     size_t totalExpectedConnections = 30;
 
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
@@ -287,11 +291,11 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
     };
 
     {
-        std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
         for (size_t i = 0; i < totalExpectedConnections; ++i)
         {
             ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
         }
+        std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
         semaphore.wait(uniqueLock, [&]() {
             return connectionCount + connectionsFailed == connectionManagerOptions.maxConnections;
         });
@@ -301,6 +305,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
     ASSERT_TRUE(connectionCount > 0);
 
     Vector<std::shared_ptr<Http::HttpClientConnection>> connectionsCpy = connections;
+    fprintf(stderr, "remaining connections %d\n", (int)connectionsCpy.size());
     connections.clear();
     size_t i = 0;
     for (auto &connection : connectionsCpy)
@@ -311,11 +316,9 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
         }
         connectionManager->ReleaseConnection(connection);
     }
-    /* new connections will have to be made in this case, wait for them to setup. */
-    {
-        std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
-        semaphore.wait(uniqueLock, [&]() { return connectionCount + connectionsFailed == totalExpectedConnections; });
-    }
+    std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
+    semaphore.wait(uniqueLock, [&]() { return (connectionCount + connectionsFailed == totalExpectedConnections); });
+
     /* release should have given us more connections. */
     ASSERT_FALSE(connections.empty());
     for (auto &connection : connections)
