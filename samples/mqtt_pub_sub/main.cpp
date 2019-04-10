@@ -159,7 +159,8 @@ int main(int argc, char *argv[])
     socketOptions.keep_alive_max_failed_probes = 1;
     socketOptions.keepalive = true;
 
-    Io::ClientBootstrap bootstrap(eventLoopGroup);
+    Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 1, 5);
+    Io::ClientBootstrap bootstrap(eventLoopGroup, defaultHostResolver);
 
     if (!bootstrap)
     {

@@ -17,8 +17,10 @@
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
 #include <aws/crt/io/EventLoopGroup.h>
+#include <aws/crt/io/HostResolver.h>
 
 #include <aws/io/channel_bootstrap.h>
+#include <aws/io/host_resolver.h>
 
 namespace Aws
 {
@@ -29,12 +31,15 @@ namespace Aws
             class AWS_CRT_CPP_API ClientBootstrap final
             {
               public:
-                ClientBootstrap(EventLoopGroup &elGroup, Allocator *allocator = DefaultAllocator()) noexcept;
+                ClientBootstrap(
+                    EventLoopGroup &elGroup,
+                    HostResolver &resolver,
+                    Allocator *allocator = DefaultAllocator()) noexcept;
                 ~ClientBootstrap();
                 ClientBootstrap(const ClientBootstrap &) = delete;
                 ClientBootstrap &operator=(const ClientBootstrap &) = delete;
-                ClientBootstrap(ClientBootstrap &&) noexcept;
-                ClientBootstrap &operator=(ClientBootstrap &&) noexcept;
+                ClientBootstrap(ClientBootstrap &&) = delete;
+                ClientBootstrap &operator=(ClientBootstrap &&) = delete;
 
                 operator bool() const noexcept;
                 int LastError() const noexcept;

@@ -64,7 +64,10 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
 
-    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, allocator);
+    Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+    ASSERT_TRUE(defaultHostResolver);
+
+    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
     ASSERT_TRUE(allocator);
 
     Aws::Crt::Mqtt::MqttClient mqttClient(clientBootstrap, allocator);

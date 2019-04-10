@@ -21,6 +21,7 @@
 #include <aws/io/socket.h>
 #include <aws/mqtt/mqtt.h>
 
+#include <list>
 #include <map>
 #include <sstream>
 #include <string>
@@ -62,6 +63,7 @@ namespace Aws
         template <typename K, typename V>
         using MultiMap = std::multimap<K, V, std::less<K>, StlAllocator<std::pair<const K, V>>>;
         template <typename T> using Vector = std::vector<T, StlAllocator<T>>;
+        template <typename T> using List = std::list<T, StlAllocator<T>>;
 
         AWS_CRT_CPP_API Allocator *DefaultAllocator() noexcept;
         AWS_CRT_CPP_API ByteBuf ByteBufFromCString(const char *str) noexcept;

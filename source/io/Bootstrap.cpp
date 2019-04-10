@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2010-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -20,43 +20,25 @@ namespace Aws
     {
         namespace Io
         {
-            ClientBootstrap::ClientBootstrap(EventLoopGroup &elGroup, Allocator *allocator) noexcept
+            ClientBootstrap::ClientBootstrap(
+                EventLoopGroup &elGroup,
+                HostResolver &resolver,
+                Allocator *allocator) noexcept
                 : m_lastError(AWS_ERROR_SUCCESS)
             {
-                m_bootstrap = aws_client_bootstrap_new(allocator, elGroup.GetUnderlyingHandle(), nullptr, nullptr);
+                m_bootstrap = aws_client_bootstrap_new(
+                    allocator, elGroup.GetUnderlyingHandle(), resolver.GetUnderlyingHandle(), resolver.GetConfig());
             }
 
             ClientBootstrap::~ClientBootstrap()
             {
                 if (m_bootstrap)
                 {
-                    aws_client_bootstrap_destroy(m_bootstrap);
+                    aws_client_bootstrap_release(m_bootstrap);
                     m_bootstrap = nullptr;
                     m_lastError = AWS_ERROR_UNKNOWN;
                     AWS_ZERO_STRUCT(m_bootstrap);
                 }
-            }
-
-            ClientBootstrap::ClientBootstrap(ClientBootstrap &&toMove) noexcept
-                : m_bootstrap(toMove.m_bootstrap), m_lastError(toMove.m_lastError)
-            {
-                toMove.m_lastError = AWS_ERROR_UNKNOWN;
-                AWS_ZERO_STRUCT(toMove.m_bootstrap);
-            }
-
-            ClientBootstrap &ClientBootstrap::operator=(ClientBootstrap &&toMove) noexcept
-            {
-                if (this == &toMove)
-                {
-                    return *this;
-                }
-
-                m_bootstrap = toMove.m_bootstrap;
-                m_lastError = toMove.m_lastError;
-                toMove.m_lastError = AWS_ERROR_UNKNOWN;
-                AWS_ZERO_STRUCT(toMove.m_bootstrap);
-
-                return *this;
             }
 
             ClientBootstrap::operator bool() const noexcept { return m_lastError == AWS_ERROR_SUCCESS; }

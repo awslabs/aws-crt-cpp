@@ -96,11 +96,6 @@ namespace Aws
 
             TlsConnectionOptions::TlsConnectionOptions(const TlsConnectionOptions &options) noexcept
             {
-                if (m_isInit)
-                {
-                    aws_tls_connection_options_clean_up(&m_tls_connection_options);
-                }
-
                 m_isInit = false;
 
                 if (options.m_isInit)

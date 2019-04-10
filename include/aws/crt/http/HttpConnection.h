@@ -325,13 +325,18 @@ namespace Aws
                 std::shared_ptr<HttpClientStream> NewClientStream(const HttpRequestOptions &requestOptions) noexcept;
 
                 /**
+                 * Returns true unless the connection is closed or closing.
+                 */
+                bool IsOpen() const noexcept;
+
+                /**
                  * Initiate a shutdown of the connection. Sometimes, connections are persistent and you want
                  * to close them before shutting down your application or whatever is consuming this interface.
                  *
                  * Assuming `OnConnectionShutdown` has not already been invoked, it will be invoked as a result of this
-                 * call. It is safe to release your reference to this object after calling this function.
+                 * call.
                  */
-                bool Close() noexcept;
+                void Close() noexcept;
 
                 int LastError() const noexcept { return m_lastError; }
 
@@ -359,8 +364,6 @@ namespace Aws
                     struct aws_http_connection *connection,
                     int error_code,
                     void *user_data) noexcept;
-
-                friend class HttpClient;
             };
 
         } // namespace Http

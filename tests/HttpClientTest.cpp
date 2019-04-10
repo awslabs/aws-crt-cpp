@@ -69,7 +69,8 @@ static int s_VerifyFilesAreTheSame(Allocator *allocator, const char *fileName1, 
     ASSERT_TRUE(file1Hash.Digest(file1DigestBuf));
     ASSERT_TRUE(file2Hash.Digest(file2DigestBuf));
 
-    return aws_byte_buf_eq(&file1DigestBuf, &file2DigestBuf) ? AWS_OP_SUCCESS : AWS_OP_ERR;
+    ASSERT_BIN_ARRAYS_EQUALS(file2DigestBuf.buffer, file2DigestBuf.len, file1DigestBuf.buffer, file1DigestBuf.len);
+    return AWS_OP_SUCCESS;
 }
 
 static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, void *ctx)
@@ -77,14 +78,6 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
-
-/* okay so, we do this here because custom libcrypto builds on 32-bit unix do not have the correct default paths
- * setup, so we bundled a CA for running this test on those platforms.
- */
-#if defined(__i386__) && !defined(__APPLE__)
-    tlsCtxOptions.OverrideDefaultTrustStore(nullptr, "ca-certificates.crt");
-#endif
-
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
 
@@ -100,13 +93,16 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     AWS_ZERO_STRUCT(socketOptions);
     socketOptions.type = AWS_SOCKET_STREAM;
     socketOptions.domain = AWS_SOCKET_IPV4;
-    socketOptions.connect_timeout_ms = 3000;
+    socketOptions.connect_timeout_ms = 1000;
 
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
 
-    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, allocator);
-    ASSERT_TRUE(allocator);
+    Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+    ASSERT_TRUE(defaultHostResolver);
+
+    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+    ASSERT_TRUE(clientBootstrap);
 
     std::shared_ptr<Http::HttpClientConnection> connection(nullptr);
     bool errorOccured = true;
@@ -193,7 +189,7 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     requestOptions.uri = uri.GetPathAndQuery();
 
     Http::HttpHeader host_header;
-    host_header.name_str = ByteCursorFromCString("host");
+    host_header.name = ByteCursorFromCString("host");
     host_header.value = uri.GetHostName();
     requestOptions.headerArray = &host_header;
     requestOptions.headerArrayLength = 1;

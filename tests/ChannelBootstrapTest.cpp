@@ -19,20 +19,19 @@
 
 static int s_TestClientBootstrapResourceSafety(struct aws_allocator *allocator, void *)
 {
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
     ASSERT_NOT_NULL(eventLoopGroup.GetUnderlyingHandle());
 
-    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, allocator);
+    Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+    ASSERT_TRUE(defaultHostResolver);
+    ASSERT_NOT_NULL(defaultHostResolver.GetUnderlyingHandle());
+
+    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
     ASSERT_TRUE(clientBootstrap);
     ASSERT_NOT_NULL(clientBootstrap.GetUnderlyingHandle());
-
-    Aws::Crt::Io::ClientBootstrap clientBootstrapMoved = std::move(clientBootstrap);
-    ASSERT_TRUE(clientBootstrapMoved);
-    ASSERT_NOT_NULL(clientBootstrapMoved.GetUnderlyingHandle());
-
-    // NOLINTNEXTLINE
-    ASSERT_FALSE(clientBootstrap);
 
     return AWS_ERROR_SUCCESS;
 }
