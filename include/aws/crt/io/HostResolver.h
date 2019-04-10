@@ -28,13 +28,15 @@ namespace Aws
             class EventLoopGroup;
             class HostResolver;
 
+            using HostAddress = aws_host_address;
+
             /**
              * Invoked upon resolution of an address. You do not own the memory pointed to in addresses, if you persist
              * the data, copy it first. If errorCode is AWS_ERROR_SUCCESS, the operation succeeded. Otherwise, the
              * operation failed.
              */
             using OnHostResolved =
-                std::function<void(HostResolver &resolver, const Vector<aws_host_address> &addresses, int errorCode)>;
+                std::function<void(HostResolver &resolver, const Vector<HostAddress> &addresses, int errorCode)>;
 
             class HostResolver
             {
@@ -63,7 +65,7 @@ namespace Aws
                 DefaultHostResolver(DefaultHostResolver &&) = delete;
                 DefaultHostResolver &operator=(DefaultHostResolver &&) = delete;
 
-                operator bool() const noexcept { return m_good; }
+                operator bool() const noexcept { return m_initialized; }
 
                 /**
                  * Kicks off an asynchronous resolution of host. onResolved will be invoked upon completion of the
@@ -78,7 +80,7 @@ namespace Aws
                 aws_host_resolver m_resolver;
                 aws_host_resolution_config m_config;
                 Allocator *m_allocator;
-                bool m_good;
+                bool m_initialized;
 
                 static void s_onHostResolved(
                     struct aws_host_resolver *resolver,

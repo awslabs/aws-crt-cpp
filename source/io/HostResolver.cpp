@@ -31,11 +31,11 @@ namespace Aws
                 size_t maxHosts,
                 size_t maxTTL,
                 Allocator *allocator) noexcept
-                : m_allocator(allocator), m_good(true)
+                : m_allocator(allocator), m_initialized(true)
             {
                 if (aws_host_resolver_init_default(&m_resolver, allocator, maxHosts, elGroup.GetUnderlyingHandle()))
                 {
-                    m_good = false;
+                    m_initialized = false;
                 }
 
                 m_config.impl = aws_default_dns_resolve;
@@ -45,10 +45,10 @@ namespace Aws
 
             DefaultHostResolver::~DefaultHostResolver()
             {
-                if (m_good)
+                if (m_initialized)
                 {
                     aws_host_resolver_clean_up(&m_resolver);
-                    m_good = false;
+                    m_initialized = false;
                 }
             }
 
@@ -70,11 +70,11 @@ namespace Aws
                 DefaultHostResolveArgs *args = static_cast<DefaultHostResolveArgs *>(userData);
 
                 size_t len = aws_array_list_length(hostAddresses);
-                Vector<aws_host_address> addresses;
+                Vector<HostAddress> addresses;
 
                 for (size_t i = 0; i < len; ++i)
                 {
-                    aws_host_address *address_ptr = NULL;
+                    HostAddress *address_ptr = NULL;
                     aws_array_list_get_at_ptr(hostAddresses, reinterpret_cast<void **>(&address_ptr), i);
                     addresses.push_back(*address_ptr);
                 }
