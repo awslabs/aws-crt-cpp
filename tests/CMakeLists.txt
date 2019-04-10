@@ -22,6 +22,7 @@ add_test_case(IotPublishSubscribe)
 add_test_case(HttpClientConnectionManagerResourceSafety)
 add_test_case(HttpClientConnectionWithPendingAcquisitions)
 add_test_case(HttpClientConnectionWithPendingAcquisitionsAndClosedConnections)
+add_test_case(DefaultResolution)
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 

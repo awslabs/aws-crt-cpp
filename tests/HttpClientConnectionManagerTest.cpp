@@ -54,7 +54,10 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
 
-    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, allocator);
+    Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+    ASSERT_TRUE(defaultHostResolver);
+
+    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
     ASSERT_TRUE(clientBootstrap);
 
     std::condition_variable semaphore;
@@ -153,7 +156,10 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
 
-    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, allocator);
+    Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+    ASSERT_TRUE(defaultHostResolver);
+
+    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
     ASSERT_TRUE(clientBootstrap);
 
     std::condition_variable semaphore;
@@ -266,7 +272,10 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
 
-    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, allocator);
+    Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+    ASSERT_TRUE(defaultHostResolver);
+
+    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
     ASSERT_TRUE(clientBootstrap);
 
     std::condition_variable semaphore;

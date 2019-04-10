@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2010-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -20,22 +20,20 @@ namespace Aws
     {
         namespace Io
         {
-            ClientBootstrap::ClientBootstrap(EventLoopGroup &elGroup, Allocator *allocator) noexcept
+            ClientBootstrap::ClientBootstrap(
+                EventLoopGroup &elGroup,
+                HostResolver &resolver,
+                Allocator *allocator) noexcept
                 : m_lastError(AWS_ERROR_SUCCESS)
             {
-                aws_host_resolver_init_default(&m_resolver, allocator, 64);
-                m_resolve_config.impl = aws_default_dns_resolve;
-                m_resolve_config.impl_data = nullptr;
-                m_resolve_config.max_ttl = 30;
-                m_bootstrap =
-                    aws_client_bootstrap_new(allocator, elGroup.GetUnderlyingHandle(), &m_resolver, &m_resolve_config);
+                m_bootstrap = aws_client_bootstrap_new(
+                    allocator, elGroup.GetUnderlyingHandle(), resolver.GetUnderlyingHandle(), resolver.GetConfig());
             }
 
             ClientBootstrap::~ClientBootstrap()
             {
                 if (m_bootstrap)
                 {
-                    aws_host_resolver_clean_up(&m_resolver);
                     aws_client_bootstrap_release(m_bootstrap);
                     m_bootstrap = nullptr;
                     m_lastError = AWS_ERROR_UNKNOWN;

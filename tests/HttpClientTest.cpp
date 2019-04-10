@@ -98,8 +98,11 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
 
-    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, allocator);
-    ASSERT_TRUE(allocator);
+    Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+    ASSERT_TRUE(defaultHostResolver);
+
+    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+    ASSERT_TRUE(clientBootstrap);
 
     std::shared_ptr<Http::HttpClientConnection> connection(nullptr);
     bool errorOccured = true;
