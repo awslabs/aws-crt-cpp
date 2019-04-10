@@ -48,7 +48,6 @@ namespace Aws
 
               private:
                 aws_client_bootstrap *m_bootstrap;
-                aws_host_resolution_config m_resolve_config;
                 int m_lastError;
             };
         } // namespace Io
