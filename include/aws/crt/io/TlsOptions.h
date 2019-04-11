@@ -37,6 +37,7 @@ namespace Aws
                 friend class TlsContext;
 
               public:
+                TlsContextOptions() noexcept;
                 ~TlsContextOptions();
                 TlsContextOptions(const TlsContextOptions &) noexcept = default;
                 TlsContextOptions &operator=(const TlsContextOptions &) noexcept = default;
@@ -101,10 +102,11 @@ namespace Aws
                  */
                 void OverrideDefaultTrustStore(const char *caPath, const char *caFile) noexcept;
 
+                void OverrideDefaultTrustStore(const ByteCursor &ca) noexcept;
+
               private:
                 aws_tls_ctx_options m_options;
-
-                TlsContextOptions() noexcept;
+                bool m_isInit;
             };
 
             /**
@@ -156,6 +158,7 @@ namespace Aws
             class AWS_CRT_CPP_API TlsContext final
             {
               public:
+                TlsContext() noexcept;
                 TlsContext(
                     TlsContextOptions &options,
                     TlsMode mode,
