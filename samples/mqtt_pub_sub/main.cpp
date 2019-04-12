@@ -13,13 +13,14 @@
  * permissions and limitations under the License.
  */
 #include <aws/crt/Api.h>
+#include <aws/crt/StlAllocator.h>
+
+#include <aws/iot/MqttClient.h>
 
 #include <algorithm>
-#include <aws/crt/StlAllocator.h>
 #include <condition_variable>
 #include <iostream>
 #include <mutex>
-#include <aws/iot/MqttClient.h>
 
 using namespace Aws::Crt;
 
