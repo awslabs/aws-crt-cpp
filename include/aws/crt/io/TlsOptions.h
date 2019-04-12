@@ -39,8 +39,10 @@ namespace Aws
               public:
                 TlsContextOptions() noexcept;
                 ~TlsContextOptions();
-                TlsContextOptions(const TlsContextOptions &) noexcept = default;
-                TlsContextOptions &operator=(const TlsContextOptions &) noexcept = default;
+                TlsContextOptions(const TlsContextOptions &) noexcept = delete;
+                TlsContextOptions &operator=(const TlsContextOptions &) noexcept = delete;
+                TlsContextOptions(TlsContextOptions &&) noexcept;
+                TlsContextOptions &operator=(TlsContextOptions &&) noexcept;
 
                 /**
                  * Initializes TlsContextOptions with secure by default options, with
@@ -49,13 +51,22 @@ namespace Aws
                 static TlsContextOptions InitDefaultClient(Allocator *allocator = DefaultAllocator()) noexcept;
                 /**
                  * Initializes TlsContextOptions with secure by default options, with
-                 * client certificate and private key. These are paths to a file on disk. These
-                 * strings must remain in memory for the lifetime of the returned object. These files
+                 * client certificate and private key. These are paths to a file on disk. These files
                  * must be in the PEM format.
                  */
                 static TlsContextOptions InitClientWithMtls(
                     const char *cert_path,
                     const char *pkey_path,
+                    Allocator *allocator = DefaultAllocator()) noexcept;
+
+                /**
+                 * Initializes TlsContextOptions with secure by default options, with
+                 * client certificate and private key. These are in memory buffers. These buffers
+                 * must be in the PEM format.
+                 */
+                static TlsContextOptions InitClientWithMtls(
+                    const ByteCursor &cert,
+                    const ByteCursor &pkey,
                     Allocator *allocator = DefaultAllocator()) noexcept;
 
 #ifdef __APPLE__

@@ -32,6 +32,32 @@ namespace Aws
 
             TlsContextOptions::TlsContextOptions() noexcept : m_isInit(false) { AWS_ZERO_STRUCT(m_options); }
 
+            TlsContextOptions::TlsContextOptions(TlsContextOptions &&other) noexcept
+            {
+                m_options = other.m_options;
+                m_isInit = other.m_isInit;
+                AWS_ZERO_STRUCT(other.m_options);
+                other.m_isInit = false;
+            }
+
+            TlsContextOptions &TlsContextOptions::operator=(TlsContextOptions &&other) noexcept
+            {
+                if (&other != this)
+                {
+                    if (m_isInit)
+                    {
+                        aws_tls_ctx_options_clean_up(&m_options);
+                    }
+
+                    m_options = other.m_options;
+                    m_isInit = other.m_isInit;
+                    AWS_ZERO_STRUCT(other.m_options);
+                    other.m_isInit = false;
+                }
+
+                return *this;
+            }
+
             TlsContextOptions TlsContextOptions::InitDefaultClient(Allocator *allocator) noexcept
             {
                 TlsContextOptions ctxOptions;
@@ -48,6 +74,23 @@ namespace Aws
                 TlsContextOptions ctxOptions;
                 if (!aws_tls_ctx_options_init_client_mtls_from_path(
                         &ctxOptions.m_options, allocator, certPath, pKeyPath))
+                {
+                    ctxOptions.m_isInit = true;
+                }
+                return ctxOptions;
+            }
+
+            TlsContextOptions TlsContextOptions::InitClientWithMtls(
+                const ByteCursor &cert,
+                const ByteCursor &pkey,
+                Allocator *allocator) noexcept
+            {
+                TlsContextOptions ctxOptions;
+                if (!aws_tls_ctx_options_init_client_mtls(
+                        &ctxOptions.m_options,
+                        allocator,
+                        const_cast<ByteCursor *>(&cert),
+                        const_cast<ByteCursor *>(&pkey)))
                 {
                     ctxOptions.m_isInit = true;
                 }

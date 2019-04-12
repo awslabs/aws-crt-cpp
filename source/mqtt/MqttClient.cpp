@@ -304,9 +304,16 @@ namespace Aws
             {
                 ByteBuf userNameBuf = aws_byte_buf_from_c_str(userName);
                 ByteCursor userNameCur = aws_byte_cursor_from_buf(&userNameBuf);
-                ByteBuf pwdBuf = aws_byte_buf_from_c_str(password);
-                ByteCursor pwdCur = aws_byte_cursor_from_buf(&pwdBuf);
-                return aws_mqtt_client_connection_set_login(m_underlyingConnection, &userNameCur, &pwdCur) == 0;
+
+                ByteCursor *pwdCurPtr = nullptr;
+                ByteCursor pwdCur;
+
+                if (password)
+                {
+                    pwdCur = ByteCursorFromCString(password);
+                    pwdCurPtr = &pwdCur;
+                }
+                return aws_mqtt_client_connection_set_login(m_underlyingConnection, &userNameCur, pwdCurPtr) == 0;
             }
 
             bool MqttConnection::Connect(

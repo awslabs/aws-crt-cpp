@@ -63,5 +63,8 @@ namespace Aws
         }
 
         const char *ErrorDebugString(int error) noexcept { return aws_error_debug_str(error); }
+
+        int LastError() noexcept { return aws_last_error(); }
+
     } // namespace Crt
 } // namespace Aws
