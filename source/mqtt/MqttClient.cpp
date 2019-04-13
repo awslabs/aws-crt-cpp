@@ -230,7 +230,7 @@ namespace Aws
                 const Io::TlsConnectionOptions *tlsConnOptions)
             {
 
-                self->m_hostNameBuf = aws_byte_buf_from_c_str(hostName);
+                self->m_hostName = String(hostName);
                 self->m_port = port;
 
                 if (tlsConnOptions)
@@ -281,10 +281,7 @@ namespace Aws
                 if (*this)
                 {
                     aws_mqtt_client_connection_destroy(m_underlyingConnection);
-                    aws_byte_buf_clean_up(&m_hostNameBuf);
                 }
-
-                AWS_ZERO_STRUCT(*this);
             }
 
             MqttConnection::operator bool() const noexcept { return m_underlyingConnection != nullptr; }
@@ -305,9 +302,16 @@ namespace Aws
             {
                 ByteBuf userNameBuf = aws_byte_buf_from_c_str(userName);
                 ByteCursor userNameCur = aws_byte_cursor_from_buf(&userNameBuf);
-                ByteBuf pwdBuf = aws_byte_buf_from_c_str(password);
-                ByteCursor pwdCur = aws_byte_cursor_from_buf(&pwdBuf);
-                return aws_mqtt_client_connection_set_login(m_underlyingConnection, &userNameCur, &pwdCur) == 0;
+
+                ByteCursor *pwdCurPtr = nullptr;
+                ByteCursor pwdCur;
+
+                if (password)
+                {
+                    pwdCur = ByteCursorFromCString(password);
+                    pwdCurPtr = &pwdCur;
+                }
+                return aws_mqtt_client_connection_set_login(m_underlyingConnection, &userNameCur, pwdCurPtr) == 0;
             }
 
             bool MqttConnection::Connect(
@@ -319,7 +323,8 @@ namespace Aws
                 aws_mqtt_connection_options options;
                 AWS_ZERO_STRUCT(options);
                 options.client_id = aws_byte_cursor_from_c_str(clientId);
-                options.host_name = aws_byte_cursor_from_buf(&m_hostNameBuf);
+                options.host_name = aws_byte_cursor_from_array(
+                    reinterpret_cast<const uint8_t *>(m_hostName.data()), m_hostName.length());
                 options.tls_options =
                     m_useTls ? const_cast<aws_tls_connection_options *>(m_tlsOptions.GetUnderlyingHandle()) : nullptr;
                 options.port = m_port;

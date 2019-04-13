@@ -37,5 +37,6 @@ namespace Aws
 
         AWS_CRT_CPP_API void LoadErrorStrings() noexcept;
         AWS_CRT_CPP_API const char *ErrorDebugString(int error) noexcept;
+        AWS_CRT_CPP_API int LastError() noexcept;
     } // namespace Crt
 } // namespace Aws

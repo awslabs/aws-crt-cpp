@@ -192,7 +192,7 @@ namespace Aws
                 aws_mqtt_client *m_owningClient;
                 aws_mqtt_client_connection *m_underlyingConnection;
                 std::atomic<ConnectionState> m_connectionState;
-                ByteBuf m_hostNameBuf;
+                String m_hostName;
                 uint16_t m_port;
                 Io::TlsConnectionOptions m_tlsOptions;
                 Io::SocketOptions m_socketOptions;

@@ -16,6 +16,9 @@ if (NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 11)
 endif()
 
+set(AWS_CRT_CPP_VERSION "v0.3.0")
+configure_file(include/aws/crt/Config.h.in ${CMAKE_CURRENT_LIST_DIR}/include/aws/crt/Config.h @ONLY)
+
 if (BUILD_DEPS)
     set(AWS_DEPS_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/deps)
     if (DEFINED CMAKE_INSTALL_PREFIX)
@@ -107,6 +110,10 @@ file(GLOB AWS_CRT_IO_HEADERS
         "include/aws/crt/io/*.h"
 )
 
+file(GLOB AWS_CRT_IOT_HEADERS
+        "include/aws/iot/*.h"
+)
+
 file(GLOB AWS_CRT_MQTT_HEADERS
         "include/aws/crt/mqtt/*.h"
 )
@@ -123,6 +130,7 @@ file(GLOB AWS_CRT_CPP_HEADERS
         ${AWS_CRT_HEADERS}
         ${AWS_CRT_CRYPTO_HEADERS}
         ${AWS_CRT_IO_HEADERS}
+        ${AWS_CRT_IOT_HEADERS}
         ${AWS_CRT_MQTT_HEADERS}
         ${AWS_CRT_HTTP_HEADERS}
         ${AWS_CRT_EXTERNAL_HEADERS}
@@ -138,6 +146,10 @@ file(GLOB AWS_CRT_CRYPTO_SRC
 
 file (GLOB AWS_CRT_IO_SRC
        "source/io/*.cpp"
+)
+
+file (GLOB AWS_CRT_IOT_SRC
+        "source/iot/*.cpp"
 )
 
 file (GLOB AWS_CRT_MQTT_SRC
@@ -156,6 +168,7 @@ file(GLOB AWS_CRT_CPP_SRC
         ${AWS_CRT_SRC}
         ${AWS_CRT_CRYPTO_SRC}
         ${AWS_CRT_IO_SRC}
+        ${AWS_CRT_IOT_SRC}
         ${AWS_CRT_MQTT_SRC}
         ${AWS_CRT_HTTP_SRC}
         ${AWS_CRT_EXTERNAL_CRC}
@@ -166,6 +179,7 @@ if (WIN32)
         source_group("Header Files\\aws\\crt" FILES ${AWS_CRT_HEADERS})
         source_group("Header Files\\aws\\crt\\crypto" FILES ${AWS_CRT_CRYPTO_HEADERS})
         source_group("Header Files\\aws\\crt\\io" FILES ${AWS_CRT_IO_HEADERS})
+        source_group("Header Files\\aws\\iot" FILES ${AWS_CRT_IOT_HEADERS})
         source_group("Header Files\\aws\\crt\\mqtt" FILES ${AWS_CRT_MQTT_HEADERS})
         source_group("Header Files\\aws\\crt\\http" FILES ${AWS_CRT_HTTP_HEADERS})
         source_group("Header Files\\aws\\crt\\external" FILES ${AWS_CRT_EXTERNAL_HEADERS})
@@ -173,6 +187,7 @@ if (WIN32)
         source_group("Source Files" FILES ${AWS_CRT_SRC})
         source_group("Source Files\\crypto" FILES ${AWS_CRT_CRYPTO_SRC})
         source_group("Source Files\\io" FILES ${AWS_CRT_IO_SRC})
+        source_group("Source Files\\iot" FILES ${AWS_CRT_IOT_SRC})
         source_group("Source Files\\mqtt" FILES ${AWS_CRT_MQTT_SRC})
         source_group("Source Files\\http" FILES ${AWS_CRT_HTTP_SRC})
         source_group("Source Files\\external" FILES ${AWS_CRT_EXTERNAL_SRC})
@@ -214,6 +229,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME} AWS::aws-c-cal AWS::aws-c-http AWS::
 install(FILES ${AWS_CRT_HEADERS} DESTINATION "include/aws/crt" COMPONENT Development)
 install(FILES ${AWS_CRT_CRYPTO_HEADERS} DESTINATION "include/aws/crt/crypto" COMPONENT Development)
 install(FILES ${AWS_CRT_IO_HEADERS} DESTINATION "include/aws/crt/io" COMPONENT Development)
+install(FILES ${AWS_CRT_IOT_HEADERS} DESTINATION "include/aws/iot" COMPONENT Development)
 install(FILES ${AWS_CRT_MQTT_HEADERS} DESTINATION "include/aws/crt/mqtt" COMPONENT Development)
 install(FILES ${AWS_CRT_HTTP_HEADERS} DESTINATION "include/aws/crt/http" COMPONENT Development)
 install(FILES ${AWS_CRT_EXTERNAL_HEADERS} DESTINATION "include/aws/crt/external" COMPONENT Development)
