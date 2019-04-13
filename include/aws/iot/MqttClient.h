@@ -24,11 +24,12 @@ namespace Aws
 
         /**
          * Represents a unique configuration for connecting to a single endpoint. You can use a single instance of this
-         * class PER endpoint you want to connect to.
+         * class PER endpoint you want to connect to. This object must live through the lifetime of your connection.
          */
         class AWS_CRT_CPP_API MqttClientConnectionConfig final
         {
           public:
+            MqttClientConnectionConfig() noexcept;
             MqttClientConnectionConfig(
                 const Crt::String &endpoint,
                 uint16_t port,
