@@ -282,8 +282,6 @@ namespace Aws
                 {
                     aws_mqtt_client_connection_destroy(m_underlyingConnection);
                 }
-
-                AWS_ZERO_STRUCT(*this);
             }
 
             MqttConnection::operator bool() const noexcept { return m_underlyingConnection != nullptr; }
