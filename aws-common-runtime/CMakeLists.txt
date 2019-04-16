@@ -31,11 +31,11 @@ set(AWS_C_IO_SHA "v0.3.0")
 include(BuildAwsCIO)
 
 set(AWS_C_HTTP_URL "https://github.com/awslabs/aws-c-http.git")
-set(AWS_C_HTTP_SHA "v0.2.1")
+set(AWS_C_HTTP_SHA "v0.2.2")
 include(BuildAwsCHttp)
 
 set(AWS_C_MQTT_URL "https://github.com/awslabs/aws-c-mqtt.git")
-set(AWS_C_MQTT_SHA "v0.3.4")
+set(AWS_C_MQTT_SHA "v0.3.5")
 include(BuildAwsCMqtt)
 
 set(AWS_C_CAL_URL "https://github.com/awslabs/aws-c-cal.git")
