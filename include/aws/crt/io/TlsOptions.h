@@ -79,7 +79,7 @@ namespace Aws
                 static TlsContextOptions InitClientWithMtlsPkcs12(
                     const char *pkcs12_path,
                     const char *pkcs12_pwd,
-                    Allocator *allocator = DefaultAllocator) noexcept;
+                    Allocator *allocator = DefaultAllocator()) noexcept;
 #endif
 
                 /**
