@@ -42,7 +42,7 @@ static int s_TestDateTimeBinding(struct aws_allocator *allocator, void *ctx)
 
         uint8_t dateOutput[AWS_DATE_TIME_STR_MAX_LEN];
         AWS_ZERO_ARRAY(dateOutput);
-        Aws::Crt::ByteBuf strOutput = Aws::Crt::ByteBufFromArray(dateOutput, sizeof(dateOutput));
+        Aws::Crt::ByteBuf strOutput = Aws::Crt::ByteBufFromEmptyArray(dateOutput, sizeof(dateOutput));
         ASSERT_TRUE(dateTime.ToGmtString(Aws::Crt::DateFormat::RFC822, strOutput));
 
         const char *expectedLongStr = "Wed, 02 Oct 2002 08:05:09 GMT";

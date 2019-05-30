@@ -24,9 +24,14 @@ namespace Aws
 
         ByteBuf ByteBufFromCString(const char *str) noexcept { return aws_byte_buf_from_c_str(str); }
 
-        ByteBuf ByteBufFromArray(const uint8_t *array, size_t len) noexcept
+        ByteBuf ByteBufFromEmptyArray(const uint8_t *array, size_t len) noexcept
         {
-            return aws_byte_buf_from_array(array, len);
+            return aws_byte_buf_from_empty_array(array, len);
+        }
+
+        ByteBuf ByteBufFromArray(const uint8_t *array, size_t capacity) noexcept
+        {
+            return aws_byte_buf_from_array(array, capacity);
         }
 
         ByteBuf ByteBufNewCopy(Allocator *alloc, const uint8_t *array, size_t len)

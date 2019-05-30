@@ -61,10 +61,8 @@ static int s_VerifyFilesAreTheSame(Allocator *allocator, const char *fileName1, 
     uint8_t file2Digest[Crypto::SHA256_DIGEST_SIZE];
     AWS_ZERO_ARRAY(file2Digest);
 
-    ByteBuf file1DigestBuf = ByteBufFromArray(file1Digest, sizeof(file1Digest));
-    file1DigestBuf.len = 0;
-    ByteBuf file2DigestBuf = ByteBufFromArray(file2Digest, sizeof(file2Digest));
-    file2DigestBuf.len = 0;
+    ByteBuf file1DigestBuf = ByteBufFromEmptyArray(file1Digest, sizeof(file1Digest));
+    ByteBuf file2DigestBuf = ByteBufFromEmptyArray(file2Digest, sizeof(file2Digest));
 
     ASSERT_TRUE(file1Hash.Digest(file1DigestBuf));
     ASSERT_TRUE(file2Hash.Digest(file2DigestBuf));

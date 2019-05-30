@@ -50,8 +50,7 @@ namespace Aws
             String uuidStr;
             uuidStr.reserve(AWS_UUID_STR_LEN);
 
-            auto outBuf = ByteBufFromArray(reinterpret_cast<const uint8_t *>(uuidStr.data()), uuidStr.capacity());
-            outBuf.len = 0;
+            auto outBuf = ByteBufFromEmptyArray(reinterpret_cast<const uint8_t *>(uuidStr.data()), uuidStr.capacity());
             aws_uuid_to_str(&m_uuid, &outBuf);
             return uuidStr;
         }
