@@ -53,7 +53,7 @@ namespace Aws
             {
                 m_initialWindowSize = connectionManagerOptions.initialWindowSize;
                 m_bootstrap = connectionManagerOptions.bootstrap;
-                assert(connectionManagerOptions.hostName.ptr && connectionManagerOptions.hostName.len);
+                AWS_ASSERT(connectionManagerOptions.hostName.ptr && connectionManagerOptions.hostName.len);
                 m_hostName =
                     String((const char *)connectionManagerOptions.hostName.ptr, connectionManagerOptions.hostName.len);
                 m_maxSize = connectionManagerOptions.maxConnections;

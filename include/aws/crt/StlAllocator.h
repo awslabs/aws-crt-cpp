@@ -14,7 +14,6 @@
  * permissions and limitations under the License.
  */
 
-#include <assert.h>
 #include <memory>
 
 #include <aws/common/common.h>
@@ -48,13 +47,13 @@ namespace Aws
             typename Base::pointer allocate(size_type n, const void *hint = nullptr)
             {
                 (void)hint;
-                assert(g_allocator);
+                AWS_ASSERT(g_allocator);
                 return reinterpret_cast<typename Base::pointer>(aws_mem_acquire(g_allocator, n * sizeof(T)));
             }
 
             void deallocate(typename Base::pointer p, size_type)
             {
-                assert(g_allocator);
+                AWS_ASSERT(g_allocator);
                 aws_mem_release(g_allocator, p);
             }
         };

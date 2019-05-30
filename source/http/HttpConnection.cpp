@@ -97,9 +97,9 @@ namespace Aws
 
             bool HttpClientConnection::CreateConnection(const HttpClientConnectionOptions &connectionOptions) noexcept
             {
-                assert(connectionOptions.onConnectionSetup);
-                assert(connectionOptions.onConnectionShutdown);
-                assert(connectionOptions.socketOptions);
+                AWS_ASSERT(connectionOptions.onConnectionSetup);
+                AWS_ASSERT(connectionOptions.onConnectionShutdown);
+                AWS_ASSERT(connectionOptions.socketOptions);
 
                 auto *callbackData =
                     New<ConnectionCallbackData>(connectionOptions.allocator, connectionOptions.allocator);
@@ -162,8 +162,8 @@ namespace Aws
             std::shared_ptr<HttpClientStream> HttpClientConnection::NewClientStream(
                 const HttpRequestOptions &requestOptions) noexcept
             {
-                assert(requestOptions.onIncomingHeaders);
-                assert(requestOptions.onStreamComplete);
+                AWS_ASSERT(requestOptions.onIncomingHeaders);
+                AWS_ASSERT(requestOptions.onStreamComplete);
 
                 aws_http_request_options options;
                 AWS_ZERO_STRUCT(options);
