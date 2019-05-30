@@ -208,7 +208,7 @@ aws_prepare_symbol_visibility_args(${CMAKE_PROJECT_NAME} "AWS_CRT_CPP")
 
 #set warnings
 if (MSVC)
-    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE /W4 /WX)
+    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
 else ()
     target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
 endif ()

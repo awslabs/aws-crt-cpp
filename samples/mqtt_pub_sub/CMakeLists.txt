@@ -15,7 +15,7 @@ set(CMAKE_C_FLAGS_DEBUGOPT "")
 
 #set warnings
 if (MSVC)
-    target_compile_options(${PUB_SUB_PROJECT_NAME} PRIVATE /W4 /WX)
+    target_compile_options(${PUB_SUB_PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
 else ()
     target_compile_options(${PUB_SUB_PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
 endif ()
