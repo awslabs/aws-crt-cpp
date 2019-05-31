@@ -179,7 +179,6 @@ int main(int argc, char *argv[])
         else
         {
             fprintf(stdout, "Connection completed with return code %d\n", returnCode);
-            fprintf(stdout, "Connection state %d\n", static_cast<int>(connection->GetConnectionState()));
             connectionSucceeded = true;
         }
         {
@@ -200,7 +199,7 @@ int main(int argc, char *argv[])
      */
     auto onDisconnect = [&](Mqtt::MqttConnection &conn) {
         {
-            fprintf(stdout, "Connection state %d\n", static_cast<int>(conn.GetConnectionState()));
+            fprintf(stdout, "Disconnect completed\n");
             std::lock_guard<std::mutex> lockGuard(mutex);
             connectionClosed = true;
         }
@@ -217,6 +216,7 @@ int main(int argc, char *argv[])
      * This will use default ping behavior of 1 hour and 3 second timeouts.
      * If you want different behavior, those arguments go into slots 3 & 4.
      */
+    fprintf(stdout, "Connecting...\n");
     if (!connection->Connect(clientId.c_str(), false))
     {
         fprintf(stderr, "MQTT Connection failed with error %s\n", ErrorDebugString(connection->LastError()));

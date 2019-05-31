@@ -37,15 +37,6 @@ namespace Aws
             class MqttClient;
             class MqttConnection;
 
-            enum class ConnectionState
-            {
-                Init,
-                Connecting,
-                Connected,
-                Disconnected,
-                Error,
-            };
-
             /**
              * Invoked Upon Connection loss.
              */
@@ -112,7 +103,6 @@ namespace Aws
 
                 operator bool() const noexcept;
                 int LastError() const noexcept;
-                inline ConnectionState GetConnectionState() const noexcept { return m_connectionState; }
 
                 /**
                  * Sets LastWill for the connection. The memory backing payload must outlive the connection.
@@ -191,7 +181,6 @@ namespace Aws
               private:
                 aws_mqtt_client *m_owningClient;
                 aws_mqtt_client_connection *m_underlyingConnection;
-                std::atomic<ConnectionState> m_connectionState;
                 String m_hostName;
                 uint16_t m_port;
                 Io::TlsConnectionOptions m_tlsOptions;

@@ -28,7 +28,6 @@ namespace Aws
             void MqttConnection::s_onConnectionInterrupted(aws_mqtt_client_connection *, int errorCode, void *userData)
             {
                 auto connWrapper = reinterpret_cast<MqttConnection *>(userData);
-                connWrapper->m_connectionState = ConnectionState::Connecting;
                 if (connWrapper->OnConnectionInterrupted)
                 {
                     connWrapper->OnConnectionInterrupted(*connWrapper, errorCode);
@@ -42,7 +41,6 @@ namespace Aws
                 void *userData)
             {
                 auto connWrapper = reinterpret_cast<MqttConnection *>(userData);
-                connWrapper->m_connectionState = ConnectionState::Connected;
                 if (connWrapper->OnConnectionResumed)
                 {
                     connWrapper->OnConnectionResumed(*connWrapper, returnCode, sessionPresent);
@@ -57,16 +55,6 @@ namespace Aws
                 void *userData)
             {
                 auto connWrapper = reinterpret_cast<MqttConnection *>(userData);
-
-                if (returnCode == AWS_MQTT_CONNECT_ACCEPTED)
-                {
-                    connWrapper->m_connectionState = ConnectionState::Connected;
-                }
-                else
-                {
-                    connWrapper->m_connectionState = ConnectionState::Error;
-                }
-
                 if (connWrapper->OnConnectionCompleted)
                 {
                     connWrapper->OnConnectionCompleted(*connWrapper, errorCode, returnCode, sessionPresent);
@@ -76,9 +64,6 @@ namespace Aws
             void MqttConnection::s_onDisconnect(aws_mqtt_client_connection *, void *userData)
             {
                 auto connWrapper = reinterpret_cast<MqttConnection *>(userData);
-
-                connWrapper->m_connectionState = ConnectionState::Disconnected;
-
                 if (connWrapper->OnDisconnect)
                 {
                     connWrapper->OnDisconnect(*connWrapper);
@@ -242,17 +227,15 @@ namespace Aws
 
                 self->m_underlyingConnection = aws_mqtt_client_connection_new(self->m_owningClient);
 
-                if (!self->m_underlyingConnection)
+                if (self->m_underlyingConnection)
                 {
-                    self->m_connectionState = ConnectionState::Error;
+                    aws_mqtt_client_connection_set_connection_interruption_handlers(
+                        self->m_underlyingConnection,
+                        MqttConnection::s_onConnectionInterrupted,
+                        self,
+                        MqttConnection::s_onConnectionResumed,
+                        self);
                 }
-
-                aws_mqtt_client_connection_set_connection_interruption_handlers(
-                    self->m_underlyingConnection,
-                    MqttConnection::s_onConnectionInterrupted,
-                    self,
-                    MqttConnection::s_onConnectionResumed,
-                    self);
             }
 
             MqttConnection::MqttConnection(
@@ -261,7 +244,7 @@ namespace Aws
                 uint16_t port,
                 const Io::SocketOptions &socketOptions,
                 const Io::TlsConnectionOptions &tlsConnOptions) noexcept
-                : m_owningClient(client), m_connectionState(ConnectionState::Init), m_useTls(true)
+                : m_owningClient(client), m_useTls(true)
             {
                 s_connectionInit(this, hostName, port, socketOptions, &tlsConnOptions);
             }
@@ -271,7 +254,7 @@ namespace Aws
                 const char *hostName,
                 uint16_t port,
                 const Io::SocketOptions &socketOptions) noexcept
-                : m_owningClient(client), m_connectionState(ConnectionState::Init), m_useTls(false)
+                : m_owningClient(client), m_useTls(false)
             {
                 s_connectionInit(this, hostName, port, socketOptions, nullptr);
             }
@@ -340,7 +323,6 @@ namespace Aws
                     return false;
                 }
 
-                m_connectionState = ConnectionState::Connecting;
                 return true;
             }
 
