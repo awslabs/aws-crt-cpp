@@ -20,7 +20,7 @@ set(AWS_CRT_CPP_VERSION "v0.3.0")
 configure_file(include/aws/crt/Config.h.in ${CMAKE_CURRENT_LIST_DIR}/include/aws/crt/Config.h @ONLY)
 
 if (BUILD_DEPS)
-    set(AWS_DEPS_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/deps)
+    set(AWS_DEPS_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/deps CACHE STRING "If BUILD_DEPS is on, aws common runtime dependencies build in this directory.")
     if (DEFINED CMAKE_INSTALL_PREFIX)
         set(AWS_DEPS_INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
     else()
@@ -136,7 +136,7 @@ file(GLOB AWS_CRT_CPP_HEADERS
         ${AWS_CRT_EXTERNAL_HEADERS}
 )
 
-file(GLOB AWS_CRT_SRC 
+file(GLOB AWS_CRT_SRC
        "source/*.cpp"
 )
 
@@ -208,7 +208,7 @@ aws_prepare_symbol_visibility_args(${CMAKE_PROJECT_NAME} "AWS_CRT_CPP")
 
 #set warnings
 if (MSVC)
-    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE /W4 /WX)
+    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
 else ()
     target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
 endif ()

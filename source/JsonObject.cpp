@@ -359,7 +359,7 @@ namespace Aws
 
         String JsonView::GetString(const char *key) const
         {
-            assert(m_value);
+            AWS_ASSERT(m_value);
             auto item = cJSON_GetObjectItemCaseSensitive(m_value, key);
             auto str = cJSON_GetStringValue(item);
             return str != nullptr ? str : "";
@@ -379,15 +379,15 @@ namespace Aws
 
         bool JsonView::GetBool(const char *key) const
         {
-            assert(m_value);
+            AWS_ASSERT(m_value);
             auto item = cJSON_GetObjectItemCaseSensitive(m_value, key);
-            assert(item);
+            AWS_ASSERT(item);
             return item->valueint != 0;
         }
 
         bool JsonView::AsBool() const
         {
-            assert(cJSON_IsBool(m_value));
+            AWS_ASSERT(cJSON_IsBool(m_value));
             return cJSON_IsTrue(m_value) != 0;
         }
 
@@ -395,15 +395,15 @@ namespace Aws
 
         int JsonView::GetInteger(const char *key) const
         {
-            assert(m_value);
+            AWS_ASSERT(m_value);
             auto item = cJSON_GetObjectItemCaseSensitive(m_value, key);
-            assert(item);
+            AWS_ASSERT(item);
             return item->valueint;
         }
 
         int JsonView::AsInteger() const
         {
-            assert(cJSON_IsNumber(m_value)); // can be double or value larger than int_max, but at least not UB
+            AWS_ASSERT(cJSON_IsNumber(m_value)); // can be double or value larger than int_max, but at least not UB
             return m_value->valueint;
         }
 
@@ -413,7 +413,7 @@ namespace Aws
 
         int64_t JsonView::AsInt64() const
         {
-            assert(cJSON_IsNumber(m_value));
+            AWS_ASSERT(cJSON_IsNumber(m_value));
             return static_cast<int64_t>(m_value->valuedouble);
         }
 
@@ -421,15 +421,15 @@ namespace Aws
 
         double JsonView::GetDouble(const char *key) const
         {
-            assert(m_value);
+            AWS_ASSERT(m_value);
             auto item = cJSON_GetObjectItemCaseSensitive(m_value, key);
-            assert(item);
+            AWS_ASSERT(item);
             return item->valuedouble;
         }
 
         double JsonView::AsDouble() const
         {
-            assert(cJSON_IsNumber(m_value));
+            AWS_ASSERT(cJSON_IsNumber(m_value));
             return m_value->valuedouble;
         }
 
@@ -437,7 +437,7 @@ namespace Aws
 
         JsonView JsonView::GetJsonObject(const char *key) const
         {
-            assert(m_value);
+            AWS_ASSERT(m_value);
             auto item = cJSON_GetObjectItemCaseSensitive(m_value, key);
             return item;
         }
@@ -446,14 +446,14 @@ namespace Aws
 
         JsonObject JsonView::GetJsonObjectCopy(const char *key) const
         {
-            assert(m_value);
+            AWS_ASSERT(m_value);
             /* force a deep copy */
             return JsonObject(cJSON_GetObjectItemCaseSensitive(m_value, key));
         }
 
         JsonView JsonView::AsObject() const
         {
-            assert(cJSON_IsObject(m_value));
+            AWS_ASSERT(cJSON_IsObject(m_value));
             return m_value;
         }
 
@@ -461,9 +461,9 @@ namespace Aws
 
         Vector<JsonView> JsonView::GetArray(const char *key) const
         {
-            assert(m_value);
+            AWS_ASSERT(m_value);
             auto array = cJSON_GetObjectItemCaseSensitive(m_value, key);
-            assert(cJSON_IsArray(array));
+            AWS_ASSERT(cJSON_IsArray(array));
             Vector<JsonView> returnArray(static_cast<size_t>(cJSON_GetArraySize(array)));
 
             auto element = array->child;
@@ -477,7 +477,7 @@ namespace Aws
 
         Vector<JsonView> JsonView::AsArray() const
         {
-            assert(cJSON_IsArray(m_value));
+            AWS_ASSERT(cJSON_IsArray(m_value));
             Vector<JsonView> returnArray(static_cast<size_t>(cJSON_GetArraySize(m_value)));
 
             auto element = m_value->child;

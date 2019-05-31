@@ -37,8 +37,7 @@ static int s_TestSHA256HMACResourceSafety(struct aws_allocator *allocator, void 
     Aws::Crt::ByteBuf expectedBuf = Aws::Crt::ByteBufFromArray(expected, sizeof(expected));
 
     uint8_t output[Aws::Crt::Crypto::SHA256_HMAC_DIGEST_SIZE] = {0};
-    Aws::Crt::ByteBuf outputBuf = Aws::Crt::ByteBufFromArray(output, sizeof(output));
-    outputBuf.len = 0;
+    Aws::Crt::ByteBuf outputBuf = Aws::Crt::ByteBufFromEmptyArray(output, sizeof(output));
 
     ASSERT_TRUE(sha256Hmac.Update(input));
     ASSERT_TRUE(sha256Hmac.Digest(outputBuf));

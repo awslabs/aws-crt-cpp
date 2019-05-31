@@ -35,6 +35,7 @@ namespace Aws
             g_allocator = allocator;
             Io::InitTlsStaticState(allocator);
             aws_http_library_init(allocator);
+            aws_mqtt_library_init(allocator);
 
             cJSON_Hooks hooks;
             hooks.malloc_fn = s_cJSONAlloc;
@@ -45,6 +46,7 @@ namespace Aws
         static void s_cleanUpApi()
         {
             g_allocator = nullptr;
+            aws_mqtt_library_clean_up();
             aws_http_library_clean_up();
             Io::CleanUpTlsStaticState();
         }
@@ -59,7 +61,6 @@ namespace Aws
         {
             aws_load_error_strings();
             aws_io_load_error_strings();
-            aws_mqtt_load_error_strings();
         }
 
         const char *ErrorDebugString(int error) noexcept { return aws_error_debug_str(error); }

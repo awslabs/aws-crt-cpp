@@ -30,8 +30,7 @@ static int s_TestSHA256ResourceSafety(struct aws_allocator *allocator, void *)
     Aws::Crt::ByteBuf expectedBuf = Aws::Crt::ByteBufFromArray(expected, sizeof(expected));
 
     uint8_t output[Aws::Crt::Crypto::SHA256_DIGEST_SIZE] = {0};
-    Aws::Crt::ByteBuf outputBuf = Aws::Crt::ByteBufFromArray(output, sizeof(output));
-    outputBuf.len = 0;
+    Aws::Crt::ByteBuf outputBuf = Aws::Crt::ByteBufFromEmptyArray(output, sizeof(output));
 
     ASSERT_TRUE(sha256.Update(input));
     ASSERT_TRUE(sha256.Digest(outputBuf));
@@ -72,8 +71,7 @@ static int s_TestMD5ResourceSafety(struct aws_allocator *allocator, void *)
     Aws::Crt::ByteBuf expectedBuf = Aws::Crt::ByteBufFromArray(expected, sizeof(expected));
 
     uint8_t output[Aws::Crt::Crypto::MD5_DIGEST_SIZE] = {0};
-    Aws::Crt::ByteBuf outputBuf = Aws::Crt::ByteBufFromArray(output, sizeof(output));
-    outputBuf.len = 0;
+    Aws::Crt::ByteBuf outputBuf = Aws::Crt::ByteBufFromEmptyArray(output, sizeof(output));
 
     ASSERT_TRUE(md5.Update(input));
     ASSERT_TRUE(md5.Digest(outputBuf));
