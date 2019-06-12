@@ -155,6 +155,11 @@ namespace Aws
             JsonObject &AsArray(Vector<JsonObject> &&array);
 
             /**
+             * Sets the current JSON node as null.
+             */
+            JsonObject &AsNull();
+
+            /**
              * Adds a JSON object to the top level of this node at key.
              * The object parameter is deep-copied.
              */
