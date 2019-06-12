@@ -281,6 +281,12 @@ namespace Aws
             return *this;
         }
 
+        JsonObject &JsonObject::AsNull()
+        {
+            m_value = cJSON_CreateNull();
+            return *this;
+        }
+
         JsonObject &JsonObject::WithObject(const char *key, const JsonObject &value)
         {
             if (m_value == nullptr)
