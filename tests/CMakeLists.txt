@@ -26,6 +26,9 @@ add_test_case(HttpClientConnectionManagerResourceSafety)
 add_test_case(HttpClientConnectionWithPendingAcquisitions)
 add_test_case(HttpClientConnectionWithPendingAcquisitionsAndClosedConnections)
 add_test_case(DefaultResolution)
+add_test_case(OptionalCopySafety)
+add_test_case(OptionalMoveSafety)
+add_test_case(OptionalCopyAndMoveSemantics)
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 

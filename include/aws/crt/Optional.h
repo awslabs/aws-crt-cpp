@@ -73,6 +73,10 @@ namespace Aws
                     new (&m_storage) T(*other.m_value);
                     m_value = reinterpret_cast<T *>(&m_storage);
                 }
+                else
+                {
+                    m_value = nullptr;
+                }
             }
 
             Optional(Optional<T> &&other) noexcept
@@ -82,7 +86,10 @@ namespace Aws
                     new (&m_storage) T(std::forward<T>(*other.m_value));
                     m_value = reinterpret_cast<T *>(&m_storage);
                 }
-                other.m_value = nullptr;
+                else
+                {
+                    m_value = nullptr;
+                }
             }
 
             Optional &operator=(const Optional &other)
@@ -109,9 +116,8 @@ namespace Aws
 
                 if (other.m_value)
                 {
-                    new (&m_storage) T();
+                    new (&m_storage) T(*other.m_value);
                     m_value = reinterpret_cast<T *>(&m_storage);
-                    *m_value = *other.m_value;
                 }
 
                 return *this;
@@ -141,9 +147,8 @@ namespace Aws
 
                 if (other.m_value)
                 {
-                    new (&m_storage) T();
+                    new (&m_storage) T(*other.m_value);
                     m_value = reinterpret_cast<T *>(&m_storage);
-                    *m_value = *other.m_value;
                 }
 
                 return *this;
@@ -158,18 +163,23 @@ namespace Aws
 
                 if (m_value)
                 {
-                    m_value->~T();
+                    if (other.m_value)
+                    {
+                        *m_value = std::forward(*other.m_value);
+                    }
+                    else
+                    {
+                        m_value->~T();
+                        m_value = nullptr;
+                    }
+
+                    return *this;
                 }
 
                 if (other.m_value)
                 {
                     new (&m_storage) T(std::forward<U>(*other.m_value));
                     m_value = reinterpret_cast<T *>(&m_storage);
-                    other.m_value = nullptr;
-                }
-                else
-                {
-                    m_value = nullptr;
                 }
 
                 return *this;
