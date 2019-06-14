@@ -28,7 +28,7 @@ static int s_OptionalCopySafety(struct aws_allocator *allocator, void *ctx)
     Aws::Crt::Optional<Aws::Crt::String> strCpyConstructedOptional(strCpyAssigned);
     Aws::Crt::Optional<Aws::Crt::String> strCpyConstructedValue(*strCpyAssigned);
 
-    // now force data access just to check there's a not segfault hiding somewhere.
+    // now force data access just to check there's not a segfault hiding somewhere.
     ASSERT_STR_EQUALS(s_test_str, str1->c_str());
     ASSERT_STR_EQUALS(s_test_str, strCpyAssigned->c_str());
     ASSERT_STR_EQUALS(s_test_str, strCpyConstructedOptional->c_str());
