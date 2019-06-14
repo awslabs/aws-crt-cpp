@@ -50,7 +50,7 @@ namespace Aws
         {
         }
 
-        JsonObject::JsonObject(JsonObject &&value)
+        JsonObject::JsonObject(JsonObject &&value) noexcept
             : m_value(value.m_value), m_wasParseSuccessful(value.m_wasParseSuccessful),
               m_errorMessage(std::move(value.m_errorMessage))
         {
@@ -75,7 +75,7 @@ namespace Aws
             return *this;
         }
 
-        JsonObject &JsonObject::operator=(JsonObject &&other)
+        JsonObject &JsonObject::operator=(JsonObject &&other) noexcept
         {
             if (this == &other)
             {

@@ -103,6 +103,7 @@ static int s_JsonExplicitNullTest(struct aws_allocator *allocator, void *ctx)
     Aws::Crt::JsonObject doc;
     Aws::Crt::JsonObject nullObject;
     nullObject.AsNull();
+
     doc.WithObject("testKey", nullObject);
 
     auto str = doc.View().WriteCompact(true);

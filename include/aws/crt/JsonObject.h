@@ -50,7 +50,7 @@ namespace Aws
              * Moves the ownership of the internal JSON DOM.
              * No copying is performed.
              */
-            JsonObject(JsonObject &&value);
+            JsonObject(JsonObject &&value) noexcept;
 
             ~JsonObject();
 
@@ -66,7 +66,7 @@ namespace Aws
              * @warning This will result in invalidating any outstanding views of the current DOM. However, views
              * to the moved-from DOM would still valid.
              */
-            JsonObject &operator=(JsonObject &&other);
+            JsonObject &operator=(JsonObject &&other) noexcept;
 
             bool operator==(const JsonObject &other) const;
             bool operator!=(const JsonObject &other) const;

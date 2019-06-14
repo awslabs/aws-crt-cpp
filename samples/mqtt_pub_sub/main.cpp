@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
             conditionVariable.notify_one();
         };
 
-        connection->Subscribe(topic.c_str(), AWS_MQTT_QOS_AT_MOST_ONCE, onPublish, onSubAck);
+        connection->Subscribe(topic.c_str(), AWS_MQTT_QOS_AT_LEAST_ONCE, onPublish, onSubAck);
         conditionVariable.wait(uniqueLock);
 
         while (true)
@@ -286,7 +286,7 @@ int main(int argc, char *argv[])
                     fprintf(stdout, "Operation failed with error %s\n", aws_error_debug_str(errorCode));
                 }
             };
-            connection->Publish(topic.c_str(), AWS_MQTT_QOS_AT_MOST_ONCE, false, payload, onPublishComplete);
+            connection->Publish(topic.c_str(), AWS_MQTT_QOS_AT_LEAST_ONCE, false, payload, onPublishComplete);
         }
 
         /*
