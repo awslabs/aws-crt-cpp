@@ -123,9 +123,9 @@ int main(int argc, char *argv[])
     }
 
     auto clientConfig = Aws::Iot::MqttClientConnectionConfigBuilder(certificatePath.c_str(), keyPath.c_str())
-            .WithEndpoint(endpoint)
-            .WithCertificateAuthority(caFile.c_str())
-            .Build();
+                            .WithEndpoint(endpoint)
+                            .WithCertificateAuthority(caFile.c_str())
+                            .Build();
 
     if (!clientConfig)
     {
@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
     /*
      * Invoked when a disconnect message has completed.
      */
-    auto onDisconnect = [&](Mqtt::MqttConnection &conn) {
+    auto onDisconnect = [&](Mqtt::MqttConnection &) {
         {
             fprintf(stdout, "Disconnect completed\n");
             std::lock_guard<std::mutex> lockGuard(mutex);
