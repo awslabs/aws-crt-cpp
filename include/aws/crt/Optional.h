@@ -165,7 +165,7 @@ namespace Aws
                 {
                     if (other.m_value)
                     {
-                        *m_value = std::forward(*other.m_value);
+                        *m_value = std::forward<U>(*other.m_value);
                     }
                     else
                     {
