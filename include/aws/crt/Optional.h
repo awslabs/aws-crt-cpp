@@ -79,7 +79,7 @@ namespace Aws
                 }
             }
 
-            Optional(Optional<T> &&other) noexcept
+            Optional(Optional<T> &&other)
             {
                 if (other.m_value)
                 {
