@@ -15,6 +15,7 @@
 #include <aws/crt/http/HttpConnectionManager.h>
 
 #include <algorithm>
+#include <aws/http/connection_manager.h>
 
 namespace Aws
 {
@@ -22,6 +23,13 @@ namespace Aws
     {
         namespace Http
         {
+            struct ConnectionManagerCallbackArgs
+            {
+                ConnectionManagerCallbackArgs() = default;
+                OnClientConnectionAvailable m_onClientConnectionAvailable;
+                std::shared_ptr<HttpClientConnectionManager> m_connectionManager;
+            };
+
             HttpClientConnectionManagerOptions::HttpClientConnectionManagerOptions()
                 : bootstrap(nullptr), initialWindowSize(SIZE_MAX), port(0), maxConnections(2)
             {
@@ -48,17 +56,10 @@ namespace Aws
             HttpClientConnectionManager::HttpClientConnectionManager(
                 const HttpClientConnectionManagerOptions &connectionManagerOptions,
                 Allocator *allocator) noexcept
-                : m_allocator(allocator), m_good(true), m_lastError(AWS_ERROR_SUCCESS),
-                  m_outstandingVendedConnections(0), m_pendingConnections(0)
+                : m_connectionManager(nullptr), m_allocator(allocator), m_good(true), m_lastError(AWS_ERROR_SUCCESS)
             {
-                m_initialWindowSize = connectionManagerOptions.initialWindowSize;
                 m_bootstrap = connectionManagerOptions.bootstrap;
                 AWS_ASSERT(connectionManagerOptions.hostName.ptr && connectionManagerOptions.hostName.len);
-                m_hostName =
-                    String((const char *)connectionManagerOptions.hostName.ptr, connectionManagerOptions.hostName.len);
-                m_maxSize = connectionManagerOptions.maxConnections;
-                m_port = connectionManagerOptions.port;
-                m_socketOptions = *connectionManagerOptions.socketOptions;
 
                 if (connectionManagerOptions.tlsConnectionOptions)
                 {
@@ -70,280 +71,114 @@ namespace Aws
                         m_good = false;
                     }
                 }
+
+                aws_http_connection_manager_options managerOptions;
+                AWS_ZERO_STRUCT(managerOptions);
+                managerOptions.bootstrap = m_bootstrap->GetUnderlyingHandle();
+                managerOptions.port = connectionManagerOptions.port;
+                managerOptions.max_connections = connectionManagerOptions.maxConnections;
+                managerOptions.socket_options = connectionManagerOptions.socketOptions;
+                managerOptions.initial_window_size = connectionManagerOptions.initialWindowSize;
+
+                if (m_tlsConnOptions)
+                {
+                    managerOptions.tls_connection_options =
+                        const_cast<aws_tls_connection_options *>(m_tlsConnOptions.GetUnderlyingHandle());
+                }
+                managerOptions.host = connectionManagerOptions.hostName;
+
+                m_connectionManager = aws_http_connection_manager_new(allocator, &managerOptions);
+
+                if (!m_connectionManager)
+                {
+                    m_lastError = aws_last_error();
+                    m_good = false;
+                }
             }
 
             HttpClientConnectionManager::~HttpClientConnectionManager()
             {
-                Vector<std::shared_ptr<HttpClientConnection>> connectionsCopy = m_connections;
-                /* make sure all connections we know about are closed. */
-                for (auto &connection : connectionsCopy)
+                if (m_connectionManager)
                 {
-                    connection->Close();
-                }
-
-                /*
-                 * This would be really screwy if this ever happened. I don't even know what error to report, but in
-                 * case someone is waiting for a connection, AT LEAST let them know so they can not deadlock.
-                 */
-                for (auto &pendingConnectionRequest : m_pendingConnectionRequests)
-                {
-                    pendingConnectionRequest(nullptr, AWS_OP_ERR);
+                    aws_http_connection_manager_release(m_connectionManager);
+                    m_connectionManager = nullptr;
                 }
             }
 
-            /* Asssumption: Whoever calls this already holds the lock. */
-            bool HttpClientConnectionManager::createConnection() noexcept
-            {
-                if (m_connections.size() + m_outstandingVendedConnections + m_pendingConnections < m_maxSize)
-                {
-                    HttpClientConnectionOptions connectionOptions;
-                    connectionOptions.socketOptions = &m_socketOptions;
-                    connectionOptions.port = m_port;
-                    connectionOptions.hostName = ByteCursorFromCString(m_hostName.c_str());
-                    connectionOptions.bootstrap = m_bootstrap;
-                    connectionOptions.initialWindowSize = m_initialWindowSize;
-                    connectionOptions.allocator = m_allocator;
-
-                    std::weak_ptr<HttpClientConnectionManager> weakRef(shared_from_this());
-
-                    connectionOptions.onConnectionSetup =
-                        [weakRef](const std::shared_ptr<HttpClientConnection> &connection, int errorCode) {
-                            if (auto connManager = weakRef.lock())
-                            {
-                                connManager->onConnectionSetup(connection, errorCode);
-                            }
-                        };
-                    connectionOptions.onConnectionShutdown =
-                        [weakRef](HttpClientConnection &connection, int errorCode) {
-                            if (auto connManager = weakRef.lock())
-                            {
-                                connManager->onConnectionShutdown(connection, errorCode);
-                            }
-                        };
-
-                    if (m_tlsConnOptions)
-                    {
-                        connectionOptions.tlsConnOptions = &m_tlsConnOptions;
-                    }
-
-                    if (HttpClientConnection::CreateConnection(connectionOptions))
-                    {
-                        ++m_pendingConnections;
-                        return true;
-                    }
-                    return false;
-                }
-
-                return true;
-            }
-
-            /* User wants to acquire a connection from the pool, there's a few cases:
-             *
-             * 1.) We already have a free connection, so return it to the user immediately. We don't care about the
-             *      queued connection requests, since it is impossible for there to be a pending connection acquisition
-             *      AND a free connection.
-             *
-             * 2.) We don't have a free connection AND we have not exceeded the pool size limits. Queue the request and
-             * wait for the connection setup callback to fire. That callback will invoke the pending request.
-             *
-             * 3.) We don't have a free connection AND the pool size has been reached. Queue the request, a connection
-             * release will pop the queue and invoke the user's callback with a connection.
-             */
             bool HttpClientConnectionManager::AcquireConnection(
                 const OnClientConnectionAvailable &onClientConnectionAvailable) noexcept
             {
-                OnClientConnectionAvailable userCallback;
-                std::shared_ptr<HttpClientConnection> connection(nullptr);
-                int callbackError = AWS_ERROR_SUCCESS;
-                bool retVal = true;
 
+                auto connectionManagerCallbackArgs = Aws::Crt::New<ConnectionManagerCallbackArgs>(m_allocator);
+
+                if (!connectionManagerCallbackArgs)
                 {
-                    std::lock_guard<std::mutex> connectionsLock(m_connectionsLock);
-
-                    /* Case 1 */
-                    if (!m_connections.empty())
-                    {
-                        connection = m_connections.back();
-                        m_connections.pop_back();
-                        ++m_outstandingVendedConnections;
-                        userCallback = onClientConnectionAvailable;
-                        callbackError = AWS_ERROR_SUCCESS;
-                        retVal = true;
-                    }
-                    else
-                    {
-                        /* case 2 or 3, we don't know yet. */
-                        m_pendingConnectionRequests.push_back(onClientConnectionAvailable);
-
-                        /* if we have available space, case 2, otherwise case 3 */
-                        if (!createConnection())
-                        {
-                            /* case 2 and the connection creation failed, pop back, because in this rare case, we want
-                             * to just tell the caller that our entire attempt at this failed. */
-                            m_pendingConnectionRequests.pop_back();
-                            m_lastError = aws_last_error();
-                            userCallback = onClientConnectionAvailable;
-                            callbackError = m_lastError;
-                            retVal = false;
-                        }
-                    }
+                    m_lastError = aws_last_error();
+                    return false;
                 }
 
-                if (userCallback)
-                {
-                    userCallback(connection, callbackError);
-                }
+                connectionManagerCallbackArgs->m_connectionManager = shared_from_this();
+                connectionManagerCallbackArgs->m_onClientConnectionAvailable = onClientConnectionAvailable;
 
-                return retVal;
+                aws_http_connection_manager_acquire_connection(
+                    m_connectionManager, s_onConnectionSetup, connectionManagerCallbackArgs);
+                return true;
             }
 
-            /*
-             * User is finished with a connection and wants to return it to the pool.
-             *
-             * Case 1, The connection is actually dead and can't be returned to the pool.
-             *      Case 1.1 We don't have any pending connection acquisition requests so just let it hit the floor, it
-             * will get created in the next Acquire call. Case 1.2 We have pending connection acquisition requests, so
-             * create a new connection to replace it, let the callback's fire to notify the user and grow the pool as
-             * normal.
-             *
-             * Case 2, the connection is still good.
-             *      Case 2.1 We have pending acquisitions. Just give it to the top of the queue.
-             *      Case 2.2 We don't have pending acquisitions, push it to the pool.
-             */
-            void HttpClientConnectionManager::poolOrVendConnection(
-                std::shared_ptr<HttpClientConnection> connection,
-                bool isRelease) noexcept
+            class ManagedConnection final : public HttpClientConnection
             {
-                OnClientConnectionAvailable userCallback;
-                int callbackError = AWS_ERROR_SUCCESS;
-                std::shared_ptr<HttpClientConnection> vendedConnection(nullptr);
-                bool poolOrVend = true;
-
+              public:
+                ManagedConnection(
+                    aws_http_connection *connection,
+                    std::shared_ptr<HttpClientConnectionManager> connectionManager)
+                    : HttpClientConnection(connection, connectionManager->m_allocator),
+                      m_connectionManager(std::move(connectionManager))
                 {
-                    std::lock_guard<std::mutex> connectionsLock(m_connectionsLock);
+                }
 
-                    if (isRelease)
+                ~ManagedConnection() override
+                {
+                    if (m_connection)
                     {
-                        --m_outstandingVendedConnections;
-                    }
-                    else
-                    {
-                        --m_pendingConnections;
-                    }
-
-                    /* Case 1 */
-                    if (!connection->IsOpen())
-                    {
-                        poolOrVend = false;
-                        /* Case 1.2 */
-                        if (!m_pendingConnectionRequests.empty())
-                        {
-                            /* if connection fails, tell the front of the pendingConnectionRequests queue
-                             * that their connection failed so they can retry. */
-                            if (!createConnection())
-                            {
-                                userCallback = m_pendingConnectionRequests.front();
-                                m_pendingConnectionRequests.pop_front();
-                                m_lastError = aws_last_error();
-                                callbackError = m_lastError;
-                            }
-                        }
-                        connection = nullptr;
-                        /* Case 1.1 */
-                    }
-
-                    /* Case 2.1*/
-                    if (poolOrVend && !m_pendingConnectionRequests.empty())
-                    {
-                        userCallback = m_pendingConnectionRequests.front();
-                        m_pendingConnectionRequests.pop_front();
-                        ++m_outstandingVendedConnections;
-                        callbackError = AWS_ERROR_SUCCESS;
-                        vendedConnection = std::move(connection);
-                    }
-                    else if (poolOrVend)
-                    {
-                        /* Case 2.2 */
-                        m_connections.push_back(std::move(connection));
+                        aws_http_connection_manager_release_connection(
+                            m_connectionManager->m_connectionManager, m_connection);
+                        m_connection = nullptr;
                     }
                 }
 
-                if (userCallback)
-                {
-                    userCallback(vendedConnection, callbackError);
-                }
-            }
+              private:
+                std::shared_ptr<HttpClientConnectionManager> m_connectionManager;
+            };
 
-            void HttpClientConnectionManager::ReleaseConnection(
-                std::shared_ptr<HttpClientConnection> connection) noexcept
+            void HttpClientConnectionManager::s_onConnectionSetup(
+                aws_http_connection *connection,
+                int errorCode,
+                void *userData) noexcept
             {
-                poolOrVendConnection(std::move(connection), true);
-            }
+                auto callbackArgs = static_cast<ConnectionManagerCallbackArgs *>(userData);
+                auto manager = std::move(callbackArgs->m_connectionManager);
+                auto callback = std::move(callbackArgs->m_onClientConnectionAvailable);
 
-            void HttpClientConnectionManager::onConnectionSetup(
-                const std::shared_ptr<HttpClientConnection> &connection,
-                int errorCode) noexcept
-            {
-                if (!errorCode && connection)
+                Delete(callbackArgs, manager->m_allocator);
+
+                if (errorCode)
                 {
-                    poolOrVendConnection(connection, false);
+                    callback(nullptr, errorCode);
                     return;
                 }
 
-                /* this only gets hit if the connection setup failed. */
-                Vector<std::pair<OnClientConnectionAvailable, int>> userCallbackNewConnectionFailures;
-                {
-                    std::lock_guard<std::mutex> connectionsLock(m_connectionsLock);
-                    --m_pendingConnections;
-                    if (!m_pendingConnectionRequests.empty())
-                    {
-                        userCallbackNewConnectionFailures.push_back(std::pair<OnClientConnectionAvailable, int>(
-                            m_pendingConnectionRequests.front(), errorCode));
-                        m_pendingConnectionRequests.pop_front();
-                    }
+                auto connectionObj = std::allocate_shared<ManagedConnection>(
+                    Aws::Crt::StlAllocator<ManagedConnection>(), connection, manager);
 
-                    /* if we had more pending connection requests than the pool size, we need to replace this
-                       connection. Just loop until we've matched either the connectionRequest to the max amount of
-                       connections in flight, or when run out of pending connection requests. */
-                    while (m_pendingConnectionRequests.size() > m_pendingConnections &&
-                           m_connections.size() + m_pendingConnections + m_outstandingVendedConnections < m_maxSize)
-                    {
-                        if (!createConnection())
-                        {
-                            userCallbackNewConnectionFailures.push_back(std::pair<OnClientConnectionAvailable, int>(
-                                m_pendingConnectionRequests.front(), aws_last_error()));
-                            m_pendingConnectionRequests.pop_front();
-                            m_lastError = aws_last_error();
-                        }
-                    }
+                if (!connectionObj)
+                {
+                    callback(nullptr, AWS_ERROR_OOM);
+                    return;
                 }
 
-                for (auto &failures : userCallbackNewConnectionFailures)
-                {
-                    failures.first(nullptr, failures.second);
-                }
-
-                userCallbackNewConnectionFailures.clear();
+                callback(connectionObj, AWS_OP_SUCCESS);
             }
 
-            void HttpClientConnectionManager::onConnectionShutdown(HttpClientConnection &connection, int) noexcept
-            {
-                {
-                    std::lock_guard<std::mutex> connectionsLock(m_connectionsLock);
-                    if (!m_connections.empty())
-                    {
-                        auto toRemove = std::remove_if(
-                            m_connections.begin(), m_connections.end(), [&](std::shared_ptr<HttpClientConnection> val) {
-                                return val.get() == &connection;
-                            });
-
-                        if (toRemove != m_connections.end())
-                        {
-                            m_connections.erase(toRemove);
-                        }
-                    }
-                }
-            }
         } // namespace Http
     }     // namespace Crt
 } // namespace Aws

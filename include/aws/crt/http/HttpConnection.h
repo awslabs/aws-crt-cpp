@@ -303,10 +303,10 @@ namespace Aws
             /**
              * Represents a connection from a Http Client to a Server.
              */
-            class AWS_CRT_CPP_API HttpClientConnection final : public std::enable_shared_from_this<HttpClientConnection>
+            class AWS_CRT_CPP_API HttpClientConnection : public std::enable_shared_from_this<HttpClientConnection>
             {
               public:
-                ~HttpClientConnection();
+                virtual ~HttpClientConnection() = default;
                 HttpClientConnection(const HttpClientConnection &) = delete;
                 HttpClientConnection(HttpClientConnection &&) = delete;
                 HttpClientConnection &operator=(const HttpClientConnection &) = delete;
@@ -350,9 +350,11 @@ namespace Aws
                  */
                 static bool CreateConnection(const HttpClientConnectionOptions &connectionOptions) noexcept;
 
-              private:
+              protected:
                 HttpClientConnection(aws_http_connection *m_connection, Allocator *allocator) noexcept;
                 aws_http_connection *m_connection;
+
+              private:
                 Allocator *m_allocator;
                 int m_lastError;
 
