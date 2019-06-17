@@ -113,7 +113,7 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
     connections.clear();
     for (auto &connection : connectionsCpy)
     {
-        connectionManager->ReleaseConnection(connection);
+        connection.reset();
     }
 
     {
@@ -217,7 +217,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
 
     for (auto &connection : connectionsCpy)
     {
-        connectionManager->ReleaseConnection(connection);
+        connection.reset();
     }
     {
         std::lock_guard<std::mutex> lockGuard(semaphoreLock);
@@ -230,7 +230,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
 
     for (auto &connection : connectionsCpy)
     {
-        connectionManager->ReleaseConnection(connection);
+        connection.reset();
     }
 
     {
@@ -339,7 +339,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
         {
             connection->Close();
         }
-        connectionManager->ReleaseConnection(connection);
+        connection.reset();
     }
     std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
     semaphore.wait(uniqueLock, [&]() { return (connectionCount + connectionsFailed == totalExpectedConnections); });
@@ -348,7 +348,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
     ASSERT_FALSE(connections.empty());
     for (auto &connection : connections)
     {
-        connectionManager->ReleaseConnection(connection);
+        connectionManager.reset();
     }
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/

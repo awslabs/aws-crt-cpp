@@ -17,6 +17,8 @@
 #include <condition_variable>
 #include <mutex>
 
+struct aws_http_connection_manager;
+
 namespace Aws
 {
     namespace Crt
@@ -26,10 +28,10 @@ namespace Aws
             /**
              * Invoked when a connection from the pool is available. If a connection was successfully obtained
              * the connection shared_ptr can be seated into your own copy of connection. If it failed, errorCode
-             * will be non-zero. It is your responsibility to release the connection when you are finished with it.
+             * will be non-zero.
              */
             using OnClientConnectionAvailable =
-                std::function<void(std::shared_ptr<HttpClientConnection> connection, int errorCode)>;
+                std::function<void(std::shared_ptr<HttpClientConnection>, int errorCode)>;
 
             struct HttpClientConnectionManagerOptions
             {
@@ -54,16 +56,10 @@ namespace Aws
                 /**
                  * Acquires a connection from the pool. onClientConnectionAvailable will be invoked upon an available
                  * connection. Returns true if the connection request was successfully pooled, returns false if it
-                 * failed. On failure, onClientConnectionAvailable will not be invoked. After receiving a connection,
-                 * you must invoke ReleaseConnection().
+                 * failed. On failure, onClientConnectionAvailable will not be invoked. After receiving a connection, it
+                 * will automatically be cleaned up when your last reference to the shared_ptr is released.
                  */
                 bool AcquireConnection(const OnClientConnectionAvailable &onClientConnectionAvailable) noexcept;
-
-                /**
-                 * Releases a connection back to the pool. This will cause queued consumers to be serviced, or the
-                 * connection will be pooled waiting on another call to AcquireConnection
-                 */
-                void ReleaseConnection(std::shared_ptr<HttpClientConnection> connection) noexcept;
 
                 int LastError() const noexcept { return m_lastError; }
                 explicit operator bool() const noexcept { return m_good; }
@@ -77,26 +73,20 @@ namespace Aws
                     const HttpClientConnectionManagerOptions &connectionManagerOptions,
                     Allocator *allocator = DefaultAllocator()) noexcept;
 
-                Vector<std::shared_ptr<HttpClientConnection>> m_connections;
-                List<OnClientConnectionAvailable> m_pendingConnectionRequests;
+                aws_http_connection_manager *m_connectionManager;
+
                 Allocator *m_allocator;
                 Io::ClientBootstrap *m_bootstrap;
-                size_t m_initialWindowSize;
-                Io::SocketOptions m_socketOptions;
                 Io::TlsConnectionOptions m_tlsConnOptions;
-                String m_hostName;
-                uint16_t m_port;
                 bool m_good;
                 int m_lastError;
-                size_t m_maxSize;
-                size_t m_outstandingVendedConnections;
-                size_t m_pendingConnections;
-                std::mutex m_connectionsLock;
 
-                void onConnectionSetup(const std::shared_ptr<HttpClientConnection> &connection, int errorCode) noexcept;
-                void onConnectionShutdown(HttpClientConnection &connection, int errorCode) noexcept;
-                bool createConnection() noexcept;
-                void poolOrVendConnection(std::shared_ptr<HttpClientConnection> connection, bool isRelease) noexcept;
+                static void s_onConnectionSetup(
+                    aws_http_connection *connection,
+                    int errorCode,
+                    void *userData) noexcept;
+
+                friend class ManagedConnection;
             };
         } // namespace Http
     }     // namespace Crt
