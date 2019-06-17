@@ -39,15 +39,15 @@ namespace Aws
                 OnConnectionShutdown onConnectionShutdown;
             };
 
-            class UnManagedConnection final : public HttpClientConnection
+            class UnmanagedConnection final : public HttpClientConnection
             {
               public:
-                UnManagedConnection(aws_http_connection *connection, Aws::Crt::Allocator *allocator)
+                UnmanagedConnection(aws_http_connection *connection, Aws::Crt::Allocator *allocator)
                     : HttpClientConnection(connection, allocator)
                 {
                 }
 
-                ~UnManagedConnection() override
+                ~UnmanagedConnection() override
                 {
                     if (m_connection)
                     {
@@ -68,8 +68,8 @@ namespace Aws
                 auto *callbackData = static_cast<ConnectionCallbackData *>(user_data);
                 if (!errorCode)
                 {
-                    auto connectionObj = std::allocate_shared<UnManagedConnection>(
-                        Aws::Crt::StlAllocator<UnManagedConnection>(), connection, callbackData->allocator);
+                    auto connectionObj = std::allocate_shared<UnmanagedConnection>(
+                        Aws::Crt::StlAllocator<UnmanagedConnection>(), connection, callbackData->allocator);
 
                     if (connectionObj)
                     {

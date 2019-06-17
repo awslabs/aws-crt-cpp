@@ -111,10 +111,9 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
     ASSERT_TRUE(connectionCount > 0);
     Vector<std::shared_ptr<Http::HttpClientConnection>> connectionsCpy = connections;
     connections.clear();
-    for (auto &connection : connectionsCpy)
-    {
-        connection.reset();
-    }
+
+    /* this will trigger a mutation to connections, hence the copy. */
+    connectionsCpy.clear();
 
     {
         std::lock_guard<std::mutex> lockGuard(semaphoreLock);
@@ -215,29 +214,21 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     Vector<std::shared_ptr<Http::HttpClientConnection>> connectionsCpy = connections;
     connections.clear();
 
-    for (auto &connection : connectionsCpy)
-    {
-        connection.reset();
-    }
+    connectionsCpy.clear();
     {
         std::lock_guard<std::mutex> lockGuard(semaphoreLock);
         /* release should have given us more connections. */
         ASSERT_FALSE(connections.empty());
-        connectionsCpy.clear();
         connectionsCpy = connections;
         connections.clear();
     }
 
-    for (auto &connection : connectionsCpy)
-    {
-        connection.reset();
-    }
+    connectionsCpy.clear();
 
     {
         std::lock_guard<std::mutex> lockGuard(semaphoreLock);
         connections.clear();
     }
-    connectionsCpy.clear();
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/
     return AWS_OP_SUCCESS;
@@ -346,10 +337,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
 
     /* release should have given us more connections. */
     ASSERT_FALSE(connections.empty());
-    for (auto &connection : connections)
-    {
-        connectionManager.reset();
-    }
+    connections.clear();
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/
     return AWS_OP_SUCCESS;
