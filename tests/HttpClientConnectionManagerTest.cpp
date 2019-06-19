@@ -187,12 +187,10 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
 
             if (!errorCode)
             {
-                fprintf(stderr, "success \n");
                 connections.push_back(newConnection);
             }
             else
             {
-                fprintf(stderr, "failed \n");
                 connectionsFailed++;
             }
         }
