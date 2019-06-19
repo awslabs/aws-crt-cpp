@@ -49,7 +49,7 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
     AWS_ZERO_STRUCT(socketOptions);
     socketOptions.type = AWS_SOCKET_STREAM;
     socketOptions.domain = AWS_SOCKET_IPV4;
-    socketOptions.connect_timeout_ms = 1000;
+    socketOptions.connect_timeout_ms = 10000;
 
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
@@ -111,10 +111,9 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
     ASSERT_TRUE(connectionCount > 0);
     Vector<std::shared_ptr<Http::HttpClientConnection>> connectionsCpy = connections;
     connections.clear();
-    for (auto &connection : connectionsCpy)
-    {
-        connectionManager->ReleaseConnection(connection);
-    }
+
+    /* this will trigger a mutation to connections, hence the copy. */
+    connectionsCpy.clear();
 
     {
         std::lock_guard<std::mutex> lockGuard(semaphoreLock);
@@ -151,7 +150,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     AWS_ZERO_STRUCT(socketOptions);
     socketOptions.type = AWS_SOCKET_STREAM;
     socketOptions.domain = AWS_SOCKET_IPV4;
-    socketOptions.connect_timeout_ms = 1000;
+    socketOptions.connect_timeout_ms = 10000;
 
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
@@ -215,29 +214,21 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     Vector<std::shared_ptr<Http::HttpClientConnection>> connectionsCpy = connections;
     connections.clear();
 
-    for (auto &connection : connectionsCpy)
-    {
-        connectionManager->ReleaseConnection(connection);
-    }
+    connectionsCpy.clear();
     {
         std::lock_guard<std::mutex> lockGuard(semaphoreLock);
         /* release should have given us more connections. */
         ASSERT_FALSE(connections.empty());
-        connectionsCpy.clear();
         connectionsCpy = connections;
         connections.clear();
     }
 
-    for (auto &connection : connectionsCpy)
-    {
-        connectionManager->ReleaseConnection(connection);
-    }
+    connectionsCpy.clear();
 
     {
         std::lock_guard<std::mutex> lockGuard(semaphoreLock);
         connections.clear();
     }
-    connectionsCpy.clear();
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/
     return AWS_OP_SUCCESS;
@@ -260,7 +251,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
     AWS_ZERO_STRUCT(socketOptions);
     socketOptions.type = AWS_SOCKET_STREAM;
     socketOptions.domain = AWS_SOCKET_IPV4;
-    socketOptions.connect_timeout_ms = 1000;
+    socketOptions.connect_timeout_ms = 10000;
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
 
@@ -339,17 +330,14 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
         {
             connection->Close();
         }
-        connectionManager->ReleaseConnection(connection);
+        connection.reset();
     }
     std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
     semaphore.wait(uniqueLock, [&]() { return (connectionCount + connectionsFailed == totalExpectedConnections); });
 
     /* release should have given us more connections. */
     ASSERT_FALSE(connections.empty());
-    for (auto &connection : connections)
-    {
-        connectionManager->ReleaseConnection(connection);
-    }
+    connections.clear();
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/
     return AWS_OP_SUCCESS;

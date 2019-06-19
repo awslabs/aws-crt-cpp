@@ -39,6 +39,24 @@ namespace Aws
                 OnConnectionShutdown onConnectionShutdown;
             };
 
+            class UnmanagedConnection final : public HttpClientConnection
+            {
+              public:
+                UnmanagedConnection(aws_http_connection *connection, Aws::Crt::Allocator *allocator)
+                    : HttpClientConnection(connection, allocator)
+                {
+                }
+
+                ~UnmanagedConnection() override
+                {
+                    if (m_connection)
+                    {
+                        aws_http_connection_release(m_connection);
+                        m_connection = nullptr;
+                    }
+                }
+            };
+
             void HttpClientConnection::s_onClientConnectionSetup(
                 struct aws_http_connection *connection,
                 int errorCode,
@@ -50,28 +68,18 @@ namespace Aws
                 auto *callbackData = static_cast<ConnectionCallbackData *>(user_data);
                 if (!errorCode)
                 {
-                    Allocator *allocator = callbackData->allocator;
+                    auto connectionObj = std::allocate_shared<UnmanagedConnection>(
+                        Aws::Crt::StlAllocator<UnmanagedConnection>(), connection, callbackData->allocator);
 
-                    /* Why aren't we using New...? Because the constructor is private and the C++ type system
-                     * isn't the boss of me. */
-                    auto *toSeat =
-                        static_cast<HttpClientConnection *>(aws_mem_acquire(allocator, sizeof(HttpClientConnection)));
-                    if (toSeat)
+                    if (connectionObj)
                     {
-                        toSeat = new (toSeat) HttpClientConnection(connection, allocator);
-                        auto sharedPtr = std::shared_ptr<HttpClientConnection>(
-                            toSeat, [allocator](HttpClientConnection *connection) { Delete(connection, allocator); });
-
-                        callbackData->connection = sharedPtr;
-
-                        callbackData->onConnectionSetup(std::move(sharedPtr), errorCode);
+                        callbackData->connection = connectionObj;
+                        callbackData->onConnectionSetup(std::move(connectionObj), errorCode);
                         return;
                     }
 
                     aws_http_connection_release(connection);
                     errorCode = aws_last_error();
-                    callbackData->onConnectionSetup(nullptr, errorCode);
-                    return;
                 }
 
                 callbackData->onConnectionSetup(nullptr, errorCode);
@@ -141,16 +149,6 @@ namespace Aws
             HttpClientConnection::HttpClientConnection(aws_http_connection *connection, Allocator *allocator) noexcept
                 : m_connection(connection), m_allocator(allocator), m_lastError(AWS_ERROR_SUCCESS)
             {
-            }
-
-            HttpClientConnection::~HttpClientConnection()
-            {
-                if (m_connection)
-                {
-                    /* TODO: invoke shutdown callback from here if it hasn't fired yet */
-                    aws_http_connection_release(m_connection);
-                    m_connection = nullptr;
-                }
             }
 
             struct ClientStreamCallbackData
