@@ -49,7 +49,7 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
     AWS_ZERO_STRUCT(socketOptions);
     socketOptions.type = AWS_SOCKET_STREAM;
     socketOptions.domain = AWS_SOCKET_IPV4;
-    socketOptions.connect_timeout_ms = 1000;
+    socketOptions.connect_timeout_ms = 10000;
 
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
@@ -150,7 +150,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     AWS_ZERO_STRUCT(socketOptions);
     socketOptions.type = AWS_SOCKET_STREAM;
     socketOptions.domain = AWS_SOCKET_IPV4;
-    socketOptions.connect_timeout_ms = 1000;
+    socketOptions.connect_timeout_ms = 10000;
 
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
@@ -187,10 +187,12 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
 
             if (!errorCode)
             {
+                fprintf(stderr, "success \n");
                 connections.push_back(newConnection);
             }
             else
             {
+                fprintf(stderr, "failed \n");
                 connectionsFailed++;
             }
         }
@@ -251,7 +253,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
     AWS_ZERO_STRUCT(socketOptions);
     socketOptions.type = AWS_SOCKET_STREAM;
     socketOptions.domain = AWS_SOCKET_IPV4;
-    socketOptions.connect_timeout_ms = 1000;
+    socketOptions.connect_timeout_ms = 10000;
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
 
