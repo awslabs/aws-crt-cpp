@@ -17,7 +17,7 @@ set(AWS_DEPS_DOWNLOAD_DIR "${AWS_DEPS_BUILD_DIR}/downloads" CACHE PATH "Dependen
 
 message("install dir ${AWS_DEPS_INSTALL_DIR}")
 set(AWS_C_COMMON_URL "https://github.com/awslabs/aws-c-common.git")
-set(AWS_C_COMMON_SHA "v0.3.14")
+set(AWS_C_COMMON_SHA "v0.3.15")
 include(BuildAwsCCommon)
 
 if (UNIX AND NOT APPLE)
@@ -27,7 +27,7 @@ if (UNIX AND NOT APPLE)
 endif()
 
 set(AWS_C_IO_URL "https://github.com/awslabs/aws-c-io.git")
-set(AWS_C_IO_SHA "v0.3.14")
+set(AWS_C_IO_SHA "v0.3.15")
 include(BuildAwsCIO)
 
 set(AWS_C_COMPRESSION_URL "https://github.com/awslabs/aws-c-compression.git")
