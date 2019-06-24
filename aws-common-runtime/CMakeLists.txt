@@ -39,7 +39,7 @@ set(AWS_C_HTTP_SHA "v0.2.18")
 include(BuildAwsCHttp)
 
 set(AWS_C_MQTT_URL "https://github.com/awslabs/aws-c-mqtt.git")
-set(AWS_C_MQTT_SHA "v0.3.8")
+set(AWS_C_MQTT_SHA "v0.3.9")
 include(BuildAwsCMqtt)
 
 set(AWS_C_CAL_URL "https://github.com/awslabs/aws-c-cal.git")
