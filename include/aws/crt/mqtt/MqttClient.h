@@ -168,11 +168,6 @@ namespace Aws
                     const ByteBuf &payload,
                     OnOperationCompleteHandler &&onOpComplete) noexcept;
 
-                /**
-                 * Sends a ping message.
-                 */
-                void Ping();
-
                 OnConnectionInterruptedHandler OnConnectionInterrupted;
                 OnConnectionResumedHandler OnConnectionResumed;
                 OnConnectionCompletedHandler OnConnectionCompleted;
