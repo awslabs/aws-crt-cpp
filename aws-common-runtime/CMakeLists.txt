@@ -46,10 +46,15 @@ set(AWS_C_CAL_URL "https://github.com/awslabs/aws-c-cal.git")
 set(AWS_C_CAL_SHA "v0.1.5")
 include(BuildAwsCCal)
 
+set(AWS_C_AUTH_URL "https://github.com/awslabs/aws-c-auth.git")
+set(AWS_C_AUTH_SHA "48c7f91467eb399d3252b177bd0070dd7c43cd37")
+include(BuildAwsCAuth)
+
 add_dependencies(AwsCCompression AwsCCommon)
 add_dependencies(AwsCMqtt AwsCIO)
 add_dependencies(AwsCHttp AwsCIO AwsCCompression)
 add_dependencies(AwsCCal AwsCCommon)
+add_dependencies(AwsCAuth AwsCHttp AwsCCal)
 
 if (UNIX AND NOT APPLE)
     add_dependencies(AwsCIO S2N AwsCCommon)

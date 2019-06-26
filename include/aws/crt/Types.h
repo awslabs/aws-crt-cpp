@@ -93,5 +93,14 @@ namespace Aws
             return new (t) T(std::forward<Args>(args)...);
         }
 
+        template <typename T, typename... Args> std::shared_ptr<T> *MakeShared(Allocator *allocator, Args &&... args)
+        {
+            T *t = reinterpret_cast<T *>(aws_mem_acquire(allocator, sizeof(T)));
+            if (!t)
+                return nullptr;
+            return new (t) T(std::forward<Args>(args)...);
+        }
+
+
     } // namespace Crt
 } // namespace Aws
