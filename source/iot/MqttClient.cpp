@@ -20,10 +20,11 @@ namespace Aws
 {
     namespace Iot
     {
+        /*
         MqttClientConnectionConfig::MqttClientConnectionConfig() noexcept : m_port(0)
         {
             AWS_ZERO_STRUCT(m_socketOptions);
-        }
+        }*/
 
         MqttClientConnectionConfig::MqttClientConnectionConfig(
             const Crt::String &endpoint,
@@ -38,7 +39,7 @@ namespace Aws
             const char *certPath,
             const char *pkeyPath,
             Crt::Allocator *allocator) noexcept
-            : m_allocator(allocator), m_portOverride(0)
+            : m_allocator(allocator), m_endpoint(Aws::Crt::StlAllocator<char>(allocator)), m_portOverride(0)
         {
             m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(certPath, pkeyPath, allocator);
             AWS_ZERO_STRUCT(m_socketOptions);
@@ -49,7 +50,7 @@ namespace Aws
             const Crt::ByteCursor &cert,
             const Crt::ByteCursor &pkey,
             Crt::Allocator *allocator) noexcept
-            : m_allocator(allocator), m_portOverride(0)
+            : m_allocator(allocator), m_endpoint(Aws::Crt::StlAllocator<char>(allocator)), m_portOverride(0)
         {
             m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(cert, pkey, allocator);
             AWS_ZERO_STRUCT(m_socketOptions);

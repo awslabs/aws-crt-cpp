@@ -17,6 +17,8 @@
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/io/Bootstrap.h>
 
+#include <aws/mqtt/client.h>
+
 #include <utility>
 
 namespace Aws
@@ -173,7 +175,7 @@ namespace Aws
             };
 
             void MqttConnection::s_onMultiSubAck(
-                aws_mqtt_client_connection *,
+                aws_mqtt_client_connection *connection,
                 uint16_t packetId,
                 const struct aws_array_list *topicSubacks,
                 int errorCode,
@@ -184,7 +186,7 @@ namespace Aws
                 if (callbackData->onSubAck)
                 {
                     size_t length = aws_array_list_length(topicSubacks);
-                    Vector<String> topics(length);
+                    Vector<String> topics(length, StlAllocator<String>(connection->));
                     QOS qos = AWS_MQTT_QOS_AT_MOST_ONCE;
                     for (size_t i = 0; i < length; ++i)
                     {
@@ -215,7 +217,7 @@ namespace Aws
                 const Io::TlsConnectionOptions *tlsConnOptions)
             {
 
-                self->m_hostName = String(hostName);
+                self->m_hostName = String(hostName, StlAllocator<char>(self->m_owningClient->allocator));
                 self->m_port = port;
 
                 if (tlsConnOptions)
@@ -244,7 +246,7 @@ namespace Aws
                 uint16_t port,
                 const Io::SocketOptions &socketOptions,
                 const Io::TlsConnectionOptions &tlsConnOptions) noexcept
-                : m_owningClient(client), m_useTls(true)
+                : m_owningClient(client), m_hostName(StlAllocator<char>(client->allocator)), m_useTls(true)
             {
                 s_connectionInit(this, hostName, port, socketOptions, &tlsConnOptions);
             }
@@ -254,7 +256,7 @@ namespace Aws
                 const char *hostName,
                 uint16_t port,
                 const Io::SocketOptions &socketOptions) noexcept
-                : m_owningClient(client), m_useTls(false)
+                : m_owningClient(client), m_hostName(StlAllocator<char>(client->allocator)), m_useTls(false)
             {
                 s_connectionInit(this, hostName, port, socketOptions, nullptr);
             }

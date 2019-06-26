@@ -24,14 +24,26 @@ namespace Aws
 {
     namespace Crt
     {
-        JsonObject::JsonObject() : m_wasParseSuccessful(true) { m_value = nullptr; }
+        JsonObject::JsonObject(Allocator *a) :
+            m_allocator(a),
+            m_wasParseSuccessful(true),
+            m_errorMessage(StlAllocator<char>(a))
+        {
+            m_value = nullptr;
+        }
 
-        JsonObject::JsonObject(cJSON *value)
-            : m_value(cJSON_Duplicate(value, 1 /* recurse */)), m_wasParseSuccessful(true)
+        JsonObject::JsonObject(cJSON *value, Allocator *a) :
+            m_allocator(a),
+            m_value(cJSON_Duplicate(value, 1 /* recurse */)),
+            m_wasParseSuccessful(true),
+            m_errorMessage(StlAllocator<char>(a))
         {
         }
 
-        JsonObject::JsonObject(const String &value) : m_wasParseSuccessful(true)
+        JsonObject::JsonObject(const String &value, Allocator *a) :
+            m_allocator(a),
+            m_wasParseSuccessful(true),
+            m_errorMessage(StlAllocator<char>(a))
         {
             const char *return_parse_end;
             m_value = cJSON_ParseWithOpts(value.c_str(), value.length(), &return_parse_end);
@@ -44,15 +56,19 @@ namespace Aws
             }
         }
 
-        JsonObject::JsonObject(const JsonObject &value)
-            : m_value(cJSON_Duplicate(value.m_value, 1 /*recurse*/)), m_wasParseSuccessful(value.m_wasParseSuccessful),
-              m_errorMessage(value.m_errorMessage)
+        JsonObject::JsonObject(const JsonObject &value) :
+            m_allocator(value.m_allocator),
+            m_value(cJSON_Duplicate(value.m_value, 1 /*recurse*/)),
+            m_wasParseSuccessful(value.m_wasParseSuccessful),
+            m_errorMessage(value.m_errorMessage)
         {
         }
 
-        JsonObject::JsonObject(JsonObject &&value) noexcept
-            : m_value(value.m_value), m_wasParseSuccessful(value.m_wasParseSuccessful),
-              m_errorMessage(std::move(value.m_errorMessage))
+        JsonObject::JsonObject(JsonObject &&value) noexcept :
+            m_allocator(value.m_allocator),
+            m_value(value.m_value),
+            m_wasParseSuccessful(value.m_wasParseSuccessful),
+            m_errorMessage(std::move(value.m_errorMessage))
         {
             value.m_value = nullptr;
         }
@@ -343,11 +359,20 @@ namespace Aws
 
         JsonView JsonObject::View() const { return *this; }
 
-        JsonView::JsonView() : m_value(nullptr) {}
+        JsonView::JsonView(Allocator *a) :
+            m_allocator(a),
+            m_value(nullptr)
+        {}
 
-        JsonView::JsonView(const JsonObject &val) : m_value(val.m_value) {}
+        JsonView::JsonView(const JsonObject &val) :
+            m_allocator(val.m_allocator),
+            m_value(val.m_value)
+        {}
 
-        JsonView::JsonView(cJSON *val) : m_value(val) {}
+        JsonView::JsonView(cJSON *val, Allocator *a) :
+            m_allocator(a),
+            m_value(val)
+        {}
 
         JsonView &JsonView::operator=(const JsonObject &v)
         {
@@ -368,17 +393,13 @@ namespace Aws
             AWS_ASSERT(m_value);
             auto item = cJSON_GetObjectItemCaseSensitive(m_value, key);
             auto str = cJSON_GetStringValue(item);
-            return str != nullptr ? str : "";
+            return String(str != nullptr ? str : "", StlAllocator<char>(m_allocator));
         }
 
         String JsonView::AsString() const
         {
             const char *str = cJSON_GetStringValue(m_value);
-            if (str == nullptr)
-            {
-                return {};
-            }
-            return str;
+            return String(str != nullptr ? str : "", StlAllocator<char>(m_allocator));
         }
 
         bool JsonView::GetBool(const String &key) const { return GetBool(key.c_str()); }
@@ -454,7 +475,7 @@ namespace Aws
         {
             AWS_ASSERT(m_value);
             /* force a deep copy */
-            return JsonObject(cJSON_GetObjectItemCaseSensitive(m_value, key));
+            return JsonObject(cJSON_GetObjectItemCaseSensitive(m_value, key), m_allocator);
         }
 
         JsonView JsonView::AsObject() const
@@ -470,7 +491,7 @@ namespace Aws
             AWS_ASSERT(m_value);
             auto array = cJSON_GetObjectItemCaseSensitive(m_value, key);
             AWS_ASSERT(cJSON_IsArray(array));
-            Vector<JsonView> returnArray(static_cast<size_t>(cJSON_GetArraySize(array)));
+            Vector<JsonView> returnArray(static_cast<size_t>(cJSON_GetArraySize(array)), StlAllocator<JsonView>(m_allocator));
 
             auto element = array->child;
             for (size_t i = 0; element != nullptr && i < returnArray.size(); ++i, element = element->next)
@@ -484,7 +505,7 @@ namespace Aws
         Vector<JsonView> JsonView::AsArray() const
         {
             AWS_ASSERT(cJSON_IsArray(m_value));
-            Vector<JsonView> returnArray(static_cast<size_t>(cJSON_GetArraySize(m_value)));
+            Vector<JsonView> returnArray(static_cast<size_t>(cJSON_GetArraySize(m_value)), StlAllocator<JsonView>(m_allocator));
 
             auto element = m_value->child;
 
@@ -498,7 +519,8 @@ namespace Aws
 
         Map<String, JsonView> JsonView::GetAllObjects() const
         {
-            Map<String, JsonView> valueMap;
+            StlAllocator<std::pair<const String, JsonView>> allocator(m_allocator);
+            Map<String, JsonView> valueMap(allocator);
             if (m_value == nullptr)
             {
                 return valueMap;
@@ -506,7 +528,7 @@ namespace Aws
 
             for (auto iter = m_value->child; iter != nullptr; iter = iter->next)
             {
-                valueMap.emplace(std::make_pair(String(iter->string), JsonView(iter)));
+                valueMap.emplace(std::make_pair(String(iter->string, allocator), JsonView(iter)));
             }
 
             return valueMap;
@@ -569,38 +591,42 @@ namespace Aws
 
         String JsonView::WriteCompact(bool treatAsObject) const
         {
+            StlAllocator<char> allocator(m_allocator);
+
             if (m_value == nullptr)
             {
                 if (treatAsObject)
                 {
-                    return "{}";
+                    return String("{}", allocator);
                 }
-                return "";
+                return String("", allocator);
             }
 
             auto temp = cJSON_PrintUnformatted(m_value);
-            String out(temp);
+            String out(temp, allocator);
             cJSON_free(temp);
             return out;
         }
 
         String JsonView::WriteReadable(bool treatAsObject) const
         {
+            StlAllocator<char> allocator(m_allocator);
+
             if (m_value == nullptr)
             {
                 if (treatAsObject)
                 {
-                    return "{\n}\n";
+                    return String("{\n}\n", allocator);
                 }
-                return "";
+                return String("", allocator);
             }
 
             auto temp = cJSON_Print(m_value);
-            String out(temp);
+            String out(temp, allocator);
             cJSON_free(temp);
             return out;
         }
 
-        JsonObject JsonView::Materialize() const { return m_value; }
+        JsonObject JsonView::Materialize() const { return JsonObject(m_value, m_allocator); }
     } // namespace Crt
 } // namespace Aws

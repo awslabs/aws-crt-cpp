@@ -18,7 +18,7 @@ namespace Aws
 {
     namespace Crt
     {
-        UUID::UUID() noexcept : m_good(false)
+        UUID::UUID(Allocator *a) noexcept : m_allocator(a), m_good(false)
         {
             if (aws_uuid_init(&m_uuid) == AWS_OP_SUCCESS)
             {
@@ -47,7 +47,8 @@ namespace Aws
 
         String UUID::ToString() const
         {
-            String uuidStr;
+            StlAllocator<char> allocator(m_allocator);
+            String uuidStr(allocator);
             uuidStr.reserve(AWS_UUID_STR_LEN);
 
             auto outBuf = ByteBufFromEmptyArray(reinterpret_cast<const uint8_t *>(uuidStr.data()), uuidStr.capacity());

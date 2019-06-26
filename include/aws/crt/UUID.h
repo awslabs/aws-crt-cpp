@@ -25,7 +25,7 @@ namespace Aws
         class UUID final
         {
           public:
-            UUID() noexcept;
+            UUID(Allocator *a = DefaultAllocator()) noexcept;
             UUID(const String &str) noexcept;
 
             UUID &operator=(const String &str) noexcept;
@@ -42,6 +42,7 @@ namespace Aws
             String ToString() const;
 
           private:
+            Allocator *m_allocator;
             aws_uuid m_uuid;
             bool m_good;
         };

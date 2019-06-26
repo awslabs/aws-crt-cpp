@@ -69,7 +69,7 @@ namespace Aws
                 if (!errorCode)
                 {
                     auto connectionObj = std::allocate_shared<UnmanagedConnection>(
-                        Aws::Crt::StlAllocator<UnmanagedConnection>(), connection, callbackData->allocator);
+                        Aws::Crt::StlAllocator<UnmanagedConnection>(callbackData->allocator), connection, callbackData->allocator);
 
                     if (connectionObj)
                     {

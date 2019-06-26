@@ -53,7 +53,7 @@ namespace Aws
             return aws_byte_cursor_from_array(array, len);
         }
 
-        Vector<uint8_t> Base64Decode(const String &decode)
+        Vector<uint8_t> Base64Decode(const String &decode, Allocator *a)
         {
             ByteCursor toDecode = aws_byte_cursor_from_array((const void *)decode.data(), decode.length());
 
@@ -61,7 +61,7 @@ namespace Aws
 
             if (aws_base64_compute_decoded_len(&toDecode, &allocation_size) == AWS_OP_SUCCESS)
             {
-                Vector<uint8_t> output(allocation_size, 0x00);
+                Vector<uint8_t> output(allocation_size, 0x00, StlAllocator<uint8_t>(a));
                 ByteBuf tempBuf = aws_byte_buf_from_array(output.data(), output.size());
                 tempBuf.len = 0;
 
@@ -71,10 +71,10 @@ namespace Aws
                 }
             }
 
-            return {};
+            return Vector<uint8_t>{StlAllocator<uint8_t>(a)};
         }
 
-        String Base64Encode(const Vector<uint8_t> &encode)
+        String Base64Encode(const Vector<uint8_t> &encode, Allocator *a)
         {
             ByteCursor toEncode = aws_byte_cursor_from_array((const void *)encode.data(), encode.size());
 
@@ -82,7 +82,7 @@ namespace Aws
 
             if (aws_base64_compute_encoded_len(encode.size(), &allocation_size) == AWS_OP_SUCCESS)
             {
-                String output(allocation_size, 0x00);
+                String output(allocation_size, 0x00, StlAllocator<char>(a));
                 ByteBuf tempBuf = aws_byte_buf_from_array(output.data(), output.size());
                 tempBuf.len = 0;
 
@@ -92,7 +92,7 @@ namespace Aws
                 }
             }
 
-            return {};
+            return String{StlAllocator<char>(a)};
         }
 
     } // namespace Crt

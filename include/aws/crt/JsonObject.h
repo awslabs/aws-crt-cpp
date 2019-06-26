@@ -33,12 +33,12 @@ namespace Aws
             /**
              * Constructs empty JSON DOM.
              */
-            JsonObject();
+            JsonObject(Allocator *a = DefaultAllocator());
 
             /**
              * Constructs a JSON DOM by parsing the input string.
              */
-            JsonObject(const String &value);
+            JsonObject(const String &value, Allocator *a = DefaultAllocator());
 
             /**
              * Performs a deep copy of the JSON DOM parameter.
@@ -200,7 +200,8 @@ namespace Aws
 
           private:
             void Destroy();
-            JsonObject(cJSON *value);
+            JsonObject(cJSON *value, Allocator *a);
+            Allocator *m_allocator;
             cJSON *m_value;
             bool m_wasParseSuccessful;
             String m_errorMessage;
@@ -217,7 +218,7 @@ namespace Aws
         {
           public:
             /* constructors */
-            JsonView();
+            JsonView(Allocator *a = DefaultAllocator());
             JsonView(const JsonObject &val);
             JsonView &operator=(const JsonObject &val);
 
@@ -408,8 +409,9 @@ namespace Aws
             JsonObject Materialize() const;
 
           private:
-            JsonView(cJSON *val);
+            JsonView(cJSON *val, Allocator *a = DefaultAllocator());
             JsonView &operator=(cJSON *val);
+            Allocator *m_allocator;
             cJSON *m_value;
         };
     } // namespace Crt

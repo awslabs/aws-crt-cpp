@@ -168,7 +168,7 @@ namespace Aws
                 }
 
                 auto connectionObj = std::allocate_shared<ManagedConnection>(
-                    Aws::Crt::StlAllocator<ManagedConnection>(), connection, manager);
+                    Aws::Crt::StlAllocator<ManagedConnection>(manager->m_allocator), connection, manager);
 
                 if (!connectionObj)
                 {

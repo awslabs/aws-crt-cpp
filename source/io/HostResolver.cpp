@@ -61,7 +61,7 @@ namespace Aws
             };
 
             void DefaultHostResolver::s_onHostResolved(
-                struct aws_host_resolver *,
+                struct aws_host_resolver *resolver,
                 const struct aws_string *hostName,
                 int errCode,
                 const struct aws_array_list *hostAddresses,
@@ -69,8 +69,9 @@ namespace Aws
             {
                 DefaultHostResolveArgs *args = static_cast<DefaultHostResolveArgs *>(userData);
 
+                StlAllocator<HostAddress> allocator(resolver->allocator);
                 size_t len = aws_array_list_length(hostAddresses);
-                Vector<HostAddress> addresses;
+                Vector<HostAddress> addresses(allocator);
 
                 for (size_t i = 0; i < len; ++i)
                 {
@@ -79,7 +80,7 @@ namespace Aws
                     addresses.push_back(*address_ptr);
                 }
 
-                String host(reinterpret_cast<const char *>(hostName->bytes), hostName->len);
+                String host(reinterpret_cast<const char *>(hostName->bytes), hostName->len, allocator);
                 args->onResolved(*args->resolver, addresses, errCode);
                 aws_string_destroy(args->host);
                 Delete(args, args->allocator);

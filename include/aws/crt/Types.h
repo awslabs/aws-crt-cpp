@@ -76,8 +76,8 @@ namespace Aws
         AWS_CRT_CPP_API ByteCursor ByteCursorFromByteBuf(const ByteBuf &) noexcept;
         AWS_CRT_CPP_API ByteCursor ByteCursorFromArray(const uint8_t *array, size_t len) noexcept;
 
-        AWS_CRT_CPP_API Vector<uint8_t> Base64Decode(const String &decode);
-        AWS_CRT_CPP_API String Base64Encode(const Vector<uint8_t> &encode);
+        AWS_CRT_CPP_API Vector<uint8_t> Base64Decode(const String &decode, Allocator *a = DefaultAllocator());
+        AWS_CRT_CPP_API String Base64Encode(const Vector<uint8_t> &encode, Allocator *a = DefaultAllocator());
 
         template <typename T> void Delete(T *t, Allocator *allocator)
         {
