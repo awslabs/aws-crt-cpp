@@ -177,7 +177,7 @@ namespace Aws
             };
 
             void MqttConnection::s_onMultiSubAck(
-                aws_mqtt_client_connection *connection,
+                aws_mqtt_client_connection *,
                 uint16_t packetId,
                 const struct aws_array_list *topicSubacks,
                 int errorCode,

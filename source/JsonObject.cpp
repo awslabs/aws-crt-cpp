@@ -472,14 +472,15 @@ namespace Aws
             AWS_ASSERT(m_value);
             auto array = cJSON_GetObjectItemCaseSensitive(m_value, key);
             AWS_ASSERT(cJSON_IsArray(array));
+            size_t length = static_cast<size_t>(cJSON_GetArraySize(array));
             StlAllocator<JsonView> allocator(m_allocator);
             Vector<JsonView> returnArray(allocator);
-            returnArray.reserve(static_cast<size_t>(cJSON_GetArraySize(array)));
+            returnArray.reserve(length);
 
             auto element = array->child;
-            for (size_t i = 0; element != nullptr && i < returnArray.size(); ++i, element = element->next)
+            for (size_t i = 0; element != nullptr && i < length; ++i, element = element->next)
             {
-                returnArray[i] = element;
+                returnArray.push_back(element);
             }
 
             return returnArray;
@@ -488,15 +489,16 @@ namespace Aws
         Vector<JsonView> JsonView::AsArray() const
         {
             AWS_ASSERT(cJSON_IsArray(m_value));
+            size_t length = static_cast<size_t>(cJSON_GetArraySize(m_value));
             StlAllocator<JsonView> allocator(m_allocator);
             Vector<JsonView> returnArray(allocator);
-            returnArray.reserve(static_cast<size_t>(cJSON_GetArraySize(m_value)));
+            returnArray.reserve(length);
 
             auto element = m_value->child;
 
-            for (size_t i = 0; element != nullptr && i < returnArray.size(); ++i, element = element->next)
+            for (size_t i = 0; element != nullptr && i < length; ++i, element = element->next)
             {
-                returnArray[i] = element;
+                returnArray.push_back(element);
             }
 
             return returnArray;
