@@ -29,7 +29,6 @@ namespace Aws
         class AWS_CRT_CPP_API MqttClientConnectionConfig final
         {
           public:
-            // MqttClientConnectionConfig() noexcept;
             MqttClientConnectionConfig(
                 const Crt::String &endpoint,
                 uint16_t port,

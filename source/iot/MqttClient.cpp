@@ -20,12 +20,6 @@ namespace Aws
 {
     namespace Iot
     {
-        /*
-        MqttClientConnectionConfig::MqttClientConnectionConfig() noexcept : m_port(0)
-        {
-            AWS_ZERO_STRUCT(m_socketOptions);
-        }*/
-
         MqttClientConnectionConfig::MqttClientConnectionConfig(
             const Crt::String &endpoint,
             uint16_t port,
