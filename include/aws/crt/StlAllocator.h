@@ -30,9 +30,7 @@ namespace Aws
           public:
             using Base = std::allocator<T>;
 
-#ifndef AWS_CRT_DEFAULT_ALLOCATOR_FILTER
             StlAllocator() noexcept : Base(), m_allocator(g_allocator) {}
-#endif /* AWS_CRT_DEFAULT_ALLOCATOR_FILTER */
 
             StlAllocator(Allocator *a) noexcept : Base(), m_allocator(a) {}
 
@@ -64,8 +62,16 @@ namespace Aws
                 aws_mem_release(m_allocator, p);
             }
 
+            template <typename U> bool operator==(const StlAllocator<U> &rhs) const
+            {
+                return m_allocator == rhs.m_allocator;
+            }
+
+            template <typename U> bool operator!=(const StlAllocator<U> &rhs) const { return !(*this == rhs); }
+
           private:
             Allocator *m_allocator;
         };
+
     } // namespace Crt
 } // namespace Aws

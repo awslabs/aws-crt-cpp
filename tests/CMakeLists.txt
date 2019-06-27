@@ -32,8 +32,6 @@ add_test_case(OptionalCopyAndMoveSemantics)
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 
-target_compile_definitions(${TEST_BINARY_NAME} PRIVATE "-DAWS_CRT_DEFAULT_ALLOCATOR_FILTER")
-
 add_custom_command(TARGET ${TEST_BINARY_NAME} PRE_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_CURRENT_SOURCE_DIR}/resources ${CMAKE_CURRENT_BINARY_DIR})
