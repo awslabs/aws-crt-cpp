@@ -17,6 +17,8 @@
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
 
+#include <chrono>
+
 struct aws_credentials;
 struct aws_credentials_provider;
 
@@ -24,11 +26,19 @@ namespace Aws
 {
     namespace Crt
     {
+        namespace Io
+        {
+            class ClientBootstrap;
+        }
+
+        /*
+         * A class to hold the basic components necessary for various AWS authentication protocols.
+         */
         class AWS_CRT_CPP_API Credentials
         {
           public:
-            Credentials(aws_credentials *credentials, Allocator *allocator) noexcept;
-            Credentials(ByteCursor access_key_id, ByteCursor secret_access_key, ByteCursor session_token, Allocator *allocator) noexcept;
+            Credentials(aws_credentials *credentials, Allocator *allocator = DefaultAllocator()) noexcept;
+            Credentials(ByteCursor access_key_id, ByteCursor secret_access_key, ByteCursor session_token, Allocator *allocator = DefaultAllocator()) noexcept;
 
             ~Credentials();
 
@@ -43,61 +53,114 @@ namespace Aws
             aws_credentials *m_credentials;
         };
 
+        /*
+         * Callback invoked by credentials providers when resolution succeeds (credentials will be non-null)
+         * or fails (credentials will be null)
+         */
         using OnCredentialsResolved = std::function<void(std::shared_ptr<Credentials>)>;
 
+        /*
+         * Simple base interface for credentials providers.  Credentials providers are objects that
+         * retrieve (asynchronously) AWS credentials from some source.
+         */
         class AWS_CRT_CPP_API ICredentialsProvider : public std::enable_shared_from_this<ICredentialsProvider> {
           public:
             virtual ~ICredentialsProvider() = default;
 
-            virtual bool GetCredentials(const OnCredentialsResolved &onCredentialsResolved) const noexcept = 0;
+            /*
+             * Asynchronous method to query for credentials based on the internal provider implementation.
+             */
+            virtual bool GetCredentials(const OnCredentialsResolved &onCredentialsResolved) const = 0;
+
+            virtual aws_credentials_provider *GetUnderlyingHandle(void) const noexcept = 0;
         };
 
+        /*
+         * Configuration options for the static credentials provider
+         */
         struct CredentialsProviderStaticConfig {
-          std::shared_ptr<Credentials> m_credentials;
+            ByteCursor m_accessKeyId;
+            ByteCursor m_secretAccessKey;
+            ByteCursor m_sessionToken;
         };
 
+        /*
+         * Configuration options for the profile credentials provider
+         */
         struct CredentialsProviderProfileConfig {
-
+            ByteCursor m_profileNameOverride;
+            ByteCursor m_configFileNameOverride;
+            ByteCursor m_credentialsFileNameOverride;
         };
 
+        /*
+         * Configuration options for the Ec2 instance metadata service credentials provider
+         */
         struct CredentialsProviderImdsConfig {
-
+            Io::ClientBootstrap *m_bootstrap;
         };
 
+        /*
+         * Configuration options for a chain-of-responsibility-based credentials provider.
+         * This provider works by traversing the chain and returning the first positive
+         * result.
+         */
         struct CredentialsProviderChainConfig {
-
+            Vector<std::shared_ptr<ICredentialsProvider>> m_providers;
         };
 
-        struct CredentialsProviderDefaultChainConfig {
-
+        /*
+         * Configuration options for a provider that caches the results of another provider
+         */
+        struct CredentialsProviderCachedConfig {
+            std::shared_ptr<ICredentialsProvider> m_provider;
+            std::chrono::milliseconds m_refreshTime;
         };
 
-        class AWS_CRT_CPP_API WrappedCredentialsProvider : public ICredentialsProvider {
+        /*
+         * Configuration options for a provider that implements a cached provider chain
+         * based on the AWS SDK defaults:
+         *
+         *   Cache-Of(Environment -> Profile -> IMDS)
+         */
+        struct CredentialsProviderChainDefaultConfig {
+            Io::ClientBootstrap *m_bootstrap;
+        };
+
+        /*
+         * Simple credentials provider implementation that wraps one of the internal C-based implementations.
+         *
+         * Contains a set of factory methods for building each supported provider, as well as one for the
+         * default provider chain.
+         */
+        class AWS_CRT_CPP_API CredentialsProvider : public ICredentialsProvider {
           public:
 
-            WrappedCredentialsProvider(const WrappedCredentialsProvider &) = delete;
-            WrappedCredentialsProvider(WrappedCredentialsProvider &&) = delete;
-            WrappedCredentialsProvider &operator=(const WrappedCredentialsProvider &) = delete;
-            WrappedCredentialsProvider &operator=(WrappedCredentialsProvider &&) = delete;
+            CredentialsProvider(aws_credentials_provider *provider, Allocator *allocator = DefaultAllocator()) noexcept;
 
-            virtual ~WrappedCredentialsProvider();
+            CredentialsProvider(const CredentialsProvider &) = delete;
+            CredentialsProvider(CredentialsProvider &&) = delete;
+            CredentialsProvider &operator=(const CredentialsProvider &) = delete;
+            CredentialsProvider &operator=(CredentialsProvider &&) = delete;
 
-            virtual bool GetCredentials(const OnCredentialsResolved &onCredentialsResolved) const noexcept override;
+            virtual ~CredentialsProvider();
 
-            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderStatic(const CredentialsProviderStaticConfig &config, Allocator *allocator);
-            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderEnvironment(Allocator *allocator);
-            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderProfile(const CredentialsProviderProfileConfig &config, Allocator *allocator);
-            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderImds(const CredentialsProviderImdsConfig &config, Allocator *allocator);
-            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderChain(const CredentialsProviderChainConfig &config, Allocator *allocator);
-            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderDefaultChain(const CredentialsProviderDefaultChainConfig &config, Allocator *allocator);
+            virtual bool GetCredentials(const OnCredentialsResolved &onCredentialsResolved) const override;
 
-          protected:
+            virtual aws_credentials_provider *GetUnderlyingHandle(void) const noexcept override { return m_provider; }
 
-            WrappedCredentialsProvider(aws_credentials_provider *provider, Allocator *allocator) noexcept;
+            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderStatic(const CredentialsProviderStaticConfig &config, Allocator *allocator = DefaultAllocator());
+            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderEnvironment(Allocator *allocator = DefaultAllocator());
+            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderProfile(const CredentialsProviderProfileConfig &config, Allocator *allocator = DefaultAllocator());
+            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderImds(const CredentialsProviderImdsConfig &config, Allocator *allocator = DefaultAllocator());
+            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderChain(const CredentialsProviderChainConfig &config, Allocator *allocator = DefaultAllocator());
+            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderCached(const CredentialsProviderCachedConfig &config, Allocator *allocator = DefaultAllocator());
+            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderChainDefault(
+                const CredentialsProviderChainDefaultConfig &config, Allocator *allocator = DefaultAllocator());
 
           private:
 
-            static void s_onCredentialsResolved(aws_credentials *credentials, void *user_data) noexcept;
+            static void s_onCredentialsResolved(aws_credentials *credentials, void *user_data);
 
             Allocator *m_allocator;
             aws_credentials_provider *m_provider;
