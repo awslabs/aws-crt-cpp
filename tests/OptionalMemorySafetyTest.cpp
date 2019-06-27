@@ -23,7 +23,7 @@ static int s_OptionalCopySafety(struct aws_allocator *allocator, void *ctx)
     (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
 
-    Aws::Crt::Optional<Aws::Crt::String> str1(s_test_str);
+    Aws::Crt::Optional<Aws::Crt::String> str1(Aws::Crt::String(s_test_str, Aws::Crt::StlAllocator<char>(allocator)));
     Aws::Crt::Optional<Aws::Crt::String> strCpyAssigned = str1;
     Aws::Crt::Optional<Aws::Crt::String> strCpyConstructedOptional(strCpyAssigned);
     Aws::Crt::Optional<Aws::Crt::String> strCpyConstructedValue(*strCpyAssigned);
@@ -44,7 +44,7 @@ static int s_OptionalMoveSafety(struct aws_allocator *allocator, void *ctx)
     (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
 
-    Aws::Crt::Optional<Aws::Crt::String> str1(s_test_str);
+    Aws::Crt::Optional<Aws::Crt::String> str1(Aws::Crt::String(s_test_str, Aws::Crt::StlAllocator<char>(allocator)));
     Aws::Crt::Optional<Aws::Crt::String> strMoveAssigned = std::move(str1);
     ASSERT_STR_EQUALS(s_test_str, strMoveAssigned->c_str());
 

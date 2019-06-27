@@ -29,30 +29,18 @@ namespace Aws
         {
           public:
             using Base = std::allocator<T>;
-#ifdef NEVER
-#ifndef AWS_CRT_UNIT_TESTS
-            StlAllocator() noexcept :
-                Base(),
-                m_allocator(g_allocator)
-            {}
-#endif /* AWS_CRT_UNIT_TESTS */
-#endif
-            StlAllocator(Allocator *a) :
-                Base(),
-                m_allocator(a)
-            {}
 
-            StlAllocator(const StlAllocator<T> &a) noexcept :
-                Base(a),
-                m_allocator(a.m_allocator)
-            {}
+#ifndef AWS_CRT_DEFAULT_ALLOCATOR_FILTER
+            StlAllocator() noexcept : Base(), m_allocator(g_allocator) {}
+#endif /* AWS_CRT_DEFAULT_ALLOCATOR_FILTER */
+
+            StlAllocator(Allocator *a) noexcept : Base(), m_allocator(a) {}
+
+            StlAllocator(const StlAllocator<T> &a) noexcept : Base(a), m_allocator(a.m_allocator) {}
 
             template <typename U> friend class StlAllocator;
 
-            template <class U> StlAllocator(const StlAllocator<U> &a) noexcept :
-                Base(a),
-                m_allocator(a.m_allocator)
-            {}
+            template <class U> StlAllocator(const StlAllocator<U> &a) noexcept : Base(a), m_allocator(a.m_allocator) {}
 
             ~StlAllocator() {}
 
@@ -77,7 +65,6 @@ namespace Aws
             }
 
           private:
-
             Allocator *m_allocator;
         };
     } // namespace Crt

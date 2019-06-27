@@ -217,6 +217,8 @@ if (CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE MATCHES Debug)
     target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE "-DDEBUG_BUILD")
 endif ()
 
+target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE "-DAWS_CRT_DEFAULT_ALLOCATOR_FILTER")
+
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>)

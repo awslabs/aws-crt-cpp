@@ -96,7 +96,8 @@ namespace Aws
 
                 if (callbackData->onPublishReceived)
                 {
-                    String topicStr(reinterpret_cast<char *>(topic->ptr), topic->len);
+                    StlAllocator<char> allocator(callbackData->allocator);
+                    String topicStr(reinterpret_cast<char *>(topic->ptr), topic->len, allocator);
                     ByteBuf payloadBuf = aws_byte_buf_from_array(payload->ptr, payload->len);
                     callbackData->onPublishReceived(*(callbackData->connection), topicStr, payloadBuf);
                 }
@@ -153,7 +154,8 @@ namespace Aws
 
                 if (callbackData->onSubAck)
                 {
-                    String topicStr(reinterpret_cast<char *>(topic->ptr), topic->len);
+                    StlAllocator<char> allocator(callbackData->allocator);
+                    String topicStr(reinterpret_cast<char *>(topic->ptr), topic->len, allocator);
                     callbackData->onSubAck(*callbackData->connection, packetId, topicStr, qos, errorCode);
                 }
 
@@ -186,14 +188,18 @@ namespace Aws
                 if (callbackData->onSubAck)
                 {
                     size_t length = aws_array_list_length(topicSubacks);
-                    Vector<String> topics(length, StlAllocator<String>(connection->));
+                    StlAllocator<Aws::Crt::String> stringAllocator(callbackData->allocator);
+                    StlAllocator<char> charAllocator(callbackData->allocator);
+                    Vector<String> topics(stringAllocator);
+                    topics.reserve(length);
+
                     QOS qos = AWS_MQTT_QOS_AT_MOST_ONCE;
                     for (size_t i = 0; i < length; ++i)
                     {
                         aws_mqtt_topic_subscription *subscription = NULL;
                         aws_array_list_get_at_ptr(topicSubacks, reinterpret_cast<void **>(&subscription), i);
-                        topics.push_back(
-                            String(reinterpret_cast<char *>(subscription->topic.ptr), subscription->topic.len));
+                        topics.push_back(String(
+                            reinterpret_cast<char *>(subscription->topic.ptr), subscription->topic.len, charAllocator));
                         qos = subscription->qos;
                     }
 

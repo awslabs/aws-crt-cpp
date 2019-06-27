@@ -21,10 +21,11 @@ static int s_BasicJsonParsing(struct aws_allocator *allocator, void *ctx)
     (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
 
-    const Aws::Crt::String jsonValue =
+    const Aws::Crt::String jsonValue = Aws::Crt::String(
         "{\"testStringKey\":\"testStringValue\", \"testIntKey\":10, "
         "\"testBoolKey\":false, \"array\": [\"stringArrayEntry1\", \"stringArrayEntry2\"], "
-        "\"object\": {\"testObjectStringKey\":\"testObjectStringValue\"}}";
+        "\"object\": {\"testObjectStringKey\":\"testObjectStringValue\"}}",
+        Aws::Crt::StlAllocator<char>(allocator));
 
     Aws::Crt::JsonObject value(jsonValue);
     ASSERT_TRUE(value.WasParseSuccessful());
@@ -48,9 +49,11 @@ static int s_JsonNullParseTest(struct aws_allocator *allocator, void *ctx)
     (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
 
-    const Aws::Crt::String jsonValue = "{\"testStringKey\":null,\"testIntKey\":10,"
-                                       "\"array\":[null,\"stringArrayEntry\"],"
-                                       "\"object\":{\"testObjectStringKey\":null}}";
+    const Aws::Crt::String jsonValue = Aws::Crt::String(
+        "{\"testStringKey\":null,\"testIntKey\":10,"
+        "\"array\":[null,\"stringArrayEntry\"],"
+        "\"object\":{\"testObjectStringKey\":null}}",
+        Aws::Crt::StlAllocator<char>(allocator));
 
     Aws::Crt::JsonObject value(jsonValue);
     ASSERT_TRUE(value.WasParseSuccessful());
@@ -70,9 +73,11 @@ static int s_JsonNullNestedObjectTest(struct aws_allocator *allocator, void *ctx
     (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
 
-    const Aws::Crt::String jsonValue = "{\"testStringKey\":null,\"testIntKey\":10,"
-                                       "\"array\":[null,\"stringArrayEntry\"],"
-                                       "\"object\":{\"testObjectStringKey\":null}}";
+    const Aws::Crt::String jsonValue = Aws::Crt::String(
+        "{\"testStringKey\":null,\"testIntKey\":10,"
+        "\"array\":[null,\"stringArrayEntry\"],"
+        "\"object\":{\"testObjectStringKey\":null}}",
+        Aws::Crt::StlAllocator<char>(allocator));
 
     Aws::Crt::JsonObject value(jsonValue);
     ASSERT_TRUE(value.WasParseSuccessful());
@@ -80,9 +85,11 @@ static int s_JsonNullNestedObjectTest(struct aws_allocator *allocator, void *ctx
     Aws::Crt::JsonObject doc;
     doc.WithObject("null_members", jsonValue);
 
-    const Aws::Crt::String expectedValue = "{\"null_members\":{\"testStringKey\":null,\"testIntKey\":10,"
-                                           "\"array\":[null,\"stringArrayEntry\"],"
-                                           "\"object\":{\"testObjectStringKey\":null}}}";
+    const Aws::Crt::String expectedValue = Aws::Crt::String(
+        "{\"null_members\":{\"testStringKey\":null,\"testIntKey\":10,"
+        "\"array\":[null,\"stringArrayEntry\"],"
+        "\"object\":{\"testObjectStringKey\":null}}}",
+        Aws::Crt::StlAllocator<char>(allocator));
     auto str = doc.View().WriteCompact(true);
     ASSERT_STR_EQUALS(expectedValue.c_str(), str.c_str());
     str = doc.View().WriteCompact(false);
@@ -98,7 +105,8 @@ static int s_JsonExplicitNullTest(struct aws_allocator *allocator, void *ctx)
     (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
 
-    const Aws::Crt::String expectedValue = "{\"testKey\":null}";
+    const Aws::Crt::String expectedValue =
+        Aws::Crt::String("{\"testKey\":null}", Aws::Crt::StlAllocator<char>(allocator));
 
     Aws::Crt::JsonObject doc;
     Aws::Crt::JsonObject nullObject;

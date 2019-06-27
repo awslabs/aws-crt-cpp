@@ -26,6 +26,8 @@
 
 using namespace Aws::Crt;
 
+using ConnectionSharedPtrAllocator = Aws::Crt::StlAllocator<std::shared_ptr<Http::HttpClientConnection>>;
+
 /* make 30 connections, release them to the pool, then make sure the destructor cleans everything up properly. */
 static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator *allocator, void *ctx)
 {
@@ -79,7 +81,8 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
     ASSERT_TRUE(connectionManager);
 
-    Vector<std::shared_ptr<Http::HttpClientConnection>> connections;
+    ConnectionSharedPtrAllocator vectorAllocator(allocator);
+    Vector<std::shared_ptr<Http::HttpClientConnection>> connections(vectorAllocator);
 
     auto onConnectionAvailable = [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode) {
         {
@@ -179,7 +182,8 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
     ASSERT_TRUE(connectionManager);
 
-    Vector<std::shared_ptr<Http::HttpClientConnection>> connections;
+    ConnectionSharedPtrAllocator vectorAllocator(allocator);
+    Vector<std::shared_ptr<Http::HttpClientConnection>> connections(vectorAllocator);
 
     auto onConnectionAvailable = [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode) {
         {
@@ -288,7 +292,8 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
     ASSERT_TRUE(connectionManager);
 
-    Vector<std::shared_ptr<Http::HttpClientConnection>> connections;
+    ConnectionSharedPtrAllocator vectorAllocator(allocator);
+    Vector<std::shared_ptr<Http::HttpClientConnection>> connections(vectorAllocator);
 
     auto onConnectionAvailable = [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode) {
         {

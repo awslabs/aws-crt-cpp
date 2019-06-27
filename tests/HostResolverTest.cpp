@@ -48,7 +48,7 @@ static int s_TestDefaultResolution(struct aws_allocator *allocator, void *)
         semaphore.notify_one();
     };
 
-    ASSERT_TRUE(defaultHostResolver.ResolveHost("localhost", onHostResolved));
+    ASSERT_TRUE(defaultHostResolver.ResolveHost(Aws::Crt::String("localhost", allocator), onHostResolved));
 
     {
         std::unique_lock<std::mutex> lock(semaphoreLock);
