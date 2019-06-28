@@ -101,6 +101,5 @@ namespace Aws
             return new (t) T(std::forward<Args>(args)...);
         }
 
-
     } // namespace Crt
 } // namespace Aws

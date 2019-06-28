@@ -25,7 +25,8 @@ namespace Aws
 {
     namespace Crt
     {
-        enum class LogLevel {
+        enum class LogLevel
+        {
             None = AWS_LL_NONE,
             Fatal = AWS_LL_FATAL,
             Error = AWS_LL_ERROR,
@@ -51,7 +52,6 @@ namespace Aws
             void InitializeLogging(LogLevel level, const char *filename);
 
           private:
-
             aws_logger logger;
         };
 

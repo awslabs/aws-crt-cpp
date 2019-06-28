@@ -38,7 +38,11 @@ namespace Aws
         {
           public:
             Credentials(aws_credentials *credentials, Allocator *allocator = DefaultAllocator()) noexcept;
-            Credentials(ByteCursor access_key_id, ByteCursor secret_access_key, ByteCursor session_token, Allocator *allocator = DefaultAllocator()) noexcept;
+            Credentials(
+                ByteCursor access_key_id,
+                ByteCursor secret_access_key,
+                ByteCursor session_token,
+                Allocator *allocator = DefaultAllocator()) noexcept;
 
             ~Credentials();
 
@@ -49,7 +53,6 @@ namespace Aws
             aws_credentials *GetUnderlyingHandle(void) const noexcept;
 
           private:
-
             aws_credentials *m_credentials;
         };
 
@@ -63,22 +66,29 @@ namespace Aws
          * Simple base interface for credentials providers.  Credentials providers are objects that
          * retrieve (asynchronously) AWS credentials from some source.
          */
-        class AWS_CRT_CPP_API ICredentialsProvider : public std::enable_shared_from_this<ICredentialsProvider> {
+        class AWS_CRT_CPP_API ICredentialsProvider : public std::enable_shared_from_this<ICredentialsProvider>
+        {
           public:
             virtual ~ICredentialsProvider() = default;
 
             /*
-             * Asynchronous method to query for credentials based on the internal provider implementation.
+             * Asynchronous method to query for AWS credentials based on the internal provider implementation.
              */
             virtual bool GetCredentials(const OnCredentialsResolved &onCredentialsResolved) const = 0;
 
+            /*
+             * Returns the underlying credentials provider implementation.  Support for credentials providers
+             * not based on a C implementation is theoretically possible, but requires some re-implementation to
+             * support provider chains and caching (whose implementations rely on links to C implementation providers)
+             */
             virtual aws_credentials_provider *GetUnderlyingHandle(void) const noexcept = 0;
         };
 
         /*
          * Configuration options for the static credentials provider
          */
-        struct CredentialsProviderStaticConfig {
+        struct CredentialsProviderStaticConfig
+        {
             ByteCursor m_accessKeyId;
             ByteCursor m_secretAccessKey;
             ByteCursor m_sessionToken;
@@ -87,7 +97,8 @@ namespace Aws
         /*
          * Configuration options for the profile credentials provider
          */
-        struct CredentialsProviderProfileConfig {
+        struct CredentialsProviderProfileConfig
+        {
             ByteCursor m_profileNameOverride;
             ByteCursor m_configFileNameOverride;
             ByteCursor m_credentialsFileNameOverride;
@@ -96,7 +107,8 @@ namespace Aws
         /*
          * Configuration options for the Ec2 instance metadata service credentials provider
          */
-        struct CredentialsProviderImdsConfig {
+        struct CredentialsProviderImdsConfig
+        {
             Io::ClientBootstrap *m_bootstrap;
         };
 
@@ -105,14 +117,16 @@ namespace Aws
          * This provider works by traversing the chain and returning the first positive
          * result.
          */
-        struct CredentialsProviderChainConfig {
+        struct CredentialsProviderChainConfig
+        {
             Vector<std::shared_ptr<ICredentialsProvider>> m_providers;
         };
 
         /*
          * Configuration options for a provider that caches the results of another provider
          */
-        struct CredentialsProviderCachedConfig {
+        struct CredentialsProviderCachedConfig
+        {
             std::shared_ptr<ICredentialsProvider> m_provider;
             std::chrono::milliseconds m_refreshTime;
         };
@@ -123,19 +137,20 @@ namespace Aws
          *
          *   Cache-Of(Environment -> Profile -> IMDS)
          */
-        struct CredentialsProviderChainDefaultConfig {
+        struct CredentialsProviderChainDefaultConfig
+        {
             Io::ClientBootstrap *m_bootstrap;
         };
 
         /*
          * Simple credentials provider implementation that wraps one of the internal C-based implementations.
          *
-         * Contains a set of factory methods for building each supported provider, as well as one for the
+         * Contains a set of static factory methods for building each supported provider, as well as one for the
          * default provider chain.
          */
-        class AWS_CRT_CPP_API CredentialsProvider : public ICredentialsProvider {
+        class AWS_CRT_CPP_API CredentialsProvider : public ICredentialsProvider
+        {
           public:
-
             CredentialsProvider(aws_credentials_provider *provider, Allocator *allocator = DefaultAllocator()) noexcept;
 
             CredentialsProvider(const CredentialsProvider &) = delete;
@@ -145,18 +160,44 @@ namespace Aws
 
             virtual ~CredentialsProvider();
 
+            /*
+             * Asynchronous method to query for AWS credentials based on the internal provider implementation.
+             */
             virtual bool GetCredentials(const OnCredentialsResolved &onCredentialsResolved) const override;
 
             virtual aws_credentials_provider *GetUnderlyingHandle(void) const noexcept override { return m_provider; }
 
-            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderStatic(const CredentialsProviderStaticConfig &config, Allocator *allocator = DefaultAllocator());
-            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderEnvironment(Allocator *allocator = DefaultAllocator());
-            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderProfile(const CredentialsProviderProfileConfig &config, Allocator *allocator = DefaultAllocator());
-            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderImds(const CredentialsProviderImdsConfig &config, Allocator *allocator = DefaultAllocator());
-            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderChain(const CredentialsProviderChainConfig &config, Allocator *allocator = DefaultAllocator());
-            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderCached(const CredentialsProviderCachedConfig &config, Allocator *allocator = DefaultAllocator());
+            /*
+             * Factory methods for all of the basic credentials provider types
+             *
+             * NYI: X509, ECS
+             */
+            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderStatic(
+                const CredentialsProviderStaticConfig &config,
+                Allocator *allocator = DefaultAllocator());
+
+            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderEnvironment(
+                Allocator *allocator = DefaultAllocator());
+
+            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderProfile(
+                const CredentialsProviderProfileConfig &config,
+                Allocator *allocator = DefaultAllocator());
+
+            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderImds(
+                const CredentialsProviderImdsConfig &config,
+                Allocator *allocator = DefaultAllocator());
+
+            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderChain(
+                const CredentialsProviderChainConfig &config,
+                Allocator *allocator = DefaultAllocator());
+
+            static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderCached(
+                const CredentialsProviderCachedConfig &config,
+                Allocator *allocator = DefaultAllocator());
+
             static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderChainDefault(
-                const CredentialsProviderChainDefaultConfig &config, Allocator *allocator = DefaultAllocator());
+                const CredentialsProviderChainDefaultConfig &config,
+                Allocator *allocator = DefaultAllocator());
 
           private:
 
@@ -166,5 +207,5 @@ namespace Aws
             aws_credentials_provider *m_provider;
         };
 
-    }
-}
+    } // namespace Crt
+} // namespace Aws
