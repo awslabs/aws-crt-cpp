@@ -60,23 +60,16 @@ namespace Aws
             Io::CleanUpTlsStaticState();
         }
 
-        ApiHandle::ApiHandle(Allocator *allocator) noexcept :
-            logger()
-        {
-            s_initApi(allocator);
-        }
+        ApiHandle::ApiHandle(Allocator *allocator) noexcept : logger() { s_initApi(allocator); }
 
-        ApiHandle::ApiHandle() noexcept :
-            logger()
-        {
-            s_initApi(DefaultAllocator());
-        }
+        ApiHandle::ApiHandle() noexcept : logger() { s_initApi(DefaultAllocator()); }
 
         ApiHandle::~ApiHandle()
         {
             s_cleanUpApi();
 
-            if (aws_logger_get() == &logger) {
+            if (aws_logger_get() == &logger)
+            {
                 aws_logger_set(NULL);
                 aws_logger_clean_up(&logger);
             }
@@ -84,10 +77,12 @@ namespace Aws
 
         void ApiHandle::InitializeLogging(Aws::Crt::LogLevel level, const char *filename)
         {
-            if (aws_logger_get() == &logger) {
+            if (aws_logger_get() == &logger)
+            {
                 aws_logger_set(NULL);
                 aws_logger_clean_up(&logger);
-                if (level == Aws::Crt::LogLevel::None) {
+                if (level == Aws::Crt::LogLevel::None)
+                {
                     AWS_ZERO_STRUCT(logger);
                     return;
                 }
@@ -100,7 +95,8 @@ namespace Aws
             options.file = file;
             options.filename = filename;
 
-            if (aws_logger_init_standard(&logger, allocator, &options)) {
+            if (aws_logger_init_standard(&logger, allocator, &options))
+            {
                 return;
             }
 
