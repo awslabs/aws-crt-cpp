@@ -200,7 +200,6 @@ namespace Aws
                 Allocator *allocator = DefaultAllocator());
 
           private:
-          
             static void s_onCredentialsResolved(aws_credentials *credentials, void *user_data);
 
             Allocator *m_allocator;
