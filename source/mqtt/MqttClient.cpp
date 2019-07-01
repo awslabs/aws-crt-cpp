@@ -567,8 +567,6 @@ namespace Aws
                 return packetId;
             }
 
-            void MqttConnection::Ping() { aws_mqtt_client_connection_ping(m_underlyingConnection); }
-
             MqttClient::MqttClient(Io::ClientBootstrap &bootstrap, Allocator *allocator) noexcept : m_client(nullptr)
             {
                 m_client =
