@@ -18,6 +18,7 @@
 #include <aws/crt/Types.h>
 
 #include <chrono>
+#include <functional>
 
 struct aws_credentials;
 struct aws_credentials_provider;
