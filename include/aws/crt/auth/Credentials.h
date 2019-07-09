@@ -69,7 +69,7 @@ namespace Aws
             using OnCredentialsResolved = std::function<void(std::shared_ptr<Credentials>)>;
 
             /*
-             * Base interface for credentials providers.  Credentials providers are objects that
+             * Base interface for all credentials providers.  Credentials providers are objects that
              * retrieve (asynchronously) AWS credentials from some source.
              */
             class AWS_CRT_CPP_API ICredentialsProvider : public std::enable_shared_from_this<ICredentialsProvider>
