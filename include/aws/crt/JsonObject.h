@@ -16,10 +16,10 @@
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/Types.h>
 
-struct cJSON;
-
 namespace Aws
 {
+    struct cJSON;
+
     namespace Crt
     {
         class JsonView;
