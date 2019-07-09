@@ -26,192 +26,196 @@ namespace Aws
 {
     namespace Crt
     {
-        Credentials::Credentials(aws_credentials *credentials, Allocator *allocator) noexcept
-            : m_credentials(aws_credentials_new_copy(allocator, credentials))
+        namespace Auth
         {
-        }
-
-        Credentials::Credentials(
-            ByteCursor access_key_id,
-            ByteCursor secret_access_key,
-            ByteCursor session_token,
-            Allocator *allocator) noexcept
-            : m_credentials(
-                  aws_credentials_new_from_cursors(allocator, &access_key_id, &secret_access_key, &session_token))
-        {
-        }
-
-        Credentials::~Credentials() { aws_credentials_destroy(m_credentials); }
-
-        ByteCursor Credentials::GetAccessKeyId(void) const noexcept
-        {
-            return aws_byte_cursor_from_string(m_credentials->access_key_id);
-        }
-
-        ByteCursor Credentials::GetSecretAccessKey(void) const noexcept
-        {
-            return aws_byte_cursor_from_string(m_credentials->secret_access_key);
-        }
-
-        ByteCursor Credentials::GetSessionToken(void) const noexcept
-        {
-            return aws_byte_cursor_from_string(m_credentials->session_token);
-        }
-
-        CredentialsProvider::CredentialsProvider(aws_credentials_provider *provider, Allocator *allocator) noexcept
-            : m_allocator(allocator), m_provider(provider)
-        {
-        }
-
-        CredentialsProvider::~CredentialsProvider()
-        {
-            if (m_provider != nullptr)
+            Credentials::Credentials(aws_credentials *credentials, Allocator *allocator) noexcept
+                : m_credentials(aws_credentials_new_copy(allocator, credentials))
             {
-                aws_credentials_provider_release(m_provider);
-                m_provider = nullptr;
-            }
-        }
-
-        struct CredentialsProviderCallbackArgs
-        {
-            CredentialsProviderCallbackArgs() = default;
-
-            OnCredentialsResolved m_onCredentialsResolved;
-            std::shared_ptr<const CredentialsProvider> m_provider;
-        };
-
-        void CredentialsProvider::s_onCredentialsResolved(aws_credentials *credentials, void *user_data)
-        {
-            CredentialsProviderCallbackArgs *callbackArgs = static_cast<CredentialsProviderCallbackArgs *>(user_data);
-
-            auto credentialsPtr = std::make_shared<Credentials>(credentials, callbackArgs->m_provider->m_allocator);
-
-            callbackArgs->m_onCredentialsResolved(credentialsPtr);
-
-            Aws::Crt::Delete(callbackArgs, callbackArgs->m_provider->m_allocator);
-        }
-
-        bool CredentialsProvider::GetCredentials(const OnCredentialsResolved &onCredentialsResolved) const
-        {
-            auto callbackArgs = Aws::Crt::New<CredentialsProviderCallbackArgs>(m_allocator);
-            if (callbackArgs == nullptr)
-            {
-                return false;
             }
 
-            callbackArgs->m_provider = std::static_pointer_cast<const CredentialsProvider>(shared_from_this());
-            callbackArgs->m_onCredentialsResolved = onCredentialsResolved;
-
-            aws_credentials_provider_get_credentials(m_provider, s_onCredentialsResolved, callbackArgs);
-
-            return true;
-        }
-
-        static std::shared_ptr<ICredentialsProvider> s_CreateWrappedProvider(
-            struct aws_credentials_provider *raw_provider,
-            Allocator *allocator)
-        {
-            if (raw_provider == nullptr)
+            Credentials::Credentials(
+                ByteCursor access_key_id,
+                ByteCursor secret_access_key,
+                ByteCursor session_token,
+                Allocator *allocator) noexcept
+                : m_credentials(
+                      aws_credentials_new_from_cursors(allocator, &access_key_id, &secret_access_key, &session_token))
             {
-                return nullptr;
             }
 
-            /* Switch to some kind of make_shared/allocate_shared when allocator support improves */
-            std::shared_ptr<ICredentialsProvider> provider(
-                Aws::Crt::New<CredentialsProvider>(allocator, raw_provider, allocator));
+            Credentials::~Credentials() { aws_credentials_destroy(m_credentials); }
 
-            return provider;
-        }
+            ByteCursor Credentials::GetAccessKeyId(void) const noexcept
+            {
+                return aws_byte_cursor_from_string(m_credentials->access_key_id);
+            }
 
-        std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderStatic(
-            const CredentialsProviderStaticConfig &config,
-            Allocator *allocator)
-        {
-            return s_CreateWrappedProvider(
-                aws_credentials_provider_new_static(
-                    allocator, config.m_accessKeyId, config.m_secretAccessKey, config.m_sessionToken),
-                allocator);
-        }
+            ByteCursor Credentials::GetSecretAccessKey(void) const noexcept
+            {
+                return aws_byte_cursor_from_string(m_credentials->secret_access_key);
+            }
 
-        std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderEnvironment(
-            Allocator *allocator)
-        {
-            return s_CreateWrappedProvider(aws_credentials_provider_new_environment(allocator), allocator);
-        }
+            ByteCursor Credentials::GetSessionToken(void) const noexcept
+            {
+                return aws_byte_cursor_from_string(m_credentials->session_token);
+            }
 
-        std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderProfile(
-            const CredentialsProviderProfileConfig &config,
-            Allocator *allocator)
-        {
-            struct aws_credentials_provider_profile_options raw_config;
-            AWS_ZERO_STRUCT(raw_config);
+            CredentialsProvider::CredentialsProvider(aws_credentials_provider *provider, Allocator *allocator) noexcept
+                : m_allocator(allocator), m_provider(provider)
+            {
+            }
 
-            raw_config.config_file_name_override = config.m_configFileNameOverride;
-            raw_config.credentials_file_name_override = config.m_credentialsFileNameOverride;
-            raw_config.profile_name_override = config.m_profileNameOverride;
+            CredentialsProvider::~CredentialsProvider()
+            {
+                if (m_provider != nullptr)
+                {
+                    aws_credentials_provider_release(m_provider);
+                    m_provider = nullptr;
+                }
+            }
 
-            return s_CreateWrappedProvider(aws_credentials_provider_new_profile(allocator, &raw_config), allocator);
-        }
+            struct CredentialsProviderCallbackArgs
+            {
+                CredentialsProviderCallbackArgs() = default;
 
-        std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderImds(
-            const CredentialsProviderImdsConfig &config,
-            Allocator *allocator)
-        {
-            struct aws_credentials_provider_imds_options raw_config;
-            AWS_ZERO_STRUCT(raw_config);
+                OnCredentialsResolved m_onCredentialsResolved;
+                std::shared_ptr<const CredentialsProvider> m_provider;
+            };
 
-            raw_config.bootstrap = config.m_bootstrap->GetUnderlyingHandle();
+            void CredentialsProvider::s_onCredentialsResolved(aws_credentials *credentials, void *user_data)
+            {
+                CredentialsProviderCallbackArgs *callbackArgs =
+                    static_cast<CredentialsProviderCallbackArgs *>(user_data);
 
-            return s_CreateWrappedProvider(aws_credentials_provider_new_imds(allocator, &raw_config), allocator);
-        }
+                auto credentialsPtr = std::make_shared<Credentials>(credentials, callbackArgs->m_provider->m_allocator);
 
-        std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderChain(
-            const CredentialsProviderChainConfig &config,
-            Allocator *allocator)
-        {
-            Vector<aws_credentials_provider *> providers;
-            providers.reserve(config.m_providers.size());
+                callbackArgs->m_onCredentialsResolved(credentialsPtr);
 
-            std::for_each(
-                config.m_providers.begin(),
-                config.m_providers.end(),
-                [&](const std::shared_ptr<ICredentialsProvider> &provider) {
-                    providers.push_back(provider->GetUnderlyingHandle());
-                });
+                Aws::Crt::Delete(callbackArgs, callbackArgs->m_provider->m_allocator);
+            }
 
-            struct aws_credentials_provider_chain_options raw_config;
-            AWS_ZERO_STRUCT(raw_config);
+            bool CredentialsProvider::GetCredentials(const OnCredentialsResolved &onCredentialsResolved) const
+            {
+                auto callbackArgs = Aws::Crt::New<CredentialsProviderCallbackArgs>(m_allocator);
+                if (callbackArgs == nullptr)
+                {
+                    return false;
+                }
 
-            raw_config.providers = providers.data();
-            raw_config.provider_count = config.m_providers.size();
+                callbackArgs->m_provider = std::static_pointer_cast<const CredentialsProvider>(shared_from_this());
+                callbackArgs->m_onCredentialsResolved = onCredentialsResolved;
 
-            return s_CreateWrappedProvider(aws_credentials_provider_new_chain(allocator, &raw_config), allocator);
-        }
+                aws_credentials_provider_get_credentials(m_provider, s_onCredentialsResolved, callbackArgs);
 
-        std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderCached(
-            const CredentialsProviderCachedConfig &config,
-            Allocator *allocator)
-        {
-            struct aws_credentials_provider_cached_options raw_config;
-            AWS_ZERO_STRUCT(raw_config);
+                return true;
+            }
 
-            raw_config.source = config.m_provider->GetUnderlyingHandle();
-            raw_config.refresh_time_in_milliseconds = config.m_refreshTime.count();
+            static std::shared_ptr<ICredentialsProvider> s_CreateWrappedProvider(
+                struct aws_credentials_provider *raw_provider,
+                Allocator *allocator)
+            {
+                if (raw_provider == nullptr)
+                {
+                    return nullptr;
+                }
 
-            return s_CreateWrappedProvider(aws_credentials_provider_new_cached(allocator, &raw_config), allocator);
-        }
+                /* Switch to some kind of make_shared/allocate_shared when allocator support improves */
+                std::shared_ptr<CredentialsProvider> provider =
+                    Aws::Crt::MakeShared<CredentialsProvider>(allocator, raw_provider, allocator);
 
-        std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderChainDefault(
-            const CredentialsProviderChainDefaultConfig &config,
-            Allocator *allocator)
-        {
-            struct aws_credentials_provider_chain_default_options raw_config;
-            AWS_ZERO_STRUCT(raw_config);
+                return std::static_pointer_cast<ICredentialsProvider>(provider);
+            }
 
-            raw_config.bootstrap = config.m_bootstrap->GetUnderlyingHandle();
+            std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderStatic(
+                const CredentialsProviderStaticConfig &config,
+                Allocator *allocator)
+            {
+                return s_CreateWrappedProvider(
+                    aws_credentials_provider_new_static(
+                        allocator, config.m_accessKeyId, config.m_secretAccessKey, config.m_sessionToken),
+                    allocator);
+            }
 
-            return s_CreateWrappedProvider(
-                aws_credentials_provider_new_chain_default(allocator, &raw_config), allocator);
-        }
-    } // namespace Crt
+            std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderEnvironment(
+                Allocator *allocator)
+            {
+                return s_CreateWrappedProvider(aws_credentials_provider_new_environment(allocator), allocator);
+            }
+
+            std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderProfile(
+                const CredentialsProviderProfileConfig &config,
+                Allocator *allocator)
+            {
+                struct aws_credentials_provider_profile_options raw_config;
+                AWS_ZERO_STRUCT(raw_config);
+
+                raw_config.config_file_name_override = config.m_configFileNameOverride;
+                raw_config.credentials_file_name_override = config.m_credentialsFileNameOverride;
+                raw_config.profile_name_override = config.m_profileNameOverride;
+
+                return s_CreateWrappedProvider(aws_credentials_provider_new_profile(allocator, &raw_config), allocator);
+            }
+
+            std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderImds(
+                const CredentialsProviderImdsConfig &config,
+                Allocator *allocator)
+            {
+                struct aws_credentials_provider_imds_options raw_config;
+                AWS_ZERO_STRUCT(raw_config);
+
+                raw_config.bootstrap = config.m_bootstrap->GetUnderlyingHandle();
+
+                return s_CreateWrappedProvider(aws_credentials_provider_new_imds(allocator, &raw_config), allocator);
+            }
+
+            std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderChain(
+                const CredentialsProviderChainConfig &config,
+                Allocator *allocator)
+            {
+                Vector<aws_credentials_provider *> providers;
+                providers.reserve(config.m_providers.size());
+
+                std::for_each(
+                    config.m_providers.begin(),
+                    config.m_providers.end(),
+                    [&](const std::shared_ptr<ICredentialsProvider> &provider) {
+                        providers.push_back(provider->GetUnderlyingHandle());
+                    });
+
+                struct aws_credentials_provider_chain_options raw_config;
+                AWS_ZERO_STRUCT(raw_config);
+
+                raw_config.providers = providers.data();
+                raw_config.provider_count = config.m_providers.size();
+
+                return s_CreateWrappedProvider(aws_credentials_provider_new_chain(allocator, &raw_config), allocator);
+            }
+
+            std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderCached(
+                const CredentialsProviderCachedConfig &config,
+                Allocator *allocator)
+            {
+                struct aws_credentials_provider_cached_options raw_config;
+                AWS_ZERO_STRUCT(raw_config);
+
+                raw_config.source = config.m_provider->GetUnderlyingHandle();
+                raw_config.refresh_time_in_milliseconds = config.m_refreshTime.count();
+
+                return s_CreateWrappedProvider(aws_credentials_provider_new_cached(allocator, &raw_config), allocator);
+            }
+
+            std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderChainDefault(
+                const CredentialsProviderChainDefaultConfig &config,
+                Allocator *allocator)
+            {
+                struct aws_credentials_provider_chain_default_options raw_config;
+                AWS_ZERO_STRUCT(raw_config);
+
+                raw_config.bootstrap = config.m_bootstrap->GetUnderlyingHandle();
+
+                return s_CreateWrappedProvider(
+                    aws_credentials_provider_new_chain_default(allocator, &raw_config), allocator);
+            }
+        } // namespace Auth
+    }     // namespace Crt
 } // namespace Aws
