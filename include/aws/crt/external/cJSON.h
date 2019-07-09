@@ -23,6 +23,7 @@
 /** MODIFICATIONS:
  * parse doesn't rely on null terminated strings. (Who thought that was a good idea.... ever?).
  * valueInt was moved up to improve alignment.
+ * Wrap all symbols in the Aws namespace as a short-term collision resolution
  *
  * Modifications licensed under:
  *
