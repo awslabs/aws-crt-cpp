@@ -43,22 +43,49 @@ namespace Aws
             {
             }
 
-            Credentials::~Credentials() { aws_credentials_destroy(m_credentials); }
+            Credentials::~Credentials()
+            {
+                aws_credentials_destroy(m_credentials);
+                m_credentials = nullptr;
+            }
 
             ByteCursor Credentials::GetAccessKeyId(void) const noexcept
             {
-                return aws_byte_cursor_from_string(m_credentials->access_key_id);
+                if (m_credentials)
+                {
+                    return aws_byte_cursor_from_string(m_credentials->access_key_id);
+                }
+                else
+                {
+                    return ByteCursor{0, nullptr};
+                }
             }
 
             ByteCursor Credentials::GetSecretAccessKey(void) const noexcept
             {
-                return aws_byte_cursor_from_string(m_credentials->secret_access_key);
+                if (m_credentials)
+                {
+                    return aws_byte_cursor_from_string(m_credentials->secret_access_key);
+                }
+                else
+                {
+                    return ByteCursor{0, nullptr};
+                }
             }
 
             ByteCursor Credentials::GetSessionToken(void) const noexcept
             {
-                return aws_byte_cursor_from_string(m_credentials->session_token);
+                if (m_credentials)
+                {
+                    return aws_byte_cursor_from_string(m_credentials->session_token);
+                }
+                else
+                {
+                    return ByteCursor{0, nullptr};
+                }
             }
+
+            Credentials::operator bool(void) const noexcept { return m_credentials != nullptr; }
 
             CredentialsProvider::CredentialsProvider(aws_credentials_provider *provider, Allocator *allocator) noexcept
                 : m_allocator(allocator), m_provider(provider)
@@ -96,6 +123,11 @@ namespace Aws
 
             bool CredentialsProvider::GetCredentials(const OnCredentialsResolved &onCredentialsResolved) const
             {
+                if (m_provider == nullptr)
+                {
+                    return false;
+                }
+
                 auto callbackArgs = Aws::Crt::New<CredentialsProviderCallbackArgs>(m_allocator);
                 if (callbackArgs == nullptr)
                 {

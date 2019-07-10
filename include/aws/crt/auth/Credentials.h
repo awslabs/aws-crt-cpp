@@ -41,7 +41,6 @@ namespace Aws
             {
               public:
                 Credentials(aws_credentials *credentials, Allocator *allocator = DefaultAllocator()) noexcept;
-
                 Credentials(
                     ByteCursor access_key_id,
                     ByteCursor secret_access_key,
@@ -55,6 +54,8 @@ namespace Aws
                 ByteCursor GetSecretAccessKey(void) const noexcept;
 
                 ByteCursor GetSessionToken(void) const noexcept;
+
+                operator bool(void) const noexcept;
 
                 aws_credentials *GetUnderlyingHandle(void) const noexcept;
 
@@ -89,12 +90,17 @@ namespace Aws
                  * providers)
                  */
                 virtual aws_credentials_provider *GetUnderlyingHandle(void) const noexcept = 0;
+
+                /*
+                 * Validity check
+                 */
+                virtual operator bool(void) const noexcept = 0;
             };
 
             /*
              * Configuration options for the static credentials provider
              */
-            struct CredentialsProviderStaticConfig
+            struct AWS_CRT_CPP_API CredentialsProviderStaticConfig
             {
 
                 CredentialsProviderStaticConfig(void) : m_accessKeyId(), m_secretAccessKey(), m_sessionToken() {}
@@ -107,7 +113,7 @@ namespace Aws
             /*
              * Configuration options for the profile credentials provider
              */
-            struct CredentialsProviderProfileConfig
+            struct AWS_CRT_CPP_API CredentialsProviderProfileConfig
             {
 
                 CredentialsProviderProfileConfig(void)
@@ -123,7 +129,7 @@ namespace Aws
             /*
              * Configuration options for the Ec2 instance metadata service credentials provider
              */
-            struct CredentialsProviderImdsConfig
+            struct AWS_CRT_CPP_API CredentialsProviderImdsConfig
             {
                 CredentialsProviderImdsConfig(void) : m_bootstrap(nullptr) {}
 
@@ -135,7 +141,7 @@ namespace Aws
              * This provider works by traversing the chain and returning the first positive
              * result.
              */
-            struct CredentialsProviderChainConfig
+            struct AWS_CRT_CPP_API CredentialsProviderChainConfig
             {
                 CredentialsProviderChainConfig(void) : m_providers() {}
 
@@ -145,7 +151,7 @@ namespace Aws
             /*
              * Configuration options for a provider that caches the results of another provider
              */
-            struct CredentialsProviderCachedConfig
+            struct AWS_CRT_CPP_API CredentialsProviderCachedConfig
             {
                 CredentialsProviderCachedConfig(void) : m_provider(nullptr), m_refreshTime() {}
 
@@ -159,7 +165,7 @@ namespace Aws
              *
              *   Cache-Of(Environment -> Profile -> IMDS)
              */
-            struct CredentialsProviderChainDefaultConfig
+            struct AWS_CRT_CPP_API CredentialsProviderChainDefaultConfig
             {
                 CredentialsProviderChainDefaultConfig(void) : m_bootstrap(nullptr) {}
 
@@ -198,6 +204,8 @@ namespace Aws
                 {
                     return m_provider;
                 }
+
+                virtual operator bool(void) const noexcept override { return m_provider != nullptr; }
 
                 /*
                  * Factory methods for all of the basic credentials provider types
