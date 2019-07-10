@@ -152,8 +152,7 @@ namespace Aws
                 }
 
                 /* Switch to some kind of make_shared/allocate_shared when allocator support improves */
-                std::shared_ptr<CredentialsProvider> provider =
-                    Aws::Crt::MakeShared<CredentialsProvider>(allocator, raw_provider, allocator);
+                auto provider = Aws::Crt::MakeShared<CredentialsProvider>(allocator, raw_provider, allocator);
 
                 return std::static_pointer_cast<ICredentialsProvider>(provider);
             }
