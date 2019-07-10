@@ -29,6 +29,12 @@ add_test_case(DefaultResolution)
 add_test_case(OptionalCopySafety)
 add_test_case(OptionalMoveSafety)
 add_test_case(OptionalCopyAndMoveSemantics)
+add_test_case(StreamTestCreateDestroyWrapperFirst)
+add_test_case(StreamTestCreateDestroyWrapperLast)
+add_test_case(StreamTestLength)
+add_test_case(StreamTestRead)
+add_test_case(StreamTestSeekBegin)
+add_test_case(StreamTestSeekEnd)
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 
