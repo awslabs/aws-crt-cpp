@@ -50,8 +50,11 @@ namespace Aws
             ApiHandle &operator=(ApiHandle &&) = delete;
 
             void InitializeLogging(LogLevel level, const char *filename);
+            void InitializeLogging(LogLevel level, FILE *fp);
 
           private:
+            void InitializeLoggingCommon(struct aws_logger_standard_options &options);
+
             aws_logger logger;
         };
 
