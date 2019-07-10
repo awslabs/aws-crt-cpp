@@ -102,6 +102,10 @@ file(GLOB AWS_CRT_HEADERS
         "include/aws/crt/*.h"
 )
 
+file(GLOB AWS_CRT_AUTH_HEADERS
+        "include/aws/crt/auth/*.h"
+)
+
 file(GLOB AWS_CRT_CRYPTO_HEADERS
         "include/aws/crt/crypto/*.h"
 )
@@ -128,6 +132,7 @@ file(GLOB AWS_CRT_EXTERNAL_HEADERS
 
 file(GLOB AWS_CRT_CPP_HEADERS
         ${AWS_CRT_HEADERS}
+        ${AWS_CRT_AUTH_HEADERS}
         ${AWS_CRT_CRYPTO_HEADERS}
         ${AWS_CRT_IO_HEADERS}
         ${AWS_CRT_IOT_HEADERS}
@@ -138,6 +143,10 @@ file(GLOB AWS_CRT_CPP_HEADERS
 
 file(GLOB AWS_CRT_SRC
        "source/*.cpp"
+)
+
+file(GLOB AWS_CRT_AUTH_SRC
+        "source/auth/*.cpp"
 )
 
 file(GLOB AWS_CRT_CRYPTO_SRC
@@ -166,6 +175,7 @@ file(GLOB AWS_CRT_EXTERNAL_CRC
 
 file(GLOB AWS_CRT_CPP_SRC
         ${AWS_CRT_SRC}
+        ${AWS_CRT_AUTH_SRC}
         ${AWS_CRT_CRYPTO_SRC}
         ${AWS_CRT_IO_SRC}
         ${AWS_CRT_IOT_SRC}
@@ -177,6 +187,7 @@ file(GLOB AWS_CRT_CPP_SRC
 if (WIN32)
     if (MSVC)
         source_group("Header Files\\aws\\crt" FILES ${AWS_CRT_HEADERS})
+        source_group("Header Files\\aws\\crt\\auth" FILES ${AWS_CRT_AUTH_HEADERS})
         source_group("Header Files\\aws\\crt\\crypto" FILES ${AWS_CRT_CRYPTO_HEADERS})
         source_group("Header Files\\aws\\crt\\io" FILES ${AWS_CRT_IO_HEADERS})
         source_group("Header Files\\aws\\iot" FILES ${AWS_CRT_IOT_HEADERS})
@@ -185,6 +196,7 @@ if (WIN32)
         source_group("Header Files\\aws\\crt\\external" FILES ${AWS_CRT_EXTERNAL_HEADERS})
 
         source_group("Source Files" FILES ${AWS_CRT_SRC})
+        source_group("Source Files\\auth" FILES ${AWS_CRT_AUTH_SRC})
         source_group("Source Files\\crypto" FILES ${AWS_CRT_CRYPTO_SRC})
         source_group("Source Files\\io" FILES ${AWS_CRT_IO_SRC})
         source_group("Source Files\\iot" FILES ${AWS_CRT_IOT_SRC})
@@ -224,9 +236,11 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
 find_package(aws-c-http REQUIRED)
 find_package(aws-c-mqtt REQUIRED)
 find_package(aws-c-cal REQUIRED)
-target_link_libraries(${CMAKE_PROJECT_NAME} AWS::aws-c-cal AWS::aws-c-http AWS::aws-c-mqtt)
+find_package(aws-c-auth REQUIRED)
+target_link_libraries(${CMAKE_PROJECT_NAME} AWS::aws-c-auth AWS::aws-c-cal AWS::aws-c-http AWS::aws-c-mqtt)
 
 install(FILES ${AWS_CRT_HEADERS} DESTINATION "include/aws/crt" COMPONENT Development)
+install(FILES ${AWS_CRT_AUTH_HEADERS} DESTINATION "include/aws/crt/auth" COMPONENT Development)
 install(FILES ${AWS_CRT_CRYPTO_HEADERS} DESTINATION "include/aws/crt/crypto" COMPONENT Development)
 install(FILES ${AWS_CRT_IO_HEADERS} DESTINATION "include/aws/crt/io" COMPONENT Development)
 install(FILES ${AWS_CRT_IOT_HEADERS} DESTINATION "include/aws/iot" COMPONENT Development)
