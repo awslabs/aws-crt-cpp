@@ -19,10 +19,25 @@
 #include <aws/crt/io/TlsOptions.h>
 #include <aws/crt/mqtt/MqttClient.h>
 
+#include <aws/common/logging.h>
+
 namespace Aws
 {
     namespace Crt
     {
+        enum class LogLevel
+        {
+            None = AWS_LL_NONE,
+            Fatal = AWS_LL_FATAL,
+            Error = AWS_LL_ERROR,
+            Warn = AWS_LL_WARN,
+            Info = AWS_LL_INFO,
+            Debug = AWS_LL_DEBUG,
+            Trace = AWS_LL_TRACE,
+
+            Count
+        };
+
         class AWS_CRT_CPP_API ApiHandle
         {
           public:
@@ -33,9 +48,13 @@ namespace Aws
             ApiHandle(ApiHandle &&) = delete;
             ApiHandle &operator=(const ApiHandle &) = delete;
             ApiHandle &operator=(ApiHandle &&) = delete;
+
+            void InitializeLogging(LogLevel level, const char *filename);
+
+          private:
+            aws_logger logger;
         };
 
-        AWS_CRT_CPP_API void LoadErrorStrings() noexcept;
         AWS_CRT_CPP_API const char *ErrorDebugString(int error) noexcept;
         AWS_CRT_CPP_API int LastError() noexcept;
     } // namespace Crt

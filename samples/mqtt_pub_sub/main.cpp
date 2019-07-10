@@ -63,11 +63,6 @@ int main(int argc, char *argv[])
 
     /************************ Setup the Lib ****************************/
     /*
-     * These make debug output via ErrorDebugString() work.
-     */
-    LoadErrorStrings();
-
-    /*
      * Do the global initialization for the API.
      */
     ApiHandle apiHandle;
