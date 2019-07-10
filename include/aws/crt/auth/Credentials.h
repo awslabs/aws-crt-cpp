@@ -49,6 +49,11 @@ namespace Aws
 
                 ~Credentials();
 
+                Credentials(const Credentials &) = delete;
+                Credentials(Credentials &&) = delete;
+                Credentials &operator=(const Credentials &) = delete;
+                Credentials &operator=(Credentials &&) = delete;
+
                 ByteCursor GetAccessKeyId(void) const noexcept;
 
                 ByteCursor GetSecretAccessKey(void) const noexcept;
@@ -183,15 +188,12 @@ namespace Aws
                     aws_credentials_provider *provider,
                     Allocator *allocator = DefaultAllocator()) noexcept;
 
-                CredentialsProvider(const CredentialsProvider &) = delete;
-
-                CredentialsProvider(CredentialsProvider &&) = delete;
-
-                CredentialsProvider &operator=(const CredentialsProvider &) = delete;
-
-                CredentialsProvider &operator=(CredentialsProvider &&) = delete;
-
                 virtual ~CredentialsProvider();
+
+                CredentialsProvider(const CredentialsProvider &) = delete;
+                CredentialsProvider(CredentialsProvider &&) = delete;
+                CredentialsProvider &operator=(const CredentialsProvider &) = delete;
+                CredentialsProvider &operator=(CredentialsProvider &&) = delete;
 
                 /*
                  * Asynchronous method to query for AWS credentials based on the internal provider implementation.
