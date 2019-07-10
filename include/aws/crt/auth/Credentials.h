@@ -102,7 +102,6 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API CredentialsProviderStaticConfig
             {
-
                 CredentialsProviderStaticConfig(void) : m_accessKeyId(), m_secretAccessKey(), m_sessionToken() {}
 
                 ByteCursor m_accessKeyId;
@@ -115,7 +114,6 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API CredentialsProviderProfileConfig
             {
-
                 CredentialsProviderProfileConfig(void)
                     : m_profileNameOverride(), m_configFileNameOverride(), m_credentialsFileNameOverride()
                 {
