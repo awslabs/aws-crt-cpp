@@ -22,7 +22,6 @@
 
 #include <sstream>
 
-using namespace Aws::Crt::Io;
 using namespace Aws::Crt::Http;
 
 static int s_HttpRequestTestCreateDestroy(struct aws_allocator *allocator, void *ctx)
@@ -35,7 +34,7 @@ static int s_HttpRequestTestCreateDestroy(struct aws_allocator *allocator, void 
         request.SetMethod(aws_byte_cursor_from_c_str("GET"));
         request.SetPath(aws_byte_cursor_from_c_str("/index"));
 
-        std::shared_ptr<IStream> stream = std::make_shared<std::stringstream>("TestContent");
+        std::shared_ptr<Aws::Crt::Io::IStream> stream = std::make_shared<std::stringstream>("TestContent");
         request.SetBody(stream);
 
         HttpHeader header1 = {aws_byte_cursor_from_c_str("Host"), aws_byte_cursor_from_c_str("www.test.com")};
