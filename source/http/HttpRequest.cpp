@@ -32,7 +32,7 @@ namespace Aws
 
             HttpRequest::~HttpRequest() { aws_http_request_destroy(m_request); }
 
-            ByteCursor HttpRequest::GetMethod(void) const noexcept
+            ByteCursor HttpRequest::GetMethod() const noexcept
             {
                 ByteCursor method_cursor;
                 AWS_ZERO_STRUCT(method_cursor);
@@ -44,7 +44,7 @@ namespace Aws
 
             void HttpRequest::SetMethod(ByteCursor method) noexcept { aws_http_request_set_method(m_request, method); }
 
-            ByteCursor HttpRequest::GetPath(void) const noexcept
+            ByteCursor HttpRequest::GetPath() const noexcept
             {
                 ByteCursor path_cursor;
                 AWS_ZERO_STRUCT(path_cursor);
@@ -56,7 +56,7 @@ namespace Aws
 
             void HttpRequest::SetPath(ByteCursor path) noexcept { aws_http_request_set_path(m_request, path); }
 
-            std::shared_ptr<Aws::Crt::Io::IStream> HttpRequest::GetBody(void) const noexcept { return m_bodyStream; }
+            std::shared_ptr<Aws::Crt::Io::IStream> HttpRequest::GetBody() const noexcept { return m_bodyStream; }
 
             void HttpRequest::SetBody(const std::shared_ptr<Aws::Crt::Io::IStream> &body) noexcept
             {
@@ -67,10 +67,7 @@ namespace Aws
                 m_bodyStream = (stream) ? body : nullptr;
             }
 
-            size_t HttpRequest::GetHeaderCount(void) const noexcept
-            {
-                return aws_http_request_get_header_count(m_request);
-            }
+            size_t HttpRequest::GetHeaderCount() const noexcept { return aws_http_request_get_header_count(m_request); }
 
             HttpHeader HttpRequest::GetHeader(size_t index) const noexcept
             {
