@@ -35,6 +35,11 @@ add_test_case(StreamTestLength)
 add_test_case(StreamTestRead)
 add_test_case(StreamTestSeekBegin)
 add_test_case(StreamTestSeekEnd)
+add_test_case(TestProviderStaticGet)
+add_test_case(TestProviderEnvironmentGet)
+add_test_case(TestProviderProfileGet)
+add_test_case(TestProviderImdsGet)
+add_test_case(TestProviderDefaultChainGet)
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 

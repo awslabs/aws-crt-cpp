@@ -37,7 +37,6 @@ namespace Aws
                     aws_client_bootstrap_release(m_bootstrap);
                     m_bootstrap = nullptr;
                     m_lastError = AWS_ERROR_UNKNOWN;
-                    AWS_ZERO_STRUCT(m_bootstrap);
                 }
             }
 
