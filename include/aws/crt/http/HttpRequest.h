@@ -42,17 +42,17 @@ namespace Aws
                 HttpRequest &operator=(const HttpRequest &) = delete;
                 HttpRequest &operator=(HttpRequest &&) = delete;
 
-                bool GetMethod(ByteCursor &method) const noexcept;
+                Optional<ByteCursor> GetMethod() const noexcept;
                 bool SetMethod(ByteCursor method) noexcept;
 
-                bool GetPath(ByteCursor &path) const noexcept;
+                Optional<ByteCursor> GetPath() const noexcept;
                 bool SetPath(ByteCursor path) noexcept;
 
                 std::shared_ptr<Aws::Crt::Io::IStream> GetBody() const noexcept;
                 bool SetBody(const std::shared_ptr<Aws::Crt::Io::IStream> &body) noexcept;
 
                 size_t GetHeaderCount() const noexcept;
-                bool GetHeader(size_t index, HttpHeader &header) const noexcept;
+                Optional<HttpHeader> GetHeader(size_t index) const noexcept;
                 bool SetHeader(size_t index, const HttpHeader &header) noexcept;
                 bool AddHeader(const HttpHeader &header) noexcept;
                 bool EraseHeader(size_t index) noexcept;

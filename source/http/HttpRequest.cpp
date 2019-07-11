@@ -32,9 +32,15 @@ namespace Aws
 
             HttpRequest::~HttpRequest() { aws_http_request_destroy(m_request); }
 
-            bool HttpRequest::GetMethod(ByteCursor &method) const noexcept
+            Optional<ByteCursor> HttpRequest::GetMethod() const noexcept
             {
-                return aws_http_request_get_method(m_request, &method) == AWS_OP_SUCCESS;
+                ByteCursor method;
+                if (aws_http_request_get_method(m_request, &method) != AWS_OP_SUCCESS)
+                {
+                    return Optional<ByteCursor>();
+                }
+
+                return Optional<ByteCursor>(method);
             }
 
             bool HttpRequest::SetMethod(ByteCursor method) noexcept
@@ -42,9 +48,15 @@ namespace Aws
                 return aws_http_request_set_method(m_request, method) == AWS_OP_SUCCESS;
             }
 
-            bool HttpRequest::GetPath(ByteCursor &path) const noexcept
+            Optional<ByteCursor> HttpRequest::GetPath() const noexcept
             {
-                return aws_http_request_get_path(m_request, &path) == AWS_OP_SUCCESS;
+                ByteCursor path;
+                if (aws_http_request_get_path(m_request, &path) != AWS_OP_SUCCESS)
+                {
+                    return Optional<ByteCursor>();
+                }
+
+                return Optional<ByteCursor>(path);
             }
 
             bool HttpRequest::SetPath(ByteCursor path) noexcept
@@ -75,9 +87,15 @@ namespace Aws
 
             size_t HttpRequest::GetHeaderCount() const noexcept { return aws_http_request_get_header_count(m_request); }
 
-            bool HttpRequest::GetHeader(size_t index, HttpHeader &header) const noexcept
+            Optional<HttpHeader> HttpRequest::GetHeader(size_t index) const noexcept
             {
-                return aws_http_request_get_header(m_request, &header, index) == AWS_OP_SUCCESS;
+                HttpHeader header;
+                if (aws_http_request_get_header(m_request, &header, index) != AWS_OP_SUCCESS)
+                {
+                    return Optional<HttpHeader>();
+                }
+
+                return Optional<HttpHeader>(header);
             }
 
             bool HttpRequest::SetHeader(size_t index, const HttpHeader &header) noexcept
