@@ -32,64 +32,68 @@ namespace Aws
 
             HttpRequest::~HttpRequest() { aws_http_request_destroy(m_request); }
 
-            ByteCursor HttpRequest::GetMethod() const noexcept
+            bool HttpRequest::GetMethod(ByteCursor &method) const noexcept
             {
-                ByteCursor method_cursor;
-                AWS_ZERO_STRUCT(method_cursor);
-
-                aws_http_request_get_method(m_request, &method_cursor);
-
-                return method_cursor;
+                return aws_http_request_get_method(m_request, &method) == AWS_OP_SUCCESS;
             }
 
-            void HttpRequest::SetMethod(ByteCursor method) noexcept { aws_http_request_set_method(m_request, method); }
-
-            ByteCursor HttpRequest::GetPath() const noexcept
+            bool HttpRequest::SetMethod(ByteCursor method) noexcept
             {
-                ByteCursor path_cursor;
-                AWS_ZERO_STRUCT(path_cursor);
-
-                aws_http_request_get_path(m_request, &path_cursor);
-
-                return path_cursor;
+                return aws_http_request_set_method(m_request, method) == AWS_OP_SUCCESS;
             }
 
-            void HttpRequest::SetPath(ByteCursor path) noexcept { aws_http_request_set_path(m_request, path); }
+            bool HttpRequest::GetPath(ByteCursor &path) const noexcept
+            {
+                return aws_http_request_get_path(m_request, &path) == AWS_OP_SUCCESS;
+            }
+
+            bool HttpRequest::SetPath(ByteCursor path) noexcept
+            {
+                return aws_http_request_set_path(m_request, path) == AWS_OP_SUCCESS;
+            }
 
             std::shared_ptr<Aws::Crt::Io::IStream> HttpRequest::GetBody() const noexcept { return m_bodyStream; }
 
-            void HttpRequest::SetBody(const std::shared_ptr<Aws::Crt::Io::IStream> &body) noexcept
+            bool HttpRequest::SetBody(const std::shared_ptr<Aws::Crt::Io::IStream> &body) noexcept
             {
-                aws_input_stream *stream = body ? Aws::Crt::Io::AwsInputStreamNewCpp(body, m_allocator) : nullptr;
+                aws_input_stream *stream = nullptr;
+                if (body != nullptr)
+                {
+                    stream = Aws::Crt::Io::AwsInputStreamNewCpp(body, m_allocator);
+                    if (stream == nullptr)
+                    {
+                        return false;
+                    }
+                }
 
                 aws_http_request_set_body_stream(m_request, stream);
 
                 m_bodyStream = (stream) ? body : nullptr;
+
+                return true;
             }
 
             size_t HttpRequest::GetHeaderCount() const noexcept { return aws_http_request_get_header_count(m_request); }
 
-            HttpHeader HttpRequest::GetHeader(size_t index) const noexcept
+            bool HttpRequest::GetHeader(size_t index, HttpHeader &header) const noexcept
             {
-                HttpHeader header;
-                AWS_ZERO_STRUCT(header);
-
-                aws_http_request_get_header(m_request, &header, index);
-
-                return header;
+                return aws_http_request_get_header(m_request, &header, index) == AWS_OP_SUCCESS;
             }
 
-            void HttpRequest::SetHeader(size_t index, const HttpHeader &header) noexcept
+            bool HttpRequest::SetHeader(size_t index, const HttpHeader &header) noexcept
             {
-                aws_http_request_set_header(m_request, header, index);
+                return aws_http_request_set_header(m_request, header, index) == AWS_OP_SUCCESS;
             }
 
-            void HttpRequest::AddHeader(const HttpHeader &header) noexcept
+            bool HttpRequest::AddHeader(const HttpHeader &header) noexcept
             {
-                aws_http_request_add_header(m_request, header);
+                return aws_http_request_add_header(m_request, header) == AWS_OP_SUCCESS;
             }
 
-            void HttpRequest::EraseHeader(size_t index) noexcept { aws_http_request_erase_header(m_request, index); }
+            bool HttpRequest::EraseHeader(size_t index) noexcept
+            {
+                return aws_http_request_erase_header(m_request, index) == AWS_OP_SUCCESS;
+            }
         } // namespace Http
     }     // namespace Crt
 } // namespace Aws

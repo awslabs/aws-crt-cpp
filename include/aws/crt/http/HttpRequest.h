@@ -42,20 +42,20 @@ namespace Aws
                 HttpRequest &operator=(const HttpRequest &) = delete;
                 HttpRequest &operator=(HttpRequest &&) = delete;
 
-                ByteCursor GetMethod() const noexcept;
-                void SetMethod(ByteCursor method) noexcept;
+                bool GetMethod(ByteCursor &method) const noexcept;
+                bool SetMethod(ByteCursor method) noexcept;
 
-                ByteCursor GetPath() const noexcept;
-                void SetPath(ByteCursor path) noexcept;
+                bool GetPath(ByteCursor &path) const noexcept;
+                bool SetPath(ByteCursor path) noexcept;
 
                 std::shared_ptr<Aws::Crt::Io::IStream> GetBody() const noexcept;
-                void SetBody(const std::shared_ptr<Aws::Crt::Io::IStream> &body) noexcept;
+                bool SetBody(const std::shared_ptr<Aws::Crt::Io::IStream> &body) noexcept;
 
                 size_t GetHeaderCount() const noexcept;
-                HttpHeader GetHeader(size_t index) const noexcept;
-                void SetHeader(size_t index, const HttpHeader &header) noexcept;
-                void AddHeader(const HttpHeader &header) noexcept;
-                void EraseHeader(size_t index) noexcept;
+                bool GetHeader(size_t index, HttpHeader &header) const noexcept;
+                bool SetHeader(size_t index, const HttpHeader &header) noexcept;
+                bool AddHeader(const HttpHeader &header) noexcept;
+                bool EraseHeader(size_t index) noexcept;
 
                 operator bool() const noexcept { return m_request != nullptr; }
 
