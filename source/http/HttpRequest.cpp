@@ -72,6 +72,8 @@ namespace Aws
             HttpHeader HttpRequest::GetHeader(size_t index) const noexcept
             {
                 HttpHeader header;
+                AWS_ZERO_STRUCT(header);
+
                 aws_http_request_get_header(m_request, &header, index);
 
                 return header;
