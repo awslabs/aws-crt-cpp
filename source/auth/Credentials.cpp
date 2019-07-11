@@ -49,7 +49,7 @@ namespace Aws
                 m_credentials = nullptr;
             }
 
-            ByteCursor Credentials::GetAccessKeyId(void) const noexcept
+            ByteCursor Credentials::GetAccessKeyId() const noexcept
             {
                 if (m_credentials)
                 {
@@ -61,7 +61,7 @@ namespace Aws
                 }
             }
 
-            ByteCursor Credentials::GetSecretAccessKey(void) const noexcept
+            ByteCursor Credentials::GetSecretAccessKey() const noexcept
             {
                 if (m_credentials)
                 {
@@ -73,7 +73,7 @@ namespace Aws
                 }
             }
 
-            ByteCursor Credentials::GetSessionToken(void) const noexcept
+            ByteCursor Credentials::GetSessionToken() const noexcept
             {
                 if (m_credentials)
                 {
@@ -85,7 +85,7 @@ namespace Aws
                 }
             }
 
-            Credentials::operator bool(void) const noexcept { return m_credentials != nullptr; }
+            Credentials::operator bool() const noexcept { return m_credentials != nullptr; }
 
             CredentialsProvider::CredentialsProvider(aws_credentials_provider *provider, Allocator *allocator) noexcept
                 : m_allocator(allocator), m_provider(provider)

@@ -54,15 +54,15 @@ namespace Aws
                 Credentials &operator=(const Credentials &) = delete;
                 Credentials &operator=(Credentials &&) = delete;
 
-                ByteCursor GetAccessKeyId(void) const noexcept;
+                ByteCursor GetAccessKeyId() const noexcept;
 
-                ByteCursor GetSecretAccessKey(void) const noexcept;
+                ByteCursor GetSecretAccessKey() const noexcept;
 
-                ByteCursor GetSessionToken(void) const noexcept;
+                ByteCursor GetSessionToken() const noexcept;
 
-                operator bool(void) const noexcept;
+                operator bool() const noexcept;
 
-                aws_credentials *GetUnderlyingHandle(void) const noexcept;
+                aws_credentials *GetUnderlyingHandle() const noexcept;
 
               private:
                 aws_credentials *m_credentials;
@@ -94,12 +94,12 @@ namespace Aws
                  * support provider chains and caching (whose implementations rely on links to C implementation
                  * providers)
                  */
-                virtual aws_credentials_provider *GetUnderlyingHandle(void) const noexcept = 0;
+                virtual aws_credentials_provider *GetUnderlyingHandle() const noexcept = 0;
 
                 /*
                  * Validity check
                  */
-                virtual operator bool(void) const noexcept = 0;
+                virtual operator bool() const noexcept = 0;
             };
 
             /*
@@ -107,7 +107,7 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API CredentialsProviderStaticConfig
             {
-                CredentialsProviderStaticConfig(void) : m_accessKeyId(), m_secretAccessKey(), m_sessionToken() {}
+                CredentialsProviderStaticConfig() : m_accessKeyId(), m_secretAccessKey(), m_sessionToken() {}
 
                 ByteCursor m_accessKeyId;
                 ByteCursor m_secretAccessKey;
@@ -119,7 +119,7 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API CredentialsProviderProfileConfig
             {
-                CredentialsProviderProfileConfig(void)
+                CredentialsProviderProfileConfig()
                     : m_profileNameOverride(), m_configFileNameOverride(), m_credentialsFileNameOverride()
                 {
                 }
@@ -134,7 +134,7 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API CredentialsProviderImdsConfig
             {
-                CredentialsProviderImdsConfig(void) : m_bootstrap(nullptr) {}
+                CredentialsProviderImdsConfig() : m_bootstrap(nullptr) {}
 
                 Io::ClientBootstrap *m_bootstrap;
             };
@@ -146,7 +146,7 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API CredentialsProviderChainConfig
             {
-                CredentialsProviderChainConfig(void) : m_providers() {}
+                CredentialsProviderChainConfig() : m_providers() {}
 
                 Vector<std::shared_ptr<ICredentialsProvider>> m_providers;
             };
@@ -156,7 +156,7 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API CredentialsProviderCachedConfig
             {
-                CredentialsProviderCachedConfig(void) : m_provider(nullptr), m_refreshTime() {}
+                CredentialsProviderCachedConfig() : m_provider(nullptr), m_refreshTime() {}
 
                 std::shared_ptr<ICredentialsProvider> m_provider;
                 std::chrono::milliseconds m_refreshTime;
@@ -170,7 +170,7 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API CredentialsProviderChainDefaultConfig
             {
-                CredentialsProviderChainDefaultConfig(void) : m_bootstrap(nullptr) {}
+                CredentialsProviderChainDefaultConfig() : m_bootstrap(nullptr) {}
 
                 Io::ClientBootstrap *m_bootstrap;
             };
@@ -200,12 +200,9 @@ namespace Aws
                  */
                 virtual bool GetCredentials(const OnCredentialsResolved &onCredentialsResolved) const override;
 
-                virtual aws_credentials_provider *GetUnderlyingHandle(void) const noexcept override
-                {
-                    return m_provider;
-                }
+                virtual aws_credentials_provider *GetUnderlyingHandle() const noexcept override { return m_provider; }
 
-                virtual operator bool(void) const noexcept override { return m_provider != nullptr; }
+                virtual operator bool() const noexcept override { return m_provider != nullptr; }
 
                 /*
                  * Factory methods for all of the basic credentials provider types

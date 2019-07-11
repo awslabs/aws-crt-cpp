@@ -45,7 +45,7 @@ class GetCredentialsWaiter
         m_signal.notify_one();
     }
 
-    std::shared_ptr<Credentials> GetCredentials(void)
+    std::shared_ptr<Credentials> GetCredentials()
     {
         {
             std::unique_lock<std::mutex> lock(m_lock);
