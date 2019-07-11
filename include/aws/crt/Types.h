@@ -45,7 +45,7 @@ namespace Aws
         namespace Io
         {
             using SocketOptions = aws_socket_options;
-            using IoStream = std::basic_iostream<char, std::char_traits<char>>;
+            using IStream = std::basic_istream<char, std::char_traits<char>>;
         } // namespace Io
 
         namespace Mqtt

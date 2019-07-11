@@ -29,7 +29,7 @@ namespace Aws
              * Factory to create a aws-c-io input stream subclass from a C++ stream
              */
             AWS_CRT_CPP_API aws_input_stream *AwsInputStreamNewCpp(
-                const std::shared_ptr<Aws::Crt::Io::IoStream> &stream,
+                const std::shared_ptr<Aws::Crt::Io::IStream> &stream,
                 Aws::Crt::Allocator *allocator = DefaultAllocator()) noexcept;
         } // namespace Io
     }     // namespace Crt

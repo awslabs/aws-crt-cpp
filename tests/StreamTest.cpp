@@ -30,7 +30,7 @@ static int s_StreamTestCreateDestroyWrapperFirst(struct aws_allocator *allocator
 
     {
         auto string_stream = std::make_shared<std::stringstream>("SomethingInteresting");
-        auto stream = std::static_pointer_cast<Aws::Crt::Io::IoStream>(string_stream);
+        auto stream = std::static_pointer_cast<Aws::Crt::Io::IStream>(string_stream);
 
         aws_input_stream *wrapped_stream = Aws::Crt::Io::AwsInputStreamNewCpp(stream);
 
@@ -54,7 +54,7 @@ static int s_StreamTestCreateDestroyWrapperLast(struct aws_allocator *allocator,
 
         {
             auto string_stream = std::make_shared<std::stringstream>("SomethingInteresting");
-            auto stream = std::static_pointer_cast<Aws::Crt::Io::IoStream>(string_stream);
+            auto stream = std::static_pointer_cast<Aws::Crt::Io::IStream>(string_stream);
 
             wrapped_stream = Aws::Crt::Io::AwsInputStreamNewCpp(stream);
 
@@ -78,7 +78,7 @@ static int s_StreamTestLength(struct aws_allocator *allocator, void *ctx)
 
     {
         auto string_stream = std::make_shared<std::stringstream>(STREAM_CONTENTS);
-        auto stream = std::static_pointer_cast<Aws::Crt::Io::IoStream>(string_stream);
+        auto stream = std::static_pointer_cast<Aws::Crt::Io::IStream>(string_stream);
 
         aws_input_stream *wrapped_stream = Aws::Crt::Io::AwsInputStreamNewCpp(stream);
 
@@ -101,7 +101,7 @@ static int s_StreamTestRead(struct aws_allocator *allocator, void *ctx)
 
     {
         auto string_stream = std::make_shared<std::stringstream>(STREAM_CONTENTS);
-        auto stream = std::static_pointer_cast<Aws::Crt::Io::IoStream>(string_stream);
+        auto stream = std::static_pointer_cast<Aws::Crt::Io::IStream>(string_stream);
 
         aws_input_stream *wrapped_stream = Aws::Crt::Io::AwsInputStreamNewCpp(stream);
 
@@ -133,7 +133,7 @@ static int s_StreamTestSeekBegin(struct aws_allocator *allocator, void *ctx)
 
     {
         auto string_stream = std::make_shared<std::stringstream>(STREAM_CONTENTS);
-        auto stream = std::static_pointer_cast<Aws::Crt::Io::IoStream>(string_stream);
+        auto stream = std::static_pointer_cast<Aws::Crt::Io::IStream>(string_stream);
 
         aws_input_stream *wrapped_stream = Aws::Crt::Io::AwsInputStreamNewCpp(stream);
 
@@ -167,7 +167,7 @@ static int s_StreamTestSeekEnd(struct aws_allocator *allocator, void *ctx)
 
     {
         auto string_stream = std::make_shared<std::stringstream>(STREAM_CONTENTS);
-        auto stream = std::static_pointer_cast<Aws::Crt::Io::IoStream>(string_stream);
+        auto stream = std::static_pointer_cast<Aws::Crt::Io::IStream>(string_stream);
 
         aws_input_stream *wrapped_stream = Aws::Crt::Io::AwsInputStreamNewCpp(stream);
 

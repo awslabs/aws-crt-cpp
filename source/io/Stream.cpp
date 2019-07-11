@@ -33,7 +33,7 @@ static std::ios_base::seekdir s_stream_seek_basis_to_seekdir(enum aws_stream_see
 
 struct aws_input_stream_cpp_impl
 {
-    std::shared_ptr<Aws::Crt::Io::IoStream> stream;
+    std::shared_ptr<Aws::Crt::Io::IStream> stream;
 };
 
 static int s_aws_input_stream_cpp_seek(
@@ -42,7 +42,7 @@ static int s_aws_input_stream_cpp_seek(
     enum aws_stream_seek_basis basis)
 {
     aws_input_stream_cpp_impl *impl = static_cast<aws_input_stream_cpp_impl *>(stream->impl);
-    impl->stream->seekg(Aws::Crt::Io::IoStream::off_type(offset), s_stream_seek_basis_to_seekdir(basis));
+    impl->stream->seekg(Aws::Crt::Io::IStream::off_type(offset), s_stream_seek_basis_to_seekdir(basis));
 
     return AWS_OP_SUCCESS;
 }
@@ -111,7 +111,7 @@ namespace Aws
         namespace Io
         {
             struct aws_input_stream *AwsInputStreamNewCpp(
-                const std::shared_ptr<Aws::Crt::Io::IoStream> &stream,
+                const std::shared_ptr<Aws::Crt::Io::IStream> &stream,
                 Aws::Crt::Allocator *allocator) noexcept
             {
                 struct aws_input_stream *input_stream = NULL;
