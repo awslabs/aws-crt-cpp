@@ -26,7 +26,7 @@ namespace Aws
     {
         namespace Http
         {
-            using HttpHeader = struct aws_http_header;
+            using HttpHeader = aws_http_header;
 
             /*
              * Class representing a mutable http request.
