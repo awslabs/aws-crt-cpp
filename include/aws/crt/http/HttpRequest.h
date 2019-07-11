@@ -29,7 +29,7 @@ namespace Aws
             using HttpHeader = struct aws_http_header;
 
             /*
-             *
+             * Class representing a mutable http request.
              */
             class AWS_CRT_CPP_API HttpRequest
             {
