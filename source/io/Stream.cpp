@@ -52,7 +52,7 @@ static int s_aws_input_stream_cpp_read(struct aws_input_stream *stream, struct a
     aws_input_stream_cpp_impl *impl = static_cast<aws_input_stream_cpp_impl *>(stream->impl);
 
     impl->stream->read(reinterpret_cast<char *>(dest->buffer + dest->len), dest->capacity - dest->len);
-    *amount_read = impl->stream->gcount();
+    *amount_read = static_cast<size_t>(impl->stream->gcount());
 
     dest->len += *amount_read;
 
