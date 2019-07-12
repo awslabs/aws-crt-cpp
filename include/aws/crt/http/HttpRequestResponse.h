@@ -34,7 +34,7 @@ namespace Aws
             class AWS_CRT_CPP_API HttpMessage
             {
               public:
-                ~HttpMessage();
+                virtual ~HttpMessage();
 
                 HttpMessage(const HttpMessage &) = delete;
                 HttpMessage(HttpMessage &&) = delete;
@@ -51,7 +51,7 @@ namespace Aws
                 bool EraseHeader(size_t index) noexcept;
 
                 operator bool() const noexcept { return m_message != nullptr; }
-
+                
                 struct aws_http_message *GetUnderlyingMessage() const noexcept { return m_message; }
 
               protected:
