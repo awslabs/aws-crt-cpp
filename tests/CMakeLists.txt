@@ -40,6 +40,7 @@ add_test_case(TestProviderEnvironmentGet)
 add_test_case(TestProviderProfileGet)
 add_test_case(TestProviderImdsGet)
 add_test_case(TestProviderDefaultChainGet)
+add_test_case(HttpRequestTestCreateDestroy)
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 
