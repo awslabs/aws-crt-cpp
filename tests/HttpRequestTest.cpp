@@ -37,6 +37,9 @@ static int s_HttpRequestTestCreateDestroy(struct aws_allocator *allocator, void 
         std::shared_ptr<Aws::Crt::Io::IStream> stream = std::make_shared<std::stringstream>("TestContent");
         request.SetBody(stream);
 
+        std::shared_ptr<Aws::Crt::Io::IStream> stream2 = std::make_shared<std::stringstream>("SomeOtherContent");
+        request.SetBody(stream2);
+
         HttpHeader header1 = {aws_byte_cursor_from_c_str("Host"), aws_byte_cursor_from_c_str("www.test.com")};
         request.AddHeader(header1);
 

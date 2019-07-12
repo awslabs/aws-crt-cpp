@@ -17,6 +17,7 @@
 
 #include <aws/crt/io/Stream.h>
 #include <aws/http/request_response.h>
+#include <aws/io/stream.h>
 
 namespace Aws
 {
@@ -30,7 +31,20 @@ namespace Aws
             {
             }
 
-            HttpRequest::~HttpRequest() { aws_http_request_destroy(m_request); }
+            HttpRequest::~HttpRequest()
+            {
+                if (m_request != nullptr)
+                {
+                    aws_input_stream *old_stream = aws_http_request_get_body_stream(m_request);
+                    if (old_stream != nullptr)
+                    {
+                        aws_input_stream_destroy(old_stream);
+                    }
+
+                    aws_http_request_destroy(m_request);
+                    m_request = nullptr;
+                }
+            }
 
             Optional<ByteCursor> HttpRequest::GetMethod() const noexcept
             {
@@ -76,6 +90,15 @@ namespace Aws
                     {
                         return false;
                     }
+                }
+
+                /*
+                 * clean up the old stream before setting the new
+                 */
+                aws_input_stream *old_stream = aws_http_request_get_body_stream(m_request);
+                if (old_stream != nullptr)
+                {
+                    // aws_input_stream_destroy(old_stream);
                 }
 
                 aws_http_request_set_body_stream(m_request, stream);
