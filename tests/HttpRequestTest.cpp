@@ -30,7 +30,7 @@ static int s_HttpRequestTestCreateDestroy(struct aws_allocator *allocator, void 
     Aws::Crt::ApiHandle apiHandle(allocator);
 
     {
-        Aws::Crt::Http::HttpRequest request;
+        Aws::Crt::Http::HttpRequest request(allocator);
         request.SetMethod(aws_byte_cursor_from_c_str("GET"));
         request.SetPath(aws_byte_cursor_from_c_str("/index"));
 

@@ -41,6 +41,10 @@ add_test_case(TestProviderProfileGet)
 add_test_case(TestProviderImdsGet)
 add_test_case(TestProviderDefaultChainGet)
 add_test_case(HttpRequestTestCreateDestroy)
+add_test_case(Sigv4SignerTestCreateDestroy)
+add_test_case(Sigv4SignerTestSimple)
+add_test_case(Sigv4SigningPipelineTestCreateDestroy)
+add_test_case(Sigv4SigningPipelineTestSimple)
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 

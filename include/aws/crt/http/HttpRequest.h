@@ -59,6 +59,8 @@ namespace Aws
 
                 operator bool() const noexcept { return m_request != nullptr; }
 
+                aws_http_request *GetUnderlyingHandle() const noexcept { return m_request; }
+
               private:
                 Allocator *m_allocator;
 

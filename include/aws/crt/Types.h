@@ -104,5 +104,33 @@ namespace Aws
             return std::shared_ptr<T>(t, [allocator](T *obj) { Delete(obj, allocator); });
         }
 
+        template <typename T> using ScopedResourceDestructor = std::function<void(T *)>;
+
+        /*
+         * A simple RAII class intended for automatically cleaning up aws-c-* structs
+         */
+        template <typename T> class ScopedResource
+        {
+          public:
+            ScopedResource(T *resource, ScopedResourceDestructor<T> destructor)
+                : m_resource(resource), m_destructor(destructor)
+            {
+            }
+
+            ~ScopedResource()
+            {
+                if (m_resource)
+                {
+                    m_destructor(m_resource);
+                    m_resource = nullptr;
+                }
+            }
+
+            T *GetResource() const { return m_resource; }
+
+          private:
+            T *m_resource;
+            ScopedResourceDestructor<T> m_destructor;
+        };
     } // namespace Crt
 } // namespace Aws
