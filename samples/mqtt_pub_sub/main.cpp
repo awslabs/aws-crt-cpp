@@ -124,7 +124,10 @@ int main(int argc, char *argv[])
 
     if (!clientConfig)
     {
-        fprintf(stderr, "Client Configuration initialization failed with error %s\n", ErrorDebugString(LastError()));
+        fprintf(
+            stderr,
+            "Client Configuration initialization failed with error %s\n",
+            ErrorDebugString(clientConfig.LastError()));
         exit(-1);
     }
 

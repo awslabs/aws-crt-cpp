@@ -29,7 +29,8 @@ namespace Aws
         class AWS_CRT_CPP_API MqttClientConnectionConfig final
         {
           public:
-            MqttClientConnectionConfig() noexcept;
+            static MqttClientConnectionConfig CreateInvalid(int lastError) noexcept;
+
             MqttClientConnectionConfig(
                 const Crt::String &endpoint,
                 uint16_t port,
@@ -37,12 +38,15 @@ namespace Aws
                 Crt::Io::TlsContext &&tlsContext);
 
             explicit operator bool() const noexcept { return m_context ? true : false; }
+            int LastError() const noexcept { return m_lastError; }
 
           private:
+            MqttClientConnectionConfig(int lastError) noexcept;
             Crt::String m_endpoint;
             uint16_t m_port;
             Crt::Io::TlsContext m_context;
             Crt::Io::SocketOptions m_socketOptions;
+            int m_lastError;
 
             friend class MqttClient;
         };
@@ -127,12 +131,16 @@ namespace Aws
              */
             MqttClientConnectionConfig Build() noexcept;
 
+            explicit operator bool() const noexcept { return m_lastError == 0; }
+            int LastError() const noexcept { return m_lastError; }
+
           private:
             Crt::Allocator *m_allocator;
             Crt::String m_endpoint;
             uint16_t m_portOverride;
             Crt::Io::SocketOptions m_socketOptions;
             Crt::Io::TlsContextOptions m_contextOptions;
+            int m_lastError;
         };
 
         /**
