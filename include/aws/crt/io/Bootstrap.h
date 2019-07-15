@@ -44,7 +44,7 @@ namespace Aws
                 operator bool() const noexcept;
                 int LastError() const noexcept;
 
-                aws_client_bootstrap *GetUnderlyingHandle() noexcept;
+                aws_client_bootstrap *GetUnderlyingHandle() const noexcept;
 
               private:
                 aws_client_bootstrap *m_bootstrap;
