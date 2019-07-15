@@ -148,9 +148,9 @@ int main(int argc, char *argv[])
      */
     auto connection = mqttClient.NewConnection(clientConfig);
 
-    if (!*connection)
+    if (!connection)
     {
-        fprintf(stderr, "MQTT Connection Creation failed with error %s\n", ErrorDebugString(connection->LastError()));
+        fprintf(stderr, "MQTT Connection Creation failed with error %s\n", ErrorDebugString(mqttClient.LastError()));
         exit(-1);
     }
 

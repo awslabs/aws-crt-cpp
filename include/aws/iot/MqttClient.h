@@ -162,6 +162,7 @@ namespace Aws
 
           private:
             Crt::Mqtt::MqttClient m_client;
+            int m_lastError;
         };
     } // namespace Iot
 } // namespace Aws

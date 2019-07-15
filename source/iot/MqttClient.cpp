@@ -186,25 +186,43 @@ namespace Aws
         }
 
         MqttClient::MqttClient(Crt::Io::ClientBootstrap &bootstrap, Crt::Allocator *allocator) noexcept
-            : m_client(bootstrap, allocator)
+            : m_client(bootstrap, allocator), m_lastError(0)
         {
+            if (!m_client)
+            {
+                m_lastError = m_client.LastError();
+            }
         }
 
         std::shared_ptr<Crt::Mqtt::MqttConnection> MqttClient::NewConnection(
             const MqttClientConnectionConfig &config) noexcept
         {
+            if (!config)
+            {
+                m_lastError = config.LastError();
+                return nullptr;
+            }
+
             auto newConnection = m_client.NewConnection(
                 config.m_endpoint.c_str(),
                 config.m_port,
                 config.m_socketOptions,
                 config.m_context.NewConnectionOptions());
 
-            if (newConnection && newConnection->SetLogin("?SDK=CPPv2&Version=" AWS_CRT_CPP_VERSION, nullptr))
+            if (!newConnection)
             {
-                return newConnection;
+                m_lastError = m_client.LastError();
+                return nullptr;
             }
 
-            return nullptr;
+            if (!(*newConnection) ||
+                !newConnection->SetLogin("?SDK=CPPv2&Version=" AWS_CRT_CPP_VERSION, nullptr))
+            {
+                m_lastError = newConnection->LastError();
+                return nullptr;
+            }
+
+            return newConnection;
         }
     } // namespace Iot
 } // namespace Aws
