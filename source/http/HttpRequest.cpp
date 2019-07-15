@@ -98,7 +98,7 @@ namespace Aws
                 aws_input_stream *old_stream = aws_http_request_get_body_stream(m_request);
                 if (old_stream != nullptr)
                 {
-                    // aws_input_stream_destroy(old_stream);
+                    aws_input_stream_destroy(old_stream);
                 }
 
                 aws_http_request_set_body_stream(m_request, stream);

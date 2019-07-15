@@ -28,7 +28,7 @@ namespace Aws
         namespace Auth
         {
             AwsSigningConfig::AwsSigningConfig(Allocator *allocator)
-                : ISigningConfig(), m_allocator(nullptr), m_credentials(nullptr),
+                : ISigningConfig(), m_allocator(allocator), m_credentials(nullptr),
                   m_config(Aws::Crt::New<aws_signing_config_aws>(allocator))
             {
                 AWS_ZERO_STRUCT(*m_config);
@@ -168,6 +168,7 @@ namespace Aws
 
                 struct aws_signing_result signing_result;
                 AWS_ZERO_STRUCT(signing_result);
+                aws_signing_result_init(&signing_result, m_allocator);
 
                 ScopedResource<aws_signing_result> scoped_signing_result(&signing_result, aws_signing_result_clean_up);
 

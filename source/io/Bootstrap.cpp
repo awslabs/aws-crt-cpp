@@ -44,7 +44,7 @@ namespace Aws
 
             int ClientBootstrap::LastError() const noexcept { return m_lastError; }
 
-            aws_client_bootstrap *ClientBootstrap::GetUnderlyingHandle() noexcept
+            aws_client_bootstrap *ClientBootstrap::GetUnderlyingHandle() const noexcept
             {
                 if (*this)
                 {
