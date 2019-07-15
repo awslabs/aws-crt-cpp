@@ -215,8 +215,7 @@ namespace Aws
                 return nullptr;
             }
 
-            if (!(*newConnection) ||
-                !newConnection->SetLogin("?SDK=CPPv2&Version=" AWS_CRT_CPP_VERSION, nullptr))
+            if (!(*newConnection) || !newConnection->SetLogin("?SDK=CPPv2&Version=" AWS_CRT_CPP_VERSION, nullptr))
             {
                 m_lastError = newConnection->LastError();
                 return nullptr;
