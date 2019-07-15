@@ -22,6 +22,8 @@ namespace Aws
     {
         namespace Io
         {
+            int TlsContextOptions::LastError() const noexcept { return aws_last_error(); }
+
             TlsContextOptions::~TlsContextOptions()
             {
                 if (m_isInit)
@@ -115,36 +117,28 @@ namespace Aws
 
             bool TlsContextOptions::IsAlpnSupported() noexcept { return aws_tls_is_alpn_available(); }
 
-            void TlsContextOptions::SetAlpnList(const char *alpn_list) noexcept
+            bool TlsContextOptions::SetAlpnList(const char *alpn_list) noexcept
             {
-                if (m_isInit)
-                {
-                    aws_tls_ctx_options_set_alpn_list(&m_options, alpn_list);
-                }
+                AWS_ASSERT(m_isInit);
+                return aws_tls_ctx_options_set_alpn_list(&m_options, alpn_list) == 0;
             }
 
             void TlsContextOptions::SetVerifyPeer(bool verify_peer) noexcept
             {
-                if (m_isInit)
-                {
-                    aws_tls_ctx_options_set_verify_peer(&m_options, verify_peer);
-                }
+                AWS_ASSERT(m_isInit);
+                aws_tls_ctx_options_set_verify_peer(&m_options, verify_peer);
             }
 
-            void TlsContextOptions::OverrideDefaultTrustStore(const char *caPath, const char *caFile) noexcept
+            bool TlsContextOptions::OverrideDefaultTrustStore(const char *caPath, const char *caFile) noexcept
             {
-                if (m_isInit)
-                {
-                    aws_tls_ctx_options_override_default_trust_store_from_path(&m_options, caPath, caFile);
-                }
+                AWS_ASSERT(m_isInit);
+                return aws_tls_ctx_options_override_default_trust_store_from_path(&m_options, caPath, caFile) == 0;
             }
 
-            void TlsContextOptions::OverrideDefaultTrustStore(const ByteCursor &ca) noexcept
+            bool TlsContextOptions::OverrideDefaultTrustStore(const ByteCursor &ca) noexcept
             {
-                if (m_isInit)
-                {
-                    aws_tls_ctx_options_override_default_trust_store(&m_options, const_cast<ByteCursor *>(&ca));
-                }
+                AWS_ASSERT(m_isInit);
+                return aws_tls_ctx_options_override_default_trust_store(&m_options, const_cast<ByteCursor *>(&ca)) == 0;
             }
 
             void InitTlsStaticState(Aws::Crt::Allocator *alloc) noexcept { aws_tls_init_static_state(alloc); }

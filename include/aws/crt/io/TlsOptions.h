@@ -44,6 +44,9 @@ namespace Aws
                 TlsContextOptions(TlsContextOptions &&) noexcept;
                 TlsContextOptions &operator=(TlsContextOptions &&) noexcept;
 
+                explicit operator bool() const noexcept { return m_isInit; }
+                int LastError() const noexcept;
+
                 /**
                  * Initializes TlsContextOptions with secure by default options, with
                  * no client certificates.
@@ -92,7 +95,7 @@ namespace Aws
                  * Sets the list of alpn protocols, delimited by ';'. This string must remain in memory
                  * for the lifetime of this object.
                  */
-                void SetAlpnList(const char *alpnList) noexcept;
+                bool SetAlpnList(const char *alpnList) noexcept;
 
                 /**
                  * In client mode, this turns off x.509 validation. Don't do this unless you're testing.
@@ -111,9 +114,9 @@ namespace Aws
                  *
                  * These strings must remain in memory for the lifetime of this object.
                  */
-                void OverrideDefaultTrustStore(const char *caPath, const char *caFile) noexcept;
+                bool OverrideDefaultTrustStore(const char *caPath, const char *caFile) noexcept;
 
-                void OverrideDefaultTrustStore(const ByteCursor &ca) noexcept;
+                bool OverrideDefaultTrustStore(const ByteCursor &ca) noexcept;
 
               private:
                 aws_tls_ctx_options m_options;
