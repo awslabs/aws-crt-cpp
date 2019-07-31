@@ -14,7 +14,7 @@
  */
 #include <aws/crt/Api.h>
 
-#include <aws/crt/http/HttpRequest.h>
+#include <aws/crt/http/HttpRequestResponse.h>
 
 #include <aws/http/request_response.h>
 

@@ -14,7 +14,6 @@
  * permissions and limitations under the License.
  */
 #include <aws/http/connection.h>
-#include <aws/http/request_response.h>
 
 #include <aws/crt/Types.h>
 #include <aws/crt/io/Bootstrap.h>
@@ -37,6 +36,7 @@ namespace Aws
             class HttpClientConnection;
             class HttpStream;
             class HttpClientStream;
+            class HttpRequest;
             using HttpHeader = aws_http_header;
 
             /**
@@ -57,21 +57,6 @@ namespace Aws
              * immediately released after completion of this callback.
              */
             using OnConnectionShutdown = std::function<void(HttpClientConnection &connection, int errorCode)>;
-
-            /**
-             * Called as part of the outgoing http message's body (request in client mode, and response in server mode).
-             * `buffer` contains the buffer for you to write into. Keep in mind, that `buffer` may already have
-             * pending data in it, so always append after buffer.buf + buffer.len. You can write up to buffer.capacity
-             * - buffer.len into the buffer.
-             *
-             * You need not write anything to the buffer to keep the stream alive. As long as you return:
-             * AWS_HTTP_OUTGOING_BODY_IN_PROGRESS, you will continue to receive this callback until you
-             * return AWS_HTTP_OUTGOING_BODY_DONE.
-             *
-             * This parameter can be empty on the HttpStream object if you will not be sending a body.
-             */
-            using OnStreamOutgoingBody =
-                std::function<enum aws_http_outgoing_body_state(HttpStream &stream, ByteBuf &buffer)>;
 
             /**
              * Called as headers are received from the peer. `headersArray` will contain the header value
@@ -96,16 +81,10 @@ namespace Aws
              * Invoked as chunks of the body are read. `data` contains the data read from the wire. If chunked encoding
              * was used, it will already be decoded (TBD).
              *
-             * `outWindowUpdateSize` is how much to increment the window once this data is processed.
-             * By default, it is the size of the data which has just come in.
-             * Leaving this value untouched will increment the window back to its original size.
-             * Setting this value to 0 will prevent the update and let the window shrink.
-             * The window can be manually updated via Aws::Crt::Http::HttpStream::UpdateWindow()
-             *
              * On HttpStream, this function can be empty if you are not expecting a body (e.g. a HEAD request).
              */
             using OnIncomingBody =
-                std::function<void(HttpStream &stream, const ByteCursor &data, std::size_t &outWindowUpdateSize)>;
+                std::function<void(HttpStream &stream, const ByteCursor &data)>;
 
             /**
              * Invoked upon completion of the stream. This means the request has been sent and a completed response
@@ -122,34 +101,8 @@ namespace Aws
              */
             struct HttpRequestOptions
             {
-                /**
-                 * Http verb to use (e.g. GET, POST, PUT, DELETE, HEAD....). If you are using a custom verb, that
-                 * can be set here as well.
-                 *
-                 * this value is copied internally.
-                 */
-                ByteCursor method;
-                /**
-                 * Usually the Path and Query portion of the request uri (assuming the host header has been set).
-                 * There's not validation on this, it can also be the absolute uri if you want/need that.
-                 *
-                 * A helpful utility for setting this value can be found in Aws::Crt::Io::Uri
-                 *
-                 * this value is copied internally.
-                 */
-                ByteCursor uri;
-                /**
-                 * Array of headers to use for the Request. These values will be copied internally.
-                 */
-                HttpHeader *headerArray;
-                /**
-                 * Length of `headerArray`.
-                 */
-                std::size_t headerArrayLength;
-                /**
-                 * See `OnConnectionShutdown` for more info. This value can be empty if you don't need to send a body.
-                 */
-                OnStreamOutgoingBody onStreamOutgoingBody;
+
+                HttpRequest *request;
                 /**
                  * See `OnIncomingHeaders` for more info. This value must be set.
                  */
@@ -202,29 +155,23 @@ namespace Aws
                 HttpStream(const std::shared_ptr<HttpClientConnection> &connection) noexcept;
 
               private:
-                OnStreamOutgoingBody m_onStreamOutgoingBody;
                 OnIncomingHeaders m_onIncomingHeaders;
                 OnIncomingHeadersBlockDone m_onIncomingHeadersBlockDone;
                 OnIncomingBody m_onIncomingBody;
                 OnStreamComplete m_onStreamComplete;
 
-                static enum aws_http_outgoing_body_state s_onStreamOutgoingBody(
-                    struct aws_http_stream *stream,
-                    struct aws_byte_buf *buf,
-                    void *user_data) noexcept;
-                static void s_onIncomingHeaders(
+                static int s_onIncomingHeaders(
                     struct aws_http_stream *stream,
                     const struct aws_http_header *header_array,
                     size_t num_headers,
                     void *user_data) noexcept;
-                static void s_onIncomingHeaderBlockDone(
+                static int s_onIncomingHeaderBlockDone(
                     struct aws_http_stream *stream,
                     bool has_body,
                     void *user_data) noexcept;
-                static void s_onIncomingBody(
+                static int s_onIncomingBody(
                     struct aws_http_stream *stream,
                     const struct aws_byte_cursor *data,
-                    size_t *out_window_update_size,
                     void *user_data) noexcept;
                 static void s_onStreamComplete(
                     struct aws_http_stream *stream,

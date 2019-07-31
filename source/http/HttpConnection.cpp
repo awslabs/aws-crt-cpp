@@ -13,6 +13,7 @@
  * permissions and limitations under the License.
  */
 #include <aws/crt/http/HttpConnection.h>
+#include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Bootstrap.h>
 
 namespace Aws
@@ -166,11 +167,7 @@ namespace Aws
                 aws_http_request_options options;
                 AWS_ZERO_STRUCT(options);
                 options.self_size = sizeof(aws_http_request_options);
-                options.uri = requestOptions.uri;
-                options.method = requestOptions.method;
-                options.header_array = requestOptions.headerArray;
-                options.num_headers = requestOptions.headerArrayLength;
-                options.stream_outgoing_body = HttpStream::s_onStreamOutgoingBody;
+                options.request = requestOptions.request->GetUnderlyingMessage();
                 options.on_response_body = HttpStream::s_onIncomingBody;
                 options.on_response_headers = HttpStream::s_onIncomingHeaders;
                 options.on_response_header_block_done = HttpStream::s_onIncomingHeaderBlockDone;
@@ -200,7 +197,6 @@ namespace Aws
                     toSeat->m_onIncomingHeaders = requestOptions.onIncomingHeaders;
                     toSeat->m_onIncomingHeadersBlockDone = requestOptions.onIncomingHeadersBlockDone;
                     toSeat->m_onStreamComplete = requestOptions.onStreamComplete;
-                    toSeat->m_onStreamOutgoingBody = requestOptions.onStreamOutgoingBody;
 
                     callbackData->allocator = m_allocator;
                     options.user_data = callbackData;
@@ -225,22 +221,7 @@ namespace Aws
 
             void HttpClientConnection::Close() noexcept { aws_http_connection_close(m_connection); }
 
-            enum aws_http_outgoing_body_state HttpStream::s_onStreamOutgoingBody(
-                struct aws_http_stream *,
-                struct aws_byte_buf *buf,
-                void *userData) noexcept
-            {
-                auto callbackData = static_cast<ClientStreamCallbackData *>(userData);
-
-                if (callbackData->stream->m_onStreamOutgoingBody)
-                {
-                    return callbackData->stream->m_onStreamOutgoingBody(*callbackData->stream, *buf);
-                }
-
-                return AWS_HTTP_OUTGOING_BODY_DONE;
-            }
-
-            void HttpStream::s_onIncomingHeaders(
+            int HttpStream::s_onIncomingHeaders(
                 struct aws_http_stream *,
                 const struct aws_http_header *headerArray,
                 std::size_t numHeaders,
@@ -248,9 +229,11 @@ namespace Aws
             {
                 auto callbackData = static_cast<ClientStreamCallbackData *>(userData);
                 callbackData->stream->m_onIncomingHeaders(*callbackData->stream, headerArray, numHeaders);
+
+                return AWS_OP_SUCCESS;
             }
 
-            void HttpStream::s_onIncomingHeaderBlockDone(
+            int HttpStream::s_onIncomingHeaderBlockDone(
                 struct aws_http_stream *,
                 bool hasBody,
                 void *userData) noexcept
@@ -261,20 +244,23 @@ namespace Aws
                 {
                     callbackData->stream->m_onIncomingHeadersBlockDone(*callbackData->stream, hasBody);
                 }
+
+                return AWS_OP_SUCCESS;
             }
 
-            void HttpStream::s_onIncomingBody(
+            int HttpStream::s_onIncomingBody(
                 struct aws_http_stream *,
                 const struct aws_byte_cursor *data,
-                size_t *outWindowUpdateSize,
                 void *userData) noexcept
             {
                 auto callbackData = static_cast<ClientStreamCallbackData *>(userData);
 
                 if (callbackData->stream->m_onIncomingBody)
                 {
-                    callbackData->stream->m_onIncomingBody(*callbackData->stream, *data, *outWindowUpdateSize);
+                    callbackData->stream->m_onIncomingBody(*callbackData->stream, *data);
                 }
+
+                return AWS_OP_SUCCESS;
             }
 
             void HttpStream::s_onStreamComplete(struct aws_http_stream *, int errorCode, void *userData) noexcept
