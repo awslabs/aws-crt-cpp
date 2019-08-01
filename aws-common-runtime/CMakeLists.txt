@@ -17,12 +17,12 @@ set(AWS_DEPS_DOWNLOAD_DIR "${AWS_DEPS_BUILD_DIR}/downloads" CACHE PATH "Dependen
 
 message("install dir ${AWS_DEPS_INSTALL_DIR}")
 set(AWS_C_COMMON_URL "https://github.com/awslabs/aws-c-common.git")
-set(AWS_C_COMMON_SHA "08ab3462e205a6d1e7c3e4eb1d92915d0471a15d")
+set(AWS_C_COMMON_SHA "v0.4.3")
 include(BuildAwsCCommon)
 
 if (UNIX AND NOT APPLE)
-    set(S2N_URL "https://github.com/justinboswell/s2n.git")
-    set(S2N_SHA "aeac0d58ab560d2ccdf2e1dfcc151644b0511c95")
+    set(S2N_URL "https://github.com/awslabs/s2n.git")
+    set(S2N_SHA "042ebe229df8274d7a0708b3940e1a10994ccead")
     include(BuildS2N)
 endif()
 
