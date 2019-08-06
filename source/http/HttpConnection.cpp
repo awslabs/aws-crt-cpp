@@ -233,10 +233,7 @@ namespace Aws
                 return AWS_OP_SUCCESS;
             }
 
-            int HttpStream::s_onIncomingHeaderBlockDone(
-                struct aws_http_stream *,
-                bool hasBody,
-                void *userData) noexcept
+            int HttpStream::s_onIncomingHeaderBlockDone(struct aws_http_stream *, bool hasBody, void *userData) noexcept
             {
                 auto callbackData = static_cast<ClientStreamCallbackData *>(userData);
 

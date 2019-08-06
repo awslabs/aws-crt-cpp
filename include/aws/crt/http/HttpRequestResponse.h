@@ -51,7 +51,7 @@ namespace Aws
                 bool EraseHeader(size_t index) noexcept;
 
                 operator bool() const noexcept { return m_message != nullptr; }
-                
+
                 struct aws_http_message *GetUnderlyingMessage() const noexcept { return m_message; }
 
               protected:
@@ -65,8 +65,7 @@ namespace Aws
             /*
              * Class representing a mutable http request.
              */
-            class AWS_CRT_CPP_API HttpRequest
-             : public HttpMessage
+            class AWS_CRT_CPP_API HttpRequest : public HttpMessage
             {
               public:
                 HttpRequest(Allocator *allocator = DefaultAllocator());
@@ -81,8 +80,7 @@ namespace Aws
             /*
              * Class representing a mutable http response.
              */
-            class AWS_CRT_CPP_API HttpResponse
-             : public HttpMessage
+            class AWS_CRT_CPP_API HttpResponse : public HttpMessage
             {
               public:
                 HttpResponse(Allocator *allocator = DefaultAllocator());
