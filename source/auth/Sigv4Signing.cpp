@@ -148,7 +148,7 @@ namespace Aws
 
                 ScopedResource<aws_signable> scoped_signable(
                     aws_signable_new_http_request(m_allocator, request.GetUnderlyingMessage()), aws_signable_destroy);
-                if (scoped_signable.GetResource() == nullptr)
+                if (scoped_signable == nullptr)
                 {
                     return false;
                 }
@@ -173,10 +173,8 @@ namespace Aws
                 ScopedResource<aws_signing_result> scoped_signing_result(&signing_result, aws_signing_result_clean_up);
 
                 if (aws_signer_sign_request(
-                        m_signer,
-                        scoped_signable.GetResource(),
-                        (aws_signing_config_base *)&signingConfig,
-                        &signing_result) != AWS_OP_SUCCESS)
+                        m_signer, scoped_signable.get(), (aws_signing_config_base *)&signingConfig, &signing_result) !=
+                    AWS_OP_SUCCESS)
                 {
                     return false;
                 }
