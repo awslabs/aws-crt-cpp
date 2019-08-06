@@ -211,7 +211,7 @@ namespace Aws
                     return;
                 }
 
-                auto getCredentialsCallback = [&, this](std::shared_ptr<Credentials> credentials) {
+                auto getCredentialsCallback = [=](std::shared_ptr<Credentials> credentials) {
                     if (credentials == nullptr)
                     {
                         completionCallback(request, AWS_AUTH_SIGNING_NO_CREDENTIALS);
