@@ -114,11 +114,11 @@ namespace Aws
             /*
              * Http request signer that wraps any aws-c-* signer implementation
              */
-            class AWS_CRT_CPP_API AwsCHttpRequestSigner : public IHttpRequestSigner
+            class AWS_CRT_CPP_API AwsHttpRequestSigner : public IHttpRequestSigner
             {
               public:
-                AwsCHttpRequestSigner(aws_signer *signer, Allocator *allocator = DefaultAllocator());
-                virtual ~AwsCHttpRequestSigner();
+                AwsHttpRequestSigner(aws_signer *signer, Allocator *allocator = DefaultAllocator());
+                virtual ~AwsHttpRequestSigner();
 
                 virtual operator bool() const override { return m_signer != nullptr; }
 
@@ -131,7 +131,7 @@ namespace Aws
             /*
              * Http request signer that performs Aws Sigv4 signing
              */
-            class AWS_CRT_CPP_API Sigv4HttpRequestSigner : public AwsCHttpRequestSigner
+            class AWS_CRT_CPP_API Sigv4HttpRequestSigner : public AwsHttpRequestSigner
             {
               public:
                 Sigv4HttpRequestSigner(Allocator *allocator = DefaultAllocator());
@@ -156,7 +156,7 @@ namespace Aws
                 virtual void SignRequest(
                     const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
                     const std::shared_ptr<ISigningConfig> &config,
-                    const OnSigningComplete &completionCallback) override;
+                    const OnHttpRequestSigningComplete &completionCallback) override;
 
                 virtual operator bool() const override
                 {

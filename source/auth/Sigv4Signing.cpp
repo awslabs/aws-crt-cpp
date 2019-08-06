@@ -108,12 +108,12 @@ namespace Aws
 
             /////////////////////////////////////////////////////////////////////////////////////////////
 
-            AwsCHttpRequestSigner::AwsCHttpRequestSigner(struct aws_signer *signer, Allocator *allocator)
+            AwsHttpRequestSigner::AwsHttpRequestSigner(struct aws_signer *signer, Allocator *allocator)
                 : IHttpRequestSigner(), m_allocator(allocator), m_signer(signer)
             {
             }
 
-            AwsCHttpRequestSigner::~AwsCHttpRequestSigner()
+            AwsHttpRequestSigner::~AwsHttpRequestSigner()
             {
                 if (m_signer != nullptr)
                 {
@@ -126,7 +126,7 @@ namespace Aws
             /////////////////////////////////////////////////////////////////////////////////////////////
 
             Sigv4HttpRequestSigner::Sigv4HttpRequestSigner(Aws::Crt::Allocator *allocator)
-                : AwsCHttpRequestSigner(aws_signer_new_aws(allocator), allocator)
+                : AwsHttpRequestSigner(aws_signer_new_aws(allocator), allocator)
             {
             }
 
@@ -203,7 +203,7 @@ namespace Aws
             void Sigv4HttpRequestSigningPipeline::SignRequest(
                 const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
                 const std::shared_ptr<ISigningConfig> &config,
-                const OnSigningComplete &completionCallback)
+                const OnHttpRequestSigningComplete &completionCallback)
             {
                 if (config->GetType() != SigningConfigType::Aws)
                 {

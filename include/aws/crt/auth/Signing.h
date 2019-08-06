@@ -79,7 +79,8 @@ namespace Aws
              * Signing pipeline callback.  The second parameter is an aws error code,  The signing was successful
              * iff the error code is AWS_ERROR_SUCCESS.
              */
-            using OnSigningComplete = std::function<void(const std::shared_ptr<Aws::Crt::Http::HttpRequest> &, int)>;
+            using OnHttpRequestSigningComplete =
+                std::function<void(const std::shared_ptr<Aws::Crt::Http::HttpRequest> &, int)>;
 
             /*
              * Abstract base for a complete signing process.  While the primary difference between this
@@ -101,7 +102,7 @@ namespace Aws
                 virtual void SignRequest(
                     const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
                     const std::shared_ptr<ISigningConfig> &config,
-                    const OnSigningComplete &completionCallback) = 0;
+                    const OnHttpRequestSigningComplete &completionCallback) = 0;
 
                 virtual operator bool() const = 0;
             };
