@@ -16,7 +16,7 @@
 
 #include <aws/crt/auth/Credentials.h>
 #include <aws/crt/auth/Sigv4Signing.h>
-#include <aws/crt/http/HttpRequest.h>
+#include <aws/crt/http/HttpRequestResponse.h>
 
 #include <aws/auth/credentials.h>
 #include <aws/http/request_response.h>

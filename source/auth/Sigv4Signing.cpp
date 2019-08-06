@@ -16,7 +16,7 @@
 #include <aws/crt/auth/Sigv4Signing.h>
 
 #include <aws/crt/auth/Credentials.h>
-#include <aws/crt/http/HttpRequest.h>
+#include <aws/crt/http/HttpRequestResponse.h>
 
 #include <aws/auth/signable.h>
 #include <aws/auth/signer.h>
@@ -147,7 +147,7 @@ namespace Aws
                 const AwsSigningConfig *awsSigningConfig = static_cast<const AwsSigningConfig *>(config);
 
                 ScopedResource<aws_signable> scoped_signable(
-                    aws_signable_new_http_request(m_allocator, request.GetUnderlyingHandle()), aws_signable_destroy);
+                    aws_signable_new_http_request(m_allocator, request.GetUnderlyingMessage()), aws_signable_destroy);
                 if (scoped_signable.GetResource() == nullptr)
                 {
                     return false;
@@ -182,7 +182,7 @@ namespace Aws
                 }
 
                 if (aws_apply_signing_result_to_http_request(
-                        request.GetUnderlyingHandle(), m_allocator, &signing_result) != AWS_OP_SUCCESS)
+                        request.GetUnderlyingMessage(), m_allocator, &signing_result) != AWS_OP_SUCCESS)
                 {
                     return false;
                 }
