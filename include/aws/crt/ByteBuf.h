@@ -63,7 +63,7 @@ namespace Aws
             ByteBuf() noexcept {}
 
             ByteBuf(const ByteBuf &rhs) noexcept = delete;
-            ByteBuf(ByteBuf &rhs) noexcept = delete;
+            ByteBuf(ByteBuf &&rhs) noexcept = delete;
 
             ByteBuf &operator=(const ByteBuf &buffer) noexcept = delete;
             ByteBuf &operator=(ByteBuf &&buffer) noexcept = delete;
