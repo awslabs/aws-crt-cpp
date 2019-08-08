@@ -14,6 +14,7 @@
  * permissions and limitations under the License.
  */
 #include <aws/http/connection.h>
+#include <aws/http/request_response.h>
 
 #include <aws/crt/Types.h>
 #include <aws/crt/io/Bootstrap.h>
