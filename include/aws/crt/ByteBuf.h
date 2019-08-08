@@ -43,12 +43,15 @@ namespace Aws
             aws_byte_cursor m_cursor;
         };
 
+        /*
+         * Base class that gets passed around by ref across CRT APIs
+         */
         class ByteBuf
         {
           public:
             virtual ~ByteBuf() {}
 
-            // All of non-init API
+            // All of non-init APIs go here
             AwsCrtResultVoid Append(ByteCursor cursor) noexcept;
             AwsCrtResultVoid AppendDynamic(ByteCursor cursor) noexcept;
             // etc...
@@ -66,6 +69,12 @@ namespace Aws
             ByteBuf &operator=(ByteBuf &&buffer) noexcept = delete;
         };
 
+        /*
+         * Wrapper for a pointer to a byte_buf.  Intended for byte_buf objects
+         * that come from C.
+         *
+         * Does not do any cleanup.
+         */
         class ByteBufRef : public ByteBuf
         {
           public:
@@ -86,6 +95,18 @@ namespace Aws
             aws_byte_buf *m_buffer;
         };
 
+        /*
+         * Wrapper for a byte_buf value.  Intended for C++ user creation of
+         * byte bufs that get passed into C-land via a C++ API.
+         *
+         * Object is cleaned up internally on destruction.
+         *
+         * All constructors cannot fail.  Construction patterns that may fail
+         * are done via Init* methods.
+         *
+         * Copy-construction and copy-assignment are disallowed.  Use the (failable)
+         * Init method that takes a ByteBufValue instead.
+         */
         class ByteBufValue : public ByteBuf
         {
           public:
