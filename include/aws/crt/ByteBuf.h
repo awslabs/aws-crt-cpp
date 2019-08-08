@@ -62,11 +62,11 @@ namespace Aws
           protected:
             ByteBuf() noexcept {}
 
-            ByteBuf(const ByteBuf &rhs) noexcept = delete;
-            ByteBuf(ByteBuf &&rhs) noexcept = delete;
+            ByteBuf(const ByteBuf &rhs) = delete;
+            ByteBuf(ByteBuf &&rhs) = delete;
 
-            ByteBuf &operator=(const ByteBuf &buffer) noexcept = delete;
-            ByteBuf &operator=(ByteBuf &&buffer) noexcept = delete;
+            ByteBuf &operator=(const ByteBuf &buffer) = delete;
+            ByteBuf &operator=(ByteBuf &&buffer) = delete;
         };
 
         /*
@@ -111,15 +111,13 @@ namespace Aws
         {
           public:
             ByteBufValue() noexcept;
-            ByteBufValue(const ByteBufValue &buffer) noexcept = delete;
             ByteBufValue(ByteBufValue &&buffer) noexcept;
             explicit ByteBufValue(const char *str) noexcept;
-            ByteBufValue(const uint8_t *array, size_t capacity, size_t len);
+            ByteBufValue(const uint8_t *array, size_t capacity, size_t len) noexcept;
 
             virtual ~ByteBufValue();
 
             ByteBufValue &operator=(ByteBufValue &&buffer) noexcept;
-            ByteBufValue &operator=(const ByteBufValue &buffer) noexcept = delete;
 
             static AwsCrtResult<ByteBufValue> Init(const ByteBufValue &buffer) noexcept;
             static AwsCrtResult<ByteBufValue> Init(Allocator *alloc, size_t capacity) noexcept;
@@ -132,6 +130,10 @@ namespace Aws
             virtual const aws_byte_buf *Get() const noexcept override { return &m_buffer; }
 
           private:
+            ByteBufValue(const ByteBufValue &buffer) = delete;
+
+            ByteBufValue &operator=(const ByteBufValue &buffer) = delete;
+
             void Cleanup() noexcept;
 
             struct aws_byte_buf m_buffer;

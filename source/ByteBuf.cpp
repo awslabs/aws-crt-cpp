@@ -95,7 +95,7 @@ namespace Aws
 
         ByteBufValue::ByteBufValue(const char *str) noexcept : m_buffer(aws_byte_buf_from_c_str(str)) {}
 
-        ByteBufValue::ByteBufValue(const uint8_t *array, size_t capacity, size_t len)
+        ByteBufValue::ByteBufValue(const uint8_t *array, size_t capacity, size_t len) noexcept
             : m_buffer(aws_byte_buf_from_array(array, capacity))
         {
             AWS_FATAL_ASSERT(len <= capacity);
