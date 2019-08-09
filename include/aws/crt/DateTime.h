@@ -25,6 +25,8 @@ namespace Aws
 {
     namespace Crt
     {
+        class ByteBuf;
+
         enum class DateFormat
         {
             RFC822 = AWS_DATE_FORMAT_RFC822,

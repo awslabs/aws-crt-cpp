@@ -38,8 +38,11 @@ namespace Aws
                 ByteCursor secret_access_key,
                 ByteCursor session_token,
                 Allocator *allocator) noexcept
-                : m_credentials(
-                      aws_credentials_new_from_cursors(allocator, &access_key_id, &secret_access_key, &session_token))
+                : m_credentials(aws_credentials_new_from_cursors(
+                      allocator,
+                      access_key_id.Get(),
+                      secret_access_key.Get(),
+                      session_token.Get()))
             {
             }
 
@@ -53,11 +56,11 @@ namespace Aws
             {
                 if (m_credentials)
                 {
-                    return aws_byte_cursor_from_string(m_credentials->access_key_id);
+                    return ByteCursor(aws_byte_cursor_from_string(m_credentials->access_key_id));
                 }
                 else
                 {
-                    return ByteCursor{0, nullptr};
+                    return ByteCursor();
                 }
             }
 
@@ -65,11 +68,11 @@ namespace Aws
             {
                 if (m_credentials)
                 {
-                    return aws_byte_cursor_from_string(m_credentials->secret_access_key);
+                    return ByteCursor(aws_byte_cursor_from_string(m_credentials->secret_access_key));
                 }
                 else
                 {
-                    return ByteCursor{0, nullptr};
+                    return ByteCursor();
                 }
             }
 
@@ -77,11 +80,11 @@ namespace Aws
             {
                 if (m_credentials)
                 {
-                    return aws_byte_cursor_from_string(m_credentials->session_token);
+                    return ByteCursor(aws_byte_cursor_from_string(m_credentials->session_token));
                 }
                 else
                 {
-                    return ByteCursor{0, nullptr};
+                    return ByteCursor();
                 }
             }
 
@@ -163,7 +166,10 @@ namespace Aws
             {
                 return s_CreateWrappedProvider(
                     aws_credentials_provider_new_static(
-                        allocator, config.m_accessKeyId, config.m_secretAccessKey, config.m_sessionToken),
+                        allocator,
+                        *config.m_accessKeyId.Get(),
+                        *config.m_secretAccessKey.Get(),
+                        *config.m_sessionToken.Get()),
                     allocator);
             }
 
@@ -180,9 +186,9 @@ namespace Aws
                 struct aws_credentials_provider_profile_options raw_config;
                 AWS_ZERO_STRUCT(raw_config);
 
-                raw_config.config_file_name_override = config.m_configFileNameOverride;
-                raw_config.credentials_file_name_override = config.m_credentialsFileNameOverride;
-                raw_config.profile_name_override = config.m_profileNameOverride;
+                raw_config.config_file_name_override = *config.m_configFileNameOverride.Get();
+                raw_config.credentials_file_name_override = *config.m_credentialsFileNameOverride.Get();
+                raw_config.profile_name_override = *config.m_profileNameOverride.Get();
 
                 return s_CreateWrappedProvider(aws_credentials_provider_new_profile(allocator, &raw_config), allocator);
             }

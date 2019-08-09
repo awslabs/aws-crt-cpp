@@ -15,6 +15,7 @@
  */
 #include <aws/http/connection.h>
 
+#include <aws/crt/ByteBuf.h>
 #include <aws/crt/Types.h>
 #include <aws/crt/io/Bootstrap.h>
 #include <aws/crt/io/TlsOptions.h>
@@ -83,8 +84,7 @@ namespace Aws
              *
              * On HttpStream, this function can be empty if you are not expecting a body (e.g. a HEAD request).
              */
-            using OnIncomingBody =
-                std::function<void(HttpStream &stream, const ByteCursor &data)>;
+            using OnIncomingBody = std::function<void(HttpStream &stream, const ByteCursor &data)>;
 
             /**
              * Invoked upon completion of the stream. This means the request has been sent and a completed response
@@ -200,6 +200,10 @@ namespace Aws
                 HttpClientStream(const std::shared_ptr<HttpClientConnection> &connection) noexcept;
 
                 friend class HttpClientConnection;
+            };
+
+            struct HttpClientConnectionProxyOptions
+            {
             };
 
             struct HttpClientConnectionOptions

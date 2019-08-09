@@ -14,6 +14,7 @@
  * permissions and limitations under the License.
  */
 
+#include <aws/crt/ByteBuf.h>
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
 

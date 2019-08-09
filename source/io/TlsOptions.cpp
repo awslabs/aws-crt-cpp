@@ -16,6 +16,8 @@
 
 #include <aws/io/tls_channel_handler.h>
 
+#include <aws/crt/ByteBuf.h>
+
 namespace Aws
 {
     namespace Crt
@@ -88,11 +90,7 @@ namespace Aws
                 Allocator *allocator) noexcept
             {
                 TlsContextOptions ctxOptions;
-                if (!aws_tls_ctx_options_init_client_mtls(
-                        &ctxOptions.m_options,
-                        allocator,
-                        const_cast<ByteCursor *>(&cert),
-                        const_cast<ByteCursor *>(&pkey)))
+                if (!aws_tls_ctx_options_init_client_mtls(&ctxOptions.m_options, allocator, cert.Get(), pkey.Get()))
                 {
                     ctxOptions.m_isInit = true;
                 }
@@ -138,7 +136,7 @@ namespace Aws
             bool TlsContextOptions::OverrideDefaultTrustStore(const ByteCursor &ca) noexcept
             {
                 AWS_ASSERT(m_isInit);
-                return aws_tls_ctx_options_override_default_trust_store(&m_options, const_cast<ByteCursor *>(&ca)) == 0;
+                return aws_tls_ctx_options_override_default_trust_store(&m_options, ca.Get()) == 0;
             }
 
             void InitTlsStaticState(Aws::Crt::Allocator *alloc) noexcept { aws_tls_init_static_state(alloc); }
@@ -240,7 +238,8 @@ namespace Aws
 
             bool TlsConnectionOptions::SetServerName(ByteCursor &serverName) noexcept
             {
-                if (aws_tls_connection_options_set_server_name(&m_tls_connection_options, m_allocator, &serverName))
+                if (aws_tls_connection_options_set_server_name(
+                        &m_tls_connection_options, m_allocator, serverName.Get()))
                 {
                     m_lastError = aws_last_error();
                     return false;

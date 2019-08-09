@@ -85,7 +85,7 @@ namespace Aws
                     managerOptions.tls_connection_options =
                         const_cast<aws_tls_connection_options *>(m_tlsConnOptions.GetUnderlyingHandle());
                 }
-                managerOptions.host = connectionManagerOptions.hostName;
+                managerOptions.host = *connectionManagerOptions.hostName.Get();
 
                 m_connectionManager = aws_http_connection_manager_new(allocator, &managerOptions);
 

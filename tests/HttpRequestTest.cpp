@@ -13,6 +13,7 @@
  * permissions and limitations under the License.
  */
 #include <aws/crt/Api.h>
+#include <aws/crt/ByteBuf.h>
 
 #include <aws/crt/http/HttpRequestResponse.h>
 
@@ -31,8 +32,8 @@ static int s_HttpRequestTestCreateDestroy(struct aws_allocator *allocator, void 
 
     {
         Aws::Crt::Http::HttpRequest request;
-        request.SetMethod(aws_byte_cursor_from_c_str("GET"));
-        request.SetPath(aws_byte_cursor_from_c_str("/index"));
+        request.SetMethod(Aws::Crt::ByteCursor("GET"));
+        request.SetPath(Aws::Crt::ByteCursor("/index"));
 
         std::shared_ptr<Aws::Crt::Io::IStream> stream = std::make_shared<std::stringstream>("TestContent");
         request.SetBody(stream);

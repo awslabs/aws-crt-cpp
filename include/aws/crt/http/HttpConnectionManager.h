@@ -14,6 +14,9 @@
  * permissions and limitations under the License.
  */
 #include <aws/crt/http/HttpConnection.h>
+
+#include <aws/crt/ByteBuf.h>
+
 #include <condition_variable>
 #include <mutex>
 

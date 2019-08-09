@@ -44,7 +44,7 @@ static int s_VerifyFilesAreTheSame(Allocator *allocator, const char *fileName1, 
     while (file1.read((char *)buffer, sizeof(buffer)))
     {
         auto read = file1.gcount();
-        ByteCursor toHash = ByteCursorFromArray(buffer, (size_t)read);
+        ByteCursor toHash(buffer, (size_t)read);
         ASSERT_TRUE(file1Hash.Update(toHash));
     }
 
@@ -53,7 +53,7 @@ static int s_VerifyFilesAreTheSame(Allocator *allocator, const char *fileName1, 
     while (file2.read((char *)buffer, sizeof(buffer)))
     {
         auto read = file2.gcount();
-        ByteCursor toHash = ByteCursorFromArray(buffer, (size_t)read);
+        ByteCursor toHash(buffer, (size_t)read);
         ASSERT_TRUE(file2Hash.Update(toHash));
     }
 
@@ -62,13 +62,17 @@ static int s_VerifyFilesAreTheSame(Allocator *allocator, const char *fileName1, 
     uint8_t file2Digest[Crypto::SHA256_DIGEST_SIZE];
     AWS_ZERO_ARRAY(file2Digest);
 
-    ByteBuf file1DigestBuf = ByteBufFromEmptyArray(file1Digest, sizeof(file1Digest));
-    ByteBuf file2DigestBuf = ByteBufFromEmptyArray(file2Digest, sizeof(file2Digest));
+    ByteBuf file1DigestBuf(file1Digest, sizeof(file1Digest), 0);
+    ByteBuf file2DigestBuf(file2Digest, sizeof(file2Digest), 0);
 
     ASSERT_TRUE(file1Hash.Digest(file1DigestBuf));
     ASSERT_TRUE(file2Hash.Digest(file2DigestBuf));
 
-    ASSERT_BIN_ARRAYS_EQUALS(file2DigestBuf.buffer, file2DigestBuf.len, file1DigestBuf.buffer, file1DigestBuf.len);
+    ASSERT_BIN_ARRAYS_EQUALS(
+        file2DigestBuf.Get()->buffer,
+        file2DigestBuf.Get()->len,
+        file1DigestBuf.Get()->buffer,
+        file1DigestBuf.Get()->len);
     return AWS_OP_SUCCESS;
 }
 
@@ -82,7 +86,7 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
 
     Aws::Crt::Io::TlsConnectionOptions tlsConnectionOptions = tlsContext.NewConnectionOptions();
 
-    ByteCursor cursor = ByteCursorFromCString("https://aws-crt-test-stuff.s3.amazonaws.com/http_test_doc.txt");
+    ByteCursor cursor("https://aws-crt-test-stuff.s3.amazonaws.com/http_test_doc.txt");
     Io::Uri uri(cursor, allocator);
 
     auto hostName = uri.GetHostName();
@@ -182,15 +186,15 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
         responseCode = stream.GetResponseStatusCode();
     };
     requestOptions.onIncomingBody = [&](Http::HttpStream &, const ByteCursor &data) {
-        downloadedFile.write((const char *)data.ptr, data.len);
+        downloadedFile.write((const char *)data.Get()->ptr, data.Get()->len);
     };
 
-    request.SetMethod(ByteCursorFromCString("GET"));
+    request.SetMethod(ByteCursor("GET"));
     request.SetPath(uri.GetPathAndQuery());
 
     Http::HttpHeader host_header;
-    host_header.name = ByteCursorFromCString("host");
-    host_header.value = uri.GetHostName();
+    host_header.name = aws_byte_cursor_from_c_str("host");
+    host_header.value = *uri.GetHostName().Get();
     request.AddHeader(host_header);
 
     connection->NewClientStream(requestOptions);

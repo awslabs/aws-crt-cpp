@@ -13,6 +13,8 @@
  * permissions and limitations under the License.
  */
 #include <aws/crt/DateTime.h>
+
+#include <aws/crt/ByteBuf.h>
 #include <aws/testing/aws_test_harness.h>
 
 static int s_TestDateTimeBinding(struct aws_allocator *allocator, void *ctx)
@@ -42,13 +44,14 @@ static int s_TestDateTimeBinding(struct aws_allocator *allocator, void *ctx)
 
         uint8_t dateOutput[AWS_DATE_TIME_STR_MAX_LEN];
         AWS_ZERO_ARRAY(dateOutput);
-        Aws::Crt::ByteBuf strOutput = Aws::Crt::ByteBufFromEmptyArray(dateOutput, sizeof(dateOutput));
+        Aws::Crt::ByteBuf strOutput(dateOutput, sizeof(dateOutput), 0);
         ASSERT_TRUE(dateTime.ToGmtString(Aws::Crt::DateFormat::RFC822, strOutput));
 
         const char *expectedLongStr = "Wed, 02 Oct 2002 08:05:09 GMT";
-        Aws::Crt::ByteBuf expectedLongBuf = Aws::Crt::ByteBufFromCString(expectedLongStr);
+        Aws::Crt::ByteBuf expectedLongBuf(expectedLongStr);
 
-        ASSERT_BIN_ARRAYS_EQUALS(expectedLongBuf.buffer, expectedLongBuf.len, strOutput.buffer, strOutput.len);
+        ASSERT_BIN_ARRAYS_EQUALS(
+            expectedLongBuf.Get()->buffer, expectedLongBuf.Get()->len, strOutput.Get()->buffer, strOutput.Get()->len);
     }
 
     return AWS_OP_SUCCESS;

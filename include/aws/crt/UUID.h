@@ -13,6 +13,7 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
+#include <aws/crt/ByteBuf.h>
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/Types.h>
 
@@ -33,7 +34,8 @@ namespace Aws
             bool operator==(const UUID &other) noexcept;
             bool operator!=(const UUID &other) noexcept;
             operator String() const;
-            operator ByteBuf() const noexcept;
+
+            AwsCrtResult<ByteBuf> ToByteBuf() const noexcept;
 
             inline operator bool() const noexcept { return m_good; }
 

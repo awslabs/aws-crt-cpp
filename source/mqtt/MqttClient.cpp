@@ -14,6 +14,7 @@
  */
 #include <aws/crt/mqtt/MqttClient.h>
 
+#include <aws/crt/ByteBuf.h>
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/io/Bootstrap.h>
 
@@ -95,7 +96,7 @@ namespace Aws
                 if (callbackData->onPublishReceived)
                 {
                     String topicStr(reinterpret_cast<char *>(topic->ptr), topic->len);
-                    ByteBuf payloadBuf = aws_byte_buf_from_array(payload->ptr, payload->len);
+                    ByteBuf payloadBuf(payload->ptr, payload->len, payload->len);
                     callbackData->onPublishReceived(*(callbackData->connection), topicStr, payloadBuf);
                 }
             }
@@ -273,28 +274,29 @@ namespace Aws
 
             bool MqttConnection::SetWill(const char *topic, QOS qos, bool retain, const ByteBuf &payload) noexcept
             {
-                ByteBuf topicBuf = aws_byte_buf_from_c_str(topic);
-                ByteCursor topicCur = aws_byte_cursor_from_buf(&topicBuf);
-                ByteCursor payloadCur = aws_byte_cursor_from_buf(&payload);
+                ByteBuf topicBuf(topic);
+                ByteCursor topicCur = topicBuf.GetCursor();
+                ByteCursor payloadCur = payload.GetCursor();
 
                 return aws_mqtt_client_connection_set_will(
-                           m_underlyingConnection, &topicCur, qos, retain, &payloadCur) == 0;
+                           m_underlyingConnection, topicCur.Get(), qos, retain, payloadCur.Get()) == 0;
             }
 
             bool MqttConnection::SetLogin(const char *userName, const char *password) noexcept
             {
-                ByteBuf userNameBuf = aws_byte_buf_from_c_str(userName);
-                ByteCursor userNameCur = aws_byte_cursor_from_buf(&userNameBuf);
+                ByteBuf userNameBuf(userName);
+                ByteCursor userNameCur = userNameBuf.GetCursor();
 
                 ByteCursor *pwdCurPtr = nullptr;
                 ByteCursor pwdCur;
 
                 if (password)
                 {
-                    pwdCur = ByteCursorFromCString(password);
+                    pwdCur = ByteCursor(password);
                     pwdCurPtr = &pwdCur;
                 }
-                return aws_mqtt_client_connection_set_login(m_underlyingConnection, &userNameCur, pwdCurPtr) == 0;
+                return aws_mqtt_client_connection_set_login(
+                           m_underlyingConnection, userNameCur.Get(), pwdCurPtr->Get()) == 0;
             }
 
             bool MqttConnection::Connect(
@@ -371,12 +373,11 @@ namespace Aws
                 subAckCallbackData->topic = nullptr;
                 subAckCallbackData->allocator = m_owningClient->allocator;
 
-                ByteBuf topicFilterBuf = aws_byte_buf_from_c_str(topicFilter);
-                ByteCursor topicFilterCur = aws_byte_cursor_from_buf(&topicFilterBuf);
+                ByteCursor topicFilterCur(topicFilter);
 
                 uint16_t packetId = aws_mqtt_client_connection_subscribe(
                     m_underlyingConnection,
-                    &topicFilterCur,
+                    topicFilterCur.Get(),
                     qos,
                     s_onPublish,
                     pubCallbackData,
@@ -436,15 +437,14 @@ namespace Aws
                     pubCallbackData->onPublishReceived = topicFilter.second;
                     pubCallbackData->allocator = m_owningClient->allocator;
 
-                    ByteBuf topicFilterBuf = aws_byte_buf_from_c_str(topicFilter.first);
-                    ByteCursor topicFilterCur = aws_byte_cursor_from_buf(&topicFilterBuf);
+                    ByteCursor topicFilterCur(topicFilter.first);
 
                     aws_mqtt_topic_subscription subscription;
                     subscription.on_cleanup = s_cleanUpOnPublishData;
                     subscription.on_publish = s_onPublish;
                     subscription.on_publish_ud = pubCallbackData;
                     subscription.qos = qos;
-                    subscription.topic = topicFilterCur;
+                    subscription.topic = *topicFilterCur.Get();
 
                     aws_array_list_push_back(&multiPub, reinterpret_cast<const void *>(&subscription));
                 }
@@ -498,11 +498,10 @@ namespace Aws
                 opCompleteCallbackData->allocator = m_owningClient->allocator;
                 opCompleteCallbackData->onOperationComplete = std::move(onOpComplete);
                 opCompleteCallbackData->topic = nullptr;
-                ByteBuf topicFilterBuf = aws_byte_buf_from_c_str(topicFilter);
-                ByteCursor topicFilterCur = aws_byte_cursor_from_buf(&topicFilterBuf);
+                ByteCursor topicFilterCur(topicFilter);
 
                 uint16_t packetId = aws_mqtt_client_connection_unsubscribe(
-                    m_underlyingConnection, &topicFilterCur, s_onOpComplete, opCompleteCallbackData);
+                    m_underlyingConnection, topicFilterCur.Get(), s_onOpComplete, opCompleteCallbackData);
 
                 if (!packetId)
                 {
@@ -545,15 +544,15 @@ namespace Aws
                 opCompleteCallbackData->allocator = m_owningClient->allocator;
                 opCompleteCallbackData->onOperationComplete = std::move(onOpComplete);
                 opCompleteCallbackData->topic = topicCpy;
-                ByteCursor topicCur = aws_byte_cursor_from_array(topicCpy, topicLen - 1);
+                ByteCursor topicCur(reinterpret_cast<const uint8_t *>(topicCpy), topicLen - 1);
+                ByteCursor payloadCur = payload.GetCursor();
 
-                ByteCursor payloadCur = aws_byte_cursor_from_buf(&payload);
                 uint16_t packetId = aws_mqtt_client_connection_publish(
                     m_underlyingConnection,
-                    &topicCur,
+                    topicCur.Get(),
                     qos,
                     retain,
-                    &payloadCur,
+                    payloadCur.Get(),
                     s_onOpComplete,
                     opCompleteCallbackData);
 

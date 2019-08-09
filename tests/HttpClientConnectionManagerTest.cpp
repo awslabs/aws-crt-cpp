@@ -39,7 +39,7 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
 
     Aws::Crt::Io::TlsConnectionOptions tlsConnectionOptions = tlsContext.NewConnectionOptions();
 
-    ByteCursor cursor = ByteCursorFromCString("https://s3.amazonaws.com");
+    ByteCursor cursor("https://s3.amazonaws.com");
     Io::Uri uri(cursor, allocator);
 
     auto hostName = uri.GetHostName();
@@ -140,7 +140,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
 
     Aws::Crt::Io::TlsConnectionOptions tlsConnectionOptions = tlsContext.NewConnectionOptions();
 
-    ByteCursor cursor = ByteCursorFromCString("https://s3.amazonaws.com");
+    ByteCursor cursor("https://s3.amazonaws.com");
     Io::Uri uri(cursor, allocator);
 
     auto hostName = uri.GetHostName();
@@ -242,7 +242,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
 {
     (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
-    ByteCursor cursor = ByteCursorFromCString("https://s3.amazonaws.com");
+    ByteCursor cursor("https://s3.amazonaws.com");
     Io::Uri uri(cursor, allocator);
 
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();

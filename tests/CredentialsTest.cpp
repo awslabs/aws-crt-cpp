@@ -78,9 +78,9 @@ static int s_TestProviderStaticGet(struct aws_allocator *allocator, void *ctx)
 
     {
         CredentialsProviderStaticConfig config;
-        config.m_accessKeyId = aws_byte_cursor_from_c_str(s_access_key_id);
-        config.m_secretAccessKey = aws_byte_cursor_from_c_str(s_secret_access_key);
-        config.m_sessionToken = aws_byte_cursor_from_c_str(s_session_token);
+        config.m_accessKeyId = ByteCursor(aws_byte_cursor_from_c_str(s_access_key_id));
+        config.m_secretAccessKey = ByteCursor(aws_byte_cursor_from_c_str(s_secret_access_key));
+        config.m_sessionToken = ByteCursor(aws_byte_cursor_from_c_str(s_session_token));
 
         auto provider = CredentialsProvider::CreateCredentialsProviderStatic(config, allocator);
         GetCredentialsWaiter waiter(provider);

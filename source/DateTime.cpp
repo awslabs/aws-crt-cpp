@@ -14,6 +14,8 @@
  */
 #include <aws/crt/DateTime.h>
 
+#include <aws/crt/ByteBuf.h>
+
 #include <chrono>
 
 namespace Aws
@@ -50,10 +52,10 @@ namespace Aws
 
         DateTime::DateTime(const char *timestamp, DateFormat format) noexcept
         {
-            ByteBuf timeStampBuf = ByteBufFromCString(timestamp);
+            ByteBuf timeStampBuf(timestamp);
 
             m_good =
-                (aws_date_time_init_from_str(&m_date_time, &timeStampBuf, static_cast<aws_date_format>(format)) ==
+                (aws_date_time_init_from_str(&m_date_time, timeStampBuf.Get(), static_cast<aws_date_format>(format)) ==
                  AWS_ERROR_SUCCESS);
         }
 
@@ -125,10 +127,10 @@ namespace Aws
 
         DateTime &DateTime::operator=(const char *timestamp) noexcept
         {
-            ByteBuf timeStampBuf = aws_byte_buf_from_c_str(timestamp);
+            ByteBuf timeStampBuf(timestamp);
 
             m_good = aws_date_time_init_from_str(
-                         &m_date_time, &timeStampBuf, static_cast<aws_date_format>(DateFormat::AutoDetect)) ==
+                         &m_date_time, timeStampBuf.Get(), static_cast<aws_date_format>(DateFormat::AutoDetect)) ==
                      AWS_ERROR_SUCCESS;
             return *this;
         }
@@ -140,14 +142,14 @@ namespace Aws
         bool DateTime::ToLocalTimeString(DateFormat format, ByteBuf &outputBuf) const noexcept
         {
             return (
-                aws_date_time_to_local_time_str(&m_date_time, static_cast<aws_date_format>(format), &outputBuf) ==
+                aws_date_time_to_local_time_str(&m_date_time, static_cast<aws_date_format>(format), outputBuf.Get()) ==
                 AWS_ERROR_SUCCESS);
         }
 
         bool DateTime::ToGmtString(DateFormat format, ByteBuf &outputBuf) const noexcept
         {
             return (
-                aws_date_time_to_utc_time_str(&m_date_time, static_cast<aws_date_format>(format), &outputBuf) ==
+                aws_date_time_to_utc_time_str(&m_date_time, static_cast<aws_date_format>(format), outputBuf.Get()) ==
                 AWS_ERROR_SUCCESS);
         }
 

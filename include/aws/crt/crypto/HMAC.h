@@ -21,6 +21,9 @@ namespace Aws
 {
     namespace Crt
     {
+        class ByteCursor;
+        class ByteBuf;
+
         namespace Crypto
         {
             static const size_t SHA256_HMAC_DIGEST_SIZE = 32;

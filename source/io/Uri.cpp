@@ -14,6 +14,8 @@
  */
 #include <aws/crt/io/Uri.h>
 
+#include <aws/crt/ByteBuf.h>
+
 namespace Aws
 {
     namespace Crt
@@ -34,7 +36,7 @@ namespace Aws
             Uri::Uri(const ByteCursor &cursor, Allocator *allocator) noexcept
                 : m_lastError(AWS_ERROR_SUCCESS), m_isInit(false)
             {
-                if (!aws_uri_init_parse(&m_uri, allocator, &cursor))
+                if (!aws_uri_init_parse(&m_uri, allocator, cursor.Get()))
                 {
                     m_isInit = true;
                 }
@@ -63,7 +65,7 @@ namespace Aws
                 {
                     ByteCursor uriCursor = other.GetFullUri();
 
-                    if (!aws_uri_init_parse(&m_uri, other.m_uri.allocator, &uriCursor))
+                    if (!aws_uri_init_parse(&m_uri, other.m_uri.allocator, uriCursor.Get()))
                     {
                         m_isInit = true;
                     }
@@ -85,7 +87,7 @@ namespace Aws
                     {
                         ByteCursor uriCursor = other.GetFullUri();
 
-                        if (!aws_uri_init_parse(&m_uri, other.m_uri.allocator, &uriCursor))
+                        if (!aws_uri_init_parse(&m_uri, other.m_uri.allocator, uriCursor.Get()))
                         {
                             m_isInit = true;
                         }
@@ -131,21 +133,21 @@ namespace Aws
                 return *this;
             }
 
-            ByteCursor Uri::GetScheme() const noexcept { return m_uri.scheme; }
+            ByteCursor Uri::GetScheme() const noexcept { return ByteCursor(m_uri.scheme); }
 
-            ByteCursor Uri::GetAuthority() const noexcept { return m_uri.authority; }
+            ByteCursor Uri::GetAuthority() const noexcept { return ByteCursor(m_uri.authority); }
 
-            ByteCursor Uri::GetPath() const noexcept { return m_uri.path; }
+            ByteCursor Uri::GetPath() const noexcept { return ByteCursor(m_uri.path); }
 
-            ByteCursor Uri::GetQueryString() const noexcept { return m_uri.query_string; }
+            ByteCursor Uri::GetQueryString() const noexcept { return ByteCursor(m_uri.query_string); }
 
-            ByteCursor Uri::GetHostName() const noexcept { return m_uri.host_name; }
+            ByteCursor Uri::GetHostName() const noexcept { return ByteCursor(m_uri.host_name); }
 
             uint16_t Uri::GetPort() const noexcept { return m_uri.port; }
 
-            ByteCursor Uri::GetPathAndQuery() const noexcept { return m_uri.path_and_query; }
+            ByteCursor Uri::GetPathAndQuery() const noexcept { return ByteCursor(m_uri.path_and_query); }
 
-            ByteCursor Uri::GetFullUri() const noexcept { return ByteCursorFromByteBuf(m_uri.uri_str); }
+            ByteCursor Uri::GetFullUri() const noexcept { return ByteCursor(&m_uri.uri_str); }
         } // namespace Io
     }     // namespace Crt
 } // namespace Aws

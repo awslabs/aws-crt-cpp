@@ -27,6 +27,8 @@ namespace Aws
 {
     namespace Crt
     {
+        class ByteBuf;
+
         namespace Io
         {
             class ClientBootstrap;

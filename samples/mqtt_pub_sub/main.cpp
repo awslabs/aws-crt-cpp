@@ -13,6 +13,7 @@
  * permissions and limitations under the License.
  */
 #include <aws/crt/Api.h>
+#include <aws/crt/ByteBuf.h>
 #include <aws/crt/StlAllocator.h>
 
 #include <aws/iot/MqttClient.h>
@@ -229,10 +230,10 @@ int main(int argc, char *argv[])
         /*
          * This is invoked upon the receipt of a Publish on a subscribed topic.
          */
-        auto onPublish = [&](Mqtt::MqttConnection &, const String &topic, const ByteBuf &byteBuf) {
+        auto onPublish = [&](Mqtt::MqttConnection &, const String &topic, const ByteBug &byteBuf) {
             fprintf(stdout, "Publish received on topic %s\n", topic.c_str());
             fprintf(stdout, "\n Message:\n");
-            fwrite(byteBuf.buffer, 1, byteBuf.len, stdout);
+            fwrite(byteBuf.Get()->buffer, 1, byteBuf.Get()->len, stdout);
             fprintf(stdout, "\n");
         };
 
@@ -269,11 +270,16 @@ int main(int argc, char *argv[])
                 break;
             }
 
-            ByteBuf payload = ByteBufNewCopy(DefaultAllocator(), (const uint8_t *)input.data(), input.length());
-            ByteBuf *payloadPtr = &payload;
+            auto payloadResult = Aws::Crt::ByteBuf::InitFromArray(DefaultAllocator(), (const uint8_t *)input.data(), input.length());
+            if (!payloadResult) {
+                break;
+            }
+
+            ByteBug &payload = payloadResult.GetResult();
+            ByteBug *payloadPtr = &payload;
 
             auto onPublishComplete = [payloadPtr](Mqtt::MqttConnection &, uint16_t packetId, int errorCode) {
-                aws_byte_buf_clean_up(payloadPtr);
+                aws_byte_buf_clean_up(payloadPtr->Get());
 
                 if (packetId)
                 {

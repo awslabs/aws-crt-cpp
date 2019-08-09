@@ -23,7 +23,6 @@ namespace Aws
 {
     namespace Crt
     {
-
         class ByteCursor
         {
           public:
@@ -32,111 +31,57 @@ namespace Aws
             explicit ByteCursor(const char *str) noexcept;
             explicit ByteCursor(const String &str) noexcept;
             explicit ByteCursor(aws_byte_cursor cursor) noexcept;
+            explicit ByteCursor(aws_byte_cursor *cursor) noexcept;
+            explicit ByteCursor(const aws_byte_buf *buffer) noexcept;
             ByteCursor(const uint8_t *array, size_t len) noexcept;
 
             ByteCursor &operator=(const ByteCursor &cursor) noexcept;
 
-            aws_byte_cursor Get() const noexcept { return m_cursor; }
-            aws_byte_cursor *GetPtr() noexcept { return &m_cursor; }
+            aws_byte_cursor *Get() noexcept { return m_cursorPtr; }
+            const aws_byte_cursor *Get() const noexcept { return m_cursorPtr; }
 
           private:
             aws_byte_cursor m_cursor;
+            aws_byte_cursor *m_cursorPtr;
         };
 
-        /*
-         * Base class that gets passed around by ref across CRT APIs
-         */
         class ByteBuf
         {
           public:
-            virtual ~ByteBuf() {}
+            // Initialization that cannot fail
+            ByteBuf() noexcept;
+            ByteBuf(ByteBuf &&rhs) noexcept;
+            explicit ByteBuf(aws_byte_buf *buffer) noexcept;
+            explicit ByteBuf(const char *str) noexcept;
+            ByteBuf(const uint8_t *array, size_t capacity, size_t len) noexcept;
+
+            ByteBuf &operator=(ByteBuf &&buffer) noexcept;
+
+            ~ByteBuf();
+
+            // Initialization that can fail
+            static AwsCrtResult<ByteBuf> Init(const ByteBuf &buffer) noexcept;
+            static AwsCrtResult<ByteBuf> Init(Allocator *alloc, size_t capacity) noexcept;
+            static AwsCrtResult<ByteBuf> InitFromArray(Allocator *alloc, const uint8_t *array, size_t len) noexcept;
 
             // All of non-init APIs go here
-            AwsCrtResultVoid Append(ByteCursor cursor) noexcept;
-            AwsCrtResultVoid AppendDynamic(ByteCursor cursor) noexcept;
+            AwsCrtResult<void> Append(ByteCursor cursor) noexcept;
+            AwsCrtResult<void> AppendDynamic(ByteCursor cursor) noexcept;
             // etc...
 
-            virtual aws_byte_buf *Get() noexcept = 0;
-            virtual const aws_byte_buf *Get() const noexcept = 0;
+            aws_byte_buf *Get() noexcept { return m_bufferPtr; }
+            const aws_byte_buf *Get() const noexcept { return m_bufferPtr; }
 
-          protected:
-            ByteBuf() noexcept {}
+            ByteCursor GetCursor() const noexcept;
 
+          private:
             ByteBuf(const ByteBuf &rhs) = delete;
-            ByteBuf(ByteBuf &&rhs) = delete;
-
             ByteBuf &operator=(const ByteBuf &buffer) = delete;
-            ByteBuf &operator=(ByteBuf &&buffer) = delete;
-        };
-
-        /*
-         * Wrapper for a pointer to a byte_buf.  Intended for byte_buf objects
-         * that come from C.
-         *
-         * Does not do any cleanup.
-         */
-        class ByteBufRef : public ByteBuf
-        {
-          public:
-            ByteBufRef() : m_buffer(nullptr) {}
-            ByteBufRef(const ByteBufRef &ref) : m_buffer(ref.m_buffer) {}
-            ByteBufRef(ByteBufRef &&ref) : m_buffer(ref.m_buffer) {}
-            explicit ByteBufRef(aws_byte_buf *buffer) : m_buffer(buffer) {}
-
-            virtual ~ByteBufRef() {}
-
-            ByteBufRef &operator=(const ByteBufRef &buffer) noexcept;
-            ByteBufRef &operator=(ByteBufRef &&buffer) noexcept;
-
-            virtual aws_byte_buf *Get() noexcept override { return m_buffer; }
-            virtual const aws_byte_buf *Get() const noexcept override { return m_buffer; }
-
-          private:
-            aws_byte_buf *m_buffer;
-        };
-
-        /*
-         * Wrapper for a byte_buf value.  Intended for C++ user creation of
-         * byte bufs that get passed into C-land via a C++ API.
-         *
-         * Object is cleaned up internally on destruction.
-         *
-         * All constructors cannot fail.  Construction patterns that may fail
-         * are done via Init* methods.
-         *
-         * Copy-construction and copy-assignment are disallowed.  Use the (failable)
-         * Init method that takes a ByteBufValue instead.
-         */
-        class ByteBufValue : public ByteBuf
-        {
-          public:
-            ByteBufValue() noexcept;
-            ByteBufValue(ByteBufValue &&buffer) noexcept;
-            explicit ByteBufValue(const char *str) noexcept;
-            ByteBufValue(const uint8_t *array, size_t capacity, size_t len) noexcept;
-
-            virtual ~ByteBufValue();
-
-            ByteBufValue &operator=(ByteBufValue &&buffer) noexcept;
-
-            static AwsCrtResult<ByteBufValue> Init(const ByteBufValue &buffer) noexcept;
-            static AwsCrtResult<ByteBufValue> Init(Allocator *alloc, size_t capacity) noexcept;
-            static AwsCrtResult<ByteBufValue> InitFromArray(
-                Allocator *alloc,
-                const uint8_t *array,
-                size_t len) noexcept;
-
-            virtual aws_byte_buf *Get() noexcept override { return &m_buffer; }
-            virtual const aws_byte_buf *Get() const noexcept override { return &m_buffer; }
-
-          private:
-            ByteBufValue(const ByteBufValue &buffer) = delete;
-
-            ByteBufValue &operator=(const ByteBufValue &buffer) = delete;
 
             void Cleanup() noexcept;
 
-            struct aws_byte_buf m_buffer;
+            aws_byte_buf m_buffer;
+            aws_byte_buf *m_bufferPtr;
         };
     } // namespace Crt
 } // namespace Aws

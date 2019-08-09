@@ -15,6 +15,7 @@
 #include <aws/crt/crypto/HMAC.h>
 
 #include <aws/cal/hmac.h>
+#include <aws/crt/ByteBuf.h>
 
 namespace Aws
 {
@@ -29,7 +30,8 @@ namespace Aws
                 ByteBuf &output,
                 size_t truncateTo) noexcept
             {
-                return aws_sha256_hmac_compute(allocator, &secret, &input, &output, truncateTo) == AWS_OP_SUCCESS;
+                return aws_sha256_hmac_compute(allocator, secret.Get(), input.Get(), output.Get(), truncateTo) ==
+                       AWS_OP_SUCCESS;
             }
 
             bool ComputeSHA256HMAC(
@@ -38,8 +40,8 @@ namespace Aws
                 ByteBuf &output,
                 size_t truncateTo) noexcept
             {
-                return aws_sha256_hmac_compute(DefaultAllocator(), &secret, &input, &output, truncateTo) ==
-                       AWS_OP_SUCCESS;
+                return aws_sha256_hmac_compute(
+                           DefaultAllocator(), secret.Get(), input.Get(), output.Get(), truncateTo) == AWS_OP_SUCCESS;
             }
 
             HMAC::HMAC(aws_hmac *hmac) noexcept : m_hmac(hmac), m_good(false), m_lastError(0)
@@ -81,19 +83,19 @@ namespace Aws
 
             HMAC HMAC::CreateSHA256HMAC(Allocator *allocator, const ByteCursor &secret) noexcept
             {
-                return HMAC(aws_sha256_hmac_new(allocator, &secret));
+                return HMAC(aws_sha256_hmac_new(allocator, secret.Get()));
             }
 
             HMAC HMAC::CreateSHA256HMAC(const ByteCursor &secret) noexcept
             {
-                return HMAC(aws_sha256_hmac_new(DefaultAllocator(), &secret));
+                return HMAC(aws_sha256_hmac_new(DefaultAllocator(), secret.Get()));
             }
 
             bool HMAC::Update(const ByteCursor &toHMAC) noexcept
             {
                 if (*this)
                 {
-                    if (aws_hmac_update(m_hmac, &toHMAC))
+                    if (aws_hmac_update(m_hmac, toHMAC.Get()))
                     {
                         m_lastError = aws_last_error();
                         m_good = false;
@@ -110,7 +112,7 @@ namespace Aws
                 if (*this)
                 {
                     m_good = false;
-                    if (aws_hmac_finalize(m_hmac, &output, truncateTo))
+                    if (aws_hmac_finalize(m_hmac, output.Get(), truncateTo))
                     {
                         m_lastError = aws_last_error();
                         return false;

@@ -131,7 +131,7 @@ namespace Aws
                 }
                 options.allocator = connectionOptions.allocator;
                 options.user_data = callbackData;
-                options.host_name = connectionOptions.hostName;
+                options.host_name = *connectionOptions.hostName.Get();
                 options.port = connectionOptions.port;
                 options.initial_window_size = connectionOptions.initialWindowSize;
                 options.socket_options = connectionOptions.socketOptions;
@@ -233,10 +233,7 @@ namespace Aws
                 return AWS_OP_SUCCESS;
             }
 
-            int HttpStream::s_onIncomingHeaderBlockDone(
-                struct aws_http_stream *,
-                bool hasBody,
-                void *userData) noexcept
+            int HttpStream::s_onIncomingHeaderBlockDone(struct aws_http_stream *, bool hasBody, void *userData) noexcept
             {
                 auto callbackData = static_cast<ClientStreamCallbackData *>(userData);
 
@@ -257,7 +254,7 @@ namespace Aws
 
                 if (callbackData->stream->m_onIncomingBody)
                 {
-                    callbackData->stream->m_onIncomingBody(*callbackData->stream, *data);
+                    callbackData->stream->m_onIncomingBody(*callbackData->stream, ByteCursor(*data));
                 }
 
                 return AWS_OP_SUCCESS;

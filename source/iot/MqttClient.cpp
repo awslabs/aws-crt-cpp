@@ -14,6 +14,7 @@
  */
 #include <aws/iot/MqttClient.h>
 
+#include <aws/crt/ByteBuf.h>
 #include <aws/crt/Config.h>
 
 namespace Aws

@@ -24,6 +24,8 @@ namespace Aws
 {
     namespace Crt
     {
+        class ByteCursor;
+
         namespace Io
         {
             enum class TlsMode

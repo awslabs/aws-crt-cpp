@@ -15,6 +15,7 @@
 
 #include <aws/crt/http/HttpRequestResponse.h>
 
+#include <aws/crt/ByteBuf.h>
 #include <aws/crt/io/Stream.h>
 #include <aws/http/request_response.h>
 #include <aws/io/stream.h>
@@ -112,7 +113,7 @@ namespace Aws
             Optional<ByteCursor> HttpRequest::GetMethod() const noexcept
             {
                 ByteCursor method;
-                if (aws_http_message_get_request_method(m_message, &method) != AWS_OP_SUCCESS)
+                if (aws_http_message_get_request_method(m_message, method.Get()) != AWS_OP_SUCCESS)
                 {
                     return Optional<ByteCursor>();
                 }
@@ -122,13 +123,13 @@ namespace Aws
 
             bool HttpRequest::SetMethod(ByteCursor method) noexcept
             {
-                return aws_http_message_set_request_method(m_message, method) == AWS_OP_SUCCESS;
+                return aws_http_message_set_request_method(m_message, *method.Get()) == AWS_OP_SUCCESS;
             }
 
             Optional<ByteCursor> HttpRequest::GetPath() const noexcept
             {
                 ByteCursor path;
-                if (aws_http_message_get_request_path(m_message, &path) != AWS_OP_SUCCESS)
+                if (aws_http_message_get_request_path(m_message, path.Get()) != AWS_OP_SUCCESS)
                 {
                     return Optional<ByteCursor>();
                 }
@@ -138,7 +139,7 @@ namespace Aws
 
             bool HttpRequest::SetPath(ByteCursor path) noexcept
             {
-                return aws_http_message_set_request_path(m_message, path) == AWS_OP_SUCCESS;
+                return aws_http_message_set_request_path(m_message, *path.Get()) == AWS_OP_SUCCESS;
             }
 
             HttpResponse::HttpResponse(Allocator *allocator)

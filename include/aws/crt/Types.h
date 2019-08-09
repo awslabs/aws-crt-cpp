@@ -17,6 +17,7 @@
 #include <aws/crt/Optional.h>
 #include <aws/crt/StlAllocator.h>
 
+#include <aws/common/byte_buf.h>
 #include <aws/common/common.h>
 #include <aws/io/socket.h>
 #include <aws/mqtt/mqtt.h>
@@ -30,8 +31,6 @@
 #include <vector>
 
 struct aws_allocator;
-struct aws_byte_buf;
-struct aws_byte_cursor;
 struct aws_socket_options;
 
 namespace Aws
@@ -39,8 +38,6 @@ namespace Aws
     namespace Crt
     {
         using Allocator = aws_allocator;
-        using ByteBuf = aws_byte_buf;
-        using ByteCursor = aws_byte_cursor;
 
         namespace Io
         {
@@ -67,15 +64,6 @@ namespace Aws
         template <typename T> using List = std::list<T, StlAllocator<T>>;
 
         AWS_CRT_CPP_API Allocator *DefaultAllocator() noexcept;
-        AWS_CRT_CPP_API ByteBuf ByteBufFromCString(const char *str) noexcept;
-        AWS_CRT_CPP_API ByteBuf ByteBufFromEmptyArray(const uint8_t *array, size_t len) noexcept;
-        AWS_CRT_CPP_API ByteBuf ByteBufFromArray(const uint8_t *array, size_t capacity) noexcept;
-        AWS_CRT_CPP_API ByteBuf ByteBufNewCopy(Allocator *alloc, const uint8_t *array, size_t len);
-        AWS_CRT_CPP_API void ByteBufDelete(ByteBuf &);
-
-        AWS_CRT_CPP_API ByteCursor ByteCursorFromCString(const char *str) noexcept;
-        AWS_CRT_CPP_API ByteCursor ByteCursorFromByteBuf(const ByteBuf &) noexcept;
-        AWS_CRT_CPP_API ByteCursor ByteCursorFromArray(const uint8_t *array, size_t len) noexcept;
 
         AWS_CRT_CPP_API Vector<uint8_t> Base64Decode(const String &decode);
         AWS_CRT_CPP_API String Base64Encode(const Vector<uint8_t> &encode);
