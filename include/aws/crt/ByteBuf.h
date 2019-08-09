@@ -32,6 +32,7 @@ namespace Aws
             explicit ByteCursor(const String &str) noexcept;
             explicit ByteCursor(aws_byte_cursor cursor) noexcept;
             explicit ByteCursor(aws_byte_cursor *cursor) noexcept;
+            explicit ByteCursor(const aws_byte_buf &buffer) noexcept;
             explicit ByteCursor(const aws_byte_buf *buffer) noexcept;
             ByteCursor(const uint8_t *array, size_t len) noexcept;
 

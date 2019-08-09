@@ -42,54 +42,50 @@ namespace Aws
             m_cursor = aws_byte_cursor_from_buf(buffer);
         }
 
+        ByteCursor::ByteCursor(const aws_byte_buf &buffer) noexcept : m_cursorPtr(&m_cursor)
+        {
+            m_cursor = aws_byte_cursor_from_buf(&buffer);
+        }
+
         ByteCursor::ByteCursor(const uint8_t *array, size_t len) noexcept : m_cursorPtr(&m_cursor)
         {
             m_cursor = aws_byte_cursor_from_array(array, len);
         }
 
-        ByteCursor::ByteCursor(const ByteCursor &cursor) noexcept : m_cursor(cursor.m_cursor), m_cursorPtr(&m_cursor) {}
+        ByteCursor::ByteCursor(const ByteCursor &cursor) noexcept
+        {
+            if (cursor.m_cursorPtr == &cursor.m_cursor)
+            {
+                m_cursor = cursor.m_cursor;
+                m_cursorPtr = &m_cursor;
+            }
+            else
+            {
+                AWS_ZERO_STRUCT(m_cursor);
+                m_cursorPtr = cursor.m_cursorPtr;
+            }
+        }
 
         ByteCursor &ByteCursor::operator=(const ByteCursor &cursor) noexcept
         {
-            m_cursor = cursor.m_cursor;
-            m_cursorPtr = &m_cursor;
+            if (this != &cursor)
+            {
+                if (cursor.m_cursorPtr == &cursor.m_cursor)
+                {
+                    m_cursor = cursor.m_cursor;
+                    m_cursorPtr = &m_cursor;
+                }
+                else
+                {
+                    AWS_ZERO_STRUCT(m_cursor);
+                    m_cursorPtr = cursor.m_cursorPtr;
+                }
+            }
 
             return *this;
         }
 
         ///////////////////////////////////////////////////////////////////////////////////
-
-        AwsCrtResultVoid ByteBuf::Append(ByteCursor cursor) noexcept
-        {
-            if (aws_byte_buf_append(m_bufferPtr, cursor.Get()))
-            {
-                return MakeLastErrorResult<void>();
-            }
-
-            return AwsCrtResultVoid();
-        }
-
-        AwsCrtResultVoid ByteBuf::AppendDynamic(ByteCursor cursor) noexcept
-        {
-            if (aws_byte_buf_append_dynamic(m_bufferPtr, cursor.Get()))
-            {
-                return MakeLastErrorResult<void>();
-            }
-
-            return AwsCrtResultVoid();
-        }
-
-        ///////////////////////////////////////////////////////////////////////////////////
-
-        void ByteBuf::Cleanup() noexcept
-        {
-            if (m_bufferPtr == &m_buffer)
-            {
-                aws_byte_buf_clean_up(&m_buffer);
-                AWS_ZERO_STRUCT(m_buffer);
-                m_bufferPtr = nullptr;
-            }
-        }
 
         ByteBuf::ByteBuf(ByteBuf &&rhs) noexcept
         {
@@ -201,5 +197,35 @@ namespace Aws
         }
 
         ByteCursor ByteBuf::GetCursor() const noexcept { return ByteCursor(m_bufferPtr->buffer, m_bufferPtr->len); }
+
+        AwsCrtResultVoid ByteBuf::Append(ByteCursor cursor) noexcept
+        {
+            if (aws_byte_buf_append(m_bufferPtr, cursor.Get()))
+            {
+                return MakeLastErrorResult<void>();
+            }
+
+            return AwsCrtResultVoid();
+        }
+
+        AwsCrtResultVoid ByteBuf::AppendDynamic(ByteCursor cursor) noexcept
+        {
+            if (aws_byte_buf_append_dynamic(m_bufferPtr, cursor.Get()))
+            {
+                return MakeLastErrorResult<void>();
+            }
+
+            return AwsCrtResultVoid();
+        }
+
+        void ByteBuf::Cleanup() noexcept
+        {
+            if (m_bufferPtr == &m_buffer)
+            {
+                aws_byte_buf_clean_up(&m_buffer);
+                AWS_ZERO_STRUCT(m_buffer);
+                m_bufferPtr = nullptr;
+            }
+        }
     } // namespace Crt
 } // namespace Aws
