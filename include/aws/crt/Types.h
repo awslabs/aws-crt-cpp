@@ -22,6 +22,7 @@
 #include <aws/io/socket.h>
 #include <aws/mqtt/mqtt.h>
 
+#include <functional>
 #include <list>
 #include <map>
 #include <sstream>
@@ -91,6 +92,8 @@ namespace Aws
 
             return std::shared_ptr<T>(t, [allocator](T *obj) { Delete(obj, allocator); });
         }
+
+        template <typename T> using ScopedResource = std::unique_ptr<T, std::function<void(T *)>>;
 
     } // namespace Crt
 } // namespace Aws

@@ -230,7 +230,7 @@ int main(int argc, char *argv[])
         /*
          * This is invoked upon the receipt of a Publish on a subscribed topic.
          */
-        auto onPublish = [&](Mqtt::MqttConnection &, const String &topic, const ByteBug &byteBuf) {
+        auto onPublish = [&](Mqtt::MqttConnection &, const String &topic, const ByteBuf &byteBuf) {
             fprintf(stdout, "Publish received on topic %s\n", topic.c_str());
             fprintf(stdout, "\n Message:\n");
             fwrite(byteBuf.Get()->buffer, 1, byteBuf.Get()->len, stdout);
@@ -275,8 +275,8 @@ int main(int argc, char *argv[])
                 break;
             }
 
-            ByteBug &payload = payloadResult.GetResult();
-            ByteBug *payloadPtr = &payload;
+            ByteBuf &payload = payloadResult.GetResult();
+            ByteBuf *payloadPtr = &payload;
 
             auto onPublishComplete = [payloadPtr](Mqtt::MqttConnection &, uint16_t packetId, int errorCode) {
                 aws_byte_buf_clean_up(payloadPtr->Get());

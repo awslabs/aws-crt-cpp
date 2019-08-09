@@ -63,7 +63,7 @@ namespace Aws
 
                 operator bool() const noexcept;
 
-                aws_credentials *GetUnderlyingHandle() const noexcept;
+                aws_credentials *GetUnderlyingHandle() const noexcept { return m_credentials; }
 
               private:
                 aws_credentials *m_credentials;

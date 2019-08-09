@@ -36,7 +36,7 @@ namespace Aws
             class AWS_CRT_CPP_API HttpMessage
             {
               public:
-                ~HttpMessage();
+                virtual ~HttpMessage();
 
                 HttpMessage(const HttpMessage &) = delete;
                 HttpMessage(HttpMessage &&) = delete;
