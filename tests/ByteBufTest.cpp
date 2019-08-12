@@ -163,6 +163,8 @@ static int s_ByteBufInitializationFailure(struct aws_allocator *allocator, void 
     auto arrayFailureResult = ByteBuf::InitFromArray(&fail_to_allocate, (uint8_t *)s_TestString, strlen(s_TestString));
     ASSERT_FALSE(arrayFailureResult);
 
+    aws_timebomb_allocator_clean_up(&fail_to_allocate);
+
     return AWS_ERROR_SUCCESS;
 }
 
@@ -235,7 +237,8 @@ static int s_ByteBufMove(struct aws_allocator *allocator, void *)
     ASSERT_TRUE(valueMoveConstruct.Get()->buffer == valueCopy.buffer);
     ASSERT_TRUE(valueMoveConstruct.Get()->len == valueCopy.len);
     ASSERT_TRUE(valueMoveConstruct.Get()->capacity == valueCopy.capacity);
-    ASSERT_TRUE(valueResult.GetResult().Get() == nullptr);
+    ASSERT_TRUE(valueResult.GetResult().Get()->len == 0);
+    ASSERT_TRUE(valueResult.GetResult().Get()->buffer == nullptr);
 
     ByteBuf pointerMoveConstruct(std::move(pointerBuffer));
     ASSERT_TRUE(pointerMoveConstruct.Get() == pointerBufferPtr);
@@ -253,7 +256,8 @@ static int s_ByteBufMove(struct aws_allocator *allocator, void *)
     ASSERT_TRUE(valueMoveAssign.Get()->buffer == toBeAssignedCopy.buffer);
     ASSERT_TRUE(valueMoveAssign.Get()->len == toBeAssignedCopy.len);
     ASSERT_TRUE(valueMoveAssign.Get()->capacity == toBeAssignedCopy.capacity);
-    ASSERT_TRUE(toBeAssignedResult.GetResult().Get() == nullptr);
+    ASSERT_TRUE(toBeAssignedResult.GetResult().Get()->len == 0);
+    ASSERT_TRUE(toBeAssignedResult.GetResult().Get()->buffer == 0);
 
     ByteBuf pointerMoveAssign(std::move(valueMoveAssign));
 
@@ -283,7 +287,7 @@ static int s_ByteBufAppend(struct aws_allocator *allocator, void *)
 
     ASSERT_TRUE(appendBufferResult.GetResult().Get()->len == 6);
     ASSERT_BIN_ARRAYS_EQUALS(
-        appendBufferResult.GetResult().Get()->buffer, appendBufferResult.GetResult().Get()->len, "abddef", 6);
+        appendBufferResult.GetResult().Get()->buffer, appendBufferResult.GetResult().Get()->len, "abcdef", 6);
 
     return AWS_ERROR_SUCCESS;
 }
@@ -324,23 +328,27 @@ static int s_ByteBufAppendDynamicFailure(struct aws_allocator *allocator, void *
     struct aws_allocator allocate_once;
     AWS_ZERO_STRUCT(allocate_once);
 
-    ASSERT_SUCCESS(aws_timebomb_allocator_init(&allocate_once, allocator, 1));
+    {
+        ASSERT_SUCCESS(aws_timebomb_allocator_init(&allocate_once, allocator, 1));
 
-    auto appendBufferResult = ByteBuf::Init(&allocate_once, 10);
-    ASSERT_TRUE(appendBufferResult);
+        auto appendBufferResult = ByteBuf::Init(&allocate_once, 10);
+        ASSERT_TRUE(appendBufferResult);
 
-    auto appendResult1 = appendBufferResult.GetResult().AppendDynamic(ByteCursor("abc"));
-    ASSERT_TRUE(appendResult1);
+        auto appendResult1 = appendBufferResult.GetResult().AppendDynamic(ByteCursor("abc"));
+        ASSERT_TRUE(appendResult1);
 
-    auto appendResult2 = appendBufferResult.GetResult().AppendDynamic(ByteCursor("def"));
-    ASSERT_TRUE(appendResult2);
+        auto appendResult2 = appendBufferResult.GetResult().AppendDynamic(ByteCursor("def"));
+        ASSERT_TRUE(appendResult2);
 
-    auto appendResult3 = appendBufferResult.GetResult().AppendDynamic(ByteCursor("ghijklmnop"));
-    ASSERT_FALSE(appendResult3);
+        auto appendResult3 = appendBufferResult.GetResult().AppendDynamic(ByteCursor("ghijklmnop"));
+        ASSERT_FALSE(appendResult3);
 
-    ASSERT_TRUE(appendBufferResult.GetResult().Get()->len == 6);
-    ASSERT_BIN_ARRAYS_EQUALS(
-        appendBufferResult.GetResult().Get()->buffer, appendBufferResult.GetResult().Get()->len, "abcdef", 6);
+        ASSERT_TRUE(appendBufferResult.GetResult().Get()->len == 6);
+        ASSERT_BIN_ARRAYS_EQUALS(
+            appendBufferResult.GetResult().Get()->buffer, appendBufferResult.GetResult().Get()->len, "abcdef", 6);
+    }
+
+    aws_timebomb_allocator_clean_up(&allocate_once);
 
     return AWS_ERROR_SUCCESS;
 }

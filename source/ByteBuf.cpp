@@ -95,7 +95,6 @@ namespace Aws
                 m_bufferPtr = &m_buffer;
 
                 AWS_ZERO_STRUCT(rhs.m_buffer);
-                rhs.m_bufferPtr = nullptr;
             }
             else
             {
@@ -126,7 +125,7 @@ namespace Aws
                     m_bufferPtr = &m_buffer;
 
                     AWS_ZERO_STRUCT(rhs.m_buffer);
-                    rhs.m_bufferPtr = nullptr;
+                    rhs.m_bufferPtr = &rhs.m_buffer;
                 }
                 else
                 {
@@ -136,7 +135,7 @@ namespace Aws
             return *this;
         }
 
-        ByteBuf::ByteBuf() noexcept : m_bufferPtr(nullptr) { AWS_ZERO_STRUCT(m_buffer); }
+        ByteBuf::ByteBuf() noexcept : m_bufferPtr(&m_buffer) { AWS_ZERO_STRUCT(m_buffer); }
 
         ByteBuf::~ByteBuf() { Cleanup(); }
 
