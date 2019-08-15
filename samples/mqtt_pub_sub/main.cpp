@@ -233,7 +233,7 @@ int main(int argc, char *argv[])
         auto onPublish = [&](Mqtt::MqttConnection &, const String &topic, const ByteBuf &byteBuf) {
             fprintf(stdout, "Publish received on topic %s\n", topic.c_str());
             fprintf(stdout, "\n Message:\n");
-            fwrite(byteBuf.Get()->buffer, 1, byteBuf.Get()->len, stdout);
+            fwrite(byteBuf.GetImpl()->buffer, 1, byteBuf.GetImpl()->len, stdout);
             fprintf(stdout, "\n");
         };
 
@@ -270,8 +270,11 @@ int main(int argc, char *argv[])
                 break;
             }
 
-            auto payloadResult = Aws::Crt::ByteBuf::InitFromArray(DefaultAllocator(), (const uint8_t *)input.data(), input.length());
+            auto payloadResult = Aws::Crt::ByteBuf::Init(DefaultAllocator(), input.length());
             if (!payloadResult) {
+                break;
+            }
+            if (!payloadResult.GetResult().Append(ByteCursor((const uint8_t *)input.data(), input.length()))) {
                 break;
             }
 
@@ -279,7 +282,7 @@ int main(int argc, char *argv[])
             ByteBuf *payloadPtr = &payload;
 
             auto onPublishComplete = [payloadPtr](Mqtt::MqttConnection &, uint16_t packetId, int errorCode) {
-                aws_byte_buf_clean_up(payloadPtr->Get());
+                aws_byte_buf_clean_up(payloadPtr->GetImpl());
 
                 if (packetId)
                 {
@@ -290,7 +293,7 @@ int main(int argc, char *argv[])
                     fprintf(stdout, "Operation failed with error %s\n", aws_error_debug_str(errorCode));
                 }
             };
-            connection->Publish(topic.c_str(), AWS_MQTT_QOS_AT_LEAST_ONCE, false, payload, onPublishComplete);
+            connection->Publish(topic.c_str(), AWS_MQTT_QOS_AT_LEAST_ONCE, false, payload.GetCursor(), onPublishComplete);
         }
 
         /*

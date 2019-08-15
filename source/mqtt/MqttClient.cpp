@@ -274,18 +274,16 @@ namespace Aws
 
             bool MqttConnection::SetWill(const char *topic, QOS qos, bool retain, const ByteBuf &payload) noexcept
             {
-                ByteBuf topicBuf(topic);
-                ByteCursor topicCur = topicBuf.GetCursor();
+                ByteCursor topicCur(topic);
                 ByteCursor payloadCur = payload.GetCursor();
 
                 return aws_mqtt_client_connection_set_will(
-                           m_underlyingConnection, topicCur.Get(), qos, retain, payloadCur.Get()) == 0;
+                           m_underlyingConnection, topicCur.GetImpl(), qos, retain, payloadCur.GetImpl()) == 0;
             }
 
             bool MqttConnection::SetLogin(const char *userName, const char *password) noexcept
             {
-                ByteBuf userNameBuf(userName);
-                ByteCursor userNameCur = userNameBuf.GetCursor();
+                ByteCursor userNameCur(userName);
 
                 ByteCursor *pwdCurPtr = nullptr;
                 ByteCursor pwdCur;
@@ -296,7 +294,7 @@ namespace Aws
                     pwdCurPtr = &pwdCur;
                 }
                 return aws_mqtt_client_connection_set_login(
-                           m_underlyingConnection, userNameCur.Get(), pwdCurPtr->Get()) == 0;
+                           m_underlyingConnection, userNameCur.GetImpl(), pwdCurPtr->GetImpl()) == 0;
             }
 
             bool MqttConnection::Connect(
@@ -377,7 +375,7 @@ namespace Aws
 
                 uint16_t packetId = aws_mqtt_client_connection_subscribe(
                     m_underlyingConnection,
-                    topicFilterCur.Get(),
+                    topicFilterCur.GetImpl(),
                     qos,
                     s_onPublish,
                     pubCallbackData,
@@ -444,7 +442,7 @@ namespace Aws
                     subscription.on_publish = s_onPublish;
                     subscription.on_publish_ud = pubCallbackData;
                     subscription.qos = qos;
-                    subscription.topic = *topicFilterCur.Get();
+                    subscription.topic = *topicFilterCur.GetImpl();
 
                     aws_array_list_push_back(&multiPub, reinterpret_cast<const void *>(&subscription));
                 }
@@ -501,7 +499,7 @@ namespace Aws
                 ByteCursor topicFilterCur(topicFilter);
 
                 uint16_t packetId = aws_mqtt_client_connection_unsubscribe(
-                    m_underlyingConnection, topicFilterCur.Get(), s_onOpComplete, opCompleteCallbackData);
+                    m_underlyingConnection, topicFilterCur.GetImpl(), s_onOpComplete, opCompleteCallbackData);
 
                 if (!packetId)
                 {
@@ -516,7 +514,7 @@ namespace Aws
                 const char *topic,
                 QOS qos,
                 bool retain,
-                const ByteBuf &payload,
+                const ByteCursor &payloadCur,
                 OnOperationCompleteHandler &&onOpComplete) noexcept
             {
 
@@ -545,14 +543,13 @@ namespace Aws
                 opCompleteCallbackData->onOperationComplete = std::move(onOpComplete);
                 opCompleteCallbackData->topic = topicCpy;
                 ByteCursor topicCur(reinterpret_cast<const uint8_t *>(topicCpy), topicLen - 1);
-                ByteCursor payloadCur = payload.GetCursor();
 
                 uint16_t packetId = aws_mqtt_client_connection_publish(
                     m_underlyingConnection,
-                    topicCur.Get(),
+                    topicCur.GetImpl(),
                     qos,
                     retain,
-                    payloadCur.Get(),
+                    payloadCur.GetImpl(),
                     s_onOpComplete,
                     opCompleteCallbackData);
 

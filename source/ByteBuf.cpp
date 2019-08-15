@@ -21,35 +21,28 @@ namespace Aws
     {
         ///////////////////////////////////////////////////////////////////////////////////
 
-        ByteCursor::ByteCursor() noexcept : m_cursorPtr(&m_cursor) { AWS_ZERO_STRUCT(m_cursor); }
+        ByteCursor::ByteCursor() noexcept : m_cursor{0}, m_cursorPtr{&m_cursor} {}
 
-        ByteCursor::ByteCursor(const char *str) noexcept : m_cursorPtr(&m_cursor)
+        ByteCursor::ByteCursor(const char *str) noexcept
+            : m_cursor(aws_byte_cursor_from_c_str(str)), m_cursorPtr(&m_cursor)
         {
-            m_cursor = aws_byte_cursor_from_c_str(str);
         }
 
-        ByteCursor::ByteCursor(const String &str) noexcept : m_cursorPtr(&m_cursor)
+        ByteCursor::ByteCursor(const String &str) noexcept
+            : m_cursor(aws_byte_cursor_from_array(str.c_str(), str.size())), m_cursorPtr(&m_cursor)
         {
-            m_cursor = aws_byte_cursor_from_array(str.c_str(), str.size());
         }
 
         ByteCursor::ByteCursor(aws_byte_cursor cursor) noexcept : m_cursor(cursor), m_cursorPtr(&m_cursor) {}
 
-        ByteCursor::ByteCursor(aws_byte_cursor *cursor) noexcept : m_cursorPtr(cursor) { AWS_ZERO_STRUCT(m_cursor); }
-
-        ByteCursor::ByteCursor(const aws_byte_buf *buffer) noexcept : m_cursorPtr(&m_cursor)
+        ByteCursor::ByteCursor(const aws_byte_buf &buffer) noexcept
+            : m_cursor(aws_byte_cursor_from_buf(&buffer)), m_cursorPtr(&m_cursor)
         {
-            m_cursor = aws_byte_cursor_from_buf(buffer);
         }
 
-        ByteCursor::ByteCursor(const aws_byte_buf &buffer) noexcept : m_cursorPtr(&m_cursor)
+        ByteCursor::ByteCursor(const uint8_t *array, size_t len) noexcept
+            : m_cursor(aws_byte_cursor_from_array(array, len)), m_cursorPtr(&m_cursor)
         {
-            m_cursor = aws_byte_cursor_from_buf(&buffer);
-        }
-
-        ByteCursor::ByteCursor(const uint8_t *array, size_t len) noexcept : m_cursorPtr(&m_cursor)
-        {
-            m_cursor = aws_byte_cursor_from_array(array, len);
         }
 
         ByteCursor::ByteCursor(const ByteCursor &cursor) noexcept
@@ -85,6 +78,16 @@ namespace Aws
             return *this;
         }
 
+        ByteCursor ByteCursor::Wrap(aws_byte_cursor *cursor) noexcept
+        {
+            ByteCursor temp;
+            temp.m_cursorPtr = cursor;
+
+            return temp;
+        }
+
+        void ByteCursor::Advance(size_t len) noexcept { *m_cursorPtr = aws_byte_cursor_advance(m_cursorPtr, len); }
+
         ///////////////////////////////////////////////////////////////////////////////////
 
         ByteBuf::ByteBuf(ByteBuf &&rhs) noexcept
@@ -103,9 +106,13 @@ namespace Aws
             }
         }
 
-        ByteBuf::ByteBuf(aws_byte_buf *buffer) noexcept : m_bufferPtr(buffer) { AWS_ZERO_STRUCT(m_buffer); }
+        ByteBuf ByteBuf::Wrap(aws_byte_buf *buffer) noexcept
+        {
+            ByteBuf buf;
+            buf.m_bufferPtr = buffer;
 
-        ByteBuf::ByteBuf(const char *str) noexcept : m_buffer(aws_byte_buf_from_c_str(str)), m_bufferPtr(&m_buffer) {}
+            return buf;
+        }
 
         ByteBuf::ByteBuf(const uint8_t *array, size_t capacity, size_t len) noexcept
             : m_buffer(aws_byte_buf_from_array(array, capacity)), m_bufferPtr(&m_buffer)
@@ -125,7 +132,6 @@ namespace Aws
                     m_bufferPtr = &m_buffer;
 
                     AWS_ZERO_STRUCT(rhs.m_buffer);
-                    rhs.m_bufferPtr = &rhs.m_buffer;
                 }
                 else
                 {
@@ -135,7 +141,7 @@ namespace Aws
             return *this;
         }
 
-        ByteBuf::ByteBuf() noexcept : m_bufferPtr(&m_buffer) { AWS_ZERO_STRUCT(m_buffer); }
+        ByteBuf::ByteBuf() noexcept : m_buffer{0}, m_bufferPtr{&m_buffer} {}
 
         ByteBuf::~ByteBuf() { Cleanup(); }
 
@@ -180,26 +186,11 @@ namespace Aws
             return AwsCrtResult<ByteBuf>(std::move(temp));
         }
 
-        AwsCrtResult<ByteBuf> ByteBuf::InitFromArray(Allocator *alloc, const uint8_t *array, size_t len) noexcept
-        {
-
-            ByteBuf temp;
-            ByteCursor cursor(const_cast<uint8_t *>(array), len);
-            if (aws_byte_buf_init_copy_from_cursor(&temp.m_buffer, alloc, *cursor.Get()))
-            {
-                return MakeLastErrorResult<ByteBuf>();
-            }
-
-            temp.m_bufferPtr = &temp.m_buffer;
-
-            return AwsCrtResult<ByteBuf>(std::move(temp));
-        }
-
         ByteCursor ByteBuf::GetCursor() const noexcept { return ByteCursor(m_bufferPtr->buffer, m_bufferPtr->len); }
 
         AwsCrtResultVoid ByteBuf::Append(ByteCursor cursor) noexcept
         {
-            if (aws_byte_buf_append(m_bufferPtr, cursor.Get()))
+            if (aws_byte_buf_append(m_bufferPtr, cursor.GetImpl()))
             {
                 return MakeLastErrorResult<void>();
             }
@@ -209,7 +200,7 @@ namespace Aws
 
         AwsCrtResultVoid ByteBuf::AppendDynamic(ByteCursor cursor) noexcept
         {
-            if (aws_byte_buf_append_dynamic(m_bufferPtr, cursor.Get()))
+            if (aws_byte_buf_append_dynamic(m_bufferPtr, cursor.GetImpl()))
             {
                 return MakeLastErrorResult<void>();
             }

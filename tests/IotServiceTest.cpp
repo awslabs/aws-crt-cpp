@@ -103,7 +103,7 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
             cv.notify_one();
         };
         auto onTest = [&](MqttConnection &connection, const String &topic, const ByteBuf &payload) {
-            printf("GOT MESSAGE topic=%s payload=" PRInSTR "\n", topic.c_str(), AWS_BYTE_BUF_PRI(*payload.Get()));
+            printf("GOT MESSAGE topic=%s payload=" PRInSTR "\n", topic.c_str(), AWS_BYTE_BUF_PRI(*payload.GetImpl()));
             received = true;
             cv.notify_one();
         };
@@ -137,7 +137,7 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
             cv.wait(lock, [&]() { return subscribed; });
         }
 
-        Aws::Crt::ByteBuf payload("notice me pls");
+        Aws::Crt::ByteCursor payload("notice me pls");
         mqttConnection->Publish("/publish/me/senpai", QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, payload, onPubAck);
 
         // wait for publish

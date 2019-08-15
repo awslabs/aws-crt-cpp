@@ -29,22 +29,24 @@ namespace Aws
                 ByteBuf &output,
                 size_t truncateTo) noexcept
             {
-                return aws_sha256_compute(allocator, input.Get(), output.Get(), truncateTo) == AWS_OP_SUCCESS;
+                return aws_sha256_compute(allocator, input.GetImpl(), output.GetImpl(), truncateTo) == AWS_OP_SUCCESS;
             }
 
             bool ComputeSHA256(const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
             {
-                return aws_sha256_compute(DefaultAllocator(), input.Get(), output.Get(), truncateTo) == AWS_OP_SUCCESS;
+                return aws_sha256_compute(DefaultAllocator(), input.GetImpl(), output.GetImpl(), truncateTo) ==
+                       AWS_OP_SUCCESS;
             }
 
             bool ComputeMD5(Allocator *allocator, const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
             {
-                return aws_md5_compute(allocator, input.Get(), output.Get(), truncateTo) == AWS_OP_SUCCESS;
+                return aws_md5_compute(allocator, input.GetImpl(), output.GetImpl(), truncateTo) == AWS_OP_SUCCESS;
             }
 
             bool ComputeMD5(const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
             {
-                return aws_md5_compute(DefaultAllocator(), input.Get(), output.Get(), truncateTo) == AWS_OP_SUCCESS;
+                return aws_md5_compute(DefaultAllocator(), input.GetImpl(), output.GetImpl(), truncateTo) ==
+                       AWS_OP_SUCCESS;
             }
 
             Hash::Hash(aws_hash *hash) noexcept : m_hash(hash), m_good(false), m_lastError(0)
@@ -92,7 +94,7 @@ namespace Aws
             {
                 if (*this)
                 {
-                    if (aws_hash_update(m_hash, toHash.Get()))
+                    if (aws_hash_update(m_hash, toHash.GetImpl()))
                     {
                         m_lastError = aws_last_error();
                         m_good = false;
@@ -109,7 +111,7 @@ namespace Aws
                 if (*this)
                 {
                     m_good = false;
-                    if (aws_hash_finalize(m_hash, output.Get(), truncateTo))
+                    if (aws_hash_finalize(m_hash, output.GetImpl(), truncateTo))
                     {
                         m_lastError = aws_last_error();
                         return false;

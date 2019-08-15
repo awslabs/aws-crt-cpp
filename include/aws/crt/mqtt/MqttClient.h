@@ -167,7 +167,7 @@ namespace Aws
                     const char *topic,
                     QOS qos,
                     bool retain,
-                    const ByteBuf &payload,
+                    const ByteCursor &payload,
                     OnOperationCompleteHandler &&onOpComplete) noexcept;
 
                 OnConnectionInterruptedHandler OnConnectionInterrupted;

@@ -113,7 +113,7 @@ namespace Aws
             Optional<ByteCursor> HttpRequest::GetMethod() const noexcept
             {
                 ByteCursor method;
-                if (aws_http_message_get_request_method(m_message, method.Get()) != AWS_OP_SUCCESS)
+                if (aws_http_message_get_request_method(m_message, method.GetImpl()) != AWS_OP_SUCCESS)
                 {
                     return Optional<ByteCursor>();
                 }
@@ -123,13 +123,13 @@ namespace Aws
 
             bool HttpRequest::SetMethod(ByteCursor method) noexcept
             {
-                return aws_http_message_set_request_method(m_message, *method.Get()) == AWS_OP_SUCCESS;
+                return aws_http_message_set_request_method(m_message, *method.GetImpl()) == AWS_OP_SUCCESS;
             }
 
             Optional<ByteCursor> HttpRequest::GetPath() const noexcept
             {
                 ByteCursor path;
-                if (aws_http_message_get_request_path(m_message, path.Get()) != AWS_OP_SUCCESS)
+                if (aws_http_message_get_request_path(m_message, path.GetImpl()) != AWS_OP_SUCCESS)
                 {
                     return Optional<ByteCursor>();
                 }
@@ -139,7 +139,7 @@ namespace Aws
 
             bool HttpRequest::SetPath(ByteCursor path) noexcept
             {
-                return aws_http_message_set_request_path(m_message, *path.Get()) == AWS_OP_SUCCESS;
+                return aws_http_message_set_request_path(m_message, *path.GetImpl()) == AWS_OP_SUCCESS;
             }
 
             HttpResponse::HttpResponse(Allocator *allocator)

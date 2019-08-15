@@ -131,7 +131,7 @@ namespace Aws
                 }
                 options.allocator = connectionOptions.allocator;
                 options.user_data = callbackData;
-                options.host_name = *connectionOptions.hostName.Get();
+                options.host_name = *connectionOptions.hostName.GetImpl();
                 options.port = connectionOptions.port;
                 options.initial_window_size = connectionOptions.initialWindowSize;
                 options.socket_options = connectionOptions.socketOptions;

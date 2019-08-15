@@ -72,12 +72,6 @@ namespace Aws
 
             R &GetResult() { return m_result; }
 
-            /**
-             * casts the underlying result to an r-value so that caller can take ownership of underlying resources.
-             * this is necessary when streams are involved.
-             */
-            R &&AcquireResult() { return std::move(m_result); }
-
             const E &GetError() const { return m_error; }
 
             operator bool() const { return m_success; }

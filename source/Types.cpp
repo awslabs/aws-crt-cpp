@@ -30,12 +30,12 @@ namespace Aws
 
             size_t allocation_size = 0;
 
-            if (aws_base64_compute_decoded_len(toDecode.Get(), &allocation_size) == AWS_OP_SUCCESS)
+            if (aws_base64_compute_decoded_len(toDecode.GetImpl(), &allocation_size) == AWS_OP_SUCCESS)
             {
                 Vector<uint8_t> output(allocation_size, 0x00);
                 ByteBuf tempBuf(output.data(), output.size(), 0);
 
-                if (aws_base64_decode(toDecode.Get(), tempBuf.Get()) == AWS_OP_SUCCESS)
+                if (aws_base64_decode(toDecode.GetImpl(), tempBuf.GetImpl()) == AWS_OP_SUCCESS)
                 {
                     return output;
                 }
@@ -55,7 +55,7 @@ namespace Aws
                 String output(allocation_size, 0x00);
                 ByteBuf tempBuf(reinterpret_cast<const uint8_t *>(output.data()), output.size(), 0);
 
-                if (aws_base64_encode(toEncode.Get(), tempBuf.Get()))
+                if (aws_base64_encode(toEncode.GetImpl(), tempBuf.GetImpl()))
                 {
                     return output;
                 }

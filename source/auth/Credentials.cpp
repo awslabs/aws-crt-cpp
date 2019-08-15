@@ -40,9 +40,9 @@ namespace Aws
                 Allocator *allocator) noexcept
                 : m_credentials(aws_credentials_new_from_cursors(
                       allocator,
-                      access_key_id.Get(),
-                      secret_access_key.Get(),
-                      session_token.Get()))
+                      access_key_id.GetImpl(),
+                      secret_access_key.GetImpl(),
+                      session_token.GetImpl()))
             {
             }
 
@@ -167,9 +167,9 @@ namespace Aws
                 return s_CreateWrappedProvider(
                     aws_credentials_provider_new_static(
                         allocator,
-                        *config.m_accessKeyId.Get(),
-                        *config.m_secretAccessKey.Get(),
-                        *config.m_sessionToken.Get()),
+                        *config.m_accessKeyId.GetImpl(),
+                        *config.m_secretAccessKey.GetImpl(),
+                        *config.m_sessionToken.GetImpl()),
                     allocator);
             }
 
@@ -186,9 +186,9 @@ namespace Aws
                 struct aws_credentials_provider_profile_options raw_config;
                 AWS_ZERO_STRUCT(raw_config);
 
-                raw_config.config_file_name_override = *config.m_configFileNameOverride.Get();
-                raw_config.credentials_file_name_override = *config.m_credentialsFileNameOverride.Get();
-                raw_config.profile_name_override = *config.m_profileNameOverride.Get();
+                raw_config.config_file_name_override = *config.m_configFileNameOverride.GetImpl();
+                raw_config.credentials_file_name_override = *config.m_credentialsFileNameOverride.GetImpl();
+                raw_config.profile_name_override = *config.m_profileNameOverride.GetImpl();
 
                 return s_CreateWrappedProvider(aws_credentials_provider_new_profile(allocator, &raw_config), allocator);
             }

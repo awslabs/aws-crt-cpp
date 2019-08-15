@@ -38,7 +38,10 @@ static int s_TestSHA256ResourceSafety(struct aws_allocator *allocator, void *)
     ASSERT_FALSE(sha256);
 
     ASSERT_BIN_ARRAYS_EQUALS(
-        expectedBuf.Get()->buffer, expectedBuf.Get()->len, outputBuf.Get()->buffer, outputBuf.Get()->len);
+        expectedBuf.GetImpl()->buffer,
+        expectedBuf.GetImpl()->len,
+        outputBuf.GetImpl()->buffer,
+        outputBuf.GetImpl()->len);
 
     return AWS_OP_SUCCESS;
 }
@@ -80,7 +83,10 @@ static int s_TestMD5ResourceSafety(struct aws_allocator *allocator, void *)
     ASSERT_FALSE(md5);
 
     ASSERT_BIN_ARRAYS_EQUALS(
-        expectedBuf.Get()->buffer, expectedBuf.Get()->len, outputBuf.Get()->buffer, outputBuf.Get()->len);
+        expectedBuf.GetImpl()->buffer,
+        expectedBuf.GetImpl()->len,
+        outputBuf.GetImpl()->buffer,
+        outputBuf.GetImpl()->len);
 
     return AWS_OP_SUCCESS;
 }

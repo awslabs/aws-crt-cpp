@@ -69,11 +69,11 @@ namespace Aws
 
             ByteCursor AwsSigningConfig::GetRegion() const noexcept { return ByteCursor(m_config->region); }
 
-            void AwsSigningConfig::SetRegion(ByteCursor region) noexcept { m_config->region = *region.Get(); }
+            void AwsSigningConfig::SetRegion(ByteCursor region) noexcept { m_config->region = *region.GetImpl(); }
 
             ByteCursor AwsSigningConfig::GetService() const noexcept { return ByteCursor(m_config->service); }
 
-            void AwsSigningConfig::SetService(ByteCursor service) noexcept { m_config->service = *service.Get(); }
+            void AwsSigningConfig::SetService(ByteCursor service) noexcept { m_config->service = *service.GetImpl(); }
 
             DateTime AwsSigningConfig::GetDate() const noexcept
             {
@@ -158,8 +158,8 @@ namespace Aws
                 signingConfig.config_type = AWS_SIGNING_CONFIG_AWS;
                 signingConfig.algorithm = (enum aws_signing_algorithm)awsSigningConfig->GetSigningAlgorithm();
                 signingConfig.credentials = awsSigningConfig->GetCredentials()->GetUnderlyingHandle();
-                signingConfig.region = *awsSigningConfig->GetRegion().Get();
-                signingConfig.service = *awsSigningConfig->GetService().Get();
+                signingConfig.region = *awsSigningConfig->GetRegion().GetImpl();
+                signingConfig.service = *awsSigningConfig->GetService().GetImpl();
                 signingConfig.use_double_uri_encode = awsSigningConfig->GetUseDoubleUriEncode();
                 signingConfig.should_normalize_uri_path = awsSigningConfig->GetShouldNormalizeUriPath();
                 signingConfig.sign_body = awsSigningConfig->GetSignBody();

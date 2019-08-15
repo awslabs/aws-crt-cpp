@@ -30,7 +30,8 @@ namespace Aws
                 ByteBuf &output,
                 size_t truncateTo) noexcept
             {
-                return aws_sha256_hmac_compute(allocator, secret.Get(), input.Get(), output.Get(), truncateTo) ==
+                return aws_sha256_hmac_compute(
+                           allocator, secret.GetImpl(), input.GetImpl(), output.GetImpl(), truncateTo) ==
                        AWS_OP_SUCCESS;
             }
 
@@ -41,7 +42,8 @@ namespace Aws
                 size_t truncateTo) noexcept
             {
                 return aws_sha256_hmac_compute(
-                           DefaultAllocator(), secret.Get(), input.Get(), output.Get(), truncateTo) == AWS_OP_SUCCESS;
+                           DefaultAllocator(), secret.GetImpl(), input.GetImpl(), output.GetImpl(), truncateTo) ==
+                       AWS_OP_SUCCESS;
             }
 
             HMAC::HMAC(aws_hmac *hmac) noexcept : m_hmac(hmac), m_good(false), m_lastError(0)
@@ -83,19 +85,19 @@ namespace Aws
 
             HMAC HMAC::CreateSHA256HMAC(Allocator *allocator, const ByteCursor &secret) noexcept
             {
-                return HMAC(aws_sha256_hmac_new(allocator, secret.Get()));
+                return HMAC(aws_sha256_hmac_new(allocator, secret.GetImpl()));
             }
 
             HMAC HMAC::CreateSHA256HMAC(const ByteCursor &secret) noexcept
             {
-                return HMAC(aws_sha256_hmac_new(DefaultAllocator(), secret.Get()));
+                return HMAC(aws_sha256_hmac_new(DefaultAllocator(), secret.GetImpl()));
             }
 
             bool HMAC::Update(const ByteCursor &toHMAC) noexcept
             {
                 if (*this)
                 {
-                    if (aws_hmac_update(m_hmac, toHMAC.Get()))
+                    if (aws_hmac_update(m_hmac, toHMAC.GetImpl()))
                     {
                         m_lastError = aws_last_error();
                         m_good = false;
@@ -112,7 +114,7 @@ namespace Aws
                 if (*this)
                 {
                     m_good = false;
-                    if (aws_hmac_finalize(m_hmac, output.Get(), truncateTo))
+                    if (aws_hmac_finalize(m_hmac, output.GetImpl(), truncateTo))
                     {
                         m_lastError = aws_last_error();
                         return false;

@@ -48,10 +48,13 @@ static int s_TestDateTimeBinding(struct aws_allocator *allocator, void *ctx)
         ASSERT_TRUE(dateTime.ToGmtString(Aws::Crt::DateFormat::RFC822, strOutput));
 
         const char *expectedLongStr = "Wed, 02 Oct 2002 08:05:09 GMT";
-        Aws::Crt::ByteBuf expectedLongBuf(expectedLongStr);
+        Aws::Crt::ByteCursor expectedLongCursor(expectedLongStr);
 
         ASSERT_BIN_ARRAYS_EQUALS(
-            expectedLongBuf.Get()->buffer, expectedLongBuf.Get()->len, strOutput.Get()->buffer, strOutput.Get()->len);
+            expectedLongCursor.GetImpl()->ptr,
+            expectedLongCursor.GetImpl()->len,
+            strOutput.GetImpl()->buffer,
+            strOutput.GetImpl()->len);
     }
 
     return AWS_OP_SUCCESS;

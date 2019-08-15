@@ -69,10 +69,10 @@ static int s_VerifyFilesAreTheSame(Allocator *allocator, const char *fileName1, 
     ASSERT_TRUE(file2Hash.Digest(file2DigestBuf));
 
     ASSERT_BIN_ARRAYS_EQUALS(
-        file2DigestBuf.Get()->buffer,
-        file2DigestBuf.Get()->len,
-        file1DigestBuf.Get()->buffer,
-        file1DigestBuf.Get()->len);
+        file2DigestBuf.GetImpl()->buffer,
+        file2DigestBuf.GetImpl()->len,
+        file1DigestBuf.GetImpl()->buffer,
+        file1DigestBuf.GetImpl()->len);
     return AWS_OP_SUCCESS;
 }
 
@@ -186,7 +186,7 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
         responseCode = stream.GetResponseStatusCode();
     };
     requestOptions.onIncomingBody = [&](Http::HttpStream &, const ByteCursor &data) {
-        downloadedFile.write((const char *)data.Get()->ptr, data.Get()->len);
+        downloadedFile.write((const char *)data.GetImpl()->ptr, data.GetImpl()->len);
     };
 
     request.SetMethod(ByteCursor("GET"));
@@ -194,7 +194,7 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
 
     Http::HttpHeader host_header;
     host_header.name = aws_byte_cursor_from_c_str("host");
-    host_header.value = *uri.GetHostName().Get();
+    host_header.value = *uri.GetHostName().GetImpl();
     request.AddHeader(host_header);
 
     connection->NewClientStream(requestOptions);

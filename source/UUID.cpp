@@ -51,15 +51,15 @@ namespace Aws
             uuidStr.reserve(AWS_UUID_STR_LEN);
 
             ByteBuf outBuf(reinterpret_cast<const uint8_t *>(uuidStr.data()), uuidStr.capacity(), 0);
-            aws_uuid_to_str(&m_uuid, outBuf.Get());
+            aws_uuid_to_str(&m_uuid, outBuf.GetImpl());
             return uuidStr;
         }
 
         UUID::operator String() const { return ToString(); }
 
-        AwsCrtResult<ByteBuf> UUID::ToByteBuf() const noexcept
+        ByteCursor UUID::ToByteCursor() const noexcept
         {
-            return ByteBuf::InitFromArray(DefaultAllocator(), m_uuid.uuid_data, sizeof(m_uuid.uuid_data));
+            return ByteCursor(m_uuid.uuid_data, sizeof(m_uuid.uuid_data));
         }
 
         int UUID::GetLastError() const noexcept { return aws_last_error(); }

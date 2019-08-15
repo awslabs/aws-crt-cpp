@@ -45,7 +45,10 @@ static int s_TestSHA256HMACResourceSafety(struct aws_allocator *allocator, void 
     ASSERT_FALSE(sha256Hmac);
 
     ASSERT_BIN_ARRAYS_EQUALS(
-        expectedBuf.Get()->buffer, expectedBuf.Get()->len, outputBuf.Get()->buffer, outputBuf.Get()->len);
+        expectedBuf.GetImpl()->buffer,
+        expectedBuf.GetImpl()->len,
+        outputBuf.GetImpl()->buffer,
+        outputBuf.GetImpl()->len);
 
     return AWS_OP_SUCCESS;
 }

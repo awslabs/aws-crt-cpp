@@ -36,7 +36,7 @@ namespace Aws
             Uri::Uri(const ByteCursor &cursor, Allocator *allocator) noexcept
                 : m_lastError(AWS_ERROR_SUCCESS), m_isInit(false)
             {
-                if (!aws_uri_init_parse(&m_uri, allocator, cursor.Get()))
+                if (!aws_uri_init_parse(&m_uri, allocator, cursor.GetImpl()))
                 {
                     m_isInit = true;
                 }
@@ -65,7 +65,7 @@ namespace Aws
                 {
                     ByteCursor uriCursor = other.GetFullUri();
 
-                    if (!aws_uri_init_parse(&m_uri, other.m_uri.allocator, uriCursor.Get()))
+                    if (!aws_uri_init_parse(&m_uri, other.m_uri.allocator, uriCursor.GetImpl()))
                     {
                         m_isInit = true;
                     }
@@ -87,7 +87,7 @@ namespace Aws
                     {
                         ByteCursor uriCursor = other.GetFullUri();
 
-                        if (!aws_uri_init_parse(&m_uri, other.m_uri.allocator, uriCursor.Get()))
+                        if (!aws_uri_init_parse(&m_uri, other.m_uri.allocator, uriCursor.GetImpl()))
                         {
                             m_isInit = true;
                         }
@@ -147,7 +147,7 @@ namespace Aws
 
             ByteCursor Uri::GetPathAndQuery() const noexcept { return ByteCursor(m_uri.path_and_query); }
 
-            ByteCursor Uri::GetFullUri() const noexcept { return ByteCursor(&m_uri.uri_str); }
+            ByteCursor Uri::GetFullUri() const noexcept { return ByteCursor(m_uri.uri_str); }
         } // namespace Io
     }     // namespace Crt
 } // namespace Aws

@@ -35,7 +35,7 @@ namespace Aws
             bool operator!=(const UUID &other) noexcept;
             operator String() const;
 
-            AwsCrtResult<ByteBuf> ToByteBuf() const noexcept;
+            ByteCursor ToByteCursor() const noexcept;
 
             inline operator bool() const noexcept { return m_good; }
 

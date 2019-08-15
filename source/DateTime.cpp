@@ -52,10 +52,11 @@ namespace Aws
 
         DateTime::DateTime(const char *timestamp, DateFormat format) noexcept
         {
-            ByteBuf timeStampBuf(timestamp);
+            ByteCursor timeStampCursor(timestamp);
 
             m_good =
-                (aws_date_time_init_from_str(&m_date_time, timeStampBuf.Get(), static_cast<aws_date_format>(format)) ==
+                (aws_date_time_init_from_str_cursor(
+                     &m_date_time, timeStampCursor.GetImpl(), static_cast<aws_date_format>(format)) ==
                  AWS_ERROR_SUCCESS);
         }
 
@@ -127,11 +128,12 @@ namespace Aws
 
         DateTime &DateTime::operator=(const char *timestamp) noexcept
         {
-            ByteBuf timeStampBuf(timestamp);
+            ByteCursor timeStampCursor(timestamp);
 
-            m_good = aws_date_time_init_from_str(
-                         &m_date_time, timeStampBuf.Get(), static_cast<aws_date_format>(DateFormat::AutoDetect)) ==
-                     AWS_ERROR_SUCCESS;
+            m_good =
+                aws_date_time_init_from_str_cursor(
+                    &m_date_time, timeStampCursor.GetImpl(), static_cast<aws_date_format>(DateFormat::AutoDetect)) ==
+                AWS_ERROR_SUCCESS;
             return *this;
         }
 
@@ -142,15 +144,15 @@ namespace Aws
         bool DateTime::ToLocalTimeString(DateFormat format, ByteBuf &outputBuf) const noexcept
         {
             return (
-                aws_date_time_to_local_time_str(&m_date_time, static_cast<aws_date_format>(format), outputBuf.Get()) ==
-                AWS_ERROR_SUCCESS);
+                aws_date_time_to_local_time_str(
+                    &m_date_time, static_cast<aws_date_format>(format), outputBuf.GetImpl()) == AWS_ERROR_SUCCESS);
         }
 
         bool DateTime::ToGmtString(DateFormat format, ByteBuf &outputBuf) const noexcept
         {
             return (
-                aws_date_time_to_utc_time_str(&m_date_time, static_cast<aws_date_format>(format), outputBuf.Get()) ==
-                AWS_ERROR_SUCCESS);
+                aws_date_time_to_utc_time_str(
+                    &m_date_time, static_cast<aws_date_format>(format), outputBuf.GetImpl()) == AWS_ERROR_SUCCESS);
         }
 
         double DateTime::SecondsWithMSPrecision() const noexcept { return aws_date_time_as_epoch_secs(&m_date_time); }
