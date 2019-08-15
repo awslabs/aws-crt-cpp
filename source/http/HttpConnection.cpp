@@ -164,15 +164,14 @@ namespace Aws
                 AWS_ASSERT(requestOptions.onIncomingHeaders);
                 AWS_ASSERT(requestOptions.onStreamComplete);
 
-                aws_http_request_options options;
+                aws_http_make_request_options options;
                 AWS_ZERO_STRUCT(options);
-                options.self_size = sizeof(aws_http_request_options);
+                options.self_size = sizeof(aws_http_make_request_options);
                 options.request = requestOptions.request->GetUnderlyingMessage();
                 options.on_response_body = HttpStream::s_onIncomingBody;
                 options.on_response_headers = HttpStream::s_onIncomingHeaders;
                 options.on_response_header_block_done = HttpStream::s_onIncomingHeaderBlockDone;
                 options.on_complete = HttpStream::s_onStreamComplete;
-                options.client_connection = m_connection;
 
                 /* Do the same ref counting trick we did with HttpClientConnection. We need to maintain a reference
                  * internally (regardless of what the user does), until the Stream shuts down. */
@@ -200,7 +199,7 @@ namespace Aws
 
                     callbackData->allocator = m_allocator;
                     options.user_data = callbackData;
-                    toSeat->m_stream = aws_http_stream_new_client_request(&options);
+                    toSeat->m_stream = aws_http_connection_make_request(m_connection, &options);
 
                     if (!toSeat->m_stream)
                     {
