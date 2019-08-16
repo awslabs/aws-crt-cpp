@@ -28,7 +28,6 @@ namespace Aws
     namespace Crt
     {
         class ByteCursor;
-        class ByteBuf;
 
         namespace Auth
         {
