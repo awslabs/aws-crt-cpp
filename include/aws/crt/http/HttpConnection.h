@@ -202,6 +202,21 @@ namespace Aws
                 friend class HttpClientConnection;
             };
 
+            enum AwsHttpProxyAuthenticationType {
+              None = AWS_HPAT_NONE,
+              Basic,
+            };
+
+            struct HttpClientConnectionProxyOptions
+            {
+              ByteCursor m_hostName;
+              uint16_t m_port;
+              Io::TlsConnectionOptions *m_tlsOptions;
+              AwsHttpProxyAuthenticationType m_authType;
+              ByteCursor m_basicAuthUsername;
+              ByteCursor m_basicAuthPassword;
+            };
+
             struct HttpClientConnectionOptions
             {
                 HttpClientConnectionOptions();
