@@ -33,6 +33,21 @@ namespace Aws
             using OnClientConnectionAvailable =
                 std::function<void(std::shared_ptr<HttpClientConnection>, int errorCode)>;
 
+            enum AwsHttpProxyAuthenticationType {
+              None,
+              Basic,
+            };
+
+            struct HttpClientConnectionProxyOptions
+            {
+              ByteCursor m_hostName;
+              uint16_t m_port;
+              Io::TlsConnectionOptions *m_tlsOptions;
+              AwsHttpProxyAuthenticationType m_authType;
+              ByteCursor m_basicAuthUsername;
+              ByteCursor m_basicAuthPassword;
+            };
+
             struct HttpClientConnectionManagerOptions
             {
                 HttpClientConnectionManagerOptions();
