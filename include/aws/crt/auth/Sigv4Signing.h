@@ -41,7 +41,7 @@ namespace Aws
             };
 
             /*
-             * Wrapper around the configuration structure specific to the Aws
+             * Wrapper around the configuration structure specific to the AWS
              * Sigv4 signing process
              */
             class AWS_CRT_CPP_API AwsSigningConfig : public ISigningConfig
