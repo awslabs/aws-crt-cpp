@@ -27,7 +27,7 @@ if (UNIX AND NOT APPLE)
 endif()
 
 set(AWS_C_IO_URL "https://github.com/awslabs/aws-c-io.git")
-set(AWS_C_IO_SHA "master")
+set(AWS_C_IO_SHA "v0.4.4")
 include(BuildAwsCIO)
 
 set(AWS_C_COMPRESSION_URL "https://github.com/awslabs/aws-c-compression.git")
@@ -35,7 +35,7 @@ set(AWS_C_COMPRESSION_SHA "v0.2.2")
 include(BuildAwsCCompression)
 
 set(AWS_C_HTTP_URL "https://github.com/awslabs/aws-c-http.git")
-set(AWS_C_HTTP_SHA "h1b")
+set(AWS_C_HTTP_SHA "v0.4.0")
 include(BuildAwsCHttp)
 
 set(AWS_C_MQTT_URL "https://github.com/awslabs/aws-c-mqtt.git")
@@ -47,7 +47,7 @@ set(AWS_C_CAL_SHA "v0.1.5")
 include(BuildAwsCCal)
 
 set(AWS_C_AUTH_URL "https://github.com/awslabs/aws-c-auth.git")
-set(AWS_C_AUTH_SHA "h1b")
+set(AWS_C_AUTH_SHA "v0.2.0")
 include(BuildAwsCAuth)
 
 add_dependencies(AwsCCompression AwsCCommon)
