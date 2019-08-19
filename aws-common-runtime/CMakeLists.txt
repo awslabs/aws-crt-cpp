@@ -17,17 +17,17 @@ set(AWS_DEPS_DOWNLOAD_DIR "${AWS_DEPS_BUILD_DIR}/downloads" CACHE PATH "Dependen
 
 message("install dir ${AWS_DEPS_INSTALL_DIR}")
 set(AWS_C_COMMON_URL "https://github.com/awslabs/aws-c-common.git")
-set(AWS_C_COMMON_SHA "v0.4.2")
+set(AWS_C_COMMON_SHA "v0.4.3")
 include(BuildAwsCCommon)
 
 if (UNIX AND NOT APPLE)
     set(S2N_URL "https://github.com/awslabs/s2n.git")
-    set(S2N_SHA "db4fe111c6e64a206662524da31a5aba6b0932a8")
+    set(S2N_SHA "042ebe229df8274d7a0708b3940e1a10994ccead")
     include(BuildS2N)
 endif()
 
 set(AWS_C_IO_URL "https://github.com/awslabs/aws-c-io.git")
-set(AWS_C_IO_SHA "master")
+set(AWS_C_IO_SHA "v0.4.4")
 include(BuildAwsCIO)
 
 set(AWS_C_COMPRESSION_URL "https://github.com/awslabs/aws-c-compression.git")
@@ -35,7 +35,7 @@ set(AWS_C_COMPRESSION_SHA "v0.2.2")
 include(BuildAwsCCompression)
 
 set(AWS_C_HTTP_URL "https://github.com/awslabs/aws-c-http.git")
-set(AWS_C_HTTP_SHA "h1b")
+set(AWS_C_HTTP_SHA "v0.4.1")
 include(BuildAwsCHttp)
 
 set(AWS_C_MQTT_URL "https://github.com/awslabs/aws-c-mqtt.git")
@@ -47,7 +47,7 @@ set(AWS_C_CAL_SHA "v0.1.5")
 include(BuildAwsCCal)
 
 set(AWS_C_AUTH_URL "https://github.com/awslabs/aws-c-auth.git")
-set(AWS_C_AUTH_SHA "h1b")
+set(AWS_C_AUTH_SHA "v0.2.0")
 include(BuildAwsCAuth)
 
 add_dependencies(AwsCCompression AwsCCommon)
