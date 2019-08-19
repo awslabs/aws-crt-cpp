@@ -109,11 +109,10 @@ static int s_StreamTestRead(struct aws_allocator *allocator, void *ctx)
         AWS_ZERO_STRUCT(buffer);
         aws_byte_buf_init(&buffer, allocator, 256);
 
-        size_t read = 0;
-        aws_input_stream_read(wrapped_stream, &buffer, &read);
+        aws_input_stream_read(wrapped_stream, &buffer);
 
-        ASSERT_TRUE(read == strlen(STREAM_CONTENTS));
-        ASSERT_BIN_ARRAYS_EQUALS(STREAM_CONTENTS, read, buffer.buffer, read);
+        ASSERT_TRUE(buffer.len == strlen(STREAM_CONTENTS));
+        ASSERT_BIN_ARRAYS_EQUALS(STREAM_CONTENTS, buffer.len, buffer.buffer, buffer.len);
 
         aws_byte_buf_clean_up(&buffer);
         aws_input_stream_destroy(wrapped_stream);
@@ -143,11 +142,10 @@ static int s_StreamTestSeekBegin(struct aws_allocator *allocator, void *ctx)
         AWS_ZERO_STRUCT(buffer);
         aws_byte_buf_init(&buffer, allocator, 256);
 
-        size_t read = 0;
-        aws_input_stream_read(wrapped_stream, &buffer, &read);
+        aws_input_stream_read(wrapped_stream, &buffer);
 
-        ASSERT_TRUE(read == strlen(STREAM_CONTENTS) - BEGIN_SEEK_OFFSET);
-        ASSERT_BIN_ARRAYS_EQUALS(STREAM_CONTENTS + BEGIN_SEEK_OFFSET, read, buffer.buffer, read);
+        ASSERT_TRUE(buffer.len == strlen(STREAM_CONTENTS) - BEGIN_SEEK_OFFSET);
+        ASSERT_BIN_ARRAYS_EQUALS(STREAM_CONTENTS + BEGIN_SEEK_OFFSET, buffer.len, buffer.buffer, buffer.len);
 
         aws_byte_buf_clean_up(&buffer);
         aws_input_stream_destroy(wrapped_stream);
@@ -177,12 +175,11 @@ static int s_StreamTestSeekEnd(struct aws_allocator *allocator, void *ctx)
         AWS_ZERO_STRUCT(buffer);
         aws_byte_buf_init(&buffer, allocator, 256);
 
-        size_t read = 0;
-        aws_input_stream_read(wrapped_stream, &buffer, &read);
+        aws_input_stream_read(wrapped_stream, &buffer);
 
-        ASSERT_TRUE(read == -END_SEEK_OFFSET);
+        ASSERT_TRUE(buffer.len == -END_SEEK_OFFSET);
         ASSERT_BIN_ARRAYS_EQUALS(
-            STREAM_CONTENTS + strlen(STREAM_CONTENTS) + END_SEEK_OFFSET, read, buffer.buffer, read);
+            STREAM_CONTENTS + strlen(STREAM_CONTENTS) + END_SEEK_OFFSET, buffer.len, buffer.buffer, buffer.len);
 
         aws_byte_buf_clean_up(&buffer);
         aws_input_stream_destroy(wrapped_stream);

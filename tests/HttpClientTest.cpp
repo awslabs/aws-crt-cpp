@@ -15,6 +15,7 @@
 #include <aws/crt/Api.h>
 #include <aws/crt/crypto/Hash.h>
 #include <aws/crt/http/HttpConnection.h>
+#include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Uri.h>
 
 #include <aws/io/uri.h>
@@ -160,8 +161,9 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     std::ofstream downloadedFile("http_download_test_file.txt", std::ios_base::binary);
     ASSERT_TRUE(downloadedFile);
 
+    Http::HttpRequest request;
     Http::HttpRequestOptions requestOptions;
-    requestOptions.onStreamOutgoingBody = nullptr;
+    requestOptions.request = &request;
 
     bool streamCompleted = false;
     requestOptions.onStreamComplete = [&](Http::HttpStream &stream, int errorCode) {
@@ -179,18 +181,17 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     requestOptions.onIncomingHeaders = [&](Http::HttpStream &stream, const Http::HttpHeader *header, std::size_t len) {
         responseCode = stream.GetResponseStatusCode();
     };
-    requestOptions.onIncomingBody = [&](Http::HttpStream &, const ByteCursor &data, std::size_t &outWindowUpdateSize) {
+    requestOptions.onIncomingBody = [&](Http::HttpStream &, const ByteCursor &data) {
         downloadedFile.write((const char *)data.ptr, data.len);
     };
 
-    requestOptions.method = ByteCursorFromCString("GET");
-    requestOptions.uri = uri.GetPathAndQuery();
+    request.SetMethod(ByteCursorFromCString("GET"));
+    request.SetPath(uri.GetPathAndQuery());
 
     Http::HttpHeader host_header;
     host_header.name = ByteCursorFromCString("host");
     host_header.value = uri.GetHostName();
-    requestOptions.headerArray = &host_header;
-    requestOptions.headerArrayLength = 1;
+    request.AddHeader(host_header);
 
     connection->NewClientStream(requestOptions);
     semaphore.wait(semaphoreULock, [&]() { return streamCompleted; });
