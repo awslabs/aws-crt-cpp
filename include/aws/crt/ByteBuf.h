@@ -36,26 +36,18 @@ namespace Aws
 
             ByteCursor &operator=(const ByteCursor &cursor) noexcept;
 
-            /**
-             * This creates an instance that's a reference to the passed in
-             * cursor rather than copying it.  Side-effects to this object
-             * will affect the original cursor.
-             */
-            static ByteCursor Wrap(aws_byte_cursor *cursor) noexcept;
-
             // APIs
             void Advance(size_t len) noexcept;
 
             // Accessors
-            aws_byte_cursor *GetImpl() noexcept { return m_cursorPtr; }
-            const aws_byte_cursor *GetImpl() const noexcept { return m_cursorPtr; }
+            aws_byte_cursor *GetImpl() noexcept { return &m_cursor; }
+            const aws_byte_cursor *GetImpl() const noexcept { return &m_cursor; }
 
-            const uint8_t *GetPtr() const noexcept { return m_cursorPtr->ptr; }
-            size_t GetLen() const noexcept { return m_cursorPtr->len; }
+            const uint8_t *GetPtr() const noexcept { return m_cursor.ptr; }
+            size_t GetLen() const noexcept { return m_cursor.len; }
 
           private:
             aws_byte_cursor m_cursor;
-            aws_byte_cursor *m_cursorPtr;
         };
 
         class ByteBuf
@@ -63,23 +55,22 @@ namespace Aws
           public:
             // Initialization that cannot fail
             ByteBuf() noexcept;
-            ByteBuf(ByteBuf &&rhs) noexcept;
+          ByteBuf(const ByteBuf &rhs) noexcept;
+          ByteBuf(ByteBuf &&rhs) noexcept;
+            ByteBuf(Allocator *alloc, size_t capacity) noexcept;
             ByteBuf(const uint8_t *array, size_t capacity, size_t len) noexcept;
 
+            /**
+            * This creates an instance that is a reference to the passed in
+            * buffer rather than copying it.  Side-effects to this object
+            * will affect the original c buffer.
+            */
+            ByteBuf(aws_byte_buf *buffer) noexcept;
+
             ByteBuf &operator=(ByteBuf &&buffer) noexcept;
+            ByteBuf &operator=(const ByteBuf &buffer) noexcept;
 
             ~ByteBuf();
-
-            /**
-             * This creates an instance that is a reference to the passed in
-             * buffer rather than copying it.  Side-effects to this object
-             * will affect the original c buffer.
-             */
-            static ByteBuf Wrap(aws_byte_buf *buffer) noexcept;
-
-            // Initialization that can fail
-            static AwsCrtResult<ByteBuf> Init(const ByteBuf &buffer) noexcept;
-            static AwsCrtResult<ByteBuf> Init(Allocator *alloc, size_t capacity) noexcept;
 
             // All of non-init APIs go here
             AwsCrtResult<void> Append(ByteCursor cursor) noexcept;
@@ -90,19 +81,23 @@ namespace Aws
             const aws_byte_buf *GetImpl() const noexcept { return m_bufferPtr; }
 
             const uint8_t *GetBuffer() const noexcept { return m_bufferPtr->buffer; }
-            size_t GetLen() const noexcept { return m_bufferPtr->len; }
+            size_t GetLength() const noexcept { return m_bufferPtr->len; }
             size_t GetCapacity() const noexcept { return m_bufferPtr->capacity; }
 
             ByteCursor GetCursor() const noexcept;
 
-          private:
-            ByteBuf(const ByteBuf &rhs) = delete;
-            ByteBuf &operator=(const ByteBuf &buffer) = delete;
+            explicit operator bool() const noexcept { return m_initializationErrorCode == AWS_ERROR_SUCCESS; }
+            int GetInitializationErrorCode() const noexcept { return m_initializationErrorCode; }
 
+          private:
+
+            void OnInitializationFail() noexcept;
             void Cleanup() noexcept;
 
             aws_byte_buf m_buffer;
             aws_byte_buf *m_bufferPtr;
+
+            int m_initializationErrorCode;
         };
 
     } // namespace Crt

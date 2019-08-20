@@ -15,80 +15,85 @@
 
 #include <aws/crt/ByteBuf.h>
 
+#include <aws/crt/Api.h>
+
 namespace Aws
 {
     namespace Crt
     {
         ///////////////////////////////////////////////////////////////////////////////////
 
-        ByteCursor::ByteCursor() noexcept : m_cursor{0}, m_cursorPtr{&m_cursor} {}
+        ByteCursor::ByteCursor() noexcept : m_cursor{0} {}
 
         ByteCursor::ByteCursor(const char *str) noexcept
-            : m_cursor(aws_byte_cursor_from_c_str(str)), m_cursorPtr(&m_cursor)
+            : m_cursor(aws_byte_cursor_from_c_str(str))
         {
         }
 
         ByteCursor::ByteCursor(const String &str) noexcept
-            : m_cursor(aws_byte_cursor_from_array(str.c_str(), str.size())), m_cursorPtr(&m_cursor)
+            : m_cursor(aws_byte_cursor_from_array(str.c_str(), str.size()))
         {
         }
 
-        ByteCursor::ByteCursor(aws_byte_cursor cursor) noexcept : m_cursor(cursor), m_cursorPtr(&m_cursor) {}
+        ByteCursor::ByteCursor(aws_byte_cursor cursor) noexcept : m_cursor(cursor) {}
 
         ByteCursor::ByteCursor(const aws_byte_buf &buffer) noexcept
-            : m_cursor(aws_byte_cursor_from_buf(&buffer)), m_cursorPtr(&m_cursor)
+            : m_cursor(aws_byte_cursor_from_buf(&buffer))
         {
         }
 
         ByteCursor::ByteCursor(const uint8_t *array, size_t len) noexcept
-            : m_cursor(aws_byte_cursor_from_array(array, len)), m_cursorPtr(&m_cursor)
+            : m_cursor(aws_byte_cursor_from_array(array, len))
         {
         }
 
-        ByteCursor::ByteCursor(const ByteCursor &cursor) noexcept
+        ByteCursor::ByteCursor(const ByteCursor &rhs) noexcept :
+          m_cursor(rhs.m_cursor)
         {
-            if (cursor.m_cursorPtr == &cursor.m_cursor)
-            {
-                m_cursor = cursor.m_cursor;
-                m_cursorPtr = &m_cursor;
-            }
-            else
-            {
-                AWS_ZERO_STRUCT(m_cursor);
-                m_cursorPtr = cursor.m_cursorPtr;
-            }
         }
 
-        ByteCursor &ByteCursor::operator=(const ByteCursor &cursor) noexcept
+        ByteCursor &ByteCursor::operator=(const ByteCursor &rhs) noexcept
         {
-            if (this != &cursor)
-            {
-                if (cursor.m_cursorPtr == &cursor.m_cursor)
-                {
-                    m_cursor = cursor.m_cursor;
-                    m_cursorPtr = &m_cursor;
-                }
-                else
-                {
-                    AWS_ZERO_STRUCT(m_cursor);
-                    m_cursorPtr = cursor.m_cursorPtr;
-                }
-            }
-
+            m_cursor = rhs.m_cursor;
             return *this;
         }
 
-        ByteCursor ByteCursor::Wrap(aws_byte_cursor *cursor) noexcept
-        {
-            ByteCursor temp;
-            temp.m_cursorPtr = cursor;
-
-            return temp;
-        }
-
-        void ByteCursor::Advance(size_t len) noexcept { *m_cursorPtr = aws_byte_cursor_advance(m_cursorPtr, len); }
+        void ByteCursor::Advance(size_t len) noexcept { m_cursor = aws_byte_cursor_advance(&m_cursor, len); }
 
         ///////////////////////////////////////////////////////////////////////////////////
+
+        ByteBuf::ByteBuf() noexcept : m_buffer{0}, m_bufferPtr{&m_buffer}, m_initializationErrorCode{AWS_ERROR_SUCCESS} {}
+
+        ByteBuf::ByteBuf(const ByteBuf &rhs) noexcept :
+            m_initializationErrorCode(rhs.m_initializationErrorCode)
+        {
+            if (m_initializationErrorCode != AWS_ERROR_SUCCESS) {
+                AWS_ZERO_STRUCT(m_buffer);
+                m_bufferPtr = &m_buffer;
+                return;
+            }
+
+            if (rhs.m_bufferPtr == &rhs.m_buffer)
+            {
+                if (rhs.m_buffer.allocator != nullptr)
+                {
+                    if (aws_byte_buf_init_copy(&m_buffer, rhs.m_buffer.allocator, &rhs.m_buffer))
+                    {
+                        OnInitializationFail();
+                        return;
+                    }
+                }
+                else
+                {
+                    m_buffer = rhs.m_buffer;
+                }
+                m_bufferPtr = &m_buffer;
+            }
+            else
+            {
+                m_bufferPtr = rhs.m_bufferPtr;
+            }
+        }
 
         ByteBuf::ByteBuf(ByteBuf &&rhs) noexcept
         {
@@ -96,6 +101,7 @@ namespace Aws
             {
                 m_buffer = rhs.m_buffer;
                 m_bufferPtr = &m_buffer;
+                m_initializationErrorCode = rhs.m_initializationErrorCode;
 
                 AWS_ZERO_STRUCT(rhs.m_buffer);
             }
@@ -103,22 +109,53 @@ namespace Aws
             {
                 AWS_ZERO_STRUCT(m_buffer);
                 m_bufferPtr = rhs.m_bufferPtr;
+                m_initializationErrorCode = rhs.m_initializationErrorCode;
             }
         }
 
-        ByteBuf ByteBuf::Wrap(aws_byte_buf *buffer) noexcept
+        ByteBuf::ByteBuf(Allocator *alloc, size_t capacity) noexcept :
+            m_initializationErrorCode(AWS_ERROR_SUCCESS)
         {
-            ByteBuf buf;
-            buf.m_bufferPtr = buffer;
+            if (aws_byte_buf_init(&m_buffer, alloc, capacity))
+            {
+                OnInitializationFail();
+                return;
+            }
 
-            return buf;
+            m_bufferPtr = &m_buffer;
         }
 
         ByteBuf::ByteBuf(const uint8_t *array, size_t capacity, size_t len) noexcept
-            : m_buffer(aws_byte_buf_from_array(array, capacity)), m_bufferPtr(&m_buffer)
+            : m_buffer(aws_byte_buf_from_array(array, capacity)), m_bufferPtr(&m_buffer), m_initializationErrorCode(AWS_ERROR_SUCCESS)
         {
             AWS_FATAL_ASSERT(len <= capacity);
             m_buffer.len = len;
+        }
+
+        ByteBuf::ByteBuf(aws_byte_buf *buffer) noexcept :
+            m_buffer(),
+            m_bufferPtr(buffer),
+            m_initializationErrorCode(AWS_ERROR_SUCCESS)
+        {
+            AWS_ZERO_STRUCT(m_buffer);
+        }
+
+        ByteBuf &ByteBuf::operator=(const ByteBuf &rhs) noexcept
+        {
+            if (&rhs != this)
+            {
+                ByteBuf temp = rhs;
+                if (!temp) {
+                    OnInitializationFail();
+                    return *this;
+                }
+
+                Cleanup();
+
+                *this = std::move(temp);
+            }
+
+            return *this;
         }
 
         ByteBuf &ByteBuf::operator=(ByteBuf &&rhs) noexcept
@@ -130,61 +167,20 @@ namespace Aws
                 {
                     m_buffer = rhs.m_buffer;
                     m_bufferPtr = &m_buffer;
+                    m_initializationErrorCode = rhs.m_initializationErrorCode;
 
                     AWS_ZERO_STRUCT(rhs.m_buffer);
                 }
                 else
                 {
                     m_bufferPtr = rhs.m_bufferPtr;
+                    m_initializationErrorCode = rhs.m_initializationErrorCode;
                 }
             }
             return *this;
         }
 
-        ByteBuf::ByteBuf() noexcept : m_buffer{0}, m_bufferPtr{&m_buffer} {}
-
         ByteBuf::~ByteBuf() { Cleanup(); }
-
-        AwsCrtResult<ByteBuf> ByteBuf::Init(const ByteBuf &buffer) noexcept
-        {
-            ByteBuf temp;
-
-            if (buffer.m_bufferPtr == &buffer.m_buffer)
-            {
-                if (buffer.m_buffer.allocator != nullptr)
-                {
-                    if (aws_byte_buf_init_copy(&temp.m_buffer, buffer.m_buffer.allocator, &buffer.m_buffer))
-                    {
-                        return MakeLastErrorResult<ByteBuf>();
-                    }
-                }
-                else
-                {
-                    temp.m_buffer = buffer.m_buffer;
-                }
-                temp.m_bufferPtr = &temp.m_buffer;
-            }
-            else
-            {
-                temp.m_bufferPtr = buffer.m_bufferPtr;
-            }
-
-            return AwsCrtResult<ByteBuf>(std::move(temp));
-        }
-
-        AwsCrtResult<ByteBuf> ByteBuf::Init(Allocator *alloc, size_t capacity) noexcept
-        {
-            ByteBuf temp;
-
-            if (aws_byte_buf_init(&temp.m_buffer, alloc, capacity))
-            {
-                return MakeLastErrorResult<ByteBuf>();
-            }
-
-            temp.m_bufferPtr = &temp.m_buffer;
-
-            return AwsCrtResult<ByteBuf>(std::move(temp));
-        }
 
         ByteCursor ByteBuf::GetCursor() const noexcept { return ByteCursor(m_bufferPtr->buffer, m_bufferPtr->len); }
 
@@ -216,6 +212,12 @@ namespace Aws
                 AWS_ZERO_STRUCT(m_buffer);
                 m_bufferPtr = nullptr;
             }
+        }
+
+        void ByteBuf::OnInitializationFail() noexcept {
+            AWS_ZERO_STRUCT(m_buffer);
+            m_bufferPtr = &m_buffer;
+            m_initializationErrorCode = LastErrorOrUnknown();
         }
     } // namespace Crt
 } // namespace Aws
