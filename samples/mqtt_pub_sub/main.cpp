@@ -270,15 +270,14 @@ int main(int argc, char *argv[])
                 break;
             }
 
-            auto payloadResult = Aws::Crt::ByteBuf::Init(DefaultAllocator(), input.length());
-            if (!payloadResult) {
+            auto payload = Aws::Crt::ByteBuf(DefaultAllocator(), input.length());
+            if (!payload) {
                 break;
             }
-            if (!payloadResult.GetResult().Append(ByteCursor((const uint8_t *)input.data(), input.length()))) {
+            if (!payload.Append(ByteCursor((const uint8_t *)input.data(), input.length()))) {
                 break;
             }
-
-            ByteBuf &payload = payloadResult.GetResult();
+            
             ByteBuf *payloadPtr = &payload;
 
             auto onPublishComplete = [payloadPtr](Mqtt::MqttConnection &, uint16_t packetId, int errorCode) {

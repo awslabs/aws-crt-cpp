@@ -25,10 +25,7 @@ namespace Aws
 
         ByteCursor::ByteCursor() noexcept : m_cursor{0} {}
 
-        ByteCursor::ByteCursor(const char *str) noexcept
-            : m_cursor(aws_byte_cursor_from_c_str(str))
-        {
-        }
+        ByteCursor::ByteCursor(const char *str) noexcept : m_cursor(aws_byte_cursor_from_c_str(str)) {}
 
         ByteCursor::ByteCursor(const String &str) noexcept
             : m_cursor(aws_byte_cursor_from_array(str.c_str(), str.size()))
@@ -37,20 +34,14 @@ namespace Aws
 
         ByteCursor::ByteCursor(aws_byte_cursor cursor) noexcept : m_cursor(cursor) {}
 
-        ByteCursor::ByteCursor(const aws_byte_buf &buffer) noexcept
-            : m_cursor(aws_byte_cursor_from_buf(&buffer))
-        {
-        }
+        ByteCursor::ByteCursor(const aws_byte_buf &buffer) noexcept : m_cursor(aws_byte_cursor_from_buf(&buffer)) {}
 
         ByteCursor::ByteCursor(const uint8_t *array, size_t len) noexcept
             : m_cursor(aws_byte_cursor_from_array(array, len))
         {
         }
 
-        ByteCursor::ByteCursor(const ByteCursor &rhs) noexcept :
-          m_cursor(rhs.m_cursor)
-        {
-        }
+        ByteCursor::ByteCursor(const ByteCursor &rhs) noexcept : m_cursor(rhs.m_cursor) {}
 
         ByteCursor &ByteCursor::operator=(const ByteCursor &rhs) noexcept
         {
@@ -62,12 +53,14 @@ namespace Aws
 
         ///////////////////////////////////////////////////////////////////////////////////
 
-        ByteBuf::ByteBuf() noexcept : m_buffer{0}, m_bufferPtr{&m_buffer}, m_initializationErrorCode{AWS_ERROR_SUCCESS} {}
-
-        ByteBuf::ByteBuf(const ByteBuf &rhs) noexcept :
-            m_initializationErrorCode(rhs.m_initializationErrorCode)
+        ByteBuf::ByteBuf() noexcept : m_buffer{0}, m_bufferPtr{&m_buffer}, m_initializationErrorCode{AWS_ERROR_SUCCESS}
         {
-            if (m_initializationErrorCode != AWS_ERROR_SUCCESS) {
+        }
+
+        ByteBuf::ByteBuf(const ByteBuf &rhs) noexcept : m_initializationErrorCode(rhs.m_initializationErrorCode)
+        {
+            if (m_initializationErrorCode != AWS_ERROR_SUCCESS)
+            {
                 AWS_ZERO_STRUCT(m_buffer);
                 m_bufferPtr = &m_buffer;
                 return;
@@ -113,8 +106,7 @@ namespace Aws
             }
         }
 
-        ByteBuf::ByteBuf(Allocator *alloc, size_t capacity) noexcept :
-            m_initializationErrorCode(AWS_ERROR_SUCCESS)
+        ByteBuf::ByteBuf(Allocator *alloc, size_t capacity) noexcept : m_initializationErrorCode(AWS_ERROR_SUCCESS)
         {
             if (aws_byte_buf_init(&m_buffer, alloc, capacity))
             {
@@ -126,16 +118,15 @@ namespace Aws
         }
 
         ByteBuf::ByteBuf(const uint8_t *array, size_t capacity, size_t len) noexcept
-            : m_buffer(aws_byte_buf_from_array(array, capacity)), m_bufferPtr(&m_buffer), m_initializationErrorCode(AWS_ERROR_SUCCESS)
+            : m_buffer(aws_byte_buf_from_array(array, capacity)), m_bufferPtr(&m_buffer),
+              m_initializationErrorCode(AWS_ERROR_SUCCESS)
         {
             AWS_FATAL_ASSERT(len <= capacity);
             m_buffer.len = len;
         }
 
-        ByteBuf::ByteBuf(aws_byte_buf *buffer) noexcept :
-            m_buffer(),
-            m_bufferPtr(buffer),
-            m_initializationErrorCode(AWS_ERROR_SUCCESS)
+        ByteBuf::ByteBuf(aws_byte_buf *buffer) noexcept
+            : m_buffer(), m_bufferPtr(buffer), m_initializationErrorCode(AWS_ERROR_SUCCESS)
         {
             AWS_ZERO_STRUCT(m_buffer);
         }
@@ -145,7 +136,8 @@ namespace Aws
             if (&rhs != this)
             {
                 ByteBuf temp = rhs;
-                if (!temp) {
+                if (!temp)
+                {
                     OnInitializationFail();
                     return *this;
                 }
@@ -214,7 +206,8 @@ namespace Aws
             }
         }
 
-        void ByteBuf::OnInitializationFail() noexcept {
+        void ByteBuf::OnInitializationFail() noexcept
+        {
             AWS_ZERO_STRUCT(m_buffer);
             m_bufferPtr = &m_buffer;
             m_initializationErrorCode = LastErrorOrUnknown();

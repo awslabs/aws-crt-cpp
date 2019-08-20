@@ -55,16 +55,16 @@ namespace Aws
           public:
             // Initialization that cannot fail
             ByteBuf() noexcept;
-          ByteBuf(const ByteBuf &rhs) noexcept;
-          ByteBuf(ByteBuf &&rhs) noexcept;
+            ByteBuf(const ByteBuf &rhs) noexcept;
+            ByteBuf(ByteBuf &&rhs) noexcept;
             ByteBuf(Allocator *alloc, size_t capacity) noexcept;
             ByteBuf(const uint8_t *array, size_t capacity, size_t len) noexcept;
 
             /**
-            * This creates an instance that is a reference to the passed in
-            * buffer rather than copying it.  Side-effects to this object
-            * will affect the original c buffer.
-            */
+             * This creates an instance that is a reference to the passed in
+             * buffer rather than copying it.  Side-effects to this object
+             * will affect the original c buffer.
+             */
             ByteBuf(aws_byte_buf *buffer) noexcept;
 
             ByteBuf &operator=(ByteBuf &&buffer) noexcept;
@@ -90,7 +90,6 @@ namespace Aws
             int GetInitializationErrorCode() const noexcept { return m_initializationErrorCode; }
 
           private:
-
             void OnInitializationFail() noexcept;
             void Cleanup() noexcept;
 

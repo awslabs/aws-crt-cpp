@@ -122,9 +122,11 @@ namespace Aws
 
         int LastError() noexcept { return aws_last_error(); }
 
-        int LastErrorOrUnknown() noexcept {
+        int LastErrorOrUnknown() noexcept
+        {
             int error = LastError();
-            if (error == AWS_ERROR_SUCCESS) {
+            if (error == AWS_ERROR_SUCCESS)
+            {
                 error = AWS_ERROR_UNKNOWN;
             }
 

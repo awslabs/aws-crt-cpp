@@ -152,10 +152,7 @@ static int s_ByteBufInitializationSuccess(struct aws_allocator *allocator, void 
     ASSERT_TRUE(arrayResult.GetImpl()->capacity >= strlen(s_TestString));
     ASSERT_TRUE(arrayResult.GetImpl()->buffer != (uint8_t *)s_TestString);
     ASSERT_BIN_ARRAYS_EQUALS(
-        arrayResult.GetImpl()->buffer,
-        arrayResult.GetImpl()->len,
-        s_TestString,
-        strlen(s_TestString));
+        arrayResult.GetImpl()->buffer, arrayResult.GetImpl()->len, s_TestString, strlen(s_TestString));
 
     return AWS_ERROR_SUCCESS;
 }
@@ -258,8 +255,7 @@ static int s_ByteBufAppend(struct aws_allocator *allocator, void *)
     ASSERT_FALSE(appendResult3);
 
     ASSERT_TRUE(appendBufferResult.GetImpl()->len == 6);
-    ASSERT_BIN_ARRAYS_EQUALS(
-        appendBufferResult.GetImpl()->buffer, appendBufferResult.GetImpl()->len, "abcdef", 6);
+    ASSERT_BIN_ARRAYS_EQUALS(appendBufferResult.GetImpl()->buffer, appendBufferResult.GetImpl()->len, "abcdef", 6);
 
     return AWS_ERROR_SUCCESS;
 }
@@ -316,11 +312,7 @@ static int s_ByteBufAppendDynamicFailure(struct aws_allocator *allocator, void *
         ASSERT_FALSE(appendResult3);
 
         ASSERT_TRUE(appendBufferResult.GetImpl()->len == 6);
-        ASSERT_BIN_ARRAYS_EQUALS(
-            appendBufferResult.GetImpl()->buffer,
-            appendBufferResult.GetImpl()->len,
-            "abcdef",
-            6);
+        ASSERT_BIN_ARRAYS_EQUALS(appendBufferResult.GetImpl()->buffer, appendBufferResult.GetImpl()->len, "abcdef", 6);
     }
 
     aws_timebomb_allocator_clean_up(&allocate_once);
