@@ -202,25 +202,24 @@ namespace Aws
                 friend class HttpClientConnection;
             };
 
-            enum AwsHttpProxyAuthenticationType {
+            enum class AwsHttpProxyAuthenticationType {
               None = AWS_HPAT_NONE,
               Basic,
             };
 
             struct HttpClientConnectionProxyOptions
             {
-              ByteCursor m_hostName;
+              String m_hostName;
               uint16_t m_port;
               Io::TlsConnectionOptions *m_tlsOptions;
               AwsHttpProxyAuthenticationType m_authType;
-              ByteCursor m_basicAuthUsername;
-              ByteCursor m_basicAuthPassword;
+              String m_basicAuthUsername;
+              String m_basicAuthPassword;
             };
 
             struct HttpClientConnectionOptions
             {
                 HttpClientConnectionOptions();
-                Allocator *allocator;
 
                 /**
                  * Client bootstrap to use for setting up and tearing down connections.
@@ -260,6 +259,11 @@ namespace Aws
                  * https will be used.
                  */
                 Io::TlsConnectionOptions *tlsConnOptions;
+
+                /*
+                 * Http proxy options to use.  If null, proxy connection logic will not be used.
+                 */
+                HttpClientConnectionProxyOptions *proxyOptions;
             };
 
             /**
@@ -310,7 +314,7 @@ namespace Aws
                  * be invoked. On success, `onConnectionSetup` will be called, either with a connection, or an
                  * errorCode.
                  */
-                static bool CreateConnection(const HttpClientConnectionOptions &connectionOptions) noexcept;
+                static bool CreateConnection(const HttpClientConnectionOptions &connectionOptions, Allocator *allocator) noexcept;
 
               protected:
                 HttpClientConnection(aws_http_connection *m_connection, Allocator *allocator) noexcept;

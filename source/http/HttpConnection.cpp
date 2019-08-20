@@ -23,7 +23,7 @@ namespace Aws
         namespace Http
         {
             HttpClientConnectionOptions::HttpClientConnectionOptions()
-                : allocator(DefaultAllocator()), bootstrap(nullptr), initialWindowSize(SIZE_MAX), port(0),
+                : bootstrap(nullptr), initialWindowSize(SIZE_MAX), port(0),
                   socketOptions(nullptr), tlsConnOptions(nullptr)
             {
                 AWS_ZERO_STRUCT(hostName);
@@ -104,14 +104,14 @@ namespace Aws
                 Delete(callbackData, callbackData->allocator);
             }
 
-            bool HttpClientConnection::CreateConnection(const HttpClientConnectionOptions &connectionOptions) noexcept
+            bool HttpClientConnection::CreateConnection(const HttpClientConnectionOptions &connectionOptions, Allocator *allocator) noexcept
             {
                 AWS_ASSERT(connectionOptions.onConnectionSetup);
                 AWS_ASSERT(connectionOptions.onConnectionShutdown);
                 AWS_ASSERT(connectionOptions.socketOptions);
 
                 auto *callbackData =
-                    New<ConnectionCallbackData>(connectionOptions.allocator, connectionOptions.allocator);
+                    New<ConnectionCallbackData>(allocator, allocator);
 
                 if (!callbackData)
                 {
@@ -129,7 +129,7 @@ namespace Aws
                     options.tls_options = const_cast<aws_tls_connection_options *>(
                         connectionOptions.tlsConnOptions->GetUnderlyingHandle());
                 }
-                options.allocator = connectionOptions.allocator;
+                options.allocator = allocator;
                 options.user_data = callbackData;
                 options.host_name = connectionOptions.hostName;
                 options.port = connectionOptions.port;
@@ -140,7 +140,7 @@ namespace Aws
 
                 if (aws_http_client_connect(&options))
                 {
-                    Delete(callbackData, connectionOptions.allocator);
+                    Delete(callbackData, allocator);
                     return false;
                 }
 

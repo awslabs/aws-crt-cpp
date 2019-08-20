@@ -139,7 +139,6 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     };
 
     Http::HttpClientConnectionOptions httpClientConnectionOptions;
-    httpClientConnectionOptions.allocator = allocator;
     httpClientConnectionOptions.bootstrap = &clientBootstrap;
     httpClientConnectionOptions.onConnectionSetup = onConnectionSetup;
     httpClientConnectionOptions.onConnectionShutdown = onConnectionShutdown;
@@ -150,7 +149,7 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     httpClientConnectionOptions.port = 443;
 
     std::unique_lock<std::mutex> semaphoreULock(semaphoreLock);
-    ASSERT_TRUE(Http::HttpClientConnection::CreateConnection(httpClientConnectionOptions));
+    ASSERT_TRUE(Http::HttpClientConnection::CreateConnection(httpClientConnectionOptions, allocator));
     semaphore.wait(semaphoreULock, [&]() { return connection || connectionShutdown; });
 
     ASSERT_FALSE(errorOccured);
