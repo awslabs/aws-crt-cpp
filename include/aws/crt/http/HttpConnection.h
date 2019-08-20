@@ -207,63 +207,146 @@ namespace Aws
               Basic,
             };
 
-            struct HttpClientConnectionProxyOptions
+            class HttpClientConnectionProxyOptions
             {
+            public:
+              HttpClientConnectionProxyOptions(struct aws_allocator *allocator = DefaultAllocator());
+              HttpClientConnectionProxyOptions(const HttpClientConnectionProxyOptions &rhs);
+              HttpClientConnectionProxyOptions(HttpClientConnectionProxyOptions &&rhs);
+
+              HttpClientConnectionProxyOptions &operator =(const HttpClientConnectionProxyOptions &rhs);
+              HttpClientConnectionProxyOptions &operator =(HttpClientConnectionProxyOptions &&rhs);
+
+              ~HttpClientConnectionProxyOptions();
+
+              void SetHostName(const String &hostName) { m_hostName = hostName; }
+              const String &GetHostName() const { return m_hostName; }
+
+              void SetPort(uint16_t port) noexcept { m_port = port; }
+              uint16_t GetPort() const noexcept { return m_port; }
+
+              void SetTlsOptions(const Io::TlsConnectionOptions &options) noexcept;
+              Io::TlsConnectionOptions *GetTlsOptions() const noexcept { return m_tlsOptions.get(); }
+
+              void SetAuthenticationType(enum AwsHttpProxyAuthenticationType authType) { m_authType = authType; }
+              enum AwsHttpProxyAuthenticationType GetAuthenticationType() const { return m_authType; }
+
+              void SetBasicAuthUsername(const String &username) { m_basicAuthUsername = username; }
+              const String &GetBasicAuthUsername() const { return m_basicAuthUsername; }
+
+              void SetBasicAuthPassword(const String &password) { m_basicAuthPassword = password; }
+              const String &GetBasicAuthPassword() const { return m_basicAuthPassword; }
+
+              explicit operator bool() const { return m_initializationErrorCode == AWS_ERROR_SUCCESS; }
+              int GetInitializationErrorCode() const { return m_initializationErrorCode; }
+
+            private:
+
+              struct aws_allocator *m_allocator;
+              int m_initializationErrorCode;
+              
               String m_hostName;
               uint16_t m_port;
-              Io::TlsConnectionOptions *m_tlsOptions;
+              ScopedResource<Io::TlsConnectionOptions> m_tlsOptions;
               AwsHttpProxyAuthenticationType m_authType;
               String m_basicAuthUsername;
               String m_basicAuthPassword;
             };
 
-            struct HttpClientConnectionOptions
+            class HttpClientConnectionOptions
             {
-                HttpClientConnectionOptions();
+            public:
+                HttpClientConnectionOptions(struct aws_allocator *allocator = DefaultAllocator()) noexcept;
+              HttpClientConnectionOptions(const HttpClientConnectionOptions &rhs);
+              HttpClientConnectionOptions(HttpClientConnectionOptions &&rhs) noexcept;
+
+              ~HttpClientConnectionOptions();
+
+              HttpClientConnectionOptions &operator =(const HttpClientConnectionOptions &rhs);
+              HttpClientConnectionOptions &operator =(const HttpClientConnectionOptions &&rhs) noexcept;
+
+              void SetBootstrap(Io::ClientBootstrap *bootstrap) noexcept { m_bootstrap = bootstrap; }
+              Io::ClientBootstrap *GetBootstrap() const noexcept { return m_bootstrap; }
+
+              void SetInitialWindowSize(size_t initialWindowSize) noexcept { m_initialWindowSize = initialWindowSize; }
+              size_t GetInitialWindowSize() const noexcept { return m_initialWindowSize; }
+
+              void SetOnConnectionSetupCallback(const OnConnectionSetup &callback) { m_onConnectionSetup = callback; }
+              const OnConnectionSetup &GetOnConnectionSetupCallback() const { return m_onConnectionSetup; }
+
+              void SetOnConnectionShutdownCallback(const OnConnectionShutdown &callback) { m_onConnectionShutdown = callback; }
+              const OnConnectionShutdown &GetOnConnectionShutdownCallback() const { return m_onConnectionShutdown; }
+
+              void SetHostName(const String &hostName) { m_hostName = hostName; }
+              const String &GetHostName() const { return m_hostName; }
+
+              void SetPort(uint16_t port) noexcept { m_port = port; }
+              uint16_t GetPort() const noexcept { return m_port; }
+
+              void SetSocketOptions(const Io::SocketOptions &options) noexcept { m_socketOptions = options; }
+              const Io::SocketOptions &GetSocketOptions() const noexcept { return m_socketOptions; }
+
+              void SetTlsOptions(const Io::TlsConnectionOptions &options) noexcept;
+              Io::TlsConnectionOptions *GetTlsOptions() const noexcept { return m_tlsOptions.get(); }
+
+              void SetProxyOptions(const HttpClientConnectionProxyOptions &options) noexcept;
+              HttpClientConnectionProxyOptions *GetProxyOptions() const noexcept { return m_proxyOptions.get(); }
+
+              explicit operator bool() const { return m_initializationErrorCode == AWS_ERROR_SUCCESS; }
+              int GetInitializationErrorCode() const { return m_initializationErrorCode; }
+
+            private:
+
+                struct aws_allocator *m_allocator;
+
+                int m_initializationErrorCode;
 
                 /**
                  * Client bootstrap to use for setting up and tearing down connections.
                  */
-                Io::ClientBootstrap *bootstrap;
+                Io::ClientBootstrap *m_bootstrap;
+
                 /**
                  *  `initialWindowSize` will set the TCP read window
                  * allowed for Http 1.1 connections and Initial Windows for H2 connections.
                  */
-                size_t initialWindowSize;
+                size_t m_initialWindowSize;
+
                 /**
                  * See `OnConnectionSetup` for more info. This value cannot be empty.
                  */
-                OnConnectionSetup onConnectionSetup;
+                OnConnectionSetup m_onConnectionSetup;
+
                 /**
                  * See `OnConnectionShutdown` for more info. This value cannot be empty.
                  */
-                OnConnectionShutdown onConnectionShutdown;
+                OnConnectionShutdown m_onConnectionShutdown;
 
                 /**
                  * hostname to connect to.
                  */
-                ByteCursor hostName;
+                String m_hostName;
 
                 /**
                  * port on host to connect to.
                  */
-                uint16_t port;
+                uint16_t m_port;
 
                 /**
                  * socket options to use for connection.
                  */
-                Io::SocketOptions *socketOptions;
+                Io::SocketOptions m_socketOptions;
 
                 /**
                  * Tls options to use. If null, and http (plain-text) connection will be attempted. Otherwise,
                  * https will be used.
                  */
-                Io::TlsConnectionOptions *tlsConnOptions;
+                ScopedResource<Io::TlsConnectionOptions> m_tlsOptions;
 
                 /*
                  * Http proxy options to use.  If null, proxy connection logic will not be used.
                  */
-                HttpClientConnectionProxyOptions *proxyOptions;
+                ScopedResource<HttpClientConnectionProxyOptions> m_proxyOptions;
             };
 
             /**
