@@ -101,9 +101,9 @@ namespace Aws
                 const HttpClientConnectionOptions &connectionOptions,
                 Allocator *allocator) noexcept
             {
-                AWS_ASSERT(connectionOptions.onConnectionSetup);
-                AWS_ASSERT(connectionOptions.onConnectionShutdown);
-                AWS_ASSERT(connectionOptions.socketOptions);
+                AWS_ASSERT(connectionOptions.GetOnConnectionSetup());
+                AWS_ASSERT(connectionOptions.GetOnConnectionShutdown());
+                AWS_ASSERT(connectionOptions.GetSocketOptions());
 
                 auto *callbackData = New<ConnectionCallbackData>(allocator, allocator);
 
