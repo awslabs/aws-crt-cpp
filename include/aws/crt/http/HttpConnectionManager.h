@@ -85,7 +85,7 @@ namespace Aws
 
                 /**
                  * Acquires a connection from the pool. onClientConnectionAvailable will be invoked upon an available
-                 * connection. Returns true if the connection request was successfully pooled, returns false if it
+                 * connection. Returns true if the connection request was successfully queued, returns false if it
                  * failed. On failure, onClientConnectionAvailable will not be invoked. After receiving a connection, it
                  * will automatically be cleaned up when your last reference to the shared_ptr is released.
                  */
