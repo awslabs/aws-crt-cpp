@@ -37,7 +37,7 @@ namespace Aws
                 Aws = AWS_SIGNING_CONFIG_AWS
             };
 
-            /*
+            /**
              * Base class for all different signing configurations.  Type functions as a
              * primitive RTTI for downcasting.
              */
@@ -52,10 +52,13 @@ namespace Aws
 
                 virtual ~ISigningConfig() = default;
 
+                /**
+                 * RTTI query for the SigningConfig hierarchy
+                 */
                 virtual SigningConfigType GetType(void) const = 0;
             };
 
-            /*
+            /**
              * Abstract base for all http request signers.  Synchronous interface.  Intended to
              * be a tight wrapper around aws-c-* signer implementations.
              */
@@ -70,19 +73,26 @@ namespace Aws
 
                 virtual ~IHttpRequestSigner() = default;
 
+                /**
+                 * Synchronous method to use a signing process to transform an http request.
+                 * Thread-safe.
+                 */
                 virtual bool SignRequest(Aws::Crt::Http::HttpRequest &request, const ISigningConfig *config) = 0;
 
-                virtual operator bool() const = 0;
+                /**
+                 * Whether or not the signer is in a valid state
+                 */
+                virtual explicit operator bool() const = 0;
             };
 
-            /*
+            /**
              * Signing pipeline callback.  The second parameter is an aws error code,  The signing was successful
              * iff the error code is AWS_ERROR_SUCCESS.
              */
             using OnHttpRequestSigningComplete =
                 std::function<void(const std::shared_ptr<Aws::Crt::Http::HttpRequest> &, int)>;
 
-            /*
+            /**
              * Abstract base for a complete signing process.  While the primary difference between this
              * and IHttpRequestSigner is one of async vs. sync, the intent of this interface is to encapsulate an
              * entire signing process that may involve multiple asynchronous steps (Sigv4 with credentials fetch, OAuth,
@@ -99,12 +109,19 @@ namespace Aws
 
                 virtual ~IHttpRequestSigningPipeline() = default;
 
+                /**
+                 * Asynchronous method to use a signing process/pipeline to transform an http request.
+                 * Thread-safe.
+                 */
                 virtual void SignRequest(
                     const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
                     const std::shared_ptr<ISigningConfig> &config,
                     const OnHttpRequestSigningComplete &completionCallback) = 0;
 
-                virtual operator bool() const = 0;
+                /**
+                 * Whether or not the signing pipeline is in a valid state
+                 */
+                virtual explicit operator bool() const = 0;
             };
 
         } // namespace Auth

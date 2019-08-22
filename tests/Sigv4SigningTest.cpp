@@ -26,6 +26,8 @@
 #include <condition_variable>
 #include <mutex>
 
+#include <aws/testing/aws_test_allocators.h>
+
 using namespace Aws::Crt;
 using namespace Aws::Crt::Auth;
 using namespace Aws::Crt::Http;
@@ -144,7 +146,7 @@ static int s_Sigv4SignerTestSimple(struct aws_allocator *allocator, void *ctx)
 
         auto config = Aws::Crt::MakeShared<AwsSigningConfig>(allocator, allocator);
         config->SetCredentials(credentials);
-        config->SetDate(Aws::Crt::DateTime());
+        config->SetSigningTimepoint(Aws::Crt::DateTime());
         config->SetRegion(aws_byte_cursor_from_c_str("test"));
         config->SetService(aws_byte_cursor_from_c_str("service"));
 
@@ -209,7 +211,7 @@ static int s_Sigv4SigningPipelineTestSimple(struct aws_allocator *allocator, voi
         auto request = s_MakeDummyRequest(allocator);
 
         auto signingConfig = Aws::Crt::MakeShared<AwsSigningConfig>(allocator, allocator);
-        signingConfig->SetDate(Aws::Crt::DateTime());
+        signingConfig->SetSigningTimepoint(Aws::Crt::DateTime());
         signingConfig->SetRegion(aws_byte_cursor_from_c_str("test"));
         signingConfig->SetService(aws_byte_cursor_from_c_str("service"));
 

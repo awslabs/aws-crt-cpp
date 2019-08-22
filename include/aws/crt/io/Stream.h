@@ -25,7 +25,7 @@ namespace Aws
     {
         namespace Io
         {
-            /*
+            /**
              * Factory to create a aws-c-io input stream subclass from a C++ stream
              */
             AWS_CRT_CPP_API aws_input_stream *AwsInputStreamNewCpp(

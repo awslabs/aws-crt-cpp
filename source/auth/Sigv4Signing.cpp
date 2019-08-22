@@ -75,12 +75,12 @@ namespace Aws
 
             void AwsSigningConfig::SetService(ByteCursor service) noexcept { m_config->service = service; }
 
-            DateTime AwsSigningConfig::GetDate() const noexcept
+            DateTime AwsSigningConfig::GetSigningTimepoint() const noexcept
             {
                 return DateTime(aws_date_time_as_millis(&m_config->date));
             }
 
-            void AwsSigningConfig::SetDate(const DateTime &date) noexcept
+            void AwsSigningConfig::SetSigningTimepoint(const DateTime &date) noexcept
             {
                 aws_date_time_init_epoch_millis(&m_config->date, date.Millis());
             }
@@ -164,7 +164,7 @@ namespace Aws
                 signingConfig.should_normalize_uri_path = awsSigningConfig->GetShouldNormalizeUriPath();
                 signingConfig.sign_body = awsSigningConfig->GetSignBody();
 
-                aws_date_time_init_epoch_millis(&signingConfig.date, awsSigningConfig->GetDate().Millis());
+                aws_date_time_init_epoch_millis(&signingConfig.date, awsSigningConfig->GetSigningTimepoint().Millis());
 
                 struct aws_signing_result signing_result;
                 AWS_ZERO_STRUCT(signing_result);
