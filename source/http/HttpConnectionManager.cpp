@@ -30,6 +30,47 @@ namespace Aws
                 std::shared_ptr<HttpClientConnectionManager> m_connectionManager;
             };
 
+            HttpClientConnectionManagerOptions::HttpClientConnectionManagerOptions()
+                : m_connectionOptions(), m_maxConnections(1)
+            {
+            }
+
+            HttpClientConnectionManagerOptions::HttpClientConnectionManagerOptions(
+                const HttpClientConnectionManagerOptions &rhs)
+                : m_connectionOptions(rhs.m_connectionOptions), m_maxConnections(rhs.m_maxConnections)
+            {
+            }
+
+            HttpClientConnectionManagerOptions::HttpClientConnectionManagerOptions(
+                HttpClientConnectionManagerOptions &&rhs)
+                : m_connectionOptions(std::move(rhs.m_connectionOptions)), m_maxConnections(rhs.m_maxConnections)
+            {
+            }
+
+            HttpClientConnectionManagerOptions &HttpClientConnectionManagerOptions::operator=(
+                const HttpClientConnectionManagerOptions &rhs)
+            {
+                if (&rhs != this)
+                {
+                    m_connectionOptions = rhs.m_connectionOptions;
+                    m_maxConnections = rhs.m_maxConnections;
+                }
+
+                return *this;
+            }
+
+            HttpClientConnectionManagerOptions &HttpClientConnectionManagerOptions::operator=(
+                HttpClientConnectionManagerOptions &&rhs)
+            {
+                if (&rhs != this)
+                {
+                    m_connectionOptions = std::move(rhs.m_connectionOptions);
+                    m_maxConnections = rhs.m_maxConnections;
+                }
+
+                return *this;
+            }
+
             std::shared_ptr<HttpClientConnectionManager> HttpClientConnectionManager::NewClientConnectionManager(
                 const HttpClientConnectionManagerOptions &connectionManagerOptions,
                 Allocator *allocator) noexcept

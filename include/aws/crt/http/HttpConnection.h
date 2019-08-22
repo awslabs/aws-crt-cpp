@@ -218,7 +218,8 @@ namespace Aws
             class AWS_CRT_CPP_API HttpClientConnectionProxyOptions
             {
               public:
-              explicit HttpClientConnectionProxyOptions(struct aws_allocator *allocator = DefaultAllocator()) noexcept;
+                explicit HttpClientConnectionProxyOptions(
+                    struct aws_allocator *allocator = DefaultAllocator()) noexcept;
                 HttpClientConnectionProxyOptions(const HttpClientConnectionProxyOptions &rhs) noexcept;
                 HttpClientConnectionProxyOptions(HttpClientConnectionProxyOptions &&rhs) noexcept;
 
@@ -235,17 +236,17 @@ namespace Aws
 
                 /**
                  * Returns the name of the proxy server to connect through.
-                 * This value must be set.
                  */
                 const String &GetHostName() const noexcept { return m_hostName; }
 
                 /**
-                 * Sets the port of the proxy server to connect to
+                 * Sets the port of the proxy server to connect to.
+                 * This value must be set.
                  */
                 void SetPort(uint16_t port) noexcept { m_port = port; }
 
                 /**
-                 * Gets the port of the proxy server to connect to
+                 * Gets the port of the proxy server to connect to.
                  */
                 uint16_t GetPort() const noexcept { return m_port; }
 

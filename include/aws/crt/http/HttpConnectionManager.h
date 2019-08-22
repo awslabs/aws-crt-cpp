@@ -39,7 +39,12 @@ namespace Aws
             class AWS_CRT_CPP_API HttpClientConnectionManagerOptions
             {
               public:
-                // Auto-generated constructors and destructor are sufficient
+                HttpClientConnectionManagerOptions();
+                HttpClientConnectionManagerOptions(const HttpClientConnectionManagerOptions &rhs);
+                HttpClientConnectionManagerOptions(HttpClientConnectionManagerOptions &&rhs);
+
+                HttpClientConnectionManagerOptions &operator=(const HttpClientConnectionManagerOptions &rhs);
+                HttpClientConnectionManagerOptions &operator=(HttpClientConnectionManagerOptions &&rhs);
 
                 /**
                  * Sets the http connections to use for each connection created by the manager
@@ -72,7 +77,8 @@ namespace Aws
             /**
              * Manages a pool of connections to a specific endpoint using the same socket and tls options.
              */
-            class AWS_CRT_CPP_API HttpClientConnectionManager final : public std::enable_shared_from_this<HttpClientConnectionManager>
+            class AWS_CRT_CPP_API HttpClientConnectionManager final
+                : public std::enable_shared_from_this<HttpClientConnectionManager>
             {
               public:
                 ~HttpClientConnectionManager();
