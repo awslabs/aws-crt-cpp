@@ -22,13 +22,6 @@ namespace Aws
     {
         namespace Http
         {
-            HttpClientConnectionOptions::HttpClientConnectionOptions()
-                : bootstrap(nullptr), initialWindowSize(SIZE_MAX), port(0),
-                  socketOptions(nullptr), tlsConnOptions(nullptr)
-            {
-                AWS_ZERO_STRUCT(hostName);
-            }
-
             /* This exists to handle aws_http_connection's shutdown callback, which might fire after
              * HttpClientConnection has been destroyed. */
             struct ConnectionCallbackData
@@ -104,37 +97,38 @@ namespace Aws
                 Delete(callbackData, callbackData->allocator);
             }
 
-            bool HttpClientConnection::CreateConnection(const HttpClientConnectionOptions &connectionOptions, Allocator *allocator) noexcept
+            bool HttpClientConnection::CreateConnection(
+                const HttpClientConnectionOptions &connectionOptions,
+                Allocator *allocator) noexcept
             {
                 AWS_ASSERT(connectionOptions.onConnectionSetup);
                 AWS_ASSERT(connectionOptions.onConnectionShutdown);
                 AWS_ASSERT(connectionOptions.socketOptions);
 
-                auto *callbackData =
-                    New<ConnectionCallbackData>(allocator, allocator);
+                auto *callbackData = New<ConnectionCallbackData>(allocator, allocator);
 
                 if (!callbackData)
                 {
                     return false;
                 }
-                callbackData->onConnectionShutdown = connectionOptions.onConnectionShutdown;
-                callbackData->onConnectionSetup = connectionOptions.onConnectionSetup;
+                callbackData->onConnectionShutdown = connectionOptions.GetOnConnectionShutdownCallback();
+                callbackData->onConnectionSetup = connectionOptions.GetOnConnectionSetupCallback();
 
                 aws_http_client_connection_options options;
                 AWS_ZERO_STRUCT(options);
                 options.self_size = sizeof(aws_http_client_connection_options);
-                options.bootstrap = connectionOptions.bootstrap->GetUnderlyingHandle();
-                if (connectionOptions.tlsConnOptions)
+                options.bootstrap = connectionOptions.GetBootstrap()->GetUnderlyingHandle();
+                if (connectionOptions.GetTlsOptions())
                 {
                     options.tls_options = const_cast<aws_tls_connection_options *>(
-                        connectionOptions.tlsConnOptions->GetUnderlyingHandle());
+                        connectionOptions.GetTlsOptions()->GetUnderlyingHandle());
                 }
                 options.allocator = allocator;
                 options.user_data = callbackData;
-                options.host_name = connectionOptions.hostName;
-                options.port = connectionOptions.port;
-                options.initial_window_size = connectionOptions.initialWindowSize;
-                options.socket_options = connectionOptions.socketOptions;
+                options.host_name = aws_byte_cursor_from_c_str(connectionOptions.GetHostName().c_str());
+                options.port = connectionOptions.GetPort();
+                options.initial_window_size = connectionOptions.GetInitialWindowSize();
+                options.socket_options = &connectionOptions.GetSocketOptions();
                 options.on_setup = HttpClientConnection::s_onClientConnectionSetup;
                 options.on_shutdown = HttpClientConnection::s_onClientConnectionShutdown;
 
@@ -307,6 +301,201 @@ namespace Aws
             void HttpStream::UpdateWindow(std::size_t incrementSize) noexcept
             {
                 aws_http_stream_update_window(m_stream, incrementSize);
+            }
+
+            HttpClientConnectionProxyOptions::HttpClientConnectionProxyOptions(struct aws_allocator *allocator) noexcept
+                : m_allocator(allocator), m_hostName(), m_port(0),
+                  m_tlsOptions(
+                      nullptr,
+                      [allocator](Io::TlsConnectionOptions * options) noexcept { Delete(options, allocator); }),
+                  m_authType(AwsHttpProxyAuthenticationType::None), m_basicAuthUsername(), m_basicAuthPassword()
+            {
+            }
+
+            HttpClientConnectionProxyOptions::HttpClientConnectionProxyOptions(
+                const HttpClientConnectionProxyOptions &rhs) noexcept
+                : m_allocator(rhs.m_allocator), m_hostName(rhs.m_hostName), m_port(rhs.m_port),
+                  m_tlsOptions(nullptr, [this](Io::TlsConnectionOptions *options) { Delete(options, m_allocator); }),
+                  m_authType(rhs.m_authType), m_basicAuthUsername(rhs.m_basicAuthUsername),
+                  m_basicAuthPassword(rhs.m_basicAuthPassword)
+            {
+                if (rhs.m_tlsOptions.get())
+                {
+                    SetTlsOptions(*rhs.m_tlsOptions.get());
+                }
+            }
+
+            HttpClientConnectionProxyOptions::HttpClientConnectionProxyOptions(
+                HttpClientConnectionProxyOptions &&rhs) noexcept
+                : m_allocator(rhs.m_allocator), m_hostName(std::move(rhs.m_hostName)), m_port(rhs.m_port),
+                  m_tlsOptions(std::move(rhs.m_tlsOptions)), m_authType(rhs.m_authType),
+                  m_basicAuthUsername(std::move(rhs.m_basicAuthUsername)),
+                  m_basicAuthPassword(std::move(rhs.m_basicAuthPassword))
+            {
+            }
+
+            HttpClientConnectionProxyOptions &HttpClientConnectionProxyOptions::operator=(
+                const HttpClientConnectionProxyOptions &rhs) noexcept
+            {
+                if (&rhs != this)
+                {
+                    m_allocator = rhs.m_allocator;
+                    m_hostName = rhs.m_hostName;
+                    m_port = rhs.m_port;
+                    m_tlsOptions = nullptr;
+                    if (rhs.m_tlsOptions)
+                    {
+                        SetTlsOptions(*rhs.m_tlsOptions.get());
+                    }
+                    m_authType = rhs.m_authType;
+                    m_basicAuthUsername = rhs.m_basicAuthUsername;
+                    m_basicAuthPassword = rhs.m_basicAuthPassword;
+                }
+
+                return *this;
+            }
+
+            HttpClientConnectionProxyOptions &HttpClientConnectionProxyOptions::operator=(
+                HttpClientConnectionProxyOptions &&rhs) noexcept
+            {
+                if (&rhs != this)
+                {
+                    m_allocator = rhs.m_allocator;
+                    m_hostName = std::move(rhs.m_hostName);
+                    m_port = rhs.m_port;
+                    m_tlsOptions = std::move(rhs.m_tlsOptions);
+                    m_authType = rhs.m_authType;
+                    m_basicAuthUsername = std::move(rhs.m_basicAuthUsername);
+                    m_basicAuthPassword = std::move(rhs.m_basicAuthPassword);
+                }
+
+                return *this;
+            }
+
+            HttpClientConnectionProxyOptions::~HttpClientConnectionProxyOptions() {}
+
+            void HttpClientConnectionProxyOptions::SetTlsOptions(const Io::TlsConnectionOptions &options) noexcept
+            {
+                auto *toSeat = static_cast<Io::TlsConnectionOptions *>(
+                    aws_mem_acquire(m_allocator, sizeof(Io::TlsConnectionOptions)));
+                if (toSeat)
+                {
+                    toSeat = new (toSeat) Io::TlsConnectionOptions(options);
+                    m_tlsOptions.reset(toSeat);
+                }
+            }
+
+            HttpClientConnectionOptions::HttpClientConnectionOptions(struct aws_allocator *allocator) noexcept
+                : m_allocator(allocator), m_bootstrap(nullptr), m_initialWindowSize(SIZE_MAX), m_onConnectionSetup(),
+                  m_onConnectionShutdown(), m_hostName(), m_port(0), m_socketOptions(),
+                  m_tlsOptions(nullptr, [this](Io::TlsConnectionOptions *options) { Delete(options, m_allocator); }),
+                  m_proxyOptions(nullptr, [this](HttpClientConnectionProxyOptions *options) {
+                      Delete(options, m_allocator);
+                  })
+            {
+            }
+
+            HttpClientConnectionOptions::HttpClientConnectionOptions(const HttpClientConnectionOptions &rhs) noexcept
+                : m_allocator(rhs.m_allocator), m_bootstrap(rhs.m_bootstrap),
+                  m_initialWindowSize(rhs.m_initialWindowSize), m_onConnectionSetup(rhs.m_onConnectionSetup),
+                  m_onConnectionShutdown(rhs.m_onConnectionShutdown), m_hostName(rhs.m_hostName), m_port(rhs.m_port),
+                  m_socketOptions(rhs.m_socketOptions),
+                  m_tlsOptions(nullptr, [this](Io::TlsConnectionOptions *options) { Delete(options, m_allocator); }),
+                  m_proxyOptions(nullptr, [this](HttpClientConnectionProxyOptions *options) {
+                      Delete(options, m_allocator);
+                  })
+            {
+                if (rhs.m_tlsOptions.get())
+                {
+                    SetTlsOptions(*rhs.m_tlsOptions.get());
+                }
+
+                if (rhs.m_proxyOptions.get())
+                {
+                    SetProxyOptions(*rhs.m_proxyOptions.get());
+                }
+            }
+
+            HttpClientConnectionOptions::HttpClientConnectionOptions(HttpClientConnectionOptions &&rhs) noexcept
+                : m_allocator(rhs.m_allocator), m_bootstrap(rhs.m_bootstrap),
+                  m_initialWindowSize(rhs.m_initialWindowSize), m_onConnectionSetup(std::move(rhs.m_onConnectionSetup)),
+                  m_onConnectionShutdown(std::move(rhs.m_onConnectionShutdown)), m_hostName(std::move(rhs.m_hostName)),
+                  m_port(rhs.m_port), m_socketOptions(rhs.m_socketOptions), m_tlsOptions(std::move(rhs.m_tlsOptions)),
+                  m_proxyOptions(std::move(rhs.m_proxyOptions))
+            {
+            }
+
+            HttpClientConnectionOptions::~HttpClientConnectionOptions() {}
+
+            HttpClientConnectionOptions &HttpClientConnectionOptions::operator=(
+                const HttpClientConnectionOptions &rhs) noexcept
+            {
+                if (&rhs != this)
+                {
+                    m_allocator = rhs.m_allocator;
+                    m_bootstrap = rhs.m_bootstrap;
+                    m_initialWindowSize = rhs.m_initialWindowSize;
+                    m_onConnectionSetup = rhs.m_onConnectionSetup;
+                    m_onConnectionShutdown = rhs.m_onConnectionShutdown;
+                    m_hostName = rhs.m_hostName;
+                    m_port = rhs.m_port;
+                    m_socketOptions = rhs.m_socketOptions;
+                    m_tlsOptions = nullptr;
+                    if (rhs.m_tlsOptions.get())
+                    {
+                        SetTlsOptions(*rhs.m_tlsOptions.get());
+                    }
+
+                    m_proxyOptions = nullptr;
+                    if (rhs.m_proxyOptions.get())
+                    {
+                        SetProxyOptions(*rhs.m_proxyOptions.get());
+                    }
+                }
+
+                return *this;
+            }
+
+            HttpClientConnectionOptions &HttpClientConnectionOptions::operator=(
+                HttpClientConnectionOptions &&rhs) noexcept
+            {
+                if (&rhs != this)
+                {
+                    m_allocator = rhs.m_allocator;
+                    m_bootstrap = rhs.m_bootstrap;
+                    m_initialWindowSize = rhs.m_initialWindowSize;
+                    m_onConnectionSetup = std::move(rhs.m_onConnectionSetup);
+                    m_onConnectionShutdown = std::move(rhs.m_onConnectionShutdown);
+                    m_hostName = std::move(rhs.m_hostName);
+                    m_port = rhs.m_port;
+                    m_socketOptions = rhs.m_socketOptions;
+                    m_tlsOptions = std::move(rhs.m_tlsOptions);
+                    m_proxyOptions = std::move(rhs.m_proxyOptions);
+                }
+
+                return *this;
+            }
+
+            void HttpClientConnectionOptions::SetTlsOptions(const Io::TlsConnectionOptions &options) noexcept
+            {
+                auto *toSeat = static_cast<Io::TlsConnectionOptions *>(
+                    aws_mem_acquire(m_allocator, sizeof(Io::TlsConnectionOptions)));
+                if (toSeat)
+                {
+                    toSeat = new (toSeat) Io::TlsConnectionOptions(options);
+                    m_tlsOptions.reset(toSeat);
+                }
+            }
+
+            void HttpClientConnectionOptions::SetProxyOptions(const HttpClientConnectionProxyOptions &options) noexcept
+            {
+                auto *toSeat = static_cast<HttpClientConnectionProxyOptions *>(
+                    aws_mem_acquire(m_allocator, sizeof(HttpClientConnectionProxyOptions)));
+                if (toSeat)
+                {
+                    toSeat = new (toSeat) HttpClientConnectionProxyOptions(options);
+                    m_proxyOptions.reset(toSeat);
+                }
             }
         } // namespace Http
     }     // namespace Crt

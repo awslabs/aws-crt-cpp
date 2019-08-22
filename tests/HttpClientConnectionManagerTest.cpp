@@ -66,14 +66,17 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
     size_t connectionsFailed = 0;
     size_t totalExpectedConnections = 30;
 
+    Http::HttpClientConnectionOptions connectionOptions;
+    connectionOptions.SetBootstrap(&clientBootstrap);
+    connectionOptions.SetInitialWindowSize(SIZE_MAX);
+    connectionOptions.SetSocketOptions(socketOptions);
+    connectionOptions.SetTlsOptions(tlsConnectionOptions);
+    connectionOptions.SetHostName(String((const char *)hostName.ptr, hostName.len));
+    connectionOptions.SetPort(443);
+
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
-    connectionManagerOptions.bootstrap = &clientBootstrap;
-    connectionManagerOptions.initialWindowSize = SIZE_MAX;
-    connectionManagerOptions.socketOptions = &socketOptions;
-    connectionManagerOptions.tlsConnectionOptions = &tlsConnectionOptions;
-    connectionManagerOptions.hostName = hostName;
-    connectionManagerOptions.port = 443;
-    connectionManagerOptions.maxConnections = totalExpectedConnections;
+    connectionManagerOptions.SetConnectionOptions(connectionOptions);
+    connectionManagerOptions.SetMaxConnections(totalExpectedConnections);
 
     auto connectionManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
@@ -166,14 +169,17 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     size_t connectionsFailed = 0;
     size_t totalExpectedConnections = 30;
 
+    Http::HttpClientConnectionOptions connectionOptions;
+    connectionOptions.SetBootstrap(&clientBootstrap);
+    connectionOptions.SetInitialWindowSize(SIZE_MAX);
+    connectionOptions.SetSocketOptions(socketOptions);
+    connectionOptions.SetTlsOptions(tlsConnectionOptions);
+    connectionOptions.SetHostName(String((const char *)hostName.ptr, hostName.len));
+    connectionOptions.SetPort(443);
+
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
-    connectionManagerOptions.bootstrap = &clientBootstrap;
-    connectionManagerOptions.initialWindowSize = SIZE_MAX;
-    connectionManagerOptions.socketOptions = &socketOptions;
-    connectionManagerOptions.tlsConnectionOptions = &tlsConnectionOptions;
-    connectionManagerOptions.hostName = hostName;
-    connectionManagerOptions.port = 443;
-    connectionManagerOptions.maxConnections = totalExpectedConnections / 2;
+    connectionManagerOptions.SetConnectionOptions(connectionOptions);
+    connectionManagerOptions.SetMaxConnections(totalExpectedConnections / 2);
 
     auto connectionManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
@@ -204,7 +210,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
         }
         std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
         semaphore.wait(uniqueLock, [&]() {
-            return connections.size() + connectionsFailed >= connectionManagerOptions.maxConnections;
+            return connections.size() + connectionsFailed >= connectionManagerOptions.GetMaxConnections();
         });
     }
 
@@ -275,14 +281,17 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
     size_t connectionsFailed = 0;
     size_t totalExpectedConnections = 30;
 
+    Http::HttpClientConnectionOptions connectionOptions;
+    connectionOptions.SetBootstrap(&clientBootstrap);
+    connectionOptions.SetInitialWindowSize(SIZE_MAX);
+    connectionOptions.SetSocketOptions(socketOptions);
+    connectionOptions.SetTlsOptions(tlsConnectionOptions);
+    connectionOptions.SetHostName(String((const char *)hostName.ptr, hostName.len));
+    connectionOptions.SetPort(443);
+
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
-    connectionManagerOptions.bootstrap = &clientBootstrap;
-    connectionManagerOptions.initialWindowSize = SIZE_MAX;
-    connectionManagerOptions.socketOptions = &socketOptions;
-    connectionManagerOptions.tlsConnectionOptions = &tlsConnectionOptions;
-    connectionManagerOptions.hostName = hostName;
-    connectionManagerOptions.port = 443;
-    connectionManagerOptions.maxConnections = totalExpectedConnections / 2;
+    connectionManagerOptions.SetConnectionOptions(connectionOptions);
+    connectionManagerOptions.SetMaxConnections(totalExpectedConnections / 2);
 
     auto connectionManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
@@ -314,7 +323,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
         }
         std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
         semaphore.wait(uniqueLock, [&]() {
-            return connectionCount + connectionsFailed == connectionManagerOptions.maxConnections;
+            return connectionCount + connectionsFailed == connectionManagerOptions.GetMaxConnections();
         });
     }
 
