@@ -76,8 +76,8 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
     int tries = 0;
     while (tries++ < 10)
     {
-        auto mqttConnection = mqttClient.NewConnection(
-            "a16523t7iy5uyg-ats.iot.us-east-1.amazonaws.com", 8883, socketOptions, tlsContext.NewConnectionOptions());
+        auto mqttConnection =
+            mqttClient.NewConnection("a16523t7iy5uyg-ats.iot.us-east-1.amazonaws.com", 8883, socketOptions, tlsContext);
 
         std::mutex mutex;
         std::condition_variable cv;

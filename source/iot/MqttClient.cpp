@@ -204,10 +204,7 @@ namespace Aws
             }
 
             auto newConnection = m_client.NewConnection(
-                config.m_endpoint.c_str(),
-                config.m_port,
-                config.m_socketOptions,
-                config.m_context.NewConnectionOptions());
+                config.m_endpoint.c_str(), config.m_port, config.m_socketOptions, config.m_context);
 
             if (!newConnection)
             {

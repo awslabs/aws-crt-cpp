@@ -178,8 +178,8 @@ namespace Aws
                     TlsMode mode,
                     Allocator *allocator = DefaultAllocator()) noexcept;
                 ~TlsContext();
-                TlsContext(const TlsContext &) = delete;
-                TlsContext &operator=(const TlsContext &) = delete;
+                TlsContext(const TlsContext &) noexcept;
+                TlsContext &operator=(const TlsContext &) noexcept;
                 TlsContext(TlsContext &&) noexcept;
                 TlsContext &operator=(TlsContext &&) noexcept;
 
@@ -189,7 +189,7 @@ namespace Aws
                 int LastError() const noexcept;
 
               private:
-                aws_tls_ctx *m_ctx;
+                std::shared_ptr<aws_tls_ctx> m_ctx;
                 int m_lastError;
             };
 

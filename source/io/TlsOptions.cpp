@@ -263,11 +263,11 @@ namespace Aws
             {
                 if (mode == TlsMode::CLIENT)
                 {
-                    m_ctx = aws_tls_client_ctx_new(allocator, &options.m_options);
+                    m_ctx.reset(aws_tls_client_ctx_new(allocator, &options.m_options), aws_tls_ctx_destroy);
                 }
                 else
                 {
-                    m_ctx = aws_tls_server_ctx_new(allocator, &options.m_options);
+                    m_ctx.reset(aws_tls_server_ctx_new(allocator, &options.m_options), aws_tls_ctx_destroy);
                 }
 
                 if (!m_ctx)
@@ -276,13 +276,7 @@ namespace Aws
                 }
             }
 
-            TlsContext::~TlsContext()
-            {
-                if (*this)
-                {
-                    aws_tls_ctx_destroy(m_ctx);
-                }
-            }
+            TlsContext::~TlsContext() {}
 
             TlsContext::TlsContext(TlsContext &&toMove) noexcept : m_ctx(toMove.m_ctx), m_lastError(toMove.m_lastError)
             {
@@ -305,13 +299,28 @@ namespace Aws
                 return *this;
             }
 
+            TlsContext::TlsContext(const TlsContext &rhs) noexcept : m_ctx(rhs.m_ctx), m_lastError(rhs.m_lastError) {}
+
+            TlsContext &TlsContext::operator=(const TlsContext &rhs) noexcept
+            {
+                if (this == &rhs)
+                {
+                    return *this;
+                }
+
+                m_ctx = rhs.m_ctx;
+                m_lastError = rhs.m_lastError;
+
+                return *this;
+            }
+
             TlsContext::operator bool() const noexcept { return m_ctx && m_lastError == AWS_ERROR_SUCCESS; }
 
             int TlsContext::LastError() const noexcept { return m_lastError; }
 
             TlsConnectionOptions TlsContext::NewConnectionOptions() const noexcept
             {
-                return TlsConnectionOptions(m_ctx, m_ctx->alloc);
+                return TlsConnectionOptions(m_ctx.get(), m_ctx->alloc);
             }
         } // namespace Io
     }     // namespace Crt

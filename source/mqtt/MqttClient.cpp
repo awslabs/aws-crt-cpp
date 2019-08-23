@@ -211,18 +211,11 @@ namespace Aws
                 MqttConnection *self,
                 const char *hostName,
                 uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                const Io::TlsConnectionOptions *tlsConnOptions)
+                const Io::SocketOptions &socketOptions)
             {
 
                 self->m_hostName = String(hostName);
                 self->m_port = port;
-
-                if (tlsConnOptions)
-                {
-                    self->m_tlsOptions = *tlsConnOptions;
-                }
-
                 self->m_socketOptions = socketOptions;
 
                 self->m_underlyingConnection = aws_mqtt_client_connection_new(self->m_owningClient);
@@ -243,10 +236,11 @@ namespace Aws
                 const char *hostName,
                 uint16_t port,
                 const Io::SocketOptions &socketOptions,
-                const Io::TlsConnectionOptions &tlsConnOptions) noexcept
-                : m_owningClient(client), m_useTls(true)
+                const Crt::Io::TlsContext &tlsContext) noexcept
+                : m_owningClient(client), m_tlsContext(tlsContext), m_tlsOptions(tlsContext.NewConnectionOptions()),
+                  m_useTls(true)
             {
-                s_connectionInit(this, hostName, port, socketOptions, &tlsConnOptions);
+                s_connectionInit(this, hostName, port, socketOptions);
             }
 
             MqttConnection::MqttConnection(
@@ -256,7 +250,7 @@ namespace Aws
                 const Io::SocketOptions &socketOptions) noexcept
                 : m_owningClient(client), m_useTls(false)
             {
-                s_connectionInit(this, hostName, port, socketOptions, nullptr);
+                s_connectionInit(this, hostName, port, socketOptions);
             }
 
             MqttConnection::~MqttConnection()
@@ -618,7 +612,7 @@ namespace Aws
                 const char *hostName,
                 uint16_t port,
                 const Io::SocketOptions &socketOptions,
-                const Io::TlsConnectionOptions &tlsConnOptions) noexcept
+                const Crt::Io::TlsContext &tlsContext) noexcept
             {
                 // If you're reading this and asking.... why is this so complicated? Why not use make_shared
                 // or allocate_shared? Well, MqttConnection constructors are private and stl is dumb like that.
@@ -631,7 +625,7 @@ namespace Aws
                     return nullptr;
                 }
 
-                toSeat = new (toSeat) MqttConnection(m_client, hostName, port, socketOptions, tlsConnOptions);
+                toSeat = new (toSeat) MqttConnection(m_client, hostName, port, socketOptions, tlsContext);
                 return std::shared_ptr<MqttConnection>(toSeat, [allocator](MqttConnection *connection) {
                     connection->~MqttConnection();
                     aws_mem_release(allocator, reinterpret_cast<void *>(connection));
