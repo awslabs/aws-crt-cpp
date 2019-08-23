@@ -18,6 +18,7 @@
 
 #include <aws/crt/Types.h>
 #include <aws/crt/io/Bootstrap.h>
+#include <aws/crt/io/SocketOptions.h>
 #include <aws/crt/io/TlsOptions.h>
 
 #include <functional>

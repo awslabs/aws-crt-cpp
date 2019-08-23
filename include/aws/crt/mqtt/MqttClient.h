@@ -16,6 +16,7 @@
 #include <aws/crt/Exports.h>
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/Types.h>
+#include <aws/crt/io/SocketOptions.h>
 #include <aws/crt/io/TlsOptions.h>
 #include <aws/mqtt/client.h>
 

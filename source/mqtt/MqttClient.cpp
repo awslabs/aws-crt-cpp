@@ -305,7 +305,7 @@ namespace Aws
                 options.tls_options =
                     m_useTls ? const_cast<aws_tls_connection_options *>(m_tlsOptions.GetUnderlyingHandle()) : nullptr;
                 options.port = m_port;
-                options.socket_options = &m_socketOptions;
+                options.socket_options = &m_socketOptions.GetImpl();
                 options.clean_session = cleanSession;
                 options.keep_alive_time_secs = keepAliveTime;
                 options.ping_timeout_ms = requestTimeoutMs;

@@ -100,7 +100,7 @@ namespace Aws
                 managerOptions.bootstrap = connectionOptions.GetBootstrap()->GetUnderlyingHandle();
                 managerOptions.port = connectionOptions.GetPort();
                 managerOptions.max_connections = m_options.GetMaxConnections();
-                managerOptions.socket_options = &connectionOptions.GetSocketOptions();
+                managerOptions.socket_options = &connectionOptions.GetSocketOptions().GetImpl();
                 managerOptions.initial_window_size = connectionOptions.GetInitialWindowSize();
 
                 aws_http_proxy_options proxyOptions;

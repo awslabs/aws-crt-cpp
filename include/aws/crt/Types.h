@@ -45,7 +45,6 @@ namespace Aws
 
         namespace Io
         {
-            using SocketOptions = aws_socket_options;
             using IStream = std::basic_istream<char, std::char_traits<char>>;
         } // namespace Io
 

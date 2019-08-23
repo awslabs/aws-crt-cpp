@@ -46,10 +46,7 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
     tlsConnectionOptions.SetServerName(hostName);
 
     Aws::Crt::Io::SocketOptions socketOptions;
-    AWS_ZERO_STRUCT(socketOptions);
-    socketOptions.type = AWS_SOCKET_STREAM;
-    socketOptions.domain = AWS_SOCKET_IPV4;
-    socketOptions.connect_timeout_ms = 10000;
+    socketOptions.SetConnectTimeoutMs(10000);
 
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
@@ -150,10 +147,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     tlsConnectionOptions.SetServerName(hostName);
 
     Aws::Crt::Io::SocketOptions socketOptions;
-    AWS_ZERO_STRUCT(socketOptions);
-    socketOptions.type = AWS_SOCKET_STREAM;
-    socketOptions.domain = AWS_SOCKET_IPV4;
-    socketOptions.connect_timeout_ms = 10000;
+    socketOptions.SetConnectTimeoutMs(10000);
 
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
@@ -254,10 +248,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
 
     Aws::Crt::Io::SocketOptions socketOptions;
-    AWS_ZERO_STRUCT(socketOptions);
-    socketOptions.type = AWS_SOCKET_STREAM;
-    socketOptions.domain = AWS_SOCKET_IPV4;
-    socketOptions.connect_timeout_ms = 10000;
+    socketOptions.SetConnectTimeoutMs(10000);
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
 

@@ -101,9 +101,8 @@ namespace Aws
                 const HttpClientConnectionOptions &connectionOptions,
                 Allocator *allocator) noexcept
             {
-                AWS_ASSERT(connectionOptions.GetOnConnectionSetup());
-                AWS_ASSERT(connectionOptions.GetOnConnectionShutdown());
-                AWS_ASSERT(connectionOptions.GetSocketOptions());
+                AWS_ASSERT(connectionOptions.GetOnConnectionSetupCallback());
+                AWS_ASSERT(connectionOptions.GetOnConnectionShutdownCallback());
 
                 auto *callbackData = New<ConnectionCallbackData>(allocator, allocator);
 
@@ -128,7 +127,7 @@ namespace Aws
                 options.host_name = aws_byte_cursor_from_c_str(connectionOptions.GetHostName().c_str());
                 options.port = connectionOptions.GetPort();
                 options.initial_window_size = connectionOptions.GetInitialWindowSize();
-                options.socket_options = &connectionOptions.GetSocketOptions();
+                options.socket_options = &connectionOptions.GetSocketOptions().GetImpl();
                 options.on_setup = HttpClientConnection::s_onClientConnectionSetup;
                 options.on_shutdown = HttpClientConnection::s_onClientConnectionShutdown;
 

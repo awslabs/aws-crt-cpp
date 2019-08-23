@@ -27,10 +27,7 @@ static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator *allocator, void *
     ASSERT_TRUE(tlsContext);
 
     Aws::Crt::Io::SocketOptions socketOptions;
-    AWS_ZERO_STRUCT(socketOptions);
-    socketOptions.type = AWS_SOCKET_STREAM;
-    socketOptions.domain = AWS_SOCKET_IPV4;
-    socketOptions.connect_timeout_ms = 3000;
+    socketOptions.SetConnectTimeoutMs(3000);
 
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
