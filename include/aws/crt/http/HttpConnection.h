@@ -219,8 +219,7 @@ namespace Aws
             class AWS_CRT_CPP_API HttpClientConnectionProxyOptions
             {
               public:
-                explicit HttpClientConnectionProxyOptions(
-                    struct aws_allocator *allocator = DefaultAllocator()) noexcept;
+                HttpClientConnectionProxyOptions() = default;
                 HttpClientConnectionProxyOptions(const HttpClientConnectionProxyOptions &rhs) = default;
                 HttpClientConnectionProxyOptions(HttpClientConnectionProxyOptions &&rhs) = default;
 
@@ -295,8 +294,6 @@ namespace Aws
                 const String &GetBasicAuthPassword() const noexcept { return m_basicAuthPassword; }
 
               private:
-                struct aws_allocator *m_allocator;
-
                 String m_hostName;
                 uint16_t m_port;
                 Optional<Io::TlsConnectionOptions> m_tlsOptions;
@@ -311,7 +308,7 @@ namespace Aws
             class AWS_CRT_CPP_API HttpClientConnectionOptions
             {
               public:
-                explicit HttpClientConnectionOptions(struct aws_allocator *allocator = DefaultAllocator()) noexcept;
+                HttpClientConnectionOptions() = default;
                 HttpClientConnectionOptions(const HttpClientConnectionOptions &rhs) = default;
                 HttpClientConnectionOptions(HttpClientConnectionOptions &&rhs) = default;
 
@@ -442,8 +439,6 @@ namespace Aws
                 }
 
               private:
-                struct aws_allocator *m_allocator;
-
                 Io::ClientBootstrap *m_bootstrap;
                 size_t m_initialWindowSize;
                 OnConnectionSetup m_onConnectionSetup;
