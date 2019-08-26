@@ -14,6 +14,7 @@
  */
 #include <aws/iot/MqttClient.h>
 
+#include <aws/crt/Api.h>
 #include <aws/crt/Config.h>
 
 namespace Aws
@@ -37,10 +38,6 @@ namespace Aws
             Crt::Io::TlsContext &&tlsContext)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions)
         {
-            if (!m_context)
-            {
-                m_lastError = m_context.LastError();
-            }
         }
 
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
@@ -53,7 +50,7 @@ namespace Aws
             m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(certPath, pkeyPath, allocator);
             if (!m_contextOptions)
             {
-                m_lastError = m_contextOptions.LastError();
+                m_lastError = Aws::Crt::LastErrorOrUnknown();
             }
         }
 
@@ -67,7 +64,7 @@ namespace Aws
             m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(cert, pkey, allocator);
             if (!m_contextOptions)
             {
-                m_lastError = m_contextOptions.LastError();
+                m_lastError = Aws::Crt::LastErrorOrUnknown();
             }
         }
 
@@ -96,7 +93,7 @@ namespace Aws
             {
                 if (!m_contextOptions.OverrideDefaultTrustStore(nullptr, caPath))
                 {
-                    m_lastError = m_contextOptions.LastError();
+                    m_lastError = Aws::Crt::LastErrorOrUnknown();
                 }
             }
             return *this;
@@ -109,7 +106,7 @@ namespace Aws
             {
                 if (!m_contextOptions.OverrideDefaultTrustStore(cert))
                 {
-                    m_lastError = m_contextOptions.LastError();
+                    m_lastError = Aws::Crt::LastErrorOrUnknown();
                 }
             }
             return *this;
@@ -171,7 +168,7 @@ namespace Aws
             {
                 if (!m_contextOptions.SetAlpnList("x-amzn-mqtt-ca"))
                 {
-                    return MqttClientConnectionConfig::CreateInvalid(m_contextOptions.LastError());
+                    return MqttClientConnectionConfig::CreateInvalid(Aws::Crt::LastErrorOrUnknown());
                 }
             }
 

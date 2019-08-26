@@ -14,6 +14,7 @@
  */
 #include <aws/crt/io/TlsOptions.h>
 
+#include <aws/crt/Api.h>
 #include <aws/io/tls_channel_handler.h>
 
 namespace Aws
@@ -22,8 +23,6 @@ namespace Aws
     {
         namespace Io
         {
-            int TlsContextOptions::LastError() const noexcept { return aws_last_error(); }
-
             TlsContextOptions::~TlsContextOptions()
             {
                 if (m_isInit)
@@ -171,7 +170,7 @@ namespace Aws
                     }
                     else
                     {
-                        m_lastError = aws_last_error();
+                        m_lastError = LastErrorOrUnknown();
                     }
                 }
             }
@@ -197,7 +196,7 @@ namespace Aws
                         }
                         else
                         {
-                            m_lastError = aws_last_error();
+                            m_lastError = LastErrorOrUnknown();
                         }
                     }
                 }
@@ -238,7 +237,7 @@ namespace Aws
             {
                 if (aws_tls_connection_options_set_server_name(&m_tls_connection_options, m_allocator, &serverName))
                 {
-                    m_lastError = aws_last_error();
+                    m_lastError = LastErrorOrUnknown();
                     return false;
                 }
 
@@ -249,17 +248,17 @@ namespace Aws
             {
                 if (aws_tls_connection_options_set_alpn_list(&m_tls_connection_options, m_allocator, alpnList))
                 {
-                    m_lastError = aws_last_error();
+                    m_lastError = LastErrorOrUnknown();
                     return false;
                 }
 
                 return true;
             }
 
-            TlsContext::TlsContext() noexcept : m_ctx(nullptr), m_lastError(AWS_ERROR_SUCCESS) {}
+            TlsContext::TlsContext() noexcept : m_ctx(nullptr), m_initializationError(AWS_ERROR_SUCCESS) {}
 
             TlsContext::TlsContext(TlsContextOptions &options, TlsMode mode, Allocator *allocator) noexcept
-                : m_ctx(nullptr), m_lastError(AWS_ERROR_SUCCESS)
+                : m_ctx(nullptr), m_initializationError(AWS_ERROR_SUCCESS)
             {
                 if (mode == TlsMode::CLIENT)
                 {
@@ -272,51 +271,9 @@ namespace Aws
 
                 if (!m_ctx)
                 {
-                    m_lastError = aws_last_error();
+                    m_initializationError = Aws::Crt::LastErrorOrUnknown();
                 }
             }
-
-            TlsContext::~TlsContext() {}
-
-            TlsContext::TlsContext(TlsContext &&toMove) noexcept : m_ctx(toMove.m_ctx), m_lastError(toMove.m_lastError)
-            {
-                toMove.m_ctx = nullptr;
-                toMove.m_lastError = AWS_ERROR_UNKNOWN;
-            }
-
-            TlsContext &TlsContext::operator=(TlsContext &&toMove) noexcept
-            {
-                if (this == &toMove)
-                {
-                    return *this;
-                }
-
-                m_ctx = toMove.m_ctx;
-                m_lastError = toMove.m_lastError;
-                toMove.m_ctx = nullptr;
-                toMove.m_lastError = AWS_ERROR_UNKNOWN;
-
-                return *this;
-            }
-
-            TlsContext::TlsContext(const TlsContext &rhs) noexcept : m_ctx(rhs.m_ctx), m_lastError(rhs.m_lastError) {}
-
-            TlsContext &TlsContext::operator=(const TlsContext &rhs) noexcept
-            {
-                if (this == &rhs)
-                {
-                    return *this;
-                }
-
-                m_ctx = rhs.m_ctx;
-                m_lastError = rhs.m_lastError;
-
-                return *this;
-            }
-
-            TlsContext::operator bool() const noexcept { return m_ctx && m_lastError == AWS_ERROR_SUCCESS; }
-
-            int TlsContext::LastError() const noexcept { return m_lastError; }
 
             TlsConnectionOptions TlsContext::NewConnectionOptions() const noexcept
             {
