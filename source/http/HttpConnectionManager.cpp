@@ -104,6 +104,7 @@ namespace Aws
                 managerOptions.initial_window_size = connectionOptions.GetInitialWindowSize();
 
                 aws_http_proxy_options proxyOptions;
+                AWS_ZERO_STRUCT(proxyOptions);
                 if (connectionOptions.GetProxyOptions())
                 {
                     const auto &proxyOpts = connectionOptions.GetProxyOptions();
