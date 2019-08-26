@@ -221,13 +221,13 @@ namespace Aws
               public:
                 explicit HttpClientConnectionProxyOptions(
                     struct aws_allocator *allocator = DefaultAllocator()) noexcept;
-                HttpClientConnectionProxyOptions(const HttpClientConnectionProxyOptions &rhs) noexcept;
-                HttpClientConnectionProxyOptions(HttpClientConnectionProxyOptions &&rhs) noexcept;
+                HttpClientConnectionProxyOptions(const HttpClientConnectionProxyOptions &rhs) = default;
+                HttpClientConnectionProxyOptions(HttpClientConnectionProxyOptions &&rhs) = default;
 
-                HttpClientConnectionProxyOptions &operator=(const HttpClientConnectionProxyOptions &rhs) noexcept;
-                HttpClientConnectionProxyOptions &operator=(HttpClientConnectionProxyOptions &&rhs) noexcept;
+                HttpClientConnectionProxyOptions &operator=(const HttpClientConnectionProxyOptions &rhs) = default;
+                HttpClientConnectionProxyOptions &operator=(HttpClientConnectionProxyOptions &&rhs) = default;
 
-                ~HttpClientConnectionProxyOptions();
+                ~HttpClientConnectionProxyOptions() = default;
 
                 /**
                  * Sets the name of the proxy server to connect through.
@@ -254,12 +254,15 @@ namespace Aws
                 /**
                  * Sets the TLS options for the proxy connection.
                  */
-                void SetTlsOptions(const Io::TlsConnectionOptions &options) noexcept;
+                void SetTlsOptions(const Io::TlsConnectionOptions &options) noexcept { m_tlsOptions = options; }
 
                 /**
                  * Gets the TLS options for the proxy connection.
                  */
-                Io::TlsConnectionOptions *GetTlsOptions() const noexcept { return m_tlsOptions.get(); }
+                const Io::TlsConnectionOptions *GetTlsOptions() const noexcept
+                {
+                    return m_tlsOptions.has_value() ? &m_tlsOptions.value() : nullptr;
+                }
 
                 /**
                  * Sets what kind of authentication approach to use when connecting to the proxy
@@ -296,7 +299,7 @@ namespace Aws
 
                 String m_hostName;
                 uint16_t m_port;
-                ScopedResource<Io::TlsConnectionOptions> m_tlsOptions;
+                Optional<Io::TlsConnectionOptions> m_tlsOptions;
                 AwsHttpProxyAuthenticationType m_authType;
                 String m_basicAuthUsername;
                 String m_basicAuthPassword;
@@ -309,13 +312,13 @@ namespace Aws
             {
               public:
                 explicit HttpClientConnectionOptions(struct aws_allocator *allocator = DefaultAllocator()) noexcept;
-                HttpClientConnectionOptions(const HttpClientConnectionOptions &rhs) noexcept;
-                HttpClientConnectionOptions(HttpClientConnectionOptions &&rhs) noexcept;
+                HttpClientConnectionOptions(const HttpClientConnectionOptions &rhs) = default;
+                HttpClientConnectionOptions(HttpClientConnectionOptions &&rhs) = default;
 
-                ~HttpClientConnectionOptions();
+                ~HttpClientConnectionOptions() = default;
 
-                HttpClientConnectionOptions &operator=(const HttpClientConnectionOptions &rhs) noexcept;
-                HttpClientConnectionOptions &operator=(HttpClientConnectionOptions &&rhs) noexcept;
+                HttpClientConnectionOptions &operator=(const HttpClientConnectionOptions &rhs) = default;
+                HttpClientConnectionOptions &operator=(HttpClientConnectionOptions &&rhs) = default;
 
                 /**
                  * Sets the client bootstrap to use for setting up and tearing down connections.
@@ -412,22 +415,31 @@ namespace Aws
                 /**
                  * Sets the TLS options for the http connection.
                  */
-                void SetTlsOptions(const Io::TlsConnectionOptions &options) noexcept;
+                void SetTlsOptions(const Io::TlsConnectionOptions &options) noexcept { m_tlsOptions = options; }
 
                 /**
                  * Gets the TLS options for the http connection.
                  */
-                Io::TlsConnectionOptions *GetTlsOptions() const noexcept { return m_tlsOptions.get(); }
+                const Io::TlsConnectionOptions *GetTlsOptions() const noexcept
+                {
+                    return m_tlsOptions.has_value() ? &m_tlsOptions.value() : nullptr;
+                }
 
                 /**
                  * Sets the proxy options for the http connection.
                  */
-                void SetProxyOptions(const HttpClientConnectionProxyOptions &options) noexcept;
+                void SetProxyOptions(const HttpClientConnectionProxyOptions &options) noexcept
+                {
+                    m_proxyOptions = options;
+                }
 
                 /**
                  * Gets the proxy options for the http connection.
                  */
-                HttpClientConnectionProxyOptions *GetProxyOptions() const noexcept { return m_proxyOptions.get(); }
+                const HttpClientConnectionProxyOptions *GetProxyOptions() const noexcept
+                {
+                    return m_proxyOptions.has_value() ? &m_proxyOptions.value() : nullptr;
+                }
 
               private:
                 struct aws_allocator *m_allocator;
@@ -439,8 +451,8 @@ namespace Aws
                 String m_hostName;
                 uint16_t m_port;
                 Io::SocketOptions m_socketOptions;
-                ScopedResource<Io::TlsConnectionOptions> m_tlsOptions;
-                ScopedResource<HttpClientConnectionProxyOptions> m_proxyOptions;
+                Optional<Io::TlsConnectionOptions> m_tlsOptions;
+                Optional<HttpClientConnectionProxyOptions> m_proxyOptions;
             };
 
             /**
