@@ -264,15 +264,12 @@ namespace Aws
                 /**
                  * Sets what kind of authentication approach to use when connecting to the proxy
                  */
-                void SetAuthenticationType(enum AwsHttpProxyAuthenticationType authType) noexcept
-                {
-                    m_authType = authType;
-                }
+                void SetAuthenticationType(AwsHttpProxyAuthenticationType authType) noexcept { m_authType = authType; }
 
                 /**
                  * Gets what kind of authentication approach to use when connecting to the proxy
                  */
-                enum AwsHttpProxyAuthenticationType GetAuthenticationType() const noexcept { return m_authType; }
+                AwsHttpProxyAuthenticationType GetAuthenticationType() const noexcept { return m_authType; }
 
                 /**
                  * Sets the username to use when connecting to the proxy via basic authentication
