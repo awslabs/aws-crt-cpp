@@ -219,7 +219,7 @@ namespace Aws
             class AWS_CRT_CPP_API HttpClientConnectionProxyOptions
             {
               public:
-                HttpClientConnectionProxyOptions() = default;
+                HttpClientConnectionProxyOptions();
                 HttpClientConnectionProxyOptions(const HttpClientConnectionProxyOptions &rhs) = default;
                 HttpClientConnectionProxyOptions(HttpClientConnectionProxyOptions &&rhs) = default;
 
@@ -308,7 +308,7 @@ namespace Aws
             class AWS_CRT_CPP_API HttpClientConnectionOptions
             {
               public:
-                HttpClientConnectionOptions() = default;
+                HttpClientConnectionOptions();
                 HttpClientConnectionOptions(const HttpClientConnectionOptions &rhs) = default;
                 HttpClientConnectionOptions(HttpClientConnectionOptions &&rhs) = default;
 

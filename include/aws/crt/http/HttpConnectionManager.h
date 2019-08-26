@@ -39,12 +39,12 @@ namespace Aws
             class AWS_CRT_CPP_API HttpClientConnectionManagerOptions
             {
               public:
-                HttpClientConnectionManagerOptions();
-                HttpClientConnectionManagerOptions(const HttpClientConnectionManagerOptions &rhs);
-                HttpClientConnectionManagerOptions(HttpClientConnectionManagerOptions &&rhs);
+                HttpClientConnectionManagerOptions() noexcept;
+                HttpClientConnectionManagerOptions(const HttpClientConnectionManagerOptions &rhs) = default;
+                HttpClientConnectionManagerOptions(HttpClientConnectionManagerOptions &&rhs) = default;
 
-                HttpClientConnectionManagerOptions &operator=(const HttpClientConnectionManagerOptions &rhs);
-                HttpClientConnectionManagerOptions &operator=(HttpClientConnectionManagerOptions &&rhs);
+                HttpClientConnectionManagerOptions &operator=(const HttpClientConnectionManagerOptions &rhs) = default;
+                HttpClientConnectionManagerOptions &operator=(HttpClientConnectionManagerOptions &&rhs) = default;
 
                 /**
                  * Sets the http connections to use for each connection created by the manager

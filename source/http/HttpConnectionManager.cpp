@@ -30,45 +30,9 @@ namespace Aws
                 std::shared_ptr<HttpClientConnectionManager> m_connectionManager;
             };
 
-            HttpClientConnectionManagerOptions::HttpClientConnectionManagerOptions()
+            HttpClientConnectionManagerOptions::HttpClientConnectionManagerOptions() noexcept
                 : m_connectionOptions(), m_maxConnections(1)
             {
-            }
-
-            HttpClientConnectionManagerOptions::HttpClientConnectionManagerOptions(
-                const HttpClientConnectionManagerOptions &rhs)
-                : m_connectionOptions(rhs.m_connectionOptions), m_maxConnections(rhs.m_maxConnections)
-            {
-            }
-
-            HttpClientConnectionManagerOptions::HttpClientConnectionManagerOptions(
-                HttpClientConnectionManagerOptions &&rhs)
-                : m_connectionOptions(std::move(rhs.m_connectionOptions)), m_maxConnections(rhs.m_maxConnections)
-            {
-            }
-
-            HttpClientConnectionManagerOptions &HttpClientConnectionManagerOptions::operator=(
-                const HttpClientConnectionManagerOptions &rhs)
-            {
-                if (&rhs != this)
-                {
-                    m_connectionOptions = rhs.m_connectionOptions;
-                    m_maxConnections = rhs.m_maxConnections;
-                }
-
-                return *this;
-            }
-
-            HttpClientConnectionManagerOptions &HttpClientConnectionManagerOptions::operator=(
-                HttpClientConnectionManagerOptions &&rhs)
-            {
-                if (&rhs != this)
-                {
-                    m_connectionOptions = std::move(rhs.m_connectionOptions);
-                    m_maxConnections = rhs.m_maxConnections;
-                }
-
-                return *this;
             }
 
             std::shared_ptr<HttpClientConnectionManager> HttpClientConnectionManager::NewClientConnectionManager(
@@ -92,8 +56,9 @@ namespace Aws
                 Allocator *allocator) noexcept
                 : m_allocator(allocator), m_connectionManager(nullptr), m_options(options)
             {
-                const auto &connectionOptions = options.GetConnectionOptions();
-                AWS_ASSERT(connectionOptions.GetHostName().size() > 0);
+                const auto &connectionOptions = m_options.GetConnectionOptions();
+                AWS_FATAL_ASSERT(connectionOptions.GetHostName().size() > 0);
+                AWS_FATAL_ASSERT(connectionOptions.GetPort() > 0);
 
                 aws_http_connection_manager_options managerOptions;
                 AWS_ZERO_STRUCT(managerOptions);

@@ -301,6 +301,18 @@ namespace Aws
             {
                 aws_http_stream_update_window(m_stream, incrementSize);
             }
+
+            HttpClientConnectionProxyOptions::HttpClientConnectionProxyOptions()
+                : m_hostName(), m_port(0), m_tlsOptions(), m_authType(AwsHttpProxyAuthenticationType::None),
+                  m_basicAuthUsername(), m_basicAuthPassword()
+            {
+            }
+
+            HttpClientConnectionOptions::HttpClientConnectionOptions()
+                : m_bootstrap(nullptr), m_initialWindowSize(SIZE_MAX), m_onConnectionSetup(), m_onConnectionShutdown(),
+                  m_hostName(), m_port(0), m_socketOptions(), m_tlsOptions(), m_proxyOptions()
+            {
+            }
         } // namespace Http
     }     // namespace Crt
 } // namespace Aws
