@@ -89,10 +89,7 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     tlsConnectionOptions.SetServerName(hostName);
 
     Aws::Crt::Io::SocketOptions socketOptions;
-    AWS_ZERO_STRUCT(socketOptions);
-    socketOptions.type = AWS_SOCKET_STREAM;
-    socketOptions.domain = AWS_SOCKET_IPV4;
-    socketOptions.connect_timeout_ms = 1000;
+    socketOptions.SetConnectTimeoutMs(1000);
 
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
@@ -139,18 +136,17 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     };
 
     Http::HttpClientConnectionOptions httpClientConnectionOptions;
-    httpClientConnectionOptions.allocator = allocator;
-    httpClientConnectionOptions.bootstrap = &clientBootstrap;
-    httpClientConnectionOptions.onConnectionSetup = onConnectionSetup;
-    httpClientConnectionOptions.onConnectionShutdown = onConnectionShutdown;
-    httpClientConnectionOptions.socketOptions = &socketOptions;
-    httpClientConnectionOptions.tlsConnOptions = &tlsConnectionOptions;
-    httpClientConnectionOptions.initialWindowSize = SIZE_MAX;
-    httpClientConnectionOptions.hostName = hostName;
-    httpClientConnectionOptions.port = 443;
+    httpClientConnectionOptions.SetBootstrap(&clientBootstrap);
+    httpClientConnectionOptions.SetOnConnectionSetupCallback(onConnectionSetup);
+    httpClientConnectionOptions.SetOnConnectionShutdownCallback(onConnectionShutdown);
+    httpClientConnectionOptions.SetSocketOptions(socketOptions);
+    httpClientConnectionOptions.SetTlsOptions(tlsConnectionOptions);
+    httpClientConnectionOptions.SetInitialWindowSize(SIZE_MAX);
+    httpClientConnectionOptions.SetHostName(String((const char *)hostName.ptr, hostName.len));
+    httpClientConnectionOptions.SetPort(443);
 
     std::unique_lock<std::mutex> semaphoreULock(semaphoreLock);
-    ASSERT_TRUE(Http::HttpClientConnection::CreateConnection(httpClientConnectionOptions));
+    ASSERT_TRUE(Http::HttpClientConnection::CreateConnection(httpClientConnectionOptions, allocator));
     semaphore.wait(semaphoreULock, [&]() { return connection || connectionShutdown; });
 
     ASSERT_FALSE(errorOccured);

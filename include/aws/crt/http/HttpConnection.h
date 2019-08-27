@@ -18,6 +18,7 @@
 
 #include <aws/crt/Types.h>
 #include <aws/crt/io/Bootstrap.h>
+#include <aws/crt/io/SocketOptions.h>
 #include <aws/crt/io/TlsOptions.h>
 
 #include <functional>
@@ -99,7 +100,7 @@ namespace Aws
             /**
              * POD structure used for setting up an Http Request
              */
-            struct HttpRequestOptions
+            struct AWS_CRT_CPP_API HttpRequestOptions
             {
 
                 HttpRequest *request;
@@ -181,7 +182,7 @@ namespace Aws
                 friend class HttpClientConnection;
             };
 
-            class HttpClientStream final : public HttpStream
+            class AWS_CRT_CPP_API HttpClientStream final : public HttpStream
             {
               public:
                 ~HttpClientStream() = default;
@@ -202,49 +203,251 @@ namespace Aws
                 friend class HttpClientConnection;
             };
 
-            struct HttpClientConnectionOptions
+            /**
+             * Mirror of the aws_http_proxy_authentication_type C enum - designates what kind of
+             * authentication, if any, to use when connecting to a proxy server
+             */
+            enum class AwsHttpProxyAuthenticationType
             {
+                None = AWS_HPAT_NONE,
+                Basic = AWS_HPAT_BASIC,
+            };
+
+            /**
+             * Configuration structure that holds all proxy-related http connection options
+             */
+            class AWS_CRT_CPP_API HttpClientConnectionProxyOptions
+            {
+              public:
+                HttpClientConnectionProxyOptions();
+                HttpClientConnectionProxyOptions(const HttpClientConnectionProxyOptions &rhs) = default;
+                HttpClientConnectionProxyOptions(HttpClientConnectionProxyOptions &&rhs) = default;
+
+                HttpClientConnectionProxyOptions &operator=(const HttpClientConnectionProxyOptions &rhs) = default;
+                HttpClientConnectionProxyOptions &operator=(HttpClientConnectionProxyOptions &&rhs) = default;
+
+                ~HttpClientConnectionProxyOptions() = default;
+
+                /**
+                 * Sets the name of the proxy server to connect through.
+                 * This value must be set.
+                 */
+                void SetHostName(const String &hostName) noexcept { m_hostName = hostName; }
+
+                /**
+                 * Returns the name of the proxy server to connect through.
+                 */
+                const String &GetHostName() const noexcept { return m_hostName; }
+
+                /**
+                 * Sets the port of the proxy server to connect to.
+                 * This value must be set.
+                 */
+                void SetPort(uint16_t port) noexcept { m_port = port; }
+
+                /**
+                 * Gets the port of the proxy server to connect to.
+                 */
+                uint16_t GetPort() const noexcept { return m_port; }
+
+                /**
+                 * Sets the TLS options for the proxy connection.
+                 */
+                void SetTlsOptions(const Io::TlsConnectionOptions &options) noexcept { m_tlsOptions = options; }
+
+                /**
+                 * Gets the TLS options for the proxy connection.
+                 */
+                const Io::TlsConnectionOptions *GetTlsOptions() const noexcept
+                {
+                    return m_tlsOptions.has_value() ? &m_tlsOptions.value() : nullptr;
+                }
+
+                /**
+                 * Sets what kind of authentication approach to use when connecting to the proxy
+                 */
+                void SetAuthenticationType(AwsHttpProxyAuthenticationType authType) noexcept { m_authType = authType; }
+
+                /**
+                 * Gets what kind of authentication approach to use when connecting to the proxy
+                 */
+                AwsHttpProxyAuthenticationType GetAuthenticationType() const noexcept { return m_authType; }
+
+                /**
+                 * Sets the username to use when connecting to the proxy via basic authentication
+                 */
+                void SetBasicAuthUsername(const String &username) noexcept { m_basicAuthUsername = username; }
+
+                /**
+                 * Gets the username to use when connecting to the proxy via basic authentication
+                 */
+                const String &GetBasicAuthUsername() const noexcept { return m_basicAuthUsername; }
+
+                /**
+                 * Sets the password to use when connecting to the proxy via basic authentication
+                 */
+                void SetBasicAuthPassword(const String &password) noexcept { m_basicAuthPassword = password; }
+
+                /**
+                 * Gets the password to use when connecting to the proxy via basic authentication
+                 */
+                const String &GetBasicAuthPassword() const noexcept { return m_basicAuthPassword; }
+
+              private:
+                String m_hostName;
+                uint16_t m_port;
+                Optional<Io::TlsConnectionOptions> m_tlsOptions;
+                AwsHttpProxyAuthenticationType m_authType;
+                String m_basicAuthUsername;
+                String m_basicAuthPassword;
+            };
+
+            /**
+             * Configuration structure holding all options relating to http connection establishment
+             */
+            class AWS_CRT_CPP_API HttpClientConnectionOptions
+            {
+              public:
                 HttpClientConnectionOptions();
-                Allocator *allocator;
+                HttpClientConnectionOptions(const HttpClientConnectionOptions &rhs) = default;
+                HttpClientConnectionOptions(HttpClientConnectionOptions &&rhs) = default;
+
+                ~HttpClientConnectionOptions() = default;
+
+                HttpClientConnectionOptions &operator=(const HttpClientConnectionOptions &rhs) = default;
+                HttpClientConnectionOptions &operator=(HttpClientConnectionOptions &&rhs) = default;
 
                 /**
-                 * Client bootstrap to use for setting up and tearing down connections.
+                 * Sets the client bootstrap to use for setting up and tearing down connections.
+                 * This value must be set.
                  */
-                Io::ClientBootstrap *bootstrap;
-                /**
-                 *  `initialWindowSize` will set the TCP read window
-                 * allowed for Http 1.1 connections and Initial Windows for H2 connections.
-                 */
-                size_t initialWindowSize;
-                /**
-                 * See `OnConnectionSetup` for more info. This value cannot be empty.
-                 */
-                OnConnectionSetup onConnectionSetup;
-                /**
-                 * See `OnConnectionShutdown` for more info. This value cannot be empty.
-                 */
-                OnConnectionShutdown onConnectionShutdown;
+                void SetBootstrap(Io::ClientBootstrap *bootstrap) noexcept { m_bootstrap = bootstrap; }
 
                 /**
-                 * hostname to connect to.
+                 * Gets the client bootstrap to use for setting up and tearing down connections.
                  */
-                ByteCursor hostName;
+                Io::ClientBootstrap *GetBootstrap() const noexcept { return m_bootstrap; }
 
                 /**
-                 * port on host to connect to.
+                 *  Sets the TCP read window allowed for Http 1.1 connections and Initial Windows for H2 connections.
                  */
-                uint16_t port;
+                void SetInitialWindowSize(size_t initialWindowSize) noexcept
+                {
+                    m_initialWindowSize = initialWindowSize;
+                }
 
                 /**
-                 * socket options to use for connection.
+                 *  Gets the TCP read window allowed for Http 1.1 connections and Initial Windows for H2 connections.
                  */
-                Io::SocketOptions *socketOptions;
+                size_t GetInitialWindowSize() const noexcept { return m_initialWindowSize; }
 
                 /**
-                 * Tls options to use. If null, and http (plain-text) connection will be attempted. Otherwise,
-                 * https will be used.
+                 * Sets the callback invoked on connection establishment, whether success or failure.
+                 * See `OnConnectionSetup` for more info.
+                 * This value must be set.
                  */
-                Io::TlsConnectionOptions *tlsConnOptions;
+                void SetOnConnectionSetupCallback(const OnConnectionSetup &callback) noexcept
+                {
+                    m_onConnectionSetup = callback;
+                }
+
+                /**
+                 * Gets the callback invoked on connection establishment, whether success or failure.
+                 * See `OnConnectionSetup` for more info.
+                 */
+                const OnConnectionSetup &GetOnConnectionSetupCallback() const noexcept { return m_onConnectionSetup; }
+
+                /**
+                 * Sets the callback invoked on connection shutdown.
+                 * See `OnConnectionShutdown` for more info.
+                 * This value must be set.
+                 */
+                void SetOnConnectionShutdownCallback(const OnConnectionShutdown &callback) noexcept
+                {
+                    m_onConnectionShutdown = callback;
+                }
+
+                /**
+                 * Gets the callback invoked on connection shutdown.
+                 * See `OnConnectionShutdown` for more info.
+                 */
+                const OnConnectionShutdown &GetOnConnectionShutdownCallback() const noexcept
+                {
+                    return m_onConnectionShutdown;
+                }
+
+                /**
+                 * Sets the name of the http server to connect to.
+                 * This value must be set.
+                 */
+                void SetHostName(const String &hostName) noexcept { m_hostName = hostName; }
+
+                /**
+                 * Gets the name of the http server to connect to.
+                 */
+                const String &GetHostName() const noexcept { return m_hostName; }
+
+                /**
+                 * Sets the port of the http server to connect to.
+                 * This value must be set.
+                 */
+                void SetPort(uint16_t port) noexcept { m_port = port; }
+
+                /**
+                 * Gets the port of the http server to connect to
+                 */
+                uint16_t GetPort() const noexcept { return m_port; }
+
+                /**
+                 * Sets the socket options of the connection.
+                 * This value must be set.
+                 */
+                void SetSocketOptions(const Io::SocketOptions &options) noexcept { m_socketOptions = options; }
+
+                /**
+                 * Gets the socket options of the connection.
+                 */
+                const Io::SocketOptions &GetSocketOptions() const noexcept { return m_socketOptions; }
+
+                /**
+                 * Sets the TLS options for the http connection.
+                 */
+                void SetTlsOptions(const Io::TlsConnectionOptions &options) noexcept { m_tlsOptions = options; }
+
+                /**
+                 * Gets the TLS options for the http connection.
+                 */
+                const Io::TlsConnectionOptions *GetTlsOptions() const noexcept
+                {
+                    return m_tlsOptions.has_value() ? &m_tlsOptions.value() : nullptr;
+                }
+
+                /**
+                 * Sets the proxy options for the http connection.
+                 */
+                void SetProxyOptions(const HttpClientConnectionProxyOptions &options) noexcept
+                {
+                    m_proxyOptions = options;
+                }
+
+                /**
+                 * Gets the proxy options for the http connection.
+                 */
+                const HttpClientConnectionProxyOptions *GetProxyOptions() const noexcept
+                {
+                    return m_proxyOptions.has_value() ? &m_proxyOptions.value() : nullptr;
+                }
+
+              private:
+                Io::ClientBootstrap *m_bootstrap;
+                size_t m_initialWindowSize;
+                OnConnectionSetup m_onConnectionSetup;
+                OnConnectionShutdown m_onConnectionShutdown;
+                String m_hostName;
+                uint16_t m_port;
+                Io::SocketOptions m_socketOptions;
+                Optional<Io::TlsConnectionOptions> m_tlsOptions;
+                Optional<HttpClientConnectionProxyOptions> m_proxyOptions;
             };
 
             /**
@@ -295,7 +498,9 @@ namespace Aws
                  * be invoked. On success, `onConnectionSetup` will be called, either with a connection, or an
                  * errorCode.
                  */
-                static bool CreateConnection(const HttpClientConnectionOptions &connectionOptions) noexcept;
+                static bool CreateConnection(
+                    const HttpClientConnectionOptions &connectionOptions,
+                    Allocator *allocator) noexcept;
 
               protected:
                 HttpClientConnection(aws_http_connection *m_connection, Allocator *allocator) noexcept;

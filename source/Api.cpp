@@ -114,5 +114,16 @@ namespace Aws
 
         int LastError() noexcept { return aws_last_error(); }
 
+        int LastErrorOrUnknown() noexcept
+        {
+            int last_error = aws_last_error();
+            if (last_error == AWS_ERROR_SUCCESS)
+            {
+                last_error = AWS_ERROR_UNKNOWN;
+            }
+
+            return last_error;
+        }
+
     } // namespace Crt
 } // namespace Aws

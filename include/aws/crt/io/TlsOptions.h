@@ -45,7 +45,6 @@ namespace Aws
                 TlsContextOptions &operator=(TlsContextOptions &&) noexcept;
 
                 explicit operator bool() const noexcept { return m_isInit; }
-                int LastError() const noexcept;
 
                 /**
                  * Initializes TlsContextOptions with secure by default options, with
@@ -177,20 +176,21 @@ namespace Aws
                     TlsContextOptions &options,
                     TlsMode mode,
                     Allocator *allocator = DefaultAllocator()) noexcept;
-                ~TlsContext();
-                TlsContext(const TlsContext &) = delete;
-                TlsContext &operator=(const TlsContext &) = delete;
-                TlsContext(TlsContext &&) noexcept;
-                TlsContext &operator=(TlsContext &&) noexcept;
+                ~TlsContext() = default;
+                TlsContext(const TlsContext &) noexcept = default;
+                TlsContext &operator=(const TlsContext &) noexcept = default;
+                TlsContext(TlsContext &&) noexcept = default;
+                TlsContext &operator=(TlsContext &&) noexcept = default;
 
                 TlsConnectionOptions NewConnectionOptions() const noexcept;
 
-                explicit operator bool() const noexcept;
-                int LastError() const noexcept;
+                explicit operator bool() const noexcept { return m_ctx && m_initializationError == AWS_ERROR_SUCCESS; }
+
+                int GetInitializationError() const noexcept { return m_initializationError; }
 
               private:
-                aws_tls_ctx *m_ctx;
-                int m_lastError;
+                std::shared_ptr<aws_tls_ctx> m_ctx;
+                int m_initializationError;
             };
 
             AWS_CRT_CPP_API void InitTlsStaticState(Allocator *alloc) noexcept;

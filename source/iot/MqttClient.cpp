@@ -14,6 +14,7 @@
  */
 #include <aws/iot/MqttClient.h>
 
+#include <aws/crt/Api.h>
 #include <aws/crt/Config.h>
 
 namespace Aws
@@ -23,7 +24,6 @@ namespace Aws
         MqttClientConnectionConfig::MqttClientConnectionConfig(int lastError) noexcept
             : m_port(0), m_lastError(lastError)
         {
-            AWS_ZERO_STRUCT(m_socketOptions);
         }
 
         MqttClientConnectionConfig MqttClientConnectionConfig::CreateInvalid(int lastError) noexcept
@@ -38,10 +38,6 @@ namespace Aws
             Crt::Io::TlsContext &&tlsContext)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions)
         {
-            if (!m_context)
-            {
-                m_lastError = m_context.LastError();
-            }
         }
 
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
@@ -50,12 +46,11 @@ namespace Aws
             Crt::Allocator *allocator) noexcept
             : m_allocator(allocator), m_portOverride(0), m_lastError(0)
         {
-            AWS_ZERO_STRUCT(m_socketOptions);
-            m_socketOptions.connect_timeout_ms = 3000;
+            m_socketOptions.SetConnectTimeoutMs(3000);
             m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(certPath, pkeyPath, allocator);
             if (!m_contextOptions)
             {
-                m_lastError = m_contextOptions.LastError();
+                m_lastError = Aws::Crt::LastErrorOrUnknown();
             }
         }
 
@@ -65,12 +60,11 @@ namespace Aws
             Crt::Allocator *allocator) noexcept
             : m_allocator(allocator), m_portOverride(0), m_lastError(0)
         {
-            AWS_ZERO_STRUCT(m_socketOptions);
-            m_socketOptions.connect_timeout_ms = 3000;
+            m_socketOptions.SetConnectTimeoutMs(3000);
             m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(cert, pkey, allocator);
             if (!m_contextOptions)
             {
-                m_lastError = m_contextOptions.LastError();
+                m_lastError = Aws::Crt::LastErrorOrUnknown();
             }
         }
 
@@ -99,7 +93,7 @@ namespace Aws
             {
                 if (!m_contextOptions.OverrideDefaultTrustStore(nullptr, caPath))
                 {
-                    m_lastError = m_contextOptions.LastError();
+                    m_lastError = Aws::Crt::LastErrorOrUnknown();
                 }
             }
             return *this;
@@ -112,7 +106,7 @@ namespace Aws
             {
                 if (!m_contextOptions.OverrideDefaultTrustStore(cert))
                 {
-                    m_lastError = m_contextOptions.LastError();
+                    m_lastError = Aws::Crt::LastErrorOrUnknown();
                 }
             }
             return *this;
@@ -120,34 +114,34 @@ namespace Aws
 
         MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithTcpKeepAlive() noexcept
         {
-            m_socketOptions.keepalive = true;
+            m_socketOptions.SetKeepAlive(true);
             return *this;
         }
         MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithTcpConnectTimeout(
             uint32_t connectTimeoutMs) noexcept
         {
-            m_socketOptions.connect_timeout_ms = connectTimeoutMs;
+            m_socketOptions.SetConnectTimeoutMs(connectTimeoutMs);
             return *this;
         }
 
         MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithTcpKeepAliveTimeout(
             uint16_t keepAliveTimeoutSecs) noexcept
         {
-            m_socketOptions.keep_alive_timeout_sec = keepAliveTimeoutSecs;
+            m_socketOptions.SetKeepAliveTimeoutSec(keepAliveTimeoutSecs);
             return *this;
         }
 
         MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithTcpKeepAliveInterval(
             uint16_t keepAliveIntervalSecs) noexcept
         {
-            m_socketOptions.keep_alive_interval_sec = keepAliveIntervalSecs;
+            m_socketOptions.SetKeepAliveIntervalSec(keepAliveIntervalSecs);
             return *this;
         }
 
         MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithTcpKeepAliveMaxProbes(
             uint16_t maxProbes) noexcept
         {
-            m_socketOptions.keep_alive_max_failed_probes = maxProbes;
+            m_socketOptions.SetKeepAliveMaxFailedProbes(maxProbes);
             return *this;
         }
 
@@ -174,7 +168,7 @@ namespace Aws
             {
                 if (!m_contextOptions.SetAlpnList("x-amzn-mqtt-ca"))
                 {
-                    return MqttClientConnectionConfig::CreateInvalid(m_contextOptions.LastError());
+                    return MqttClientConnectionConfig::CreateInvalid(Aws::Crt::LastErrorOrUnknown());
                 }
             }
 
@@ -204,10 +198,7 @@ namespace Aws
             }
 
             auto newConnection = m_client.NewConnection(
-                config.m_endpoint.c_str(),
-                config.m_port,
-                config.m_socketOptions,
-                config.m_context.NewConnectionOptions());
+                config.m_endpoint.c_str(), config.m_port, config.m_socketOptions, config.m_context);
 
             if (!newConnection)
             {

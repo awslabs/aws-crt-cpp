@@ -22,13 +22,6 @@ namespace Aws
     {
         namespace Http
         {
-            HttpClientConnectionOptions::HttpClientConnectionOptions()
-                : allocator(DefaultAllocator()), bootstrap(nullptr), initialWindowSize(SIZE_MAX), port(0),
-                  socketOptions(nullptr), tlsConnOptions(nullptr)
-            {
-                AWS_ZERO_STRUCT(hostName);
-            }
-
             /* This exists to handle aws_http_connection's shutdown callback, which might fire after
              * HttpClientConnection has been destroyed. */
             struct ConnectionCallbackData
@@ -104,43 +97,43 @@ namespace Aws
                 Delete(callbackData, callbackData->allocator);
             }
 
-            bool HttpClientConnection::CreateConnection(const HttpClientConnectionOptions &connectionOptions) noexcept
+            bool HttpClientConnection::CreateConnection(
+                const HttpClientConnectionOptions &connectionOptions,
+                Allocator *allocator) noexcept
             {
-                AWS_ASSERT(connectionOptions.onConnectionSetup);
-                AWS_ASSERT(connectionOptions.onConnectionShutdown);
-                AWS_ASSERT(connectionOptions.socketOptions);
+                AWS_ASSERT(connectionOptions.GetOnConnectionSetupCallback());
+                AWS_ASSERT(connectionOptions.GetOnConnectionShutdownCallback());
 
-                auto *callbackData =
-                    New<ConnectionCallbackData>(connectionOptions.allocator, connectionOptions.allocator);
+                auto *callbackData = New<ConnectionCallbackData>(allocator, allocator);
 
                 if (!callbackData)
                 {
                     return false;
                 }
-                callbackData->onConnectionShutdown = connectionOptions.onConnectionShutdown;
-                callbackData->onConnectionSetup = connectionOptions.onConnectionSetup;
+                callbackData->onConnectionShutdown = connectionOptions.GetOnConnectionShutdownCallback();
+                callbackData->onConnectionSetup = connectionOptions.GetOnConnectionSetupCallback();
 
                 aws_http_client_connection_options options;
                 AWS_ZERO_STRUCT(options);
                 options.self_size = sizeof(aws_http_client_connection_options);
-                options.bootstrap = connectionOptions.bootstrap->GetUnderlyingHandle();
-                if (connectionOptions.tlsConnOptions)
+                options.bootstrap = connectionOptions.GetBootstrap()->GetUnderlyingHandle();
+                if (connectionOptions.GetTlsOptions())
                 {
                     options.tls_options = const_cast<aws_tls_connection_options *>(
-                        connectionOptions.tlsConnOptions->GetUnderlyingHandle());
+                        connectionOptions.GetTlsOptions()->GetUnderlyingHandle());
                 }
-                options.allocator = connectionOptions.allocator;
+                options.allocator = allocator;
                 options.user_data = callbackData;
-                options.host_name = connectionOptions.hostName;
-                options.port = connectionOptions.port;
-                options.initial_window_size = connectionOptions.initialWindowSize;
-                options.socket_options = connectionOptions.socketOptions;
+                options.host_name = aws_byte_cursor_from_c_str(connectionOptions.GetHostName().c_str());
+                options.port = connectionOptions.GetPort();
+                options.initial_window_size = connectionOptions.GetInitialWindowSize();
+                options.socket_options = &connectionOptions.GetSocketOptions().GetImpl();
                 options.on_setup = HttpClientConnection::s_onClientConnectionSetup;
                 options.on_shutdown = HttpClientConnection::s_onClientConnectionShutdown;
 
                 if (aws_http_client_connect(&options))
                 {
-                    Delete(callbackData, connectionOptions.allocator);
+                    Delete(callbackData, allocator);
                     return false;
                 }
 
@@ -307,6 +300,18 @@ namespace Aws
             void HttpStream::UpdateWindow(std::size_t incrementSize) noexcept
             {
                 aws_http_stream_update_window(m_stream, incrementSize);
+            }
+
+            HttpClientConnectionProxyOptions::HttpClientConnectionProxyOptions()
+                : m_hostName(), m_port(0), m_tlsOptions(), m_authType(AwsHttpProxyAuthenticationType::None),
+                  m_basicAuthUsername(), m_basicAuthPassword()
+            {
+            }
+
+            HttpClientConnectionOptions::HttpClientConnectionOptions()
+                : m_bootstrap(nullptr), m_initialWindowSize(SIZE_MAX), m_onConnectionSetup(), m_onConnectionShutdown(),
+                  m_hostName(), m_port(0), m_socketOptions(), m_tlsOptions(), m_proxyOptions()
+            {
             }
         } // namespace Http
     }     // namespace Crt
