@@ -16,6 +16,7 @@
 #include <aws/crt/Exports.h>
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/Types.h>
+#include <aws/crt/io/SocketOptions.h>
 #include <aws/crt/io/TlsOptions.h>
 #include <aws/mqtt/client.h>
 
@@ -178,6 +179,7 @@ namespace Aws
                 aws_mqtt_client_connection *m_underlyingConnection;
                 String m_hostName;
                 uint16_t m_port;
+                Crt::Io::TlsContext m_tlsContext;
                 Io::TlsConnectionOptions m_tlsOptions;
                 Io::SocketOptions m_socketOptions;
                 bool m_useTls;
@@ -187,7 +189,8 @@ namespace Aws
                     const char *hostName,
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
-                    const Io::TlsConnectionOptions &tlsConnOptions) noexcept;
+                    const Crt::Io::TlsContext &tlsContext) noexcept;
+
                 MqttConnection(
                     aws_mqtt_client *client,
                     const char *hostName,
@@ -236,8 +239,7 @@ namespace Aws
                     MqttConnection *self,
                     const char *hostName,
                     uint16_t port,
-                    const Io::SocketOptions &socketOptions,
-                    const Io::TlsConnectionOptions *tlsConnOptions);
+                    const Io::SocketOptions &socketOptions);
             };
 
             /**
@@ -270,7 +272,7 @@ namespace Aws
                     const char *hostName,
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
-                    const Io::TlsConnectionOptions &tlsConnOptions) noexcept;
+                    const Crt::Io::TlsContext &tlsContext) noexcept;
                 /**
                  * Create a new connection object over plain text from the client. The client must outlive
                  * all of its connection instances.

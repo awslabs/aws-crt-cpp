@@ -34,16 +34,9 @@ namespace Aws
         {
             // sets up the StlAllocator for use.
             g_allocator = allocator;
-            Io::InitTlsStaticState(allocator);
             aws_http_library_init(allocator);
             aws_mqtt_library_init(allocator);
             aws_auth_library_init(allocator);
-
-            aws_load_error_strings();
-            aws_io_load_error_strings();
-
-            aws_common_load_log_subject_strings();
-            aws_io_load_log_subject_strings();
 
             cJSON_Hooks hooks;
             hooks.malloc_fn = s_cJSONAlloc;
@@ -57,7 +50,6 @@ namespace Aws
             aws_auth_library_clean_up();
             aws_mqtt_library_clean_up();
             aws_http_library_clean_up();
-            Io::CleanUpTlsStaticState();
         }
 
         ApiHandle::ApiHandle(Allocator *allocator) noexcept : logger() { s_initApi(allocator); }
@@ -121,6 +113,17 @@ namespace Aws
         const char *ErrorDebugString(int error) noexcept { return aws_error_debug_str(error); }
 
         int LastError() noexcept { return aws_last_error(); }
+
+        int LastErrorOrUnknown() noexcept
+        {
+            int last_error = aws_last_error();
+            if (last_error == AWS_ERROR_SUCCESS)
+            {
+                last_error = AWS_ERROR_UNKNOWN;
+            }
+
+            return last_error;
+        }
 
     } // namespace Crt
 } // namespace Aws

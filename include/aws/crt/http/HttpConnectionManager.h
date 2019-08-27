@@ -33,53 +33,81 @@ namespace Aws
             using OnClientConnectionAvailable =
                 std::function<void(std::shared_ptr<HttpClientConnection>, int errorCode)>;
 
-            struct HttpClientConnectionManagerOptions
+            /**
+             * Configuration struct containing all options related to connection manager behavior
+             */
+            class AWS_CRT_CPP_API HttpClientConnectionManagerOptions
             {
-                HttpClientConnectionManagerOptions();
-                Io::ClientBootstrap *bootstrap;
-                size_t initialWindowSize;
-                Io::SocketOptions *socketOptions;
-                Io::TlsConnectionOptions *tlsConnectionOptions;
-                ByteCursor hostName;
-                uint16_t port;
-                size_t maxConnections;
+              public:
+                HttpClientConnectionManagerOptions() noexcept;
+                HttpClientConnectionManagerOptions(const HttpClientConnectionManagerOptions &rhs) = default;
+                HttpClientConnectionManagerOptions(HttpClientConnectionManagerOptions &&rhs) = default;
+
+                HttpClientConnectionManagerOptions &operator=(const HttpClientConnectionManagerOptions &rhs) = default;
+                HttpClientConnectionManagerOptions &operator=(HttpClientConnectionManagerOptions &&rhs) = default;
+
+                /**
+                 * Sets the http connections to use for each connection created by the manager
+                 */
+                void SetConnectionOptions(const HttpClientConnectionOptions &rhs) noexcept
+                {
+                    m_connectionOptions = rhs;
+                }
+
+                /**
+                 * Gets the http connections to use for each connection created by the manager
+                 */
+                const HttpClientConnectionOptions &GetConnectionOptions() const noexcept { return m_connectionOptions; }
+
+                /**
+                 * Sets the maximum number of connections the manager is allowed to create/manage
+                 */
+                void SetMaxConnections(size_t maxConnections) noexcept { m_maxConnections = maxConnections; }
+
+                /**
+                 * Gets the maximum number of connections the manager is allowed to create/manage
+                 */
+                size_t GetMaxConnections() const noexcept { return m_maxConnections; }
+
+              private:
+                HttpClientConnectionOptions m_connectionOptions;
+                size_t m_maxConnections;
             };
 
             /**
              * Manages a pool of connections to a specific endpoint using the same socket and tls options.
              */
-            class HttpClientConnectionManager final : public std::enable_shared_from_this<HttpClientConnectionManager>
+            class AWS_CRT_CPP_API HttpClientConnectionManager final
+                : public std::enable_shared_from_this<HttpClientConnectionManager>
             {
               public:
                 ~HttpClientConnectionManager();
 
                 /**
                  * Acquires a connection from the pool. onClientConnectionAvailable will be invoked upon an available
-                 * connection. Returns true if the connection request was successfully pooled, returns false if it
+                 * connection. Returns true if the connection request was successfully queued, returns false if it
                  * failed. On failure, onClientConnectionAvailable will not be invoked. After receiving a connection, it
                  * will automatically be cleaned up when your last reference to the shared_ptr is released.
                  */
                 bool AcquireConnection(const OnClientConnectionAvailable &onClientConnectionAvailable) noexcept;
 
-                int LastError() const noexcept { return m_lastError; }
-                explicit operator bool() const noexcept { return m_good; }
-
+                /**
+                 * Factory function for connection managers
+                 */
                 static std::shared_ptr<HttpClientConnectionManager> NewClientConnectionManager(
                     const HttpClientConnectionManagerOptions &connectionManagerOptions,
                     Allocator *allocator = DefaultAllocator()) noexcept;
 
               private:
                 HttpClientConnectionManager(
-                    const HttpClientConnectionManagerOptions &connectionManagerOptions,
+                    const HttpClientConnectionManagerOptions &options,
                     Allocator *allocator = DefaultAllocator()) noexcept;
+
+                Allocator *m_allocator;
 
                 aws_http_connection_manager *m_connectionManager;
 
-                Allocator *m_allocator;
-                Io::ClientBootstrap *m_bootstrap;
-                Io::TlsConnectionOptions m_tlsConnOptions;
-                bool m_good;
-                int m_lastError;
+                HttpClientConnectionManagerOptions m_options;
 
                 static void s_onConnectionSetup(
                     aws_http_connection *connection,

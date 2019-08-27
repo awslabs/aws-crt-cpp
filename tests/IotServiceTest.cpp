@@ -56,10 +56,7 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
     ASSERT_TRUE(tlsContext);
 
     Aws::Crt::Io::SocketOptions socketOptions;
-    AWS_ZERO_STRUCT(socketOptions);
-    socketOptions.type = AWS_SOCKET_STREAM;
-    socketOptions.domain = AWS_SOCKET_IPV4;
-    socketOptions.connect_timeout_ms = 3000;
+    socketOptions.SetConnectTimeoutMs(3000);
 
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
@@ -76,8 +73,8 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
     int tries = 0;
     while (tries++ < 10)
     {
-        auto mqttConnection = mqttClient.NewConnection(
-            "a16523t7iy5uyg-ats.iot.us-east-1.amazonaws.com", 8883, socketOptions, tlsContext.NewConnectionOptions());
+        auto mqttConnection =
+            mqttClient.NewConnection("a16523t7iy5uyg-ats.iot.us-east-1.amazonaws.com", 8883, socketOptions, tlsContext);
 
         std::mutex mutex;
         std::condition_variable cv;

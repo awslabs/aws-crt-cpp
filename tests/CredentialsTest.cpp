@@ -135,6 +135,8 @@ static int s_TestProviderImdsGet(struct aws_allocator *allocator, void *ctx)
     ApiHandle apiHandle(allocator);
 
     {
+        apiHandle.InitializeLogging(Aws::Crt::LogLevel::Trace, stderr);
+
         Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
         ASSERT_TRUE(eventLoopGroup);
 
