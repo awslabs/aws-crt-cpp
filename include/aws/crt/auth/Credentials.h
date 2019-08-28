@@ -114,7 +114,7 @@ namespace Aws
                 /**
                  * Validity check method
                  */
-                virtual explicit operator bool() const noexcept = 0;
+                virtual bool IsValid() const noexcept = 0;
             };
 
             /**
@@ -122,22 +122,22 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API CredentialsProviderStaticConfig
             {
-                CredentialsProviderStaticConfig() : m_accessKeyId(), m_secretAccessKey(), m_sessionToken() {}
+                CredentialsProviderStaticConfig() : AccessKeyId{}, SecretAccessKey{}, SessionToken{} {}
 
                 /**
                  * The value of the access key component for the provider's static aws credentials
                  */
-                ByteCursor m_accessKeyId;
+                ByteCursor AccessKeyId;
 
                 /**
                  * The value of the secret access key component for the provider's  static aws credentials
                  */
-                ByteCursor m_secretAccessKey;
+                ByteCursor SecretAccessKey;
 
                 /**
                  * The value of the session token for the provider's  static aws credentials
                  */
-                ByteCursor m_sessionToken;
+                ByteCursor SessionToken;
             };
 
             /**
@@ -146,26 +146,26 @@ namespace Aws
             struct AWS_CRT_CPP_API CredentialsProviderProfileConfig
             {
                 CredentialsProviderProfileConfig()
-                    : m_profileNameOverride(), m_configFileNameOverride(), m_credentialsFileNameOverride()
+                    : ProfileNameOverride{}, ConfigFileNameOverride{}, CredentialsFileNameOverride{}
                 {
                 }
 
                 /**
                  * Override profile name to use (instead of default) when the provider sources credentials
                  */
-                ByteCursor m_profileNameOverride;
+                ByteCursor ProfileNameOverride;
 
                 /**
                  * Override file path (instead of '~/.aws/config' for the aws config file to use during
                  * credential sourcing
                  */
-                ByteCursor m_configFileNameOverride;
+                ByteCursor ConfigFileNameOverride;
 
                 /**
                  * Override file path (instead of '~/.aws/credentials' for the aws credentials file to use during
                  * credential sourcing
                  */
-                ByteCursor m_credentialsFileNameOverride;
+                ByteCursor CredentialsFileNameOverride;
             };
 
             /**
@@ -173,13 +173,13 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API CredentialsProviderImdsConfig
             {
-                CredentialsProviderImdsConfig() : m_bootstrap(nullptr) {}
+                CredentialsProviderImdsConfig() : Bootstrap(nullptr) {}
 
                 /**
                  * Connection bootstrap to use to create the http connection required to
                  * query credentials from the Ec2 instance metadata service
                  */
-                Io::ClientBootstrap *m_bootstrap;
+                Io::ClientBootstrap *Bootstrap;
             };
 
             /**
@@ -189,12 +189,12 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API CredentialsProviderChainConfig
             {
-                CredentialsProviderChainConfig() : m_providers() {}
+                CredentialsProviderChainConfig() : Providers() {}
 
                 /**
                  * The sequence of providers that make up the chain.
                  */
-                Vector<std::shared_ptr<ICredentialsProvider>> m_providers;
+                Vector<std::shared_ptr<ICredentialsProvider>> Providers;
             };
 
             /**
@@ -202,17 +202,17 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API CredentialsProviderCachedConfig
             {
-                CredentialsProviderCachedConfig() : m_provider(nullptr), m_refreshTime() {}
+                CredentialsProviderCachedConfig() : Provider(), CachedCredentialTTL() {}
 
                 /**
                  * The provider to cache credentials from
                  */
-                std::shared_ptr<ICredentialsProvider> m_provider;
+                std::shared_ptr<ICredentialsProvider> Provider;
 
                 /**
-                 * How long a cached credential set should be used
+                 * How long a cached credential set will be used for
                  */
-                std::chrono::milliseconds m_refreshTime;
+                std::chrono::milliseconds CachedCredentialTTL;
             };
 
             /**
@@ -223,13 +223,13 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API CredentialsProviderChainDefaultConfig
             {
-                CredentialsProviderChainDefaultConfig() : m_bootstrap(nullptr) {}
+                CredentialsProviderChainDefaultConfig() : Bootstrap(nullptr) {}
 
                 /**
                  * Connection bootstrap to use to create the http connection required to
                  * query credentials from the Ec2 instance metadata service
                  */
-                Io::ClientBootstrap *m_bootstrap;
+                Io::ClientBootstrap *Bootstrap;
             };
 
             /**
@@ -265,7 +265,7 @@ namespace Aws
                 /**
                  * Validity check method
                  */
-                virtual operator bool() const noexcept override { return m_provider != nullptr; }
+                virtual bool IsValid() const noexcept override { return m_provider != nullptr; }
 
                 /*
                  * Factory methods for all of the basic credentials provider types

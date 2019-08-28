@@ -110,24 +110,24 @@ namespace Aws
                 {
                     return false;
                 }
-                callbackData->onConnectionShutdown = connectionOptions.GetOnConnectionShutdownCallback();
-                callbackData->onConnectionSetup = connectionOptions.GetOnConnectionSetupCallback();
+                callbackData->onConnectionShutdown = connectionOptions.OnConnectionShutdownCallback;
+                callbackData->onConnectionSetup = connectionOptions.OnConnectionSetupCallback;
 
                 aws_http_client_connection_options options;
                 AWS_ZERO_STRUCT(options);
                 options.self_size = sizeof(aws_http_client_connection_options);
-                options.bootstrap = connectionOptions.GetBootstrap()->GetUnderlyingHandle();
-                if (connectionOptions.GetTlsOptions())
+                options.bootstrap = connectionOptions.Bootstrap->GetUnderlyingHandle();
+                if (connectionOptions.TlsOptions)
                 {
-                    options.tls_options = const_cast<aws_tls_connection_options *>(
-                        connectionOptions.GetTlsOptions()->GetUnderlyingHandle());
+                    options.tls_options =
+                        const_cast<aws_tls_connection_options *>(connectionOptions.TlsOptions->GetUnderlyingHandle());
                 }
                 options.allocator = allocator;
                 options.user_data = callbackData;
-                options.host_name = aws_byte_cursor_from_c_str(connectionOptions.GetHostName().c_str());
-                options.port = connectionOptions.GetPort();
-                options.initial_window_size = connectionOptions.GetInitialWindowSize();
-                options.socket_options = &connectionOptions.GetSocketOptions().GetImpl();
+                options.host_name = aws_byte_cursor_from_c_str(connectionOptions.HostName.c_str());
+                options.port = connectionOptions.Port;
+                options.initial_window_size = connectionOptions.InitialWindowSize;
+                options.socket_options = &connectionOptions.SocketOptions.GetImpl();
                 options.on_setup = HttpClientConnection::s_onClientConnectionSetup;
                 options.on_shutdown = HttpClientConnection::s_onClientConnectionShutdown;
 
@@ -303,14 +303,14 @@ namespace Aws
             }
 
             HttpClientConnectionProxyOptions::HttpClientConnectionProxyOptions()
-                : m_hostName(), m_port(0), m_tlsOptions(), m_authType(AwsHttpProxyAuthenticationType::None),
-                  m_basicAuthUsername(), m_basicAuthPassword()
+                : HostName(), Port(0), TlsOptions(), AuthType(AwsHttpProxyAuthenticationType::None),
+                  BasicAuthUsername(), BasicAuthPassword()
             {
             }
 
             HttpClientConnectionOptions::HttpClientConnectionOptions()
-                : m_bootstrap(nullptr), m_initialWindowSize(SIZE_MAX), m_onConnectionSetup(), m_onConnectionShutdown(),
-                  m_hostName(), m_port(0), m_socketOptions(), m_tlsOptions(), m_proxyOptions()
+                : Bootstrap(nullptr), InitialWindowSize(SIZE_MAX), OnConnectionSetupCallback(),
+                  OnConnectionShutdownCallback(), HostName(), Port(0), SocketOptions(), TlsOptions(), ProxyOptions()
             {
             }
         } // namespace Http

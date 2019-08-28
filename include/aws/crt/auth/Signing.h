@@ -82,7 +82,7 @@ namespace Aws
                 /**
                  * Whether or not the signer is in a valid state
                  */
-                virtual explicit operator bool() const = 0;
+                virtual bool IsValid() const = 0;
             };
 
             /**
@@ -121,7 +121,7 @@ namespace Aws
                 /**
                  * Whether or not the signing pipeline is in a valid state
                  */
-                virtual explicit operator bool() const = 0;
+                virtual bool IsValid() const = 0;
             };
 
         } // namespace Auth

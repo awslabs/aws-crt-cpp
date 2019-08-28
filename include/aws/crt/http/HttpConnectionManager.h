@@ -47,31 +47,14 @@ namespace Aws
                 HttpClientConnectionManagerOptions &operator=(HttpClientConnectionManagerOptions &&rhs) = default;
 
                 /**
-                 * Sets the http connections to use for each connection created by the manager
+                 * The http connection options to use for each connection created by the manager
                  */
-                void SetConnectionOptions(const HttpClientConnectionOptions &rhs) noexcept
-                {
-                    m_connectionOptions = rhs;
-                }
+                HttpClientConnectionOptions ConnectionOptions;
 
                 /**
-                 * Gets the http connections to use for each connection created by the manager
+                 * The maximum number of connections the manager is allowed to create/manage
                  */
-                const HttpClientConnectionOptions &GetConnectionOptions() const noexcept { return m_connectionOptions; }
-
-                /**
-                 * Sets the maximum number of connections the manager is allowed to create/manage
-                 */
-                void SetMaxConnections(size_t maxConnections) noexcept { m_maxConnections = maxConnections; }
-
-                /**
-                 * Gets the maximum number of connections the manager is allowed to create/manage
-                 */
-                size_t GetMaxConnections() const noexcept { return m_maxConnections; }
-
-              private:
-                HttpClientConnectionOptions m_connectionOptions;
-                size_t m_maxConnections;
+                size_t MaxConnections;
             };
 
             /**

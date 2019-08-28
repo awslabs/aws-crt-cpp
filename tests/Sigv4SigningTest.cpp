@@ -174,7 +174,7 @@ static int s_Sigv4SigningPipelineTestCreateDestroy(struct aws_allocator *allocat
         ASSERT_TRUE(clientBootstrap);
 
         CredentialsProviderChainDefaultConfig config;
-        config.m_bootstrap = &clientBootstrap;
+        config.Bootstrap = &clientBootstrap;
 
         auto provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(config);
 
@@ -202,7 +202,7 @@ static int s_Sigv4SigningPipelineTestSimple(struct aws_allocator *allocator, voi
         ASSERT_TRUE(clientBootstrap);
 
         CredentialsProviderChainDefaultConfig config;
-        config.m_bootstrap = &clientBootstrap;
+        config.Bootstrap = &clientBootstrap;
 
         auto provider = s_MakeAsyncStaticProvider(allocator, clientBootstrap);
 

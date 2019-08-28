@@ -78,9 +78,9 @@ static int s_TestProviderStaticGet(struct aws_allocator *allocator, void *ctx)
 
     {
         CredentialsProviderStaticConfig config;
-        config.m_accessKeyId = aws_byte_cursor_from_c_str(s_access_key_id);
-        config.m_secretAccessKey = aws_byte_cursor_from_c_str(s_secret_access_key);
-        config.m_sessionToken = aws_byte_cursor_from_c_str(s_session_token);
+        config.AccessKeyId = aws_byte_cursor_from_c_str(s_access_key_id);
+        config.SecretAccessKey = aws_byte_cursor_from_c_str(s_secret_access_key);
+        config.SessionToken = aws_byte_cursor_from_c_str(s_session_token);
 
         auto provider = CredentialsProvider::CreateCredentialsProviderStatic(config, allocator);
         GetCredentialsWaiter waiter(provider);
@@ -147,7 +147,7 @@ static int s_TestProviderImdsGet(struct aws_allocator *allocator, void *ctx)
         ASSERT_TRUE(clientBootstrap);
 
         CredentialsProviderImdsConfig config;
-        config.m_bootstrap = &clientBootstrap;
+        config.Bootstrap = &clientBootstrap;
 
         auto provider = CredentialsProvider::CreateCredentialsProviderImds(config, allocator);
         GetCredentialsWaiter waiter(provider);
@@ -176,7 +176,7 @@ static int s_TestProviderDefaultChainGet(struct aws_allocator *allocator, void *
         ASSERT_TRUE(clientBootstrap);
 
         CredentialsProviderChainDefaultConfig config;
-        config.m_bootstrap = &clientBootstrap;
+        config.Bootstrap = &clientBootstrap;
 
         auto provider = CredentialsProvider::CreateCredentialsProviderChainDefault(config, allocator);
         GetCredentialsWaiter waiter(provider);

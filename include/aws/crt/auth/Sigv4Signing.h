@@ -162,7 +162,7 @@ namespace Aws
                 /**
                  * Whether or not the signer is in a valid state
                  */
-                virtual explicit operator bool() const override { return m_signer != nullptr; }
+                virtual bool IsValid() const override { return m_signer != nullptr; }
 
               protected:
                 Allocator *m_allocator;
@@ -211,7 +211,7 @@ namespace Aws
                 /**
                  * Whether or not the signer is in a valid state
                  */
-                virtual explicit operator bool() const override
+                virtual bool IsValid() const override
                 {
                     return m_signer != nullptr && m_credentialsProvider != nullptr;
                 }

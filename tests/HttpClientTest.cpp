@@ -136,14 +136,13 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     };
 
     Http::HttpClientConnectionOptions httpClientConnectionOptions;
-    httpClientConnectionOptions.SetBootstrap(&clientBootstrap);
-    httpClientConnectionOptions.SetOnConnectionSetupCallback(onConnectionSetup);
-    httpClientConnectionOptions.SetOnConnectionShutdownCallback(onConnectionShutdown);
-    httpClientConnectionOptions.SetSocketOptions(socketOptions);
-    httpClientConnectionOptions.SetTlsOptions(tlsConnectionOptions);
-    httpClientConnectionOptions.SetInitialWindowSize(SIZE_MAX);
-    httpClientConnectionOptions.SetHostName(String((const char *)hostName.ptr, hostName.len));
-    httpClientConnectionOptions.SetPort(443);
+    httpClientConnectionOptions.Bootstrap = &clientBootstrap;
+    httpClientConnectionOptions.OnConnectionSetupCallback = onConnectionSetup;
+    httpClientConnectionOptions.OnConnectionShutdownCallback = onConnectionShutdown;
+    httpClientConnectionOptions.SocketOptions = socketOptions;
+    httpClientConnectionOptions.TlsOptions = tlsConnectionOptions;
+    httpClientConnectionOptions.HostName = String((const char *)hostName.ptr, hostName.len);
+    httpClientConnectionOptions.Port = 443;
 
     std::unique_lock<std::mutex> semaphoreULock(semaphoreLock);
     ASSERT_TRUE(Http::HttpClientConnection::CreateConnection(httpClientConnectionOptions, allocator));
