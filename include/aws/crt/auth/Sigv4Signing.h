@@ -40,7 +40,7 @@ namespace Aws
                 Count = AWS_SIGNING_ALGORITHM_COUNT
             };
 
-            /*
+            /**
              * Wrapper around the configuration structure specific to the AWS
              * Sigv4 signing process
              */
@@ -52,55 +52,94 @@ namespace Aws
 
                 virtual SigningConfigType GetType(void) const noexcept override { return SigningConfigType::Aws; }
 
-                /*
-                 * Credentials to sign the request with
+                /**
+                 * Gets the credentials to sign the request with
                  */
                 std::shared_ptr<Credentials> GetCredentials() const noexcept;
+
+                /**
+                 * Sets the credentials to sign the request with
+                 */
                 void SetCredentials(const std::shared_ptr<Credentials> &credentials) noexcept;
 
-                /*
-                 * What signing process do we want to invoke
+                /**
+                 * Gets the signing process we want to invoke
                  */
                 SigningAlgorithm GetSigningAlgorithm() const noexcept;
+
+                /**
+                 * Sets the signing process we want to invoke
+                 */
                 void SetSigningAlgorithm(SigningAlgorithm algorithm) noexcept;
 
-                /*
-                 * The region to sign against
+                /**
+                 * Gets the AWS region to sign against
                  */
                 ByteCursor GetRegion() const noexcept;
+
+                /**
+                 * Sets the AWS region to sign against
+                 */
                 void SetRegion(ByteCursor region) noexcept;
 
-                /*
-                 * name of service to sign a request for
+                /**
+                 * Gets the (signing) name of the AWS service to sign a request for
                  */
                 ByteCursor GetService() const noexcept;
+
+                /**
+                 * Sets the (signing) name of the AWS service to sign a request for
+                 */
                 void SetService(ByteCursor service) noexcept;
 
-                /*
-                 * Timestamp to use during the signing process.
+                /**
+                 * Gets the timestamp to use during the signing process.
                  */
-                DateTime GetDate() const noexcept;
-                void SetDate(const DateTime &date) noexcept;
+                DateTime GetSigningTimepoint() const noexcept;
+
+                /**
+                 * Sets the timestamp to use during the signing process.
+                 */
+                void SetSigningTimepoint(const DateTime &date) noexcept;
 
                 /*
                  * We assume the uri will be encoded once in preparation for transmission.  Certain services
                  * do not decode before checking signature, requiring us to actually double-encode the uri in the
                  * canonical request in order to pass a signature check.
                  */
+
+                /**
+                 * Gets whether or not the signing process should perform a uri encode step before creating the
+                 * canonical request.
+                 */
                 bool GetUseDoubleUriEncode() const noexcept;
+
+                /**
+                 * Sets whether or not the signing process should perform a uri encode step before creating the
+                 * canonical request.
+                 */
                 void SetUseDoubleUriEncode(bool useDoubleUriEncode) noexcept;
 
-                /*
-                 * Controls whether or not the uri paths should be normalized when building the canonical request
+                /**
+                 * Gets whether or not the uri paths should be normalized when building the canonical request
                  */
                 bool GetShouldNormalizeUriPath() const noexcept;
+
+                /**
+                 * Sets whether or not the uri paths should be normalized when building the canonical request
+                 */
                 void SetShouldNormalizeUriPath(bool shouldNormalizeUriPath) noexcept;
 
-                /*
-                 * If true adds the x-amz-content-sha256 header (with appropriate value) to the canonical request,
-                 * otherwise does nothing
+                /**
+                 * Gets whether or not the signer should add the x-amz-content-sha256 header (with appropriate value) to
+                 * the canonical request.
                  */
                 bool GetSignBody() const noexcept;
+
+                /**
+                 * Sets whether or not the signer should add the x-amz-content-sha256 header (with appropriate value) to
+                 * the canonical request.
+                 */
                 void SetSignBody(bool signBody) noexcept;
 
               private:
@@ -111,8 +150,8 @@ namespace Aws
                 struct aws_signing_config_aws *m_config;
             };
 
-            /*
-             * Http request signer that wraps any aws-c-* signer implementation
+            /**
+             * Http request signer base class that wraps any aws-c-* signer implementation
              */
             class AWS_CRT_CPP_API AwsHttpRequestSigner : public IHttpRequestSigner
             {
@@ -120,7 +159,10 @@ namespace Aws
                 AwsHttpRequestSigner(aws_signer *signer, Allocator *allocator = DefaultAllocator());
                 virtual ~AwsHttpRequestSigner();
 
-                virtual operator bool() const override { return m_signer != nullptr; }
+                /**
+                 * Whether or not the signer is in a valid state
+                 */
+                virtual bool IsValid() const override { return m_signer != nullptr; }
 
               protected:
                 Allocator *m_allocator;
@@ -128,7 +170,7 @@ namespace Aws
                 aws_signer *m_signer;
             };
 
-            /*
+            /**
              * Http request signer that performs Aws Sigv4 signing
              */
             class AWS_CRT_CPP_API Sigv4HttpRequestSigner : public AwsHttpRequestSigner
@@ -137,10 +179,14 @@ namespace Aws
                 Sigv4HttpRequestSigner(Allocator *allocator = DefaultAllocator());
                 virtual ~Sigv4HttpRequestSigner() = default;
 
+                /**
+                 * Synchronous method to use a signing process to transform an http request.
+                 * Thread-safe.
+                 */
                 virtual bool SignRequest(Aws::Crt::Http::HttpRequest &request, const ISigningConfig *config) override;
             };
 
-            /*
+            /**
              * Signing pipeline that performs Aws Sigv4 signing with credentials sourced from
              * an internally referenced credentials provider
              */
@@ -153,12 +199,19 @@ namespace Aws
 
                 virtual ~Sigv4HttpRequestSigningPipeline();
 
+                /**
+                 * Asynchronous method to use a signing process/pipeline to transform an http request.
+                 * Thread-safe.
+                 */
                 virtual void SignRequest(
                     const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
                     const std::shared_ptr<ISigningConfig> &config,
                     const OnHttpRequestSigningComplete &completionCallback) override;
 
-                virtual operator bool() const override
+                /**
+                 * Whether or not the signer is in a valid state
+                 */
+                virtual bool IsValid() const override
                 {
                     return m_signer != nullptr && m_credentialsProvider != nullptr;
                 }

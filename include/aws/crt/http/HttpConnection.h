@@ -229,77 +229,37 @@ namespace Aws
                 ~HttpClientConnectionProxyOptions() = default;
 
                 /**
-                 * Sets the name of the proxy server to connect through.
-                 * This value must be set.
+                 * The name of the proxy server to connect through.
+                 * Required.
                  */
-                void SetHostName(const String &hostName) noexcept { m_hostName = hostName; }
+                String HostName;
 
                 /**
-                 * Returns the name of the proxy server to connect through.
+                 * The port of the proxy server to connect to.
+                 * Required.
                  */
-                const String &GetHostName() const noexcept { return m_hostName; }
-
-                /**
-                 * Sets the port of the proxy server to connect to.
-                 * This value must be set.
-                 */
-                void SetPort(uint16_t port) noexcept { m_port = port; }
-
-                /**
-                 * Gets the port of the proxy server to connect to.
-                 */
-                uint16_t GetPort() const noexcept { return m_port; }
+                uint16_t Port;
 
                 /**
                  * Sets the TLS options for the proxy connection.
+                 * Optional.
                  */
-                void SetTlsOptions(const Io::TlsConnectionOptions &options) noexcept { m_tlsOptions = options; }
+                Optional<Io::TlsConnectionOptions> TlsOptions;
 
                 /**
-                 * Gets the TLS options for the proxy connection.
+                 * What kind of authentication approach to use when connecting to the proxy
                  */
-                const Io::TlsConnectionOptions *GetTlsOptions() const noexcept
-                {
-                    return m_tlsOptions.has_value() ? &m_tlsOptions.value() : nullptr;
-                }
+                AwsHttpProxyAuthenticationType AuthType;
 
                 /**
-                 * Sets what kind of authentication approach to use when connecting to the proxy
+                 * The username to use if connecting to the proxy via basic authentication
                  */
-                void SetAuthenticationType(AwsHttpProxyAuthenticationType authType) noexcept { m_authType = authType; }
+                String BasicAuthUsername;
 
                 /**
-                 * Gets what kind of authentication approach to use when connecting to the proxy
+                 * The password to use if connecting to the proxy via basic authentication
                  */
-                AwsHttpProxyAuthenticationType GetAuthenticationType() const noexcept { return m_authType; }
-
-                /**
-                 * Sets the username to use when connecting to the proxy via basic authentication
-                 */
-                void SetBasicAuthUsername(const String &username) noexcept { m_basicAuthUsername = username; }
-
-                /**
-                 * Gets the username to use when connecting to the proxy via basic authentication
-                 */
-                const String &GetBasicAuthUsername() const noexcept { return m_basicAuthUsername; }
-
-                /**
-                 * Sets the password to use when connecting to the proxy via basic authentication
-                 */
-                void SetBasicAuthPassword(const String &password) noexcept { m_basicAuthPassword = password; }
-
-                /**
-                 * Gets the password to use when connecting to the proxy via basic authentication
-                 */
-                const String &GetBasicAuthPassword() const noexcept { return m_basicAuthPassword; }
-
-              private:
-                String m_hostName;
-                uint16_t m_port;
-                Optional<Io::TlsConnectionOptions> m_tlsOptions;
-                AwsHttpProxyAuthenticationType m_authType;
-                String m_basicAuthUsername;
-                String m_basicAuthPassword;
+                String BasicAuthPassword;
             };
 
             /**
@@ -318,136 +278,59 @@ namespace Aws
                 HttpClientConnectionOptions &operator=(HttpClientConnectionOptions &&rhs) = default;
 
                 /**
-                 * Sets the client bootstrap to use for setting up and tearing down connections.
-                 * This value must be set.
+                 * The client bootstrap to use for setting up and tearing down connections.
+                 * Required.
                  */
-                void SetBootstrap(Io::ClientBootstrap *bootstrap) noexcept { m_bootstrap = bootstrap; }
+                Io::ClientBootstrap *Bootstrap;
 
                 /**
-                 * Gets the client bootstrap to use for setting up and tearing down connections.
+                 *  The TCP read window allowed for Http 1.1 connections and Initial Windows for H2 connections.
                  */
-                Io::ClientBootstrap *GetBootstrap() const noexcept { return m_bootstrap; }
+                size_t InitialWindowSize;
 
                 /**
-                 *  Sets the TCP read window allowed for Http 1.1 connections and Initial Windows for H2 connections.
-                 */
-                void SetInitialWindowSize(size_t initialWindowSize) noexcept
-                {
-                    m_initialWindowSize = initialWindowSize;
-                }
-
-                /**
-                 *  Gets the TCP read window allowed for Http 1.1 connections and Initial Windows for H2 connections.
-                 */
-                size_t GetInitialWindowSize() const noexcept { return m_initialWindowSize; }
-
-                /**
-                 * Sets the callback invoked on connection establishment, whether success or failure.
+                 * The callback invoked on connection establishment, whether success or failure.
                  * See `OnConnectionSetup` for more info.
-                 * This value must be set.
+                 * Required.
                  */
-                void SetOnConnectionSetupCallback(const OnConnectionSetup &callback) noexcept
-                {
-                    m_onConnectionSetup = callback;
-                }
+                OnConnectionSetup OnConnectionSetupCallback;
 
                 /**
-                 * Gets the callback invoked on connection establishment, whether success or failure.
-                 * See `OnConnectionSetup` for more info.
-                 */
-                const OnConnectionSetup &GetOnConnectionSetupCallback() const noexcept { return m_onConnectionSetup; }
-
-                /**
-                 * Sets the callback invoked on connection shutdown.
+                 * The callback invoked on connection shutdown.
                  * See `OnConnectionShutdown` for more info.
-                 * This value must be set.
+                 * Required.
                  */
-                void SetOnConnectionShutdownCallback(const OnConnectionShutdown &callback) noexcept
-                {
-                    m_onConnectionShutdown = callback;
-                }
+                OnConnectionShutdown OnConnectionShutdownCallback;
 
                 /**
-                 * Gets the callback invoked on connection shutdown.
-                 * See `OnConnectionShutdown` for more info.
+                 * The name of the http server to connect to.
+                 * Required.
                  */
-                const OnConnectionShutdown &GetOnConnectionShutdownCallback() const noexcept
-                {
-                    return m_onConnectionShutdown;
-                }
+                String HostName;
 
                 /**
-                 * Sets the name of the http server to connect to.
-                 * This value must be set.
+                 * The port of the http server to connect to.
+                 * Required.
                  */
-                void SetHostName(const String &hostName) noexcept { m_hostName = hostName; }
+                uint16_t Port;
 
                 /**
-                 * Gets the name of the http server to connect to.
+                 * The socket options of the connection.
+                 * Required.
                  */
-                const String &GetHostName() const noexcept { return m_hostName; }
+                Io::SocketOptions SocketOptions;
 
                 /**
-                 * Sets the port of the http server to connect to.
-                 * This value must be set.
+                 * The TLS options for the http connection.
+                 * Optional.
                  */
-                void SetPort(uint16_t port) noexcept { m_port = port; }
+                Optional<Io::TlsConnectionOptions> TlsOptions;
 
                 /**
-                 * Gets the port of the http server to connect to
+                 * The proxy options for the http connection.
+                 * Optional.
                  */
-                uint16_t GetPort() const noexcept { return m_port; }
-
-                /**
-                 * Sets the socket options of the connection.
-                 * This value must be set.
-                 */
-                void SetSocketOptions(const Io::SocketOptions &options) noexcept { m_socketOptions = options; }
-
-                /**
-                 * Gets the socket options of the connection.
-                 */
-                const Io::SocketOptions &GetSocketOptions() const noexcept { return m_socketOptions; }
-
-                /**
-                 * Sets the TLS options for the http connection.
-                 */
-                void SetTlsOptions(const Io::TlsConnectionOptions &options) noexcept { m_tlsOptions = options; }
-
-                /**
-                 * Gets the TLS options for the http connection.
-                 */
-                const Io::TlsConnectionOptions *GetTlsOptions() const noexcept
-                {
-                    return m_tlsOptions.has_value() ? &m_tlsOptions.value() : nullptr;
-                }
-
-                /**
-                 * Sets the proxy options for the http connection.
-                 */
-                void SetProxyOptions(const HttpClientConnectionProxyOptions &options) noexcept
-                {
-                    m_proxyOptions = options;
-                }
-
-                /**
-                 * Gets the proxy options for the http connection.
-                 */
-                const HttpClientConnectionProxyOptions *GetProxyOptions() const noexcept
-                {
-                    return m_proxyOptions.has_value() ? &m_proxyOptions.value() : nullptr;
-                }
-
-              private:
-                Io::ClientBootstrap *m_bootstrap;
-                size_t m_initialWindowSize;
-                OnConnectionSetup m_onConnectionSetup;
-                OnConnectionShutdown m_onConnectionShutdown;
-                String m_hostName;
-                uint16_t m_port;
-                Io::SocketOptions m_socketOptions;
-                Optional<Io::TlsConnectionOptions> m_tlsOptions;
-                Optional<HttpClientConnectionProxyOptions> m_proxyOptions;
+                Optional<HttpClientConnectionProxyOptions> ProxyOptions;
             };
 
             /**

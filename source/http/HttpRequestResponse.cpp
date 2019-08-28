@@ -146,7 +146,7 @@ namespace Aws
             {
             }
 
-            Optional<int> HttpResponse::GetResponse() const noexcept
+            Optional<int> HttpResponse::GetResponseCode() const noexcept
             {
                 int response = 0;
                 if (aws_http_message_get_response_status(m_message, &response) != AWS_OP_SUCCESS)
@@ -157,7 +157,7 @@ namespace Aws
                 return response;
             }
 
-            bool HttpResponse::SetResponse(int response) noexcept
+            bool HttpResponse::SetResponseCode(int response) noexcept
             {
                 return aws_http_message_set_response_status(m_message, response) == AWS_OP_SUCCESS;
             }

@@ -28,7 +28,7 @@ namespace Aws
         {
             using HttpHeader = aws_http_header;
 
-            /*
+            /**
              * Base class representing a mutable http request or response.
              */
             class AWS_CRT_CPP_API HttpMessage
@@ -41,7 +41,14 @@ namespace Aws
                 HttpMessage &operator=(const HttpMessage &) = delete;
                 HttpMessage &operator=(HttpMessage &&) = delete;
 
+                /**
+                 * Gets the input stream representing the message body
+                 */
                 std::shared_ptr<Aws::Crt::Io::IStream> GetBody() const noexcept;
+
+                /**
+                 * Sets the input stream representing the message body
+                 */
                 bool SetBody(const std::shared_ptr<Aws::Crt::Io::IStream> &body) noexcept;
 
                 size_t GetHeaderCount() const noexcept;
@@ -62,7 +69,7 @@ namespace Aws
                 std::shared_ptr<Aws::Crt::Io::IStream> m_bodyStream;
             };
 
-            /*
+            /**
              * Class representing a mutable http request.
              */
             class AWS_CRT_CPP_API HttpRequest : public HttpMessage
@@ -70,14 +77,28 @@ namespace Aws
               public:
                 HttpRequest(Allocator *allocator = DefaultAllocator());
 
+                /**
+                 * Gets the value of the Http method associated with this request
+                 */
                 Optional<ByteCursor> GetMethod() const noexcept;
+
+                /**
+                 * Sets the value of the Http method associated with this request
+                 */
                 bool SetMethod(ByteCursor method) noexcept;
 
+                /**
+                 * Gets the value of the URI-path associated with this request
+                 */
                 Optional<ByteCursor> GetPath() const noexcept;
+
+                /**
+                 * Sets the value of the URI-path associated with this request
+                 */
                 bool SetPath(ByteCursor path) noexcept;
             };
 
-            /*
+            /**
              * Class representing a mutable http response.
              */
             class AWS_CRT_CPP_API HttpResponse : public HttpMessage
@@ -85,8 +106,15 @@ namespace Aws
               public:
                 HttpResponse(Allocator *allocator = DefaultAllocator());
 
-                Optional<int> GetResponse() const noexcept;
-                bool SetResponse(int response) noexcept;
+                /**
+                 * Gets the integral Http response code associated with this response
+                 */
+                Optional<int> GetResponseCode() const noexcept;
+
+                /**
+                 * Sets the integral Http response code associated with this response
+                 */
+                bool SetResponseCode(int response) noexcept;
             };
         } // namespace Http
     }     // namespace Crt

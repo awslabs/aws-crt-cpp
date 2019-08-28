@@ -81,8 +81,14 @@ namespace Aws
                 Hash(Hash &&toMove);
                 Hash &operator=(Hash &&toMove);
 
+                /**
+                 * Returns true if the instance is in a valid state, false otherwise.
+                 */
                 inline operator bool() const noexcept { return m_good; }
 
+                /**
+                 * Returns the value of the last aws error encountered by operations on this instance.
+                 */
                 inline int LastError() const noexcept { return m_lastError; }
 
                 /**

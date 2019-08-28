@@ -31,7 +31,7 @@ namespace Aws
             };
 
             HttpClientConnectionManagerOptions::HttpClientConnectionManagerOptions() noexcept
-                : m_connectionOptions(), m_maxConnections(1)
+                : ConnectionOptions(), MaxConnections(1)
             {
             }
 
@@ -56,51 +56,48 @@ namespace Aws
                 Allocator *allocator) noexcept
                 : m_allocator(allocator), m_connectionManager(nullptr), m_options(options)
             {
-                const auto &connectionOptions = m_options.GetConnectionOptions();
-                AWS_FATAL_ASSERT(connectionOptions.GetHostName().size() > 0);
-                AWS_FATAL_ASSERT(connectionOptions.GetPort() > 0);
+                const auto &connectionOptions = m_options.ConnectionOptions;
+                AWS_FATAL_ASSERT(connectionOptions.HostName.size() > 0);
+                AWS_FATAL_ASSERT(connectionOptions.Port > 0);
 
                 aws_http_connection_manager_options managerOptions;
                 AWS_ZERO_STRUCT(managerOptions);
-                managerOptions.bootstrap = connectionOptions.GetBootstrap()->GetUnderlyingHandle();
-                managerOptions.port = connectionOptions.GetPort();
-                managerOptions.max_connections = m_options.GetMaxConnections();
-                managerOptions.socket_options = &connectionOptions.GetSocketOptions().GetImpl();
-                managerOptions.initial_window_size = connectionOptions.GetInitialWindowSize();
+                managerOptions.bootstrap = connectionOptions.Bootstrap->GetUnderlyingHandle();
+                managerOptions.port = connectionOptions.Port;
+                managerOptions.max_connections = m_options.MaxConnections;
+                managerOptions.socket_options = &connectionOptions.SocketOptions.GetImpl();
+                managerOptions.initial_window_size = connectionOptions.InitialWindowSize;
 
                 aws_http_proxy_options proxyOptions;
                 AWS_ZERO_STRUCT(proxyOptions);
-                if (connectionOptions.GetProxyOptions())
+                if (connectionOptions.ProxyOptions)
                 {
-                    const auto &proxyOpts = connectionOptions.GetProxyOptions();
-                    proxyOptions.host = aws_byte_cursor_from_c_str(proxyOpts->GetHostName().c_str());
-                    proxyOptions.port = proxyOpts->GetPort();
-                    proxyOptions.auth_type =
-                        (enum aws_http_proxy_authentication_type)proxyOpts->GetAuthenticationType();
+                    const auto &proxyOpts = connectionOptions.ProxyOptions;
+                    proxyOptions.host = aws_byte_cursor_from_c_str(proxyOpts->HostName.c_str());
+                    proxyOptions.port = proxyOpts->Port;
+                    proxyOptions.auth_type = (enum aws_http_proxy_authentication_type)proxyOpts->AuthType;
 
-                    if (proxyOpts->GetAuthenticationType() == AwsHttpProxyAuthenticationType::Basic)
+                    if (proxyOpts->AuthType == AwsHttpProxyAuthenticationType::Basic)
                     {
-                        proxyOptions.auth_username =
-                            aws_byte_cursor_from_c_str(proxyOpts->GetBasicAuthUsername().c_str());
-                        proxyOptions.auth_password =
-                            aws_byte_cursor_from_c_str(proxyOpts->GetBasicAuthPassword().c_str());
+                        proxyOptions.auth_username = aws_byte_cursor_from_c_str(proxyOpts->BasicAuthUsername.c_str());
+                        proxyOptions.auth_password = aws_byte_cursor_from_c_str(proxyOpts->BasicAuthPassword.c_str());
                     }
 
-                    if (proxyOpts->GetTlsOptions())
+                    if (proxyOpts->TlsOptions)
                     {
                         proxyOptions.tls_options =
-                            const_cast<aws_tls_connection_options *>(proxyOpts->GetTlsOptions()->GetUnderlyingHandle());
+                            const_cast<aws_tls_connection_options *>(proxyOpts->TlsOptions->GetUnderlyingHandle());
                     }
 
                     managerOptions.proxy_options = &proxyOptions;
                 }
 
-                if (connectionOptions.GetTlsOptions())
+                if (connectionOptions.TlsOptions)
                 {
-                    managerOptions.tls_connection_options = const_cast<aws_tls_connection_options *>(
-                        connectionOptions.GetTlsOptions()->GetUnderlyingHandle());
+                    managerOptions.tls_connection_options =
+                        const_cast<aws_tls_connection_options *>(connectionOptions.TlsOptions->GetUnderlyingHandle());
                 }
-                managerOptions.host = aws_byte_cursor_from_c_str(connectionOptions.GetHostName().c_str());
+                managerOptions.host = aws_byte_cursor_from_c_str(connectionOptions.HostName.c_str());
 
                 m_connectionManager = aws_http_connection_manager_new(allocator, &managerOptions);
             }

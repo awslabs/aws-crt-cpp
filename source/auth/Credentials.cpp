@@ -163,7 +163,7 @@ namespace Aws
             {
                 return s_CreateWrappedProvider(
                     aws_credentials_provider_new_static(
-                        allocator, config.m_accessKeyId, config.m_secretAccessKey, config.m_sessionToken),
+                        allocator, config.AccessKeyId, config.SecretAccessKey, config.SessionToken),
                     allocator);
             }
 
@@ -180,9 +180,9 @@ namespace Aws
                 struct aws_credentials_provider_profile_options raw_config;
                 AWS_ZERO_STRUCT(raw_config);
 
-                raw_config.config_file_name_override = config.m_configFileNameOverride;
-                raw_config.credentials_file_name_override = config.m_credentialsFileNameOverride;
-                raw_config.profile_name_override = config.m_profileNameOverride;
+                raw_config.config_file_name_override = config.ConfigFileNameOverride;
+                raw_config.credentials_file_name_override = config.CredentialsFileNameOverride;
+                raw_config.profile_name_override = config.ProfileNameOverride;
 
                 return s_CreateWrappedProvider(aws_credentials_provider_new_profile(allocator, &raw_config), allocator);
             }
@@ -194,7 +194,7 @@ namespace Aws
                 struct aws_credentials_provider_imds_options raw_config;
                 AWS_ZERO_STRUCT(raw_config);
 
-                raw_config.bootstrap = config.m_bootstrap->GetUnderlyingHandle();
+                raw_config.bootstrap = config.Bootstrap->GetUnderlyingHandle();
 
                 return s_CreateWrappedProvider(aws_credentials_provider_new_imds(allocator, &raw_config), allocator);
             }
@@ -204,11 +204,11 @@ namespace Aws
                 Allocator *allocator)
             {
                 Vector<aws_credentials_provider *> providers;
-                providers.reserve(config.m_providers.size());
+                providers.reserve(config.Providers.size());
 
                 std::for_each(
-                    config.m_providers.begin(),
-                    config.m_providers.end(),
+                    config.Providers.begin(),
+                    config.Providers.end(),
                     [&](const std::shared_ptr<ICredentialsProvider> &provider) {
                         providers.push_back(provider->GetUnderlyingHandle());
                     });
@@ -217,7 +217,7 @@ namespace Aws
                 AWS_ZERO_STRUCT(raw_config);
 
                 raw_config.providers = providers.data();
-                raw_config.provider_count = config.m_providers.size();
+                raw_config.provider_count = config.Providers.size();
 
                 return s_CreateWrappedProvider(aws_credentials_provider_new_chain(allocator, &raw_config), allocator);
             }
@@ -229,8 +229,8 @@ namespace Aws
                 struct aws_credentials_provider_cached_options raw_config;
                 AWS_ZERO_STRUCT(raw_config);
 
-                raw_config.source = config.m_provider->GetUnderlyingHandle();
-                raw_config.refresh_time_in_milliseconds = config.m_refreshTime.count();
+                raw_config.source = config.Provider->GetUnderlyingHandle();
+                raw_config.refresh_time_in_milliseconds = config.CachedCredentialTTL.count();
 
                 return s_CreateWrappedProvider(aws_credentials_provider_new_cached(allocator, &raw_config), allocator);
             }
@@ -242,7 +242,7 @@ namespace Aws
                 struct aws_credentials_provider_chain_default_options raw_config;
                 AWS_ZERO_STRUCT(raw_config);
 
-                raw_config.bootstrap = config.m_bootstrap->GetUnderlyingHandle();
+                raw_config.bootstrap = config.Bootstrap->GetUnderlyingHandle();
 
                 return s_CreateWrappedProvider(
                     aws_credentials_provider_new_chain_default(allocator, &raw_config), allocator);

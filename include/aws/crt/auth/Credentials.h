@@ -34,7 +34,7 @@ namespace Aws
 
         namespace Auth
         {
-            /*
+            /**
              * A class to hold the basic components necessary for various AWS authentication protocols.
              */
             class AWS_CRT_CPP_API Credentials
@@ -54,41 +54,56 @@ namespace Aws
                 Credentials &operator=(const Credentials &) = delete;
                 Credentials &operator=(Credentials &&) = delete;
 
+                /**
+                 * Gets the value of the access key component of aws credentials
+                 */
                 ByteCursor GetAccessKeyId() const noexcept;
 
+                /**
+                 * Gets the value of the secret access key component of aws credentials
+                 */
                 ByteCursor GetSecretAccessKey() const noexcept;
 
+                /**
+                 * Gets the value of the session token of aws credentials
+                 */
                 ByteCursor GetSessionToken() const noexcept;
 
-                operator bool() const noexcept;
+                /**
+                 * Validity check - returns true if the instance is valid, false otherwise
+                 */
+                explicit operator bool() const noexcept;
 
+                /**
+                 * Returns the underlying credentials implementation.
+                 */
                 aws_credentials *GetUnderlyingHandle() const noexcept { return m_credentials; }
 
               private:
                 aws_credentials *m_credentials;
             };
 
-            /*
+            /**
              * Callback invoked by credentials providers when resolution succeeds (credentials will be non-null)
              * or fails (credentials will be null)
              */
             using OnCredentialsResolved = std::function<void(std::shared_ptr<Credentials>)>;
 
-            /*
+            /**
              * Base interface for all credentials providers.  Credentials providers are objects that
-             * retrieve (asynchronously) AWS credentials from some source.
+             * retrieve AWS credentials from some source.
              */
             class AWS_CRT_CPP_API ICredentialsProvider : public std::enable_shared_from_this<ICredentialsProvider>
             {
               public:
                 virtual ~ICredentialsProvider() = default;
 
-                /*
+                /**
                  * Asynchronous method to query for AWS credentials based on the internal provider implementation.
                  */
                 virtual bool GetCredentials(const OnCredentialsResolved &onCredentialsResolved) const = 0;
 
-                /*
+                /**
                  * Returns the underlying credentials provider implementation.  Support for credentials providers
                  * not based on a C implementation is theoretically possible, but requires some re-implementation to
                  * support provider chains and caching (whose implementations rely on links to C implementation
@@ -96,73 +111,111 @@ namespace Aws
                  */
                 virtual aws_credentials_provider *GetUnderlyingHandle() const noexcept = 0;
 
-                /*
-                 * Validity check
+                /**
+                 * Validity check method
                  */
-                virtual operator bool() const noexcept = 0;
+                virtual bool IsValid() const noexcept = 0;
             };
 
-            /*
+            /**
              * Configuration options for the static credentials provider
              */
             struct AWS_CRT_CPP_API CredentialsProviderStaticConfig
             {
-                CredentialsProviderStaticConfig() : m_accessKeyId(), m_secretAccessKey(), m_sessionToken() {}
+                CredentialsProviderStaticConfig() : AccessKeyId{}, SecretAccessKey{}, SessionToken{} {}
 
-                ByteCursor m_accessKeyId;
-                ByteCursor m_secretAccessKey;
-                ByteCursor m_sessionToken;
+                /**
+                 * The value of the access key component for the provider's static aws credentials
+                 */
+                ByteCursor AccessKeyId;
+
+                /**
+                 * The value of the secret access key component for the provider's  static aws credentials
+                 */
+                ByteCursor SecretAccessKey;
+
+                /**
+                 * The value of the session token for the provider's  static aws credentials
+                 */
+                ByteCursor SessionToken;
             };
 
-            /*
+            /**
              * Configuration options for the profile credentials provider
              */
             struct AWS_CRT_CPP_API CredentialsProviderProfileConfig
             {
                 CredentialsProviderProfileConfig()
-                    : m_profileNameOverride(), m_configFileNameOverride(), m_credentialsFileNameOverride()
+                    : ProfileNameOverride{}, ConfigFileNameOverride{}, CredentialsFileNameOverride{}
                 {
                 }
 
-                ByteCursor m_profileNameOverride;
-                ByteCursor m_configFileNameOverride;
-                ByteCursor m_credentialsFileNameOverride;
+                /**
+                 * Override profile name to use (instead of default) when the provider sources credentials
+                 */
+                ByteCursor ProfileNameOverride;
+
+                /**
+                 * Override file path (instead of '~/.aws/config' for the aws config file to use during
+                 * credential sourcing
+                 */
+                ByteCursor ConfigFileNameOverride;
+
+                /**
+                 * Override file path (instead of '~/.aws/credentials' for the aws credentials file to use during
+                 * credential sourcing
+                 */
+                ByteCursor CredentialsFileNameOverride;
             };
 
-            /*
+            /**
              * Configuration options for the Ec2 instance metadata service credentials provider
              */
             struct AWS_CRT_CPP_API CredentialsProviderImdsConfig
             {
-                CredentialsProviderImdsConfig() : m_bootstrap(nullptr) {}
+                CredentialsProviderImdsConfig() : Bootstrap(nullptr) {}
 
-                Io::ClientBootstrap *m_bootstrap;
+                /**
+                 * Connection bootstrap to use to create the http connection required to
+                 * query credentials from the Ec2 instance metadata service
+                 */
+                Io::ClientBootstrap *Bootstrap;
             };
 
-            /*
+            /**
              * Configuration options for a chain-of-responsibility-based credentials provider.
              * This provider works by traversing the chain and returning the first positive
              * result.
              */
             struct AWS_CRT_CPP_API CredentialsProviderChainConfig
             {
-                CredentialsProviderChainConfig() : m_providers() {}
+                CredentialsProviderChainConfig() : Providers() {}
 
-                Vector<std::shared_ptr<ICredentialsProvider>> m_providers;
+                /**
+                 * The sequence of providers that make up the chain.
+                 */
+                Vector<std::shared_ptr<ICredentialsProvider>> Providers;
             };
 
-            /*
+            /**
              * Configuration options for a provider that caches the results of another provider
              */
             struct AWS_CRT_CPP_API CredentialsProviderCachedConfig
             {
-                CredentialsProviderCachedConfig() : m_provider(nullptr), m_refreshTime() {}
+                CredentialsProviderCachedConfig() : Provider(), CachedCredentialTTL() {}
 
-                std::shared_ptr<ICredentialsProvider> m_provider;
-                std::chrono::milliseconds m_refreshTime;
+                /**
+                 * The provider to cache credentials from
+                 */
+                std::shared_ptr<ICredentialsProvider> Provider;
+
+                /**
+                 * How long a cached credential set will be used for
+                 */
+                std::chrono::milliseconds CachedCredentialTTL;
             };
 
-            /*
+            /**
              * Configuration options for a provider that implements a cached provider chain
              * based on the AWS SDK defaults:
              *
@@ -170,12 +223,16 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API CredentialsProviderChainDefaultConfig
             {
-                CredentialsProviderChainDefaultConfig() : m_bootstrap(nullptr) {}
+                CredentialsProviderChainDefaultConfig() : Bootstrap(nullptr) {}
 
-                Io::ClientBootstrap *m_bootstrap;
+                /**
+                 * Connection bootstrap to use to create the http connection required to
+                 * query credentials from the Ec2 instance metadata service
+                 */
+                Io::ClientBootstrap *Bootstrap;
             };
 
-            /*
+            /**
              * Simple credentials provider implementation that wraps one of the internal C-based implementations.
              *
              * Contains a set of static factory methods for building each supported provider, as well as one for the
@@ -195,14 +252,20 @@ namespace Aws
                 CredentialsProvider &operator=(const CredentialsProvider &) = delete;
                 CredentialsProvider &operator=(CredentialsProvider &&) = delete;
 
-                /*
+                /**
                  * Asynchronous method to query for AWS credentials based on the internal provider implementation.
                  */
                 virtual bool GetCredentials(const OnCredentialsResolved &onCredentialsResolved) const override;
 
+                /**
+                 * Returns the underlying credentials provider implementation.
+                 */
                 virtual aws_credentials_provider *GetUnderlyingHandle() const noexcept override { return m_provider; }
 
-                virtual operator bool() const noexcept override { return m_provider != nullptr; }
+                /**
+                 * Validity check method
+                 */
+                virtual bool IsValid() const noexcept override { return m_provider != nullptr; }
 
                 /*
                  * Factory methods for all of the basic credentials provider types
@@ -211,34 +274,34 @@ namespace Aws
                  */
 
                 /**
-                 * A provider that returns a fixed set of credentials
+                 * Creates a provider that returns a fixed set of credentials
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderStatic(
                     const CredentialsProviderStaticConfig &config,
                     Allocator *allocator = DefaultAllocator());
 
-                /*
-                 * A provider that returns credentials sourced from environment variables
+                /**
+                 * Creates a provider that returns credentials sourced from environment variables
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderEnvironment(
                     Allocator *allocator = DefaultAllocator());
 
-                /*
-                 * A provider that returns credentials sourced from config files
+                /**
+                 * Creates a provider that returns credentials sourced from config files
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderProfile(
                     const CredentialsProviderProfileConfig &config,
                     Allocator *allocator = DefaultAllocator());
 
-                /*
-                 * A provider that returns credentials sourced from Ec2 instance metadata service
+                /**
+                 * Creates a provider that returns credentials sourced from Ec2 instance metadata service
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderImds(
                     const CredentialsProviderImdsConfig &config,
                     Allocator *allocator = DefaultAllocator());
 
-                /*
-                 * A provider that sources credentials by querying a series of providers and
+                /**
+                 * Creates a provider that sources credentials by querying a series of providers and
                  * returning the first valid credential set encountered
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderChain(
@@ -246,15 +309,15 @@ namespace Aws
                     Allocator *allocator = DefaultAllocator());
 
                 /*
-                 * A provider that puts a simple time-based cache in front of its queries
+                 * Creates a provider that puts a simple time-based cache in front of its queries
                  * to a subordinate provider.
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderCached(
                     const CredentialsProviderCachedConfig &config,
                     Allocator *allocator = DefaultAllocator());
 
-                /*
-                 * The SDK-standard default credentials provider which is a cache-fronted chain of:
+                /**
+                 * Creates the SDK-standard default credentials provider which is a cache-fronted chain of:
                  *
                  *   Environment -> Profile -> IMDS
                  *
