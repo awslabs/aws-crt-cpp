@@ -54,7 +54,8 @@ namespace Aws
             HttpClientConnectionManager::HttpClientConnectionManager(
                 const HttpClientConnectionManagerOptions &options,
                 Allocator *allocator) noexcept
-                : m_allocator(allocator), m_connectionManager(nullptr), m_options(options)
+                : m_allocator(allocator), m_connectionManager(nullptr), m_options(options), m_shutdownLock(),
+                  m_shutdownSignal(), m_hasShutdown(false)
             {
                 const auto &connectionOptions = m_options.ConnectionOptions;
                 AWS_FATAL_ASSERT(connectionOptions.HostName.size() > 0);
@@ -99,7 +100,22 @@ namespace Aws
                 }
                 managerOptions.host = aws_byte_cursor_from_c_str(connectionOptions.HostName.c_str());
 
+                managerOptions.shutdown_complete_callback = HttpClientConnectionManager::OnShutdownCallback;
+                managerOptions.shutdown_complete_user_data = this;
+
                 m_connectionManager = aws_http_connection_manager_new(allocator, &managerOptions);
+            }
+
+            void HttpClientConnectionManager::OnShutdownCallback(void *user_data)
+            {
+                HttpClientConnectionManager *manager = static_cast<HttpClientConnectionManager *>(user_data);
+
+                {
+                    std::unique_lock<std::mutex> shutdownLock(manager->m_shutdownLock);
+                    manager->m_hasShutdown = true;
+                }
+
+                manager->m_shutdownSignal.notify_one();
             }
 
             HttpClientConnectionManager::~HttpClientConnectionManager()
@@ -109,6 +125,9 @@ namespace Aws
                     aws_http_connection_manager_release(m_connectionManager);
                     m_connectionManager = nullptr;
                 }
+
+                std::unique_lock<std::mutex> shutdownLock(m_shutdownLock);
+                m_shutdownSignal.wait(shutdownLock, [this]() { return this->m_hasShutdown; });
             }
 
             bool HttpClientConnectionManager::AcquireConnection(

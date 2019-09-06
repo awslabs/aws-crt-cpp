@@ -25,6 +25,8 @@ namespace Aws
     {
         namespace Http
         {
+            class HttpClientConnectionManager;
+
             /**
              * Invoked when a connection from the pool is available. If a connection was successfully obtained
              * the connection shared_ptr can be seated into your own copy of connection. If it failed, errorCode
@@ -86,11 +88,17 @@ namespace Aws
                     const HttpClientConnectionManagerOptions &options,
                     Allocator *allocator = DefaultAllocator()) noexcept;
 
+                static void OnShutdownCallback(void *user_data);
+
                 Allocator *m_allocator;
 
                 aws_http_connection_manager *m_connectionManager;
 
                 HttpClientConnectionManagerOptions m_options;
+
+                std::mutex m_shutdownLock;
+                std::condition_variable m_shutdownSignal;
+                bool m_hasShutdown;
 
                 static void s_onConnectionSetup(
                     aws_http_connection *connection,
