@@ -85,12 +85,12 @@ if (BUILD_DEPS)
     #we don't want happening until we're done with the above code.
     list(APPEND CMAKE_PREFIX_PATH "${AWS_DEPS_INSTALL_DIR}")
 
-    project(aws-crt-cpp CXX)
+    project(aws-crt-cpp)
 
 else()
     #the following two lines are done in this branch intentionally, don't move it. project() does some magic that
     #we want happening exactly right now.
-    project(aws-crt-cpp CXX)
+    project(aws-crt-cpp)
 
 endif()
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_PREFIX_PATH}/${CMAKE_INSTALL_LIBDIR}/cmake")
@@ -256,8 +256,14 @@ install(
         RUNTIME DESTINATION bin COMPONENT Runtime
 )
 
+if (BUILD_SHARED_LIBS)
+    set (TARGET_DIR "shared")
+else()
+    set (TARGET_DIR "static")
+endif()
+
 install(EXPORT "${CMAKE_PROJECT_NAME}-targets"
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/${CMAKE_PROJECT_NAME}/cmake/"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/${CMAKE_PROJECT_NAME}/cmake/${TARGET_DIR}"
         NAMESPACE AWS::
         COMPONENT Development)
 

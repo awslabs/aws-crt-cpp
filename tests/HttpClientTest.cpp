@@ -173,9 +173,10 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
         semaphore.notify_one();
     };
     requestOptions.onIncomingHeadersBlockDone = nullptr;
-    requestOptions.onIncomingHeaders = [&](Http::HttpStream &stream, const Http::HttpHeader *header, std::size_t len) {
-        responseCode = stream.GetResponseStatusCode();
-    };
+    requestOptions.onIncomingHeaders =
+        [&](Http::HttpStream &stream, enum aws_http_header_block, const Http::HttpHeader *header, std::size_t len) {
+            responseCode = stream.GetResponseStatusCode();
+        };
     requestOptions.onIncomingBody = [&](Http::HttpStream &, const ByteCursor &data) {
         downloadedFile.write((const char *)data.ptr, data.len);
     };
