@@ -19,6 +19,7 @@
 
 #include <aws/auth/auth.h>
 #include <aws/http/http.h>
+#include <aws/mqtt/mqtt.h>
 
 namespace Aws
 {

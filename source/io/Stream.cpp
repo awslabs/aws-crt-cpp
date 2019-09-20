@@ -89,9 +89,10 @@ static int s_aws_input_stream_cpp_get_length(struct aws_input_stream *stream, in
     return AWS_OP_SUCCESS;
 }
 
-static void s_aws_input_stream_cpp_clean_up(struct aws_input_stream *stream)
+static void s_aws_input_stream_cpp_destroy(struct aws_input_stream *stream)
 {
     aws_input_stream_cpp_impl *impl = static_cast<aws_input_stream_cpp_impl *>(stream->impl);
+    aws_mem_release(stream->allocator, stream);
 
     impl->stream = nullptr;
 }
@@ -100,7 +101,7 @@ static struct aws_input_stream_vtable s_aws_input_stream_cpp_vtable = {s_aws_inp
                                                                        s_aws_input_stream_cpp_read,
                                                                        s_aws_input_stream_cpp_get_status,
                                                                        s_aws_input_stream_cpp_get_length,
-                                                                       s_aws_input_stream_cpp_clean_up};
+                                                                       s_aws_input_stream_cpp_destroy};
 
 namespace Aws
 {

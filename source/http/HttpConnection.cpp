@@ -215,23 +215,27 @@ namespace Aws
 
             int HttpStream::s_onIncomingHeaders(
                 struct aws_http_stream *,
+                enum aws_http_header_block headerBlock,
                 const struct aws_http_header *headerArray,
-                std::size_t numHeaders,
+                size_t numHeaders,
                 void *userData) noexcept
             {
                 auto callbackData = static_cast<ClientStreamCallbackData *>(userData);
-                callbackData->stream->m_onIncomingHeaders(*callbackData->stream, headerArray, numHeaders);
+                callbackData->stream->m_onIncomingHeaders(*callbackData->stream, headerBlock, headerArray, numHeaders);
 
                 return AWS_OP_SUCCESS;
             }
 
-            int HttpStream::s_onIncomingHeaderBlockDone(struct aws_http_stream *, bool hasBody, void *userData) noexcept
+            int HttpStream::s_onIncomingHeaderBlockDone(
+                struct aws_http_stream *,
+                enum aws_http_header_block headerBlock,
+                void *userData) noexcept
             {
                 auto callbackData = static_cast<ClientStreamCallbackData *>(userData);
 
                 if (callbackData->stream->m_onIncomingHeadersBlockDone)
                 {
-                    callbackData->stream->m_onIncomingHeadersBlockDone(*callbackData->stream, hasBody);
+                    callbackData->stream->m_onIncomingHeadersBlockDone(*callbackData->stream, headerBlock);
                 }
 
                 return AWS_OP_SUCCESS;
