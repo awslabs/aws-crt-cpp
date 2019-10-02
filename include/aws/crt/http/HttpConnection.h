@@ -68,8 +68,11 @@ namespace Aws
              *
              * On HttpStream, this function must be set.
              */
-            using OnIncomingHeaders =
-                std::function<void(HttpStream &stream, const HttpHeader *headersArray, std::size_t headersCount)>;
+            using OnIncomingHeaders = std::function<void(
+                HttpStream &stream,
+                enum aws_http_header_block headerBlock,
+                const HttpHeader *headersArray,
+                std::size_t headersCount)>;
 
             /**
              * Invoked when the headers portion of the message has been completely received. `hasBody` will indicate
@@ -77,7 +80,8 @@ namespace Aws
              *
              * On HttpStream, this function can be empty.
              */
-            using OnIncomingHeadersBlockDone = std::function<void(HttpStream &stream, bool hasBody)>;
+            using OnIncomingHeadersBlockDone =
+                std::function<void(HttpStream &stream, enum aws_http_header_block block)>;
 
             /**
              * Invoked as chunks of the body are read. `data` contains the data read from the wire. If chunked encoding
@@ -163,21 +167,19 @@ namespace Aws
 
                 static int s_onIncomingHeaders(
                     struct aws_http_stream *stream,
-                    const struct aws_http_header *header_array,
-                    size_t num_headers,
-                    void *user_data) noexcept;
+                    enum aws_http_header_block headerBlock,
+                    const struct aws_http_header *headerArray,
+                    size_t numHeaders,
+                    void *userData) noexcept;
                 static int s_onIncomingHeaderBlockDone(
                     struct aws_http_stream *stream,
-                    bool has_body,
-                    void *user_data) noexcept;
+                    enum aws_http_header_block headerBlock,
+                    void *userData) noexcept;
                 static int s_onIncomingBody(
                     struct aws_http_stream *stream,
                     const struct aws_byte_cursor *data,
-                    void *user_data) noexcept;
-                static void s_onStreamComplete(
-                    struct aws_http_stream *stream,
-                    int error_code,
-                    void *user_data) noexcept;
+                    void *userData) noexcept;
+                static void s_onStreamComplete(struct aws_http_stream *stream, int errorCode, void *userData) noexcept;
 
                 friend class HttpClientConnection;
             };
