@@ -37,6 +37,13 @@ namespace Aws
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext);
 
+            MqttClientConnectionConfig(
+                const Crt::String &endpoint,
+                uint16_t port,
+                const Crt::Io::SocketOptions &socketOptions,
+                Crt::Io::TlsContext &&tlsContext,
+                Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor);
+
             explicit operator bool() const noexcept { return m_context ? true : false; }
             int LastError() const noexcept { return m_lastError; }
 
@@ -46,6 +53,7 @@ namespace Aws
             uint16_t m_port;
             Crt::Io::TlsContext m_context;
             Crt::Io::SocketOptions m_socketOptions;
+            Crt::Mqtt::OnWebSocketHandshakeIntercept m_webSocketInterceptor;
             int m_lastError;
 
             friend class MqttClient;

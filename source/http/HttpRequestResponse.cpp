@@ -109,6 +109,11 @@ namespace Aws
             {
             }
 
+            HttpRequest::HttpRequest(Allocator *allocator, struct aws_http_message *message)
+                : HttpMessage(allocator, message)
+            {
+            }
+
             Optional<ByteCursor> HttpRequest::GetMethod() const noexcept
             {
                 ByteCursor method;

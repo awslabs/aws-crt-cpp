@@ -24,6 +24,11 @@ namespace Aws
 {
     namespace Crt
     {
+        namespace Mqtt
+        {
+            class MqttConnection;
+        }
+
         namespace Http
         {
             using HttpHeader = aws_http_header;
@@ -74,6 +79,8 @@ namespace Aws
              */
             class AWS_CRT_CPP_API HttpRequest : public HttpMessage
             {
+                friend class Mqtt::MqttConnection;
+
               public:
                 HttpRequest(Allocator *allocator = DefaultAllocator());
 
@@ -96,6 +103,9 @@ namespace Aws
                  * Sets the value of the URI-path associated with this request
                  */
                 bool SetPath(ByteCursor path) noexcept;
+
+              protected:
+                HttpRequest(Allocator *allocator, struct aws_http_message *message);
             };
 
             /**

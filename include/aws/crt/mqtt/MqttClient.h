@@ -33,6 +33,11 @@ namespace Aws
             class ClientBootstrap;
         }
 
+        namespace Http
+        {
+            class HttpRequest;
+        }
+
         namespace Mqtt
         {
             class MqttClient;
@@ -84,6 +89,12 @@ namespace Aws
 
             using OnOperationCompleteHandler =
                 std::function<void(MqttConnection &connection, uint16_t packetId, int errorCode)>;
+
+            using OnWebSocketHandshakeInterceptComplete =
+                std::function<void(const std::shared_ptr<Http::HttpRequest> &, int errorCode)>;
+
+            using OnWebSocketHandshakeIntercept = std::function<
+                void(std::shared_ptr<Http::HttpRequest> req, const OnWebSocketHandshakeInterceptComplete &onComplete)>;
 
             /**
              * Represents a persistent Mqtt Connection. The memory is owned by MqttClient.
@@ -173,6 +184,7 @@ namespace Aws
                 OnConnectionResumedHandler OnConnectionResumed;
                 OnConnectionCompletedHandler OnConnectionCompleted;
                 OnDisconnectHandler OnDisconnect;
+                OnWebSocketHandshakeIntercept WebsocketInterceptor;
 
               private:
                 aws_mqtt_client *m_owningClient;
@@ -183,19 +195,22 @@ namespace Aws
                 Io::TlsConnectionOptions m_tlsOptions;
                 Io::SocketOptions m_socketOptions;
                 bool m_useTls;
+                bool m_useWebsocket;
 
                 MqttConnection(
                     aws_mqtt_client *client,
                     const char *hostName,
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
-                    const Crt::Io::TlsContext &tlsContext) noexcept;
+                    const Crt::Io::TlsContext &tlsContext,
+                    bool useWebsocket) noexcept;
 
                 MqttConnection(
                     aws_mqtt_client *client,
                     const char *hostName,
                     uint16_t port,
-                    const Io::SocketOptions &socketOptions) noexcept;
+                    const Io::SocketOptions &socketOptions,
+                    bool useWebsocket) noexcept;
 
                 static void s_onConnectionInterrupted(aws_mqtt_client_connection *, int errorCode, void *userData);
                 static void s_onConnectionCompleted(
@@ -235,6 +250,12 @@ namespace Aws
                     int errorCode,
                     void *userdata);
 
+                static void s_onWebsocketHandshake(
+                    struct aws_http_message *request,
+                    void *user_data,
+                    aws_mqtt_transform_websocket_handshake_complete_fn *complete_fn,
+                    void *complete_ctx);
+
                 static void s_connectionInit(
                     MqttConnection *self,
                     const char *hostName,
@@ -272,7 +293,8 @@ namespace Aws
                     const char *hostName,
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
-                    const Crt::Io::TlsContext &tlsContext) noexcept;
+                    const Crt::Io::TlsContext &tlsContext,
+                    bool useWebsocket = false) noexcept;
                 /**
                  * Create a new connection object over plain text from the client. The client must outlive
                  * all of its connection instances.
@@ -280,7 +302,8 @@ namespace Aws
                 std::shared_ptr<MqttConnection> NewConnection(
                     const char *hostName,
                     uint16_t port,
-                    const Io::SocketOptions &socketOptions) noexcept;
+                    const Io::SocketOptions &socketOptions,
+                    bool useWebsocket = false) noexcept;
 
               private:
                 aws_mqtt_client *m_client;

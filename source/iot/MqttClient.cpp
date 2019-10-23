@@ -40,6 +40,17 @@ namespace Aws
         {
         }
 
+        MqttClientConnectionConfig::MqttClientConnectionConfig(
+            const Crt::String &endpoint,
+            uint16_t port,
+            const Crt::Io::SocketOptions &socketOptions,
+            Crt::Io::TlsContext &&tlsContext,
+            Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor)
+            : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
+              m_webSocketInterceptor(std::move(interceptor))
+        {
+        }
+
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
             const char *certPath,
             const char *pkeyPath,
@@ -197,8 +208,9 @@ namespace Aws
                 return nullptr;
             }
 
+            bool useWebsocket = config.m_webSocketInterceptor.operator bool();
             auto newConnection = m_client.NewConnection(
-                config.m_endpoint.c_str(), config.m_port, config.m_socketOptions, config.m_context);
+                config.m_endpoint.c_str(), config.m_port, config.m_socketOptions, config.m_context, useWebsocket);
 
             if (!newConnection)
             {
@@ -210,6 +222,11 @@ namespace Aws
             {
                 m_lastError = newConnection->LastError();
                 return nullptr;
+            }
+
+            if (useWebsocket)
+            {
+                newConnection->WebsocketInterceptor = config.m_webSocketInterceptor;
             }
 
             return newConnection;
