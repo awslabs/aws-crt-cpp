@@ -30,7 +30,8 @@ static void s_printHelp()
     fprintf(
         stdout,
         "aws-crt-cpp-mqtt-pub-sub --endpoint <endpoint> --cert <path to cert>"
-        " --key <path to key> --topic --ca_file <optional: path to custom ca>\n\n");
+        " --key <path to key> --topic --ca_file <optional: path to custom ca>"
+        " --use-websocket\n\n");
     fprintf(stdout, "endpoint: the endpoint of the mqtt server not including a port\n");
     fprintf(stdout, "cert: path to your client certificate in PEM format\n");
     fprintf(stdout, "key: path to your key in PEM format\n");
@@ -41,6 +42,7 @@ static void s_printHelp()
         "ca_file: Optional, if the mqtt server uses a certificate that's not already"
         " in your trust store, set this.\n");
     fprintf(stdout, "\tIt's the path to a CA file in PEM format\n");
+    fprintf(stdout, "use-websocket: if specified, uses a websocket over https\n\n");
 }
 
 bool s_cmdOptionExists(char **begin, char **end, const String &option)
@@ -73,18 +75,27 @@ int main(int argc, char *argv[])
     String caFile;
     String topic;
     String clientId("samples-client-id");
+    bool useWebSocket = false;
 
     /*********************** Parse Arguments ***************************/
-    if (!(s_cmdOptionExists(argv, argv + argc, "--endpoint") && s_cmdOptionExists(argv, argv + argc, "--cert") &&
-          s_cmdOptionExists(argv, argv + argc, "--key") && s_cmdOptionExists(argv, argv + argc, "--topic")))
+    if (!(s_cmdOptionExists(argv, argv + argc, "--endpoint")  && s_cmdOptionExists(argv, argv + argc, "--topic")))
     {
         s_printHelp();
         return 0;
     }
 
     endpoint = s_getCmdOption(argv, argv + argc, "--endpoint");
-    certificatePath = s_getCmdOption(argv, argv + argc, "--cert");
-    keyPath = s_getCmdOption(argv, argv + argc, "--key");
+
+    if (s_cmdOptionExists(argv, argv + argc, "--key"))
+    {
+        keyPath = s_getCmdOption(argv, argv + argc, "--key");
+    }
+
+    if (s_cmdOptionExists(argv, argv + argc, "--cert"))
+    {
+        certificatePath = s_getCmdOption(argv, argv + argc, "--cert");
+    }
+
     topic = s_getCmdOption(argv, argv + argc, "--topic");
     if (s_cmdOptionExists(argv, argv + argc, "--ca_file"))
     {
@@ -93,6 +104,10 @@ int main(int argc, char *argv[])
     if (s_cmdOptionExists(argv, argv + argc, "--client_id"))
     {
         clientId = s_getCmdOption(argv, argv + argc, "--client_id");
+    }
+    if (s_cmdOptionExists(argv, argv + argc, "--use-websocket"))
+    {
+        useWebSocket = true;
     }
 
     /********************** Now Setup an Mqtt Client ******************/
@@ -117,10 +132,30 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
-    auto clientConfig = Aws::Iot::MqttClientConnectionConfigBuilder(certificatePath.c_str(), keyPath.c_str())
-                            .WithEndpoint(endpoint)
-                            .WithCertificateAuthority(caFile.c_str())
-                            .Build();
+    Aws::Iot::MqttClientConnectionConfigBuilder builder;
+    Aws::Iot::WebsocketConfig config;
+
+    if (!certificatePath.empty() && !keyPath.empty())
+    {
+        builder =
+                Aws::Iot::MqttClientConnectionConfigBuilder(certificatePath.c_str(), keyPath.c_str());
+    }
+    else if (useWebSocket)
+    {
+        config.ServiceName = "iot";
+        config.SigningRegion = "us-east-1";
+
+        builder = Aws::Iot::MqttClientConnectionConfigBuilder(config);
+    }
+    else
+    {
+        s_printHelp();
+    }
+
+    builder.WithEndpoint(endpoint)
+           .WithCertificateAuthority(caFile.c_str());
+
+    auto clientConfig = builder.Build();
 
     if (!clientConfig)
     {

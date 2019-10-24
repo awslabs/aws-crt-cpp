@@ -16,6 +16,9 @@
 
 #include <aws/crt/Api.h>
 #include <aws/crt/Config.h>
+#include <aws/crt/auth/Credentials.h>
+#include <aws/crt/auth/Sigv4Signing.h>
+#include <aws/crt/http/HttpRequestResponse.h>
 
 namespace Aws
 {
@@ -66,17 +69,32 @@ namespace Aws
         }
 
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
-            const Crt::ByteCursor &cert,
-            const Crt::ByteCursor &pkey,
+            const WebsocketConfig &config,
             Crt::Allocator *allocator) noexcept
             : m_allocator(allocator), m_portOverride(0), m_lastError(0)
         {
             m_socketOptions.SetConnectTimeoutMs(3000);
-            m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(cert, pkey, allocator);
+            m_contextOptions = Crt::Io::TlsContextOptions::InitDefaultClient(allocator);
             if (!m_contextOptions)
             {
                 m_lastError = Aws::Crt::LastErrorOrUnknown();
             }
+
+            m_websocketConfig = config;
+
+            std::shared_ptr<Crt::Auth::ICredentialsProvider> credsProvider = config.CredentialsProvider;
+            if (!config.CredentialsProvider)
+            {
+                Crt::Auth::CredentialsProviderProfileConfig credsConfig;
+                credsProvider =
+                    Crt::Auth::CredentialsProvider::CreateCredentialsProviderProfile(credsConfig, m_allocator);
+            }
+            m_signer = Aws::Crt::MakeShared<Crt::Auth::Sigv4HttpRequestSigningPipeline>(m_allocator, credsProvider);
+            m_signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(m_allocator);
+            m_signerConfig->SetRegion(Crt::ByteCursorFromCString(m_websocketConfig->SigningRegion.c_str()));
+            m_signerConfig->SetService(Crt::ByteCursorFromCString(m_websocketConfig->ServiceName.c_str()));
+            m_signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4QueryParam);
+            m_signerConfig->SetSignBody(false);
         }
 
         MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithEndpoint(const Crt::String &endpoint)
@@ -167,15 +185,22 @@ namespace Aws
 
             if (!m_portOverride)
             {
-                port = 8883;
-
-                if (Crt::Io::TlsContextOptions::IsAlpnSupported())
+                if (m_websocketConfig)
                 {
                     port = 443;
                 }
+                else
+                {
+                    port = 8883;
+
+                    if (Crt::Io::TlsContextOptions::IsAlpnSupported())
+                    {
+                        port = 443;
+                    }
+                }
             }
 
-            if (port == 443 && Crt::Io::TlsContextOptions::IsAlpnSupported())
+            if (port == 443 && !m_websocketConfig && Crt::Io::TlsContextOptions::IsAlpnSupported())
             {
                 if (!m_contextOptions.SetAlpnList("x-amzn-mqtt-ca"))
                 {
@@ -183,11 +208,34 @@ namespace Aws
                 }
             }
 
+            if (!m_websocketConfig)
+            {
+                return MqttClientConnectionConfig(
+                    m_endpoint,
+                    port,
+                    m_socketOptions,
+                    Crt::Io::TlsContext(m_contextOptions, Crt::Io::TlsMode::CLIENT, m_allocator));
+            }
+
+            auto signer = m_signer;
+            auto signerConfig = m_signerConfig;
+            auto signerTransform = [signer, signerConfig](
+                                       std::shared_ptr<Crt::Http::HttpRequest> req,
+                                       const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete) {
+                auto signingComplete =
+                    [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
+                        onComplete(req1, errorCode);
+                    };
+
+                signer->SignRequest(req, signerConfig, std::move(signingComplete));
+            };
+
             return MqttClientConnectionConfig(
                 m_endpoint,
                 port,
                 m_socketOptions,
-                Crt::Io::TlsContext(m_contextOptions, Crt::Io::TlsMode::CLIENT, m_allocator));
+                Crt::Io::TlsContext(m_contextOptions, Crt::Io::TlsMode::CLIENT, m_allocator),
+                signerTransform);
         }
 
         MqttClient::MqttClient(Crt::Io::ClientBootstrap &bootstrap, Crt::Allocator *allocator) noexcept

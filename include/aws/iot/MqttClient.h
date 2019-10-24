@@ -14,6 +14,7 @@
  * permissions and limitations under the License.
  */
 #include <aws/crt/Exports.h>
+#include <aws/crt/auth/Sigv4Signing.h>
 #include <aws/crt/mqtt/MqttClient.h>
 
 namespace Aws
@@ -59,6 +60,17 @@ namespace Aws
             friend class MqttClient;
         };
 
+        struct WebsocketConfig
+        {
+            std::shared_ptr<Crt::Auth::ICredentialsProvider> CredentialsProvider;
+            Crt::Optional<Crt::String> ProxyHost;
+            Crt::Optional<uint16_t> ProxyPort;
+            Crt::Optional<Crt::String> ProxyUserName;
+            Crt::Optional<Crt::String> ProxyPassword;
+            Crt::String SigningRegion;
+            Crt::String ServiceName;
+        };
+
         /**
          * Represents configuration parameters for building a MqttClientConnectionConfig object. You can use a single
          * instance of this class PER MqttClientConnectionConfig you want to generate. If you want to generate a config
@@ -67,6 +79,8 @@ namespace Aws
         class AWS_CRT_CPP_API MqttClientConnectionConfigBuilder final
         {
           public:
+            MqttClientConnectionConfigBuilder() = default;
+
             /**
              * Sets the builder up for MTLS using certPath and pkeyPath. These are files on disk and must be in the PEM
              * format.
@@ -80,8 +94,7 @@ namespace Aws
              * format.
              */
             MqttClientConnectionConfigBuilder(
-                const Crt::ByteCursor &cert,
-                const Crt::ByteCursor &pkey,
+                const WebsocketConfig &config,
                 Crt::Allocator *allocator = Crt::DefaultAllocator()) noexcept;
 
             /**
@@ -148,6 +161,10 @@ namespace Aws
             uint16_t m_portOverride;
             Crt::Io::SocketOptions m_socketOptions;
             Crt::Io::TlsContextOptions m_contextOptions;
+            Crt::Optional<WebsocketConfig> m_websocketConfig;
+            // this is a shared pointer for lifetime reasons.
+            std::shared_ptr<Crt::Auth::Sigv4HttpRequestSigningPipeline> m_signer;
+            std::shared_ptr<Crt::Auth::AwsSigningConfig> m_signerConfig;
             int m_lastError;
         };
 
