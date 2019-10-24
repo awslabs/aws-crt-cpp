@@ -68,6 +68,7 @@ int main(int argc, char *argv[])
      * Do the global initialization for the API.
      */
     ApiHandle apiHandle;
+    //apiHandle.InitializeLogging(LogLevel::Trace, stderr);
 
     String endpoint;
     String certificatePath;
@@ -133,7 +134,6 @@ int main(int argc, char *argv[])
     }
 
     Aws::Iot::MqttClientConnectionConfigBuilder builder;
-    Aws::Iot::WebsocketConfig config;
 
     if (!certificatePath.empty() && !keyPath.empty())
     {
@@ -142,9 +142,7 @@ int main(int argc, char *argv[])
     }
     else if (useWebSocket)
     {
-        config.ServiceName = "iot";
-        config.SigningRegion = "us-east-1";
-
+        Aws::Iot::WebsocketConfig config("us-east-1", &bootstrap);
         builder = Aws::Iot::MqttClientConnectionConfigBuilder(config);
     }
     else
@@ -250,7 +248,7 @@ int main(int argc, char *argv[])
      * If you want different behavior, those arguments go into slots 3 & 4.
      */
     fprintf(stdout, "Connecting...\n");
-    if (!connection->Connect(clientId.c_str(), false))
+    if (!connection->Connect(clientId.c_str(), false, 1000))
     {
         fprintf(stderr, "MQTT Connection failed with error %s\n", ErrorDebugString(connection->LastError()));
         exit(-1);

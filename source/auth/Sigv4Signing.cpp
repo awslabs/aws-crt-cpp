@@ -36,6 +36,8 @@ namespace Aws
                 SetSigningAlgorithm(SigningAlgorithm::SigV4Header);
                 SetShouldNormalizeUriPath(true);
                 SetSignBody(true);
+                SetSigningTimepoint(DateTime::Now());
+                m_config->config_type = AWS_SIGNING_CONFIG_AWS;
             }
 
             AwsSigningConfig::~AwsSigningConfig()
@@ -67,13 +69,27 @@ namespace Aws
                 m_config->algorithm = static_cast<aws_signing_algorithm>(algorithm);
             }
 
-            ByteCursor AwsSigningConfig::GetRegion() const noexcept { return m_config->region; }
+            const Crt::String &AwsSigningConfig::GetRegion() const noexcept
+            {
+                return m_signingRegion;
+            }
 
-            void AwsSigningConfig::SetRegion(ByteCursor region) noexcept { m_config->region = region; }
+            void AwsSigningConfig::SetRegion(const Crt::String &region) noexcept
+            {
+                m_signingRegion = region;
+                m_config->region = ByteCursorFromCString(m_signingRegion.c_str());
+            }
 
-            ByteCursor AwsSigningConfig::GetService() const noexcept { return m_config->service; }
+            const Crt::String &AwsSigningConfig::GetService() const noexcept
+            {
+                return m_serviceName;
+            }
 
-            void AwsSigningConfig::SetService(ByteCursor service) noexcept { m_config->service = service; }
+            void AwsSigningConfig::SetService(const Crt::String &service) noexcept
+            {
+                m_serviceName = service;
+                m_config->service = ByteCursorFromCString(m_serviceName.c_str());
+            }
 
             DateTime AwsSigningConfig::GetSigningTimepoint() const noexcept
             {
@@ -100,6 +116,11 @@ namespace Aws
             void AwsSigningConfig::SetShouldNormalizeUriPath(bool shouldNormalizeUriPath) noexcept
             {
                 m_config->should_normalize_uri_path = shouldNormalizeUriPath;
+            }
+
+            void AwsSigningConfig::SetExcludeHeadersCallback(bool(*should_sign_cb)(const Crt::ByteCursor *)) noexcept
+            {
+                m_config->should_sign_header = should_sign_cb;
             }
 
             bool AwsSigningConfig::GetSignBody() const noexcept { return m_config->sign_body; }
@@ -158,8 +179,8 @@ namespace Aws
                 signingConfig.config_type = AWS_SIGNING_CONFIG_AWS;
                 signingConfig.algorithm = (enum aws_signing_algorithm)awsSigningConfig->GetSigningAlgorithm();
                 signingConfig.credentials = awsSigningConfig->GetCredentials()->GetUnderlyingHandle();
-                signingConfig.region = awsSigningConfig->GetRegion();
-                signingConfig.service = awsSigningConfig->GetService();
+                signingConfig.region = Crt::ByteCursorFromCString(awsSigningConfig->GetRegion().c_str());
+                signingConfig.service = Crt::ByteCursorFromCString(awsSigningConfig->GetService().c_str());
                 signingConfig.use_double_uri_encode = awsSigningConfig->GetUseDoubleUriEncode();
                 signingConfig.should_normalize_uri_path = awsSigningConfig->GetShouldNormalizeUriPath();
                 signingConfig.sign_body = awsSigningConfig->GetSignBody();

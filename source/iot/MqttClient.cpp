@@ -22,8 +22,26 @@
 
 namespace Aws
 {
+    static Crt::ByteCursor s_dateHeader = aws_byte_cursor_from_c_str("x-amz-date");
+    static Crt::ByteCursor s_securityTokenHeader = aws_byte_cursor_from_c_str("x-amz-security-token");
+
     namespace Iot
     {
+        WebsocketConfig::WebsocketConfig(const Crt::String &signingRegion, Crt::Io::ClientBootstrap *bootstrap, Crt::Allocator *allocator) noexcept
+            : SigningRegion(signingRegion), ServiceName("iotdevicegateway")
+        {
+            Crt::Auth::CredentialsProviderChainDefaultConfig config;
+            config.Bootstrap = bootstrap;
+
+            CredentialsProvider = Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(config, allocator);
+        }
+
+        WebsocketConfig::WebsocketConfig(const Crt::String &signingRegion, const std::shared_ptr<Crt::Auth::ICredentialsProvider> &credentialsProvider) noexcept
+                : CredentialsProvider(credentialsProvider), SigningRegion(signingRegion), ServiceName("iotdevicegateway")
+        {
+        }
+
+
         MqttClientConnectionConfig::MqttClientConnectionConfig(int lastError) noexcept
             : m_port(0), m_lastError(lastError)
         {
@@ -68,6 +86,12 @@ namespace Aws
             }
         }
 
+        static bool s_blackListHeadersFromSigning(const Crt::ByteCursor * cur)
+        {
+            return aws_byte_cursor_eq_ignore_case(&s_securityTokenHeader, cur)
+                    || aws_byte_cursor_eq_ignore_case(&s_dateHeader, cur);
+        }
+
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
             const WebsocketConfig &config,
             Crt::Allocator *allocator) noexcept
@@ -81,20 +105,8 @@ namespace Aws
             }
 
             m_websocketConfig = config;
+            m_signer = Aws::Crt::MakeShared<Crt::Auth::Sigv4HttpRequestSigningPipeline>(m_allocator, config.CredentialsProvider);
 
-            std::shared_ptr<Crt::Auth::ICredentialsProvider> credsProvider = config.CredentialsProvider;
-            if (!config.CredentialsProvider)
-            {
-                Crt::Auth::CredentialsProviderProfileConfig credsConfig;
-                credsProvider =
-                    Crt::Auth::CredentialsProvider::CreateCredentialsProviderProfile(credsConfig, m_allocator);
-            }
-            m_signer = Aws::Crt::MakeShared<Crt::Auth::Sigv4HttpRequestSigningPipeline>(m_allocator, credsProvider);
-            m_signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(m_allocator);
-            m_signerConfig->SetRegion(Crt::ByteCursorFromCString(m_websocketConfig->SigningRegion.c_str()));
-            m_signerConfig->SetService(Crt::ByteCursorFromCString(m_websocketConfig->ServiceName.c_str()));
-            m_signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4QueryParam);
-            m_signerConfig->SetSignBody(false);
         }
 
         MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithEndpoint(const Crt::String &endpoint)
@@ -218,14 +230,22 @@ namespace Aws
             }
 
             auto signer = m_signer;
-            auto signerConfig = m_signerConfig;
-            auto signerTransform = [signer, signerConfig](
+            auto allocator = m_allocator;
+            auto websocketConfig = m_websocketConfig.value();
+            auto signerTransform = [websocketConfig, allocator, signer](
                                        std::shared_ptr<Crt::Http::HttpRequest> req,
                                        const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete) {
                 auto signingComplete =
                     [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
                         onComplete(req1, errorCode);
                     };
+
+                auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
+                signerConfig->SetRegion(websocketConfig.SigningRegion);
+                signerConfig->SetService(websocketConfig.ServiceName);
+                signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4QueryParam);
+                signerConfig->SetSignBody(false);
+                signerConfig->SetExcludeHeadersCallback(s_blackListHeadersFromSigning);
 
                 signer->SignRequest(req, signerConfig, std::move(signingComplete));
             };

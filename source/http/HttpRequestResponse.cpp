@@ -26,8 +26,8 @@ namespace Aws
         namespace Http
         {
 
-            HttpMessage::HttpMessage(Allocator *allocator, struct aws_http_message *message) noexcept
-                : m_allocator(allocator), m_message(message), m_bodyStream(nullptr)
+            HttpMessage::HttpMessage(Allocator *allocator, struct aws_http_message *message, bool ownsMessage) noexcept
+                : m_allocator(allocator), m_message(message), m_bodyStream(nullptr), m_ownsMessage(ownsMessage)
             {
             }
 
@@ -41,7 +41,10 @@ namespace Aws
                         aws_input_stream_destroy(old_stream);
                     }
 
-                    aws_http_message_destroy(m_message);
+                    if (m_ownsMessage)
+                    {
+                        aws_http_message_destroy(m_message);
+                    }
                     m_message = nullptr;
                 }
             }
@@ -105,12 +108,12 @@ namespace Aws
             }
 
             HttpRequest::HttpRequest(Allocator *allocator)
-                : HttpMessage(allocator, aws_http_message_new_request(allocator))
+                : HttpMessage(allocator, aws_http_message_new_request(allocator), true)
             {
             }
 
             HttpRequest::HttpRequest(Allocator *allocator, struct aws_http_message *message)
-                : HttpMessage(allocator, message)
+                : HttpMessage(allocator, message, false)
             {
             }
 

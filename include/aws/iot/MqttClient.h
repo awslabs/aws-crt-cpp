@@ -62,6 +62,9 @@ namespace Aws
 
         struct WebsocketConfig
         {
+            WebsocketConfig(const Crt::String &signingRegion, Crt::Io::ClientBootstrap *bootstrap, Crt::Allocator *allocator = Crt::DefaultAllocator()) noexcept;
+            WebsocketConfig(const Crt::String &signingRegion, const std::shared_ptr<Crt::Auth::ICredentialsProvider> &credentialsProvider) noexcept;
+
             std::shared_ptr<Crt::Auth::ICredentialsProvider> CredentialsProvider;
             Crt::Optional<Crt::String> ProxyHost;
             Crt::Optional<uint16_t> ProxyPort;
@@ -164,7 +167,6 @@ namespace Aws
             Crt::Optional<WebsocketConfig> m_websocketConfig;
             // this is a shared pointer for lifetime reasons.
             std::shared_ptr<Crt::Auth::Sigv4HttpRequestSigningPipeline> m_signer;
-            std::shared_ptr<Crt::Auth::AwsSigningConfig> m_signerConfig;
             int m_lastError;
         };
 

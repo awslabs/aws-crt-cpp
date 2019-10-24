@@ -247,7 +247,10 @@ namespace Aws
                 toSeat = new (toSeat) Http::HttpRequest(allocator, rawRequest);
 
                 std::shared_ptr<Http::HttpRequest> request = std::shared_ptr<Http::HttpRequest>(
-                    toSeat, [allocator](Http::HttpRequest *ptr) { Crt::Delete(ptr, allocator); });
+                    toSeat, [allocator](Http::HttpRequest *ptr)
+                    {
+                        Crt::Delete(ptr, allocator);
+                    });
                 request->SetBody(nullptr);
 
                 auto onInterceptComplete =
