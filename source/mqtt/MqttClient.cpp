@@ -324,6 +324,12 @@ namespace Aws
                 return aws_mqtt_client_connection_set_login(m_underlyingConnection, &userNameCur, pwdCurPtr) == 0;
             }
 
+            bool MqttConnection::SetWebsocketProxyOptions(const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept
+            {
+                m_proxyOptions = proxyOptions;
+                return true;
+            }
+
             bool MqttConnection::Connect(
                 const char *clientId,
                 bool cleanSession,
@@ -345,29 +351,59 @@ namespace Aws
                 options.on_connection_complete = MqttConnection::s_onConnectionCompleted;
                 options.user_data = this;
 
-                if (m_useWebsocket && WebsocketInterceptor)
+                if (m_useWebsocket)
                 {
-                    if (aws_mqtt_client_connection_use_websockets(
-                            m_underlyingConnection, MqttConnection::s_onWebsocketHandshake, this, nullptr, nullptr))
+                    if (WebsocketInterceptor)
                     {
-                        return false;
+                        if (aws_mqtt_client_connection_use_websockets(
+                                m_underlyingConnection, MqttConnection::s_onWebsocketHandshake, this, nullptr,
+                                nullptr))
+                        {
+                            return false;
+                        }
                     }
-                }
-                else if (m_useWebsocket)
-                {
-                    if (aws_mqtt_client_connection_use_websockets(
-                            m_underlyingConnection, nullptr, nullptr, nullptr, nullptr))
+                    else
                     {
-                        return false;
+                        if (aws_mqtt_client_connection_use_websockets(
+                                m_underlyingConnection, nullptr, nullptr, nullptr, nullptr))
+                        {
+                            return false;
+                        }
+                    }
+
+                    if (m_proxyOptions)
+                    {
+                        struct aws_http_proxy_options proxyOptions;
+                        AWS_ZERO_STRUCT(proxyOptions);
+
+                        if (!m_proxyOptions->BasicAuthUsername.empty())
+                        {
+                            proxyOptions.auth_username = ByteCursorFromCString(m_proxyOptions->BasicAuthUsername.c_str());
+                        }
+
+                        if (!m_proxyOptions->BasicAuthPassword.empty())
+                        {
+                            proxyOptions.auth_password = ByteCursorFromCString(m_proxyOptions->BasicAuthPassword.c_str());
+                        }
+
+                        if (m_proxyOptions->TlsOptions)
+                        {
+                            proxyOptions.tls_options =
+                                    const_cast<struct aws_tls_connection_options *>(m_proxyOptions->TlsOptions->GetUnderlyingHandle());
+                        }
+
+                        proxyOptions.auth_type = static_cast<enum aws_http_proxy_authentication_type>(m_proxyOptions->AuthType);
+                        proxyOptions.host = ByteCursorFromCString(m_proxyOptions->HostName.c_str());
+                        proxyOptions.port = m_proxyOptions->Port;
+
+                        if (aws_mqtt_client_connection_set_websocket_proxy_options(m_underlyingConnection, &proxyOptions))
+                        {
+                            return false;
+                        }
                     }
                 }
 
-                if (aws_mqtt_client_connection_connect(m_underlyingConnection, &options))
-                {
-                    return false;
-                }
-
-                return true;
+                return aws_mqtt_client_connection_connect(m_underlyingConnection, &options) == AWS_OP_SUCCESS;
             }
 
             bool MqttConnection::Disconnect() noexcept

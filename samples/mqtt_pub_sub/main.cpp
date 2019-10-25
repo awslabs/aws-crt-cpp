@@ -31,10 +31,10 @@ static void s_printHelp()
         stdout,
         "aws-crt-cpp-mqtt-pub-sub --endpoint <endpoint> --cert <path to cert>"
         " --key <path to key> --topic --ca_file <optional: path to custom ca>"
-        " --use-websocket\n\n");
+        " --use_websocket --signing_region <region> --proxy_host <host> --proxy_port <port>\n\n");
     fprintf(stdout, "endpoint: the endpoint of the mqtt server not including a port\n");
-    fprintf(stdout, "cert: path to your client certificate in PEM format\n");
-    fprintf(stdout, "key: path to your key in PEM format\n");
+    fprintf(stdout, "cert: path to your client certificate in PEM format. If this is not set you must specify use_websocket\n");
+    fprintf(stdout, "key: path to your key in PEM format. If this is not set you must specify use_websocket\n");
     fprintf(stdout, "topic: topic to publish, subscribe to.\n");
     fprintf(stdout, "client_id: client id to use (optional)\n");
     fprintf(
@@ -42,7 +42,10 @@ static void s_printHelp()
         "ca_file: Optional, if the mqtt server uses a certificate that's not already"
         " in your trust store, set this.\n");
     fprintf(stdout, "\tIt's the path to a CA file in PEM format\n");
-    fprintf(stdout, "use-websocket: if specified, uses a websocket over https\n\n");
+    fprintf(stdout, "use_websocket: if specified, uses a websocket over https (optional)\n");
+    fprintf(stdout, "signing_region: used for websocket signer it should only be specific if websockets are used. (required for websockets)\n");
+    fprintf(stdout, "proxy_host: if you want to use a proxy with websockets, specify the host here (optional).\n");
+    fprintf(stdout, "proxy_port: defaults to 8080 is proxy_host is set. Set this to any value you'd like (optional).\n\n");
 }
 
 bool s_cmdOptionExists(char **begin, char **end, const String &option)
@@ -68,7 +71,6 @@ int main(int argc, char *argv[])
      * Do the global initialization for the API.
      */
     ApiHandle apiHandle;
-    //apiHandle.InitializeLogging(LogLevel::Trace, stderr);
 
     String endpoint;
     String certificatePath;
@@ -76,6 +78,10 @@ int main(int argc, char *argv[])
     String caFile;
     String topic;
     String clientId("samples-client-id");
+    String signingRegion;
+    String proxyHost;
+    uint16_t proxyPort(8080);
+
     bool useWebSocket = false;
 
     /*********************** Parse Arguments ***************************/
@@ -106,9 +112,24 @@ int main(int argc, char *argv[])
     {
         clientId = s_getCmdOption(argv, argv + argc, "--client_id");
     }
-    if (s_cmdOptionExists(argv, argv + argc, "--use-websocket"))
+    if (s_cmdOptionExists(argv, argv + argc, "--use_websocket"))
     {
+        if (!s_cmdOptionExists(argv, argv + argc, "--signing_region"))
+        {
+            s_printHelp();
+        }
         useWebSocket = true;
+        signingRegion = s_getCmdOption(argv, argv + argc, "--signing_region");
+
+        if (s_cmdOptionExists(argv, argv + argc, "--proxy_host"))
+        {
+            proxyHost = s_getCmdOption(argv, argv + argc, "--proxy_host");
+        }
+
+        if (s_cmdOptionExists(argv, argv + argc, "--proxy_port"))
+        {
+            proxyPort = atoi(s_getCmdOption(argv, argv + argc, "--proxy_port"));
+        }
     }
 
     /********************** Now Setup an Mqtt Client ******************/
@@ -142,7 +163,17 @@ int main(int argc, char *argv[])
     }
     else if (useWebSocket)
     {
-        Aws::Iot::WebsocketConfig config("us-east-1", &bootstrap);
+        Aws::Iot::WebsocketConfig config(signingRegion, &bootstrap);
+
+        if (!proxyHost.empty())
+        {
+            Aws::Crt::Http::HttpClientConnectionProxyOptions proxyOptions;
+            proxyOptions.HostName = proxyHost;
+            proxyOptions.Port = proxyPort;
+            proxyOptions.AuthType = Aws::Crt::Http::AwsHttpProxyAuthenticationType::None;
+            config.ProxyOptions = std::move(proxyOptions);
+        }
+
         builder = Aws::Iot::MqttClientConnectionConfigBuilder(config);
     }
     else
@@ -150,8 +181,12 @@ int main(int argc, char *argv[])
         s_printHelp();
     }
 
-    builder.WithEndpoint(endpoint)
-           .WithCertificateAuthority(caFile.c_str());
+    if (!caFile.empty())
+    {
+        builder.WithCertificateAuthority(caFile.c_str());
+    }
+
+    builder.WithEndpoint(endpoint);
 
     auto clientConfig = builder.Build();
 

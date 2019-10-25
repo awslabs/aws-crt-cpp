@@ -28,26 +28,19 @@ namespace Aws
         namespace Auth
         {
             AwsSigningConfig::AwsSigningConfig(Allocator *allocator)
-                : ISigningConfig(), m_allocator(allocator), m_credentials(nullptr),
-                  m_config(Aws::Crt::New<aws_signing_config_aws>(allocator))
+                : ISigningConfig(), m_allocator(allocator), m_credentials(nullptr)
             {
-                AWS_ZERO_STRUCT(*m_config);
+                AWS_ZERO_STRUCT(m_config);
 
                 SetSigningAlgorithm(SigningAlgorithm::SigV4Header);
                 SetShouldNormalizeUriPath(true);
                 SetSignBody(true);
                 SetSigningTimepoint(DateTime::Now());
-                m_config->config_type = AWS_SIGNING_CONFIG_AWS;
+                m_config.config_type = AWS_SIGNING_CONFIG_AWS;
             }
 
             AwsSigningConfig::~AwsSigningConfig()
             {
-                if (m_config != nullptr)
-                {
-                    Aws::Crt::Delete(m_config, m_allocator);
-                    m_config = nullptr;
-                }
-
                 m_allocator = nullptr;
             }
 
@@ -55,18 +48,18 @@ namespace Aws
 
             void AwsSigningConfig::SetCredentials(const std::shared_ptr<Credentials> &credentials) noexcept
             {
-                m_config->credentials = credentials->GetUnderlyingHandle();
                 m_credentials = credentials;
+                m_config.credentials = m_credentials->GetUnderlyingHandle();
             }
 
             SigningAlgorithm AwsSigningConfig::GetSigningAlgorithm() const noexcept
             {
-                return static_cast<SigningAlgorithm>(m_config->algorithm);
+                return static_cast<SigningAlgorithm>(m_config.algorithm);
             }
 
             void AwsSigningConfig::SetSigningAlgorithm(SigningAlgorithm algorithm) noexcept
             {
-                m_config->algorithm = static_cast<aws_signing_algorithm>(algorithm);
+                m_config.algorithm = static_cast<aws_signing_algorithm>(algorithm);
             }
 
             const Crt::String &AwsSigningConfig::GetRegion() const noexcept
@@ -77,7 +70,7 @@ namespace Aws
             void AwsSigningConfig::SetRegion(const Crt::String &region) noexcept
             {
                 m_signingRegion = region;
-                m_config->region = ByteCursorFromCString(m_signingRegion.c_str());
+                m_config.region = ByteCursorFromCString(m_signingRegion.c_str());
             }
 
             const Crt::String &AwsSigningConfig::GetService() const noexcept
@@ -88,44 +81,54 @@ namespace Aws
             void AwsSigningConfig::SetService(const Crt::String &service) noexcept
             {
                 m_serviceName = service;
-                m_config->service = ByteCursorFromCString(m_serviceName.c_str());
+                m_config.service = ByteCursorFromCString(m_serviceName.c_str());
             }
 
             DateTime AwsSigningConfig::GetSigningTimepoint() const noexcept
             {
-                return DateTime(aws_date_time_as_millis(&m_config->date));
+                return {aws_date_time_as_millis(&m_config.date)};
             }
 
             void AwsSigningConfig::SetSigningTimepoint(const DateTime &date) noexcept
             {
-                aws_date_time_init_epoch_millis(&m_config->date, date.Millis());
+                aws_date_time_init_epoch_millis(&m_config.date, date.Millis());
             }
 
-            bool AwsSigningConfig::GetUseDoubleUriEncode() const noexcept { return m_config->use_double_uri_encode; }
+            bool AwsSigningConfig::GetUseDoubleUriEncode() const noexcept { return m_config.use_double_uri_encode; }
 
             void AwsSigningConfig::SetUseDoubleUriEncode(bool useDoubleUriEncode) noexcept
             {
-                m_config->use_double_uri_encode = useDoubleUriEncode;
+                m_config.use_double_uri_encode = useDoubleUriEncode;
             }
 
             bool AwsSigningConfig::GetShouldNormalizeUriPath() const noexcept
             {
-                return m_config->should_normalize_uri_path;
+                return m_config.should_normalize_uri_path;
             }
 
             void AwsSigningConfig::SetShouldNormalizeUriPath(bool shouldNormalizeUriPath) noexcept
             {
-                m_config->should_normalize_uri_path = shouldNormalizeUriPath;
+                m_config.should_normalize_uri_path = shouldNormalizeUriPath;
             }
 
-            void AwsSigningConfig::SetExcludeHeadersCallback(bool(*should_sign_cb)(const Crt::ByteCursor *)) noexcept
+            ShouldSignHeadersCb AwsSigningConfig::GetShouldSignHeadersCallback() const noexcept
             {
-                m_config->should_sign_header = should_sign_cb;
+                return m_config.should_sign_header;
             }
 
-            bool AwsSigningConfig::GetSignBody() const noexcept { return m_config->sign_body; }
+            void AwsSigningConfig::SetShouldSignHeadersCallback(ShouldSignHeadersCb shouldSignHeadersCb) noexcept
+            {
+                m_config.should_sign_header = shouldSignHeadersCb;
+            }
 
-            void AwsSigningConfig::SetSignBody(bool signBody) noexcept { m_config->sign_body = signBody; }
+            bool AwsSigningConfig::GetSignBody() const noexcept { return m_config.sign_body; }
+
+            void AwsSigningConfig::SetSignBody(bool signBody) noexcept { m_config.sign_body = signBody; }
+
+            const struct aws_signing_config_aws *AwsSigningConfig::GetUnderlyingHandle() const noexcept
+            {
+                return &m_config;
+            }
 
             /////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -165,7 +168,7 @@ namespace Aws
                     return false;
                 }
 
-                const AwsSigningConfig *awsSigningConfig = static_cast<const AwsSigningConfig *>(config);
+                const auto *awsSigningConfig = static_cast<const AwsSigningConfig *>(config);
 
                 ScopedResource<aws_signable> scoped_signable(
                     aws_signable_new_http_request(m_allocator, request.GetUnderlyingMessage()), aws_signable_destroy);
@@ -174,19 +177,6 @@ namespace Aws
                     return false;
                 }
 
-                struct aws_signing_config_aws signingConfig;
-                AWS_ZERO_STRUCT(signingConfig);
-                signingConfig.config_type = AWS_SIGNING_CONFIG_AWS;
-                signingConfig.algorithm = (enum aws_signing_algorithm)awsSigningConfig->GetSigningAlgorithm();
-                signingConfig.credentials = awsSigningConfig->GetCredentials()->GetUnderlyingHandle();
-                signingConfig.region = Crt::ByteCursorFromCString(awsSigningConfig->GetRegion().c_str());
-                signingConfig.service = Crt::ByteCursorFromCString(awsSigningConfig->GetService().c_str());
-                signingConfig.use_double_uri_encode = awsSigningConfig->GetUseDoubleUriEncode();
-                signingConfig.should_normalize_uri_path = awsSigningConfig->GetShouldNormalizeUriPath();
-                signingConfig.sign_body = awsSigningConfig->GetSignBody();
-
-                aws_date_time_init_epoch_millis(&signingConfig.date, awsSigningConfig->GetSigningTimepoint().Millis());
-
                 struct aws_signing_result signing_result;
                 AWS_ZERO_STRUCT(signing_result);
                 aws_signing_result_init(&signing_result, m_allocator);
@@ -194,19 +184,15 @@ namespace Aws
                 ScopedResource<aws_signing_result> scoped_signing_result(&signing_result, aws_signing_result_clean_up);
 
                 if (aws_signer_sign_request(
-                        m_signer, scoped_signable.get(), (aws_signing_config_base *)&signingConfig, &signing_result) !=
+                        m_signer, scoped_signable.get(), (aws_signing_config_base *)awsSigningConfig->GetUnderlyingHandle(), &signing_result) !=
                     AWS_OP_SUCCESS)
                 {
                     return false;
                 }
 
-                if (aws_apply_signing_result_to_http_request(
-                        request.GetUnderlyingMessage(), m_allocator, &signing_result) != AWS_OP_SUCCESS)
-                {
-                    return false;
-                }
+                return aws_apply_signing_result_to_http_request(
+                        request.GetUnderlyingMessage(), m_allocator, &signing_result) == AWS_OP_SUCCESS;
 
-                return true;
             }
 
             /////////////////////////////////////////////////////////////////////////////////////////////

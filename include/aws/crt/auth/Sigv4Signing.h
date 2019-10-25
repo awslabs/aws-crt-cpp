@@ -40,6 +40,8 @@ namespace Aws
                 Count = AWS_SIGNING_ALGORITHM_COUNT
             };
 
+            using ShouldSignHeadersCb = bool(*)(const Crt::ByteCursor *);
+
             /**
              * Wrapper around the configuration structure specific to the AWS
              * Sigv4 signing process
@@ -130,7 +132,8 @@ namespace Aws
                  */
                 void SetShouldNormalizeUriPath(bool shouldNormalizeUriPath) noexcept;
 
-                void SetExcludeHeadersCallback(bool(*should_sign_cb)(const Crt::ByteCursor *)) noexcept;
+                ShouldSignHeadersCb GetShouldSignHeadersCallback() const noexcept;
+                void SetShouldSignHeadersCallback(ShouldSignHeadersCb shouldSignHeadersCb) noexcept;
 
                 /**
                  * Gets whether or not the signer should add the x-amz-content-sha256 header (with appropriate value) to
@@ -144,12 +147,12 @@ namespace Aws
                  */
                 void SetSignBody(bool signBody) noexcept;
 
-                struct aws_signing_config_aws *GetUnderlyingHandle() const noexcept { return m_config; }
+                const struct aws_signing_config_aws *GetUnderlyingHandle() const noexcept;
 
               private:
                 Allocator *m_allocator;
                 std::shared_ptr<Credentials> m_credentials;
-                struct aws_signing_config_aws *m_config;
+                struct aws_signing_config_aws m_config;
                 Crt::String m_signingRegion;
                 Crt::String m_serviceName;
             };

@@ -57,7 +57,7 @@ namespace Aws
             uint16_t port,
             const Crt::Io::SocketOptions &socketOptions,
             Crt::Io::TlsContext &&tlsContext)
-            : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions)
+            : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions), m_lastError(0)
         {
         }
 
@@ -66,9 +66,10 @@ namespace Aws
             uint16_t port,
             const Crt::Io::SocketOptions &socketOptions,
             Crt::Io::TlsContext &&tlsContext,
-            Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor)
+            Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
+            const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions>& proxyOptions)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
-              m_webSocketInterceptor(std::move(interceptor))
+              m_webSocketInterceptor(std::move(interceptor)), m_proxyOptions(proxyOptions), m_lastError(0)
         {
         }
 
@@ -88,8 +89,8 @@ namespace Aws
 
         static bool s_blackListHeadersFromSigning(const Crt::ByteCursor * cur)
         {
-            return aws_byte_cursor_eq_ignore_case(&s_securityTokenHeader, cur)
-                    || aws_byte_cursor_eq_ignore_case(&s_dateHeader, cur);
+            return !aws_byte_cursor_eq_ignore_case(&s_securityTokenHeader, cur)
+                    && !aws_byte_cursor_eq_ignore_case(&s_dateHeader, cur);
         }
 
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
@@ -235,27 +236,26 @@ namespace Aws
             auto signerTransform = [websocketConfig, allocator, signer](
                                        std::shared_ptr<Crt::Http::HttpRequest> req,
                                        const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete) {
-                auto signingComplete =
-                    [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
-                        onComplete(req1, errorCode);
-                    };
 
                 auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
                 signerConfig->SetRegion(websocketConfig.SigningRegion);
                 signerConfig->SetService(websocketConfig.ServiceName);
                 signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4QueryParam);
                 signerConfig->SetSignBody(false);
-                signerConfig->SetExcludeHeadersCallback(s_blackListHeadersFromSigning);
+                signerConfig->SetShouldSignHeadersCallback(s_blackListHeadersFromSigning);
 
-                signer->SignRequest(req, signerConfig, std::move(signingComplete));
+                signer->SignRequest(req, signerConfig, onComplete);
             };
+
+            const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions = m_websocketConfig->ProxyOptions;
 
             return MqttClientConnectionConfig(
                 m_endpoint,
                 port,
                 m_socketOptions,
                 Crt::Io::TlsContext(m_contextOptions, Crt::Io::TlsMode::CLIENT, m_allocator),
-                signerTransform);
+                signerTransform,
+                proxyOptions);
         }
 
         MqttClient::MqttClient(Crt::Io::ClientBootstrap &bootstrap, Crt::Allocator *allocator) noexcept
@@ -295,6 +295,11 @@ namespace Aws
             if (useWebsocket)
             {
                 newConnection->WebsocketInterceptor = config.m_webSocketInterceptor;
+
+                if (config.m_proxyOptions)
+                {
+                    newConnection->SetWebsocketProxyOptions(config.m_proxyOptions.value());
+                }
             }
 
             return newConnection;

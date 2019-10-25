@@ -38,12 +38,18 @@ namespace Aws
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext);
 
+            /**
+             * Creates a client configuration for use with making new AWS Iot specific MQTT Connections with web sockets.
+             * interceptor: a callback
+             * @param proxyOptions
+             */
             MqttClientConnectionConfig(
                 const Crt::String &endpoint,
                 uint16_t port,
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext,
-                Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor);
+                Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
+                const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions>& proxyOptions);
 
             explicit operator bool() const noexcept { return m_context ? true : false; }
             int LastError() const noexcept { return m_lastError; }
@@ -55,6 +61,7 @@ namespace Aws
             Crt::Io::TlsContext m_context;
             Crt::Io::SocketOptions m_socketOptions;
             Crt::Mqtt::OnWebSocketHandshakeIntercept m_webSocketInterceptor;
+            Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
             int m_lastError;
 
             friend class MqttClient;
@@ -66,10 +73,7 @@ namespace Aws
             WebsocketConfig(const Crt::String &signingRegion, const std::shared_ptr<Crt::Auth::ICredentialsProvider> &credentialsProvider) noexcept;
 
             std::shared_ptr<Crt::Auth::ICredentialsProvider> CredentialsProvider;
-            Crt::Optional<Crt::String> ProxyHost;
-            Crt::Optional<uint16_t> ProxyPort;
-            Crt::Optional<Crt::String> ProxyUserName;
-            Crt::Optional<Crt::String> ProxyPassword;
+            Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> ProxyOptions;
             Crt::String SigningRegion;
             Crt::String ServiceName;
         };

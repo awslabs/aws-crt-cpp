@@ -18,6 +18,8 @@
 #include <aws/crt/Types.h>
 #include <aws/crt/io/SocketOptions.h>
 #include <aws/crt/io/TlsOptions.h>
+#include <aws/crt/http/HttpConnection.h>
+
 #include <aws/mqtt/client.h>
 
 #include <atomic>
@@ -127,6 +129,8 @@ namespace Aws
                  */
                 bool SetLogin(const char *userName, const char *password) noexcept;
 
+                bool SetWebsocketProxyOptions(const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
+
                 /**
                  * Initiates the connection, OnConnectionCompleted will
                  * be invoked in an event-loop thread.
@@ -194,6 +198,7 @@ namespace Aws
                 Crt::Io::TlsContext m_tlsContext;
                 Io::TlsConnectionOptions m_tlsOptions;
                 Io::SocketOptions m_socketOptions;
+                Crt::Optional<Http::HttpClientConnectionProxyOptions> m_proxyOptions;
                 bool m_useTls;
                 bool m_useWebsocket;
 
