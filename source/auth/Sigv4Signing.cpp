@@ -39,10 +39,7 @@ namespace Aws
                 m_config.config_type = AWS_SIGNING_CONFIG_AWS;
             }
 
-            AwsSigningConfig::~AwsSigningConfig()
-            {
-                m_allocator = nullptr;
-            }
+            AwsSigningConfig::~AwsSigningConfig() { m_allocator = nullptr; }
 
             std::shared_ptr<Credentials> AwsSigningConfig::GetCredentials() const noexcept { return m_credentials; }
 
@@ -62,10 +59,7 @@ namespace Aws
                 m_config.algorithm = static_cast<aws_signing_algorithm>(algorithm);
             }
 
-            const Crt::String &AwsSigningConfig::GetRegion() const noexcept
-            {
-                return m_signingRegion;
-            }
+            const Crt::String &AwsSigningConfig::GetRegion() const noexcept { return m_signingRegion; }
 
             void AwsSigningConfig::SetRegion(const Crt::String &region) noexcept
             {
@@ -73,10 +67,7 @@ namespace Aws
                 m_config.region = ByteCursorFromCString(m_signingRegion.c_str());
             }
 
-            const Crt::String &AwsSigningConfig::GetService() const noexcept
-            {
-                return m_serviceName;
-            }
+            const Crt::String &AwsSigningConfig::GetService() const noexcept { return m_serviceName; }
 
             void AwsSigningConfig::SetService(const Crt::String &service) noexcept
             {
@@ -184,15 +175,16 @@ namespace Aws
                 ScopedResource<aws_signing_result> scoped_signing_result(&signing_result, aws_signing_result_clean_up);
 
                 if (aws_signer_sign_request(
-                        m_signer, scoped_signable.get(), (aws_signing_config_base *)awsSigningConfig->GetUnderlyingHandle(), &signing_result) !=
-                    AWS_OP_SUCCESS)
+                        m_signer,
+                        scoped_signable.get(),
+                        (aws_signing_config_base *)awsSigningConfig->GetUnderlyingHandle(),
+                        &signing_result) != AWS_OP_SUCCESS)
                 {
                     return false;
                 }
 
                 return aws_apply_signing_result_to_http_request(
-                        request.GetUnderlyingMessage(), m_allocator, &signing_result) == AWS_OP_SUCCESS;
-
+                           request.GetUnderlyingMessage(), m_allocator, &signing_result) == AWS_OP_SUCCESS;
             }
 
             /////////////////////////////////////////////////////////////////////////////////////////////

@@ -67,7 +67,7 @@ namespace Aws
                 struct aws_http_message *GetUnderlyingMessage() const noexcept { return m_message; }
 
               protected:
-                HttpMessage(Allocator *allocator, struct aws_http_message *message, bool ownsMessage=true) noexcept;
+                HttpMessage(Allocator *allocator, struct aws_http_message *message, bool ownsMessage = true) noexcept;
 
                 Allocator *m_allocator;
                 struct aws_http_message *m_message;

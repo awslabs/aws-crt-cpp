@@ -27,20 +27,25 @@ namespace Aws
 
     namespace Iot
     {
-        WebsocketConfig::WebsocketConfig(const Crt::String &signingRegion, Crt::Io::ClientBootstrap *bootstrap, Crt::Allocator *allocator) noexcept
+        WebsocketConfig::WebsocketConfig(
+            const Crt::String &signingRegion,
+            Crt::Io::ClientBootstrap *bootstrap,
+            Crt::Allocator *allocator) noexcept
             : SigningRegion(signingRegion), ServiceName("iotdevicegateway")
         {
             Crt::Auth::CredentialsProviderChainDefaultConfig config;
             config.Bootstrap = bootstrap;
 
-            CredentialsProvider = Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(config, allocator);
+            CredentialsProvider =
+                Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(config, allocator);
         }
 
-        WebsocketConfig::WebsocketConfig(const Crt::String &signingRegion, const std::shared_ptr<Crt::Auth::ICredentialsProvider> &credentialsProvider) noexcept
-                : CredentialsProvider(credentialsProvider), SigningRegion(signingRegion), ServiceName("iotdevicegateway")
+        WebsocketConfig::WebsocketConfig(
+            const Crt::String &signingRegion,
+            const std::shared_ptr<Crt::Auth::ICredentialsProvider> &credentialsProvider) noexcept
+            : CredentialsProvider(credentialsProvider), SigningRegion(signingRegion), ServiceName("iotdevicegateway")
         {
         }
-
 
         MqttClientConnectionConfig::MqttClientConnectionConfig(int lastError) noexcept
             : m_port(0), m_lastError(lastError)
@@ -57,7 +62,8 @@ namespace Aws
             uint16_t port,
             const Crt::Io::SocketOptions &socketOptions,
             Crt::Io::TlsContext &&tlsContext)
-            : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions), m_lastError(0)
+            : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
+              m_lastError(0)
         {
         }
 
@@ -67,47 +73,57 @@ namespace Aws
             const Crt::Io::SocketOptions &socketOptions,
             Crt::Io::TlsContext &&tlsContext,
             Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
-            const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions>& proxyOptions)
+            const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
               m_webSocketInterceptor(std::move(interceptor)), m_proxyOptions(proxyOptions), m_lastError(0)
         {
         }
 
+        MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder() : m_isGood(false) {}
+
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
             const char *certPath,
             const char *pkeyPath,
             Crt::Allocator *allocator) noexcept
-            : m_allocator(allocator), m_portOverride(0), m_lastError(0)
+            : m_allocator(allocator), m_portOverride(0), m_isGood(true)
         {
             m_socketOptions.SetConnectTimeoutMs(3000);
             m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(certPath, pkeyPath, allocator);
             if (!m_contextOptions)
             {
-                m_lastError = Aws::Crt::LastErrorOrUnknown();
+                m_isGood = false;
             }
         }
 
-        static bool s_blackListHeadersFromSigning(const Crt::ByteCursor * cur)
+        MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
+            const Crt::ByteCursor &cert,
+            const Crt::ByteCursor &pkey,
+            Crt::Allocator *allocator) noexcept
+            : m_allocator(allocator), m_portOverride(0), m_isGood(true)
         {
-            return !aws_byte_cursor_eq_ignore_case(&s_securityTokenHeader, cur)
-                    && !aws_byte_cursor_eq_ignore_case(&s_dateHeader, cur);
+            m_socketOptions.SetConnectTimeoutMs(3000);
+            m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(cert, pkey, allocator);
+            if (!m_contextOptions)
+            {
+                m_isGood = false;
+            }
         }
 
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
             const WebsocketConfig &config,
             Crt::Allocator *allocator) noexcept
-            : m_allocator(allocator), m_portOverride(0), m_lastError(0)
+            : m_allocator(allocator), m_portOverride(0), m_isGood(true)
         {
             m_socketOptions.SetConnectTimeoutMs(3000);
             m_contextOptions = Crt::Io::TlsContextOptions::InitDefaultClient(allocator);
             if (!m_contextOptions)
             {
-                m_lastError = Aws::Crt::LastErrorOrUnknown();
+                m_isGood = false;
             }
 
             m_websocketConfig = config;
-            m_signer = Aws::Crt::MakeShared<Crt::Auth::Sigv4HttpRequestSigningPipeline>(m_allocator, config.CredentialsProvider);
-
+            m_signer = Aws::Crt::MakeShared<Crt::Auth::Sigv4HttpRequestSigningPipeline>(
+                m_allocator, config.CredentialsProvider);
         }
 
         MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithEndpoint(const Crt::String &endpoint)
@@ -135,7 +151,7 @@ namespace Aws
             {
                 if (!m_contextOptions.OverrideDefaultTrustStore(nullptr, caPath))
                 {
-                    m_lastError = Aws::Crt::LastErrorOrUnknown();
+                    m_isGood = false;
                 }
             }
             return *this;
@@ -148,7 +164,7 @@ namespace Aws
             {
                 if (!m_contextOptions.OverrideDefaultTrustStore(cert))
                 {
-                    m_lastError = Aws::Crt::LastErrorOrUnknown();
+                    m_isGood = false;
                 }
             }
             return *this;
@@ -187,11 +203,17 @@ namespace Aws
             return *this;
         }
 
+        static bool s_blackListHeadersFromSigning(const Crt::ByteCursor *cur)
+        {
+            return !aws_byte_cursor_eq_ignore_case(&s_securityTokenHeader, cur) &&
+                   !aws_byte_cursor_eq_ignore_case(&s_dateHeader, cur);
+        }
+
         MqttClientConnectionConfig MqttClientConnectionConfigBuilder::Build() noexcept
         {
-            if (m_lastError)
+            if (m_isGood)
             {
-                return MqttClientConnectionConfig::CreateInvalid(m_lastError);
+                return MqttClientConnectionConfig::CreateInvalid(aws_last_error());
             }
 
             uint16_t port = m_portOverride;
@@ -236,6 +258,12 @@ namespace Aws
             auto signerTransform = [websocketConfig, allocator, signer](
                                        std::shared_ptr<Crt::Http::HttpRequest> req,
                                        const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete) {
+                // it is only a very happy coincidence that these function signatures match. This is the callback
+                // for signing to be complete. It invokes the callback for websocket handshake to be complete.
+                auto signingComplete =
+                    [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
+                        onComplete(req1, errorCode);
+                    };
 
                 auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
                 signerConfig->SetRegion(websocketConfig.SigningRegion);
@@ -244,10 +272,11 @@ namespace Aws
                 signerConfig->SetSignBody(false);
                 signerConfig->SetShouldSignHeadersCallback(s_blackListHeadersFromSigning);
 
-                signer->SignRequest(req, signerConfig, onComplete);
+                signer->SignRequest(req, signerConfig, signingComplete);
             };
 
-            const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions = m_websocketConfig->ProxyOptions;
+            const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions =
+                m_websocketConfig->ProxyOptions;
 
             return MqttClientConnectionConfig(
                 m_endpoint,

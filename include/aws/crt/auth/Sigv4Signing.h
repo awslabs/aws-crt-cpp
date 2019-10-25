@@ -40,7 +40,7 @@ namespace Aws
                 Count = AWS_SIGNING_ALGORITHM_COUNT
             };
 
-            using ShouldSignHeadersCb = bool(*)(const Crt::ByteCursor *);
+            using ShouldSignHeadersCb = bool (*)(const Crt::ByteCursor *);
 
             /**
              * Wrapper around the configuration structure specific to the AWS
@@ -132,7 +132,15 @@ namespace Aws
                  */
                 void SetShouldNormalizeUriPath(bool shouldNormalizeUriPath) noexcept;
 
+                /**
+                 * Gets the ShouldSignHeadersCb from the underlying config.
+                 */
                 ShouldSignHeadersCb GetShouldSignHeadersCallback() const noexcept;
+
+                /**
+                 * Sets a callback invoked during the signing process for white-listing headers that can be signed.
+                 * If you do not set this, all headers will be signed.
+                 */
                 void SetShouldSignHeadersCallback(ShouldSignHeadersCb shouldSignHeadersCb) noexcept;
 
                 /**

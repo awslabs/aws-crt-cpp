@@ -16,9 +16,9 @@
 #include <aws/crt/Exports.h>
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/Types.h>
+#include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/io/SocketOptions.h>
 #include <aws/crt/io/TlsOptions.h>
-#include <aws/crt/http/HttpConnection.h>
 
 #include <aws/mqtt/client.h>
 
@@ -92,9 +92,19 @@ namespace Aws
             using OnOperationCompleteHandler =
                 std::function<void(MqttConnection &connection, uint16_t packetId, int errorCode)>;
 
+            /**
+             * Callback for users to invoke upon completion of, presumably asynchronous, OnWebSocketHandshakeIntercept
+             * callback's initiated process.
+             */
             using OnWebSocketHandshakeInterceptComplete =
                 std::function<void(const std::shared_ptr<Http::HttpRequest> &, int errorCode)>;
 
+            /**
+             * Invoked during websocket handshake to give users opportunity to transform an http request for purposes
+             * such as signing/authorization etc... Returning from this function does not continue the websocket
+             * handshake since some work flows may be asynchronous. To accommodate that, onComplete must be invoked upon
+             * completion of the signing process.
+             */
             using OnWebSocketHandshakeIntercept = std::function<
                 void(std::shared_ptr<Http::HttpRequest> req, const OnWebSocketHandshakeInterceptComplete &onComplete)>;
 
@@ -129,6 +139,9 @@ namespace Aws
                  */
                 bool SetLogin(const char *userName, const char *password) noexcept;
 
+                /**
+                 * Sets websocket proxy options. Proxies are only allowed for use with websockets.
+                 */
                 bool SetWebsocketProxyOptions(const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
 
                 /**
