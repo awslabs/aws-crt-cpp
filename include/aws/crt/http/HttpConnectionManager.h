@@ -17,6 +17,7 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <future>
 #include <mutex>
 
 struct aws_http_connection_manager;
@@ -58,13 +59,14 @@ namespace Aws
                  */
                 size_t MaxConnections;
 
-                /* If set, this ensures the connection manager cannot be destroyed until all resources
-                    are freed. They will eventually be freed regardless, but setting this to true will prevent
-                    the destructor from returning until it has happened. This isn't recommended for use cases
-                    where it's likely you'll be creating and destroying multiple connection managers during the normal
-                    flow of your application since it causes blocking behavior.
-                    It is, however, quite useful for testing and application shutdown.*/
-                bool SafeDestruct;
+                /** If set, initiate shutdown will return a future that will allow a user to block until the
+                 * connection manager has completely released all resources. This isn't necessary during the normal
+                 * flow of an application, but it is useful for scenarios, such as tests, that need deterministic
+                 * shutdown ordering. Be aware, if you use this anywhere other than the main thread, you will most
+                 * likely cause a deadlock. If this is set, you MUST call InitiateShutdown() before releasing your last
+                 * reference to the connection manager.
+                 */
+                bool EnableBlockingDestruct;
             };
 
             /**
@@ -85,6 +87,14 @@ namespace Aws
                 bool AcquireConnection(const OnClientConnectionAvailable &onClientConnectionAvailable) noexcept;
 
                 /**
+                 * Starts shutdown of the connection manager. Returns a future to the connection manager's shutdown
+                 * process. If EnableBlockingDestruct was enabled on the connection manager options, calling get() on
+                 * the returned future will block until the last connection is released. If the option is not set, get()
+                 * will immediately return.
+                 */
+                std::future<void> InitiateShutdown() noexcept;
+
+                /**
                  * Factory function for connection managers
                  */
                 static std::shared_ptr<HttpClientConnectionManager> NewClientConnectionManager(
@@ -101,9 +111,8 @@ namespace Aws
                 aws_http_connection_manager *m_connectionManager;
 
                 HttpClientConnectionManagerOptions m_options;
-                std::condition_variable m_shutdownCompleteCVar;
-                bool m_safeDestruct;
-                std::atomic<bool> m_shutdownComplete;
+                std::promise<void> m_shutdownPromise;
+                std::atomic<bool> m_blockingShutdown;
 
                 static void s_onConnectionSetup(
                     aws_http_connection *connection,

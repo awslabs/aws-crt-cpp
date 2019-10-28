@@ -73,7 +73,7 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
     connectionManagerOptions.ConnectionOptions = connectionOptions;
     connectionManagerOptions.MaxConnections = totalExpectedConnections;
-    connectionManagerOptions.SafeDestruct = true;
+    connectionManagerOptions.EnableBlockingDestruct = true;
 
     auto connectionManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
@@ -121,6 +121,8 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
         ASSERT_TRUE(connections.empty());
         connectionsCpy.clear();
     }
+
+    connectionManager->InitiateShutdown().get();
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/
     return AWS_OP_SUCCESS;
@@ -173,7 +175,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
     connectionManagerOptions.ConnectionOptions = connectionOptions;
     connectionManagerOptions.MaxConnections = totalExpectedConnections / 2;
-    connectionManagerOptions.SafeDestruct = true;
+    connectionManagerOptions.EnableBlockingDestruct = true;
 
     auto connectionManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
@@ -230,6 +232,8 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
         connections.clear();
     }
 
+    connectionManager->InitiateShutdown().get();
+
     /* now let everything tear down and make sure we don't leak or deadlock.*/
     return AWS_OP_SUCCESS;
 }
@@ -282,7 +286,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
     connectionManagerOptions.ConnectionOptions = connectionOptions;
     connectionManagerOptions.MaxConnections = totalExpectedConnections / 2;
-    connectionManagerOptions.SafeDestruct = true;
+    connectionManagerOptions.EnableBlockingDestruct = true;
 
     auto connectionManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
@@ -338,6 +342,8 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
     /* release should have given us more connections. */
     ASSERT_FALSE(connections.empty());
     connections.clear();
+
+    connectionManager->InitiateShutdown().get();
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/
     return AWS_OP_SUCCESS;
