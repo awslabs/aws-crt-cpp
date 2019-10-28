@@ -39,7 +39,7 @@ namespace Aws
             }
 
             HttpClientConnectionManagerOptions::HttpClientConnectionManagerOptions() noexcept
-                : ConnectionOptions(), MaxConnections(1), EnableBlockingDestruct(false)
+                : ConnectionOptions(), MaxConnections(1), EnableBlockingShutdown(false)
             {
             }
 
@@ -63,7 +63,7 @@ namespace Aws
                 const HttpClientConnectionManagerOptions &options,
                 Allocator *allocator) noexcept
                 : m_allocator(allocator), m_connectionManager(nullptr), m_options(options),
-                  m_blockingShutdown(options.EnableBlockingDestruct)
+                  m_blockingShutdown(options.EnableBlockingShutdown)
             {
                 const auto &connectionOptions = m_options.ConnectionOptions;
                 AWS_FATAL_ASSERT(connectionOptions.HostName.size() > 0);

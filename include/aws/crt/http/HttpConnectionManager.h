@@ -66,7 +66,7 @@ namespace Aws
                  * likely cause a deadlock. If this is set, you MUST call InitiateShutdown() before releasing your last
                  * reference to the connection manager.
                  */
-                bool EnableBlockingDestruct;
+                bool EnableBlockingShutdown;
             };
 
             /**
