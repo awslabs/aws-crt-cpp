@@ -30,8 +30,16 @@ namespace Aws
                 std::shared_ptr<HttpClientConnectionManager> m_connectionManager;
             };
 
+            void HttpClientConnectionManager::s_shutdownCompleted(void *userData) noexcept
+            {
+                HttpClientConnectionManager *connectionManager =
+                    reinterpret_cast<HttpClientConnectionManager *>(userData);
+                connectionManager->m_shutdownComplete = true;
+                connectionManager->m_shutdownCompleteCVar.notify_all();
+            }
+
             HttpClientConnectionManagerOptions::HttpClientConnectionManagerOptions() noexcept
-                : ConnectionOptions(), MaxConnections(1)
+                : ConnectionOptions(), MaxConnections(1), SafeDestruct(false)
             {
             }
 
@@ -54,7 +62,8 @@ namespace Aws
             HttpClientConnectionManager::HttpClientConnectionManager(
                 const HttpClientConnectionManagerOptions &options,
                 Allocator *allocator) noexcept
-                : m_allocator(allocator), m_connectionManager(nullptr), m_options(options)
+                : m_allocator(allocator), m_connectionManager(nullptr), m_options(options),
+                  m_safeDestruct(options.SafeDestruct), m_shutdownComplete(false)
             {
                 const auto &connectionOptions = m_options.ConnectionOptions;
                 AWS_FATAL_ASSERT(connectionOptions.HostName.size() > 0);
@@ -67,6 +76,12 @@ namespace Aws
                 managerOptions.max_connections = m_options.MaxConnections;
                 managerOptions.socket_options = &connectionOptions.SocketOptions.GetImpl();
                 managerOptions.initial_window_size = connectionOptions.InitialWindowSize;
+
+                if (m_safeDestruct)
+                {
+                    managerOptions.shutdown_complete_callback = s_shutdownCompleted;
+                    managerOptions.shutdown_complete_user_data = this;
+                }
 
                 aws_http_proxy_options proxyOptions;
                 AWS_ZERO_STRUCT(proxyOptions);
@@ -107,6 +122,13 @@ namespace Aws
                 if (m_connectionManager)
                 {
                     aws_http_connection_manager_release(m_connectionManager);
+
+                    if (m_safeDestruct)
+                    {
+                        std::mutex shutdownLock;
+                        std::unique_lock<std::mutex> shutdownUniqueLock(shutdownLock);
+                        m_shutdownCompleteCVar.wait(shutdownUniqueLock, [this] { return m_shutdownComplete.load(); });
+                    }
                     m_connectionManager = nullptr;
                 }
             }

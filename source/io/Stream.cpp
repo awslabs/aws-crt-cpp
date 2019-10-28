@@ -92,9 +92,8 @@ static int s_aws_input_stream_cpp_get_length(struct aws_input_stream *stream, in
 static void s_aws_input_stream_cpp_destroy(struct aws_input_stream *stream)
 {
     aws_input_stream_cpp_impl *impl = static_cast<aws_input_stream_cpp_impl *>(stream->impl);
-    aws_mem_release(stream->allocator, stream);
-
     impl->stream = nullptr;
+    aws_mem_release(stream->allocator, stream);
 }
 
 static struct aws_input_stream_vtable s_aws_input_stream_cpp_vtable = {s_aws_input_stream_cpp_seek,

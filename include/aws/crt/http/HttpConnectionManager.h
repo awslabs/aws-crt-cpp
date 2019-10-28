@@ -14,6 +14,8 @@
  * permissions and limitations under the License.
  */
 #include <aws/crt/http/HttpConnection.h>
+
+#include <atomic>
 #include <condition_variable>
 #include <mutex>
 
@@ -55,6 +57,14 @@ namespace Aws
                  * The maximum number of connections the manager is allowed to create/manage
                  */
                 size_t MaxConnections;
+
+                /* If set, this ensures the connection manager cannot be destroyed until all resources
+                    are freed. They will eventually be freed regardless, but setting this to true will prevent
+                    the destructor from returning until it has happened. This isn't recommended for use cases
+                    where it's likely you'll be creating and destroying multiple connection managers during the normal
+                    flow of your application since it causes blocking behavior.
+                    It is, however, quite useful for testing and application shutdown.*/
+                bool SafeDestruct;
             };
 
             /**
@@ -91,11 +101,16 @@ namespace Aws
                 aws_http_connection_manager *m_connectionManager;
 
                 HttpClientConnectionManagerOptions m_options;
+                std::condition_variable m_shutdownCompleteCVar;
+                bool m_safeDestruct;
+                std::atomic<bool> m_shutdownComplete;
 
                 static void s_onConnectionSetup(
                     aws_http_connection *connection,
                     int errorCode,
                     void *userData) noexcept;
+
+                static void s_shutdownCompleted(void *userData) noexcept;
 
                 friend class ManagedConnection;
             };

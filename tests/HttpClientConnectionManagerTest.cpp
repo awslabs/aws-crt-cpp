@@ -73,6 +73,7 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
     connectionManagerOptions.ConnectionOptions = connectionOptions;
     connectionManagerOptions.MaxConnections = totalExpectedConnections;
+    connectionManagerOptions.SafeDestruct = true;
 
     auto connectionManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
@@ -172,6 +173,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
     connectionManagerOptions.ConnectionOptions = connectionOptions;
     connectionManagerOptions.MaxConnections = totalExpectedConnections / 2;
+    connectionManagerOptions.SafeDestruct = true;
 
     auto connectionManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
@@ -280,6 +282,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
     connectionManagerOptions.ConnectionOptions = connectionOptions;
     connectionManagerOptions.MaxConnections = totalExpectedConnections / 2;
+    connectionManagerOptions.SafeDestruct = true;
 
     auto connectionManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
