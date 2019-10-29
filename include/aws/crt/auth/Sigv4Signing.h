@@ -40,7 +40,7 @@ namespace Aws
                 Count = AWS_SIGNING_ALGORITHM_COUNT
             };
 
-            using ShouldSignHeadersCb = bool (*)(const Crt::ByteCursor *);
+            using ShouldSignParameterCb = bool (*)(const Crt::ByteCursor *);
 
             /**
              * Wrapper around the configuration structure specific to the AWS
@@ -135,13 +135,13 @@ namespace Aws
                 /**
                  * Gets the ShouldSignHeadersCb from the underlying config.
                  */
-                ShouldSignHeadersCb GetShouldSignHeadersCallback() const noexcept;
+                ShouldSignParameterCb GetShouldSignParameterCallback() const noexcept;
 
                 /**
                  * Sets a callback invoked during the signing process for white-listing headers that can be signed.
                  * If you do not set this, all headers will be signed.
                  */
-                void SetShouldSignHeadersCallback(ShouldSignHeadersCb shouldSignHeadersCb) noexcept;
+                void SetShouldSignHeadersCallback(ShouldSignParameterCb shouldSignParameterCb) noexcept;
 
                 /**
                  * Gets whether or not the signer should add the x-amz-content-sha256 header (with appropriate value) to

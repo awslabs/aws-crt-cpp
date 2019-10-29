@@ -102,14 +102,14 @@ namespace Aws
                 m_config.should_normalize_uri_path = shouldNormalizeUriPath;
             }
 
-            ShouldSignHeadersCb AwsSigningConfig::GetShouldSignHeadersCallback() const noexcept
+            ShouldSignParameterCb AwsSigningConfig::GetShouldSignParameterCallback() const noexcept
             {
-                return m_config.should_sign_header;
+                return m_config.should_sign_param;
             }
 
-            void AwsSigningConfig::SetShouldSignHeadersCallback(ShouldSignHeadersCb shouldSignHeadersCb) noexcept
+            void AwsSigningConfig::SetShouldSignHeadersCallback(ShouldSignParameterCb shouldSignParameterCb) noexcept
             {
-                m_config.should_sign_header = shouldSignHeadersCb;
+                m_config.should_sign_param = shouldSignParameterCb;
             }
 
             bool AwsSigningConfig::GetSignBody() const noexcept { return m_config.sign_body; }

@@ -211,7 +211,7 @@ namespace Aws
 
         MqttClientConnectionConfig MqttClientConnectionConfigBuilder::Build() noexcept
         {
-            if (m_isGood)
+            if (!m_isGood)
             {
                 return MqttClientConnectionConfig::CreateInvalid(aws_last_error());
             }
@@ -220,18 +220,13 @@ namespace Aws
 
             if (!m_portOverride)
             {
-                if (m_websocketConfig)
+                if (m_websocketConfig || Crt::Io::TlsContextOptions::IsAlpnSupported())
                 {
                     port = 443;
                 }
                 else
                 {
                     port = 8883;
-
-                    if (Crt::Io::TlsContextOptions::IsAlpnSupported())
-                    {
-                        port = 443;
-                    }
                 }
             }
 
@@ -275,16 +270,13 @@ namespace Aws
                 signer->SignRequest(req, signerConfig, signingComplete);
             };
 
-            const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions =
-                m_websocketConfig->ProxyOptions;
-
             return MqttClientConnectionConfig(
                 m_endpoint,
                 port,
                 m_socketOptions,
                 Crt::Io::TlsContext(m_contextOptions, Crt::Io::TlsMode::CLIENT, m_allocator),
                 signerTransform,
-                proxyOptions);
+                m_websocketConfig->ProxyOptions);
         }
 
         MqttClient::MqttClient(Crt::Io::ClientBootstrap &bootstrap, Crt::Allocator *allocator) noexcept
