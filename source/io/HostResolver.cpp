@@ -79,7 +79,7 @@ namespace Aws
                     addresses.push_back(*address_ptr);
                 }
 
-                String host(reinterpret_cast<const char *>(hostName->bytes), hostName->len);
+                String host(aws_string_c_str(hostName), hostName->len);
                 args->onResolved(*args->resolver, addresses, errCode);
                 aws_string_destroy(args->host);
                 Delete(args, args->allocator);
