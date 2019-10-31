@@ -314,7 +314,13 @@ namespace Aws
 
             HttpClientConnectionOptions::HttpClientConnectionOptions()
                 : Bootstrap(nullptr), InitialWindowSize(SIZE_MAX), OnConnectionSetupCallback(),
-                  OnConnectionShutdownCallback(), HostName(), Port(0), SocketOptions(), TlsOptions(), ProxyOptions()
+                  OnConnectionShutdownCallback(), HostName(), Port(0), SocketOptions(), TlsOptions(), ProxyOptions(),
+                  MonitoringOptions()
+            {
+            }
+
+            HttpConnectionMonitoringOptions::HttpConnectionMonitoringOptions()
+                : MinimumThroughputBytesPerSecond(0), MinimumThroughputFailureThresholdInSeconds(0)
             {
             }
         } // namespace Http

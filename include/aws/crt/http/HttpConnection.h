@@ -264,6 +264,30 @@ namespace Aws
                 String BasicAuthPassword;
             };
 
+            class AWS_CRT_CPP_API HttpConnectionMonitoringOptions
+            {
+              public:
+                HttpConnectionMonitoringOptions();
+                HttpConnectionMonitoringOptions(const HttpConnectionMonitoringOptions &rhs) = default;
+                HttpConnectionMonitoringOptions(HttpConnectionMonitoringOptions &&rhs) = default;
+                HttpConnectionMonitoringOptions &operator=(const HttpConnectionMonitoringOptions &rhs) = default;
+                HttpConnectionMonitoringOptions &operator=(HttpConnectionMonitoringOptions &&rhs) = default;
+
+                ~HttpConnectionMonitoringOptions() = default;
+
+                /**
+                 * minimum required throughput of the connection.  Throughput is only measured against the interval of
+                 * time where there is actual io to perform
+                 */
+                uint64_t MinimumThroughputBytesPerSecond;
+
+                /*
+                 * number of throughput failures that may occur before the monitor shuts down the connection.  If zero,
+                 * no checks will be performed.  A value of one is considered invalid.
+                 */
+                uint32_t MinimumThroughputFailureThresholdInSeconds;
+            };
+
             /**
              * Configuration structure holding all options relating to http connection establishment
              */
@@ -333,6 +357,12 @@ namespace Aws
                  * Optional.
                  */
                 Optional<HttpClientConnectionProxyOptions> ProxyOptions;
+
+                /**
+                 * Configuration options for connection monitoring
+                 * Optional.
+                 */
+                Optional<HttpConnectionMonitoringOptions> MonitoringOptions;
             };
 
             /**
