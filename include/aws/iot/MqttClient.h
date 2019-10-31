@@ -204,7 +204,6 @@ namespace Aws
             Crt::Io::SocketOptions m_socketOptions;
             Crt::Io::TlsContextOptions m_contextOptions;
             Crt::Optional<WebsocketConfig> m_websocketConfig;
-            // this is a shared pointer for lifetime reasons.
             std::shared_ptr<Crt::Auth::Sigv4HttpRequestSigningPipeline> m_signer;
             bool m_isGood;
         };
