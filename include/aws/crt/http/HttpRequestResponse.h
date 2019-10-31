@@ -24,6 +24,11 @@ namespace Aws
 {
     namespace Crt
     {
+        namespace Mqtt
+        {
+            class MqttConnection;
+        }
+
         namespace Http
         {
             using HttpHeader = aws_http_header;
@@ -62,11 +67,12 @@ namespace Aws
                 struct aws_http_message *GetUnderlyingMessage() const noexcept { return m_message; }
 
               protected:
-                HttpMessage(Allocator *allocator, struct aws_http_message *message) noexcept;
+                HttpMessage(Allocator *allocator, struct aws_http_message *message, bool ownsMessage = true) noexcept;
 
                 Allocator *m_allocator;
                 struct aws_http_message *m_message;
                 std::shared_ptr<Aws::Crt::Io::IStream> m_bodyStream;
+                bool m_ownsMessage;
             };
 
             /**
@@ -74,6 +80,8 @@ namespace Aws
              */
             class AWS_CRT_CPP_API HttpRequest : public HttpMessage
             {
+                friend class Mqtt::MqttConnection;
+
               public:
                 HttpRequest(Allocator *allocator = DefaultAllocator());
 
@@ -96,6 +104,9 @@ namespace Aws
                  * Sets the value of the URI-path associated with this request
                  */
                 bool SetPath(ByteCursor path) noexcept;
+
+              protected:
+                HttpRequest(Allocator *allocator, struct aws_http_message *message);
             };
 
             /**

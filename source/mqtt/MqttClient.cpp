@@ -15,6 +15,7 @@
 #include <aws/crt/mqtt/MqttClient.h>
 
 #include <aws/crt/StlAllocator.h>
+#include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Bootstrap.h>
 
 #include <utility>
@@ -231,14 +232,42 @@ namespace Aws
                 }
             }
 
+            void MqttConnection::s_onWebsocketHandshake(
+                struct aws_http_message *rawRequest,
+                void *user_data,
+                aws_mqtt_transform_websocket_handshake_complete_fn *complete_fn,
+                void *complete_ctx)
+            {
+                MqttConnection *connection = reinterpret_cast<MqttConnection *>(user_data);
+
+                Allocator *allocator = connection->m_owningClient->allocator;
+                // we have to do this because of private constructors.
+                Http::HttpRequest *toSeat =
+                    reinterpret_cast<Http::HttpRequest *>(aws_mem_acquire(allocator, sizeof(Http::HttpRequest)));
+                toSeat = new (toSeat) Http::HttpRequest(allocator, rawRequest);
+
+                std::shared_ptr<Http::HttpRequest> request = std::shared_ptr<Http::HttpRequest>(
+                    toSeat, [allocator](Http::HttpRequest *ptr) { Crt::Delete(ptr, allocator); });
+                request->SetBody(nullptr);
+
+                auto onInterceptComplete =
+                    [complete_fn,
+                     complete_ctx](const std::shared_ptr<Http::HttpRequest> &transformedRequest, int errorCode) {
+                        complete_fn(transformedRequest->GetUnderlyingMessage(), errorCode, complete_ctx);
+                    };
+
+                connection->WebsocketInterceptor(request, onInterceptComplete);
+            }
+
             MqttConnection::MqttConnection(
                 aws_mqtt_client *client,
                 const char *hostName,
                 uint16_t port,
                 const Io::SocketOptions &socketOptions,
-                const Crt::Io::TlsContext &tlsContext) noexcept
+                const Crt::Io::TlsContext &tlsContext,
+                bool useWebsocket) noexcept
                 : m_owningClient(client), m_tlsContext(tlsContext), m_tlsOptions(tlsContext.NewConnectionOptions()),
-                  m_useTls(true)
+                  m_useTls(true), m_useWebsocket(useWebsocket)
             {
                 s_connectionInit(this, hostName, port, socketOptions);
             }
@@ -247,8 +276,9 @@ namespace Aws
                 aws_mqtt_client *client,
                 const char *hostName,
                 uint16_t port,
-                const Io::SocketOptions &socketOptions) noexcept
-                : m_owningClient(client), m_useTls(false)
+                const Io::SocketOptions &socketOptions,
+                bool useWebsocket) noexcept
+                : m_owningClient(client), m_useTls(false), m_useWebsocket(useWebsocket)
             {
                 s_connectionInit(this, hostName, port, socketOptions);
             }
@@ -291,6 +321,13 @@ namespace Aws
                 return aws_mqtt_client_connection_set_login(m_underlyingConnection, &userNameCur, pwdCurPtr) == 0;
             }
 
+            bool MqttConnection::SetWebsocketProxyOptions(
+                const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept
+            {
+                m_proxyOptions = proxyOptions;
+                return true;
+            }
+
             bool MqttConnection::Connect(
                 const char *clientId,
                 bool cleanSession,
@@ -312,12 +349,62 @@ namespace Aws
                 options.on_connection_complete = MqttConnection::s_onConnectionCompleted;
                 options.user_data = this;
 
-                if (aws_mqtt_client_connection_connect(m_underlyingConnection, &options))
+                if (m_useWebsocket)
                 {
-                    return false;
+                    if (WebsocketInterceptor)
+                    {
+                        if (aws_mqtt_client_connection_use_websockets(
+                                m_underlyingConnection, MqttConnection::s_onWebsocketHandshake, this, nullptr, nullptr))
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        if (aws_mqtt_client_connection_use_websockets(
+                                m_underlyingConnection, nullptr, nullptr, nullptr, nullptr))
+                        {
+                            return false;
+                        }
+                    }
+
+                    if (m_proxyOptions)
+                    {
+                        struct aws_http_proxy_options proxyOptions;
+                        AWS_ZERO_STRUCT(proxyOptions);
+
+                        if (!m_proxyOptions->BasicAuthUsername.empty())
+                        {
+                            proxyOptions.auth_username =
+                                ByteCursorFromCString(m_proxyOptions->BasicAuthUsername.c_str());
+                        }
+
+                        if (!m_proxyOptions->BasicAuthPassword.empty())
+                        {
+                            proxyOptions.auth_password =
+                                ByteCursorFromCString(m_proxyOptions->BasicAuthPassword.c_str());
+                        }
+
+                        if (m_proxyOptions->TlsOptions)
+                        {
+                            proxyOptions.tls_options = const_cast<struct aws_tls_connection_options *>(
+                                m_proxyOptions->TlsOptions->GetUnderlyingHandle());
+                        }
+
+                        proxyOptions.auth_type =
+                            static_cast<enum aws_http_proxy_authentication_type>(m_proxyOptions->AuthType);
+                        proxyOptions.host = ByteCursorFromCString(m_proxyOptions->HostName.c_str());
+                        proxyOptions.port = m_proxyOptions->Port;
+
+                        if (aws_mqtt_client_connection_set_websocket_proxy_options(
+                                m_underlyingConnection, &proxyOptions))
+                        {
+                            return false;
+                        }
+                    }
                 }
 
-                return true;
+                return aws_mqtt_client_connection_connect(m_underlyingConnection, &options) == AWS_OP_SUCCESS;
             }
 
             bool MqttConnection::Disconnect() noexcept
@@ -612,7 +699,8 @@ namespace Aws
                 const char *hostName,
                 uint16_t port,
                 const Io::SocketOptions &socketOptions,
-                const Crt::Io::TlsContext &tlsContext) noexcept
+                const Crt::Io::TlsContext &tlsContext,
+                bool useWebsocket) noexcept
             {
                 // If you're reading this and asking.... why is this so complicated? Why not use make_shared
                 // or allocate_shared? Well, MqttConnection constructors are private and stl is dumb like that.
@@ -625,7 +713,7 @@ namespace Aws
                     return nullptr;
                 }
 
-                toSeat = new (toSeat) MqttConnection(m_client, hostName, port, socketOptions, tlsContext);
+                toSeat = new (toSeat) MqttConnection(m_client, hostName, port, socketOptions, tlsContext, useWebsocket);
                 return std::shared_ptr<MqttConnection>(toSeat, [allocator](MqttConnection *connection) {
                     connection->~MqttConnection();
                     aws_mem_release(allocator, reinterpret_cast<void *>(connection));
@@ -635,7 +723,8 @@ namespace Aws
             std::shared_ptr<MqttConnection> MqttClient::NewConnection(
                 const char *hostName,
                 uint16_t port,
-                const Io::SocketOptions &socketOptions) noexcept
+                const Io::SocketOptions &socketOptions,
+                bool useWebsocket) noexcept
 
             {
                 // If you're reading this and asking.... why is this so complicated? Why not use make_shared
@@ -649,7 +738,7 @@ namespace Aws
                     return nullptr;
                 }
 
-                toSeat = new (toSeat) MqttConnection(m_client, hostName, port, socketOptions);
+                toSeat = new (toSeat) MqttConnection(m_client, hostName, port, socketOptions, useWebsocket);
                 return std::shared_ptr<MqttConnection>(toSeat, [allocator](MqttConnection *connection) {
                     connection->~MqttConnection();
                     aws_mem_release(allocator, reinterpret_cast<void *>(connection));

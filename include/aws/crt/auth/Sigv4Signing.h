@@ -40,6 +40,8 @@ namespace Aws
                 Count = AWS_SIGNING_ALGORITHM_COUNT
             };
 
+            using ShouldSignParameterCb = bool (*)(const Crt::ByteCursor *);
+
             /**
              * Wrapper around the configuration structure specific to the AWS
              * Sigv4 signing process
@@ -50,7 +52,7 @@ namespace Aws
                 AwsSigningConfig(Allocator *allocator = DefaultAllocator());
                 virtual ~AwsSigningConfig();
 
-                virtual SigningConfigType GetType(void) const noexcept override { return SigningConfigType::Aws; }
+                virtual SigningConfigType GetType() const noexcept override { return SigningConfigType::Aws; }
 
                 /**
                  * Gets the credentials to sign the request with
@@ -75,22 +77,22 @@ namespace Aws
                 /**
                  * Gets the AWS region to sign against
                  */
-                ByteCursor GetRegion() const noexcept;
+                const Crt::String &GetRegion() const noexcept;
 
                 /**
                  * Sets the AWS region to sign against
                  */
-                void SetRegion(ByteCursor region) noexcept;
+                void SetRegion(const Crt::String &region) noexcept;
 
                 /**
                  * Gets the (signing) name of the AWS service to sign a request for
                  */
-                ByteCursor GetService() const noexcept;
+                const Crt::String &GetService() const noexcept;
 
                 /**
                  * Sets the (signing) name of the AWS service to sign a request for
                  */
-                void SetService(ByteCursor service) noexcept;
+                void SetService(const Crt::String &service) noexcept;
 
                 /**
                  * Gets the timestamp to use during the signing process.
@@ -131,6 +133,17 @@ namespace Aws
                 void SetShouldNormalizeUriPath(bool shouldNormalizeUriPath) noexcept;
 
                 /**
+                 * Gets the ShouldSignHeadersCb from the underlying config.
+                 */
+                ShouldSignParameterCb GetShouldSignParameterCallback() const noexcept;
+
+                /**
+                 * Sets a callback invoked during the signing process for white-listing headers that can be signed.
+                 * If you do not set this, all headers will be signed.
+                 */
+                void SetShouldSignHeadersCallback(ShouldSignParameterCb shouldSignParameterCb) noexcept;
+
+                /**
                  * Gets whether or not the signer should add the x-amz-content-sha256 header (with appropriate value) to
                  * the canonical request.
                  */
@@ -142,12 +155,14 @@ namespace Aws
                  */
                 void SetSignBody(bool signBody) noexcept;
 
+                const struct aws_signing_config_aws *GetUnderlyingHandle() const noexcept;
+
               private:
                 Allocator *m_allocator;
-
                 std::shared_ptr<Credentials> m_credentials;
-
-                struct aws_signing_config_aws *m_config;
+                struct aws_signing_config_aws m_config;
+                Crt::String m_signingRegion;
+                Crt::String m_serviceName;
             };
 
             /**

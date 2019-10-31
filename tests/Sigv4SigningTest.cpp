@@ -147,8 +147,8 @@ static int s_Sigv4SignerTestSimple(struct aws_allocator *allocator, void *ctx)
         auto config = Aws::Crt::MakeShared<AwsSigningConfig>(allocator, allocator);
         config->SetCredentials(credentials);
         config->SetSigningTimepoint(Aws::Crt::DateTime());
-        config->SetRegion(aws_byte_cursor_from_c_str("test"));
-        config->SetService(aws_byte_cursor_from_c_str("service"));
+        config->SetRegion("test");
+        config->SetService("service");
 
         signer->SignRequest(*request, config.get());
     }
@@ -212,8 +212,8 @@ static int s_Sigv4SigningPipelineTestSimple(struct aws_allocator *allocator, voi
 
         auto signingConfig = Aws::Crt::MakeShared<AwsSigningConfig>(allocator, allocator);
         signingConfig->SetSigningTimepoint(Aws::Crt::DateTime());
-        signingConfig->SetRegion(aws_byte_cursor_from_c_str("test"));
-        signingConfig->SetService(aws_byte_cursor_from_c_str("service"));
+        signingConfig->SetRegion("test");
+        signingConfig->SetService("service");
 
         SignWaiter waiter;
 

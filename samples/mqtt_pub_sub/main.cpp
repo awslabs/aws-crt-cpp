@@ -30,10 +30,11 @@ static void s_printHelp()
     fprintf(
         stdout,
         "aws-crt-cpp-mqtt-pub-sub --endpoint <endpoint> --cert <path to cert>"
-        " --key <path to key> --topic --ca_file <optional: path to custom ca>\n\n");
+        " --key <path to key> --topic --ca_file <optional: path to custom ca>"
+        " --use_websocket --signing_region <region> --proxy_host <host> --proxy_port <port>\n\n");
     fprintf(stdout, "endpoint: the endpoint of the mqtt server not including a port\n");
-    fprintf(stdout, "cert: path to your client certificate in PEM format\n");
-    fprintf(stdout, "key: path to your key in PEM format\n");
+    fprintf(stdout, "cert: path to your client certificate in PEM format. If this is not set you must specify use_websocket\n");
+    fprintf(stdout, "key: path to your key in PEM format. If this is not set you must specify use_websocket\n");
     fprintf(stdout, "topic: topic to publish, subscribe to.\n");
     fprintf(stdout, "client_id: client id to use (optional)\n");
     fprintf(
@@ -41,6 +42,10 @@ static void s_printHelp()
         "ca_file: Optional, if the mqtt server uses a certificate that's not already"
         " in your trust store, set this.\n");
     fprintf(stdout, "\tIt's the path to a CA file in PEM format\n");
+    fprintf(stdout, "use_websocket: if specified, uses a websocket over https (optional)\n");
+    fprintf(stdout, "signing_region: used for websocket signer it should only be specific if websockets are used. (required for websockets)\n");
+    fprintf(stdout, "proxy_host: if you want to use a proxy with websockets, specify the host here (optional).\n");
+    fprintf(stdout, "proxy_port: defaults to 8080 is proxy_host is set. Set this to any value you'd like (optional).\n\n");
 }
 
 bool s_cmdOptionExists(char **begin, char **end, const String &option)
@@ -73,18 +78,31 @@ int main(int argc, char *argv[])
     String caFile;
     String topic;
     String clientId("samples-client-id");
+    String signingRegion;
+    String proxyHost;
+    uint16_t proxyPort(8080);
+
+    bool useWebSocket = false;
 
     /*********************** Parse Arguments ***************************/
-    if (!(s_cmdOptionExists(argv, argv + argc, "--endpoint") && s_cmdOptionExists(argv, argv + argc, "--cert") &&
-          s_cmdOptionExists(argv, argv + argc, "--key") && s_cmdOptionExists(argv, argv + argc, "--topic")))
+    if (!(s_cmdOptionExists(argv, argv + argc, "--endpoint")  && s_cmdOptionExists(argv, argv + argc, "--topic")))
     {
         s_printHelp();
         return 0;
     }
 
     endpoint = s_getCmdOption(argv, argv + argc, "--endpoint");
-    certificatePath = s_getCmdOption(argv, argv + argc, "--cert");
-    keyPath = s_getCmdOption(argv, argv + argc, "--key");
+
+    if (s_cmdOptionExists(argv, argv + argc, "--key"))
+    {
+        keyPath = s_getCmdOption(argv, argv + argc, "--key");
+    }
+
+    if (s_cmdOptionExists(argv, argv + argc, "--cert"))
+    {
+        certificatePath = s_getCmdOption(argv, argv + argc, "--cert");
+    }
+
     topic = s_getCmdOption(argv, argv + argc, "--topic");
     if (s_cmdOptionExists(argv, argv + argc, "--ca_file"))
     {
@@ -93,6 +111,25 @@ int main(int argc, char *argv[])
     if (s_cmdOptionExists(argv, argv + argc, "--client_id"))
     {
         clientId = s_getCmdOption(argv, argv + argc, "--client_id");
+    }
+    if (s_cmdOptionExists(argv, argv + argc, "--use_websocket"))
+    {
+        if (!s_cmdOptionExists(argv, argv + argc, "--signing_region"))
+        {
+            s_printHelp();
+        }
+        useWebSocket = true;
+        signingRegion = s_getCmdOption(argv, argv + argc, "--signing_region");
+
+        if (s_cmdOptionExists(argv, argv + argc, "--proxy_host"))
+        {
+            proxyHost = s_getCmdOption(argv, argv + argc, "--proxy_host");
+        }
+
+        if (s_cmdOptionExists(argv, argv + argc, "--proxy_port"))
+        {
+            proxyPort = atoi(s_getCmdOption(argv, argv + argc, "--proxy_port"));
+        }
     }
 
     /********************** Now Setup an Mqtt Client ******************/
@@ -117,10 +154,41 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
-    auto clientConfig = Aws::Iot::MqttClientConnectionConfigBuilder(certificatePath.c_str(), keyPath.c_str())
-                            .WithEndpoint(endpoint)
-                            .WithCertificateAuthority(caFile.c_str())
-                            .Build();
+    Aws::Iot::MqttClientConnectionConfigBuilder builder;
+
+    if (!certificatePath.empty() && !keyPath.empty())
+    {
+        builder =
+                Aws::Iot::MqttClientConnectionConfigBuilder(certificatePath.c_str(), keyPath.c_str());
+    }
+    else if (useWebSocket)
+    {
+        Aws::Iot::WebsocketConfig config(signingRegion, &bootstrap);
+
+        if (!proxyHost.empty())
+        {
+            Aws::Crt::Http::HttpClientConnectionProxyOptions proxyOptions;
+            proxyOptions.HostName = proxyHost;
+            proxyOptions.Port = proxyPort;
+            proxyOptions.AuthType = Aws::Crt::Http::AwsHttpProxyAuthenticationType::None;
+            config.ProxyOptions = std::move(proxyOptions);
+        }
+
+        builder = Aws::Iot::MqttClientConnectionConfigBuilder(config);
+    }
+    else
+    {
+        s_printHelp();
+    }
+
+    if (!caFile.empty())
+    {
+        builder.WithCertificateAuthority(caFile.c_str());
+    }
+
+    builder.WithEndpoint(endpoint);
+
+    auto clientConfig = builder.Build();
 
     if (!clientConfig)
     {
@@ -215,7 +283,7 @@ int main(int argc, char *argv[])
      * If you want different behavior, those arguments go into slots 3 & 4.
      */
     fprintf(stdout, "Connecting...\n");
-    if (!connection->Connect(clientId.c_str(), false))
+    if (!connection->Connect(clientId.c_str(), false, 1000))
     {
         fprintf(stderr, "MQTT Connection failed with error %s\n", ErrorDebugString(connection->LastError()));
         exit(-1);

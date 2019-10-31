@@ -100,10 +100,9 @@ static int s_StreamTestRead(struct aws_allocator *allocator, void *ctx)
     Aws::Crt::ApiHandle apiHandle(allocator);
 
     {
-        auto string_stream = std::make_shared<std::stringstream>(STREAM_CONTENTS);
-        auto stream = std::static_pointer_cast<Aws::Crt::Io::IStream>(string_stream);
+        auto string_stream = std::make_shared<Aws::Crt::StringStream>(STREAM_CONTENTS);
 
-        aws_input_stream *wrapped_stream = Aws::Crt::Io::AwsInputStreamNewCpp(stream);
+        aws_input_stream *wrapped_stream = Aws::Crt::Io::AwsInputStreamNewCpp(string_stream);
 
         aws_byte_buf buffer;
         AWS_ZERO_STRUCT(buffer);

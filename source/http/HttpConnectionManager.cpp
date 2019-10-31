@@ -30,8 +30,16 @@ namespace Aws
                 std::shared_ptr<HttpClientConnectionManager> m_connectionManager;
             };
 
+            void HttpClientConnectionManager::s_shutdownCompleted(void *userData) noexcept
+            {
+                HttpClientConnectionManager *connectionManager =
+                    reinterpret_cast<HttpClientConnectionManager *>(userData);
+                connectionManager->m_blockingShutdown = false;
+                connectionManager->m_shutdownPromise.set_value();
+            }
+
             HttpClientConnectionManagerOptions::HttpClientConnectionManagerOptions() noexcept
-                : ConnectionOptions(), MaxConnections(1)
+                : ConnectionOptions(), MaxConnections(1), EnableBlockingShutdown(false)
             {
             }
 
@@ -54,7 +62,8 @@ namespace Aws
             HttpClientConnectionManager::HttpClientConnectionManager(
                 const HttpClientConnectionManagerOptions &options,
                 Allocator *allocator) noexcept
-                : m_allocator(allocator), m_connectionManager(nullptr), m_options(options)
+                : m_allocator(allocator), m_connectionManager(nullptr), m_options(options),
+                  m_blockingShutdown(options.EnableBlockingShutdown)
             {
                 const auto &connectionOptions = m_options.ConnectionOptions;
                 AWS_FATAL_ASSERT(connectionOptions.HostName.size() > 0);
@@ -67,6 +76,12 @@ namespace Aws
                 managerOptions.max_connections = m_options.MaxConnections;
                 managerOptions.socket_options = &connectionOptions.SocketOptions.GetImpl();
                 managerOptions.initial_window_size = connectionOptions.InitialWindowSize;
+
+                if (m_blockingShutdown)
+                {
+                    managerOptions.shutdown_complete_callback = s_shutdownCompleted;
+                    managerOptions.shutdown_complete_user_data = this;
+                }
 
                 aws_http_proxy_options proxyOptions;
                 AWS_ZERO_STRUCT(proxyOptions);
@@ -108,13 +123,19 @@ namespace Aws
                 {
                     aws_http_connection_manager_release(m_connectionManager);
                     m_connectionManager = nullptr;
+
+                    if (m_blockingShutdown)
+                    {
+                        AWS_ASSERT(!"Blocking destruct was set, but InitiateShutdown has not been invoked, blocking "
+                                    "now but this is a bug.");
+                        m_shutdownPromise.get_future().get();
+                    }
                 }
             }
 
             bool HttpClientConnectionManager::AcquireConnection(
                 const OnClientConnectionAvailable &onClientConnectionAvailable) noexcept
             {
-
                 auto connectionManagerCallbackArgs = Aws::Crt::New<ConnectionManagerCallbackArgs>(m_allocator);
                 if (!connectionManagerCallbackArgs)
                 {
@@ -127,6 +148,20 @@ namespace Aws
                 aws_http_connection_manager_acquire_connection(
                     m_connectionManager, s_onConnectionSetup, connectionManagerCallbackArgs);
                 return true;
+            }
+
+            std::future<void> HttpClientConnectionManager::InitiateShutdown() noexcept
+            {
+                aws_http_connection_manager_release(m_connectionManager);
+                m_connectionManager = nullptr;
+
+                if (!m_blockingShutdown)
+                {
+                    m_blockingShutdown = false;
+                    m_shutdownPromise.set_value();
+                }
+
+                return m_shutdownPromise.get_future();
             }
 
             class ManagedConnection final : public HttpClientConnection

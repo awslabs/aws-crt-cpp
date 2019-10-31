@@ -14,6 +14,7 @@
  * permissions and limitations under the License.
  */
 #include <aws/crt/Exports.h>
+#include <aws/crt/auth/Sigv4Signing.h>
 #include <aws/crt/mqtt/MqttClient.h>
 
 namespace Aws
@@ -31,11 +32,32 @@ namespace Aws
           public:
             static MqttClientConnectionConfig CreateInvalid(int lastError) noexcept;
 
+            /**
+             * Creates a client configuration for use with making new AWS Iot specific MQTT Connections with MTLS.
+             */
             MqttClientConnectionConfig(
                 const Crt::String &endpoint,
                 uint16_t port,
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext);
+
+            /**
+             * Creates a client configuration for use with making new AWS Iot specific MQTT Connections with web
+             * sockets. interceptor: a callback invoked during web socket handshake giving you the opportunity to mutate
+             * the request for authorization/signing purposes. If not specified, it's assumed you don't need to sign the
+             * request. proxyOptions: optional, if you want to use a proxy with websockets, specify the configuration
+             * options here.
+             *
+             * If proxy options are used, the tlsContext is applied to the connection to the remote endpoint, NOT the
+             * proxy. To make a tls connection to the proxy itself, you'll want to specify tls options in proxyOptions.
+             */
+            MqttClientConnectionConfig(
+                const Crt::String &endpoint,
+                uint16_t port,
+                const Crt::Io::SocketOptions &socketOptions,
+                Crt::Io::TlsContext &&tlsContext,
+                Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
+                const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions);
 
             explicit operator bool() const noexcept { return m_context ? true : false; }
             int LastError() const noexcept { return m_lastError; }
@@ -46,9 +68,40 @@ namespace Aws
             uint16_t m_port;
             Crt::Io::TlsContext m_context;
             Crt::Io::SocketOptions m_socketOptions;
+            Crt::Mqtt::OnWebSocketHandshakeIntercept m_webSocketInterceptor;
+            Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
             int m_lastError;
 
             friend class MqttClient;
+        };
+
+        struct WebsocketConfig
+        {
+            /**
+             * Create a websocket configuration for use with the default credentials provider chain. Signing region
+             * will be used for Sigv4 signature calculations.
+             */
+            WebsocketConfig(
+                const Crt::String &signingRegion,
+                Crt::Io::ClientBootstrap *bootstrap,
+                Crt::Allocator *allocator = Crt::DefaultAllocator()) noexcept;
+
+            /**
+             * Create a websocket configuration for use with a custom credentials provider. Signing region will be use
+             * for Sigv4 signature calculations.
+             */
+            WebsocketConfig(
+                const Crt::String &signingRegion,
+                const std::shared_ptr<Crt::Auth::ICredentialsProvider> &credentialsProvider) noexcept;
+
+            std::shared_ptr<Crt::Auth::ICredentialsProvider> CredentialsProvider;
+
+            /**
+             * Specify ProxyOptions to use a proxy with your websocket connection.
+             */
+            Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> ProxyOptions;
+            Crt::String SigningRegion;
+            Crt::String ServiceName;
         };
 
         /**
@@ -59,6 +112,8 @@ namespace Aws
         class AWS_CRT_CPP_API MqttClientConnectionConfigBuilder final
         {
           public:
+            MqttClientConnectionConfigBuilder();
+
             /**
              * Sets the builder up for MTLS using certPath and pkeyPath. These are files on disk and must be in the PEM
              * format.
@@ -67,6 +122,7 @@ namespace Aws
                 const char *certPath,
                 const char *pkeyPath,
                 Crt::Allocator *allocator = Crt::DefaultAllocator()) noexcept;
+
             /**
              * Sets the builder up for MTLS using cert and pkey. These are in-memory buffers and must be in the PEM
              * format.
@@ -74,6 +130,13 @@ namespace Aws
             MqttClientConnectionConfigBuilder(
                 const Crt::ByteCursor &cert,
                 const Crt::ByteCursor &pkey,
+                Crt::Allocator *allocator = Crt::DefaultAllocator()) noexcept;
+
+            /**
+             * Sets the builder up for Websocket connection.
+             */
+            MqttClientConnectionConfigBuilder(
+                const WebsocketConfig &config,
                 Crt::Allocator *allocator = Crt::DefaultAllocator()) noexcept;
 
             /**
@@ -131,8 +194,8 @@ namespace Aws
              */
             MqttClientConnectionConfig Build() noexcept;
 
-            explicit operator bool() const noexcept { return m_lastError == 0; }
-            int LastError() const noexcept { return m_lastError; }
+            explicit operator bool() const noexcept { return m_isGood; }
+            int LastError() const noexcept { return aws_last_error(); }
 
           private:
             Crt::Allocator *m_allocator;
@@ -140,7 +203,9 @@ namespace Aws
             uint16_t m_portOverride;
             Crt::Io::SocketOptions m_socketOptions;
             Crt::Io::TlsContextOptions m_contextOptions;
-            int m_lastError;
+            Crt::Optional<WebsocketConfig> m_websocketConfig;
+            std::shared_ptr<Crt::Auth::Sigv4HttpRequestSigningPipeline> m_signer;
+            bool m_isGood;
         };
 
         /**
