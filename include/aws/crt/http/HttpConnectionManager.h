@@ -63,8 +63,7 @@ namespace Aws
                  * connection manager has completely released all resources. This isn't necessary during the normal
                  * flow of an application, but it is useful for scenarios, such as tests, that need deterministic
                  * shutdown ordering. Be aware, if you use this anywhere other than the main thread, you will most
-                 * likely cause a deadlock. If this is set, you MUST call InitiateShutdown() before releasing your last
-                 * reference to the connection manager.
+                 * likely cause a deadlock.
                  */
                 bool EnableBlockingShutdown;
             };
@@ -87,14 +86,6 @@ namespace Aws
                 bool AcquireConnection(const OnClientConnectionAvailable &onClientConnectionAvailable) noexcept;
 
                 /**
-                 * Starts shutdown of the connection manager. Returns a future to the connection manager's shutdown
-                 * process. If EnableBlockingDestruct was enabled on the connection manager options, calling get() on
-                 * the returned future will block until the last connection is released. If the option is not set, get()
-                 * will immediately return.
-                 */
-                std::future<void> InitiateShutdown() noexcept;
-
-                /**
                  * Factory function for connection managers
                  */
                 static std::shared_ptr<HttpClientConnectionManager> NewClientConnectionManager(
@@ -112,7 +103,6 @@ namespace Aws
 
                 HttpClientConnectionManagerOptions m_options;
                 std::promise<void> m_shutdownPromise;
-                std::atomic<bool> m_blockingShutdown;
 
                 static void s_onConnectionSetup(
                     aws_http_connection *connection,

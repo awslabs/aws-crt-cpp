@@ -131,6 +131,19 @@ namespace Aws
                 options.on_setup = HttpClientConnection::s_onClientConnectionSetup;
                 options.on_shutdown = HttpClientConnection::s_onClientConnectionShutdown;
 
+                aws_http_connection_monitoring_options monitoringOptions;
+                AWS_ZERO_STRUCT(monitoringOptions);
+                if (connectionOptions.MonitoringOptions)
+                {
+                    const auto &monitoringOpts = connectionOptions.MonitoringOptions;
+                    monitoringOptions.minimum_throughput_failure_threshold_in_seconds =
+                        monitoringOpts->MinimumThroughputFailureThresholdInSeconds;
+                    monitoringOptions.minimum_throughput_bytes_per_second =
+                        monitoringOpts->MinimumThroughputBytesPerSecond;
+
+                    options.monitoring_options = &monitoringOptions;
+                }
+
                 if (aws_http_client_connect(&options))
                 {
                     Delete(callbackData, allocator);
