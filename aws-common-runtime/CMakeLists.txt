@@ -47,7 +47,7 @@ set(AWS_C_CAL_SHA "v0.1.9")
 include(BuildAwsCCal)
 
 set(AWS_C_AUTH_URL "https://github.com/awslabs/aws-c-auth.git")
-set(AWS_C_AUTH_SHA "v0.2.8")
+set(AWS_C_AUTH_SHA "v0.2.9")
 include(BuildAwsCAuth)
 
 add_dependencies(AwsCCompression AwsCCommon)
