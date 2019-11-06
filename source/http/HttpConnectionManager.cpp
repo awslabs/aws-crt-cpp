@@ -195,13 +195,17 @@ namespace Aws
                 void *userData) noexcept
             {
                 auto callbackArgs = static_cast<ConnectionManagerCallbackArgs *>(userData);
-                auto manager = std::move(callbackArgs->m_connectionManager);
+                auto manager = callbackArgs->m_connectionManager;
                 auto callback = std::move(callbackArgs->m_onClientConnectionAvailable);
 
                 Delete(callbackArgs, manager->m_allocator);
 
                 if (errorCode)
                 {
+                    if (connection)
+                    {
+                        aws_http_connection_manager_release_connection(manager->m_connectionManager, connection);
+                    }
                     callback(nullptr, errorCode);
                     return;
                 }
@@ -211,6 +215,7 @@ namespace Aws
 
                 if (!connectionObj)
                 {
+                    aws_http_connection_manager_release_connection(manager->m_connectionManager, connection);
                     callback(nullptr, AWS_ERROR_OOM);
                     return;
                 }
