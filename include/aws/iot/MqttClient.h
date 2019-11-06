@@ -101,7 +101,9 @@ namespace Aws
              * Create a websocket configuration for use with a custom credentials provider, and a custom signer.
              *
              * You'll need to provide a function for use with creating a signing Config and pass it to
-             * createSigningConfig This is useful for cases use with:
+             * createSigningConfig.
+             *
+             * This is useful for cases use with:
              * https://docs.aws.amazon.com/iot/latest/developerguide/custom-auth.html
              */
             WebsocketConfig(
