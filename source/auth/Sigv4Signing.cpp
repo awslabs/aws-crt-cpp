@@ -151,8 +151,8 @@ namespace Aws
 
             struct HttpSignerCallbackData
             {
-                HttpSignerCallbackData() : Allocator(nullptr) {}
-                Allocator *Allocator;
+                HttpSignerCallbackData() : Alloc(nullptr) {}
+                Allocator *Alloc;
                 ScopedResource<struct aws_signable> Signable;
                 OnHttpRequestSigningComplete OnRequestSigningComplete;
                 // just hold on to this for lifetime, we don't actually use it.
@@ -164,10 +164,10 @@ namespace Aws
             {
                 auto cbData = reinterpret_cast<HttpSignerCallbackData *>(userdata);
                 aws_apply_signing_result_to_http_request(
-                    cbData->Request->GetUnderlyingMessage(), cbData->Allocator, result);
+                    cbData->Request->GetUnderlyingMessage(), cbData->Alloc, result);
 
                 cbData->OnRequestSigningComplete(cbData->Request, errorCode);
-                Crt::Delete(cbData, cbData->Allocator);
+                Crt::Delete(cbData, cbData->Alloc);
             }
 
             bool Sigv4HttpRequestSigner::SignRequest(
@@ -196,7 +196,7 @@ namespace Aws
                     return false;
                 }
 
-                signerCallbackData->Allocator = m_allocator;
+                signerCallbackData->Alloc = m_allocator;
                 signerCallbackData->Config = config;
                 signerCallbackData->OnRequestSigningComplete = completionCallback;
                 signerCallbackData->Request = request;
