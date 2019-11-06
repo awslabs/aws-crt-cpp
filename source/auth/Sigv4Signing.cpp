@@ -195,7 +195,7 @@ namespace Aws
                 {
                     return false;
                 }
-                
+
                 signerCallbackData->Allocator = m_allocator;
                 signerCallbackData->Config = config;
                 signerCallbackData->OnRequestSigningComplete = completionCallback;
