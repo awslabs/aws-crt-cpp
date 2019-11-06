@@ -47,7 +47,7 @@ namespace Aws
 
             Signer = Aws::Crt::MakeShared<Crt::Auth::Sigv4HttpRequestSigner>(allocator, allocator);
 
-            CreateSigningConfig = [allocator, this]() {
+            CreateSigningConfigCb = [allocator, this]() {
                 auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
                 signerConfig->SetRegion(SigningRegion);
                 signerConfig->SetService(ServiceName);
@@ -68,7 +68,7 @@ namespace Aws
               Signer(Aws::Crt::MakeShared<Crt::Auth::Sigv4HttpRequestSigner>(allocator, allocator)),
               SigningRegion(signingRegion), ServiceName("iotdevicegateway")
         {
-            CreateSigningConfig = [allocator, this]() {
+            CreateSigningConfigCb = [allocator, this]() {
                 auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
                 signerConfig->SetRegion(SigningRegion);
                 signerConfig->SetService(ServiceName);
@@ -85,7 +85,7 @@ namespace Aws
             const std::shared_ptr<Crt::Auth::ICredentialsProvider> &credentialsProvider,
             const std::shared_ptr<Crt::Auth::IHttpRequestSigner> &signer,
             Iot::CreateSigningConfig createConfig) noexcept
-            : CredentialsProvider(credentialsProvider), Signer(signer), CreateSigningConfig(std::move(createConfig)),
+            : CredentialsProvider(credentialsProvider), Signer(signer), CreateSigningConfigCb(std::move(createConfig)),
               ServiceName("iotdevicegateway")
         {
         }
@@ -293,7 +293,7 @@ namespace Aws
                         onComplete(req1, errorCode);
                     };
 
-                auto signerConfig = websocketConfig.CreateSigningConfig();
+                auto signerConfig = websocketConfig.CreateSigningConfigCb();
 
                 websocketConfig.Signer->SignRequest(req, signerConfig, signingComplete);
             };

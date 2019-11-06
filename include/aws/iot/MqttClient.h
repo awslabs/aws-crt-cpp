@@ -113,7 +113,7 @@ namespace Aws
 
             std::shared_ptr<Crt::Auth::ICredentialsProvider> CredentialsProvider;
             std::shared_ptr<Crt::Auth::IHttpRequestSigner> Signer;
-            CreateSigningConfig CreateSigningConfig;
+            CreateSigningConfig CreateSigningConfigCb;
 
             /**
              * Specify ProxyOptions to use a proxy with your websocket connection.
