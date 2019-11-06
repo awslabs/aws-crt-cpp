@@ -41,14 +41,6 @@ namespace Aws
 
             AwsSigningConfig::~AwsSigningConfig() { m_allocator = nullptr; }
 
-            std::shared_ptr<Credentials> AwsSigningConfig::GetCredentials() const noexcept { return m_credentials; }
-
-            void AwsSigningConfig::SetCredentials(const std::shared_ptr<Credentials> &credentials) noexcept
-            {
-                m_credentials = credentials;
-                m_config.credentials = m_credentials->GetUnderlyingHandle();
-            }
-
             SigningAlgorithm AwsSigningConfig::GetSigningAlgorithm() const noexcept
             {
                 return static_cast<SigningAlgorithm>(m_config.algorithm);
@@ -116,6 +108,18 @@ namespace Aws
 
             void AwsSigningConfig::SetSignBody(bool signBody) noexcept { m_config.sign_body = signBody; }
 
+            const std::shared_ptr<ICredentialsProvider> &AwsSigningConfig::GetCredentialsProvider() const noexcept
+            {
+                return m_credentials;
+            }
+
+            void AwsSigningConfig::SetCredentialsProvider(
+                const std::shared_ptr<ICredentialsProvider> &credsProvider) noexcept
+            {
+                m_credentials = credsProvider;
+                m_config.credentials_provider = m_credentials->GetUnderlyingHandle();
+            }
+
             const struct aws_signing_config_aws *AwsSigningConfig::GetUnderlyingHandle() const noexcept
             {
                 return &m_config;
@@ -145,13 +149,31 @@ namespace Aws
             {
             }
 
-            Sigv4HttpRequestSigningPipeline::~Sigv4HttpRequestSigningPipeline()
+            struct HttpSignerCallbackData
             {
-                m_signer = nullptr;
-                m_credentialsProvider = nullptr;
+                HttpSignerCallbackData() : Allocator(nullptr) {}
+                Allocator *Allocator;
+                ScopedResource<struct aws_signable> Signable;
+                OnHttpRequestSigningComplete OnRequestSigningComplete;
+                // just hold on to this for lifetime, we don't actually use it.
+                std::shared_ptr<ISigningConfig> Config;
+                std::shared_ptr<Http::HttpRequest> Request;
+            };
+
+            static void s_http_signing_complete_fn(struct aws_signing_result *result, int errorCode, void *userdata)
+            {
+                auto cbData = reinterpret_cast<HttpSignerCallbackData *>(userdata);
+                aws_apply_signing_result_to_http_request(
+                    cbData->Request->GetUnderlyingMessage(), cbData->Allocator, result);
+
+                cbData->OnRequestSigningComplete(cbData->Request, errorCode);
+                Crt::Delete(cbData, cbData->Allocator);
             }
 
-            bool Sigv4HttpRequestSigner::SignRequest(Aws::Crt::Http::HttpRequest &request, const ISigningConfig *config)
+            bool Sigv4HttpRequestSigner::SignRequest(
+                const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
+                const std::shared_ptr<ISigningConfig> &config,
+                const OnHttpRequestSigningComplete &completionCallback)
             {
                 if (config->GetType() != SigningConfigType::Aws)
                 {
@@ -159,81 +181,34 @@ namespace Aws
                     return false;
                 }
 
-                const auto *awsSigningConfig = static_cast<const AwsSigningConfig *>(config);
+                auto awsSigningConfig = static_cast<const AwsSigningConfig *>(config.get());
 
-                ScopedResource<aws_signable> scoped_signable(
-                    aws_signable_new_http_request(m_allocator, request.GetUnderlyingMessage()), aws_signable_destroy);
-                if (scoped_signable == nullptr)
+                if (!awsSigningConfig->GetCredentialsProvider())
                 {
+                    aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
                     return false;
                 }
 
-                struct aws_signing_result signing_result;
-                AWS_ZERO_STRUCT(signing_result);
-                aws_signing_result_init(&signing_result, m_allocator);
+                auto signerCallbackData = Crt::New<HttpSignerCallbackData>(m_allocator);
 
-                ScopedResource<aws_signing_result> scoped_signing_result(&signing_result, aws_signing_result_clean_up);
-
-                if (aws_signer_sign_request(
-                        m_signer,
-                        scoped_signable.get(),
-                        (aws_signing_config_base *)awsSigningConfig->GetUnderlyingHandle(),
-                        &signing_result) != AWS_OP_SUCCESS)
+                if (!signerCallbackData)
                 {
                     return false;
                 }
+                
+                signerCallbackData->Allocator = m_allocator;
+                signerCallbackData->Config = config;
+                signerCallbackData->OnRequestSigningComplete = completionCallback;
+                signerCallbackData->Request = request;
+                signerCallbackData->Signable = ScopedResource<struct aws_signable>(
+                    aws_signable_new_http_request(m_allocator, request->GetUnderlyingMessage()), aws_signable_destroy);
 
-                return aws_apply_signing_result_to_http_request(
-                           request.GetUnderlyingMessage(), m_allocator, &signing_result) == AWS_OP_SUCCESS;
-            }
-
-            /////////////////////////////////////////////////////////////////////////////////////////////
-
-            Sigv4HttpRequestSigningPipeline::Sigv4HttpRequestSigningPipeline(
-                const std::shared_ptr<ICredentialsProvider> &credentialsProvider,
-                Allocator *allocator)
-                : m_signer(Aws::Crt::MakeShared<Sigv4HttpRequestSigner>(allocator, allocator)),
-                  m_credentialsProvider(credentialsProvider)
-            {
-            }
-
-            void Sigv4HttpRequestSigningPipeline::SignRequest(
-                const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
-                const std::shared_ptr<ISigningConfig> &config,
-                const OnHttpRequestSigningComplete &completionCallback)
-            {
-                if (config->GetType() != SigningConfigType::Aws)
-                {
-                    completionCallback(request, AWS_ERROR_INVALID_ARGUMENT);
-                    return;
-                }
-
-                auto getCredentialsCallback = [=](std::shared_ptr<Credentials> credentials) {
-                    if (credentials == nullptr)
-                    {
-                        completionCallback(request, AWS_AUTH_SIGNING_NO_CREDENTIALS);
-                    }
-                    else
-                    {
-                        int error = AWS_ERROR_SUCCESS;
-                        AwsSigningConfig *awsSigningConfig = static_cast<AwsSigningConfig *>(config.get());
-                        awsSigningConfig->SetCredentials(credentials);
-                        if (!m_signer->SignRequest(*request, config.get()))
-                        {
-                            error = aws_last_error();
-                            if (error == AWS_ERROR_SUCCESS)
-                            {
-                                error = AWS_ERROR_UNKNOWN;
-                            }
-                        }
-                        completionCallback(request, error);
-                    }
-                };
-
-                if (!m_credentialsProvider->GetCredentials(getCredentialsCallback))
-                {
-                    completionCallback(request, AWS_ERROR_UNKNOWN);
-                }
+                return aws_signer_sign_request(
+                           m_signer,
+                           signerCallbackData->Signable.get(),
+                           (aws_signing_config_base *)awsSigningConfig->GetUnderlyingHandle(),
+                           s_http_signing_complete_fn,
+                           signerCallbackData) == AWS_OP_SUCCESS;
             }
         } // namespace Auth
     }     // namespace Crt
