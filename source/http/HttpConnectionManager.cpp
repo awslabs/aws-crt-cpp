@@ -202,10 +202,6 @@ namespace Aws
 
                 if (errorCode)
                 {
-                    if (connection)
-                    {
-                        aws_http_connection_manager_release_connection(manager->m_connectionManager, connection);
-                    }
                     callback(nullptr, errorCode);
                     return;
                 }
