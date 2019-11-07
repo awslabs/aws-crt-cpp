@@ -181,6 +181,7 @@ namespace Aws
                 {
                     if (m_connection)
                     {
+                        fprintf(stderr, "destructor for connection\n");
                         aws_http_connection_manager_release_connection(
                             m_connectionManager->m_connectionManager, m_connection);
                         m_connection = nullptr;
