@@ -35,7 +35,7 @@ set(AWS_C_COMPRESSION_SHA "v0.2.4")
 include(BuildAwsCCompression)
 
 set(AWS_C_HTTP_URL "https://github.com/awslabs/aws-c-http.git")
-set(AWS_C_HTTP_SHA "more_debug_data")
+set(AWS_C_HTTP_SHA "v0.4.13")
 include(BuildAwsCHttp)
 
 set(AWS_C_MQTT_URL "https://github.com/awslabs/aws-c-mqtt.git")
