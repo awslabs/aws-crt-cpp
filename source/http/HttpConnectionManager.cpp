@@ -77,10 +77,14 @@ namespace Aws
                 managerOptions.socket_options = &connectionOptions.SocketOptions.GetImpl();
                 managerOptions.initial_window_size = connectionOptions.InitialWindowSize;
 
-                if (m_blockingShutdown)
+                if (options.EnableBlockingShutdown)
                 {
                     managerOptions.shutdown_complete_callback = s_shutdownCompleted;
                     managerOptions.shutdown_complete_user_data = this;
+                }
+                else
+                {
+                    m_shutdownPromise.set_value();
                 }
 
                 aws_http_proxy_options proxyOptions;
@@ -122,13 +126,7 @@ namespace Aws
                 if (!m_releaseInvoked)
                 {
                     aws_http_connection_manager_release(m_connectionManager);
-
-                    if (m_blockingShutdown)
-                    {
-                        AWS_ASSERT(!"Blocking destruct was set, but InitiateShutdown has not been invoked, blocking "
-                                    "now but this is a bug.");
-                        m_shutdownPromise.get_future().get();
-                    }
+                    m_shutdownPromise.get_future().get();
                 }
                 m_connectionManager = nullptr;
             }
@@ -152,16 +150,8 @@ namespace Aws
 
             std::future<void> HttpClientConnectionManager::InitiateShutdown() noexcept
             {
-                aws_http_connection_manager_release(m_connectionManager);
-
                 m_releaseInvoked = true;
-
-                if (!m_blockingShutdown)
-                {
-                    m_shutdownPromise.set_value();
-                }
-
-                m_blockingShutdown = false;
+                aws_http_connection_manager_release(m_connectionManager);
                 return m_shutdownPromise.get_future();
             }
 
