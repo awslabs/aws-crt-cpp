@@ -121,7 +121,7 @@ namespace Aws
             {
                 if (m_connectionManager)
                 {
-                    aws_http_connection_manager_release(m_connectionManager);
+                    //aws_http_connection_manager_release(m_connectionManager);
                     m_connectionManager = nullptr;
 
                     if (m_blockingShutdown)
