@@ -48,7 +48,7 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
     Aws::Crt::Io::SocketOptions socketOptions;
     socketOptions.SetConnectTimeoutMs(10000);
 
-    Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+    Aws::Crt::Io::EventLoopGroup eventLoopGroup(1, allocator);
     ASSERT_TRUE(eventLoopGroup);
 
     Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
@@ -151,7 +151,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     Aws::Crt::Io::SocketOptions socketOptions;
     socketOptions.SetConnectTimeoutMs(10000);
 
-    Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+    Aws::Crt::Io::EventLoopGroup eventLoopGroup(1, allocator);
     ASSERT_TRUE(eventLoopGroup);
 
     Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
@@ -261,7 +261,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
     auto hostName = uri.GetHostName();
     tlsConnectionOptions.SetServerName(hostName);
 
-    Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+    Aws::Crt::Io::EventLoopGroup eventLoopGroup(1, allocator);
     ASSERT_TRUE(eventLoopGroup);
 
     Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
