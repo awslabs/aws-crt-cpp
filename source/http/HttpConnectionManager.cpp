@@ -63,7 +63,7 @@ namespace Aws
                 const HttpClientConnectionManagerOptions &options,
                 Allocator *allocator) noexcept
                 : m_allocator(allocator), m_connectionManager(nullptr), m_options(options),
-                  m_blockingShutdown(options.EnableBlockingShutdown)
+                  m_blockingShutdown(options.EnableBlockingShutdown), m_releaseInvoked(false)
             {
                 const auto &connectionOptions = m_options.ConnectionOptions;
                 AWS_FATAL_ASSERT(connectionOptions.HostName.size() > 0);
@@ -119,10 +119,9 @@ namespace Aws
 
             HttpClientConnectionManager::~HttpClientConnectionManager()
             {
-                if (m_connectionManager)
+                if (!m_releaseInvoked)
                 {
                     aws_http_connection_manager_release(m_connectionManager);
-                    m_connectionManager = nullptr;
 
                     if (m_blockingShutdown)
                     {
@@ -131,6 +130,7 @@ namespace Aws
                         m_shutdownPromise.get_future().get();
                     }
                 }
+                m_connectionManager = nullptr;
             }
 
             bool HttpClientConnectionManager::AcquireConnection(
@@ -154,7 +154,7 @@ namespace Aws
             {
                 aws_http_connection_manager_release(m_connectionManager);
 
-                m_connectionManager = nullptr;
+                m_releaseInvoked = true;
 
                 if (!m_blockingShutdown)
                 {

@@ -85,23 +85,27 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
             {
                 std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
-                if (!errorCode) {
+                if (!errorCode)
+                {
                     connections.push_back(newConnection);
                     connectionCount++;
-                } else {
+                }
+                else
+                {
                     connectionsFailed++;
                 }
             }
             semaphore.notify_one();
         };
 
-        for (size_t i = 0; i < totalExpectedConnections; ++i) {
+        for (size_t i = 0; i < totalExpectedConnections; ++i)
+        {
             ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
         }
         {
             std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
-            semaphore.wait(uniqueLock,
-                           [&]() { return connectionCount + connectionsFailed == totalExpectedConnections; });
+            semaphore.wait(
+                uniqueLock, [&]() { return connectionCount + connectionsFailed == totalExpectedConnections; });
         }
 
         /* make sure the test was actually meaningful. */
@@ -118,9 +122,7 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
             ASSERT_TRUE(connections.empty());
             connectionsCpy.clear();
         }
-
     }
-    std::this_thread::sleep_for(std::chrono::seconds(1));
     connectionManager->InitiateShutdown().get();
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/
@@ -186,9 +188,12 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
             {
                 std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
-                if (!errorCode) {
+                if (!errorCode)
+                {
                     connections.push_back(newConnection);
-                } else {
+                }
+                else
+                {
                     connectionsFailed++;
                 }
             }
@@ -196,7 +201,8 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
         };
 
         {
-            for (size_t i = 0; i < totalExpectedConnections; ++i) {
+            for (size_t i = 0; i < totalExpectedConnections; ++i)
+            {
                 ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
             }
             std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
@@ -226,10 +232,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
             std::lock_guard<std::mutex> lockGuard(semaphoreLock);
             connections.clear();
         }
-
     }
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-
     connectionManager->InitiateShutdown().get();
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/
@@ -297,10 +300,13 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
             {
                 std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
-                if (!errorCode) {
+                if (!errorCode)
+                {
                     connections.push_back(newConnection);
                     connectionCount++;
-                } else {
+                }
+                else
+                {
                     connectionsFailed++;
                 }
             }
@@ -308,7 +314,8 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
         };
 
         {
-            for (size_t i = 0; i < totalExpectedConnections; ++i) {
+            for (size_t i = 0; i < totalExpectedConnections; ++i)
+            {
                 ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
             }
             std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
@@ -323,8 +330,10 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
         Vector<std::shared_ptr<Http::HttpClientConnection>> connectionsCpy = connections;
         connections.clear();
         size_t i = 0;
-        for (auto &connection : connectionsCpy) {
-            if (i++ & 0x01 && connection->IsOpen()) {
+        for (auto &connection : connectionsCpy)
+        {
+            if (i++ & 0x01 && connection->IsOpen())
+            {
                 connection->Close();
             }
             connection.reset();
@@ -336,8 +345,6 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
         ASSERT_FALSE(connections.empty());
         connections.clear();
     }
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-
     connectionManager->InitiateShutdown().get();
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/

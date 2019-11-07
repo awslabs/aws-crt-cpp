@@ -113,6 +113,7 @@ namespace Aws
                 HttpClientConnectionManagerOptions m_options;
                 std::promise<void> m_shutdownPromise;
                 std::atomic<bool> m_blockingShutdown;
+                std::atomic<bool> m_releaseInvoked;
 
                 static void s_onConnectionSetup(
                     aws_http_connection *connection,
