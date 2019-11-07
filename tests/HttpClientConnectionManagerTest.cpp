@@ -123,6 +123,7 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
             connectionsCpy.clear();
         }
     }
+    connectionManager->InitiateShutdown().get();
     /* now let everything tear down and make sure we don't leak or deadlock.*/
     return AWS_OP_SUCCESS;
 }
@@ -232,6 +233,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
             connections.clear();
         }
     }
+    connectionManager->InitiateShutdown().get();
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/
     return AWS_OP_SUCCESS;
@@ -343,6 +345,9 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
         ASSERT_FALSE(connections.empty());
         connections.clear();
     }
+
+    connectionManager->InitiateShutdown().get();
+
     /* now let everything tear down and make sure we don't leak or deadlock.*/
     return AWS_OP_SUCCESS;
 }

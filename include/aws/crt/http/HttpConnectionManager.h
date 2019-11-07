@@ -85,6 +85,8 @@ namespace Aws
                  */
                 bool AcquireConnection(const OnClientConnectionAvailable &onClientConnectionAvailable) noexcept;
 
+                std::future<void> InitiateShutdown() noexcept;
+
                 /**
                  * Factory function for connection managers
                  */

@@ -147,6 +147,14 @@ namespace Aws
                 return true;
             }
 
+            std::future<void> HttpClientConnectionManager::InitiateShutdown() noexcept
+            {
+                aws_http_connection_manager_release(m_connectionManager);
+                m_connectionManager = nullptr;
+
+                return m_shutdownPromise.get_future();
+            }
+
             class ManagedConnection final : public HttpClientConnection
             {
               public:
@@ -166,6 +174,8 @@ namespace Aws
                             m_connectionManager->m_connectionManager, m_connection);
                         m_connection = nullptr;
                     }
+
+                    m_connectionManager = nullptr;
                 }
 
               private:
