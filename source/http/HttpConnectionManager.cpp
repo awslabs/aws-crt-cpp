@@ -121,7 +121,7 @@ namespace Aws
             {
                 if (m_connectionManager)
                 {
-                    //aws_http_connection_manager_release(m_connectionManager);
+                    aws_http_connection_manager_release(m_connectionManager);
                     m_connectionManager = nullptr;
 
                     if (m_blockingShutdown)
@@ -153,14 +153,16 @@ namespace Aws
             std::future<void> HttpClientConnectionManager::InitiateShutdown() noexcept
             {
                 aws_http_connection_manager_release(m_connectionManager);
+                fprintf(stderr, "released connection manager.\n");
+
                 m_connectionManager = nullptr;
 
                 if (!m_blockingShutdown)
                 {
-                    m_blockingShutdown = false;
                     m_shutdownPromise.set_value();
                 }
 
+                m_blockingShutdown = false;
                 return m_shutdownPromise.get_future();
             }
 
@@ -194,6 +196,7 @@ namespace Aws
                 int errorCode,
                 void *userData) noexcept
             {
+                fprintf(stderr, "connection callback invoked with error %d and conn %p\n", errorCode, (void *)connection);
                 auto callbackArgs = static_cast<ConnectionManagerCallbackArgs *>(userData);
                 auto manager = callbackArgs->m_connectionManager;
                 auto callback = std::move(callbackArgs->m_onClientConnectionAvailable);
