@@ -40,7 +40,7 @@ namespace Aws
                 Count = AWS_SIGNING_ALGORITHM_COUNT
             };
 
-            using ShouldSignParameterCb = bool (*)(const Crt::ByteCursor *);
+            using ShouldSignParameterCb = bool (*)(const Crt::ByteCursor *, void *);
 
             /**
              * Wrapper around the configuration structure specific to the AWS
@@ -53,16 +53,6 @@ namespace Aws
                 virtual ~AwsSigningConfig();
 
                 virtual SigningConfigType GetType() const noexcept override { return SigningConfigType::Aws; }
-
-                /**
-                 * Gets the credentials to sign the request with
-                 */
-                std::shared_ptr<Credentials> GetCredentials() const noexcept;
-
-                /**
-                 * Sets the credentials to sign the request with
-                 */
-                void SetCredentials(const std::shared_ptr<Credentials> &credentials) noexcept;
 
                 /**
                  * Gets the signing process we want to invoke
@@ -155,11 +145,21 @@ namespace Aws
                  */
                 void SetSignBody(bool signBody) noexcept;
 
+                /**
+                 *  Get the credentials provider to use for signing.
+                 */
+                const std::shared_ptr<ICredentialsProvider> &GetCredentialsProvider() const noexcept;
+
+                /**
+                 *  Set the credentials provider to use for signing, this is mandatory for sigv4.
+                 */
+                void SetCredentialsProvider(const std::shared_ptr<ICredentialsProvider> &credsProvider) noexcept;
+
                 const struct aws_signing_config_aws *GetUnderlyingHandle() const noexcept;
 
               private:
                 Allocator *m_allocator;
-                std::shared_ptr<Credentials> m_credentials;
+                std::shared_ptr<ICredentialsProvider> m_credentials;
                 struct aws_signing_config_aws m_config;
                 Crt::String m_signingRegion;
                 Crt::String m_serviceName;
@@ -195,45 +195,12 @@ namespace Aws
                 virtual ~Sigv4HttpRequestSigner() = default;
 
                 /**
-                 * Synchronous method to use a signing process to transform an http request.
-                 * Thread-safe.
+                 * Signs an http request with AWS-auth sigv4. OnCompletionCallback will be invoked upon completion.
                  */
-                virtual bool SignRequest(Aws::Crt::Http::HttpRequest &request, const ISigningConfig *config) override;
-            };
-
-            /**
-             * Signing pipeline that performs Aws Sigv4 signing with credentials sourced from
-             * an internally referenced credentials provider
-             */
-            class AWS_CRT_CPP_API Sigv4HttpRequestSigningPipeline : public IHttpRequestSigningPipeline
-            {
-              public:
-                Sigv4HttpRequestSigningPipeline(
-                    const std::shared_ptr<ICredentialsProvider> &credentialsProvider,
-                    Allocator *allocator = DefaultAllocator());
-
-                virtual ~Sigv4HttpRequestSigningPipeline();
-
-                /**
-                 * Asynchronous method to use a signing process/pipeline to transform an http request.
-                 * Thread-safe.
-                 */
-                virtual void SignRequest(
+                virtual bool SignRequest(
                     const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
                     const std::shared_ptr<ISigningConfig> &config,
                     const OnHttpRequestSigningComplete &completionCallback) override;
-
-                /**
-                 * Whether or not the signer is in a valid state
-                 */
-                virtual bool IsValid() const override
-                {
-                    return m_signer != nullptr && m_credentialsProvider != nullptr;
-                }
-
-              private:
-                std::shared_ptr<Sigv4HttpRequestSigner> m_signer;
-                std::shared_ptr<ICredentialsProvider> m_credentialsProvider;
             };
         } // namespace Auth
     }     // namespace Crt

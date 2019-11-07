@@ -86,7 +86,7 @@ static std::shared_ptr<Credentials> s_MakeDummyCredentials(Allocator *allocator)
         aws_byte_cursor_from_c_str("token"));
 }
 
-static std::shared_ptr<ICredentialsProvider> s_MakeAsyncStaticProvider(
+static std::shared_ptr<CredentialsProvider> s_MakeAsyncStaticProvider(
     Allocator *allocator,
     const Aws::Crt::Io::ClientBootstrap &bootstrap)
 {
@@ -120,45 +120,7 @@ static std::shared_ptr<ICredentialsProvider> s_MakeAsyncStaticProvider(
     return Aws::Crt::MakeShared<CredentialsProvider>(allocator, provider_chain, allocator);
 }
 
-static int s_Sigv4SignerTestCreateDestroy(struct aws_allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-
-    {
-        auto signer = Aws::Crt::MakeShared<Sigv4HttpRequestSigner>(allocator, allocator);
-    }
-
-    return AWS_OP_SUCCESS;
-}
-
-AWS_TEST_CASE(Sigv4SignerTestCreateDestroy, s_Sigv4SignerTestCreateDestroy)
-
-static int s_Sigv4SignerTestSimple(struct aws_allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-
-    {
-        auto signer = Aws::Crt::MakeShared<Sigv4HttpRequestSigner>(allocator, allocator);
-        auto request = s_MakeDummyRequest(allocator);
-        auto credentials = s_MakeDummyCredentials(allocator);
-
-        auto config = Aws::Crt::MakeShared<AwsSigningConfig>(allocator, allocator);
-        config->SetCredentials(credentials);
-        config->SetSigningTimepoint(Aws::Crt::DateTime());
-        config->SetRegion("test");
-        config->SetService("service");
-
-        signer->SignRequest(*request, config.get());
-    }
-
-    return AWS_OP_SUCCESS;
-}
-
-AWS_TEST_CASE(Sigv4SignerTestSimple, s_Sigv4SignerTestSimple)
-
-static int s_Sigv4SigningPipelineTestCreateDestroy(struct aws_allocator *allocator, void *ctx)
+static int s_Sigv4SigningTestCreateDestroy(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
@@ -178,15 +140,15 @@ static int s_Sigv4SigningPipelineTestCreateDestroy(struct aws_allocator *allocat
 
         auto provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(config);
 
-        auto pipeline = Aws::Crt::MakeShared<Sigv4HttpRequestSigningPipeline>(allocator, provider, allocator);
+        auto signer = Aws::Crt::MakeShared<Sigv4HttpRequestSigner>(allocator, allocator);
     }
 
     return AWS_OP_SUCCESS;
 }
 
-AWS_TEST_CASE(Sigv4SigningPipelineTestCreateDestroy, s_Sigv4SigningPipelineTestCreateDestroy)
+AWS_TEST_CASE(Sigv4SigningTestCreateDestroy, s_Sigv4SigningTestCreateDestroy)
 
-static int s_Sigv4SigningPipelineTestSimple(struct aws_allocator *allocator, void *ctx)
+static int s_Sigv4SigningTestSimple(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
@@ -206,7 +168,7 @@ static int s_Sigv4SigningPipelineTestSimple(struct aws_allocator *allocator, voi
 
         auto provider = s_MakeAsyncStaticProvider(allocator, clientBootstrap);
 
-        auto pipeline = Aws::Crt::MakeShared<Sigv4HttpRequestSigningPipeline>(allocator, provider, allocator);
+        auto signer = Aws::Crt::MakeShared<Sigv4HttpRequestSigner>(allocator, allocator);
 
         auto request = s_MakeDummyRequest(allocator);
 
@@ -214,10 +176,11 @@ static int s_Sigv4SigningPipelineTestSimple(struct aws_allocator *allocator, voi
         signingConfig->SetSigningTimepoint(Aws::Crt::DateTime());
         signingConfig->SetRegion("test");
         signingConfig->SetService("service");
+        signingConfig->SetCredentialsProvider(provider);
 
         SignWaiter waiter;
 
-        pipeline->SignRequest(
+        signer->SignRequest(
             request, signingConfig, [&](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request, int errorCode) {
                 waiter.OnSigningComplete(request, errorCode);
             });
@@ -227,4 +190,4 @@ static int s_Sigv4SigningPipelineTestSimple(struct aws_allocator *allocator, voi
     return AWS_OP_SUCCESS;
 }
 
-AWS_TEST_CASE(Sigv4SigningPipelineTestSimple, s_Sigv4SigningPipelineTestSimple)
+AWS_TEST_CASE(Sigv4SigningTestSimple, s_Sigv4SigningTestSimple)

@@ -34,7 +34,6 @@ namespace Aws
             {
                 HttpClientConnectionManager *connectionManager =
                     reinterpret_cast<HttpClientConnectionManager *>(userData);
-                connectionManager->m_blockingShutdown = false;
                 connectionManager->m_shutdownPromise.set_value();
             }
 
@@ -62,8 +61,7 @@ namespace Aws
             HttpClientConnectionManager::HttpClientConnectionManager(
                 const HttpClientConnectionManagerOptions &options,
                 Allocator *allocator) noexcept
-                : m_allocator(allocator), m_connectionManager(nullptr), m_options(options),
-                  m_blockingShutdown(options.EnableBlockingShutdown)
+                : m_allocator(allocator), m_connectionManager(nullptr), m_options(options), m_releaseInvoked(false)
             {
                 const auto &connectionOptions = m_options.ConnectionOptions;
                 AWS_FATAL_ASSERT(connectionOptions.HostName.size() > 0);
@@ -77,10 +75,14 @@ namespace Aws
                 managerOptions.socket_options = &connectionOptions.SocketOptions.GetImpl();
                 managerOptions.initial_window_size = connectionOptions.InitialWindowSize;
 
-                if (m_blockingShutdown)
+                if (options.EnableBlockingShutdown)
                 {
                     managerOptions.shutdown_complete_callback = s_shutdownCompleted;
                     managerOptions.shutdown_complete_user_data = this;
+                }
+                else
+                {
+                    m_shutdownPromise.set_value();
                 }
 
                 aws_http_proxy_options proxyOptions;
@@ -119,18 +121,12 @@ namespace Aws
 
             HttpClientConnectionManager::~HttpClientConnectionManager()
             {
-                if (m_connectionManager)
+                if (!m_releaseInvoked)
                 {
                     aws_http_connection_manager_release(m_connectionManager);
-                    m_connectionManager = nullptr;
-
-                    if (m_blockingShutdown)
-                    {
-                        AWS_ASSERT(!"Blocking destruct was set, but InitiateShutdown has not been invoked, blocking "
-                                    "now but this is a bug.");
-                        m_shutdownPromise.get_future().get();
-                    }
+                    m_shutdownPromise.get_future().get();
                 }
+                m_connectionManager = nullptr;
             }
 
             bool HttpClientConnectionManager::AcquireConnection(
@@ -152,15 +148,8 @@ namespace Aws
 
             std::future<void> HttpClientConnectionManager::InitiateShutdown() noexcept
             {
+                m_releaseInvoked = true;
                 aws_http_connection_manager_release(m_connectionManager);
-                m_connectionManager = nullptr;
-
-                if (!m_blockingShutdown)
-                {
-                    m_blockingShutdown = false;
-                    m_shutdownPromise.set_value();
-                }
-
                 return m_shutdownPromise.get_future();
             }
 
@@ -195,7 +184,7 @@ namespace Aws
                 void *userData) noexcept
             {
                 auto callbackArgs = static_cast<ConnectionManagerCallbackArgs *>(userData);
-                auto manager = std::move(callbackArgs->m_connectionManager);
+                std::shared_ptr<HttpClientConnectionManager> manager = callbackArgs->m_connectionManager;
                 auto callback = std::move(callbackArgs->m_onClientConnectionAvailable);
 
                 Delete(callbackArgs, manager->m_allocator);
@@ -206,14 +195,18 @@ namespace Aws
                     return;
                 }
 
-                auto connectionObj = std::allocate_shared<ManagedConnection>(
-                    Aws::Crt::StlAllocator<ManagedConnection>(), connection, manager);
+                auto allocator = manager->m_allocator;
+                auto connectionRawObj = Aws::Crt::New<ManagedConnection>(manager->m_allocator, connection, manager);
 
-                if (!connectionObj)
+                if (!connectionRawObj)
                 {
+                    aws_http_connection_manager_release_connection(manager->m_connectionManager, connection);
                     callback(nullptr, AWS_ERROR_OOM);
                     return;
                 }
+                auto connectionObj = std::shared_ptr<ManagedConnection>(
+                    connectionRawObj,
+                    [allocator](ManagedConnection *managedConnection) { Delete(managedConnection, allocator); });
 
                 callback(connectionObj, AWS_OP_SUCCESS);
             }

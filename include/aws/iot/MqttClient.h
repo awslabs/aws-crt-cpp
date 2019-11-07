@@ -75,6 +75,8 @@ namespace Aws
             friend class MqttClient;
         };
 
+        using CreateSigningConfig = std::function<std::shared_ptr<Crt::Auth::ISigningConfig>(void)>;
+
         struct WebsocketConfig
         {
             /**
@@ -92,9 +94,26 @@ namespace Aws
              */
             WebsocketConfig(
                 const Crt::String &signingRegion,
-                const std::shared_ptr<Crt::Auth::ICredentialsProvider> &credentialsProvider) noexcept;
+                const std::shared_ptr<Crt::Auth::ICredentialsProvider> &credentialsProvider,
+                Crt::Allocator *allocator = Crt::DefaultAllocator()) noexcept;
+
+            /**
+             * Create a websocket configuration for use with a custom credentials provider, and a custom signer.
+             *
+             * You'll need to provide a function for use with creating a signing Config and pass it to
+             * createSigningConfig.
+             *
+             * This is useful for cases use with:
+             * https://docs.aws.amazon.com/iot/latest/developerguide/custom-auth.html
+             */
+            WebsocketConfig(
+                const std::shared_ptr<Crt::Auth::ICredentialsProvider> &credentialsProvider,
+                const std::shared_ptr<Crt::Auth::IHttpRequestSigner> &signer,
+                CreateSigningConfig createSigningConfig) noexcept;
 
             std::shared_ptr<Crt::Auth::ICredentialsProvider> CredentialsProvider;
+            std::shared_ptr<Crt::Auth::IHttpRequestSigner> Signer;
+            CreateSigningConfig CreateSigningConfigCb;
 
             /**
              * Specify ProxyOptions to use a proxy with your websocket connection.
@@ -204,7 +223,6 @@ namespace Aws
             Crt::Io::SocketOptions m_socketOptions;
             Crt::Io::TlsContextOptions m_contextOptions;
             Crt::Optional<WebsocketConfig> m_websocketConfig;
-            std::shared_ptr<Crt::Auth::Sigv4HttpRequestSigningPipeline> m_signer;
             bool m_isGood;
         };
 

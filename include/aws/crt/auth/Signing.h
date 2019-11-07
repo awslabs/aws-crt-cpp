@@ -38,6 +38,13 @@ namespace Aws
             };
 
             /**
+             * HTTP signing callback.  The second parameter is an aws error code,  The signing was successful
+             * iff the error code is AWS_ERROR_SUCCESS.
+             */
+            using OnHttpRequestSigningComplete =
+                std::function<void(const std::shared_ptr<Aws::Crt::Http::HttpRequest> &, int)>;
+
+            /**
              * Base class for all different signing configurations.  Type functions as a
              * primitive RTTI for downcasting.
              */
@@ -73,53 +80,13 @@ namespace Aws
 
                 virtual ~IHttpRequestSigner() = default;
 
-                /**
-                 * Synchronous method to use a signing process to transform an http request.
-                 * Thread-safe.
-                 */
-                virtual bool SignRequest(Aws::Crt::Http::HttpRequest &request, const ISigningConfig *config) = 0;
-
-                /**
-                 * Whether or not the signer is in a valid state
-                 */
-                virtual bool IsValid() const = 0;
-            };
-
-            /**
-             * Signing pipeline callback.  The second parameter is an aws error code,  The signing was successful
-             * iff the error code is AWS_ERROR_SUCCESS.
-             */
-            using OnHttpRequestSigningComplete =
-                std::function<void(const std::shared_ptr<Aws::Crt::Http::HttpRequest> &, int)>;
-
-            /**
-             * Abstract base for a complete signing process.  While the primary difference between this
-             * and IHttpRequestSigner is one of async vs. sync, the intent of this interface is to encapsulate an
-             * entire signing process that may involve multiple asynchronous steps (Sigv4 with credentials fetch, OAuth,
-             * etc...)
-             */
-            class AWS_CRT_CPP_API IHttpRequestSigningPipeline
-            {
-              public:
-                IHttpRequestSigningPipeline() = default;
-                IHttpRequestSigningPipeline(const IHttpRequestSigningPipeline &) = delete;
-                IHttpRequestSigningPipeline(IHttpRequestSigningPipeline &&) = delete;
-                IHttpRequestSigningPipeline &operator=(const IHttpRequestSigningPipeline &) = delete;
-                IHttpRequestSigningPipeline &operator=(IHttpRequestSigningPipeline &&) = delete;
-
-                virtual ~IHttpRequestSigningPipeline() = default;
-
-                /**
-                 * Asynchronous method to use a signing process/pipeline to transform an http request.
-                 * Thread-safe.
-                 */
-                virtual void SignRequest(
+                virtual bool SignRequest(
                     const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
                     const std::shared_ptr<ISigningConfig> &config,
                     const OnHttpRequestSigningComplete &completionCallback) = 0;
 
                 /**
-                 * Whether or not the signing pipeline is in a valid state
+                 * Whether or not the signer is in a valid state
                  */
                 virtual bool IsValid() const = 0;
             };

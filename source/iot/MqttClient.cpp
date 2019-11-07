@@ -27,6 +27,12 @@ namespace Aws
 
     namespace Iot
     {
+        static bool s_blackListHeadersFromSigning(const Crt::ByteCursor *cur, void *)
+        {
+            return !aws_byte_cursor_eq_ignore_case(&s_securityTokenHeader, cur) &&
+                   !aws_byte_cursor_eq_ignore_case(&s_dateHeader, cur);
+        }
+
         WebsocketConfig::WebsocketConfig(
             const Crt::String &signingRegion,
             Crt::Io::ClientBootstrap *bootstrap,
@@ -38,12 +44,49 @@ namespace Aws
 
             CredentialsProvider =
                 Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(config, allocator);
+
+            Signer = Aws::Crt::MakeShared<Crt::Auth::Sigv4HttpRequestSigner>(allocator, allocator);
+
+            CreateSigningConfigCb = [allocator, this]() {
+                auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
+                signerConfig->SetRegion(SigningRegion);
+                signerConfig->SetService(ServiceName);
+                signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4QueryParam);
+                signerConfig->SetSignBody(false);
+                signerConfig->SetShouldSignHeadersCallback(s_blackListHeadersFromSigning);
+                signerConfig->SetCredentialsProvider(CredentialsProvider);
+
+                return signerConfig;
+            };
         }
 
         WebsocketConfig::WebsocketConfig(
             const Crt::String &signingRegion,
-            const std::shared_ptr<Crt::Auth::ICredentialsProvider> &credentialsProvider) noexcept
-            : CredentialsProvider(credentialsProvider), SigningRegion(signingRegion), ServiceName("iotdevicegateway")
+            const std::shared_ptr<Crt::Auth::ICredentialsProvider> &credentialsProvider,
+            Crt::Allocator *allocator) noexcept
+            : CredentialsProvider(credentialsProvider),
+              Signer(Aws::Crt::MakeShared<Crt::Auth::Sigv4HttpRequestSigner>(allocator, allocator)),
+              SigningRegion(signingRegion), ServiceName("iotdevicegateway")
+        {
+            CreateSigningConfigCb = [allocator, this]() {
+                auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
+                signerConfig->SetRegion(SigningRegion);
+                signerConfig->SetService(ServiceName);
+                signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4QueryParam);
+                signerConfig->SetSignBody(false);
+                signerConfig->SetShouldSignHeadersCallback(s_blackListHeadersFromSigning);
+                signerConfig->SetCredentialsProvider(CredentialsProvider);
+
+                return signerConfig;
+            };
+        }
+
+        WebsocketConfig::WebsocketConfig(
+            const std::shared_ptr<Crt::Auth::ICredentialsProvider> &credentialsProvider,
+            const std::shared_ptr<Crt::Auth::IHttpRequestSigner> &signer,
+            Iot::CreateSigningConfig createConfig) noexcept
+            : CredentialsProvider(credentialsProvider), Signer(signer), CreateSigningConfigCb(std::move(createConfig)),
+              ServiceName("iotdevicegateway")
         {
         }
 
@@ -122,8 +165,6 @@ namespace Aws
             }
 
             m_websocketConfig = config;
-            m_signer = Aws::Crt::MakeShared<Crt::Auth::Sigv4HttpRequestSigningPipeline>(
-                m_allocator, config.CredentialsProvider);
         }
 
         MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithEndpoint(const Crt::String &endpoint)
@@ -203,12 +244,6 @@ namespace Aws
             return *this;
         }
 
-        static bool s_blackListHeadersFromSigning(const Crt::ByteCursor *cur)
-        {
-            return !aws_byte_cursor_eq_ignore_case(&s_securityTokenHeader, cur) &&
-                   !aws_byte_cursor_eq_ignore_case(&s_dateHeader, cur);
-        }
-
         MqttClientConnectionConfig MqttClientConnectionConfigBuilder::Build() noexcept
         {
             if (!m_isGood)
@@ -247,10 +282,8 @@ namespace Aws
                     Crt::Io::TlsContext(m_contextOptions, Crt::Io::TlsMode::CLIENT, m_allocator));
             }
 
-            auto signer = m_signer;
-            auto allocator = m_allocator;
             auto websocketConfig = m_websocketConfig.value();
-            auto signerTransform = [websocketConfig, allocator, signer](
+            auto signerTransform = [websocketConfig](
                                        std::shared_ptr<Crt::Http::HttpRequest> req,
                                        const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete) {
                 // it is only a very happy coincidence that these function signatures match. This is the callback
@@ -260,14 +293,9 @@ namespace Aws
                         onComplete(req1, errorCode);
                     };
 
-                auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
-                signerConfig->SetRegion(websocketConfig.SigningRegion);
-                signerConfig->SetService(websocketConfig.ServiceName);
-                signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4QueryParam);
-                signerConfig->SetSignBody(false);
-                signerConfig->SetShouldSignHeadersCallback(s_blackListHeadersFromSigning);
+                auto signerConfig = websocketConfig.CreateSigningConfigCb();
 
-                signer->SignRequest(req, signerConfig, signingComplete);
+                websocketConfig.Signer->SignRequest(req, signerConfig, signingComplete);
             };
 
             return MqttClientConnectionConfig(
