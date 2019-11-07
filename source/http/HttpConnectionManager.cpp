@@ -34,7 +34,6 @@ namespace Aws
             {
                 HttpClientConnectionManager *connectionManager =
                     reinterpret_cast<HttpClientConnectionManager *>(userData);
-                connectionManager->m_blockingShutdown = false;
                 connectionManager->m_shutdownPromise.set_value();
             }
 
@@ -62,8 +61,7 @@ namespace Aws
             HttpClientConnectionManager::HttpClientConnectionManager(
                 const HttpClientConnectionManagerOptions &options,
                 Allocator *allocator) noexcept
-                : m_allocator(allocator), m_connectionManager(nullptr), m_options(options),
-                  m_blockingShutdown(options.EnableBlockingShutdown), m_releaseInvoked(false)
+                : m_allocator(allocator), m_connectionManager(nullptr), m_options(options), m_releaseInvoked(false)
             {
                 const auto &connectionOptions = m_options.ConnectionOptions;
                 AWS_FATAL_ASSERT(connectionOptions.HostName.size() > 0);
