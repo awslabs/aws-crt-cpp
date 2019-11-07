@@ -206,15 +206,18 @@ namespace Aws
                     return;
                 }
 
-                auto connectionObj = std::allocate_shared<ManagedConnection>(
-                    Aws::Crt::StlAllocator<ManagedConnection>(), connection, manager);
+                auto allocator = manager->m_allocator;
+                auto connectionRawObj = Aws::Crt::New<ManagedConnection>(manager->m_allocator, connection, manager);
 
-                if (!connectionObj)
+                if (!connectionRawObj)
                 {
                     aws_http_connection_manager_release_connection(manager->m_connectionManager, connection);
                     callback(nullptr, AWS_ERROR_OOM);
                     return;
                 }
+                auto connectionObj = std::shared_ptr<ManagedConnection>(
+                    connectionRawObj,
+                    [allocator](ManagedConnection *managedConnection) { Delete(managedConnection, allocator); });
 
                 callback(connectionObj, AWS_OP_SUCCESS);
             }
