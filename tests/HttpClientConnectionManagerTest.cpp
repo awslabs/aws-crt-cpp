@@ -48,7 +48,7 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
     Aws::Crt::Io::SocketOptions socketOptions;
     socketOptions.SetConnectTimeoutMs(10000);
 
-    Aws::Crt::Io::EventLoopGroup eventLoopGroup(1, allocator);
+    Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
 
     Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
@@ -78,50 +78,47 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
     auto connectionManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
     ASSERT_TRUE(connectionManager);
+    {
+        Vector<std::shared_ptr<Http::HttpClientConnection>> connections;
 
-    Vector<std::shared_ptr<Http::HttpClientConnection>> connections;
+        auto onConnectionAvailable = [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode) {
+            {
+                std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
-    auto onConnectionAvailable = [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode) {
+                if (!errorCode) {
+                    connections.push_back(newConnection);
+                    connectionCount++;
+                } else {
+                    connectionsFailed++;
+                }
+            }
+            semaphore.notify_one();
+        };
+
+        for (size_t i = 0; i < totalExpectedConnections; ++i) {
+            ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
+        }
+        {
+            std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
+            semaphore.wait(uniqueLock,
+                           [&]() { return connectionCount + connectionsFailed == totalExpectedConnections; });
+        }
+
+        /* make sure the test was actually meaningful. */
+        ASSERT_TRUE(connectionCount > 0);
+        Vector<std::shared_ptr<Http::HttpClientConnection>> connectionsCpy = connections;
+        connections.clear();
+
+        /* this will trigger a mutation to connections, hence the copy. */
+        connectionsCpy.clear();
+
         {
             std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
-            if (!errorCode)
-            {
-                connections.push_back(newConnection);
-                connectionCount++;
-            }
-            else
-            {
-                connectionsFailed++;
-            }
+            ASSERT_TRUE(connections.empty());
+            connectionsCpy.clear();
         }
-        semaphore.notify_one();
-    };
-
-    for (size_t i = 0; i < totalExpectedConnections; ++i)
-    {
-        ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
     }
-    {
-        std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
-        semaphore.wait(uniqueLock, [&]() { return connectionCount + connectionsFailed == totalExpectedConnections; });
-    }
-
-    /* make sure the test was actually meaningful. */
-    ASSERT_TRUE(connectionCount > 0);
-    Vector<std::shared_ptr<Http::HttpClientConnection>> connectionsCpy = connections;
-    connections.clear();
-
-    /* this will trigger a mutation to connections, hence the copy. */
-    connectionsCpy.clear();
-
-    {
-        std::lock_guard<std::mutex> lockGuard(semaphoreLock);
-
-        ASSERT_TRUE(connections.empty());
-        connectionsCpy.clear();
-    }
-
     /* now let everything tear down and make sure we don't leak or deadlock.*/
     return AWS_OP_SUCCESS;
 }
@@ -149,7 +146,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     Aws::Crt::Io::SocketOptions socketOptions;
     socketOptions.SetConnectTimeoutMs(10000);
 
-    Aws::Crt::Io::EventLoopGroup eventLoopGroup(1, allocator);
+    Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
 
     Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
@@ -179,55 +176,53 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
     ASSERT_TRUE(connectionManager);
 
-    Vector<std::shared_ptr<Http::HttpClientConnection>> connections;
+    {
+        Vector<std::shared_ptr<Http::HttpClientConnection>> connections;
 
-    auto onConnectionAvailable = [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode) {
+        auto onConnectionAvailable = [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode) {
+            {
+                std::lock_guard<std::mutex> lockGuard(semaphoreLock);
+
+                if (!errorCode) {
+                    connections.push_back(newConnection);
+                } else {
+                    connectionsFailed++;
+                }
+            }
+            semaphore.notify_one();
+        };
+
+        {
+            for (size_t i = 0; i < totalExpectedConnections; ++i) {
+                ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
+            }
+            std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
+            semaphore.wait(uniqueLock, [&]() {
+                return connections.size() + connectionsFailed >= connectionManagerOptions.MaxConnections;
+            });
+        }
+
+        /* make sure the test was actually meaningful. */
+        ASSERT_FALSE(connections.empty());
+
+        Vector<std::shared_ptr<Http::HttpClientConnection>> connectionsCpy = connections;
+        connections.clear();
+
+        connectionsCpy.clear();
         {
             std::lock_guard<std::mutex> lockGuard(semaphoreLock);
-
-            if (!errorCode)
-            {
-                connections.push_back(newConnection);
-            }
-            else
-            {
-                connectionsFailed++;
-            }
+            /* release should have given us more connections. */
+            ASSERT_FALSE(connections.empty());
+            connectionsCpy = connections;
+            connections.clear();
         }
-        semaphore.notify_one();
-    };
 
-    {
-        for (size_t i = 0; i < totalExpectedConnections; ++i)
+        connectionsCpy.clear();
+
         {
-            ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
+            std::lock_guard<std::mutex> lockGuard(semaphoreLock);
+            connections.clear();
         }
-        std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
-        semaphore.wait(uniqueLock, [&]() {
-            return connections.size() + connectionsFailed >= connectionManagerOptions.MaxConnections;
-        });
-    }
-
-    /* make sure the test was actually meaningful. */
-    ASSERT_FALSE(connections.empty());
-
-    Vector<std::shared_ptr<Http::HttpClientConnection>> connectionsCpy = connections;
-    connections.clear();
-
-    connectionsCpy.clear();
-    {
-        std::lock_guard<std::mutex> lockGuard(semaphoreLock);
-        /* release should have given us more connections. */
-        ASSERT_FALSE(connections.empty());
-        connectionsCpy = connections;
-        connections.clear();
-    }
-
-    connectionsCpy.clear();
-
-    {
-        std::lock_guard<std::mutex> lockGuard(semaphoreLock);
-        connections.clear();
     }
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/
@@ -257,7 +252,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
     auto hostName = uri.GetHostName();
     tlsConnectionOptions.SetServerName(hostName);
 
-    Aws::Crt::Io::EventLoopGroup eventLoopGroup(1, allocator);
+    Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
     ASSERT_TRUE(eventLoopGroup);
 
     Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
@@ -288,57 +283,52 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
     ASSERT_TRUE(connectionManager);
 
-    Vector<std::shared_ptr<Http::HttpClientConnection>> connections;
-
-    auto onConnectionAvailable = [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode) {
-        {
-            std::lock_guard<std::mutex> lockGuard(semaphoreLock);
-
-            if (!errorCode)
-            {
-                connections.push_back(newConnection);
-                connectionCount++;
-            }
-            else
-            {
-                connectionsFailed++;
-            }
-        }
-        semaphore.notify_one();
-    };
-
     {
-        for (size_t i = 0; i < totalExpectedConnections; ++i)
+        Vector<std::shared_ptr<Http::HttpClientConnection>> connections;
+
+        auto onConnectionAvailable = [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode) {
+            {
+                std::lock_guard<std::mutex> lockGuard(semaphoreLock);
+
+                if (!errorCode) {
+                    connections.push_back(newConnection);
+                    connectionCount++;
+                } else {
+                    connectionsFailed++;
+                }
+            }
+            semaphore.notify_one();
+        };
+
         {
-            ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
+            for (size_t i = 0; i < totalExpectedConnections; ++i) {
+                ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
+            }
+            std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
+            semaphore.wait(uniqueLock, [&]() {
+                return connectionCount + connectionsFailed == connectionManagerOptions.MaxConnections;
+            });
+        }
+
+        /* make sure the test was actually meaningful. */
+        ASSERT_TRUE(connectionCount > 0);
+
+        Vector<std::shared_ptr<Http::HttpClientConnection>> connectionsCpy = connections;
+        connections.clear();
+        size_t i = 0;
+        for (auto &connection : connectionsCpy) {
+            if (i++ & 0x01 && connection->IsOpen()) {
+                connection->Close();
+            }
+            connection.reset();
         }
         std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
-        semaphore.wait(uniqueLock, [&]() {
-            return connectionCount + connectionsFailed == connectionManagerOptions.MaxConnections;
-        });
+        semaphore.wait(uniqueLock, [&]() { return (connectionCount + connectionsFailed == totalExpectedConnections); });
+
+        /* release should have given us more connections. */
+        ASSERT_FALSE(connections.empty());
+        connections.clear();
     }
-
-    /* make sure the test was actually meaningful. */
-    ASSERT_TRUE(connectionCount > 0);
-
-    Vector<std::shared_ptr<Http::HttpClientConnection>> connectionsCpy = connections;
-    connections.clear();
-    size_t i = 0;
-    for (auto &connection : connectionsCpy)
-    {
-        if (i++ & 0x01 && connection->IsOpen())
-        {
-            connection->Close();
-        }
-        connection.reset();
-    }
-    std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
-    semaphore.wait(uniqueLock, [&]() { return (connectionCount + connectionsFailed == totalExpectedConnections); });
-
-    /* release should have given us more connections. */
-    ASSERT_FALSE(connections.empty());
-    connections.clear();
-
     /* now let everything tear down and make sure we don't leak or deadlock.*/
     return AWS_OP_SUCCESS;
 }
