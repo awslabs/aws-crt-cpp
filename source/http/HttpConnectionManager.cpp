@@ -153,7 +153,6 @@ namespace Aws
             std::future<void> HttpClientConnectionManager::InitiateShutdown() noexcept
             {
                 aws_http_connection_manager_release(m_connectionManager);
-                fprintf(stderr, "released connection manager.\n");
 
                 m_connectionManager = nullptr;
 
@@ -181,7 +180,6 @@ namespace Aws
                 {
                     if (m_connection)
                     {
-                        fprintf(stderr, "destructor for connection\n");
                         aws_http_connection_manager_release_connection(
                             m_connectionManager->m_connectionManager, m_connection);
                         m_connection = nullptr;
@@ -197,9 +195,8 @@ namespace Aws
                 int errorCode,
                 void *userData) noexcept
             {
-                fprintf(stderr, "connection callback invoked with error %d and conn %p\n", errorCode, (void *)connection);
                 auto callbackArgs = static_cast<ConnectionManagerCallbackArgs *>(userData);
-                auto manager = callbackArgs->m_connectionManager;
+                std::shared_ptr<HttpClientConnectionManager> manager = callbackArgs->m_connectionManager;
                 auto callback = std::move(callbackArgs->m_onClientConnectionAvailable);
 
                 Delete(callbackArgs, manager->m_allocator);
