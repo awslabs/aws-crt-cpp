@@ -7,6 +7,8 @@ C++ wrapper around the aws-c-* libraries. Provides Cross-Platform Transport Prot
 * aws-c-common: Cross-platform primitives and data structures.
 * aws-c-io: Cross-platform event-loops, non-blocking I/O, and TLS implementations.
 * aws-c-mqtt: MQTT client.
+* aws-c-auth: Auth signers such as Aws-auth sigv4
+* aws-c-http: HTTP 1.1 client, and websockets (H2 coming soon)
 
 More protocols and utilities are coming soon, so stay tuned.
 

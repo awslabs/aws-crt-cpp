@@ -16,7 +16,12 @@ if (NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 11)
 endif()
 
-set(AWS_CRT_CPP_VERSION "v0.5.6")
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "RelWithDebInfo")
+endif()
+
+set(AWS_CRT_CPP_VERSION "v0.6.2")
+
 configure_file(include/aws/crt/Config.h.in ${CMAKE_CURRENT_LIST_DIR}/include/aws/crt/Config.h @ONLY)
 
 if (BUILD_DEPS)
