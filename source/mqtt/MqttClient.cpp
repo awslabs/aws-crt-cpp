@@ -81,8 +81,7 @@ namespace Aws
             static void s_cleanUpOnPublishData(void *userData)
             {
                 auto callbackData = reinterpret_cast<PubCallbackData *>(userData);
-                callbackData->~PubCallbackData();
-                aws_mem_release(callbackData->allocator, reinterpret_cast<void *>(callbackData));
+                Crt::Delete(callbackData, callbackData->allocator);
             }
 
             void MqttConnection::s_onPublish(
@@ -128,8 +127,7 @@ namespace Aws
                         callbackData->allocator, reinterpret_cast<void *>(const_cast<char *>(callbackData->topic)));
                 }
 
-                callbackData->~OpCompleteCallbackData();
-                aws_mem_release(callbackData->allocator, reinterpret_cast<void *>(callbackData));
+                Crt::Delete(callbackData, callbackData->allocator);
             }
 
             struct SubAckCallbackData
@@ -161,8 +159,8 @@ namespace Aws
                     aws_mem_release(
                         callbackData->allocator, reinterpret_cast<void *>(const_cast<char *>(callbackData->topic)));
                 }
-                callbackData->~SubAckCallbackData();
-                aws_mem_release(callbackData->allocator, reinterpret_cast<void *>(callbackData));
+
+                Crt::Delete(callbackData, callbackData->allocator);
             }
 
             struct MultiSubAckCallbackData
@@ -204,8 +202,8 @@ namespace Aws
                     aws_mem_release(
                         callbackData->allocator, reinterpret_cast<void *>(const_cast<char *>(callbackData->topic)));
                 }
-                callbackData->~MultiSubAckCallbackData();
-                aws_mem_release(callbackData->allocator, reinterpret_cast<void *>(callbackData));
+
+                Crt::Delete(callbackData, callbackData->allocator);
             }
 
             void MqttConnection::s_connectionInit(
@@ -278,7 +276,7 @@ namespace Aws
                 uint16_t port,
                 const Io::SocketOptions &socketOptions,
                 bool useWebsocket) noexcept
-                : m_owningClient(client), m_useTls(false), m_useWebsocket(useWebsocket)
+                : m_owningClient(client), m_onAnyCbData(nullptr), m_useTls(false), m_useWebsocket(useWebsocket)
             {
                 s_connectionInit(this, hostName, port, socketOptions);
             }
@@ -288,6 +286,12 @@ namespace Aws
                 if (*this)
                 {
                     aws_mqtt_client_connection_destroy(m_underlyingConnection);
+
+                    if (m_onAnyCbData)
+                    {
+                        auto pubCallbackData = reinterpret_cast<PubCallbackData *>(m_onAnyCbData);
+                        Crt::Delete(pubCallbackData, pubCallbackData->allocator);
+                    }
                 }
             }
 
@@ -413,6 +417,30 @@ namespace Aws
                            m_underlyingConnection, MqttConnection::s_onDisconnect, this) == AWS_OP_SUCCESS;
             }
 
+            bool MqttConnection::SetOnMessageHandler(OnPublishReceivedHandler &&onPublish) noexcept
+            {
+                auto pubCallbackData = Aws::Crt::New<PubCallbackData>(m_owningClient->allocator);
+
+                if (!pubCallbackData)
+                {
+                    return false;
+                }
+
+                pubCallbackData->connection = this;
+                pubCallbackData->onPublishReceived = std::move(onPublish);
+                pubCallbackData->allocator = m_owningClient->allocator;
+
+                if (!aws_mqtt_client_connection_set_on_any_publish_handler(
+                        m_underlyingConnection, s_onPublish, pubCallbackData))
+                {
+                    m_onAnyCbData = reinterpret_cast<void *>(pubCallbackData);
+                    return true;
+                }
+
+                Aws::Crt::Delete(pubCallbackData, pubCallbackData->allocator);
+                return false;
+            }
+
             uint16_t MqttConnection::Subscribe(
                 const char *topicFilter,
                 QOS qos,
@@ -420,31 +448,24 @@ namespace Aws
                 OnSubAckHandler &&onSubAck) noexcept
             {
 
-                PubCallbackData *pubCallbackData = reinterpret_cast<PubCallbackData *>(
-                    aws_mem_acquire(m_owningClient->allocator, sizeof(PubCallbackData)));
+                auto pubCallbackData = Crt::New<PubCallbackData>(m_owningClient->allocator);
 
                 if (!pubCallbackData)
                 {
                     return 0;
                 }
 
-                pubCallbackData = new (pubCallbackData) PubCallbackData;
-
                 pubCallbackData->connection = this;
                 pubCallbackData->onPublishReceived = std::move(onPublish);
                 pubCallbackData->allocator = m_owningClient->allocator;
 
-                SubAckCallbackData *subAckCallbackData = reinterpret_cast<SubAckCallbackData *>(
-                    aws_mem_acquire(m_owningClient->allocator, sizeof(SubAckCallbackData)));
+                auto subAckCallbackData = Crt::New<SubAckCallbackData>(m_owningClient->allocator);
 
                 if (!subAckCallbackData)
                 {
-                    pubCallbackData->~PubCallbackData();
-                    aws_mem_release(m_owningClient->allocator, reinterpret_cast<void *>(pubCallbackData));
+                    Crt::Delete(pubCallbackData, m_owningClient->allocator);
                     return 0;
                 }
-
-                subAckCallbackData = new (subAckCallbackData) SubAckCallbackData;
 
                 subAckCallbackData->connection = this;
                 subAckCallbackData->allocator = m_owningClient->allocator;
@@ -467,10 +488,8 @@ namespace Aws
 
                 if (!packetId)
                 {
-                    pubCallbackData->~PubCallbackData();
-                    aws_mem_release(m_owningClient->allocator, reinterpret_cast<void *>(pubCallbackData));
-                    subAckCallbackData->~SubAckCallbackData();
-                    aws_mem_release(m_owningClient->allocator, reinterpret_cast<void *>(subAckCallbackData));
+                    Crt::Delete(pubCallbackData, pubCallbackData->allocator);
+                    Crt::Delete(subAckCallbackData, subAckCallbackData->allocator);
                 }
 
                 return packetId;
@@ -482,36 +501,31 @@ namespace Aws
                 OnMultiSubAckHandler &&onSubAck) noexcept
             {
                 uint16_t packetId = 0;
-                MultiSubAckCallbackData *subAckCallbackData = reinterpret_cast<MultiSubAckCallbackData *>(
-                    aws_mem_acquire(m_owningClient->allocator, sizeof(MultiSubAckCallbackData)));
+                auto subAckCallbackData = Crt::New<MultiSubAckCallbackData>(m_owningClient->allocator);
 
                 if (!subAckCallbackData)
                 {
                     return 0;
                 }
 
-                subAckCallbackData = new (subAckCallbackData) MultiSubAckCallbackData;
-
                 aws_array_list multiPub;
+                AWS_ZERO_STRUCT(multiPub);
+
                 if (aws_array_list_init_dynamic(
                         &multiPub, m_owningClient->allocator, topicFilters.size(), sizeof(aws_mqtt_topic_subscription)))
                 {
-                    subAckCallbackData->~MultiSubAckCallbackData();
-                    aws_mem_release(m_owningClient->allocator, reinterpret_cast<void *>(subAckCallbackData));
+                    Crt::Delete(subAckCallbackData, m_owningClient->allocator);
                     return 0;
                 }
 
                 for (auto &topicFilter : topicFilters)
                 {
-                    PubCallbackData *pubCallbackData = reinterpret_cast<PubCallbackData *>(
-                        aws_mem_acquire(m_owningClient->allocator, sizeof(PubCallbackData)));
+                    auto pubCallbackData = Crt::New<PubCallbackData>(m_owningClient->allocator);
 
                     if (!pubCallbackData)
                     {
                         goto clean_up;
                     }
-
-                    pubCallbackData = new (pubCallbackData) PubCallbackData;
 
                     pubCallbackData->connection = this;
                     pubCallbackData->onPublishReceived = topicFilter.second;
@@ -547,14 +561,11 @@ namespace Aws
                     {
                         aws_mqtt_topic_subscription *subscription = NULL;
                         aws_array_list_get_at_ptr(&multiPub, reinterpret_cast<void **>(&subscription), i);
-                        PubCallbackData *pubCallbackData =
-                            reinterpret_cast<PubCallbackData *>(subscription->on_publish_ud);
-                        pubCallbackData->~PubCallbackData();
-                        aws_mem_release(m_owningClient->allocator, reinterpret_cast<void *>(pubCallbackData));
+                        auto pubCallbackData = reinterpret_cast<PubCallbackData *>(subscription->on_publish_ud);
+                        Crt::Delete(pubCallbackData, m_owningClient->allocator);
                     }
 
-                    subAckCallbackData->~MultiSubAckCallbackData();
-                    aws_mem_release(m_owningClient->allocator, reinterpret_cast<void *>(subAckCallbackData));
+                    Crt::Delete(subAckCallbackData, m_owningClient->allocator);
                 }
 
                 aws_array_list_clean_up(&multiPub);
@@ -566,14 +577,12 @@ namespace Aws
                 const char *topicFilter,
                 OnOperationCompleteHandler &&onOpComplete) noexcept
             {
-                OpCompleteCallbackData *opCompleteCallbackData = reinterpret_cast<OpCompleteCallbackData *>(
-                    aws_mem_acquire(m_owningClient->allocator, sizeof(OpCompleteCallbackData)));
+                auto opCompleteCallbackData = Crt::New<OpCompleteCallbackData>(m_owningClient->allocator);
+
                 if (!opCompleteCallbackData)
                 {
                     return 0;
                 }
-
-                opCompleteCallbackData = new (opCompleteCallbackData) OpCompleteCallbackData;
 
                 opCompleteCallbackData->connection = this;
                 opCompleteCallbackData->allocator = m_owningClient->allocator;
@@ -587,8 +596,7 @@ namespace Aws
 
                 if (!packetId)
                 {
-                    opCompleteCallbackData->~OpCompleteCallbackData();
-                    aws_mem_release(m_owningClient->allocator, reinterpret_cast<void *>(opCompleteCallbackData));
+                    Crt::Delete(opCompleteCallbackData, m_owningClient->allocator);
                 }
 
                 return packetId;
@@ -602,22 +610,19 @@ namespace Aws
                 OnOperationCompleteHandler &&onOpComplete) noexcept
             {
 
-                OpCompleteCallbackData *opCompleteCallbackData = reinterpret_cast<OpCompleteCallbackData *>(
-                    aws_mem_acquire(m_owningClient->allocator, sizeof(OpCompleteCallbackData)));
+                auto opCompleteCallbackData = Crt::New<OpCompleteCallbackData>(m_owningClient->allocator);
                 if (!opCompleteCallbackData)
                 {
                     return 0;
                 }
-                opCompleteCallbackData = new (opCompleteCallbackData) OpCompleteCallbackData;
 
                 size_t topicLen = strlen(topic) + 1;
                 char *topicCpy =
-                    reinterpret_cast<char *>(aws_mem_acquire(m_owningClient->allocator, sizeof(char) * (topicLen)));
+                    reinterpret_cast<char *>(aws_mem_calloc(m_owningClient->allocator, topicLen, sizeof(char)));
 
                 if (!topicCpy)
                 {
-                    opCompleteCallbackData->~OpCompleteCallbackData();
-                    aws_mem_release(m_owningClient->allocator, opCompleteCallbackData);
+                    Crt::Delete(opCompleteCallbackData, m_owningClient->allocator);
                 }
 
                 memcpy(topicCpy, topic, topicLen);
@@ -641,8 +646,7 @@ namespace Aws
                 if (!packetId)
                 {
                     aws_mem_release(m_owningClient->allocator, reinterpret_cast<void *>(topicCpy));
-                    opCompleteCallbackData->~OpCompleteCallbackData();
-                    aws_mem_release(m_owningClient->allocator, reinterpret_cast<void *>(opCompleteCallbackData));
+                    Crt::Delete(opCompleteCallbackData, m_owningClient->allocator);
                 }
 
                 return packetId;

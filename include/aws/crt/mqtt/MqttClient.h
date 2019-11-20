@@ -181,6 +181,12 @@ namespace Aws
                     OnMultiSubAckHandler &&onOpComplete) noexcept;
 
                 /**
+                 * Installs a handler for all incoming publish messages, regardless of if Subscribe has been
+                 * called on the topic.
+                 */
+                bool SetOnMessageHandler(OnPublishReceivedHandler &&onPublish) noexcept;
+
+                /**
                  * Unsubscribes from topicFilter. OnOperationCompleteHandler will be invoked upon receipt of
                  * an unsuback message.
                  */
@@ -212,6 +218,7 @@ namespace Aws
                 Io::TlsConnectionOptions m_tlsOptions;
                 Io::SocketOptions m_socketOptions;
                 Crt::Optional<Http::HttpClientConnectionProxyOptions> m_proxyOptions;
+                void *m_onAnyCbData;
                 bool m_useTls;
                 bool m_useWebsocket;
 
@@ -249,6 +256,7 @@ namespace Aws
                     const aws_byte_cursor *topic,
                     const aws_byte_cursor *payload,
                     void *user_data);
+
                 static void s_onSubAck(
                     aws_mqtt_client_connection *connection,
                     uint16_t packetId,
