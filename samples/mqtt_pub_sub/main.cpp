@@ -21,6 +21,7 @@
 #include <condition_variable>
 #include <iostream>
 #include <mutex>
+#include <aws/crt/UUID.h>
 
 using namespace Aws::Crt;
 
@@ -77,7 +78,7 @@ int main(int argc, char *argv[])
     String keyPath;
     String caFile;
     String topic;
-    String clientId("samples-client-id");
+    String clientId(Aws::Crt::UUID().ToString());
     String signingRegion;
     String proxyHost;
     uint16_t proxyPort(8080);
@@ -276,6 +277,12 @@ int main(int argc, char *argv[])
     connection->OnDisconnect = std::move(onDisconnect);
     connection->OnConnectionInterrupted = std::move(onInterrupted);
     connection->OnConnectionResumed = std::move(onResumed);
+
+    connection->SetOnMessageHandler([](Mqtt::MqttConnection &, const String &topic, const ByteBuf &payload) {
+       fprintf(stdout, "Generic Publish received on topic %s, payload:\n", topic.c_str());
+       fwrite(payload.buffer, 1, payload.len, stdout);
+       fprintf(stdout, "\n");
+    });
 
     /*
      * Actually perform the connect dance.

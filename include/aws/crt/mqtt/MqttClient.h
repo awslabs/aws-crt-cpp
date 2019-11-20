@@ -180,6 +180,10 @@ namespace Aws
                     QOS qos,
                     OnMultiSubAckHandler &&onOpComplete) noexcept;
 
+                /**
+                 * Installs a handler for all incoming publish messages, regardless of if Subscribe has been
+                 * called on the topic.
+                 */
                 bool SetOnMessageHandler(OnPublishReceivedHandler &&onPublish) noexcept;
 
                 /**

@@ -45,6 +45,9 @@ static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator *allocator, void *
     ASSERT_TRUE(mqttClientMoved);
 
     auto mqttConnection = mqttClientMoved.NewConnection("www.example.com", 443, socketOptions, tlsContext);
+
+    mqttConnection->SetOnMessageHandler(
+        [](Aws::Crt::Mqtt::MqttConnection &, const Aws::Crt::String &, const Aws::Crt::ByteBuf &) {});
     mqttConnection->Disconnect();
     ASSERT_TRUE(mqttConnection);
 
