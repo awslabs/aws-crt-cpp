@@ -16,3 +16,4 @@ jobs:
       with:
         # List of extensions to check
         extensions: c,h
+        exclude: './include/aws/crt/external/cJSON.h'
