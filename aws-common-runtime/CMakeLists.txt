@@ -17,7 +17,7 @@ set(AWS_DEPS_DOWNLOAD_DIR "${AWS_DEPS_BUILD_DIR}/downloads" CACHE PATH "Dependen
 
 message("install dir ${AWS_DEPS_INSTALL_DIR}")
 set(AWS_C_COMMON_URL "https://github.com/awslabs/aws-c-common.git")
-set(AWS_C_COMMON_SHA "v0.4.21")
+set(AWS_C_COMMON_SHA "v0.4.22")
 include(BuildAwsCCommon)
 
 if (UNIX AND NOT APPLE)
@@ -35,11 +35,11 @@ set(AWS_C_COMPRESSION_SHA "v0.2.4")
 include(BuildAwsCCompression)
 
 set(AWS_C_HTTP_URL "https://github.com/awslabs/aws-c-http.git")
-set(AWS_C_HTTP_SHA "v0.4.13")
+set(AWS_C_HTTP_SHA "v0.4.16")
 include(BuildAwsCHttp)
 
 set(AWS_C_MQTT_URL "https://github.com/awslabs/aws-c-mqtt.git")
-set(AWS_C_MQTT_SHA "v0.4.16")
+set(AWS_C_MQTT_SHA "v0.4.17")
 include(BuildAwsCMqtt)
 
 set(AWS_C_CAL_URL "https://github.com/awslabs/aws-c-cal.git")
@@ -47,7 +47,7 @@ set(AWS_C_CAL_SHA "v0.2.0")
 include(BuildAwsCCal)
 
 set(AWS_C_AUTH_URL "https://github.com/awslabs/aws-c-auth.git")
-set(AWS_C_AUTH_SHA "v0.2.9")
+set(AWS_C_AUTH_SHA "v0.3.1")
 include(BuildAwsCAuth)
 
 add_dependencies(AwsCCompression AwsCCommon)

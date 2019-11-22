@@ -283,3 +283,4 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}-config.cmake"
 enable_testing()
 add_subdirectory(tests)
 add_subdirectory(samples/mqtt_pub_sub)
+add_subdirectory(samples/raw_mqtt_pub_sub)

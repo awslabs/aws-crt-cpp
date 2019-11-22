@@ -166,34 +166,15 @@ namespace Aws
             };
 
             /**
-             * Http request signer base class that wraps any aws-c-* signer implementation
-             */
-            class AWS_CRT_CPP_API AwsHttpRequestSigner : public IHttpRequestSigner
-            {
-              public:
-                AwsHttpRequestSigner(aws_signer *signer, Allocator *allocator = DefaultAllocator());
-                virtual ~AwsHttpRequestSigner();
-
-                /**
-                 * Whether or not the signer is in a valid state
-                 */
-                virtual bool IsValid() const override { return m_signer != nullptr; }
-
-              protected:
-                Allocator *m_allocator;
-
-                aws_signer *m_signer;
-            };
-
-            /**
              * Http request signer that performs Aws Sigv4 signing
              */
-            class AWS_CRT_CPP_API Sigv4HttpRequestSigner : public AwsHttpRequestSigner
+            class AWS_CRT_CPP_API Sigv4HttpRequestSigner : public IHttpRequestSigner
             {
               public:
                 Sigv4HttpRequestSigner(Allocator *allocator = DefaultAllocator());
                 virtual ~Sigv4HttpRequestSigner() = default;
 
+                bool IsValid() const { return true; }
                 /**
                  * Signs an http request with AWS-auth sigv4. OnCompletionCallback will be invoked upon completion.
                  */
@@ -201,6 +182,9 @@ namespace Aws
                     const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
                     const std::shared_ptr<ISigningConfig> &config,
                     const OnHttpRequestSigningComplete &completionCallback) override;
+
+              private:
+                Allocator *m_allocator;
             };
         } // namespace Auth
     }     // namespace Crt
