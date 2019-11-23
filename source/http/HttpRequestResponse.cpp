@@ -92,11 +92,6 @@ namespace Aws
                 return Optional<HttpHeader>(header);
             }
 
-            bool HttpMessage::SetHeader(size_t index, const HttpHeader &header) noexcept
-            {
-                return aws_http_message_set_header(m_message, header, index) == AWS_OP_SUCCESS;
-            }
-
             bool HttpMessage::AddHeader(const HttpHeader &header) noexcept
             {
                 return aws_http_message_add_header(m_message, header) == AWS_OP_SUCCESS;
