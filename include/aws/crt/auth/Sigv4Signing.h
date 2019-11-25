@@ -174,7 +174,7 @@ namespace Aws
                 Sigv4HttpRequestSigner(Allocator *allocator = DefaultAllocator());
                 virtual ~Sigv4HttpRequestSigner() = default;
 
-                bool IsValid() const { return true; }
+                bool IsValid() const override { return true; }
                 /**
                  * Signs an http request with AWS-auth sigv4. OnCompletionCallback will be invoked upon completion.
                  */
