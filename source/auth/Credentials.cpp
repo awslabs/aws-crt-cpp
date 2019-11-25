@@ -161,16 +161,22 @@ namespace Aws
                 const CredentialsProviderStaticConfig &config,
                 Allocator *allocator)
             {
+                aws_credentials_provider_static_options staticOptions;
+                AWS_ZERO_STRUCT(staticOptions);
+                staticOptions.access_key_id = config.AccessKeyId;
+                staticOptions.secret_access_key = config.SecretAccessKey;
+                staticOptions.session_token = config.SessionToken;
                 return s_CreateWrappedProvider(
-                    aws_credentials_provider_new_static(
-                        allocator, config.AccessKeyId, config.SecretAccessKey, config.SessionToken),
-                    allocator);
+                    aws_credentials_provider_new_static(allocator, &staticOptions), allocator);
             }
 
             std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderEnvironment(
                 Allocator *allocator)
             {
-                return s_CreateWrappedProvider(aws_credentials_provider_new_environment(allocator), allocator);
+                aws_credentials_provider_environment_options environmentOptions;
+                AWS_ZERO_STRUCT(environmentOptions);
+                return s_CreateWrappedProvider(
+                    aws_credentials_provider_new_environment(allocator, &environmentOptions), allocator);
             }
 
             std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderProfile(

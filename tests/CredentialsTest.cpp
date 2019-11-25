@@ -119,9 +119,13 @@ static int s_TestProviderProfileGet(struct aws_allocator *allocator, void *ctx)
         CredentialsProviderProfileConfig config;
 
         auto provider = CredentialsProvider::CreateCredentialsProviderProfile(config, allocator);
-        GetCredentialsWaiter waiter(provider);
 
-        auto creds = waiter.GetCredentials();
+        if (provider)
+        {
+            GetCredentialsWaiter waiter(provider);
+
+            auto creds = waiter.GetCredentials();
+        }
     }
 
     return AWS_OP_SUCCESS;

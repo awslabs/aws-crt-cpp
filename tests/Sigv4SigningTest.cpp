@@ -96,15 +96,17 @@ static std::shared_ptr<CredentialsProvider> s_MakeAsyncStaticProvider(
 
     struct aws_credentials_provider *provider1 = aws_credentials_provider_new_imds(allocator, &imds_options);
 
-    struct aws_credentials_provider *provider2 = aws_credentials_provider_new_static(
-        allocator,
-        aws_byte_cursor_from_c_str("access"),
-        aws_byte_cursor_from_c_str("secret"),
-        aws_byte_cursor_from_c_str("token"));
+    aws_credentials_provider_static_options static_options;
+    AWS_ZERO_STRUCT(static_options);
+    static_options.access_key_id = aws_byte_cursor_from_c_str("access");
+    static_options.secret_access_key = aws_byte_cursor_from_c_str("secret");
+    static_options.session_token = aws_byte_cursor_from_c_str("token");
+
+    struct aws_credentials_provider *provider2 = aws_credentials_provider_new_static(allocator, &static_options);
 
     struct aws_credentials_provider *providers[2] = {provider1, provider2};
 
-    struct aws_credentials_provider_chain_options options;
+    aws_credentials_provider_chain_options options;
     AWS_ZERO_STRUCT(options);
     options.providers = providers;
     options.provider_count = 2;

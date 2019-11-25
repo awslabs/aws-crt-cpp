@@ -58,7 +58,6 @@ namespace Aws
 
                 size_t GetHeaderCount() const noexcept;
                 Optional<HttpHeader> GetHeader(size_t index) const noexcept;
-                bool SetHeader(size_t index, const HttpHeader &header) noexcept;
                 bool AddHeader(const HttpHeader &header) noexcept;
                 bool EraseHeader(size_t index) noexcept;
 

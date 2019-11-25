@@ -47,14 +47,17 @@ namespace Aws
 
             Signer = Aws::Crt::MakeShared<Crt::Auth::Sigv4HttpRequestSigner>(allocator, allocator);
 
-            CreateSigningConfigCb = [allocator, this]() {
+            auto credsProviderRef = CredentialsProvider;
+            auto signingRegionCopy = SigningRegion;
+            auto serviceNameCopy = ServiceName;
+            CreateSigningConfigCb = [allocator, credsProviderRef, signingRegionCopy, serviceNameCopy]() {
                 auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
-                signerConfig->SetRegion(SigningRegion);
-                signerConfig->SetService(ServiceName);
+                signerConfig->SetRegion(signingRegionCopy);
+                signerConfig->SetService(serviceNameCopy);
                 signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4QueryParam);
                 signerConfig->SetSignBody(false);
                 signerConfig->SetShouldSignHeadersCallback(s_blackListHeadersFromSigning);
-                signerConfig->SetCredentialsProvider(CredentialsProvider);
+                signerConfig->SetCredentialsProvider(credsProviderRef);
 
                 return signerConfig;
             };
@@ -68,14 +71,17 @@ namespace Aws
               Signer(Aws::Crt::MakeShared<Crt::Auth::Sigv4HttpRequestSigner>(allocator, allocator)),
               SigningRegion(signingRegion), ServiceName("iotdevicegateway")
         {
-            CreateSigningConfigCb = [allocator, this]() {
+            auto credsProviderRef = CredentialsProvider;
+            auto signingRegionCopy = SigningRegion;
+            auto serviceNameCopy = ServiceName;
+            CreateSigningConfigCb = [allocator, credsProviderRef, signingRegionCopy, serviceNameCopy]() {
                 auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
-                signerConfig->SetRegion(SigningRegion);
-                signerConfig->SetService(ServiceName);
+                signerConfig->SetRegion(signingRegionCopy);
+                signerConfig->SetService(serviceNameCopy);
                 signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4QueryParam);
                 signerConfig->SetSignBody(false);
                 signerConfig->SetShouldSignHeadersCallback(s_blackListHeadersFromSigning);
-                signerConfig->SetCredentialsProvider(CredentialsProvider);
+                signerConfig->SetCredentialsProvider(credsProviderRef);
 
                 return signerConfig;
             };

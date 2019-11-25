@@ -19,7 +19,7 @@
 #include <aws/crt/http/HttpRequestResponse.h>
 
 #include <aws/auth/signable.h>
-#include <aws/auth/signer.h>
+#include <aws/auth/signing.h>
 
 namespace Aws
 {
@@ -127,25 +127,8 @@ namespace Aws
 
             /////////////////////////////////////////////////////////////////////////////////////////////
 
-            AwsHttpRequestSigner::AwsHttpRequestSigner(struct aws_signer *signer, Allocator *allocator)
-                : IHttpRequestSigner(), m_allocator(allocator), m_signer(signer)
-            {
-            }
-
-            AwsHttpRequestSigner::~AwsHttpRequestSigner()
-            {
-                if (m_signer != nullptr)
-                {
-                    aws_signer_destroy(m_signer);
-                }
-                m_signer = nullptr;
-                m_allocator = nullptr;
-            }
-
-            /////////////////////////////////////////////////////////////////////////////////////////////
-
             Sigv4HttpRequestSigner::Sigv4HttpRequestSigner(Aws::Crt::Allocator *allocator)
-                : AwsHttpRequestSigner(aws_signer_new_aws(allocator), allocator)
+                : IHttpRequestSigner(), m_allocator(allocator)
             {
             }
 
@@ -203,8 +186,8 @@ namespace Aws
                 signerCallbackData->Signable = ScopedResource<struct aws_signable>(
                     aws_signable_new_http_request(m_allocator, request->GetUnderlyingMessage()), aws_signable_destroy);
 
-                return aws_signer_sign_request(
-                           m_signer,
+                return aws_sign_request_aws(
+                           m_allocator,
                            signerCallbackData->Signable.get(),
                            (aws_signing_config_base *)awsSigningConfig->GetUnderlyingHandle(),
                            s_http_signing_complete_fn,
