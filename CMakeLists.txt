@@ -297,3 +297,4 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}-config.cmake"
 
 enable_testing()
 add_subdirectory(tests)
+add_subdirectory(canary)
