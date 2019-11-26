@@ -12,6 +12,11 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
+
+#ifdef _WIN32
+#define _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES 1
+#endif
+
 #include <aws/crt/Api.h>
 
 #include <aws/testing/aws_test_harness.h>
