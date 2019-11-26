@@ -293,3 +293,5 @@ if (NOT CMAKE_CROSSCOMPILING)
         add_subdirectory(bin/elasticurl_cpp)
     endif()
 endif()
+
+add_subdirectory(canary)
