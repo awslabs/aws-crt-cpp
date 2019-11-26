@@ -260,3 +260,4 @@ if (NOT CMAKE_CROSSCOMPILING)
     endif()
 endif()
 
+add_subdirectory(canary)
