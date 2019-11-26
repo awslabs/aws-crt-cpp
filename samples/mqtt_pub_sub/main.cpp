@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 
         if (s_cmdOptionExists(argv, argv + argc, "--proxy_port"))
         {
-            proxyPort = atoi(s_getCmdOption(argv, argv + argc, "--proxy_port"));
+            proxyPort = static_cast<uint16_t>(atoi(s_getCmdOption(argv, argv + argc, "--proxy_port")));
         }
     }
 
