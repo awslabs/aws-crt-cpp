@@ -154,9 +154,6 @@ namespace Aws
             std::shared_ptr<HttpClientStream> HttpClientConnection::NewClientStream(
                 const HttpRequestOptions &requestOptions) noexcept
             {
-                AWS_ASSERT(requestOptions.onIncomingHeaders);
-                AWS_ASSERT(requestOptions.onStreamComplete);
-
                 aws_http_make_request_options options;
                 AWS_ZERO_STRUCT(options);
                 options.self_size = sizeof(aws_http_make_request_options);
@@ -221,7 +218,11 @@ namespace Aws
                 void *userData) noexcept
             {
                 auto callbackData = static_cast<ClientStreamCallbackData *>(userData);
-                callbackData->stream->m_onIncomingHeaders(*callbackData->stream, headerBlock, headerArray, numHeaders);
+                if (callbackData->stream->m_onIncomingHeaders)
+                {
+                    callbackData->stream->m_onIncomingHeaders(
+                        *callbackData->stream, headerBlock, headerArray, numHeaders);
+                }
 
                 return AWS_OP_SUCCESS;
             }
@@ -259,7 +260,10 @@ namespace Aws
             void HttpStream::s_onStreamComplete(struct aws_http_stream *, int errorCode, void *userData) noexcept
             {
                 auto callbackData = static_cast<ClientStreamCallbackData *>(userData);
-                callbackData->stream->m_onStreamComplete(*callbackData->stream, errorCode);
+                if (callbackData->stream->m_onStreamComplete)
+                {
+                    callbackData->stream->m_onStreamComplete(*callbackData->stream, errorCode);
+                }
 
                 callbackData->stream = nullptr;
                 Delete(callbackData, callbackData->allocator);
