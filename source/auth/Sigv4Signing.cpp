@@ -146,8 +146,12 @@ namespace Aws
             static void s_http_signing_complete_fn(struct aws_signing_result *result, int errorCode, void *userdata)
             {
                 auto cbData = reinterpret_cast<HttpSignerCallbackData *>(userdata);
-                aws_apply_signing_result_to_http_request(
-                    cbData->Request->GetUnderlyingMessage(), cbData->Alloc, result);
+
+                if (errorCode == AWS_OP_SUCCESS)
+                {
+                    aws_apply_signing_result_to_http_request(
+                        cbData->Request->GetUnderlyingMessage(), cbData->Alloc, result);
+                }
 
                 cbData->OnRequestSigningComplete(cbData->Request, errorCode);
                 Crt::Delete(cbData, cbData->Alloc);
