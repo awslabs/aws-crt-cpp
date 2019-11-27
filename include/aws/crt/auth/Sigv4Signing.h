@@ -200,6 +200,18 @@ namespace Aws
                  */
 
                 /**
+                 * Gets whether or not the signer should use 'UNSIGNED_PAYLOAD' for the payload hash. This is only ever
+                 * used for S3.
+                 */
+                bool GetUseUnsignedPayloadHash() const noexcept;
+
+                /**
+                 * Sets whether or not the signer should use 'UNSIGNED_PAYLOAD' for the payload hash. This is only ever
+                 * used for S3.
+                 */
+                void SetUseUnsignedPayloadHash(bool useUnsignedPayload) noexcept;
+
+                /**
                  *  Get the credentials provider to use for signing.
                  */
                 const std::shared_ptr<ICredentialsProvider> &GetCredentialsProvider() const noexcept;
