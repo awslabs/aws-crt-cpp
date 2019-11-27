@@ -13,8 +13,8 @@
  * permissions and limitations under the License.
  */
 #include <aws/crt/DateTime.h>
-#include <aws/crt/http/HttpConnectionManager.h>
 #include <aws/crt/auth/Sigv4Signing.h>
+#include <aws/crt/http/HttpConnectionManager.h>
 
 #include <chrono>
 #include <mutex>
@@ -62,41 +62,43 @@ struct Metric
  */
 class MetricsPublisher
 {
-public:
-    MetricsPublisher(const Aws::Crt::String &region,
-            Aws::Crt::Io::TlsContext &tlsContext,
-            Aws::Crt::Io::ClientBootstrap &clientBootstrap,
-            Aws::Crt::Io::EventLoopGroup &elGroup,
-            const std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> &credsProvider,
-            const std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> &signer,
-            std::chrono::seconds publishFrequency = std::chrono::seconds(1));
+  public:
+    MetricsPublisher(
+        const Aws::Crt::String &region,
+        Aws::Crt::Io::TlsContext &tlsContext,
+        Aws::Crt::Io::ClientBootstrap &clientBootstrap,
+        Aws::Crt::Io::EventLoopGroup &elGroup,
+        const std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> &credsProvider,
+        const std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> &signer,
+        std::chrono::seconds publishFrequency = std::chrono::seconds(1));
 
     ~MetricsPublisher();
 
     /**
      * Add a data point to the outgoing metrics collection.
      */
-    void AddDataPoint(const Metric& metricData);
+    void AddDataPoint(const Metric &metricData);
 
     /**
      * namespace to use for the metrics
      */
     Aws::Crt::Optional<Aws::Crt::String> Namespace;
 
-private:
-    void PreparePayload(Aws::Crt::StringStream& bodyStream);
+  private:
+    void PreparePayload(Aws::Crt::StringStream &bodyStream, const Aws::Crt::Vector<Metric> &);
 
     static void s_OnPublishTask(aws_task *task, void *arg, aws_task_status status);
 
     std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> m_connManager;
     std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> m_signer;
     std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> m_credsProvider;
-    Aws::Crt::Io::EventLoopGroup& m_elGroup;
+    Aws::Crt::Io::EventLoopGroup &m_elGroup;
     Aws::Crt::Vector<Metric> m_publishData;
     const Aws::Crt::String m_region;
     Aws::Crt::Http::HttpHeader m_hostHeader;
     Aws::Crt::Http::HttpHeader m_contentTypeHeader;
     Aws::Crt::Http::HttpHeader m_apiVersionHeader;
+    Aws::Crt::String m_endpoint;
     aws_event_loop *m_schedulingLoop;
 
     std::mutex m_publishDataLock;
