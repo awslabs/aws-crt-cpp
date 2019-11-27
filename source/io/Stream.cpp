@@ -42,6 +42,7 @@ static int s_aws_input_stream_cpp_seek(
     enum aws_stream_seek_basis basis)
 {
     aws_input_stream_cpp_impl *impl = static_cast<aws_input_stream_cpp_impl *>(stream->impl);
+    impl->stream->clear();
     impl->stream->seekg(Aws::Crt::Io::IStream::off_type(offset), s_stream_seek_basis_to_seekdir(basis));
 
     return AWS_OP_SUCCESS;

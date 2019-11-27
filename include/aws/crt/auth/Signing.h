@@ -82,7 +82,7 @@ namespace Aws
 
                 virtual bool SignRequest(
                     const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
-                    const std::shared_ptr<ISigningConfig> &config,
+                    const ISigningConfig &config,
                     const OnHttpRequestSigningComplete &completionCallback) = 0;
 
                 /**

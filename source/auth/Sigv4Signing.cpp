@@ -34,7 +34,7 @@ namespace Aws
 
                 SetSigningAlgorithm(SigningAlgorithm::SigV4Header);
                 SetShouldNormalizeUriPath(true);
-                SetSignBody(true);
+                SetBodySigningType(BodySigningType::SignBody);
                 SetSigningTimepoint(DateTime::Now());
                 m_config.config_type = AWS_SIGNING_CONFIG_AWS;
             }
@@ -104,9 +104,15 @@ namespace Aws
                 m_config.should_sign_param = shouldSignParameterCb;
             }
 
-            bool AwsSigningConfig::GetSignBody() const noexcept { return m_config.sign_body; }
+            BodySigningType AwsSigningConfig::GetBodySigningType() const noexcept
+            {
+                return static_cast<BodySigningType>(m_config.body_signing_type);
+            }
 
-            void AwsSigningConfig::SetSignBody(bool signBody) noexcept { m_config.sign_body = signBody; }
+            void AwsSigningConfig::SetBodySigningType(BodySigningType bodysigningType) noexcept
+            {
+                m_config.body_signing_type = static_cast<enum aws_body_signing_config_type>(bodysigningType);
+            }
 
             const std::shared_ptr<ICredentialsProvider> &AwsSigningConfig::GetCredentialsProvider() const noexcept
             {
@@ -138,8 +144,6 @@ namespace Aws
                 Allocator *Alloc;
                 ScopedResource<struct aws_signable> Signable;
                 OnHttpRequestSigningComplete OnRequestSigningComplete;
-                // just hold on to this for lifetime, we don't actually use it.
-                std::shared_ptr<ISigningConfig> Config;
                 std::shared_ptr<Http::HttpRequest> Request;
             };
 
@@ -159,16 +163,16 @@ namespace Aws
 
             bool Sigv4HttpRequestSigner::SignRequest(
                 const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
-                const std::shared_ptr<ISigningConfig> &config,
+                const ISigningConfig &config,
                 const OnHttpRequestSigningComplete &completionCallback)
             {
-                if (config->GetType() != SigningConfigType::Aws)
+                if (config.GetType() != SigningConfigType::Aws)
                 {
                     aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
                     return false;
                 }
 
-                auto awsSigningConfig = static_cast<const AwsSigningConfig *>(config.get());
+                auto awsSigningConfig = static_cast<const AwsSigningConfig *>(&config);
 
                 if (!awsSigningConfig->GetCredentialsProvider())
                 {
@@ -184,7 +188,6 @@ namespace Aws
                 }
 
                 signerCallbackData->Alloc = m_allocator;
-                signerCallbackData->Config = config;
                 signerCallbackData->OnRequestSigningComplete = completionCallback;
                 signerCallbackData->Request = request;
                 signerCallbackData->Signable = ScopedResource<struct aws_signable>(

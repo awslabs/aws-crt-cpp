@@ -55,7 +55,7 @@ namespace Aws
                 signerConfig->SetRegion(signingRegionCopy);
                 signerConfig->SetService(serviceNameCopy);
                 signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4QueryParam);
-                signerConfig->SetSignBody(false);
+                signerConfig->SetBodySigningType(Crt::Auth::BodySigningType::NoSigning);
                 signerConfig->SetShouldSignHeadersCallback(s_blackListHeadersFromSigning);
                 signerConfig->SetCredentialsProvider(credsProviderRef);
 
@@ -79,7 +79,7 @@ namespace Aws
                 signerConfig->SetRegion(signingRegionCopy);
                 signerConfig->SetService(serviceNameCopy);
                 signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4QueryParam);
-                signerConfig->SetSignBody(false);
+                signerConfig->SetBodySigningType(Crt::Auth::BodySigningType::NoSigning);
                 signerConfig->SetShouldSignHeadersCallback(s_blackListHeadersFromSigning);
                 signerConfig->SetCredentialsProvider(credsProviderRef);
 
@@ -301,7 +301,7 @@ namespace Aws
 
                 auto signerConfig = websocketConfig.CreateSigningConfigCb();
 
-                websocketConfig.Signer->SignRequest(req, signerConfig, signingComplete);
+                websocketConfig.Signer->SignRequest(req, *signerConfig, signingComplete);
             };
 
             return MqttClientConnectionConfig(
