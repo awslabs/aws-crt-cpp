@@ -40,6 +40,13 @@ namespace Aws
                 Count = AWS_SIGNING_ALGORITHM_COUNT
             };
 
+            enum class BodySigningType
+            {
+                NoSigning = AWS_BODY_SIGNING_OFF,
+                SignBody = AWS_BODY_SIGNING_ON,
+                UnsignedPayload = AWS_BODY_SIGNING_UNSIGNED_PAYLOAD
+            };
+
             using ShouldSignParameterCb = bool (*)(const Crt::ByteCursor *, void *);
 
             /**
@@ -137,13 +144,13 @@ namespace Aws
                  * Gets whether or not the signer should add the x-amz-content-sha256 header (with appropriate value) to
                  * the canonical request.
                  */
-                bool GetSignBody() const noexcept;
+                BodySigningType GetBodySigningType() const noexcept;
 
                 /**
                  * Sets whether or not the signer should add the x-amz-content-sha256 header (with appropriate value) to
                  * the canonical request.
                  */
-                void SetSignBody(bool signBody) noexcept;
+                void SetBodySigningType(BodySigningType bodysigningType) noexcept;
 
                 /**
                  *  Get the credentials provider to use for signing.
@@ -180,7 +187,7 @@ namespace Aws
                  */
                 virtual bool SignRequest(
                     const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
-                    const std::shared_ptr<ISigningConfig> &config,
+                    const ISigningConfig &config,
                     const OnHttpRequestSigningComplete &completionCallback) override;
 
               private:

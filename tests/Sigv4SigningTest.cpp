@@ -174,11 +174,11 @@ static int s_Sigv4SigningTestSimple(struct aws_allocator *allocator, void *ctx)
 
         auto request = s_MakeDummyRequest(allocator);
 
-        auto signingConfig = Aws::Crt::MakeShared<AwsSigningConfig>(allocator, allocator);
-        signingConfig->SetSigningTimepoint(Aws::Crt::DateTime());
-        signingConfig->SetRegion("test");
-        signingConfig->SetService("service");
-        signingConfig->SetCredentialsProvider(provider);
+        AwsSigningConfig signingConfig(allocator);
+        signingConfig.SetSigningTimepoint(Aws::Crt::DateTime());
+        signingConfig.SetRegion("test");
+        signingConfig.SetService("service");
+        signingConfig.SetCredentialsProvider(provider);
 
         SignWaiter waiter;
 
