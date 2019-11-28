@@ -13,10 +13,6 @@
  * permissions and limitations under the License.
  */
 
-#ifdef _WIN32
-#define _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES 1
-#endif
-
 #include <aws/crt/Api.h>
 
 #include <aws/testing/aws_test_harness.h>
@@ -123,7 +119,7 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
         mqttConnection->OnConnectionCompleted = onConnectionCompleted;
         mqttConnection->OnDisconnect = onDisconnect;
         char clientId[32];
-        sprintf(clientId, "aws-crt-cpp-v2-%d", tries);
+        snprintf(clientId, sizeof(clientId), "aws-crt-cpp-v2-%d", tries);
         mqttConnection->Connect(clientId, true);
 
         {
