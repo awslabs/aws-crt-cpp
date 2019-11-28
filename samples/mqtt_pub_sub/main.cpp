@@ -18,10 +18,10 @@
 #include <aws/iot/MqttClient.h>
 
 #include <algorithm>
+#include <aws/crt/UUID.h>
 #include <condition_variable>
 #include <iostream>
 #include <mutex>
-#include <aws/crt/UUID.h>
 
 using namespace Aws::Crt;
 
@@ -34,7 +34,9 @@ static void s_printHelp()
         " --key <path to key> --topic --ca_file <optional: path to custom ca>"
         " --use_websocket --signing_region <region> --proxy_host <host> --proxy_port <port>\n\n");
     fprintf(stdout, "endpoint: the endpoint of the mqtt server not including a port\n");
-    fprintf(stdout, "cert: path to your client certificate in PEM format. If this is not set you must specify use_websocket\n");
+    fprintf(
+        stdout,
+        "cert: path to your client certificate in PEM format. If this is not set you must specify use_websocket\n");
     fprintf(stdout, "key: path to your key in PEM format. If this is not set you must specify use_websocket\n");
     fprintf(stdout, "topic: topic to publish, subscribe to.\n");
     fprintf(stdout, "client_id: client id to use (optional)\n");
@@ -44,9 +46,13 @@ static void s_printHelp()
         " in your trust store, set this.\n");
     fprintf(stdout, "\tIt's the path to a CA file in PEM format\n");
     fprintf(stdout, "use_websocket: if specified, uses a websocket over https (optional)\n");
-    fprintf(stdout, "signing_region: used for websocket signer it should only be specific if websockets are used. (required for websockets)\n");
+    fprintf(
+        stdout,
+        "signing_region: used for websocket signer it should only be specific if websockets are used. (required for "
+        "websockets)\n");
     fprintf(stdout, "proxy_host: if you want to use a proxy with websockets, specify the host here (optional).\n");
-    fprintf(stdout, "proxy_port: defaults to 8080 is proxy_host is set. Set this to any value you'd like (optional).\n\n");
+    fprintf(
+        stdout, "proxy_port: defaults to 8080 is proxy_host is set. Set this to any value you'd like (optional).\n\n");
 }
 
 bool s_cmdOptionExists(char **begin, char **end, const String &option)
@@ -86,7 +92,7 @@ int main(int argc, char *argv[])
     bool useWebSocket = false;
 
     /*********************** Parse Arguments ***************************/
-    if (!(s_cmdOptionExists(argv, argv + argc, "--endpoint")  && s_cmdOptionExists(argv, argv + argc, "--topic")))
+    if (!(s_cmdOptionExists(argv, argv + argc, "--endpoint") && s_cmdOptionExists(argv, argv + argc, "--topic")))
     {
         s_printHelp();
         return 0;
@@ -159,8 +165,7 @@ int main(int argc, char *argv[])
 
     if (!certificatePath.empty() && !keyPath.empty())
     {
-        builder =
-                Aws::Iot::MqttClientConnectionConfigBuilder(certificatePath.c_str(), keyPath.c_str());
+        builder = Aws::Iot::MqttClientConnectionConfigBuilder(certificatePath.c_str(), keyPath.c_str());
     }
     else if (useWebSocket)
     {
@@ -279,9 +284,9 @@ int main(int argc, char *argv[])
     connection->OnConnectionResumed = std::move(onResumed);
 
     connection->SetOnMessageHandler([](Mqtt::MqttConnection &, const String &topic, const ByteBuf &payload) {
-       fprintf(stdout, "Generic Publish received on topic %s, payload:\n", topic.c_str());
-       fwrite(payload.buffer, 1, payload.len, stdout);
-       fprintf(stdout, "\n");
+        fprintf(stdout, "Generic Publish received on topic %s, payload:\n", topic.c_str());
+        fwrite(payload.buffer, 1, payload.len, stdout);
+        fprintf(stdout, "\n");
     });
 
     /*
