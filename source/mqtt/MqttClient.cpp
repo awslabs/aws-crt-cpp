@@ -264,8 +264,8 @@ namespace Aws
                 const Io::SocketOptions &socketOptions,
                 const Crt::Io::TlsContext &tlsContext,
                 bool useWebsocket) noexcept
-                : m_owningClient(client), m_tlsContext(tlsContext), m_tlsOptions(tlsContext.NewConnectionOptions()),
-                  m_useTls(true), m_useWebsocket(useWebsocket)
+                : m_owningClient(client), m_onAnyCbData(nullptr), m_tlsContext(tlsContext),
+                  m_tlsOptions(tlsContext.NewConnectionOptions()), m_useTls(true), m_useWebsocket(useWebsocket)
             {
                 s_connectionInit(this, hostName, port, socketOptions);
             }
