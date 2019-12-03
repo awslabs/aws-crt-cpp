@@ -215,13 +215,13 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
             ByteCursor path = ByteCursorFromCString("/");
             request->SetPath(path);
 
-            auto signingConfig = MakeShared<Auth::AwsSigningConfig>(g_allocator, g_allocator);
-            signingConfig->SetRegion(publisher->m_region);
-            signingConfig->SetCredentialsProvider(publisher->m_credsProvider);
-            signingConfig->SetService("monitoring");
-            signingConfig->SetSignBody(true);
-            signingConfig->SetSigningTimepoint(DateTime::Now());
-            signingConfig->SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
+            Auth::AwsSigningConfig signingConfig(g_allocator);
+            signingConfig.SetRegion(publisher->m_region);
+            signingConfig.SetCredentialsProvider(publisher->m_credsProvider);
+            signingConfig.SetService("monitoring");
+            signingConfig.SetBodySigningType(Auth::BodySigningType::SignBody);
+            signingConfig.SetSigningTimepoint(DateTime::Now());
+            signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
 
             publisher->m_signer->SignRequest(
                 request,
