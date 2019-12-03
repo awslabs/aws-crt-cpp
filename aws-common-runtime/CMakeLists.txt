@@ -4,7 +4,7 @@ project(aws-crt)
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
+    set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
 
 include(ExternalProject)
@@ -17,7 +17,7 @@ set(AWS_DEPS_DOWNLOAD_DIR "${AWS_DEPS_BUILD_DIR}/downloads" CACHE PATH "Dependen
 
 message("install dir ${AWS_DEPS_INSTALL_DIR}")
 set(AWS_C_COMMON_URL "https://github.com/awslabs/aws-c-common.git")
-set(AWS_C_COMMON_SHA "v0.4.22")
+set(AWS_C_COMMON_SHA "v0.4.23")
 include(BuildAwsCCommon)
 
 if (UNIX AND NOT APPLE)
@@ -27,7 +27,7 @@ if (UNIX AND NOT APPLE)
 endif()
 
 set(AWS_C_IO_URL "https://github.com/awslabs/aws-c-io.git")
-set(AWS_C_IO_SHA "v0.4.17")
+set(AWS_C_IO_SHA "v0.4.18")
 include(BuildAwsCIO)
 
 set(AWS_C_COMPRESSION_URL "https://github.com/awslabs/aws-c-compression.git")
@@ -39,7 +39,7 @@ set(AWS_C_HTTP_SHA "v0.4.17")
 include(BuildAwsCHttp)
 
 set(AWS_C_MQTT_URL "https://github.com/awslabs/aws-c-mqtt.git")
-set(AWS_C_MQTT_SHA "v0.4.17")
+set(AWS_C_MQTT_SHA "v0.4.18")
 include(BuildAwsCMqtt)
 
 set(AWS_C_CAL_URL "https://github.com/awslabs/aws-c-cal.git")
