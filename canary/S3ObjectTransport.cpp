@@ -84,14 +84,13 @@ void S3ObjectTransport::PutObject(
     ByteCursor path = ByteCursorFromCString(keyPath.c_str());
     request->SetPath(path);
 
-    auto signingConfig = MakeShared<Auth::AwsSigningConfig>(g_allocator, g_allocator);
-    signingConfig->SetRegion(m_region);
-    signingConfig->SetCredentialsProvider(m_credsProvider);
-    signingConfig->SetService("s3");
-    signingConfig->SetSignBody(false);
-    signingConfig->SetUseUnsignedPayloadHash(true);
-    signingConfig->SetSigningTimepoint(DateTime::Now());
-    signingConfig->SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
+    Auth::AwsSigningConfig signingConfig(g_allocator);
+    signingConfig.SetRegion(m_region);
+    signingConfig.SetCredentialsProvider(m_credsProvider);
+    signingConfig.SetService("s3");
+    signingConfig.SetBodySigningType(Auth::BodySigningType::UnsignedPayload);
+    signingConfig.SetSigningTimepoint(DateTime::Now());
+    signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
 
     m_signer->SignRequest(
         request,
@@ -147,14 +146,13 @@ void S3ObjectTransport::GetObject(
     ByteCursor path = ByteCursorFromCString(keyPath.c_str());
     request->SetPath(path);
 
-    auto signingConfig = MakeShared<Auth::AwsSigningConfig>(g_allocator, g_allocator);
-    signingConfig->SetRegion(m_region);
-    signingConfig->SetCredentialsProvider(m_credsProvider);
-    signingConfig->SetService("s3");
-    signingConfig->SetSignBody(false);
-    signingConfig->SetUseUnsignedPayloadHash(true);
-    signingConfig->SetSigningTimepoint(DateTime::Now());
-    signingConfig->SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
+    Auth::AwsSigningConfig signingConfig(g_allocator);
+    signingConfig.SetRegion(m_region);
+    signingConfig.SetCredentialsProvider(m_credsProvider);
+    signingConfig.SetService("s3");
+    signingConfig.SetBodySigningType(Auth::BodySigningType::UnsignedPayload);
+    signingConfig.SetSigningTimepoint(DateTime::Now());
+    signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
 
     m_signer->SignRequest(
         request,
