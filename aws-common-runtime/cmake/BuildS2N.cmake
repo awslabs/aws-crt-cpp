@@ -21,8 +21,8 @@ if("${TARGET_ARCH}" STREQUAL ANDROID)
             -DANDROID_STL=${ANDROID_STL}
             -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
             -DBUILD_TESTING=OFF
-            -DUSE_S2N_PQ_CRYPTO=OFF
-            )
+            -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
+	    )
 else()
     ExternalProject_Add(S2N
             PREFIX ${AWS_DEPS_BUILD_DIR}
@@ -39,6 +39,6 @@ else()
             -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
             -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
             -DBUILD_TESTING=OFF
-            -DUSE_S2N_PQ_CRYPTO=OFF
+            -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
             )
 endif()
