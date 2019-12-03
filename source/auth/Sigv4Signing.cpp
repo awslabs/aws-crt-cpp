@@ -150,16 +150,6 @@ namespace Aws
                 m_config.expiration_in_seconds = expirationInSeconds;
             }
 
-            bool AwsSigningConfig::GetUseUnsignedPayloadHash() const noexcept
-            {
-                return m_config.use_unsigned_payload_for_hash;
-            }
-
-            void AwsSigningConfig::SetUseUnsignedPayloadHash(bool useUnsignedPayload) noexcept
-            {
-                m_config.use_unsigned_payload_for_hash = useUnsignedPayload;
-            }
-
             const std::shared_ptr<ICredentialsProvider> &AwsSigningConfig::GetCredentialsProvider() const noexcept
             {
                 return m_credentialsProvider;
