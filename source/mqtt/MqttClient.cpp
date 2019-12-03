@@ -73,6 +73,8 @@ namespace Aws
 
             struct PubCallbackData
             {
+                PubCallbackData() : connection(nullptr), allocator(nullptr) {}
+
                 MqttConnection *connection;
                 OnPublishReceivedHandler onPublishReceived;
                 Allocator *allocator;
@@ -102,6 +104,8 @@ namespace Aws
 
             struct OpCompleteCallbackData
             {
+                OpCompleteCallbackData() : connection(nullptr), topic(nullptr), allocator(nullptr) {}
+
                 MqttConnection *connection;
                 OnOperationCompleteHandler onOperationComplete;
                 const char *topic;
@@ -132,6 +136,8 @@ namespace Aws
 
             struct SubAckCallbackData
             {
+                SubAckCallbackData() : connection(nullptr), topic(nullptr), allocator(nullptr) {}
+
                 MqttConnection *connection;
                 OnSubAckHandler onSubAck;
                 const char *topic;
@@ -165,6 +171,8 @@ namespace Aws
 
             struct MultiSubAckCallbackData
             {
+                MultiSubAckCallbackData() : connection(nullptr), topic(nullptr), allocator(nullptr) {}
+
                 MqttConnection *connection;
                 OnMultiSubAckHandler onSubAck;
                 const char *topic;
@@ -236,11 +244,11 @@ namespace Aws
                 aws_mqtt_transform_websocket_handshake_complete_fn *complete_fn,
                 void *complete_ctx)
             {
-                MqttConnection *connection = reinterpret_cast<MqttConnection *>(user_data);
+                auto connection = reinterpret_cast<MqttConnection *>(user_data);
 
                 Allocator *allocator = connection->m_owningClient->allocator;
                 // we have to do this because of private constructors.
-                Http::HttpRequest *toSeat =
+                auto toSeat =
                     reinterpret_cast<Http::HttpRequest *>(aws_mem_acquire(allocator, sizeof(Http::HttpRequest)));
                 toSeat = new (toSeat) Http::HttpRequest(allocator, rawRequest);
 
@@ -265,7 +273,7 @@ namespace Aws
                 const Crt::Io::TlsContext &tlsContext,
                 bool useWebsocket) noexcept
                 : m_owningClient(client), m_tlsContext(tlsContext), m_tlsOptions(tlsContext.NewConnectionOptions()),
-                  m_useTls(true), m_useWebsocket(useWebsocket)
+                  m_onAnyCbData(nullptr), m_useTls(true), m_useWebsocket(useWebsocket)
             {
                 s_connectionInit(this, hostName, port, socketOptions);
             }
