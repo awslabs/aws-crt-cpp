@@ -114,16 +114,6 @@ namespace Aws
                 m_config.body_signing_type = static_cast<enum aws_body_signing_config_type>(bodysigningType);
             }
 
-            bool AwsSigningConfig::GetUseUnsignedPayloadHash() const noexcept
-            {
-                return m_config.use_unsigned_payload_for_hash;
-            }
-
-            void AwsSigningConfig::SetUseUnsignedPayloadHash(bool useUnsignedPayload) noexcept
-            {
-                m_config.use_unsigned_payload_for_hash = useUnsignedPayload;
-            }
-
             const std::shared_ptr<ICredentialsProvider> &AwsSigningConfig::GetCredentialsProvider() const noexcept
             {
                 return m_credentials;
