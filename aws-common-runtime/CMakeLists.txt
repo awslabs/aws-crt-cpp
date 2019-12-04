@@ -9,16 +9,13 @@ endif()
 
 include(ExternalProject)
 
+add_subdirectory(aws-c-common)
+
 set(AWS_DEPS_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}" CACHE PATH "Dependencies install directory.")
 set(AWS_DEPS_BIN_DIR "${AWS_DEPS_INSTALL_DIR}/bin" CACHE PATH "Dependencies binary install directory.")
 set(AWS_DEPS_LIB_DIR "${AWS_DEPS_INSTALL_DIR}/lib" CACHE PATH "Dependencies library install directory.")
 set(AWS_DEPS_BUILD_DIR "${CMAKE_BINARY_DIR}/build" CACHE PATH "Dependencies build directory.")
 set(AWS_DEPS_DOWNLOAD_DIR "${AWS_DEPS_BUILD_DIR}/downloads" CACHE PATH "Dependencies download directory.")
-
-message("install dir ${AWS_DEPS_INSTALL_DIR}")
-set(AWS_C_COMMON_URL "https://github.com/awslabs/aws-c-common.git")
-set(AWS_C_COMMON_SHA "v0.4.23")
-include(BuildAwsCCommon)
 
 if (UNIX AND NOT APPLE)
     set(S2N_URL "https://github.com/awslabs/s2n.git")
@@ -50,15 +47,14 @@ set(AWS_C_AUTH_URL "https://github.com/awslabs/aws-c-auth.git")
 set(AWS_C_AUTH_SHA "v0.3.3")
 include(BuildAwsCAuth)
 
-add_dependencies(AwsCCompression AwsCCommon)
+add_dependencies(AwsCCompression aws-c-common)
 add_dependencies(AwsCMqtt AwsCHttp)
 add_dependencies(AwsCHttp AwsCIO AwsCCompression)
-add_dependencies(AwsCCal AwsCCommon)
+add_dependencies(AwsCCal aws-c-common)
 add_dependencies(AwsCAuth AwsCHttp AwsCCal)
 
 if (UNIX AND NOT APPLE)
-    add_dependencies(AwsCIO S2N AwsCCommon)
+    add_dependencies(AwsCIO S2N aws-c-common)
 else()
-    add_dependencies(AwsCIO AwsCCommon )
+    add_dependencies(AwsCIO aws-c-common)
 endif()
-

@@ -1,0 +1,3 @@
+[submodule "aws-common-runtime/aws-c-common"]
+	path = aws-common-runtime/aws-c-common
+	url = https://github.com/awslabs/aws-c-common.git
