@@ -13,26 +13,26 @@
  * permissions and limitations under the License.
  */
 #include "MetricsPublisher.h"
+#include "CanaryApp.h"
 
 #include <aws/crt/http/HttpConnectionManager.h>
 #include <aws/crt/http/HttpRequestResponse.h>
 
 #include <aws/common/clock.h>
 #include <aws/common/task_scheduler.h>
+#include <condition_variable>
 #include <iostream>
 
 using namespace Aws::Crt;
 
 MetricsPublisher::MetricsPublisher(
-    const Aws::Crt::String &region,
-    Aws::Crt::Io::TlsContext &tlsContext,
-    Aws::Crt::Io::ClientBootstrap &clientBootstrap,
-    Aws::Crt::Io::EventLoopGroup &elGroup,
-    const std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> &credsProvider,
-    const std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> &signer,
+    CanaryApp &canaryApp,
+    const char *metricNamespace,
     std::chrono::seconds publishFrequency)
-    : m_signer(signer), m_credsProvider(credsProvider), m_elGroup(elGroup), m_region(region)
+    : m_canaryApp(canaryApp)
 {
+    Namespace = metricNamespace;
+
     AWS_ZERO_STRUCT(m_publishTask);
     m_publishFrequencyNs =
         aws_timestamp_convert(publishFrequency.count(), AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_NANOS, NULL);
@@ -40,8 +40,8 @@ MetricsPublisher::MetricsPublisher(
     m_publishTask.arg = this;
 
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
-    m_endpoint = "monitoring." + m_region + ".amazonaws.com";
-    ;
+    m_endpoint = "monitoring." + canaryApp.region + ".amazonaws.com";
+
     connectionManagerOptions.ConnectionOptions.HostName = m_endpoint;
     connectionManagerOptions.ConnectionOptions.Port = 443;
     connectionManagerOptions.ConnectionOptions.SocketOptions.SetConnectTimeoutMs(3000);
@@ -50,16 +50,16 @@ MetricsPublisher::MetricsPublisher(
 
     aws_byte_cursor serverName = ByteCursorFromCString(connectionManagerOptions.ConnectionOptions.HostName.c_str());
 
-    auto connOptions = tlsContext.NewConnectionOptions();
+    auto connOptions = canaryApp.tlsContext.NewConnectionOptions();
     connOptions.SetServerName(serverName);
     connectionManagerOptions.ConnectionOptions.TlsOptions = connOptions;
-    connectionManagerOptions.ConnectionOptions.Bootstrap = &clientBootstrap;
+    connectionManagerOptions.ConnectionOptions.Bootstrap = &canaryApp.bootstrap;
     connectionManagerOptions.MaxConnections = 5;
 
     m_connManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, g_allocator);
 
-    m_schedulingLoop = aws_event_loop_group_get_next_loop(elGroup.GetUnderlyingHandle());
+    m_schedulingLoop = aws_event_loop_group_get_next_loop(canaryApp.eventLoopGroup.GetUnderlyingHandle());
     uint64_t now = 0;
     aws_event_loop_current_clock_time(m_schedulingLoop, &now);
     aws_event_loop_schedule_task_future(m_schedulingLoop, &m_publishTask, now + m_publishFrequencyNs);
@@ -77,6 +77,11 @@ MetricsPublisher::MetricsPublisher(
 MetricsPublisher::~MetricsPublisher()
 {
     aws_event_loop_cancel_task(m_schedulingLoop, &m_publishTask);
+}
+
+void MetricsPublisher::SetMetricTransferSize(MetricTransferSize transferSize)
+{
+    m_transferSize = transferSize;
 }
 
 static const char *s_UnitToStr(MetricUnit unit)
@@ -118,6 +123,18 @@ static const char *s_UnitToStr(MetricUnit unit)
     return s_unitStr[index];
 }
 
+static const char *s_MetricTransferToString(MetricTransferSize transferSize)
+{
+    static const char *s_transferSizeStr[] = {"None", "Small", "Large"};
+
+    auto index = static_cast<size_t>(transferSize);
+    if (index >= AWS_ARRAY_SIZE(s_transferSizeStr))
+    {
+        return "None";
+    }
+    return s_transferSizeStr[index];
+}
+
 void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const Vector<Metric> &metrics)
 {
     bodyStream << "Action=PutMetricData&";
@@ -128,6 +145,10 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
     }
 
     size_t metricCount = 1;
+    const char *transferSizeString = s_MetricTransferToString(m_transferSize);
+    const char *platformName = m_canaryApp.platformName.c_str();
+    const char *toolName = m_canaryApp.toolName.c_str();
+    const char *instanceType = m_canaryApp.instanceType.c_str();
 
     for (const auto &metric : metrics)
     {
@@ -141,7 +162,14 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
         bodyStream.precision(17);
         bodyStream << "MetricData.member." << metricCount << ".Value=" << std::fixed << metric.Value << "&";
         bodyStream << "MetricData.member." << metricCount << ".Unit=" << s_UnitToStr(metric.Unit) << "&";
-
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.1.Name=Platform&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.1.Value=" << platformName << "&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.2.Name=ToolName&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.2.Value=" << toolName << "&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.3.Name=InstanceType&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.3.Value=" << instanceType << "&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Name=TransferSize&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Value=" << transferSizeString << "&";
         metricCount++;
     }
 
@@ -152,6 +180,13 @@ void MetricsPublisher::AddDataPoint(const Metric &metricData)
 {
     std::lock_guard<std::mutex> locker(m_publishDataLock);
     m_publishData.push_back(metricData);
+}
+
+void MetricsPublisher::WaitForLastPublish()
+{
+    std::unique_lock<std::mutex> locker(m_publishDataLock);
+
+    m_waitForLastPublishCV.wait(locker, [this]() { return m_publishData.size() == 0; });
 }
 
 void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_status status)
@@ -170,6 +205,7 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
                 aws_event_loop_current_clock_time(publisher->m_schedulingLoop, &now);
                 aws_event_loop_schedule_task_future(
                     publisher->m_schedulingLoop, &publisher->m_publishTask, now + publisher->m_publishFrequencyNs);
+                publisher->m_waitForLastPublishCV.notify_all();
                 return;
             }
 
@@ -216,14 +252,14 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
             request->SetPath(path);
 
             Auth::AwsSigningConfig signingConfig(g_allocator);
-            signingConfig.SetRegion(publisher->m_region);
-            signingConfig.SetCredentialsProvider(publisher->m_credsProvider);
+            signingConfig.SetRegion(publisher->m_canaryApp.region);
+            signingConfig.SetCredentialsProvider(publisher->m_canaryApp.credsProvider);
             signingConfig.SetService("monitoring");
             signingConfig.SetBodySigningType(Auth::BodySigningType::SignBody);
             signingConfig.SetSigningTimepoint(DateTime::Now());
             signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
 
-            publisher->m_signer->SignRequest(
+            publisher->m_canaryApp.signer->SignRequest(
                 request,
                 signingConfig,
                 [bodyStream, publisher, finalRun](
