@@ -12,6 +12,9 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
+
+#pragma once
+
 #include <aws/crt/DateTime.h>
 #include <aws/crt/auth/Sigv4Signing.h>
 #include <aws/crt/http/HttpConnectionManager.h>
@@ -49,6 +52,13 @@ enum class MetricUnit
     None,
 };
 
+enum class MetricTransferSize
+{
+    None,
+    Small,
+    Large
+};
+
 struct Metric
 {
     MetricUnit Unit;
@@ -57,6 +67,8 @@ struct Metric
     Aws::Crt::String MetricName;
 };
 
+struct CanaryApp;
+
 /**
  * Publishes an aggregated metrics collection to cloud watch at 'publishFrequency'
  */
@@ -64,12 +76,8 @@ class MetricsPublisher
 {
   public:
     MetricsPublisher(
-        const Aws::Crt::String &region,
-        Aws::Crt::Io::TlsContext &tlsContext,
-        Aws::Crt::Io::ClientBootstrap &clientBootstrap,
-        Aws::Crt::Io::EventLoopGroup &elGroup,
-        const std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> &credsProvider,
-        const std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> &signer,
+        CanaryApp &canaryApp,
+        const char *metricNamespace,
         std::chrono::seconds publishFrequency = std::chrono::seconds(1));
 
     ~MetricsPublisher();
@@ -78,6 +86,17 @@ class MetricsPublisher
      * Add a data point to the outgoing metrics collection.
      */
     void AddDataPoint(const Metric &metricData);
+
+    /*
+     * Set the transfer size we are currently recording metrics for.  (Will
+     * be recorded with each metric.)
+     */
+    void SetMetricTransferSize(MetricTransferSize transferSize);
+
+    /**
+     * Wait until all queued metrics have been published.
+     */
+    void WaitForLastPublish();
 
     /**
      * namespace to use for the metrics
@@ -89,19 +108,17 @@ class MetricsPublisher
 
     static void s_OnPublishTask(aws_task *task, void *arg, aws_task_status status);
 
+    MetricTransferSize m_transferSize;
+    CanaryApp &m_canaryApp;
     std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> m_connManager;
-    std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> m_signer;
-    std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> m_credsProvider;
-    Aws::Crt::Io::EventLoopGroup &m_elGroup;
     Aws::Crt::Vector<Metric> m_publishData;
-    const Aws::Crt::String m_region;
     Aws::Crt::Http::HttpHeader m_hostHeader;
     Aws::Crt::Http::HttpHeader m_contentTypeHeader;
     Aws::Crt::Http::HttpHeader m_apiVersionHeader;
     Aws::Crt::String m_endpoint;
     aws_event_loop *m_schedulingLoop;
-
     std::mutex m_publishDataLock;
     aws_task m_publishTask;
     uint64_t m_publishFrequencyNs;
+    std::condition_variable m_waitForLastPublishCV;
 };

@@ -34,6 +34,14 @@ namespace Aws
             NonBlocking
         };
 
+        enum LogSubject
+        {
+            AWS_LS_CRT_CPP_GENERAL = 0x1C00,
+            AWS_LS_CRT_CPP_CANARY,
+
+            AWS_LS_CRT_CPP_LAST = (AWS_LS_CRT_CPP_GENERAL + AWS_LOG_SUBJECT_SPACE_SIZE - 1)
+        };
+
         class AWS_CRT_CPP_API ApiHandle
         {
           public:

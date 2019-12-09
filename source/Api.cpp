@@ -18,6 +18,14 @@ namespace Aws
     {
         Allocator *g_allocator = Aws::Crt::DefaultAllocator();
 
+        static struct aws_log_subject_info s_crt_cpp_log_subject_infos[] = {
+            {AWS_LS_CRT_CPP_GENERAL, "CrtCppGeneral", "Subject for aws-crt-cpp logging that defies categorization."},
+            {AWS_LS_CRT_CPP_CANARY, "CrtCppCanary", "Subject for aws-crt-cpp canary logging."}};
+
+        static struct aws_log_subject_info_list s_crt_cpp_log_subject_list = {
+            s_crt_cpp_log_subject_infos,
+            AWS_ARRAY_SIZE(s_crt_cpp_log_subject_infos)};
+
         static void *s_cJSONAlloc(size_t sz) { return aws_mem_acquire(g_allocator, sz); }
 
         static void s_cJSONFree(void *ptr) { return aws_mem_release(g_allocator, ptr); }
@@ -107,6 +115,8 @@ namespace Aws
             }
 
             aws_logger_set(&logger);
+
+            aws_register_log_subject_info_list(&s_crt_cpp_log_subject_list);
         }
 
         void ApiHandle::SetShutdownBehavior(ApiHandleShutdownBehavior behavior) { shutdownBehavior = behavior; }
