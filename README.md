@@ -16,7 +16,7 @@ More protocols and utilities are coming soon, so stay tuned.
 
 The C99 libraries are already included for your convenience when you specify the `-DBUILD_DEPS=ON` CMake argument.
 
-If you want to manage these dependencies manually (e.g. you're using them in other projects), simply specify 
+If you want to manage these dependencies manually (e.g. you're using them in other projects), simply specify
 `-DCMAKE_INSTALL_PREFIX` to point to the directory where you have them installed.
 
 ## Dependencies?
@@ -25,11 +25,11 @@ If you want to manage these dependencies manually (e.g. you're using them in oth
 There are no non-OS dependencies that AWS does not own, maintain, and ship.
 
 ### Unix
-The most likely answer is: none that you should care about. 
+The most likely answer is: none that you should care about.
 
 We do depend on an openssl compatible libcrypto implementation being in your path if you are on a
 unix system. Note: we do not actually use libssl. The most likely scenario is that libcrypto is already installed on your system. However, since
-many linux distributions these days do not provide a 32-bit libcrypto package, if you're trying to perform a 32-bit build you will 
+many linux distributions these days do not provide a 32-bit libcrypto package, if you're trying to perform a 32-bit build you will
 likely need to build and install libcrypto from source.
 
 ## Common Usage
@@ -96,33 +96,6 @@ Lastly, you will need a client or server bootstrap to use a client or server pro
 non-blocking and event driven, this handles most of the "callback hell" inherent in the design. Assuming you aren't partitioning
 threads for particular use-cases, you can have a single instance of this that you pass to multiple clients.
 
-## Sample
-
-For a working Mqtt example, see samples/mqtt_pub_sub/main.cpp. To run the sample, ensure that you have added 
-iot:Publish, iot:Receive, and iot:Subscribe permissions to your Thing's policy for topic/a/b:
-
-```json
-{
-    "Effect": "Allow",
-    "Action": [
-        "iot:Receive",
-        "iot:Publish"
-    ],
-    "Resource": [
-        "arn:aws:iot:<your-region>:<your-id>:topic/a/b"
-    ],
-},
-{
-    "Effect": "Allow",
-    "Action": [
-        "iot:Subscribe"
-    ],
-    "Resource": [
-        "arn:aws:iot:<your-region>:<your-id>:topicfilter/a/b"
-    ]
-}
-```
-
 ## License
 
-This library is licensed under the Apache 2.0 License. 
+This library is licensed under the Apache 2.0 License.
