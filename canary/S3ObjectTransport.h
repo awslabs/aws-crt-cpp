@@ -14,8 +14,8 @@
  */
 #pragma once
 
-#include <aws/common/mutex.h>
 #include <aws/common/condition_variable.h>
+#include <aws/common/mutex.h>
 #include <aws/crt/DateTime.h>
 #include <aws/crt/auth/Sigv4Signing.h>
 #include <aws/crt/http/HttpConnectionManager.h>
@@ -38,8 +38,8 @@ enum class EPutObjectFlags : uint32_t
 class S3ObjectTransport
 {
   public:
-    static const uint64_t MaxPartSizeBytes = 10 * 1000 * 1000;
-    static const uint32_t MaxStreams = 10000;
+    static const uint64_t MaxPartSizeBytes;
+    static const uint32_t MaxStreams;
 
     S3ObjectTransport(
         const Aws::Crt::String &region,
@@ -100,13 +100,15 @@ class S3ObjectTransport
         const Aws::Crt::Vector<Aws::Crt::String> &etags,
         CompleteMultipartUploadCompleted completedCallback);
 
-    void AbortMultipartUpload(const Aws::Crt::String & key, const Aws::Crt::String &uploadId, AbortMultipartUploadCompleted completedCallback);
+    void AbortMultipartUpload(
+        const Aws::Crt::String &key,
+        const Aws::Crt::String &uploadId,
+        AbortMultipartUploadCompleted completedCallback);
 
     void UploadNextParts(uint32_t upStreamsReturning);
     bool UploadNextPartsForNextObject(uint32_t upStreamsReturning);
-    
+
     void PushMultipartUpload(std::shared_ptr<MultipartTransferState> uploadState);
     std::shared_ptr<MultipartTransferState> PeekMultipartUploadQueue();
     void PopMultipartUploadQueue();
-
 };
