@@ -33,6 +33,8 @@ MetricsPublisher::MetricsPublisher(
     std::chrono::seconds publishFrequency)
     : m_signer(signer), m_credsProvider(credsProvider), m_elGroup(elGroup), m_region(region)
 {
+    (void)m_elGroup;
+
     AWS_ZERO_STRUCT(m_publishTask);
     m_publishFrequencyNs =
         aws_timestamp_convert(publishFrequency.count(), AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_NANOS, NULL);

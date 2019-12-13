@@ -14,17 +14,22 @@
  */
 #include "S3ObjectTransport.h"
 
-#include <aws/cal/hash.h>
-#include <aws/common/encoding.h>
 #include <aws/crt/external/tinyxml2.h>
 #include <aws/crt/http/HttpConnectionManager.h>
 #include <aws/crt/http/HttpRequestResponse.h>
-#include <aws/crt/io/stream.h>
+#include <aws/crt/io/Stream.h>
 #include <aws/io/stream.h>
 
 #include <iostream>
 
+#if defined(_WIN32)
+#    undef min
+#endif
+
 using namespace Aws::Crt;
+
+const uint64_t S3ObjectTransport::MaxPartSizeBytes = 10 * 1000 * 1000;
+const uint32_t S3ObjectTransport::MaxStreams = 10000;
 
 S3ObjectTransport::S3ObjectTransport(
     const Aws::Crt::String &region,
@@ -128,7 +133,7 @@ void S3ObjectTransport::PutObject(
     m_signer->SignRequest(
         request,
         signingConfig,
-        [this, keyPath, inputStream, etag, completedCallback](
+        [this, keyPath, etag, completedCallback](
             const std::shared_ptr<Aws::Crt::Http::HttpRequest> &signedRequest, int signingError) {
             if (signingError != AWS_OP_SUCCESS)
             {
@@ -136,7 +141,7 @@ void S3ObjectTransport::PutObject(
                 return;
             }
 
-            m_connManager->AcquireConnection([signedRequest, keyPath, inputStream, etag, completedCallback](
+            m_connManager->AcquireConnection([signedRequest, keyPath, etag, completedCallback](
                                                  std::shared_ptr<Http::HttpClientConnection> conn, int connError) {
                 if (connError != AWS_OP_SUCCESS)
                 {
@@ -171,31 +176,31 @@ void S3ObjectTransport::PutObject(
                         }
                     }
                 };
-                requestOptions.onStreamComplete = [signedRequest, keyPath, inputStream, etag, conn, completedCallback](
-                                                      Http::HttpStream &stream, int error) {
-                    int errorCode = error;
+                requestOptions.onStreamComplete =
+                    [signedRequest, keyPath, etag, conn, completedCallback](Http::HttpStream &stream, int error) {
+                        int errorCode = error;
 
-                    if (!errorCode)
-                    {
-                        errorCode = stream.GetResponseStatusCode() == 200 ? AWS_OP_SUCCESS : AWS_OP_ERR;
+                        if (!errorCode)
+                        {
+                            errorCode = stream.GetResponseStatusCode() == 200 ? AWS_OP_SUCCESS : AWS_OP_ERR;
 
-                        AWS_LOGF_INFO(
-                            AWS_LS_COMMON_GENERAL,
-                            "PutObjectInternal completed for path %s with response status %d.",
-                            keyPath.c_str(),
-                            stream.GetResponseStatusCode());
-                    }
-                    else
-                    {
-                        AWS_LOGF_INFO(
-                            AWS_LS_COMMON_GENERAL,
-                            "PutObjectInternal completed for path %s with error '%s'",
-                            keyPath.c_str(),
-                            aws_error_debug_str(errorCode));
-                    }
+                            AWS_LOGF_INFO(
+                                AWS_LS_COMMON_GENERAL,
+                                "PutObjectInternal completed for path %s with response status %d.",
+                                keyPath.c_str(),
+                                stream.GetResponseStatusCode());
+                        }
+                        else
+                        {
+                            AWS_LOGF_INFO(
+                                AWS_LS_COMMON_GENERAL,
+                                "PutObjectInternal completed for path %s with error '%s'",
+                                keyPath.c_str(),
+                                aws_error_debug_str(errorCode));
+                        }
 
-                    completedCallback(errorCode, etag);
-                };
+                        completedCallback(errorCode, etag);
+                    };
 
                 conn->NewClientStream(requestOptions);
             });
@@ -435,10 +440,10 @@ void S3ObjectTransport::CompleteMultipartUpload(
     *xmlContents << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n";
     *xmlContents << "<CompleteMultipartUpload xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">\n";
 
-    for (int i = 0; i < etags.size(); ++i)
+    for (size_t i = 0; i < etags.size(); ++i)
     {
         const Aws::Crt::String &etag = etags[i];
-        int partNumber = i + 1;
+        size_t partNumber = i + 1;
 
         *xmlContents << "   <Part>\n";
         *xmlContents << "       <ETag>" << etag << "</ETag>\n";
@@ -665,7 +670,7 @@ bool S3ObjectTransport::UploadNextPartsForNextObject(uint32_t upStreamsReturning
 
         uint64_t partByteStart = partIndex * S3ObjectTransport::MaxPartSizeBytes;
         uint64_t partByteRemainder = uploadState->GetObjectSize() - (partIndex * S3ObjectTransport::MaxPartSizeBytes);
-        uint64_t partByteSize = min(partByteRemainder, S3ObjectTransport::MaxPartSizeBytes);
+        uint64_t partByteSize = std::min(partByteRemainder, S3ObjectTransport::MaxPartSizeBytes);
 
         aws_input_stream *inputStream = uploadState->GetObjectPart(partByteStart, partByteSize);
 
@@ -689,10 +694,9 @@ bool S3ObjectTransport::UploadNextPartsForNextObject(uint32_t upStreamsReturning
                         uploadState->GetETags(etags);
 
                         CompleteMultipartUpload(
-                            uploadState->GetKey(),
-                            uploadState->GetUploadId(),
-                            etags,
-                            [uploadState](int errorCode) { uploadState->SetCompleted(errorCode); });
+                            uploadState->GetKey(), uploadState->GetUploadId(), etags, [uploadState](int errorCode) {
+                                uploadState->SetCompleted(errorCode);
+                            });
                     }
                 }
                 else

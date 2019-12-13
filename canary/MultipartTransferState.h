@@ -17,7 +17,7 @@
 #include <atomic>
 #include <aws/common/mutex.h>
 #include <aws/common/string.h>
-#include <aws/crt/types.h>
+#include <aws/crt/Types.h>
 #include <mutex>
 
 class S3ObjectTransport;
@@ -53,7 +53,6 @@ class MultipartTransferState
     uint32_t GetNumPartsRequested() const;
     uint32_t GetNumPartsCompleted() const;
     uint64_t GetObjectSize() const;
-
 
     template <typename... TArgs> aws_input_stream *GetObjectPart(TArgs &&... Args) const
     {
