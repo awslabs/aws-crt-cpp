@@ -26,8 +26,13 @@ namespace Aws
                 Allocator *allocator) noexcept
                 : m_lastError(AWS_ERROR_SUCCESS)
             {
-                m_bootstrap = aws_client_bootstrap_new(
-                    allocator, elGroup.GetUnderlyingHandle(), resolver.GetUnderlyingHandle(), resolver.GetConfig());
+                aws_client_bootstrap_options options;
+                options.event_loop_group = elGroup.GetUnderlyingHandle();
+                options.host_resolution_config = resolver.GetConfig();
+                options.host_resolver = resolver.GetUnderlyingHandle();
+                options.on_shutdown_complete = NULL;
+                options.user_data = NULL;
+                m_bootstrap = aws_client_bootstrap_new(allocator, &options);
             }
 
             ClientBootstrap::~ClientBootstrap()
