@@ -150,42 +150,6 @@ int main()
     S3ObjectTransport transport(
         "us-west-2", "aws-crt-canary-bucket", tlsContext, bootstrap, credsProvider, signer, maxInFlight);
 
-/*
-    StringStream keyStream1;
-    keyStream1 << "test_large_1_" << GetTickCount();
-    auto key1 = keyStream1.str();
-    uint64_t objectSize1 = S3ObjectTransport::MaxPartSizeBytes * 10;
-
-    transport.PutObjectMultipart(
-        key1,
-        objectSize1,
-        [&traceAllocator, &publisher](uint64_t byteStart, uint64_t byteSize) {
-            (void)byteStart;
-
-            aws_input_stream *inputStream = s_createTemplateStream(traceAllocator, &publisher, byteSize);
-            return inputStream;
-        },
-        [](int errorCode) {
-            (void)errorCode;
-        });
-
-    StringStream keyStream2;
-    keyStream2 << "test_large_2_" << GetTickCount();
-    auto key2 = keyStream2.str();
-    uint64_t objectSize2 = S3ObjectTransport::MaxPartSizeBytes * 5;
-
-    transport.PutObjectMultipart(
-        key2,
-        objectSize2,
-        [&traceAllocator, &publisher](uint64_t byteStart, uint64_t byteSize) {
-            (void)byteStart;
-
-            aws_input_stream *inputStream = s_createTemplateStream(traceAllocator, &publisher, byteSize);
-            return inputStream;
-        },
-        [](int errorCode) { (void)errorCode; });
-*/   
-
     bool shouldContinue = true;
     uint64_t counter = INT64_MAX;
     std::atomic<size_t> inFlight(0);
@@ -205,8 +169,11 @@ int main()
             inFlight += 1;
             auto key = keyStream.str();
             transport.PutObject(
-                key, s_createTemplateStream(traceAllocator, &publisher, s_defaultObjSize), 0, [&, key](int errorCode,
-    std::shared_ptr<Aws::Crt::String> etag) { if (errorCode == AWS_OP_SUCCESS)
+                key,
+                s_createTemplateStream(traceAllocator, &publisher, s_defaultObjSize),
+                0,
+                [&, key](int errorCode, std::shared_ptr<Aws::Crt::String> etag) {
+                    if (errorCode == AWS_OP_SUCCESS)
                     {
                         Metric successMetric;
                         successMetric.MetricName = "SuccessfulTransfer";

@@ -3,7 +3,7 @@
 
 #include <aws/crt/http/HttpConnectionManager.h>
 #include <aws/crt/http/HttpRequestResponse.h>
-#include <aws/crt/io/stream.h>
+#include <aws/crt/io/Stream.h>
 #include <aws/io/stream.h>
 
 using namespace Aws::Crt;
@@ -115,7 +115,7 @@ const Aws::Crt::String &MultipartTransferState::GetUploadId() const
     return m_uploadId;
 }
 
-void MultipartTransferState::GetETags(Aws::Crt::Vector<Aws::Crt::String> & outETags)
+void MultipartTransferState::GetETags(Aws::Crt::Vector<Aws::Crt::String> &outETags)
 {
     aws_mutex_lock(&m_etagsMutex);
     outETags = m_etags;
