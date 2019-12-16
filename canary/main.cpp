@@ -172,7 +172,7 @@ int main()
                 key,
                 s_createTemplateStream(traceAllocator, &publisher, s_defaultObjSize),
                 0,
-                [&, key](int errorCode, std::shared_ptr<Aws::Crt::String> etag) {
+                [&, key](int32_t errorCode, std::shared_ptr<Aws::Crt::String> etag) {
                     if (errorCode == AWS_OP_SUCCESS)
                     {
                         Metric successMetric;
@@ -189,10 +189,11 @@ int main()
 
                         transport.GetObject(
                             key,
+                            0,
                             [&, downMetric](Http::HttpStream &, const ByteCursor &cur) {
                                 downMetric->Value += (double)cur.len;
                             },
-                            [&, downMetric](int errorCode) {
+                            [&, downMetric](int32_t errorCode) {
                                 if (errorCode == AWS_OP_SUCCESS)
                                 {
                                     Metric successMetric;
