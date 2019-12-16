@@ -22,10 +22,19 @@
 
 #include <queue>
 
+#include "MultipartTransferProcessor.h"
 #include "MultipartTransferState.h"
 
-using TransportOpCompleted = std::function<void(int errorCode)>;
-using PutObjectCompleted = std::function<void(int errorCode, std::shared_ptr<Aws::Crt::String> etag)>;
+using GetObjectCompleted = std::function<void(int32_t errorCode)>;
+using PutObjectCompleted = std::function<void(int32_t errorCode, std::shared_ptr<Aws::Crt::String> etag)>;
+
+using PutObjectMultipartCompleted = std::function<void(int32_t errorCode, uint32_t numParts)>;
+using GetObjectMultipartCompleted = std::function<void(int32_t errorCode)>;
+
+using GetObjectPartCallback =
+    std::function<struct aws_input_stream *(const MultipartTransferState::PartInfo &partInfo)>;
+using ReceiveObjectPartDataCallback =
+    std::function<void(const MultipartTransferState::PartInfo &partInfo, const Aws::Crt::ByteCursor &data)>;
 
 struct aws_allocator;
 struct aws_event_loop;
@@ -40,6 +49,7 @@ class S3ObjectTransport
   public:
     static const uint64_t MaxPartSizeBytes;
     static const uint32_t MaxStreams;
+    static const int32_t S3GetObjectResponseStatus_PartialContent;
 
     S3ObjectTransport(
         const Aws::Crt::String &region,
@@ -50,24 +60,29 @@ class S3ObjectTransport
         const std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> &signer,
         size_t maxCons = 1000);
 
-    ~S3ObjectTransport();
-
     void PutObject(
         const Aws::Crt::String &key,
         struct aws_input_stream *inputStream,
         uint32_t flags,
-        PutObjectCompleted completedCallback);
+        PutObjectCompleted onCompleted);
 
-    void PutObjectMultipart(
+    uint32_t PutObjectMultipart(
         const Aws::Crt::String &key,
         std::uint64_t objectSize,
-        MultipartTransferState::GetObjectPartCallback getObjectPart,
-        MultipartTransferState::OnCompletedCallback onCompleted);
+        GetObjectPartCallback getObjectPart,
+        PutObjectMultipartCompleted onCompleted);
 
     void GetObject(
         const Aws::Crt::String &key,
+        std::uint32_t partNumber,
         Aws::Crt::Http::OnIncomingBody onIncomingBody,
-        TransportOpCompleted transportOpCompleted);
+        GetObjectCompleted getObjectCompleted);
+
+    void GetObjectMultipart(
+        const Aws::Crt::String &key,
+        std::uint32_t numParts,
+        ReceiveObjectPartDataCallback receiveObjectPart,
+        GetObjectMultipartCompleted onCompleted);
 
   private:
     using CreateMultipartUploadCompleted =
@@ -84,11 +99,8 @@ class S3ObjectTransport
     Aws::Crt::Http::HttpHeader m_contentTypeHeader;
     Aws::Crt::String m_endpoint;
 
-    uint32_t m_upStreamsAvailable;
-    aws_mutex m_upStreamsAvailableMutex;
-    aws_mutex m_multipartUploadQueueMutex;
-
-    std::queue<std::shared_ptr<MultipartTransferState>> m_multipartUploadQueue;
+    MultipartTransferProcessor m_uploadProcessor;
+    MultipartTransferProcessor m_downloadProcessor;
 
     uint32_t GetNumParts(uint64_t objectSize) const;
 
@@ -105,10 +117,10 @@ class S3ObjectTransport
         const Aws::Crt::String &uploadId,
         AbortMultipartUploadCompleted completedCallback);
 
-    void UploadNextParts(uint32_t upStreamsReturning);
-    bool UploadNextPartsForNextObject(uint32_t upStreamsReturning);
-
-    void PushMultipartUpload(std::shared_ptr<MultipartTransferState> uploadState);
-    std::shared_ptr<MultipartTransferState> PeekMultipartUploadQueue();
-    void PopMultipartUploadQueue();
+    void UploadPart(
+        const std::shared_ptr<MultipartTransferState> &state,
+        const std::shared_ptr<Aws::Crt::String> &uploadId,
+        const MultipartTransferState::PartInfo &partInfo,
+        aws_input_stream *partInputStream,
+        const MultipartTransferState::PartFinishedCallback &partFinished);
 };
