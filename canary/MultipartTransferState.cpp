@@ -1,6 +1,22 @@
+/*
+ * Copyright 2010-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *  http://aws.amazon.com/apache2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
 #include "MultipartTransferState.h"
 #include "S3ObjectTransport.h"
 
+#include <aws/crt/Api.h>
 #include <aws/crt/http/HttpConnectionManager.h>
 #include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Stream.h>
@@ -8,12 +24,21 @@
 
 using namespace Aws::Crt;
 
+MultipartTransferState::PartInfo::PartInfo() : index(0), number(0), byteOffset(0), byteSize(0) {}
+MultipartTransferState::PartInfo::PartInfo(
+    uint32_t partIndex,
+    uint32_t partNumber,
+    uint64_t partByteOffset,
+    uint64_t partByteSize)
+    : index(partIndex), number(partNumber), byteOffset(partByteOffset), byteSize(partByteSize)
+{
+}
+
 MultipartTransferState::MultipartTransferState(
     const Aws::Crt::String &key,
-    const Aws::Crt::String &uploadId,
     uint64_t objectSize,
     uint32_t numParts,
-    GetObjectPartCallback getObjectPartCallback,
+    ProcessPartCallback processPartCallback,
     OnCompletedCallback onCompletedCallback)
 {
     m_isCompleted = false;
@@ -23,44 +48,33 @@ MultipartTransferState::MultipartTransferState(
     m_numPartsCompleted = 0;
     m_objectSize = objectSize;
     m_key = key;
-    m_uploadId = uploadId;
-    m_getObjectPartCallback = getObjectPartCallback;
+    m_processPartCallback = processPartCallback;
     m_onCompletedCallback = onCompletedCallback;
 
-    for (size_t i = 0; i < m_numParts; ++i)
-    {
-        m_etags.push_back("");
-    }
-
-    aws_mutex_init(&m_completionMutex);
     aws_mutex_init(&m_etagsMutex);
 }
 
 MultipartTransferState::~MultipartTransferState()
 {
-    aws_mutex_clean_up(&m_completionMutex);
     aws_mutex_clean_up(&m_etagsMutex);
 }
 
 void MultipartTransferState::SetCompleted(int32_t errorCode)
 {
-    aws_mutex_lock(&m_completionMutex);
+    bool wasCompleted = m_isCompleted.exchange(true);
 
-    if (m_isCompleted)
+    if (wasCompleted)
     {
         AWS_LOGF_INFO(
-            AWS_LS_COMMON_GENERAL,
+            AWS_LS_CRT_CPP_CANARY,
             "MultipartTransferState::SetCompleted being called multiple times--not recording error code %d.",
             errorCode);
     }
     else
     {
-        m_isCompleted = true;
         m_errorCode = errorCode;
         m_onCompletedCallback(m_errorCode);
     }
-
-    aws_mutex_unlock(&m_completionMutex);
 }
 
 bool MultipartTransferState::IsCompleted() const
@@ -70,18 +84,29 @@ bool MultipartTransferState::IsCompleted() const
 
 void MultipartTransferState::SetETag(uint32_t partIndex, const Aws::Crt::String &etag)
 {
+    AWS_FATAL_ASSERT(partIndex < m_numParts);
+
     aws_mutex_lock(&m_etagsMutex);
+    while (m_etags.size() <= partIndex)
+    {
+        m_etags.push_back("");
+    }
+
     m_etags[partIndex] = etag;
     aws_mutex_unlock(&m_etagsMutex);
 }
 
-bool MultipartTransferState::GetPartsForUpload(
+bool MultipartTransferState::GetPartRangeForTransfer(
     uint32_t desiredNumParts,
     uint32_t &outStartPartIndex,
     uint32_t &outNumParts)
 {
+    if (IsCompleted())
+    {
+        return false;
+    }
+
     uint32_t startPartIndex = m_numPartsRequested.fetch_add(desiredNumParts);
-    uint32_t numPartsToUpload = 0;
 
     if (startPartIndex >= m_numParts)
     {
@@ -89,13 +114,15 @@ bool MultipartTransferState::GetPartsForUpload(
         return false;
     }
 
-    if ((startPartIndex + desiredNumParts) >= m_numParts)
+    uint32_t numPartsToTransfer = desiredNumParts;
+
+    if ((startPartIndex + numPartsToTransfer) >= m_numParts)
     {
-        numPartsToUpload = m_numParts - startPartIndex;
+        numPartsToTransfer = m_numParts - startPartIndex;
     }
 
     outStartPartIndex = startPartIndex;
-    outNumParts = numPartsToUpload;
+    outNumParts = numPartsToTransfer;
     return true;
 }
 
@@ -108,11 +135,6 @@ bool MultipartTransferState::IncNumPartsCompleted()
 const Aws::Crt::String &MultipartTransferState::GetKey() const
 {
     return m_key;
-}
-
-const Aws::Crt::String &MultipartTransferState::GetUploadId() const
-{
-    return m_uploadId;
 }
 
 void MultipartTransferState::GetETags(Aws::Crt::Vector<Aws::Crt::String> &outETags)
