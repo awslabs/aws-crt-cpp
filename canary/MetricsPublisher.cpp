@@ -19,11 +19,15 @@
 
 #include <aws/common/clock.h>
 #include <aws/common/task_scheduler.h>
+#include <condition_variable>
 #include <iostream>
 
 using namespace Aws::Crt;
 
 MetricsPublisher::MetricsPublisher(
+    const Aws::Crt::String &platformName,
+    const Aws::Crt::String &toolName,
+    const Aws::Crt::String &ec2InstanceType,
     const Aws::Crt::String &region,
     Aws::Crt::Io::TlsContext &tlsContext,
     Aws::Crt::Io::ClientBootstrap &clientBootstrap,
@@ -31,7 +35,8 @@ MetricsPublisher::MetricsPublisher(
     const std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> &credsProvider,
     const std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> &signer,
     std::chrono::seconds publishFrequency)
-    : m_signer(signer), m_credsProvider(credsProvider), m_elGroup(elGroup), m_region(region)
+    : m_transferSize(MetricTransferSize::None), m_signer(signer), m_credsProvider(credsProvider), m_elGroup(elGroup),
+      m_platformName(platformName), m_toolName(toolName), m_ec2InstanceType(ec2InstanceType), m_region(region)
 {
     (void)m_elGroup;
 
@@ -43,7 +48,7 @@ MetricsPublisher::MetricsPublisher(
 
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
     m_endpoint = "monitoring." + m_region + ".amazonaws.com";
-    ;
+
     connectionManagerOptions.ConnectionOptions.HostName = m_endpoint;
     connectionManagerOptions.ConnectionOptions.Port = 443;
     connectionManagerOptions.ConnectionOptions.SocketOptions.SetConnectTimeoutMs(3000);
@@ -79,6 +84,11 @@ MetricsPublisher::MetricsPublisher(
 MetricsPublisher::~MetricsPublisher()
 {
     aws_event_loop_cancel_task(m_schedulingLoop, &m_publishTask);
+}
+
+void MetricsPublisher::SetMetricTransferSize(MetricTransferSize transferSize)
+{
+    m_transferSize = transferSize;
 }
 
 static const char *s_UnitToStr(MetricUnit unit)
@@ -120,6 +130,18 @@ static const char *s_UnitToStr(MetricUnit unit)
     return s_unitStr[index];
 }
 
+static const char *s_MetricTransferToString(MetricTransferSize transferSize)
+{
+    static const char *s_transferSizeStr[] = {"None", "Small", "Large"};
+
+    auto index = static_cast<size_t>(transferSize);
+    if (index >= AWS_ARRAY_SIZE(s_transferSizeStr))
+    {
+        return "None";
+    }
+    return s_transferSizeStr[index];
+}
+
 void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const Vector<Metric> &metrics)
 {
     bodyStream << "Action=PutMetricData&";
@@ -130,6 +152,7 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
     }
 
     size_t metricCount = 1;
+    const char *transferSizeString = s_MetricTransferToString(m_transferSize);
 
     for (const auto &metric : metrics)
     {
@@ -143,7 +166,16 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
         bodyStream.precision(17);
         bodyStream << "MetricData.member." << metricCount << ".Value=" << std::fixed << metric.Value << "&";
         bodyStream << "MetricData.member." << metricCount << ".Unit=" << s_UnitToStr(metric.Unit) << "&";
-
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.1.Name=Platform&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.1.Value=" << m_platformName.c_str()
+                   << "&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.2.Name=ToolName&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.2.Value=" << m_toolName.c_str() << "&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.3.Name=EC2InstanceType&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.3.Value=" << m_ec2InstanceType.c_str()
+                   << "&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Name=TransferSize&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Value=" << transferSizeString << "&";
         metricCount++;
     }
 
@@ -154,6 +186,13 @@ void MetricsPublisher::AddDataPoint(const Metric &metricData)
 {
     std::lock_guard<std::mutex> locker(m_publishDataLock);
     m_publishData.push_back(metricData);
+}
+
+void MetricsPublisher::WaitForLastPublish()
+{
+    std::unique_lock<std::mutex> locker(m_publishDataLock);
+
+    m_waitForLastPublishCV.wait(locker, [this]() { return m_publishData.size() == 0; });
 }
 
 void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_status status)
@@ -172,6 +211,7 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
                 aws_event_loop_current_clock_time(publisher->m_schedulingLoop, &now);
                 aws_event_loop_schedule_task_future(
                     publisher->m_schedulingLoop, &publisher->m_publishTask, now + publisher->m_publishFrequencyNs);
+                publisher->m_waitForLastPublishCV.notify_all();
                 return;
             }
 

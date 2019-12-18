@@ -16,6 +16,7 @@
 #include "MultipartTransferProcessor.h"
 #include "S3ObjectTransport.h"
 #include <aws/crt/Types.h>
+#include <aws/crt/io/EventLoopGroup.h>
 #include <aws/crt/io/Stream.h>
 #include <aws/io/stream.h>
 
@@ -25,85 +26,137 @@
 
 using namespace Aws::Crt;
 
-MultipartTransferProcessor::MultipartTransferProcessor(std::uint32_t streamsAvailable)
-{
-    m_streamsAvailable = streamsAvailable;
+const uint32_t MultipartTransferProcessor::NumPartsPerTask = 10;
 
-    aws_mutex_init(&m_queueMutex);
+MultipartTransferProcessor::ProcessPartRangeTaskArgs::ProcessPartRangeTaskArgs(
+    MultipartTransferProcessor &inTransferProcessor,
+    uint32_t inPartRangeStart,
+    uint32_t inPartRangeLength,
+    const std::shared_ptr<std::vector<QueuedPart>> &inParts)
+    : transferProcessor(inTransferProcessor), partRangeStart(inPartRangeStart), partRangeLength(inPartRangeLength),
+      parts(inParts)
+{
 }
 
-MultipartTransferProcessor::~MultipartTransferProcessor()
+MultipartTransferProcessor::MultipartTransferProcessor(
+    Aws::Crt::Io::EventLoopGroup &elGroup,
+    std::uint32_t streamsAvailable)
 {
-    aws_mutex_clean_up(&m_queueMutex);
+    m_streamsAvailable = streamsAvailable;
+    m_schedulingLoop = aws_event_loop_group_get_next_loop(elGroup.GetUnderlyingHandle());
 }
 
 void MultipartTransferProcessor::ProcessNextParts(uint32_t streamsReturning)
 {
-    ProcessNextPartsForNextObject(streamsReturning);
+    std::shared_ptr<MultipartTransferState> state;
+    std::vector<QueuedPart> parts;
+    std::shared_ptr<std::vector<QueuedPart>> partsShared;
 
-    while (ProcessNextPartsForNextObject(0))
+    // Grab all of the streams available in the shared pool and add our own number of streams
+    // that we know locally can be returned.  If we don't end up needing that stream (or
+    // any of the streams we've just nabbed from m_streamsAvailable) it will be added back
+    // to m_streamsAvailable soon.  By not adding streamsReturning to m_streams Available
+    // right away, we guarantee that locally we can use the amount in "streamsReturning",
+    // and that it won't be grabbed by another thread.
+    uint32_t numStreamsToConsume = m_streamsAvailable.exchange(0) + streamsReturning;
+
+    // Grab all of the parts that we can consume and put them into our local parts vector.
+    uint32_t numPartsToProcess = PopQueue(numStreamsToConsume, parts);
+
+    // Figure out how many tasks this should be distributed among.  If only 1, we'll
+    // do the processing from the current thread.
+    uint32_t numTasksNeeded = numPartsToProcess / NumPartsPerTask;
+
+    m_streamsAvailable += (numStreamsToConsume - numPartsToProcess);
+
+    if ((numPartsToProcess % NumPartsPerTask) > 0)
     {
+        ++numTasksNeeded;
+    }
+
+    if (numTasksNeeded == 0)
+    {
+        return;
+    }
+    else if (numTasksNeeded == 1)
+    {
+        ProcessPartRange(parts, 0, numPartsToProcess);
+    }
+    else if (numTasksNeeded > 1)
+    {
+        // Multiple tasks will be reading from the queue, so move it into a shared pointer
+        // that will auto-cleanup once the tasks referencing it go away.
+        partsShared = std::make_shared<std::vector<QueuedPart>>();
+        *partsShared = std::move(parts);
+
+        uint32_t numParts = static_cast<uint32_t>(partsShared->size());
+
+        // Setup and create each task needed
+        for (uint32_t i = 0; i < numTasksNeeded; ++i)
+        {
+            uint32_t partRangeStart = i * NumPartsPerTask;
+            uint32_t partRangeLength = NumPartsPerTask;
+
+            if ((partRangeStart + partRangeLength) > numParts)
+            {
+                partRangeLength = numParts - partRangeStart;
+            }
+
+            void *processPartsRangeTaskArgsMem = aws_mem_acquire(g_allocator, sizeof(ProcessPartRangeTaskArgs));
+
+            new (processPartsRangeTaskArgsMem)
+                ProcessPartRangeTaskArgs(*this, partRangeStart, partRangeLength, partsShared);
+
+            aws_task processPartRangeTask;
+            AWS_ZERO_STRUCT(processPartRangeTask);
+
+            aws_task_init(
+                &processPartRangeTask,
+                MultipartTransferProcessor::s_ProcessPartRangeTask,
+                processPartsRangeTaskArgsMem,
+                nullptr);
+            aws_event_loop_schedule_task_now(m_schedulingLoop, &processPartRangeTask);
+        }
     }
 }
 
-bool MultipartTransferProcessor::ProcessNextPartsForNextObject(uint32_t streamsReturning)
+void MultipartTransferProcessor::s_ProcessPartRangeTask(aws_task *task, void *arg, aws_task_status status)
 {
-    uint32_t startPartIndex = 0;
-    uint32_t numPartsToProcess = 0;
-    std::shared_ptr<MultipartTransferState> state;
+    (void)task;
+    (void)arg;
 
-    // Grab all of the streams currently available.
-    uint32_t numStreamsToConsume = m_streamsAvailable.exchange(0);
-
-    // Add the number of streams that we just got back to our local count.  If
-    // we don't use it, then it'll get put it back into m_streamsAvailable.
-    // This way, we guarantee that those streams get to be used locally, and do not
-    // get stolen by another thread.
-    numStreamsToConsume += streamsReturning;
-
-    // If we have streams to consume, try to find something to use them.  We're not intending
-    // to use all of them all of the time--we're just trying to find the next valid range of
-    // parts to process.  Any remaining streams we grabbed will get thrown back into the pool
-    // and will be handled with a different call to this method.
-    if (numStreamsToConsume > 0)
+    if (status != AWS_TASK_STATUS_RUN_READY)
     {
-        bool processingQueue = true;
-
-        // Find the next thing in the queue that needs parts processed, cleaning up the queue along the way.
-        while (processingQueue)
-        {
-            state = PeekQueue();
-
-            // If we have no state returned, the queue is empty, so stop processing.
-            if (state == nullptr)
-            {
-                processingQueue = false;
-            }
-            // Try getting a range of parts to process.
-            else if (state->GetPartRangeForTransfer(numStreamsToConsume, startPartIndex, numPartsToProcess))
-            {
-                numStreamsToConsume -= numPartsToProcess;
-                AWS_FATAL_ASSERT(numStreamsToConsume >= 0);
-                processingQueue = false;
-            }
-            // If GetPartRangeForTransfer returned false, then there's nothing left to process on that object,
-            // so remove it from the queue.
-            else
-            {
-                PopQueue(state);
-            }
-        }
+        return;
     }
 
-    // Put back the count of streams that we didn't use.
-    m_streamsAvailable += numStreamsToConsume;
+    ProcessPartRangeTaskArgs *args = reinterpret_cast<ProcessPartRangeTaskArgs *>(arg);
+    args->transferProcessor.ProcessPartRange(*args->parts, args->partRangeStart, args->partRangeLength);
 
-    // If we didn't get a state back, then numPartsToProcess should be zero.
-    AWS_FATAL_ASSERT(state != nullptr || numPartsToProcess == 0);
+    args->~ProcessPartRangeTaskArgs();
+    aws_mem_release(g_allocator, args);
+    args = nullptr;
+}
 
-    for (uint32_t i = 0; i < numPartsToProcess; ++i)
+void MultipartTransferProcessor::ProcessPartRange(
+    const std::vector<QueuedPart> &parts,
+    uint32_t rangeStart,
+    uint32_t rangeLength)
+{
+    uint32_t rangeEnd = rangeStart + rangeLength;
+    uint32_t numSkipped = 0;
+
+    for (uint32_t i = rangeStart; i < rangeEnd; ++i)
     {
-        uint32_t partIndex = startPartIndex + i;
+        std::shared_ptr<MultipartTransferState> state = parts[i].state;
+
+        if (state->IsFinished())
+        {
+            ++numSkipped;
+            continue;
+        }
+
+        uint32_t partIndex = parts[i].partIndex;
         uint32_t partNumber = partIndex + 1;
 
         uint64_t partByteStart = partIndex * S3ObjectTransport::MaxPartSizeBytes;
@@ -112,48 +165,47 @@ bool MultipartTransferProcessor::ProcessNextPartsForNextObject(uint32_t streamsR
 
         MultipartTransferState::PartInfo partInfo(partIndex, partNumber, partByteStart, partByteSize);
 
-        state->ProcessPart(state, partInfo, [this]() { ProcessNextParts(1); });
+        state->ProcessPart(partInfo, [this]() { ProcessNextParts(1); });
     }
 
-    return numPartsToProcess > 0;
+    if (numSkipped > 0)
+    {
+        ProcessNextParts(numSkipped);
+    }
 }
 
 void MultipartTransferProcessor::PushQueue(const std::shared_ptr<MultipartTransferState> &state)
 {
-    aws_mutex_lock(&m_queueMutex);
-    m_stateQueue.push(state);
-    aws_mutex_unlock(&m_queueMutex);
+    {
+        std::lock_guard<std::mutex> lock(m_partQueueMutex);
+
+        for (uint32_t i = 0; i < state->GetNumParts(); ++i)
+        {
+            QueuedPart queuedPart = {state, i};
+            m_partQueue.push(queuedPart);
+        }
+    }
 
     ProcessNextParts(0);
 }
 
-std::shared_ptr<MultipartTransferState> MultipartTransferProcessor::PeekQueue()
+uint32_t MultipartTransferProcessor::PopQueue(uint32_t numRequested, std::vector<QueuedPart> &parts)
 {
-    std::shared_ptr<MultipartTransferState> state;
+    uint32_t numAdded = 0;
+    std::lock_guard<std::mutex> lock(m_partQueueMutex);
 
-    aws_mutex_lock(&m_queueMutex);
-
-    if (m_stateQueue.size() > 0)
+    while (m_partQueue.size() > 0 && numAdded < numRequested)
     {
-        state = m_stateQueue.front();
-    }
+        const QueuedPart &front = m_partQueue.front();
 
-    aws_mutex_unlock(&m_queueMutex);
-
-    return state;
-}
-
-void MultipartTransferProcessor::PopQueue(const std::shared_ptr<MultipartTransferState> &state)
-{
-    aws_mutex_lock(&m_queueMutex);
-    if (m_stateQueue.size() > 0)
-    {
-        std::shared_ptr<MultipartTransferState> front = m_stateQueue.front();
-
-        if (state == front)
+        if (!front.state->IsFinished())
         {
-            m_stateQueue.pop();
+            parts.push_back(front);
+            ++numAdded;
         }
+
+        m_partQueue.pop();
     }
-    aws_mutex_unlock(&m_queueMutex);
+
+    return numAdded;
 }
