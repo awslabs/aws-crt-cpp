@@ -24,22 +24,56 @@
 
 class S3ObjectTransport;
 
+namespace Aws
+{
+    namespace Crt
+    {
+        namespace Io
+        {
+            class EventLoopGroup;
+        }
+    } // namespace Crt
+} // namespace Aws
+
 class MultipartTransferProcessor
 {
   public:
-    MultipartTransferProcessor(std::uint32_t streamsAvailable);
-    virtual ~MultipartTransferProcessor();
+    MultipartTransferProcessor(Aws::Crt::Io::EventLoopGroup &elGroup, std::uint32_t streamsAvailable);
 
     void PushQueue(const std::shared_ptr<MultipartTransferState> &uploadState);
 
   private:
-    std::atomic<uint32_t> m_streamsAvailable;
-    aws_mutex m_queueMutex;
+    static const uint32_t NumPartsPerTask;
 
-    std::queue<std::shared_ptr<MultipartTransferState>> m_stateQueue;
+    struct QueuedPart
+    {
+        std::shared_ptr<MultipartTransferState> state;
+        uint32_t partIndex;
+    };
+
+    struct ProcessPartRangeTaskArgs
+    {
+        aws_task task;
+        MultipartTransferProcessor &transferProcessor;
+        uint32_t partRangeStart;
+        uint32_t partRangeLength;
+        std::shared_ptr<std::vector<QueuedPart>> parts;
+
+        ProcessPartRangeTaskArgs(
+            MultipartTransferProcessor &transferProcessor,
+            uint32_t partRangeStart,
+            uint32_t partRangeLength,
+            const std::shared_ptr<std::vector<QueuedPart>> &parts);
+    };
+
+    aws_event_loop *m_schedulingLoop;
+    std::atomic<uint32_t> m_streamsAvailable;
+    std::mutex m_partQueueMutex;
+    std::queue<QueuedPart> m_partQueue;
+
+    static void s_ProcessPartRangeTask(aws_task *task, void *arg, aws_task_status status);
 
     void ProcessNextParts(uint32_t streamsReturning);
-    bool ProcessNextPartsForNextObject(uint32_t streamsReturning);
-    std::shared_ptr<MultipartTransferState> PeekQueue();
-    void PopQueue(const std::shared_ptr<MultipartTransferState> &state);
+    void ProcessPartRange(const std::vector<QueuedPart> &parts, uint32_t partRangeStart, uint32_t partRangeLength);
+    uint32_t PopQueue(uint32_t numRequested, std::vector<QueuedPart> &parts);
 };

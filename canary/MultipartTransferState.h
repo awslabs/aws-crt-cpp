@@ -18,6 +18,7 @@
 #include <aws/common/mutex.h>
 #include <aws/common/string.h>
 #include <aws/crt/Types.h>
+#include <aws/crt/http/HttpConnection.h>
 #include <mutex>
 
 class S3ObjectTransport;
@@ -27,42 +28,36 @@ class MultipartTransferState
   public:
     struct PartInfo
     {
-        uint32_t index;
-        uint32_t number;
-        uint64_t byteOffset;
-        uint64_t byteSize;
+        uint32_t partIndex;
+        uint32_t partNumber;
+        uint64_t offsetInBytes;
+        uint64_t sizeInBytes;
 
         PartInfo();
-        PartInfo(uint32_t partIndex, uint32_t partNumber, uint64_t partByteOffset, uint64_t partByteSize);
+        PartInfo(uint32_t partIndex, uint32_t partNumber, uint64_t offsetInBytes, uint64_t sizeInBytes);
     };
 
     using PartFinishedCallback = std::function<void()>;
-    using ProcessPartCallback = std::function<
-        void(std::shared_ptr<MultipartTransferState> state, const PartInfo &partInfo, PartFinishedCallback callback)>;
-    using OnCompletedCallback = std::function<void(int32_t errorCode)>;
+    using ProcessPartCallback = std::function<void(const PartInfo &partInfo, PartFinishedCallback callback)>;
+    using FinishedCallback = std::function<void(int32_t errorCode)>;
 
-    MultipartTransferState(
-        const Aws::Crt::String &key,
-        uint64_t objectSize,
-        uint32_t numParts,
-        ProcessPartCallback processPartCallback,
-        OnCompletedCallback onCompletedCallback);
+    MultipartTransferState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts);
 
-    ~MultipartTransferState();
+    virtual ~MultipartTransferState();
 
-    void SetCompleted(int32_t errorCode = AWS_OP_SUCCESS);
-    void SetETag(uint32_t partIndex, const Aws::Crt::String &etag);
+    void SetProcessPartCallback(const ProcessPartCallback &processPartCallback);
+    void SetFinishedCallback(const FinishedCallback &finishedCallback);
+    void SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &connection);
 
-    bool GetPartRangeForTransfer(uint32_t desiredNumParts, uint32_t &outStartPartIndex, uint32_t &outNumParts);
+    void SetFinished(int32_t errorCode = AWS_ERROR_SUCCESS);
     bool IncNumPartsCompleted();
 
-    bool IsCompleted() const;
+    bool IsFinished() const;
     const Aws::Crt::String &GetKey() const;
-    void GetETags(Aws::Crt::Vector<Aws::Crt::String> &outETags);
     uint32_t GetNumParts() const;
-    uint32_t GetNumPartsRequested() const;
     uint32_t GetNumPartsCompleted() const;
     uint64_t GetObjectSize() const;
+    std::shared_ptr<Aws::Crt::Http::HttpClientConnection> GetConnection() const;
 
     template <typename... TArgs> void ProcessPart(TArgs &&... Args) const
     {
@@ -72,13 +67,34 @@ class MultipartTransferState
   private:
     int32_t m_errorCode;
     uint32_t m_numParts;
-    std::atomic<bool> m_isCompleted;
-    std::atomic<uint32_t> m_numPartsRequested;
+    std::atomic<bool> m_isFinished;
     std::atomic<uint32_t> m_numPartsCompleted;
     uint64_t m_objectSize;
     Aws::Crt::String m_key;
-    Aws::Crt::Vector<Aws::Crt::String> m_etags;
-    aws_mutex m_etagsMutex;
+    std::shared_ptr<Aws::Crt::Http::HttpClientConnection> m_connection;
     ProcessPartCallback m_processPartCallback;
-    OnCompletedCallback m_onCompletedCallback;
+    FinishedCallback m_finishedCallback;
+};
+
+class MultipartUploadState : public MultipartTransferState
+{
+  public:
+    MultipartUploadState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts);
+
+    void SetUploadId(const Aws::Crt::String &uploadId);
+    void SetETag(uint32_t partIndex, const Aws::Crt::String &etag);
+
+    void GetETags(Aws::Crt::Vector<Aws::Crt::String> &outETags);
+    const Aws::Crt::String &GetUploadId() const;
+
+  private:
+    Aws::Crt::Vector<Aws::Crt::String> m_etags;
+    std::mutex m_etagsMutex;
+    Aws::Crt::String m_uploadId;
+};
+
+class MultipartDownloadState : public MultipartTransferState
+{
+  public:
+    MultipartDownloadState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts);
 };
