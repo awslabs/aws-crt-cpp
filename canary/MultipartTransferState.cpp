@@ -24,44 +24,46 @@
 
 using namespace Aws::Crt;
 
-MultipartTransferState::PartInfo::PartInfo() : index(0), number(0), byteOffset(0), byteSize(0) {}
+MultipartTransferState::PartInfo::PartInfo() : partIndex(0), partNumber(0), offsetInBytes(0), sizeInBytes(0) {}
 MultipartTransferState::PartInfo::PartInfo(
-    uint32_t partIndex,
-    uint32_t partNumber,
-    uint64_t partByteOffset,
-    uint64_t partByteSize)
-    : index(partIndex), number(partNumber), byteOffset(partByteOffset), byteSize(partByteSize)
+    uint32_t inPartIndex,
+    uint32_t inPartNumber,
+    uint64_t inOffsetInBytes,
+    uint64_t inSizeInBytes)
+    : partIndex(inPartIndex), partNumber(inPartNumber), offsetInBytes(inOffsetInBytes), sizeInBytes(inSizeInBytes)
 {
 }
 
-MultipartTransferState::MultipartTransferState(
-    const Aws::Crt::String &key,
-    uint64_t objectSize,
-    uint32_t numParts,
-    ProcessPartCallback processPartCallback,
-    OnCompletedCallback onCompletedCallback)
+MultipartTransferState::MultipartTransferState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts)
 {
-    m_isCompleted = false;
-    m_errorCode = AWS_OP_SUCCESS;
+    m_isFinished = false;
+    m_errorCode = AWS_ERROR_SUCCESS;
     m_numParts = numParts;
-    m_numPartsRequested = 0;
     m_numPartsCompleted = 0;
     m_objectSize = objectSize;
     m_key = key;
+}
+
+MultipartTransferState::~MultipartTransferState() {}
+
+void MultipartTransferState::SetProcessPartCallback(const ProcessPartCallback &processPartCallback)
+{
     m_processPartCallback = processPartCallback;
-    m_onCompletedCallback = onCompletedCallback;
-
-    aws_mutex_init(&m_etagsMutex);
 }
 
-MultipartTransferState::~MultipartTransferState()
+void MultipartTransferState::SetFinishedCallback(const FinishedCallback &finishedCallback)
 {
-    aws_mutex_clean_up(&m_etagsMutex);
+    m_finishedCallback = finishedCallback;
 }
 
-void MultipartTransferState::SetCompleted(int32_t errorCode)
+void MultipartTransferState::SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &connection)
 {
-    bool wasCompleted = m_isCompleted.exchange(true);
+    m_connection = connection;
+}
+
+void MultipartTransferState::SetFinished(int32_t errorCode)
+{
+    bool wasCompleted = m_isFinished.exchange(true);
 
     if (wasCompleted)
     {
@@ -73,57 +75,13 @@ void MultipartTransferState::SetCompleted(int32_t errorCode)
     else
     {
         m_errorCode = errorCode;
-        m_onCompletedCallback(m_errorCode);
+        m_finishedCallback(m_errorCode);
     }
 }
 
-bool MultipartTransferState::IsCompleted() const
+bool MultipartTransferState::IsFinished() const
 {
-    return m_isCompleted;
-}
-
-void MultipartTransferState::SetETag(uint32_t partIndex, const Aws::Crt::String &etag)
-{
-    AWS_FATAL_ASSERT(partIndex < m_numParts);
-
-    aws_mutex_lock(&m_etagsMutex);
-    while (m_etags.size() <= partIndex)
-    {
-        m_etags.push_back("");
-    }
-
-    m_etags[partIndex] = etag;
-    aws_mutex_unlock(&m_etagsMutex);
-}
-
-bool MultipartTransferState::GetPartRangeForTransfer(
-    uint32_t desiredNumParts,
-    uint32_t &outStartPartIndex,
-    uint32_t &outNumParts)
-{
-    if (IsCompleted())
-    {
-        return false;
-    }
-
-    uint32_t startPartIndex = m_numPartsRequested.fetch_add(desiredNumParts);
-
-    if (startPartIndex >= m_numParts)
-    {
-        m_numPartsRequested = m_numParts;
-        return false;
-    }
-
-    uint32_t numPartsToTransfer = desiredNumParts;
-
-    if ((startPartIndex + numPartsToTransfer) >= m_numParts)
-    {
-        numPartsToTransfer = m_numParts - startPartIndex;
-    }
-
-    outStartPartIndex = startPartIndex;
-    outNumParts = numPartsToTransfer;
-    return true;
+    return m_isFinished;
 }
 
 bool MultipartTransferState::IncNumPartsCompleted()
@@ -137,21 +95,9 @@ const Aws::Crt::String &MultipartTransferState::GetKey() const
     return m_key;
 }
 
-void MultipartTransferState::GetETags(Aws::Crt::Vector<Aws::Crt::String> &outETags)
-{
-    aws_mutex_lock(&m_etagsMutex);
-    outETags = m_etags;
-    aws_mutex_unlock(&m_etagsMutex);
-}
-
 uint32_t MultipartTransferState::GetNumParts() const
 {
     return m_numParts;
-}
-
-uint32_t MultipartTransferState::GetNumPartsRequested() const
-{
-    return m_numPartsRequested;
 }
 
 uint32_t MultipartTransferState::GetNumPartsCompleted() const
@@ -162,4 +108,50 @@ uint32_t MultipartTransferState::GetNumPartsCompleted() const
 uint64_t MultipartTransferState::GetObjectSize() const
 {
     return m_objectSize;
+}
+
+std::shared_ptr<Http::HttpClientConnection> MultipartTransferState::GetConnection() const
+{
+    return m_connection;
+}
+
+MultipartUploadState::MultipartUploadState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts)
+    : MultipartTransferState(key, objectSize, numParts)
+{
+    m_etags.reserve(numParts);
+
+    for (uint32_t i = 0; i < numParts; ++i)
+    {
+        m_etags.push_back("");
+    }
+}
+
+void MultipartUploadState::SetUploadId(const Aws::Crt::String &uploadId)
+{
+    m_uploadId = uploadId;
+}
+
+void MultipartUploadState::SetETag(uint32_t partIndex, const Aws::Crt::String &etag)
+{
+    std::lock_guard<std::mutex> lock(m_etagsMutex);
+
+    AWS_FATAL_ASSERT(partIndex < m_etags.size());
+
+    m_etags[partIndex] = etag;
+}
+
+const Aws::Crt::String &MultipartUploadState::GetUploadId() const
+{
+    return m_uploadId;
+}
+
+void MultipartUploadState::GetETags(Aws::Crt::Vector<Aws::Crt::String> &outETags)
+{
+    std::lock_guard<std::mutex> lock(m_etagsMutex);
+    outETags = m_etags;
+}
+
+MultipartDownloadState::MultipartDownloadState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts)
+    : MultipartTransferState(key, objectSize, numParts)
+{
 }

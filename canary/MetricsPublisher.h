@@ -52,6 +52,13 @@ enum class MetricUnit
     None,
 };
 
+enum class MetricTransferSize
+{
+    None,
+    Small,
+    Large
+};
+
 struct Metric
 {
     MetricUnit Unit;
@@ -67,6 +74,9 @@ class MetricsPublisher
 {
   public:
     MetricsPublisher(
+        const Aws::Crt::String &platformName,
+        const Aws::Crt::String &toolName,
+        const Aws::Crt::String &ec2InstanceType,
         const Aws::Crt::String &region,
         Aws::Crt::Io::TlsContext &tlsContext,
         Aws::Crt::Io::ClientBootstrap &clientBootstrap,
@@ -82,6 +92,17 @@ class MetricsPublisher
      */
     void AddDataPoint(const Metric &metricData);
 
+    /*
+     * Set the transfer size we are currently recording metrics for.  (Will
+     * be recorded with each metric.)
+     */
+    void SetMetricTransferSize(MetricTransferSize transferSize);
+
+    /**
+     * Wait until all queued metrics have been published.
+     */
+    void WaitForLastPublish();
+
     /**
      * namespace to use for the metrics
      */
@@ -92,19 +113,23 @@ class MetricsPublisher
 
     static void s_OnPublishTask(aws_task *task, void *arg, aws_task_status status);
 
+    MetricTransferSize m_transferSize;
     std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> m_connManager;
     std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> m_signer;
     std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> m_credsProvider;
     Aws::Crt::Io::EventLoopGroup &m_elGroup;
     Aws::Crt::Vector<Metric> m_publishData;
+    Aws::Crt::String m_platformName;
+    Aws::Crt::String m_toolName;
+    Aws::Crt::String m_ec2InstanceType;
     const Aws::Crt::String m_region;
     Aws::Crt::Http::HttpHeader m_hostHeader;
     Aws::Crt::Http::HttpHeader m_contentTypeHeader;
     Aws::Crt::Http::HttpHeader m_apiVersionHeader;
     Aws::Crt::String m_endpoint;
     aws_event_loop *m_schedulingLoop;
-
     std::mutex m_publishDataLock;
     aws_task m_publishTask;
     uint64_t m_publishFrequencyNs;
+    std::condition_variable m_waitForLastPublishCV;
 };

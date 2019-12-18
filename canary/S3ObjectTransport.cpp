@@ -31,19 +31,21 @@
 using namespace Aws::Crt;
 
 const uint64_t S3ObjectTransport::MaxPartSizeBytes = 10 * 1000 * 1000;
-const uint32_t S3ObjectTransport::MaxStreams = 10;
+const uint32_t S3ObjectTransport::MaxStreams = 10000;
 const int32_t S3ObjectTransport::S3GetObjectResponseStatus_PartialContent = 206;
+const bool S3ObjectTransport::SingleConnectionPerMultipartUpload = false;
 
 S3ObjectTransport::S3ObjectTransport(
+    Aws::Crt::Io::EventLoopGroup &elGroup,
     const Aws::Crt::String &region,
     const Aws::Crt::String &bucket,
     Aws::Crt::Io::TlsContext &tlsContext,
     Aws::Crt::Io::ClientBootstrap &clientBootstrap,
     const std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> &credsProvider,
-    const std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> &signer,
-    size_t maxCons)
+    const std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> &signer)
     : m_signer(signer), m_credsProvider(credsProvider), m_region(region), m_bucketName(bucket),
-      m_uploadProcessor(S3ObjectTransport::MaxStreams), m_downloadProcessor(S3ObjectTransport::MaxStreams)
+      m_uploadProcessor(elGroup, S3ObjectTransport::MaxStreams),
+      m_downloadProcessor(elGroup, S3ObjectTransport::MaxStreams)
 {
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
     m_endpoint = m_bucketName + ".s3." + m_region + ".amazonaws.com";
@@ -59,7 +61,7 @@ S3ObjectTransport::S3ObjectTransport(
     connOptions.SetServerName(serverName);
     connectionManagerOptions.ConnectionOptions.TlsOptions = connOptions;
     connectionManagerOptions.ConnectionOptions.Bootstrap = &clientBootstrap;
-    connectionManagerOptions.MaxConnections = maxCons;
+    connectionManagerOptions.MaxConnections = 1000;
 
     m_connManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, g_allocator);
@@ -71,12 +73,107 @@ S3ObjectTransport::S3ObjectTransport(
     m_contentTypeHeader.value = ByteCursorFromCString("text/plain");
 }
 
+void S3ObjectTransport::MakeSignedRequest(
+    const std::shared_ptr<Http::HttpClientConnection> &existingConn,
+    const std::shared_ptr<Http::HttpRequest> &request,
+    const Http::HttpRequestOptions &requestOptions,
+    ErrorCallback errorCallback)
+{
+    Auth::AwsSigningConfig signingConfig(g_allocator);
+    signingConfig.SetRegion(m_region);
+    signingConfig.SetCredentialsProvider(m_credsProvider);
+    signingConfig.SetService("s3");
+    signingConfig.SetBodySigningType(Auth::BodySigningType::UnsignedPayload);
+    signingConfig.SetSigningTimepoint(DateTime::Now());
+    signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
+
+    m_signer->SignRequest(
+        request,
+        signingConfig,
+        [this, existingConn, requestOptions, errorCallback](
+            const std::shared_ptr<Aws::Crt::Http::HttpRequest> &signedRequest, int signingErrorCode) {
+            if (signingErrorCode != AWS_ERROR_SUCCESS)
+            {
+                if (errorCallback != nullptr)
+                {
+                    errorCallback(signingErrorCode);
+                }
+                return;
+            }
+
+            if (existingConn != nullptr)
+            {
+                MakeSignedRequest_SendRequest(existingConn, requestOptions, signedRequest);
+            }
+            else
+            {
+                m_connManager->AcquireConnection(
+                    [this, requestOptions, signedRequest, errorCallback](
+                        std::shared_ptr<Http::HttpClientConnection> conn, int connErrorCode) {
+                        if (connErrorCode == AWS_ERROR_SUCCESS)
+                        {
+                            MakeSignedRequest_SendRequest(conn, requestOptions, signedRequest);
+                        }
+                        else if (errorCallback != nullptr)
+                        {
+                            errorCallback(connErrorCode);
+                        }
+                    });
+            }
+        });
+}
+
+void S3ObjectTransport::MakeSignedRequest_SendRequest(
+    const std::shared_ptr<Http::HttpClientConnection> &conn,
+    const Http::HttpRequestOptions &requestOptions,
+    const std::shared_ptr<Http::HttpRequest> &signedRequest)
+{
+    Http::HttpRequestOptions requestOptionsToSend = requestOptions;
+    requestOptionsToSend.request = signedRequest.get();
+
+    // NOTE: The captures of the connection and signed request is a work around to keep those shared
+    // pointers alive until the stream is finished.  Tasks can be scheduled that rely on these things
+    // being alive which can cause crashes when they aren't around.
+    requestOptionsToSend.onStreamComplete =
+        [conn, requestOptions, signedRequest](Http::HttpStream &stream, int errorCode) {
+            if (requestOptions.onStreamComplete != nullptr)
+            {
+                requestOptions.onStreamComplete(stream, errorCode);
+            }
+        };
+
+    conn->NewClientStream(requestOptionsToSend);
+}
+
 void S3ObjectTransport::PutObject(
     const Aws::Crt::String &key,
     aws_input_stream *inputStream,
-    uint32_t flags,
-    PutObjectCompleted completedCallback)
+    const PutObjectFinished &finishedCallback)
 {
+    AWS_FATAL_ASSERT(inputStream != nullptr);
+
+    m_connManager->AcquireConnection([this, key, inputStream, finishedCallback](
+                                         std::shared_ptr<Http::HttpClientConnection> conn, int connErrorCode) {
+        if (connErrorCode != AWS_ERROR_SUCCESS)
+        {
+            aws_input_stream_destroy(inputStream);
+            finishedCallback(connErrorCode, nullptr);
+            return;
+        }
+
+        PutObject(conn, key, inputStream, 0, finishedCallback);
+    });
+}
+
+void S3ObjectTransport::PutObject(
+    const std::shared_ptr<Http::HttpClientConnection> &conn,
+    const Aws::Crt::String &key,
+    aws_input_stream *inputStream,
+    uint32_t flags,
+    const PutObjectFinished &finishedCallback)
+{
+    AWS_FATAL_ASSERT(inputStream != nullptr);
+
     auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
 
     {
@@ -96,6 +193,7 @@ void S3ObjectTransport::PutObject(
     request->AddHeader(m_hostHeader);
     request->AddHeader(m_contentTypeHeader);
 
+    // By passing the stream here, the request is accepting ownership of the memory for inputStream.
     aws_http_message_set_body_stream(request->GetUnderlyingMessage(), inputStream);
     request->SetMethod(aws_http_method_put);
 
@@ -106,165 +204,167 @@ void S3ObjectTransport::PutObject(
     ByteCursor path = ByteCursorFromCString(keyPath.c_str());
     request->SetPath(path);
 
-    Auth::AwsSigningConfig signingConfig(g_allocator);
-    signingConfig.SetRegion(m_region);
-    signingConfig.SetCredentialsProvider(m_credsProvider);
-    signingConfig.SetService("s3");
-    signingConfig.SetBodySigningType(Auth::BodySigningType::UnsignedPayload);
-    signingConfig.SetSigningTimepoint(DateTime::Now());
-    signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
-
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "PutObject initiated for path %s...", keyPath.c_str());
 
-    std::shared_ptr<Aws::Crt::String> etag = nullptr;
+    std::shared_ptr<String> etag = nullptr;
 
     if ((flags & (uint32_t)EPutObjectFlags::RetrieveETag) != 0)
     {
-        etag = std::make_shared<Aws::Crt::String>();
+        etag = MakeShared<String>(g_allocator);
     }
 
-    m_signer->SignRequest(
-        request,
-        signingConfig,
-        [this, keyPath, etag, completedCallback](
-            const std::shared_ptr<Aws::Crt::Http::HttpRequest> &signedRequest, int signingError) {
-            if (signingError != AWS_OP_SUCCESS)
+    Http::HttpRequestOptions requestOptions;
+    AWS_ZERO_STRUCT(requestOptions);
+    requestOptions.onIncomingHeaders = [etag](
+                                           Http::HttpStream &stream,
+                                           enum aws_http_header_block headerBlock,
+                                           const Http::HttpHeader *headersArray,
+                                           std::size_t headersCount) {
+        (void)stream;
+        (void)headerBlock;
+
+        if (etag == nullptr)
+        {
+            return;
+        }
+
+        for (size_t i = 0; i < headersCount; ++i)
+        {
+            const aws_byte_cursor &name = headersArray[i].name;
+
+            if (aws_byte_cursor_eq_c_str(&name, "ETag"))
             {
-                completedCallback(signingError, nullptr);
-                return;
+                const aws_byte_cursor &value = headersArray[i].value;
+                *etag = String((const char *)value.ptr, value.len);
+            }
+        }
+    };
+    requestOptions.onStreamComplete = [keyPath, etag, finishedCallback](Http::HttpStream &stream, int errorCode) {
+        if (errorCode == AWS_ERROR_SUCCESS)
+        {
+            if (stream.GetResponseStatusCode() != 200)
+            {
+                errorCode = AWS_ERROR_UNKNOWN;
             }
 
-            m_connManager->AcquireConnection([signedRequest, keyPath, etag, completedCallback](
-                                                 std::shared_ptr<Http::HttpClientConnection> conn, int connError) {
-                if (connError != AWS_OP_SUCCESS)
-                {
-                    completedCallback(connError, nullptr);
-                    return;
-                }
+            aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_INFO;
 
-                Http::HttpRequestOptions requestOptions;
-                AWS_ZERO_STRUCT(requestOptions);
-                requestOptions.request = signedRequest.get();
-                requestOptions.onIncomingHeaders = [etag](
-                                                       Http::HttpStream &stream,
-                                                       enum aws_http_header_block headerBlock,
-                                                       const Http::HttpHeader *headersArray,
-                                                       std::size_t headersCount) {
-                    (void)stream;
-                    (void)headerBlock;
+            AWS_LOGF(
+                logLevel,
+                AWS_LS_CRT_CPP_CANARY,
+                "PutObject finished for path %s with response status %d",
+                keyPath.c_str(),
+                stream.GetResponseStatusCode());
+        }
+        else
+        {
+            AWS_LOGF_ERROR(
+                AWS_LS_CRT_CPP_CANARY,
+                "PutObject finished for path %s with error '%s'",
+                keyPath.c_str(),
+                aws_error_debug_str(errorCode));
+        }
 
-                    if (etag == nullptr)
-                    {
-                        return;
-                    }
+        finishedCallback(errorCode, etag);
+    };
 
-                    for (size_t i = 0; i < headersCount; ++i)
-                    {
-                        const aws_byte_cursor &name = headersArray[i].name;
-
-                        if (aws_byte_cursor_eq_c_str(&name, "ETag"))
-                        {
-                            const aws_byte_cursor &value = headersArray[i].value;
-                            *etag = Aws::Crt::String((const char *)value.ptr, value.len);
-                        }
-                    }
-                };
-                requestOptions.onStreamComplete =
-                    [signedRequest, keyPath, etag, conn, completedCallback](Http::HttpStream &stream, int error) {
-                        int errorCode = error;
-
-                        if (!errorCode)
-                        {
-                            errorCode = (stream.GetResponseStatusCode() == 200) ? AWS_OP_SUCCESS : AWS_OP_ERR;
-
-                            aws_log_level logLevel = (errorCode == AWS_OP_ERR) ? AWS_LL_ERROR : AWS_LL_INFO;
-
-                            AWS_LOGF(
-                                logLevel,
-                                AWS_LS_CRT_CPP_CANARY,
-                                "PutObject completed for path %s with response status %d on thread %" PRId64,
-                                keyPath.c_str(),
-                                stream.GetResponseStatusCode(),
-                                aws_thread_current_thread_id());
-                        }
-                        else
-                        {
-                            AWS_LOGF_ERROR(
-                                AWS_LS_CRT_CPP_CANARY,
-                                "PutObject completed for path %s with error '%s' on thread %" PRId64,
-                                keyPath.c_str(),
-                                aws_error_debug_str(errorCode),
-                                aws_thread_current_thread_id());
-                        }
-
-                        completedCallback(errorCode, etag);
-                    };
-
-                conn->NewClientStream(requestOptions);
-            });
-        });
+    MakeSignedRequest(
+        conn, request, requestOptions, [finishedCallback](int32_t errorCode) { finishedCallback(errorCode, nullptr); });
 }
 
-uint32_t S3ObjectTransport::PutObjectMultipart(
+void S3ObjectTransport::PutObjectMultipart(
     const Aws::Crt::String &key,
     std::uint64_t objectSize,
-    GetObjectPartCallback getObjectPart,
-    PutObjectMultipartCompleted onCompleted)
+    SendPartCallback sendPart,
+    const PutObjectMultipartFinished &finishedCallback)
 {
     uint32_t numParts = GetNumParts(objectSize);
 
-    CreateMultipartUpload(
-        key,
-        [this, key, objectSize, numParts, getObjectPart, onCompleted](
-            int errorCode, std::shared_ptr<Aws::Crt::String> uploadId) {
-            if (uploadId == nullptr || uploadId->empty())
-            {
-                errorCode = AWS_OP_ERR;
-            }
+    std::shared_ptr<MultipartUploadState> uploadState =
+        MakeShared<MultipartUploadState>(g_allocator, key, objectSize, numParts);
 
-            if (errorCode != AWS_OP_SUCCESS)
+    // Set the callback that the MultipartTransferProcessor will use to process the part.
+    // In this case, it will try to upload it.
+    uploadState->SetProcessPartCallback([this, uploadState, sendPart, finishedCallback](
+                                            const MultipartTransferState::PartInfo &partInfo,
+                                            MultipartTransferState::PartFinishedCallback partFinished) {
+        aws_input_stream *partInputStream = sendPart(partInfo);
+
+        UploadPart(uploadState, partInfo, partInputStream, partFinished);
+    });
+
+    // Set the callback that will be called when something flags the upload state as finished.  Finished
+    // can happen due to success or failure.
+    uploadState->SetFinishedCallback([this, uploadState, key, numParts, finishedCallback](int32_t errorCode) {
+        if (errorCode != AWS_ERROR_SUCCESS)
+        {
+            AbortMultipartUpload(
+                uploadState->GetConnection(),
+                key,
+                uploadState->GetUploadId(),
+                [numParts, errorCode, finishedCallback](int32_t) { finishedCallback(errorCode, numParts); });
+        }
+        else
+        {
+            finishedCallback(errorCode, numParts);
+        }
+    });
+
+    m_connManager->AcquireConnection(
+        [this, uploadState](std::shared_ptr<Http::HttpClientConnection> conn, int connErrorCode) {
+            if (connErrorCode != AWS_ERROR_SUCCESS)
             {
-                onCompleted(errorCode, numParts);
+                uploadState->SetFinished(connErrorCode);
                 return;
             }
 
-            std::shared_ptr<MultipartTransferState> uploadState = std::make_shared<MultipartTransferState>(
-                key,
-                objectSize,
-                numParts,
-                [this, uploadId, getObjectPart, onCompleted](
-                    std::shared_ptr<MultipartTransferState> state,
-                    const MultipartTransferState::PartInfo &partInfo,
-                    MultipartTransferState::PartFinishedCallback partFinished) {
-                    aws_input_stream *partInputStream = getObjectPart(partInfo);
-                    UploadPart(state, uploadId, partInfo, partInputStream, partFinished);
-                },
-                [numParts, onCompleted](int32_t errorCode) { onCompleted(errorCode, numParts); });
+            // If SingleConnectinPerMultipartUpload is set to true, we cache the connection
+            // on the uploadState so that it can be re-used.  Otherwise, a new connection
+            // will be made for each request made for the multipart upload.
+            if (SingleConnectionPerMultipartUpload)
+            {
+                uploadState->SetConnection(conn);
+            }
 
-            m_uploadProcessor.PushQueue(uploadState);
+            // Go ahead and start the multipart upload, pushing it into the queue
+            // if we were able to successfully issue the CreateMultipartUpload request.
+            CreateMultipartUpload(
+                conn, uploadState->GetKey(), [this, uploadState](int errorCode, const Aws::Crt::String &uploadId) {
+                    if (errorCode != AWS_ERROR_SUCCESS)
+                    {
+                        uploadState->SetFinished(errorCode);
+                        return;
+                    }
+
+                    uploadState->SetUploadId(uploadId);
+                    m_uploadProcessor.PushQueue(uploadState);
+                });
         });
-
-    return numParts;
 }
 
 void S3ObjectTransport::UploadPart(
-    const std::shared_ptr<MultipartTransferState> &state,
-    const std::shared_ptr<Aws::Crt::String> &uploadId,
+    const std::shared_ptr<MultipartUploadState> &state,
     const MultipartTransferState::PartInfo &partInfo,
     aws_input_stream *partInputStream,
     const MultipartTransferState::PartFinishedCallback &partFinished)
 {
     StringStream keyPathStream;
-    keyPathStream << state->GetKey() << "?partNumber=" << partInfo.number << "&uploadId=" << *uploadId;
+    keyPathStream << state->GetKey() << "?partNumber=" << partInfo.partNumber << "&uploadId=" << state->GetUploadId();
 
     PutObject(
+        state->GetConnection(),
         keyPathStream.str(),
         partInputStream,
         (uint32_t)EPutObjectFlags::RetrieveETag,
-        [this, uploadId, state, partInfo, partFinished](int errorCode, std::shared_ptr<Aws::Crt::String> etag) {
-            if (errorCode == AWS_OP_SUCCESS && etag != nullptr)
+        [this, state, partInfo, partFinished](int32_t errorCode, std::shared_ptr<Aws::Crt::String> etag) {
+            if (errorCode == AWS_ERROR_SUCCESS && etag == nullptr)
             {
-                state->SetETag(partInfo.index, *etag);
+                errorCode = AWS_ERROR_UNKNOWN;
+            }
+
+            if (errorCode == AWS_ERROR_SUCCESS)
+            {
+                state->SetETag(partInfo.partIndex, *etag);
 
                 if (state->IncNumPartsCompleted())
                 {
@@ -272,28 +372,23 @@ void S3ObjectTransport::UploadPart(
                     state->GetETags(etags);
 
                     CompleteMultipartUpload(
-                        state->GetKey(), *uploadId, etags, [this, state, uploadId](int32_t errorCode) {
-                            if (errorCode != AWS_OP_SUCCESS)
-                            {
-                                AbortMultipartUpload(
-                                    state->GetKey(), *uploadId, [](int32_t errorCode) { (void)errorCode; });
-                            }
-                            state->SetCompleted(errorCode);
-                        });
+                        state->GetConnection(),
+                        state->GetKey(),
+                        state->GetUploadId(),
+                        etags,
+                        [state](int32_t errorCode) { state->SetFinished(errorCode); });
                 }
             }
             else
             {
-                AbortMultipartUpload(state->GetKey(), *uploadId, [](int32_t errorCode) { (void)errorCode; });
-
-                state->SetCompleted(errorCode);
+                state->SetFinished(errorCode);
             }
 
             AWS_LOGF_INFO(
                 AWS_LS_CRT_CPP_CANARY,
                 "UploadPart for path %s and part #%d (%d/%d) just returned code %d",
                 state->GetKey().c_str(),
-                partInfo.number,
+                partInfo.partNumber,
                 state->GetNumPartsCompleted(),
                 state->GetNumParts(),
                 errorCode);
@@ -304,9 +399,27 @@ void S3ObjectTransport::UploadPart(
 
 void S3ObjectTransport::GetObject(
     const Aws::Crt::String &key,
+    Aws::Crt::Http::OnIncomingBody onIncomingBody,
+    const GetObjectFinished &getObjectFinished)
+{
+    m_connManager->AcquireConnection([this, key, onIncomingBody, getObjectFinished](
+                                         std::shared_ptr<Http::HttpClientConnection> conn, int connErrorCode) {
+        if (connErrorCode != AWS_ERROR_SUCCESS)
+        {
+            getObjectFinished(connErrorCode);
+            return;
+        }
+
+        GetObject(conn, key, 0, onIncomingBody, getObjectFinished);
+    });
+}
+
+void S3ObjectTransport::GetObject(
+    const std::shared_ptr<Http::HttpClientConnection> &conn,
+    const Aws::Crt::String &key,
     uint32_t partNumber,
     Aws::Crt::Http::OnIncomingBody onIncomingBody,
-    GetObjectCompleted getObjectCompleted)
+    const GetObjectFinished &getObjectFinished)
 {
     auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
     request->AddHeader(m_hostHeader);
@@ -325,122 +438,125 @@ void S3ObjectTransport::GetObject(
     ByteCursor path = ByteCursorFromCString(keyPath.c_str());
     request->SetPath(path);
 
-    Auth::AwsSigningConfig signingConfig(g_allocator);
-    signingConfig.SetRegion(m_region);
-    signingConfig.SetCredentialsProvider(m_credsProvider);
-    signingConfig.SetService("s3");
-    signingConfig.SetBodySigningType(Auth::BodySigningType::UnsignedPayload);
-    signingConfig.SetSigningTimepoint(DateTime::Now());
-    signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
+    Http::HttpRequestOptions requestOptions;
+    AWS_ZERO_STRUCT(requestOptions);
+    requestOptions.onIncomingBody = onIncomingBody;
+    requestOptions.onStreamComplete = [keyPath, partNumber, getObjectFinished](Http::HttpStream &stream, int error) {
+        int errorCode = error;
 
-    m_signer->SignRequest(
-        request,
-        signingConfig,
-        [this, keyPath, partNumber, onIncomingBody, getObjectCompleted](
-            const std::shared_ptr<Aws::Crt::Http::HttpRequest> &signedRequest, int signingError) {
-            if (signingError != AWS_OP_SUCCESS)
+        if (errorCode == AWS_ERROR_SUCCESS)
+        {
+            int32_t successStatus = partNumber > 0 ? S3GetObjectResponseStatus_PartialContent : 200;
+
+            if (stream.GetResponseStatusCode() != successStatus)
             {
-                getObjectCompleted(signingError);
-                return;
+                errorCode = AWS_ERROR_UNKNOWN;
             }
 
-            m_connManager->AcquireConnection([signedRequest, keyPath, partNumber, onIncomingBody, getObjectCompleted](
-                                                 std::shared_ptr<Http::HttpClientConnection> conn, int connError) {
-                if (connError != AWS_OP_SUCCESS)
-                {
-                    getObjectCompleted(connError);
-                    return;
-                }
+            aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_INFO;
 
-                Http::HttpRequestOptions requestOptions;
-                AWS_ZERO_STRUCT(requestOptions);
-                requestOptions.request = signedRequest.get();
-                requestOptions.onIncomingBody = onIncomingBody;
-                requestOptions.onStreamComplete = [conn, signedRequest, keyPath, partNumber, getObjectCompleted](
-                                                      Http::HttpStream &stream, int error) {
-                    int errorCode = error;
+            AWS_LOGF(
+                logLevel,
+                AWS_LS_CRT_CPP_CANARY,
+                "GetObject finished for path %s with response status %d",
+                keyPath.c_str(),
+                stream.GetResponseStatusCode());
+        }
+        else
+        {
+            AWS_LOGF_ERROR(
+                AWS_LS_CRT_CPP_CANARY,
+                "GetObject finished for path %s with error '%s'",
+                keyPath.c_str(),
+                aws_error_debug_str(errorCode));
+        }
 
-                    if (!errorCode)
-                    {
-                        int32_t successStatus = partNumber > 0 ? S3GetObjectResponseStatus_PartialContent : 200;
+        getObjectFinished(errorCode);
+    };
 
-                        errorCode = (stream.GetResponseStatusCode() == successStatus) ? AWS_OP_SUCCESS : AWS_OP_ERR;
-
-                        aws_log_level logLevel = (errorCode == AWS_OP_ERR) ? AWS_LL_ERROR : AWS_LL_INFO;
-
-                        AWS_LOGF(
-                            logLevel,
-                            AWS_LS_CRT_CPP_CANARY,
-                            "GetObject completed for path %s with response status %d on thread %" PRId64,
-                            keyPath.c_str(),
-                            stream.GetResponseStatusCode(),
-                            aws_thread_current_thread_id());
-                    }
-                    else
-                    {
-                        AWS_LOGF_ERROR(
-                            AWS_LS_CRT_CPP_CANARY,
-                            "GetObject completed for path %s with error '%s' on thread %" PRId64,
-                            keyPath.c_str(),
-                            aws_error_debug_str(errorCode),
-                            aws_thread_current_thread_id());
-                    }
-
-                    getObjectCompleted(errorCode);
-                };
-
-                conn->NewClientStream(requestOptions);
-            });
-        });
+    MakeSignedRequest(
+        conn, request, requestOptions, [getObjectFinished](int32_t errorCode) { getObjectFinished(errorCode); });
 }
 
 void S3ObjectTransport::GetObjectMultipart(
     const Aws::Crt::String &key,
     std::uint32_t numParts,
-    ReceiveObjectPartDataCallback receiveObjectPartData,
-    GetObjectMultipartCompleted onCompleted)
+    const ReceivePartCallback &receivePart,
+    const GetObjectMultipartFinished &finishedCallback)
 {
-    std::shared_ptr<MultipartTransferState> downloadState = std::make_shared<MultipartTransferState>(
-        key,
-        0L,
-        numParts,
-        [this, key, receiveObjectPartData](
-            std::shared_ptr<MultipartTransferState> state,
-            const MultipartTransferState::PartInfo &partInfo,
-            MultipartTransferState::PartFinishedCallback partFinished) {
-            GetObject(
-                key,
-                partInfo.number,
-                [state, partInfo, receiveObjectPartData](Http::HttpStream &stream, const ByteCursor &data) {
-                    (void)stream;
+    std::shared_ptr<MultipartDownloadState> downloadState =
+        MakeShared<MultipartDownloadState>(g_allocator, key, 0L, numParts);
 
-                    receiveObjectPartData(partInfo, data);
-                },
-                [key, state, partInfo, partFinished](int32_t errorCode) {
-                    if (errorCode != AWS_OP_SUCCESS)
-                    {
-                        AWS_LOGF_ERROR(
-                            AWS_LS_CRT_CPP_CANARY, "Did not receive part #%d for %s", partInfo.number, key.c_str());
+    // Set the callback that the MultipartTransferProcessor will use to process the part.
+    // In this case, try to download it.
+    downloadState->SetProcessPartCallback([this, downloadState, receivePart](
+                                              const MultipartTransferState::PartInfo &partInfo,
+                                              const MultipartTransferState::PartFinishedCallback &partFinished) {
+        GetPart(downloadState, partInfo, receivePart, partFinished);
+    });
 
-                        state->SetCompleted(errorCode);
-                    }
-                    else
-                    {
-                        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Received part #%d for %s", partInfo.number, key.c_str());
+    // Set the callback that will be called when something flags the upload state as finished.  Finished
+    // can happen due to success or failure.
+    downloadState->SetFinishedCallback([finishedCallback](int32_t errorCode) { finishedCallback(errorCode); });
 
-                        if (state->IncNumPartsCompleted())
-                        {
-                            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "All parts received for %s", key.c_str());
-                            state->SetCompleted(AWS_OP_SUCCESS);
-                        }
-                    }
+    m_connManager->AcquireConnection(
+        [this, downloadState](std::shared_ptr<Http::HttpClientConnection> conn, int connErrorCode) {
+            if (connErrorCode != AWS_ERROR_SUCCESS)
+            {
+                downloadState->SetFinished(connErrorCode);
+                return;
+            }
 
-                    partFinished();
-                });
+            // If SingleConnectinPerMultipartUpload is set to true, we cache the connection
+            // on the uploadState so that it can be re-used.  Otherwise, a new connection
+            // will be made for each request made for the multipart upload.
+            if (SingleConnectionPerMultipartUpload)
+            {
+                downloadState->SetConnection(conn);
+            }
+
+            m_downloadProcessor.PushQueue(downloadState);
+        });
+}
+
+void S3ObjectTransport::GetPart(
+    std::shared_ptr<MultipartDownloadState> downloadState,
+    const MultipartTransferState::PartInfo &partInfo,
+    const ReceivePartCallback &receiveObjectPartData,
+    const MultipartTransferState::PartFinishedCallback &partFinished)
+{
+    GetObject(
+        downloadState->GetConnection(),
+        downloadState->GetKey(),
+        partInfo.partNumber,
+        [downloadState, partInfo, receiveObjectPartData](Http::HttpStream &stream, const ByteCursor &data) {
+            (void)stream;
+
+            receiveObjectPartData(partInfo, data);
         },
-        [onCompleted](int32_t errorCode) { onCompleted(errorCode); });
+        [downloadState, partInfo, partFinished](int32_t errorCode) {
+            const String &key = downloadState->GetKey();
 
-    m_downloadProcessor.PushQueue(downloadState);
+            if (errorCode != AWS_ERROR_SUCCESS)
+            {
+                AWS_LOGF_ERROR(
+                    AWS_LS_CRT_CPP_CANARY, "Did not receive part #%d for %s", partInfo.partNumber, key.c_str());
+
+                downloadState->SetFinished(errorCode);
+            }
+            else
+            {
+                AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Received part #%d for %s", partInfo.partNumber, key.c_str());
+
+                if (downloadState->IncNumPartsCompleted())
+                {
+                    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "All parts received for %s", key.c_str());
+                    downloadState->SetFinished();
+                }
+            }
+
+            partFinished();
+        });
 }
 
 uint32_t S3ObjectTransport::GetNumParts(uint64_t objectSize) const
@@ -458,133 +574,106 @@ uint32_t S3ObjectTransport::GetNumParts(uint64_t objectSize) const
 }
 
 void S3ObjectTransport::CreateMultipartUpload(
+    const std::shared_ptr<Http::HttpClientConnection> &conn,
     const Aws::Crt::String &key,
-    CreateMultipartUploadCompleted completedCallback)
+    const CreateMultipartUploadFinished &finishedCallback)
 {
-    auto createMultipartUploadRequest = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
-    createMultipartUploadRequest->AddHeader(m_hostHeader);
-    createMultipartUploadRequest->AddHeader(m_contentTypeHeader);
-    createMultipartUploadRequest->SetMethod(aws_http_method_post);
+    auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
+    request->AddHeader(m_hostHeader);
+    request->AddHeader(m_contentTypeHeader);
+    request->SetMethod(aws_http_method_post);
 
     String keyPath = "/" + key + "?uploads";
     ByteCursor path = ByteCursorFromCString(keyPath.c_str());
-    createMultipartUploadRequest->SetPath(path);
+    request->SetPath(path);
 
-    Auth::AwsSigningConfig signingConfig(g_allocator);
-    signingConfig.SetRegion(m_region);
-    signingConfig.SetCredentialsProvider(m_credsProvider);
-    signingConfig.SetService("s3");
-    signingConfig.SetBodySigningType(Auth::BodySigningType::UnsignedPayload);
-    signingConfig.SetSigningTimepoint(DateTime::Now());
-    signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
+    std::shared_ptr<String> uploadId = MakeShared<String>(g_allocator);
+
+    Http::HttpRequestOptions requestOptions;
+    AWS_ZERO_STRUCT(requestOptions);
+    requestOptions.onIncomingBody = [uploadId, keyPath](Http::HttpStream &stream, const ByteCursor &data) {
+        (void)stream;
+
+        tinyxml2::XMLDocument xmlDocument;
+        tinyxml2::XMLError parseError = xmlDocument.Parse((const char *)data.ptr, data.len);
+
+        if (parseError != tinyxml2::XML_SUCCESS)
+        {
+            return;
+        }
+
+        tinyxml2::XMLElement *rootElement = xmlDocument.RootElement();
+
+        if (rootElement == nullptr)
+        {
+            return;
+        }
+
+        tinyxml2::XMLElement *uploadIdElement = rootElement->FirstChildElement("UploadId");
+
+        if (uploadIdElement == nullptr)
+        {
+            return;
+        }
+        else
+        {
+            *uploadId = uploadIdElement->GetText();
+        }
+    };
+    requestOptions.onStreamComplete = [uploadId, keyPath, finishedCallback](Http::HttpStream &stream, int errorCode) {
+        if (errorCode == AWS_ERROR_SUCCESS && uploadId->empty())
+        {
+            errorCode = AWS_ERROR_UNKNOWN;
+        }
+
+        if (errorCode == AWS_ERROR_SUCCESS)
+        {
+            if (stream.GetResponseStatusCode() != 200)
+            {
+                errorCode = AWS_ERROR_UNKNOWN;
+            }
+
+            aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_INFO;
+
+            AWS_LOGF(
+                logLevel,
+                AWS_LS_CRT_CPP_CANARY,
+                "Created multipart upload for path %s with response status %d.",
+                keyPath.c_str(),
+                stream.GetResponseStatusCode());
+        }
+        else
+        {
+            AWS_LOGF_ERROR(
+                AWS_LS_CRT_CPP_CANARY,
+                "Created multipart upload for path %s failed with error '%s'",
+                keyPath.c_str(),
+                aws_error_debug_str(errorCode));
+        }
+
+        finishedCallback(errorCode, *uploadId);
+    };
 
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Creating multipart upload for %s...", keyPath.c_str());
 
-    std::shared_ptr<Aws::Crt::String> uploadId = std::make_shared<Aws::Crt::String>();
-
-    m_signer->SignRequest(
-        createMultipartUploadRequest,
-        signingConfig,
-        [this, uploadId, keyPath, completedCallback](
-            const std::shared_ptr<Aws::Crt::Http::HttpRequest> &signedRequest, int signingError) {
-            if (signingError != AWS_OP_SUCCESS)
-            {
-                completedCallback(signingError, nullptr);
-                return;
-            }
-
-            m_connManager->AcquireConnection([uploadId, keyPath, signedRequest, completedCallback](
-                                                 std::shared_ptr<Http::HttpClientConnection> conn, int connError) {
-                if (connError != AWS_OP_SUCCESS)
-                {
-                    completedCallback(connError, nullptr);
-                    return;
-                }
-
-                Http::HttpRequestOptions requestOptions;
-                AWS_ZERO_STRUCT(requestOptions);
-                requestOptions.request = signedRequest.get();
-                requestOptions.onIncomingBody = [uploadId, keyPath](Http::HttpStream &stream, const ByteCursor &data) {
-                    (void)stream;
-
-                    tinyxml2::XMLDocument xmlDocument;
-                    tinyxml2::XMLError parseError = xmlDocument.Parse((const char *)data.ptr, data.len);
-
-                    if (parseError != tinyxml2::XML_SUCCESS)
-                    {
-                        return;
-                    }
-
-                    tinyxml2::XMLElement *rootElement = xmlDocument.RootElement();
-
-                    if (rootElement == nullptr)
-                    {
-                        return;
-                    }
-
-                    tinyxml2::XMLElement *uploadIdElement = rootElement->FirstChildElement("UploadId");
-
-                    if (uploadIdElement == nullptr)
-                    {
-                        return;
-                    }
-                    else
-                    {
-                        *uploadId = uploadIdElement->GetText();
-                    }
-                };
-                requestOptions.onStreamComplete =
-                    [uploadId, keyPath, signedRequest, conn, completedCallback](Http::HttpStream &stream, int error) {
-                        int errorCode = error;
-
-                        if (!errorCode)
-                        {
-                            errorCode = (stream.GetResponseStatusCode() == 200) ? AWS_OP_SUCCESS : AWS_OP_ERR;
-
-                            aws_log_level logLevel = (errorCode == AWS_OP_ERR) ? AWS_LL_ERROR : AWS_LL_INFO;
-
-                            AWS_LOGF(
-                                logLevel,
-                                AWS_LS_CRT_CPP_CANARY,
-                                "Created multipart upload for path %s with response status %d.",
-                                keyPath.c_str(),
-                                stream.GetResponseStatusCode());
-                        }
-                        else
-                        {
-                            AWS_LOGF_ERROR(
-                                AWS_LS_CRT_CPP_CANARY,
-                                "Completed multipart upload for path %s with error '%s'",
-                                keyPath.c_str(),
-                                aws_error_debug_str(errorCode));
-                        }
-
-                        if (uploadId->empty())
-                        {
-                            errorCode = AWS_OP_ERR;
-                        }
-
-                        completedCallback(errorCode, uploadId);
-                    };
-
-                conn->NewClientStream(requestOptions);
-            });
-        });
+    MakeSignedRequest(
+        conn, request, requestOptions, [finishedCallback](int32_t errorCode) { finishedCallback(errorCode, nullptr); });
 }
 
 void S3ObjectTransport::CompleteMultipartUpload(
+    const std::shared_ptr<Http::HttpClientConnection> &conn,
     const Aws::Crt::String &key,
     const Aws::Crt::String &uploadId,
     const Aws::Crt::Vector<Aws::Crt::String> &etags,
-    CompleteMultipartUploadCompleted completedCallback)
+    const CompleteMultipartUploadFinished &finishedCallback)
 {
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Completing multipart upload for %s...", key.c_str());
 
-    auto completeMultipartUploadRequest = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
-    completeMultipartUploadRequest->AddHeader(m_hostHeader);
-    completeMultipartUploadRequest->SetMethod(aws_http_method_post);
+    auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
+    request->AddHeader(m_hostHeader);
+    request->SetMethod(aws_http_method_post);
 
-    std::shared_ptr<StringStream> xmlContents = std::make_shared<StringStream>();
+    std::shared_ptr<StringStream> xmlContents = MakeShared<StringStream>(g_allocator);
     *xmlContents << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n";
     *xmlContents << "<CompleteMultipartUpload xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">\n";
 
@@ -601,7 +690,9 @@ void S3ObjectTransport::CompleteMultipartUpload(
 
     *xmlContents << "</CompleteMultipartUpload>";
 
+    // By passing the stream here, the request is accepting ownership of the memory for inputStream.
     aws_input_stream *inputStream = Aws::Crt::Io::AwsInputStreamNewCpp(xmlContents, aws_default_allocator());
+    aws_http_message_set_body_stream(request->GetUnderlyingMessage(), inputStream);
 
     {
         int64_t streamLen = 0;
@@ -614,156 +705,97 @@ void S3ObjectTransport::CompleteMultipartUpload(
         contentLength.name = ByteCursorFromCString("content-length");
         contentLength.value = ByteCursorFromCString(contentLengthVal.c_str());
 
-        completeMultipartUploadRequest->AddHeader(contentLength);
+        request->AddHeader(contentLength);
     }
-
-    aws_http_message_set_body_stream(completeMultipartUploadRequest->GetUnderlyingMessage(), inputStream);
 
     StringStream keyPathStream;
     keyPathStream << "/" << key << "?uploadId=" << uploadId;
     String keyPath = keyPathStream.str();
     ByteCursor path = ByteCursorFromCString(keyPath.c_str());
-    completeMultipartUploadRequest->SetPath(path);
+    request->SetPath(path);
 
-    Auth::AwsSigningConfig signingConfig(g_allocator);
-    signingConfig.SetRegion(m_region);
-    signingConfig.SetCredentialsProvider(m_credsProvider);
-    signingConfig.SetService("s3");
-    signingConfig.SetBodySigningType(Auth::BodySigningType::UnsignedPayload);
-    signingConfig.SetSigningTimepoint(DateTime::Now());
-    signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
-
-    m_signer->SignRequest(
-        completeMultipartUploadRequest,
-        signingConfig,
-        [this, keyPath, completedCallback](
-            const std::shared_ptr<Aws::Crt::Http::HttpRequest> &signedRequest, int signingError) {
-            if (signingError != AWS_OP_SUCCESS)
+    Http::HttpRequestOptions requestOptions;
+    AWS_ZERO_STRUCT(requestOptions);
+    requestOptions.onStreamComplete = [keyPath, finishedCallback](Http::HttpStream &stream, int errorCode) {
+        if (errorCode == AWS_ERROR_SUCCESS)
+        {
+            if (stream.GetResponseStatusCode() != 200)
             {
-                completedCallback(signingError);
-                return;
+                errorCode = AWS_ERROR_UNKNOWN;
             }
 
-            m_connManager->AcquireConnection([keyPath, signedRequest, completedCallback](
-                                                 std::shared_ptr<Http::HttpClientConnection> conn, int connError) {
-                if (connError != AWS_OP_SUCCESS)
-                {
-                    completedCallback(connError);
-                    return;
-                }
+            aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_INFO;
 
-                Http::HttpRequestOptions requestOptions;
-                AWS_ZERO_STRUCT(requestOptions);
-                requestOptions.request = signedRequest.get();
-                requestOptions.onStreamComplete =
-                    [keyPath, signedRequest, conn, completedCallback](Http::HttpStream &stream, int error) {
-                        int errorCode = error;
+            AWS_LOGF(
+                logLevel,
+                AWS_LS_CRT_CPP_CANARY,
+                "Finished multipart upload for path %s with response status %d.",
+                keyPath.c_str(),
+                stream.GetResponseStatusCode());
+        }
+        else
+        {
+            AWS_LOGF_ERROR(
+                AWS_LS_CRT_CPP_CANARY,
+                "Finished multipart upload for path %s with error '%s'",
+                keyPath.c_str(),
+                aws_error_debug_str(errorCode));
+        }
 
-                        if (!errorCode)
-                        {
-                            errorCode = (stream.GetResponseStatusCode() == 200) ? AWS_OP_SUCCESS : AWS_OP_ERR;
+        finishedCallback(errorCode);
+    };
 
-                            aws_log_level logLevel = (errorCode == AWS_OP_ERR) ? AWS_LL_ERROR : AWS_LL_INFO;
-
-                            AWS_LOGF(
-                                logLevel,
-                                AWS_LS_CRT_CPP_CANARY,
-                                "Completed multipart upload for path %s with response status %d.",
-                                keyPath.c_str(),
-                                stream.GetResponseStatusCode());
-                        }
-                        else
-                        {
-                            AWS_LOGF_ERROR(
-                                AWS_LS_CRT_CPP_CANARY,
-                                "Completed multipart upload for path %s with error '%s'",
-                                keyPath.c_str(),
-                                aws_error_debug_str(errorCode));
-                        }
-
-                        completedCallback(errorCode);
-                    };
-
-                conn->NewClientStream(requestOptions);
-            });
-        });
+    MakeSignedRequest(
+        conn, request, requestOptions, [finishedCallback](int32_t errorCode) { finishedCallback(errorCode); });
 }
 
 void S3ObjectTransport::AbortMultipartUpload(
+    const std::shared_ptr<Http::HttpClientConnection> &conn,
     const Aws::Crt::String &key,
     const Aws::Crt::String &uploadId,
-    AbortMultipartUploadCompleted completedCallback)
+    const AbortMultipartUploadFinished &finishedCallback)
 {
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Aborting multipart upload for %s...", key.c_str());
 
-    auto abortMultipartUploadRequest = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
-    abortMultipartUploadRequest->AddHeader(m_hostHeader);
-    abortMultipartUploadRequest->SetMethod(aws_http_method_delete);
+    auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
+    request->AddHeader(m_hostHeader);
+    request->SetMethod(aws_http_method_delete);
 
     String keyPath = "/" + key + "?uploadId=" + uploadId;
     ByteCursor keyPathByteCursor = ByteCursorFromCString(keyPath.c_str());
-    abortMultipartUploadRequest->SetPath(keyPathByteCursor);
+    request->SetPath(keyPathByteCursor);
 
-    Auth::AwsSigningConfig signingConfig(g_allocator);
-    signingConfig.SetRegion(m_region);
-    signingConfig.SetCredentialsProvider(m_credsProvider);
-    signingConfig.SetService("s3");
-    signingConfig.SetBodySigningType(Auth::BodySigningType::UnsignedPayload);
-    signingConfig.SetSigningTimepoint(DateTime::Now());
-    signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
-
-    m_signer->SignRequest(
-        abortMultipartUploadRequest,
-        signingConfig,
-        [this, uploadId, keyPath, completedCallback](
-            const std::shared_ptr<Aws::Crt::Http::HttpRequest> &signedRequest, int signingError) {
-            if (signingError != AWS_OP_SUCCESS)
+    Http::HttpRequestOptions requestOptions;
+    AWS_ZERO_STRUCT(requestOptions);
+    requestOptions.onStreamComplete = [uploadId, keyPath, finishedCallback](Http::HttpStream &stream, int errorCode) {
+        if (errorCode == AWS_ERROR_SUCCESS)
+        {
+            if (stream.GetResponseStatusCode() != 204)
             {
-                completedCallback(signingError);
-                return;
+                errorCode = AWS_ERROR_UNKNOWN;
             }
 
-            m_connManager->AcquireConnection([uploadId, keyPath, signedRequest, completedCallback](
-                                                 std::shared_ptr<Http::HttpClientConnection> conn, int connError) {
-                if (connError != AWS_OP_SUCCESS)
-                {
-                    completedCallback(connError);
-                    return;
-                }
+            aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_INFO;
 
-                Http::HttpRequestOptions requestOptions;
-                AWS_ZERO_STRUCT(requestOptions);
-                requestOptions.request = signedRequest.get();
-                requestOptions.onStreamComplete =
-                    [uploadId, keyPath, signedRequest, conn, completedCallback](Http::HttpStream &stream, int error) {
-                        int errorCode = error;
+            AWS_LOGF(
+                logLevel,
+                AWS_LS_CRT_CPP_CANARY,
+                "Abort multipart upload for path %s finished with response status %d.",
+                keyPath.c_str(),
+                stream.GetResponseStatusCode());
+        }
+        else
+        {
+            AWS_LOGF_ERROR(
+                AWS_LS_CRT_CPP_CANARY,
+                "Abort multipart upload for path %s failed with error '%s'",
+                keyPath.c_str(),
+                aws_error_debug_str(errorCode));
+        }
 
-                        if (!errorCode)
-                        {
-                            errorCode = (stream.GetResponseStatusCode() == 204) ? AWS_OP_SUCCESS : AWS_OP_ERR;
+        finishedCallback(errorCode);
+    };
 
-                            aws_log_level logLevel = (errorCode == AWS_OP_ERR) ? AWS_LL_ERROR : AWS_LL_INFO;
-
-                            AWS_LOGF(
-                                logLevel,
-                                AWS_LS_CRT_CPP_CANARY,
-                                "Abort multipart upload for path %s with response status %d.",
-                                keyPath.c_str(),
-                                stream.GetResponseStatusCode());
-                        }
-                        else
-                        {
-                            AWS_LOGF_ERROR(
-                                AWS_LS_CRT_CPP_CANARY,
-                                "Abort multipart upload for path %s with error '%s'",
-                                keyPath.c_str(),
-                                aws_error_debug_str(errorCode));
-                        }
-
-                        completedCallback(errorCode);
-                    };
-
-                conn->NewClientStream(requestOptions);
-            });
-        });
+    MakeSignedRequest(
+        conn, request, requestOptions, [finishedCallback](int32_t errorCode) { finishedCallback(errorCode); });
 }
