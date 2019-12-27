@@ -13,6 +13,7 @@
  * permissions and limitations under the License.
  */
 #include "MetricsPublisher.h"
+#include "CanaryApp.h"
 
 #include <aws/crt/http/HttpConnectionManager.h>
 #include <aws/crt/http/HttpRequestResponse.h>
@@ -25,20 +26,12 @@
 using namespace Aws::Crt;
 
 MetricsPublisher::MetricsPublisher(
-    const Aws::Crt::String &platformName,
-    const Aws::Crt::String &toolName,
-    const Aws::Crt::String &ec2InstanceType,
-    const Aws::Crt::String &region,
-    Aws::Crt::Io::TlsContext &tlsContext,
-    Aws::Crt::Io::ClientBootstrap &clientBootstrap,
-    Aws::Crt::Io::EventLoopGroup &elGroup,
-    const std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> &credsProvider,
-    const std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> &signer,
+    CanaryApp &canaryApp,
+    const char *metricNamespace,
     std::chrono::seconds publishFrequency)
-    : m_transferSize(MetricTransferSize::None), m_signer(signer), m_credsProvider(credsProvider), m_elGroup(elGroup),
-      m_platformName(platformName), m_toolName(toolName), m_ec2InstanceType(ec2InstanceType), m_region(region)
+    : m_canaryApp(canaryApp)
 {
-    (void)m_elGroup;
+    Namespace = metricNamespace;
 
     AWS_ZERO_STRUCT(m_publishTask);
     m_publishFrequencyNs =
@@ -47,7 +40,7 @@ MetricsPublisher::MetricsPublisher(
     m_publishTask.arg = this;
 
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
-    m_endpoint = "monitoring." + m_region + ".amazonaws.com";
+    m_endpoint = "monitoring." + canaryApp.region + ".amazonaws.com";
 
     connectionManagerOptions.ConnectionOptions.HostName = m_endpoint;
     connectionManagerOptions.ConnectionOptions.Port = 443;
@@ -57,16 +50,16 @@ MetricsPublisher::MetricsPublisher(
 
     aws_byte_cursor serverName = ByteCursorFromCString(connectionManagerOptions.ConnectionOptions.HostName.c_str());
 
-    auto connOptions = tlsContext.NewConnectionOptions();
+    auto connOptions = canaryApp.tlsContext.NewConnectionOptions();
     connOptions.SetServerName(serverName);
     connectionManagerOptions.ConnectionOptions.TlsOptions = connOptions;
-    connectionManagerOptions.ConnectionOptions.Bootstrap = &clientBootstrap;
+    connectionManagerOptions.ConnectionOptions.Bootstrap = &canaryApp.bootstrap;
     connectionManagerOptions.MaxConnections = 5;
 
     m_connManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, g_allocator);
 
-    m_schedulingLoop = aws_event_loop_group_get_next_loop(elGroup.GetUnderlyingHandle());
+    m_schedulingLoop = aws_event_loop_group_get_next_loop(canaryApp.eventLoopGroup.GetUnderlyingHandle());
     uint64_t now = 0;
     aws_event_loop_current_clock_time(m_schedulingLoop, &now);
     aws_event_loop_schedule_task_future(m_schedulingLoop, &m_publishTask, now + m_publishFrequencyNs);
@@ -153,6 +146,9 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
 
     size_t metricCount = 1;
     const char *transferSizeString = s_MetricTransferToString(m_transferSize);
+    const char *platformName = m_canaryApp.platformName.c_str();
+    const char *toolName = m_canaryApp.toolName.c_str();
+    const char *instanceType = m_canaryApp.instanceType.c_str();
 
     for (const auto &metric : metrics)
     {
@@ -167,13 +163,11 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
         bodyStream << "MetricData.member." << metricCount << ".Value=" << std::fixed << metric.Value << "&";
         bodyStream << "MetricData.member." << metricCount << ".Unit=" << s_UnitToStr(metric.Unit) << "&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.1.Name=Platform&";
-        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.1.Value=" << m_platformName.c_str()
-                   << "&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.1.Value=" << platformName << "&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.2.Name=ToolName&";
-        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.2.Value=" << m_toolName.c_str() << "&";
-        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.3.Name=EC2InstanceType&";
-        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.3.Value=" << m_ec2InstanceType.c_str()
-                   << "&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.2.Value=" << toolName << "&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.3.Name=InstanceType&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.3.Value=" << instanceType << "&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Name=TransferSize&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Value=" << transferSizeString << "&";
         metricCount++;
@@ -258,14 +252,14 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
             request->SetPath(path);
 
             Auth::AwsSigningConfig signingConfig(g_allocator);
-            signingConfig.SetRegion(publisher->m_region);
-            signingConfig.SetCredentialsProvider(publisher->m_credsProvider);
+            signingConfig.SetRegion(publisher->m_canaryApp.region);
+            signingConfig.SetCredentialsProvider(publisher->m_canaryApp.credsProvider);
             signingConfig.SetService("monitoring");
             signingConfig.SetBodySigningType(Auth::BodySigningType::SignBody);
             signingConfig.SetSigningTimepoint(DateTime::Now());
             signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
 
-            publisher->m_signer->SignRequest(
+            publisher->m_canaryApp.signer->SignRequest(
                 request,
                 signingConfig,
                 [bodyStream, publisher, finalRun](

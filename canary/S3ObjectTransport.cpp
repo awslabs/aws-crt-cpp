@@ -13,6 +13,7 @@
  * permissions and limitations under the License.
  */
 #include "S3ObjectTransport.h"
+#include "CanaryApp.h"
 
 #include <aws/common/thread.h>
 #include <aws/crt/Api.h>
@@ -35,20 +36,13 @@ const uint32_t S3ObjectTransport::MaxStreams = 10000;
 const int32_t S3ObjectTransport::S3GetObjectResponseStatus_PartialContent = 206;
 const bool S3ObjectTransport::SingleConnectionPerMultipartUpload = false;
 
-S3ObjectTransport::S3ObjectTransport(
-    Aws::Crt::Io::EventLoopGroup &elGroup,
-    const Aws::Crt::String &region,
-    const Aws::Crt::String &bucket,
-    Aws::Crt::Io::TlsContext &tlsContext,
-    Aws::Crt::Io::ClientBootstrap &clientBootstrap,
-    const std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> &credsProvider,
-    const std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> &signer)
-    : m_signer(signer), m_credsProvider(credsProvider), m_region(region), m_bucketName(bucket),
-      m_uploadProcessor(elGroup, S3ObjectTransport::MaxStreams),
-      m_downloadProcessor(elGroup, S3ObjectTransport::MaxStreams)
+S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::String &bucket)
+    : m_canaryApp(canaryApp), m_bucketName(bucket),
+      m_uploadProcessor(canaryApp.eventLoopGroup, S3ObjectTransport::MaxStreams),
+      m_downloadProcessor(canaryApp.eventLoopGroup, S3ObjectTransport::MaxStreams)
 {
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
-    m_endpoint = m_bucketName + ".s3." + m_region + ".amazonaws.com";
+    m_endpoint = m_bucketName + ".s3." + canaryApp.region + ".amazonaws.com";
     connectionManagerOptions.ConnectionOptions.HostName = m_endpoint;
     connectionManagerOptions.ConnectionOptions.Port = 443;
     connectionManagerOptions.ConnectionOptions.SocketOptions.SetConnectTimeoutMs(3000);
@@ -57,10 +51,10 @@ S3ObjectTransport::S3ObjectTransport(
 
     aws_byte_cursor serverName = ByteCursorFromCString(m_endpoint.c_str());
 
-    auto connOptions = tlsContext.NewConnectionOptions();
+    auto connOptions = canaryApp.tlsContext.NewConnectionOptions();
     connOptions.SetServerName(serverName);
     connectionManagerOptions.ConnectionOptions.TlsOptions = connOptions;
-    connectionManagerOptions.ConnectionOptions.Bootstrap = &clientBootstrap;
+    connectionManagerOptions.ConnectionOptions.Bootstrap = &canaryApp.bootstrap;
     connectionManagerOptions.MaxConnections = 1000;
 
     m_connManager =
@@ -80,14 +74,14 @@ void S3ObjectTransport::MakeSignedRequest(
     ErrorCallback errorCallback)
 {
     Auth::AwsSigningConfig signingConfig(g_allocator);
-    signingConfig.SetRegion(m_region);
-    signingConfig.SetCredentialsProvider(m_credsProvider);
+    signingConfig.SetRegion(m_canaryApp.region);
+    signingConfig.SetCredentialsProvider(m_canaryApp.credsProvider);
     signingConfig.SetService("s3");
     signingConfig.SetBodySigningType(Auth::BodySigningType::UnsignedPayload);
     signingConfig.SetSigningTimepoint(DateTime::Now());
     signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
 
-    m_signer->SignRequest(
+    m_canaryApp.signer->SignRequest(
         request,
         signingConfig,
         [this, existingConn, requestOptions, errorCallback](
@@ -145,6 +139,23 @@ void S3ObjectTransport::MakeSignedRequest_SendRequest(
     conn->NewClientStream(requestOptionsToSend);
 }
 
+void S3ObjectTransport::AddContentLengthHeader(
+    std::shared_ptr<Http::HttpRequest> request,
+    aws_input_stream *inputStream)
+{
+    Http::HttpHeader contentLength;
+    contentLength.name = ByteCursorFromCString("content-length");
+
+    int64_t streamLen = 0;
+
+    aws_input_stream_get_length(inputStream, &streamLen);
+    StringStream intValue;
+    intValue << streamLen;
+    String contentLengthVal = intValue.str();
+    contentLength.value = ByteCursorFromCString(contentLengthVal.c_str());
+    request->AddHeader(contentLength);
+}
+
 void S3ObjectTransport::PutObject(
     const Aws::Crt::String &key,
     aws_input_stream *inputStream,
@@ -176,19 +187,7 @@ void S3ObjectTransport::PutObject(
 
     auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
 
-    {
-        Http::HttpHeader contentLength;
-        contentLength.name = ByteCursorFromCString("content-length");
-
-        int64_t streamLen = 0;
-
-        aws_input_stream_get_length(inputStream, &streamLen);
-        StringStream intValue;
-        intValue << streamLen;
-        String contentLengthVal = intValue.str();
-        contentLength.value = ByteCursorFromCString(contentLengthVal.c_str());
-        request->AddHeader(contentLength);
-    }
+    AddContentLengthHeader(request, inputStream);
 
     request->AddHeader(m_hostHeader);
     request->AddHeader(m_contentTypeHeader);
@@ -657,7 +656,7 @@ void S3ObjectTransport::CreateMultipartUpload(
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Creating multipart upload for %s...", keyPath.c_str());
 
     MakeSignedRequest(
-        conn, request, requestOptions, [finishedCallback](int32_t errorCode) { finishedCallback(errorCode, nullptr); });
+        conn, request, requestOptions, [finishedCallback](int32_t errorCode) { finishedCallback(errorCode, ""); });
 }
 
 void S3ObjectTransport::CompleteMultipartUpload(
@@ -694,19 +693,7 @@ void S3ObjectTransport::CompleteMultipartUpload(
     aws_input_stream *inputStream = Aws::Crt::Io::AwsInputStreamNewCpp(xmlContents, aws_default_allocator());
     aws_http_message_set_body_stream(request->GetUnderlyingMessage(), inputStream);
 
-    {
-        int64_t streamLen = 0;
-        aws_input_stream_get_length(inputStream, &streamLen);
-        StringStream intValue;
-        intValue << streamLen;
-        String contentLengthVal = intValue.str();
-
-        Http::HttpHeader contentLength;
-        contentLength.name = ByteCursorFromCString("content-length");
-        contentLength.value = ByteCursorFromCString(contentLengthVal.c_str());
-
-        request->AddHeader(contentLength);
-    }
+    AddContentLengthHeader(request, inputStream);
 
     StringStream keyPathStream;
     keyPathStream << "/" << key << "?uploadId=" << uploadId;

@@ -67,6 +67,8 @@ struct Metric
     Aws::Crt::String MetricName;
 };
 
+struct CanaryApp;
+
 /**
  * Publishes an aggregated metrics collection to cloud watch at 'publishFrequency'
  */
@@ -74,15 +76,8 @@ class MetricsPublisher
 {
   public:
     MetricsPublisher(
-        const Aws::Crt::String &platformName,
-        const Aws::Crt::String &toolName,
-        const Aws::Crt::String &ec2InstanceType,
-        const Aws::Crt::String &region,
-        Aws::Crt::Io::TlsContext &tlsContext,
-        Aws::Crt::Io::ClientBootstrap &clientBootstrap,
-        Aws::Crt::Io::EventLoopGroup &elGroup,
-        const std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> &credsProvider,
-        const std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> &signer,
+        CanaryApp &canaryApp,
+        const char *metricNamespace,
         std::chrono::seconds publishFrequency = std::chrono::seconds(1));
 
     ~MetricsPublisher();
@@ -114,15 +109,9 @@ class MetricsPublisher
     static void s_OnPublishTask(aws_task *task, void *arg, aws_task_status status);
 
     MetricTransferSize m_transferSize;
+    CanaryApp &m_canaryApp;
     std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> m_connManager;
-    std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> m_signer;
-    std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> m_credsProvider;
-    Aws::Crt::Io::EventLoopGroup &m_elGroup;
     Aws::Crt::Vector<Metric> m_publishData;
-    Aws::Crt::String m_platformName;
-    Aws::Crt::String m_toolName;
-    Aws::Crt::String m_ec2InstanceType;
-    const Aws::Crt::String m_region;
     Aws::Crt::Http::HttpHeader m_hostHeader;
     Aws::Crt::Http::HttpHeader m_contentTypeHeader;
     Aws::Crt::Http::HttpHeader m_apiVersionHeader;
