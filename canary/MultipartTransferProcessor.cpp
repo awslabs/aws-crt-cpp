@@ -102,10 +102,8 @@ void MultipartTransferProcessor::ProcessNextParts(uint32_t streamsReturning)
                 partRangeLength = numParts - partRangeStart;
             }
 
-            void *processPartsRangeTaskArgsMem = aws_mem_acquire(g_allocator, sizeof(ProcessPartRangeTaskArgs));
-
-            new (processPartsRangeTaskArgsMem)
-                ProcessPartRangeTaskArgs(*this, partRangeStart, partRangeLength, partsShared);
+            ProcessPartRangeTaskArgs *args =
+                New<ProcessPartRangeTaskArgs>(g_allocator, *this, partRangeStart, partRangeLength, partsShared);
 
             aws_task processPartRangeTask;
             AWS_ZERO_STRUCT(processPartRangeTask);
@@ -113,7 +111,7 @@ void MultipartTransferProcessor::ProcessNextParts(uint32_t streamsReturning)
             aws_task_init(
                 &processPartRangeTask,
                 MultipartTransferProcessor::s_ProcessPartRangeTask,
-                processPartsRangeTaskArgsMem,
+                reinterpret_cast<void *>(args),
                 nullptr);
             aws_event_loop_schedule_task_now(m_schedulingLoop, &processPartRangeTask);
         }
@@ -123,7 +121,6 @@ void MultipartTransferProcessor::ProcessNextParts(uint32_t streamsReturning)
 void MultipartTransferProcessor::s_ProcessPartRangeTask(aws_task *task, void *arg, aws_task_status status)
 {
     (void)task;
-    (void)arg;
 
     if (status != AWS_TASK_STATUS_RUN_READY)
     {
@@ -133,8 +130,7 @@ void MultipartTransferProcessor::s_ProcessPartRangeTask(aws_task *task, void *ar
     ProcessPartRangeTaskArgs *args = reinterpret_cast<ProcessPartRangeTaskArgs *>(arg);
     args->transferProcessor.ProcessPartRange(*args->parts, args->partRangeStart, args->partRangeLength);
 
-    args->~ProcessPartRangeTaskArgs();
-    aws_mem_release(g_allocator, args);
+    Delete(args, g_allocator);
     args = nullptr;
 }
 

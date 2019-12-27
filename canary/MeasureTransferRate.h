@@ -3,27 +3,28 @@
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/Types.h>
 #include <aws/io/stream.h>
+#include <chrono>
 #include <functional>
 
 class S3ObjectTransport;
 class MetricsPublisher;
+struct aws_event_loop;
+struct CanaryApp;
 
 class MeasureTransferRate
 {
   public:
-    void MeasureSmallObjectTransfer(
-        Aws::Crt::Allocator *allocator,
-        S3ObjectTransport &transport,
-        MetricsPublisher &publisher,
-        double cutOffTime);
+    MeasureTransferRate(CanaryApp &canaryApp);
 
-    void MeasureLargeObjectTransfer(
-        Aws::Crt::Allocator *allocator,
-        S3ObjectTransport &transport,
-        MetricsPublisher &publisher,
-        double cutOffTime);
+    void MeasureSmallObjectTransfer();
+    void MeasureLargeObjectTransfer();
 
   private:
+    struct MeasureAllocationsArgs
+    {
+        MeasureTransferRate &measureTransferRate;
+    };
+
     struct TemplateStream
     {
         aws_input_stream inputStream;
@@ -47,8 +48,14 @@ class MeasureTransferRate
     static const char BodyTemplate[];
     static const size_t SmallObjectSize;
     static const size_t LargeObjectSize;
+    static const std::chrono::milliseconds AllocationMetricFrequency;
+    static const uint64_t AllocationMetricFrequencyNS;
 
     static aws_input_stream_vtable s_templateStreamVTable;
+
+    CanaryApp &m_canaryApp;
+    aws_event_loop *m_schedulingLoop;
+    aws_task m_measureAllocationsTask;
 
     static int s_templateStreamRead(struct aws_input_stream *stream, struct aws_byte_buf *dest);
     static int s_templateStreamGetStatus(struct aws_input_stream *stream, struct aws_stream_status *status);
@@ -65,18 +72,13 @@ class MeasureTransferRate
 
     template <typename TPeformTransferType>
     void PerformMeasurement(
-        Aws::Crt::Allocator *allocator,
-        S3ObjectTransport &transport,
-        MetricsPublisher &publisher,
         uint32_t maxConcurrentTransfers,
         uint64_t objectSize,
         double cutOffTime,
         const TPeformTransferType &&performTransfer);
 
     static void s_TransferSmallObject(
-        Aws::Crt::Allocator *allocator,
-        S3ObjectTransport &transport,
-        MetricsPublisher &publisher,
+        MeasureTransferRate &measureTransferRate,
         const Aws::Crt::String &key,
         uint64_t objectSize,
         const NotifyUploadFinished &notifyUploadFinished,
@@ -84,12 +86,14 @@ class MeasureTransferRate
         const NotifyDownloadFinished &notifyDownloadFinished);
 
     static void s_TransferLargeObject(
-        Aws::Crt::Allocator *allocator,
-        S3ObjectTransport &transport,
-        MetricsPublisher &publisher,
+        MeasureTransferRate &measureTransferRate,
         const Aws::Crt::String &key,
         uint64_t objectSize,
         const NotifyUploadFinished &notifyUploadFinished,
         const NotifyDownloadProgress &notifyDownloadProgress,
         const NotifyDownloadFinished &notifyDownloadFinished);
+
+    void ScheduleMeasureAllocationsTask();
+
+    static void s_MeasureAllocations(aws_task *task, void *arg, aws_task_status status);
 };
