@@ -36,6 +36,8 @@ using SendPartCallback = std::function<struct aws_input_stream *(const Multipart
 using ReceivePartCallback =
     std::function<void(const MultipartTransferState::PartInfo &partInfo, const Aws::Crt::ByteCursor &data)>;
 
+struct CanaryApp;
+
 struct aws_allocator;
 struct aws_event_loop;
 
@@ -52,14 +54,7 @@ class S3ObjectTransport
     static const int32_t S3GetObjectResponseStatus_PartialContent;
     static const bool SingleConnectionPerMultipartUpload;
 
-    S3ObjectTransport(
-        Aws::Crt::Io::EventLoopGroup &elGroup,
-        const Aws::Crt::String &region,
-        const Aws::Crt::String &bucket,
-        Aws::Crt::Io::TlsContext &tlsContext,
-        Aws::Crt::Io::ClientBootstrap &clientBootstrap,
-        const std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> &credsProvider,
-        const std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> &signer);
+    S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::String &bucket);
 
     // Note: PutObject is responsible for making sure that inputStream will be cleaned up.
     void PutObject(
@@ -91,10 +86,8 @@ class S3ObjectTransport
 
     using ErrorCallback = std::function<void(int32_t errorCode)>;
 
+    CanaryApp &m_canaryApp;
     std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> m_connManager;
-    std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> m_signer;
-    std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> m_credsProvider;
-    const Aws::Crt::String m_region;
     const Aws::Crt::String m_bucketName;
     Aws::Crt::Http::HttpHeader m_hostHeader;
     Aws::Crt::Http::HttpHeader m_contentTypeHeader;
@@ -141,6 +134,8 @@ class S3ObjectTransport
         const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &conn,
         const Aws::Crt::Http::HttpRequestOptions &requestOptions,
         const std::shared_ptr<Aws::Crt::Http::HttpRequest> &signedRequest);
+
+    void AddContentLengthHeader(std::shared_ptr<Aws::Crt::Http::HttpRequest> request, aws_input_stream *inputStream);
 
     void CreateMultipartUpload(
         const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &conn,
