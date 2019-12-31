@@ -28,7 +28,6 @@ namespace Aws
             {
                 if (m_underlying_stream)
                 {
-                    aws_input_stream_destroy(m_underlying_stream);
                     aws_mem_release(m_allocator, m_underlying_stream);
                     m_underlying_stream = nullptr;
                 }
@@ -88,6 +87,7 @@ namespace Aws
 
             void InputStream::s_Destroy(struct aws_input_stream *stream)
             {
+                (void)stream;
                 // DO NOTHING, let the C++ destructor handle it.
             }
 
