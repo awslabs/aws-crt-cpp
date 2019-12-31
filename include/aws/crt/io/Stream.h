@@ -16,8 +16,7 @@
 
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
-
-struct aws_input_stream;
+#include <aws/io/stream.h>
 
 namespace Aws
 {
@@ -25,12 +24,102 @@ namespace Aws
     {
         namespace Io
         {
-            /**
-             * Factory to create a aws-c-io input stream subclass from a C++ stream
+            using StreamStatus = aws_stream_status;
+            using OffsetType = aws_off_t;
+
+            enum class SeekBasis
+            {
+                Begin = AWS_SSB_BEGIN,
+                End = AWS_SSB_END,
+            };
+
+            /***
+             * Interface for building an Object oriented stream that will be honored by the CRT's low-level
+             * aws_input_stream interface. To use, create a subclass of InputStream and define the abstract
+             * functions.
              */
-            AWS_CRT_CPP_API aws_input_stream *AwsInputStreamNewCpp(
-                const std::shared_ptr<Aws::Crt::Io::IStream> &stream,
-                Aws::Crt::Allocator *allocator = DefaultAllocator()) noexcept;
+            class AWS_CRT_CPP_API InputStream
+            {
+              public:
+                virtual ~InputStream();
+
+                InputStream(const InputStream &) = delete;
+                InputStream &operator=(const InputStream &) = delete;
+                InputStream(InputStream &&) = delete;
+                InputStream &operator=(InputStream &&) = delete;
+
+                explicit operator bool() const noexcept { return IsGood(); }
+
+                virtual bool IsGood() const noexcept;
+
+                aws_input_stream *GetUnderlyingStream() noexcept { return m_underlying_stream; }
+
+              protected:
+                Allocator *m_allocator;
+                aws_input_stream *m_underlying_stream;
+                bool m_good;
+
+                InputStream(Aws::Crt::Allocator *allocator = DefaultAllocator());
+
+                /***
+                 * Read up-to buffer::capacity - buffer::len into buffer::buffer
+                 * Increment buffer::len by the amount you read in.
+                 *
+                 * @return true on success, false otherwise. You SHOULD raise an error via aws_raise_error()
+                 * if a failure occurs.
+                 */
+                virtual bool Read(ByteBuf &buffer) noexcept = 0;
+
+                /**
+                 * Returns the current status of the stream.
+                 */
+                virtual StreamStatus GetStatus() const noexcept = 0;
+
+                /**
+                 * Returns the total length of the available data for the stream.
+                 * Returns -1 if not available.
+                 */
+                virtual int64_t GetLength() const noexcept = 0;
+
+                /**
+                 * Seek's the stream to seekBasis based offsetType bytes.
+                 *
+                 * It is expected, that if seeking to the beginning of a stream,
+                 * all error's are cleared if possible.
+                 *
+                 * @return true on success, false otherwise.
+                 */
+                virtual bool Seek(OffsetType offsetType, SeekBasis seekBasis) noexcept = 0;
+
+              private:
+                static int s_Seek(aws_input_stream *stream, aws_off_t offset, enum aws_stream_seek_basis basis);
+                static int s_Read(aws_input_stream *stream, aws_byte_buf *dest);
+                static int s_GetStatus(aws_input_stream *stream, aws_stream_status *status);
+                static int s_GetLength(struct aws_input_stream *stream, int64_t *out_length);
+                static void s_Destroy(struct aws_input_stream *stream);
+
+                static aws_input_stream_vtable s_vtable;
+            };
+
+            /***
+             * Implementation of Aws::Crt::Io::InputStream that wraps a std::input_stream.
+             */
+            class AWS_CRT_CPP_API StdIOStreamInputStream : public InputStream
+            {
+              public:
+                StdIOStreamInputStream(
+                    std::shared_ptr<Aws::Crt::Io::IStream> stream,
+                    Aws::Crt::Allocator *allocator = DefaultAllocator()) noexcept;
+
+              protected:
+                bool Read(ByteBuf &buffer) noexcept override;
+                StreamStatus GetStatus() const noexcept override;
+                int64_t GetLength() const noexcept override;
+                bool Seek(OffsetType offsetType, SeekBasis seekBasis) noexcept override;
+
+              private:
+                std::shared_ptr<Aws::Crt::Io::IStream> m_stream;
+            };
         } // namespace Io
     }     // namespace Crt
 } // namespace Aws
