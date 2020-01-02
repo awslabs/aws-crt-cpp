@@ -109,7 +109,7 @@ namespace Aws
             {
             }
 
-            bool StdIOStreamInputStream::IsGood() const noexcept
+            StdIOStreamInputStream::operator bool() const noexcept
             {
                 auto status = GetStatusImpl();
                 return status.is_valid;
