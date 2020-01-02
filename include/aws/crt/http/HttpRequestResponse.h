@@ -16,6 +16,7 @@
 
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
+#include <aws/crt/io/Stream.h>
 
 struct aws_http_header;
 struct aws_http_message;
@@ -49,12 +50,14 @@ namespace Aws
                 /**
                  * Gets the input stream representing the message body
                  */
-                std::shared_ptr<Aws::Crt::Io::IStream> GetBody() const noexcept;
+                std::shared_ptr<Aws::Crt::Io::InputStream> GetBody() const noexcept;
 
                 /**
                  * Sets the input stream representing the message body
                  */
                 bool SetBody(const std::shared_ptr<Aws::Crt::Io::IStream> &body) noexcept;
+
+                bool SetBody(const std::shared_ptr<Aws::Crt::Io::InputStream> &body) noexcept;
 
                 size_t GetHeaderCount() const noexcept;
                 Optional<HttpHeader> GetHeader(size_t index) const noexcept;
@@ -70,7 +73,7 @@ namespace Aws
 
                 Allocator *m_allocator;
                 struct aws_http_message *m_message;
-                std::shared_ptr<Aws::Crt::Io::IStream> m_bodyStream;
+                std::shared_ptr<Aws::Crt::Io::InputStream> m_bodyStream;
                 bool m_ownsMessage;
             };
 
