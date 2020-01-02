@@ -110,7 +110,7 @@ namespace Aws
                     std::shared_ptr<Aws::Crt::Io::IStream> stream,
                     Aws::Crt::Allocator *allocator = DefaultAllocator()) noexcept;
 
-                operator bool() const noexcept override;
+                explicit operator bool() const noexcept override;
 
               protected:
                 bool ReadImpl(ByteBuf &buffer) noexcept override;
