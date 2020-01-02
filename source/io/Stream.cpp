@@ -41,7 +41,7 @@ namespace Aws
                     return AWS_OP_SUCCESS;
                 }
 
-                impl->m_good = false;
+                impl->m_good = impl->GetStatusImpl().is_valid;
                 return AWS_OP_ERR;
             }
 
@@ -138,7 +138,7 @@ namespace Aws
             {
                 StreamStatus status;
                 status.is_end_of_stream = m_stream->eof();
-                status.is_valid = *m_stream ? true : false;
+                status.is_valid = static_cast<bool>(m_stream->operator bool());
 
                 return status;
             }
