@@ -50,14 +50,13 @@ namespace Aws
 
                 explicit operator bool() const noexcept { return IsGood(); }
 
-                bool IsGood() const noexcept;
+                virtual bool IsGood() const noexcept = 0;
 
                 aws_input_stream *GetUnderlyingStream() noexcept { return &m_underlying_stream; }
 
               protected:
                 Allocator *m_allocator;
                 aws_input_stream m_underlying_stream;
-                bool m_good;
 
                 InputStream(Aws::Crt::Allocator *allocator = DefaultAllocator());
 
@@ -114,6 +113,8 @@ namespace Aws
                 StdIOStreamInputStream(
                     std::shared_ptr<Aws::Crt::Io::IStream> stream,
                     Aws::Crt::Allocator *allocator = DefaultAllocator()) noexcept;
+
+                bool IsGood() const noexcept override;
 
               protected:
                 bool ReadImpl(ByteBuf &buffer) noexcept override;

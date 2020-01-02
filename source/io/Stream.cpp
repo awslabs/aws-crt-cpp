@@ -30,8 +30,6 @@ namespace Aws
                 // resources to clean up in the future.
             }
 
-            bool InputStream::IsGood() const noexcept { return m_good; }
-
             int InputStream::s_Seek(aws_input_stream *stream, aws_off_t offset, enum aws_stream_seek_basis basis)
             {
                 auto impl = static_cast<InputStream *>(stream->impl);
@@ -41,7 +39,6 @@ namespace Aws
                     return AWS_OP_SUCCESS;
                 }
 
-                impl->m_good = impl->GetStatusImpl().is_valid;
                 return AWS_OP_ERR;
             }
 
@@ -54,7 +51,6 @@ namespace Aws
                     return AWS_OP_SUCCESS;
                 }
 
-                impl->m_good = impl->GetStatusImpl().is_valid;
                 return AWS_OP_ERR;
             }
 
@@ -78,7 +74,6 @@ namespace Aws
                     return AWS_OP_SUCCESS;
                 }
 
-                impl->m_good = false;
                 aws_raise_error(AWS_IO_STREAM_READ_FAILED);
                 return AWS_OP_ERR;
             }
@@ -102,7 +97,6 @@ namespace Aws
                 m_allocator = allocator;
                 AWS_ZERO_STRUCT(m_underlying_stream);
 
-                m_good = true;
                 m_underlying_stream.impl = this;
                 m_underlying_stream.allocator = m_allocator;
                 m_underlying_stream.vtable = &s_vtable;
@@ -113,6 +107,12 @@ namespace Aws
                 Aws::Crt::Allocator *allocator) noexcept
                 : InputStream(allocator), m_stream(std::move(stream))
             {
+            }
+
+            bool StdIOStreamInputStream::IsGood() const noexcept
+            {
+                auto status = GetStatusImpl();
+                return status.is_valid;
             }
 
             bool StdIOStreamInputStream::ReadImpl(ByteBuf &buffer) noexcept
@@ -138,7 +138,7 @@ namespace Aws
             {
                 StreamStatus status;
                 status.is_end_of_stream = m_stream->eof();
-                status.is_valid = static_cast<bool>(m_stream->operator bool());
+                status.is_valid = static_cast<bool>(*m_stream);
 
                 return status;
             }
