@@ -67,8 +67,6 @@ namespace Aws
                  * @return true on success, false otherwise. Return false, when there is nothing left to read.
                  * You SHOULD raise an error via aws_raise_error()
                  * if an actual failure condition occurs.
-                 * If you return false, GetStatusImpl() will be called to determine
-                 * the validity of the stream.
                  */
                 virtual bool ReadImpl(ByteBuf &buffer) noexcept = 0;
 
@@ -90,7 +88,7 @@ namespace Aws
                  * all error's are cleared if possible.
                  *
                  * @return true on success, false otherwise. You SHOULD raise an error via aws_raise_error()
-                 * if a failure occurs. If you return false, the m_good flag will be set to false.
+                 * if a failure occurs.
                  */
                 virtual bool SeekImpl(OffsetType offset, StreamSeekBasis seekBasis) noexcept = 0;
 
