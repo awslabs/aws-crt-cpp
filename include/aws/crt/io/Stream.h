@@ -27,7 +27,7 @@ namespace Aws
             using StreamStatus = aws_stream_status;
             using OffsetType = aws_off_t;
 
-            enum class SeekBasis
+            enum class StreamSeekBasis
             {
                 Begin = AWS_SSB_BEGIN,
                 End = AWS_SSB_END,
@@ -50,13 +50,13 @@ namespace Aws
 
                 explicit operator bool() const noexcept { return IsGood(); }
 
-                virtual bool IsGood() const noexcept;
+                bool IsGood() const noexcept;
 
-                aws_input_stream *GetUnderlyingStream() noexcept { return m_underlying_stream; }
+                aws_input_stream *GetUnderlyingStream() noexcept { return &m_underlying_stream; }
 
               protected:
                 Allocator *m_allocator;
-                aws_input_stream *m_underlying_stream;
+                aws_input_stream m_underlying_stream;
                 bool m_good;
 
                 InputStream(Aws::Crt::Allocator *allocator = DefaultAllocator());
@@ -65,31 +65,35 @@ namespace Aws
                  * Read up-to buffer::capacity - buffer::len into buffer::buffer
                  * Increment buffer::len by the amount you read in.
                  *
-                 * @return true on success, false otherwise. You SHOULD raise an error via aws_raise_error()
-                 * if a failure occurs.
+                 * @return true on success, false otherwise. Return false, when there is nothing left to read.
+                 * You SHOULD raise an error via aws_raise_error()
+                 * if an actual failure condition occurs.
+                 * If you return false, GetStatusImpl() will be called to determine
+                 * the validity of the stream.
                  */
-                virtual bool Read(ByteBuf &buffer) noexcept = 0;
+                virtual bool ReadImpl(ByteBuf &buffer) noexcept = 0;
 
                 /**
                  * Returns the current status of the stream.
                  */
-                virtual StreamStatus GetStatus() const noexcept = 0;
+                virtual StreamStatus GetStatusImpl() const noexcept = 0;
 
                 /**
                  * Returns the total length of the available data for the stream.
                  * Returns -1 if not available.
                  */
-                virtual int64_t GetLength() const noexcept = 0;
+                virtual int64_t GetLengthImpl() const noexcept = 0;
 
                 /**
-                 * Seek's the stream to seekBasis based offsetType bytes.
+                 * Seek's the stream to seekBasis based offset bytes.
                  *
                  * It is expected, that if seeking to the beginning of a stream,
                  * all error's are cleared if possible.
                  *
-                 * @return true on success, false otherwise.
+                 * @return true on success, false otherwise. You SHOULD raise an error via aws_raise_error()
+                 * if a failure occurs. If you return false, the m_good flag will be set to false.
                  */
-                virtual bool Seek(OffsetType offsetType, SeekBasis seekBasis) noexcept = 0;
+                virtual bool SeekImpl(OffsetType offset, StreamSeekBasis seekBasis) noexcept = 0;
 
               private:
                 static int s_Seek(aws_input_stream *stream, aws_off_t offset, enum aws_stream_seek_basis basis);
@@ -112,10 +116,10 @@ namespace Aws
                     Aws::Crt::Allocator *allocator = DefaultAllocator()) noexcept;
 
               protected:
-                bool Read(ByteBuf &buffer) noexcept override;
-                StreamStatus GetStatus() const noexcept override;
-                int64_t GetLength() const noexcept override;
-                bool Seek(OffsetType offsetType, SeekBasis seekBasis) noexcept override;
+                bool ReadImpl(ByteBuf &buffer) noexcept override;
+                StreamStatus GetStatusImpl() const noexcept override;
+                int64_t GetLengthImpl() const noexcept override;
+                bool SeekImpl(OffsetType offsetType, StreamSeekBasis seekBasis) noexcept override;
 
               private:
                 std::shared_ptr<Aws::Crt::Io::IStream> m_stream;

@@ -26,11 +26,8 @@ namespace Aws
         {
             InputStream::~InputStream()
             {
-                if (m_underlying_stream)
-                {
-                    aws_mem_release(m_allocator, m_underlying_stream);
-                    m_underlying_stream = nullptr;
-                }
+                // DO NOTHING: for now. But keep this here because it has to be virtual, and we may have
+                // resources to clean up in the future.
             }
 
             bool InputStream::IsGood() const noexcept { return m_good; }
@@ -39,7 +36,7 @@ namespace Aws
             {
                 auto impl = static_cast<InputStream *>(stream->impl);
 
-                if (impl->Seek(offset, static_cast<SeekBasis>(basis)))
+                if (impl->SeekImpl(offset, static_cast<StreamSeekBasis>(basis)))
                 {
                     return AWS_OP_SUCCESS;
                 }
@@ -52,12 +49,12 @@ namespace Aws
             {
                 auto impl = static_cast<InputStream *>(stream->impl);
 
-                if (impl->Read(*dest))
+                if (impl->ReadImpl(*dest))
                 {
                     return AWS_OP_SUCCESS;
                 }
 
-                impl->m_good = false;
+                impl->m_good = impl->GetStatusImpl().is_valid;
                 return AWS_OP_ERR;
             }
 
@@ -65,7 +62,7 @@ namespace Aws
             {
                 auto impl = static_cast<InputStream *>(stream->impl);
 
-                *status = impl->GetStatus();
+                *status = impl->GetStatusImpl();
                 return AWS_OP_SUCCESS;
             }
 
@@ -73,15 +70,16 @@ namespace Aws
             {
                 auto impl = static_cast<InputStream *>(stream->impl);
 
-                int64_t length = impl->GetLength();
+                int64_t length = impl->GetLengthImpl();
 
-                if (length != -1)
+                if (length >= 0)
                 {
                     *out_length = length;
                     return AWS_OP_SUCCESS;
                 }
 
                 impl->m_good = false;
+                aws_raise_error(AWS_IO_STREAM_READ_FAILED);
                 return AWS_OP_ERR;
             }
 
@@ -102,19 +100,12 @@ namespace Aws
             InputStream::InputStream(Aws::Crt::Allocator *allocator)
             {
                 m_allocator = allocator;
-                m_underlying_stream =
-                    static_cast<aws_input_stream *>(aws_mem_calloc(m_allocator, 1, sizeof(aws_input_stream)));
-
-                if (!m_underlying_stream)
-                {
-                    m_good = false;
-                    return;
-                }
+                AWS_ZERO_STRUCT(m_underlying_stream);
 
                 m_good = true;
-                m_underlying_stream->impl = this;
-                m_underlying_stream->allocator = m_allocator;
-                m_underlying_stream->vtable = &s_vtable;
+                m_underlying_stream.impl = this;
+                m_underlying_stream.allocator = m_allocator;
+                m_underlying_stream.vtable = &s_vtable;
             }
 
             StdIOStreamInputStream::StdIOStreamInputStream(
@@ -124,31 +115,42 @@ namespace Aws
             {
             }
 
-            bool StdIOStreamInputStream::Read(ByteBuf &buffer) noexcept
+            bool StdIOStreamInputStream::ReadImpl(ByteBuf &buffer) noexcept
             {
+                // so this blocks, but readsome() doesn't work at all, so this is the best we've got.
+                // if you don't like this, don't use std::input_stream and implement your own version
+                // of Aws::Crt::Io::InputStream.
                 m_stream->read(reinterpret_cast<char *>(buffer.buffer + buffer.len), buffer.capacity - buffer.len);
-                buffer.len += static_cast<size_t>(m_stream->gcount());
+                auto read = m_stream->gcount();
+                buffer.len += static_cast<size_t>(read);
 
-                return true;
+                if (read > 0)
+                {
+                    return true;
+                }
+
+                auto status = GetStatusImpl();
+
+                return status.is_valid && !status.is_end_of_stream;
             }
 
-            StreamStatus StdIOStreamInputStream::GetStatus() const noexcept
+            StreamStatus StdIOStreamInputStream::GetStatusImpl() const noexcept
             {
                 StreamStatus status;
                 status.is_end_of_stream = m_stream->eof();
-                status.is_valid = m_stream->good();
+                status.is_valid = *m_stream ? true : false;
 
                 return status;
             }
 
-            int64_t StdIOStreamInputStream::GetLength() const noexcept
+            int64_t StdIOStreamInputStream::GetLengthImpl() const noexcept
             {
                 auto currentPosition = m_stream->tellg();
 
                 m_stream->seekg(0, std::ios_base::end);
                 int64_t retVal = -1;
 
-                if (m_stream->good())
+                if (*m_stream)
                 {
                     retVal = static_cast<int64_t>(m_stream->tellg());
                 }
@@ -158,7 +160,7 @@ namespace Aws
                 return retVal;
             }
 
-            bool StdIOStreamInputStream::Seek(OffsetType offsetType, SeekBasis seekBasis) noexcept
+            bool StdIOStreamInputStream::SeekImpl(OffsetType offsetType, StreamSeekBasis seekBasis) noexcept
             {
                 // very important, otherwise the stream can't be reused after reading the entire stream the first time.
                 m_stream->clear();
@@ -166,13 +168,14 @@ namespace Aws
                 auto seekDir = std::ios_base::beg;
                 switch (seekBasis)
                 {
-                    case SeekBasis::Begin:
+                    case StreamSeekBasis::Begin:
                         seekDir = std::ios_base::beg;
                         break;
-                    case SeekBasis::End:
+                    case StreamSeekBasis::End:
                         seekDir = std::ios_base::end;
                         break;
                     default:
+                        aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
                         return false;
                 }
 

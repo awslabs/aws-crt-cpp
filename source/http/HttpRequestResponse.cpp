@@ -53,6 +53,9 @@ namespace Aws
 
             bool HttpMessage::SetBody(const std::shared_ptr<Aws::Crt::Io::IStream> &body) noexcept
             {
+                aws_http_message_set_body_stream(m_message, nullptr);
+                m_bodyStream = nullptr;
+
                 if (body != nullptr)
                 {
                     m_bodyStream = MakeShared<Io::StdIOStreamInputStream>(m_allocator, body, m_allocator);
@@ -60,9 +63,8 @@ namespace Aws
                     {
                         return false;
                     }
+                    aws_http_message_set_body_stream(m_message, m_bodyStream->GetUnderlyingStream());
                 }
-
-                aws_http_message_set_body_stream(m_message, m_bodyStream->GetUnderlyingStream());
 
                 return true;
             }
@@ -70,7 +72,8 @@ namespace Aws
             bool HttpMessage::SetBody(const std::shared_ptr<Aws::Crt::Io::InputStream> &body) noexcept
             {
                 m_bodyStream = body;
-                aws_http_message_set_body_stream(m_message, m_bodyStream->GetUnderlyingStream());
+                aws_http_message_set_body_stream(
+                    m_message, m_bodyStream && *m_bodyStream ? m_bodyStream->GetUnderlyingStream() : nullptr);
 
                 return true;
             }
