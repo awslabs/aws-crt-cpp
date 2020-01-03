@@ -48,9 +48,8 @@ namespace Aws
                 InputStream(InputStream &&) = delete;
                 InputStream &operator=(InputStream &&) = delete;
 
-                explicit operator bool() const noexcept { return IsGood(); }
-
-                virtual bool IsGood() const noexcept = 0;
+                explicit operator bool() const noexcept { return IsValid(); }
+                virtual bool IsValid() const noexcept = 0;
 
                 aws_input_stream *GetUnderlyingStream() noexcept { return &m_underlying_stream; }
 
@@ -67,8 +66,6 @@ namespace Aws
                  * @return true on success, false otherwise. Return false, when there is nothing left to read.
                  * You SHOULD raise an error via aws_raise_error()
                  * if an actual failure condition occurs.
-                 * If you return false, GetStatusImpl() will be called to determine
-                 * the validity of the stream.
                  */
                 virtual bool ReadImpl(ByteBuf &buffer) noexcept = 0;
 
@@ -90,7 +87,7 @@ namespace Aws
                  * all error's are cleared if possible.
                  *
                  * @return true on success, false otherwise. You SHOULD raise an error via aws_raise_error()
-                 * if a failure occurs. If you return false, the m_good flag will be set to false.
+                 * if a failure occurs.
                  */
                 virtual bool SeekImpl(OffsetType offset, StreamSeekBasis seekBasis) noexcept = 0;
 
@@ -114,7 +111,7 @@ namespace Aws
                     std::shared_ptr<Aws::Crt::Io::IStream> stream,
                     Aws::Crt::Allocator *allocator = DefaultAllocator()) noexcept;
 
-                bool IsGood() const noexcept override;
+                bool IsValid() const noexcept override;
 
               protected:
                 bool ReadImpl(ByteBuf &buffer) noexcept override;

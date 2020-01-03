@@ -32,7 +32,7 @@ static int s_StreamTestCreateDestroyWrapper(struct aws_allocator *allocator, voi
         auto stringStream = Aws::Crt::MakeShared<std::stringstream>(allocator, "SomethingInteresting");
         Aws::Crt::Io::StdIOStreamInputStream inputStream(stringStream, allocator);
 
-        ASSERT_TRUE(inputStream.IsGood());
+        ASSERT_TRUE(static_cast<bool>(inputStream));
         ASSERT_NOT_NULL(inputStream.GetUnderlyingStream());
     }
 
