@@ -48,7 +48,7 @@ namespace Aws
                 InputStream(InputStream &&) = delete;
                 InputStream &operator=(InputStream &&) = delete;
 
-                explicit virtual operator bool() const noexcept = 0;
+                virtual explicit operator bool() const noexcept = 0;
 
                 aws_input_stream *GetUnderlyingStream() noexcept { return &m_underlying_stream; }
 
