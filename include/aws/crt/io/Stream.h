@@ -48,7 +48,8 @@ namespace Aws
                 InputStream(InputStream &&) = delete;
                 InputStream &operator=(InputStream &&) = delete;
 
-                virtual explicit operator bool() const noexcept = 0;
+                explicit operator bool() const noexcept { return IsValid(); }
+                virtual bool IsValid() const noexcept = 0;
 
                 aws_input_stream *GetUnderlyingStream() noexcept { return &m_underlying_stream; }
 
@@ -110,7 +111,7 @@ namespace Aws
                     std::shared_ptr<Aws::Crt::Io::IStream> stream,
                     Aws::Crt::Allocator *allocator = DefaultAllocator()) noexcept;
 
-                explicit operator bool() const noexcept override;
+                bool IsValid() const noexcept override;
 
               protected:
                 bool ReadImpl(ByteBuf &buffer) noexcept override;
