@@ -19,3 +19,6 @@
 [submodule "aws-common-runtime/aws-c-mqtt"]
 	path = aws-common-runtime/aws-c-mqtt
 	url = https://github.com/awslabs/aws-c-mqtt.git
+[submodule "aws-common-runtime/s2n"]
+	path = aws-common-runtime/s2n
+	url = https://github.com/awslabs/s2n.git
