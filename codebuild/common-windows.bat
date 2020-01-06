@@ -1,4 +1,5 @@
 
+git submodule update --init
 mkdir build
 cd build
 

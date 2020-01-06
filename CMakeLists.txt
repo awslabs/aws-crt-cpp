@@ -30,7 +30,7 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "RelWithDebInfo")
 endif()
 
-set(AWS_CRT_CPP_VERSION "v0.6.8")
+set(AWS_CRT_CPP_VERSION "v0.7.1")
 
 configure_file(include/aws/crt/Config.h.in ${CMAKE_CURRENT_LIST_DIR}/include/aws/crt/Config.h @ONLY)
 
@@ -42,6 +42,7 @@ list(APPEND CMAKE_MODULE_PATH ${AWS_MODULE_PATH})
 
 if (BUILD_DEPS)
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/aws-common-runtime/aws-c-common/cmake")
+
     include(AwsFindPackage)
 
     set(IN_SOURCE_BUILD ON)
@@ -50,6 +51,8 @@ if (BUILD_DEPS)
     add_subdirectory(aws-common-runtime/aws-c-common)
 
     if (UNIX AND NOT APPLE)
+        list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/aws-common-runtime/s2n/cmake/modules")
+        find_package(LibCrypto REQUIRED)
         add_subdirectory(aws-common-runtime/s2n)
     endif()
 
