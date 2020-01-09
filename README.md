@@ -14,10 +14,12 @@ More protocols and utilities are coming soon, so stay tuned.
 
 ## Building
 
-The C99 libraries are already included for your convenience when you specify the `-DBUILD_DEPS=ON` CMake argument.
+The C99 libraries are already included for your convenience as submodules. If you would like to have us build them
+by default, be sure to either perform a recursive clone `git clone --recursive` or initialize the submodules via. 
+`git submodule update --init`. Then, to build, specify the `-DBUILD_DEPS=ON` CMake argument.
 
 If you want to manage these dependencies manually (e.g. you're using them in other projects), simply specify
-`-DCMAKE_INSTALL_PREFIX` to point to the directory where you have them installed.
+`-DCMAKE_PREFIX_PATH` to point to the absolute path where you have them installed.
 
 ## Dependencies?
 
