@@ -46,8 +46,8 @@ class MeasureTransferRate
         const NotifyDownloadFinished &notifyDownloadFinished)>;
 
     static const char BodyTemplate[];
-    static const size_t SmallObjectSize;
-    static const size_t LargeObjectSize;
+    static const uint64_t SmallObjectSize;
+    static const uint64_t LargeObjectSize;
     static const std::chrono::milliseconds AllocationMetricFrequency;
     static const uint64_t AllocationMetricFrequencyNS;
 

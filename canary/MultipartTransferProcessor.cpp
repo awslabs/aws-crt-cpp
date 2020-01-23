@@ -26,7 +26,7 @@
 
 using namespace Aws::Crt;
 
-const uint32_t MultipartTransferProcessor::NumPartsPerTask = 10;
+const uint32_t MultipartTransferProcessor::NumPartsPerTask = 2048;
 
 MultipartTransferProcessor::ProcessPartRangeTaskArgs::ProcessPartRangeTaskArgs(
     MultipartTransferProcessor &inTransferProcessor,
@@ -113,7 +113,11 @@ void MultipartTransferProcessor::ProcessNextParts(uint32_t streamsReturning)
                 MultipartTransferProcessor::s_ProcessPartRangeTask,
                 reinterpret_cast<void *>(args),
                 nullptr);
-            aws_event_loop_schedule_task_now(m_schedulingLoop, &processPartRangeTask);
+
+            {
+                std::lock_guard<std::mutex> lock(m_schedulingMutex);
+                aws_event_loop_schedule_task_now(m_schedulingLoop, &processPartRangeTask);
+            }
         }
     }
 }

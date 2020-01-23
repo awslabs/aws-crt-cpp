@@ -69,6 +69,7 @@ class MultipartTransferProcessor
     aws_event_loop *m_schedulingLoop;
     std::atomic<uint32_t> m_streamsAvailable;
     std::mutex m_partQueueMutex;
+    std::mutex m_schedulingMutex;
     std::queue<QueuedPart> m_partQueue;
 
     static void s_ProcessPartRangeTask(aws_task *task, void *arg, aws_task_status status);
