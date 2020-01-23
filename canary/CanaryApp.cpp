@@ -22,11 +22,18 @@ CanaryApp::CanaryApp(int argc, char *argv[])
       cutOffTimeLargeObjects(10.0), measureLargeTransfer(false), measureSmallTransfer(false)
 {
     apiHandle.InitializeLogging(LogLevel::Info, stderr);
+    /*
+        Auth::CredentialsProviderChainDefaultConfig chainConfig;
+        chainConfig.Bootstrap = &bootstrap;
 
-    Auth::CredentialsProviderChainDefaultConfig chainConfig;
-    chainConfig.Bootstrap = &bootstrap;
+        credsProvider = Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(chainConfig, traceAllocator);
+    */
 
-    credsProvider = Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(chainConfig, traceAllocator);
+    Auth::CredentialsProviderImdsConfig imdsConfig;
+    imdsConfig.Bootstrap = &bootstrap;
+
+    credsProvider = Auth::CredentialsProvider::CreateCredentialsProviderImds(imdsConfig, traceAllocator);
+
     signer = MakeShared<Auth::Sigv4HttpRequestSigner>(traceAllocator, traceAllocator);
 
     Io::TlsContextOptions tlsContextOptions = Io::TlsContextOptions::InitDefaultClient(traceAllocator);
