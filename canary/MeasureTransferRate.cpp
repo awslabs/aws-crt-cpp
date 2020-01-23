@@ -11,12 +11,12 @@ using namespace Aws::Crt;
 const char MeasureTransferRate::BodyTemplate[] =
     "This is a test string for use with canary testing against Amazon Simple Storage Service";
 
-const size_t MeasureTransferRate::SmallObjectSize = 16 * 1024 * 1024;
-const size_t MeasureTransferRate::LargeObjectSize = 10 * S3ObjectTransport::MaxPartSizeBytes;
+const uint64_t MeasureTransferRate::SmallObjectSize = 16ULL * 1024ULL * 1024ULL;
+const uint64_t MeasureTransferRate::LargeObjectSize = 1ULL * 1024ULL * 1024ULL * 1024ULL;
 const std::chrono::milliseconds MeasureTransferRate::AllocationMetricFrequency(250);
 const uint64_t MeasureTransferRate::AllocationMetricFrequencyNS = aws_timestamp_convert(
     MeasureTransferRate::AllocationMetricFrequency.count(),
-    AWS_TIMESTAMP_SECS,
+    AWS_TIMESTAMP_MILLIS,
     AWS_TIMESTAMP_NANOS,
     NULL);
 
@@ -53,6 +53,7 @@ int MeasureTransferRate::s_templateStreamRead(struct aws_input_stream *stream, s
 
     if (templateStream->length == templateStream->written)
     {
+        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Sending BytesUp metric for %" PRId64 " bytes", templateStream->length);
         Metric uploadMetric;
         uploadMetric.MetricName = "BytesUp";
         uploadMetric.Timestamp = DateTime::Now();
@@ -160,6 +161,9 @@ void MeasureTransferRate::PerformMeasurement(
     time_t initialTime;
     time(&initialTime);
 
+    std::mutex bytesDownMetricMutex;
+    uint64_t bytesDownMetric = 0;
+
     while (continueInitiatingTransfers || inFlightUploadOrDownload > 0)
     {
         if (counter == 0)
@@ -203,14 +207,34 @@ void MeasureTransferRate::PerformMeasurement(
                     }
                 };
 
-            NotifyDownloadProgress notifyDownloadProgress = [publisher](uint64_t dataLength) {
-                std::shared_ptr<Metric> downMetric = MakeShared<Metric>(g_allocator);
-                downMetric->MetricName = "BytesDown";
-                downMetric->Unit = MetricUnit::Bytes;
-                downMetric->Value = static_cast<double>(dataLength);
-                downMetric->Timestamp = DateTime::Now();
-                publisher->AddDataPoint(*downMetric);
-            };
+            NotifyDownloadProgress notifyDownloadProgress =
+                [publisher, &bytesDownMetric, &bytesDownMetricMutex](uint64_t dataLength) {
+                    uint64_t bytesToReport = 0;
+
+                    {
+                        std::lock_guard<std::mutex> lock(bytesDownMetricMutex);
+                        bytesDownMetric += dataLength;
+                        const uint64_t Threshold = 10 * 1024 * 1024;
+                        if (bytesDownMetric > Threshold)
+                        {
+                            bytesToReport = bytesDownMetric;
+                            bytesDownMetric = 0;
+                        }
+                    }
+
+                    if (bytesToReport == 0)
+                    {
+                        return;
+                    }
+
+                    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Emitting BytesDown Metric %" PRId64, bytesToReport);
+                    std::shared_ptr<Metric> downMetric = MakeShared<Metric>(g_allocator);
+                    downMetric->MetricName = "BytesDown";
+                    downMetric->Unit = MetricUnit::Bytes;
+                    downMetric->Value = static_cast<double>(bytesToReport);
+                    downMetric->Timestamp = DateTime::Now();
+                    publisher->AddDataPoint(*downMetric);
+                };
 
             NotifyDownloadFinished notifyDownloadFinished = [publisher, &inFlightUploadOrDownload](int32_t errorCode) {
                 if (errorCode == AWS_ERROR_SUCCESS)
@@ -250,6 +274,19 @@ void MeasureTransferRate::PerformMeasurement(
     }
 
     aws_event_loop_cancel_task(m_schedulingLoop, &m_measureAllocationsTask);
+
+    if (bytesDownMetric > 0)
+    {
+        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Emitting BytesDown Metric %" PRId64, bytesDownMetric);
+        std::shared_ptr<Metric> downMetric = MakeShared<Metric>(g_allocator);
+        downMetric->MetricName = "BytesDown";
+        downMetric->Unit = MetricUnit::Bytes;
+        downMetric->Value = static_cast<double>(bytesDownMetric);
+        downMetric->Timestamp = DateTime::Now();
+        publisher->AddDataPoint(*downMetric);
+
+        bytesDownMetric = 0;
+    }
 
     publisher->WaitForLastPublish();
 }
@@ -356,6 +393,8 @@ void MeasureTransferRate::s_MeasureAllocations(aws_task *task, void *arg, aws_ta
     memMetric.Timestamp = DateTime::Now();
     memMetric.MetricName = "BytesAllocated";
     publisher->AddDataPoint(memMetric);
+
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Emitting BytesAllocated Metric %" PRId64, (uint64_t)memMetric.Value);
 
     measureTransferRate->ScheduleMeasureAllocationsTask();
 }
