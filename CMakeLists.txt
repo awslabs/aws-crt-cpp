@@ -52,7 +52,6 @@ if (BUILD_DEPS)
 
     if (UNIX AND NOT APPLE)
         list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/aws-common-runtime/s2n/cmake/modules")
-        find_package(LibCrypto REQUIRED)
         add_subdirectory(aws-common-runtime/s2n)
     endif()
 
@@ -210,6 +209,9 @@ aws_use_package(aws-c-http)
 aws_use_package(aws-c-mqtt)
 aws_use_package(aws-c-cal)
 aws_use_package(aws-c-auth)
+aws_use_package(aws-c-common)
+aws_use_package(aws-c-io)
+
 target_link_libraries(${PROJECT_NAME} ${DEP_AWS_LIBS})
 
 install(FILES ${AWS_CRT_HEADERS} DESTINATION "include/aws/crt" COMPONENT Development)
