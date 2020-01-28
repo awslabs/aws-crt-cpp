@@ -19,6 +19,7 @@
 #include <aws/crt/io/EventLoopGroup.h>
 #include <aws/crt/io/Stream.h>
 #include <aws/io/stream.h>
+#include <aws/crt/Api.h>
 
 #if defined(_WIN32)
 #    undef min
@@ -26,13 +27,13 @@
 
 using namespace Aws::Crt;
 
-const uint32_t MultipartTransferProcessor::NumPartsPerTask = 2048;
+const uint32_t MultipartTransferProcessor::NumPartsPerTask = 25;
 
 MultipartTransferProcessor::ProcessPartRangeTaskArgs::ProcessPartRangeTaskArgs(
     MultipartTransferProcessor &inTransferProcessor,
     uint32_t inPartRangeStart,
     uint32_t inPartRangeLength,
-    const std::shared_ptr<std::vector<QueuedPart>> &inParts)
+    const std::shared_ptr<Vector<QueuedPart>> &inParts)
     : transferProcessor(inTransferProcessor), partRangeStart(inPartRangeStart), partRangeLength(inPartRangeLength),
       parts(inParts)
 {
@@ -49,8 +50,8 @@ MultipartTransferProcessor::MultipartTransferProcessor(
 void MultipartTransferProcessor::ProcessNextParts(uint32_t streamsReturning)
 {
     std::shared_ptr<MultipartTransferState> state;
-    std::vector<QueuedPart> parts;
-    std::shared_ptr<std::vector<QueuedPart>> partsShared;
+    Vector<QueuedPart> parts;
+    std::shared_ptr<Vector<QueuedPart>> partsShared;
 
     // Grab all of the streams available in the shared pool and add our own number of streams
     // that we know locally can be returned.  If we don't end up needing that stream (or
@@ -86,7 +87,7 @@ void MultipartTransferProcessor::ProcessNextParts(uint32_t streamsReturning)
     {
         // Multiple tasks will be reading from the queue, so move it into a shared pointer
         // that will auto-cleanup once the tasks referencing it go away.
-        partsShared = std::make_shared<std::vector<QueuedPart>>();
+        partsShared = MakeShared<Vector<QueuedPart>>(g_allocator);
         *partsShared = std::move(parts);
 
         uint32_t numParts = static_cast<uint32_t>(partsShared->size());
@@ -105,27 +106,20 @@ void MultipartTransferProcessor::ProcessNextParts(uint32_t streamsReturning)
             ProcessPartRangeTaskArgs *args =
                 New<ProcessPartRangeTaskArgs>(g_allocator, *this, partRangeStart, partRangeLength, partsShared);
 
-            aws_task processPartRangeTask;
-            AWS_ZERO_STRUCT(processPartRangeTask);
-
+            aws_task* processPartRangeTask = New<aws_task>(g_allocator);
             aws_task_init(
-                &processPartRangeTask,
+                processPartRangeTask,
                 MultipartTransferProcessor::s_ProcessPartRangeTask,
                 reinterpret_cast<void *>(args),
-                nullptr);
+                "ProcessPartRangeTask");
 
-            {
-                std::lock_guard<std::mutex> lock(m_schedulingMutex);
-                aws_event_loop_schedule_task_now(m_schedulingLoop, &processPartRangeTask);
-            }
+            aws_event_loop_schedule_task_now(m_schedulingLoop, processPartRangeTask);
         }
     }
 }
 
 void MultipartTransferProcessor::s_ProcessPartRangeTask(aws_task *task, void *arg, aws_task_status status)
 {
-    (void)task;
-
     if (status != AWS_TASK_STATUS_RUN_READY)
     {
         return;
@@ -134,12 +128,15 @@ void MultipartTransferProcessor::s_ProcessPartRangeTask(aws_task *task, void *ar
     ProcessPartRangeTaskArgs *args = reinterpret_cast<ProcessPartRangeTaskArgs *>(arg);
     args->transferProcessor.ProcessPartRange(*args->parts, args->partRangeStart, args->partRangeLength);
 
+    Delete(task, g_allocator);
+    task = nullptr;
+
     Delete(args, g_allocator);
     args = nullptr;
 }
 
 void MultipartTransferProcessor::ProcessPartRange(
-    const std::vector<QueuedPart> &parts,
+    const Vector<QueuedPart> &parts,
     uint32_t rangeStart,
     uint32_t rangeLength)
 {
@@ -189,7 +186,7 @@ void MultipartTransferProcessor::PushQueue(const std::shared_ptr<MultipartTransf
     ProcessNextParts(0);
 }
 
-uint32_t MultipartTransferProcessor::PopQueue(uint32_t numRequested, std::vector<QueuedPart> &parts)
+uint32_t MultipartTransferProcessor::PopQueue(uint32_t numRequested, Vector<QueuedPart> &parts)
 {
     uint32_t numAdded = 0;
     std::lock_guard<std::mutex> lock(m_partQueueMutex);
