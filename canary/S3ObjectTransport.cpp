@@ -33,7 +33,7 @@ using namespace Aws::Crt;
 
 const uint64_t S3ObjectTransport::MaxPartSizeBytes = 500ULL * 1000ULL * 1000ULL;
 const uint32_t S3ObjectTransport::MaxStreams =
-    (1000ULL * 1000ULL * 1000ULL * 1000ULL) / S3ObjectTransport::MaxPartSizeBytes;
+    (100ULL * 1000ULL * 1000ULL * 1000ULL) / S3ObjectTransport::MaxPartSizeBytes;
 const int32_t S3ObjectTransport::S3GetObjectResponseStatus_PartialContent = 206;
 const bool S3ObjectTransport::SingleConnectionPerMultipartUpload = false;
 
@@ -339,6 +339,7 @@ void S3ObjectTransport::PutObjectMultipart(
                     uploadState->SetUploadId(uploadId);
                     m_uploadProcessor.PushQueue(uploadState);
                 });
+
         });
 }
 

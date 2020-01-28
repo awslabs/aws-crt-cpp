@@ -12,7 +12,52 @@ extern "C"
 #include <aws/crt/Types.h>
 #include <aws/crt/auth/Credentials.h>
 
+#include <aws/common/log_channel.h>
+#include <aws/common/log_formatter.h>
+#include <aws/common/log_writer.h>
+
+
 using namespace Aws::Crt;
+
+int filterLog(
+        struct aws_logger *logger,
+        enum aws_log_level log_level,
+        aws_log_subject_t subject,
+        const char *format,
+        ...)
+{
+    if(subject != AWS_LS_CRT_CPP_CANARY)
+    {
+        return 0;
+    }
+
+    va_list format_args;
+    va_start(format_args, format);
+
+    struct aws_logger_pipeline *impl = (aws_logger_pipeline*)logger->p_impl;
+    struct aws_string *output = NULL;
+
+    AWS_ASSERT(impl->formatter->vtable->format != NULL);
+    int result = (impl->formatter->vtable->format)(impl->formatter, &output, log_level, subject, format, format_args);
+
+    va_end(format_args);
+
+    if (result != AWS_OP_SUCCESS || output == NULL) {
+        return AWS_OP_ERR;
+    }
+
+    AWS_ASSERT(impl->channel->vtable->send != NULL);
+    if ((impl->channel->vtable->send)(impl->channel, output)) {
+        /*
+         * failure to send implies failure to transfer ownership
+         */
+        aws_string_destroy(output);
+        return AWS_OP_ERR;
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
 
 CanaryApp::CanaryApp(int argc, char *argv[])
     : traceAllocator(aws_mem_tracer_new(DefaultAllocator(), NULL, AWS_MEMTRACE_BYTES, 0)), apiHandle(traceAllocator),
@@ -28,6 +73,11 @@ CanaryApp::CanaryApp(int argc, char *argv[])
 
         credsProvider = Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(chainConfig, traceAllocator);
     */
+
+    aws_logger_vtable* currentVTable = aws_logger_get()->vtable;
+    //LogFunction function = currentVTable->log;
+    void** logFunctionVoid = (void**)&currentVTable->log;
+    *logFunctionVoid = (void*)filterLog;
 
     Auth::CredentialsProviderImdsConfig imdsConfig;
     imdsConfig.Bootstrap = &bootstrap;
@@ -99,6 +149,6 @@ CanaryApp::CanaryApp(int argc, char *argv[])
     }
 
     publisher = MakeShared<MetricsPublisher>(g_allocator, *this, "CRT-CPP-Canary");
-    transport = MakeShared<S3ObjectTransport>(g_allocator, *this, "aws-crt-canary-bucket-rc");
+    transport = MakeShared<S3ObjectTransport>(g_allocator, *this, "aws-crt-canary-bucket");
     measureTransferRate = MakeShared<MeasureTransferRate>(g_allocator, *this);
 }

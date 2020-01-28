@@ -12,8 +12,8 @@ const char MeasureTransferRate::BodyTemplate[] =
     "This is a test string for use with canary testing against Amazon Simple Storage Service";
 
 const uint64_t MeasureTransferRate::SmallObjectSize = 16ULL * 1024ULL * 1024ULL;
-const uint64_t MeasureTransferRate::LargeObjectSize = 1ULL * 1024ULL * 1024ULL * 1024ULL;
-const std::chrono::milliseconds MeasureTransferRate::AllocationMetricFrequency(250);
+const uint64_t MeasureTransferRate::LargeObjectSize = 1ULL * 1024ULL *  1024ULL * 1024ULL * 1024ULL;
+const std::chrono::milliseconds MeasureTransferRate::AllocationMetricFrequency(1000);
 const uint64_t MeasureTransferRate::AllocationMetricFrequencyNS = aws_timestamp_convert(
     MeasureTransferRate::AllocationMetricFrequency.count(),
     AWS_TIMESTAMP_MILLIS,
@@ -122,9 +122,8 @@ MeasureTransferRate::MeasureTransferRate(CanaryApp &canaryApp) : m_canaryApp(can
 {
     m_schedulingLoop = aws_event_loop_group_get_next_loop(canaryApp.eventLoopGroup.GetUnderlyingHandle());
 
-    AWS_ZERO_STRUCT(m_measureAllocationsTask);
     aws_task_init(
-        &m_measureAllocationsTask, MeasureTransferRate::s_MeasureAllocations, reinterpret_cast<void *>(this), nullptr);
+        &m_measureAllocationsTask, MeasureTransferRate::s_MeasureAllocations, reinterpret_cast<void *>(this), "MeasureTransferRate");
 }
 
 void MeasureTransferRate::MeasureSmallObjectTransfer()
@@ -139,7 +138,7 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
 void MeasureTransferRate::MeasureLargeObjectTransfer()
 {
     PerformMeasurement(
-        2, LargeObjectSize, m_canaryApp.cutOffTimeLargeObjects, MeasureTransferRate::s_TransferLargeObject);
+        1, LargeObjectSize, m_canaryApp.cutOffTimeLargeObjects, MeasureTransferRate::s_TransferLargeObject);
 }
 
 template <typename TPeformTransferType>
@@ -174,7 +173,7 @@ void MeasureTransferRate::PerformMeasurement(
         while (continueInitiatingTransfers && inFlightUploads < maxConcurrentTransfers)
         {
             StringStream keyStream;
-            keyStream << "crt-canary-obj-" << counter--;
+            keyStream << "crt-canary-obj-large-" << counter--;
             ++inFlightUploads;
             ++inFlightUploadOrDownload;
             auto key = keyStream.str();
