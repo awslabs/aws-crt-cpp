@@ -19,7 +19,7 @@
 #include <queue>
 
 #include <aws/common/mutex.h>
-
+#include <aws/crt/Types.h>
 #include "MultipartTransferState.h"
 
 class S3ObjectTransport;
@@ -57,13 +57,13 @@ class MultipartTransferProcessor
         MultipartTransferProcessor &transferProcessor;
         uint32_t partRangeStart;
         uint32_t partRangeLength;
-        std::shared_ptr<std::vector<QueuedPart>> parts;
+        std::shared_ptr<Aws::Crt::Vector<QueuedPart>> parts;
 
         ProcessPartRangeTaskArgs(
             MultipartTransferProcessor &transferProcessor,
             uint32_t partRangeStart,
             uint32_t partRangeLength,
-            const std::shared_ptr<std::vector<QueuedPart>> &parts);
+            const std::shared_ptr<Aws::Crt::Vector<QueuedPart>> &parts);
     };
 
     aws_event_loop *m_schedulingLoop;
@@ -75,6 +75,6 @@ class MultipartTransferProcessor
     static void s_ProcessPartRangeTask(aws_task *task, void *arg, aws_task_status status);
 
     void ProcessNextParts(uint32_t streamsReturning);
-    void ProcessPartRange(const std::vector<QueuedPart> &parts, uint32_t partRangeStart, uint32_t partRangeLength);
-    uint32_t PopQueue(uint32_t numRequested, std::vector<QueuedPart> &parts);
+    void ProcessPartRange(const Aws::Crt::Vector<QueuedPart> &parts, uint32_t partRangeStart, uint32_t partRangeLength);
+    uint32_t PopQueue(uint32_t numRequested, Aws::Crt::Vector<QueuedPart> &parts);
 };
