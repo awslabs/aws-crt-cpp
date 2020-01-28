@@ -51,7 +51,6 @@ if (BUILD_DEPS)
     add_subdirectory(aws-common-runtime/aws-c-common)
 
     if (UNIX AND NOT APPLE)
-        list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/aws-common-runtime/s2n/cmake/modules")
         add_subdirectory(aws-common-runtime/s2n)
     endif()
 
