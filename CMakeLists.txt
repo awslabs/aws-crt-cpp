@@ -27,7 +27,9 @@ if (NOT CMAKE_CXX_STANDARD)
 endif()
 
 if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "RelWithDebInfo")
+    if (NOT WIN32)
+        set(CMAKE_BUILD_TYPE "RelWithDebInfo")
+    endif()
 endif()
 
 set(AWS_CRT_CPP_VERSION "v0.7.1")
