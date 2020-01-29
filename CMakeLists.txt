@@ -27,6 +27,7 @@ if (NOT CMAKE_CXX_STANDARD)
 endif()
 
 if (NOT CMAKE_BUILD_TYPE)
+    # setting this breaks C++ builds in visualc++, so don't do it.
     if (NOT WIN32)
         set(CMAKE_BUILD_TYPE "RelWithDebInfo")
     endif()
