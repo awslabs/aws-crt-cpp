@@ -27,10 +27,13 @@ if (NOT CMAKE_CXX_STANDARD)
 endif()
 
 if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "RelWithDebInfo")
+    # setting this breaks C++ builds in visualc++, so don't do it.
+    if (NOT WIN32)
+        set(CMAKE_BUILD_TYPE "RelWithDebInfo")
+    endif()
 endif()
 
-set(AWS_CRT_CPP_VERSION "v0.7.1")
+set(AWS_CRT_CPP_VERSION "v0.7.3")
 
 configure_file(include/aws/crt/Config.h.in ${CMAKE_CURRENT_LIST_DIR}/include/aws/crt/Config.h @ONLY)
 
