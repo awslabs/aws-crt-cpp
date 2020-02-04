@@ -8,11 +8,11 @@
 
 using namespace Aws::Crt;
 
-const char MeasureTransferRate::BodyTemplate[] =
-    "This is a test string for use with canary testing against Amazon Simple Storage Service";
+size_t MeasureTransferRate::BodyTemplateSize = 500 * 1000 * 1000;
+char *MeasureTransferRate::BodyTemplate = nullptr;
 
 const uint64_t MeasureTransferRate::SmallObjectSize = 16ULL * 1024ULL * 1024ULL;
-const uint64_t MeasureTransferRate::LargeObjectSize = 1ULL * 1024ULL *  1024ULL * 1024ULL * 1024ULL;
+const uint64_t MeasureTransferRate::LargeObjectSize = 1ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL;
 const std::chrono::milliseconds MeasureTransferRate::AllocationMetricFrequency(1000);
 const uint64_t MeasureTransferRate::AllocationMetricFrequencyNS = aws_timestamp_convert(
     MeasureTransferRate::AllocationMetricFrequency.count(),
@@ -35,16 +35,24 @@ int MeasureTransferRate::s_templateStreamRead(struct aws_input_stream *stream, s
     size_t totalToWrite = totalBufferSpace > unwritten ? unwritten : totalBufferSpace;
     size_t writtenOut = 0;
 
+    if (templateStream->written == 0)
+    {
+        templateStream->iterations = 0;
+        templateStream->timestamp = DateTime::Now();
+    }
+
     while (totalToWrite)
     {
-        size_t toWrite =
-            AWS_ARRAY_SIZE(BodyTemplate) - 1 > totalToWrite ? totalToWrite : AWS_ARRAY_SIZE(BodyTemplate) - 1;
+        size_t toWrite = MeasureTransferRate::BodyTemplateSize - 1 > totalToWrite
+                             ? totalToWrite
+                             : MeasureTransferRate::BodyTemplateSize - 1;
         ByteCursor outCur = ByteCursorFromArray((const uint8_t *)BodyTemplate, toWrite);
 
         aws_byte_buf_append(dest, &outCur);
 
         writtenOut += toWrite;
         totalToWrite = totalToWrite - toWrite;
+        ++templateStream->iterations;
     }
 
     // A quick way for us to measure how much data we've actually written to S3 storage.  (This working is reliant
@@ -53,14 +61,19 @@ int MeasureTransferRate::s_templateStreamRead(struct aws_input_stream *stream, s
 
     if (templateStream->length == templateStream->written)
     {
-        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Sending BytesUp metric for %" PRId64 " bytes", templateStream->length);
-        Metric uploadMetric;
-        uploadMetric.MetricName = "BytesUp";
-        uploadMetric.Timestamp = DateTime::Now();
-        uploadMetric.Value = (double)templateStream->length;
-        uploadMetric.Unit = MetricUnit::Bytes;
+        DateTime endTime = DateTime::Now();
+        AWS_LOGF_INFO(
+            AWS_LS_CRT_CPP_CANARY,
+            "Time taken to write chunk %" PRId64 " milliseconds with %d iterations",
+            endTime.Millis() - templateStream->timestamp.Millis(),
+            templateStream->iterations);
 
-        templateStream->publisher->AddDataPoint(uploadMetric);
+        /*        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Sending BytesUp metric for %" PRId64 " bytes",
+           templateStream->length); Metric uploadMetric; uploadMetric.MetricName = "BytesUp"; uploadMetric.Timestamp =
+           DateTime::Now(); uploadMetric.Value = (double)templateStream->length; uploadMetric.Unit = MetricUnit::Bytes;
+
+                templateStream->publisher->AddDataPoint(uploadMetric);
+        */
     }
 
     return AWS_OP_SUCCESS;
@@ -123,7 +136,10 @@ MeasureTransferRate::MeasureTransferRate(CanaryApp &canaryApp) : m_canaryApp(can
     m_schedulingLoop = aws_event_loop_group_get_next_loop(canaryApp.eventLoopGroup.GetUnderlyingHandle());
 
     aws_task_init(
-        &m_measureAllocationsTask, MeasureTransferRate::s_MeasureAllocations, reinterpret_cast<void *>(this), "MeasureTransferRate");
+        &m_measureAllocationsTask,
+        MeasureTransferRate::s_MeasureAllocations,
+        reinterpret_cast<void *>(this),
+        "MeasureTransferRate");
 }
 
 void MeasureTransferRate::MeasureSmallObjectTransfer()
@@ -148,6 +164,24 @@ void MeasureTransferRate::PerformMeasurement(
     double cutOffTime,
     const TPeformTransferType &&performTransfer)
 {
+    char BodyTemplateData[] = "This is a test string for use with canary testing against Amazon Simple Storage Service";
+    BodyTemplate = new char[BodyTemplateSize];
+    BodyTemplate[BodyTemplateSize - 1] = '\0';
+
+    size_t totalToWrite = BodyTemplateSize;
+    char *BodyTemplatePos = BodyTemplate;
+
+    while (totalToWrite)
+    {
+        size_t toWrite =
+            AWS_ARRAY_SIZE(BodyTemplateData) - 1 > totalToWrite ? totalToWrite : AWS_ARRAY_SIZE(BodyTemplateData) - 1;
+
+        memcpy(BodyTemplatePos, BodyTemplateData, toWrite);
+
+        BodyTemplatePos += toWrite;
+        totalToWrite -= toWrite;
+    }
+
     ScheduleMeasureAllocationsTask();
 
     std::shared_ptr<MetricsPublisher> publisher = m_canaryApp.publisher;
@@ -288,6 +322,12 @@ void MeasureTransferRate::PerformMeasurement(
     }
 
     publisher->WaitForLastPublish();
+
+    if (BodyTemplate != nullptr)
+    {
+        delete[] BodyTemplate;
+        BodyTemplate = nullptr;
+    }
 }
 
 void MeasureTransferRate::s_TransferSmallObject(

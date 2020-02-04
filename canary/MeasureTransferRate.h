@@ -1,5 +1,6 @@
 #pragma once
 
+#include <aws/crt/DateTime.h>
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/Types.h>
 #include <aws/io/stream.h>
@@ -31,6 +32,8 @@ class MeasureTransferRate
         MetricsPublisher *publisher;
         size_t length;
         size_t written;
+        int iterations;
+        Aws::Crt::DateTime timestamp;
     };
 
     using NotifyUploadFinished = std::function<void(int32_t errorCode)>;
@@ -45,7 +48,8 @@ class MeasureTransferRate
         const NotifyUploadFinished &notifyUploadFinished,
         const NotifyDownloadFinished &notifyDownloadFinished)>;
 
-    static const char BodyTemplate[];
+    static size_t BodyTemplateSize;
+    static char *BodyTemplate;
     static const uint64_t SmallObjectSize;
     static const uint64_t LargeObjectSize;
     static const std::chrono::milliseconds AllocationMetricFrequency;

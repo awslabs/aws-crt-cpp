@@ -105,7 +105,7 @@ class S3ObjectTransport
 
     void UploadPart(
         const std::shared_ptr<MultipartUploadState> &state,
-        const MultipartTransferState::PartInfo &partInfo,
+        MultipartTransferState::PartInfo &partInfo,
         aws_input_stream *partInputStream,
         const MultipartTransferState::PartFinishedCallback &partFinished);
 
@@ -118,7 +118,7 @@ class S3ObjectTransport
 
     void GetPart(
         std::shared_ptr<MultipartDownloadState> downloadState,
-        const MultipartTransferState::PartInfo &partInfo,
+        MultipartTransferState::PartInfo &partInfo,
         const ReceivePartCallback &receiveObjectPartData,
         const MultipartTransferState::PartFinishedCallback &partFinished);
 
