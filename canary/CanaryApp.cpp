@@ -16,25 +16,31 @@ extern "C"
 #include <aws/common/log_formatter.h>
 #include <aws/common/log_writer.h>
 
+#ifdef __linux__
+#    include <sys/resource.h>
+#endif
 
 using namespace Aws::Crt;
 
 int filterLog(
-        struct aws_logger *logger,
-        enum aws_log_level log_level,
-        aws_log_subject_t subject,
-        const char *format,
-        ...)
+    struct aws_logger *logger,
+    enum aws_log_level log_level,
+    aws_log_subject_t subject,
+    const char *format,
+    ...)
 {
-    if(subject != AWS_LS_CRT_CPP_CANARY)
+    if (log_level != AWS_LL_ERROR)
     {
-        return 0;
+        if (subject != AWS_LS_CRT_CPP_CANARY)
+        {
+            return AWS_OP_SUCCESS;
+        }
     }
 
     va_list format_args;
     va_start(format_args, format);
 
-    struct aws_logger_pipeline *impl = (aws_logger_pipeline*)logger->p_impl;
+    struct aws_logger_pipeline *impl = (aws_logger_pipeline *)logger->p_impl;
     struct aws_string *output = NULL;
 
     AWS_ASSERT(impl->formatter->vtable->format != NULL);
@@ -42,12 +48,14 @@ int filterLog(
 
     va_end(format_args);
 
-    if (result != AWS_OP_SUCCESS || output == NULL) {
+    if (result != AWS_OP_SUCCESS || output == NULL)
+    {
         return AWS_OP_ERR;
     }
 
     AWS_ASSERT(impl->channel->vtable->send != NULL);
-    if ((impl->channel->vtable->send)(impl->channel, output)) {
+    if ((impl->channel->vtable->send)(impl->channel, output))
+    {
         /*
          * failure to send implies failure to transfer ownership
          */
@@ -58,36 +66,30 @@ int filterLog(
     return AWS_OP_SUCCESS;
 }
 
-
 CanaryApp::CanaryApp(int argc, char *argv[])
-    : traceAllocator(aws_mem_tracer_new(DefaultAllocator(), NULL, AWS_MEMTRACE_BYTES, 0)), apiHandle(traceAllocator),
-      eventLoopGroup(traceAllocator), defaultHostResolver(eventLoopGroup, 60, 1000, traceAllocator),
+    : traceAllocator(DefaultAllocator()), apiHandle(traceAllocator), eventLoopGroup(72, traceAllocator),
+      defaultHostResolver(eventLoopGroup, 60, 3600, traceAllocator),
       bootstrap(eventLoopGroup, defaultHostResolver, traceAllocator), platformName(CanaryUtil::GetPlatformName()),
       toolName("NA"), instanceType("unknown"), region("us-west-2"), cutOffTimeSmallObjects(10.0),
-      cutOffTimeLargeObjects(10.0), measureLargeTransfer(false), measureSmallTransfer(false)
+      cutOffTimeLargeObjects(10.0), mtu(0), measureLargeTransfer(false), measureSmallTransfer(false),
+      usingNumaControl(false), sendEncrypted(false)
 {
-    apiHandle.InitializeLogging(LogLevel::Info, stderr);
-    /*
-        Auth::CredentialsProviderChainDefaultConfig chainConfig;
-        chainConfig.Bootstrap = &bootstrap;
+#ifdef __linux__
+    rlimit fdsLimit;
+    getrlimit(RLIMIT_NOFILE, &fdsLimit);
+    fdsLimit.rlim_cur = 8192;
+    setrlimit(RLIMIT_NOFILE, &fdsLimit);
+#endif
 
-        credsProvider = Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(chainConfig, traceAllocator);
-    */
+    Auth::CredentialsProviderChainDefaultConfig chainConfig;
+    chainConfig.Bootstrap = &bootstrap;
 
-    aws_logger_vtable* currentVTable = aws_logger_get()->vtable;
-    //LogFunction function = currentVTable->log;
-    void** logFunctionVoid = (void**)&currentVTable->log;
-    *logFunctionVoid = (void*)filterLog;
+    credsProvider = Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(chainConfig, g_allocator);
 
-    Auth::CredentialsProviderImdsConfig imdsConfig;
-    imdsConfig.Bootstrap = &bootstrap;
+    signer = MakeShared<Auth::Sigv4HttpRequestSigner>(g_allocator, g_allocator);
 
-    credsProvider = Auth::CredentialsProvider::CreateCredentialsProviderImds(imdsConfig, traceAllocator);
-
-    signer = MakeShared<Auth::Sigv4HttpRequestSigner>(traceAllocator, traceAllocator);
-
-    Io::TlsContextOptions tlsContextOptions = Io::TlsContextOptions::InitDefaultClient(traceAllocator);
-    tlsContext = Io::TlsContext(tlsContextOptions, Io::TlsMode::CLIENT, traceAllocator);
+    Io::TlsContextOptions tlsContextOptions = Io::TlsContextOptions::InitDefaultClient(g_allocator);
+    tlsContext = Io::TlsContext(tlsContextOptions, Io::TlsMode::CLIENT, g_allocator);
 
     enum class CLIOption
     {
@@ -97,6 +99,10 @@ CanaryApp::CanaryApp(int argc, char *argv[])
         CutOffTimelarge,
         MeasureLargeTransfer,
         MeasureSmallTransfer,
+        Logging,
+        UsingNumaControl,
+        SendEncrypted,
+        MTU,
 
         MAX
     };
@@ -106,9 +112,13 @@ CanaryApp::CanaryApp(int argc, char *argv[])
                                       {"cutOffTimeSmall", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'c'},
                                       {"cutOffTimeLarge", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'C'},
                                       {"measureLargeTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'l'},
-                                      {"measureSmallTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 's'}};
+                                      {"measureSmallTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 's'},
+                                      {"logging", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'd'},
+                                      {"usingNumaControl", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'n'},
+                                      {"sendEncrypted", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'e'},
+                                      {"mtu", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'm'}};
 
-    const char *optstring = "t:i:c:C:ls";
+    const char *optstring = "t:i:c:C:lsdnem:";
     toolName = argc >= 1 ? argv[0] : "NA";
 
     size_t dirStart = toolName.rfind('\\');
@@ -119,6 +129,7 @@ CanaryApp::CanaryApp(int argc, char *argv[])
     }
 
     int cliOptionIndex = 0;
+    bool loggingOn = false;
 
     while (aws_cli_getopt_long(argc, argv, optstring, options, &cliOptionIndex) != -1)
     {
@@ -142,13 +153,35 @@ CanaryApp::CanaryApp(int argc, char *argv[])
             case CLIOption::MeasureSmallTransfer:
                 measureSmallTransfer = true;
                 break;
+            case CLIOption::Logging:
+                loggingOn = true;
+                break;
+            case CLIOption::UsingNumaControl:
+                usingNumaControl = true;
+                break;
+            case CLIOption::SendEncrypted:
+                sendEncrypted = true;
+                break;
+            case CLIOption::MTU:
+                mtu = atoi(aws_cli_optarg);
+                break;
             default:
                 AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Unknown CLI option used.");
                 break;
         }
     }
 
-    publisher = MakeShared<MetricsPublisher>(g_allocator, *this, "CRT-CPP-Canary");
+    if (loggingOn)
+    {
+        apiHandle.InitializeLogging(LogLevel::Info, stderr);
+
+        // TODO Take out before merging--this is a giant hack to filter just canary logs
+        aws_logger_vtable *currentVTable = aws_logger_get()->vtable;
+        void **logFunctionVoid = (void **)&currentVTable->log;
+        *logFunctionVoid = (void *)filterLog;
+    }
+
+    publisher = MakeShared<MetricsPublisher>(g_allocator, *this, "CRT-CPP-Canary-V2");
     transport = MakeShared<S3ObjectTransport>(g_allocator, *this, "aws-crt-canary-bucket");
     measureTransferRate = MakeShared<MeasureTransferRate>(g_allocator, *this);
 }

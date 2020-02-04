@@ -14,6 +14,8 @@
  */
 
 #include "MultipartTransferState.h"
+#include "CanaryApp.h"
+#include "MetricsPublisher.h"
 #include "S3ObjectTransport.h"
 
 #include <aws/crt/Api.h>
@@ -26,12 +28,66 @@ using namespace Aws::Crt;
 
 MultipartTransferState::PartInfo::PartInfo() : partIndex(0), partNumber(0), offsetInBytes(0), sizeInBytes(0) {}
 MultipartTransferState::PartInfo::PartInfo(
+    std::shared_ptr<MetricsPublisher> inPublisher,
     uint32_t inPartIndex,
     uint32_t inPartNumber,
     uint64_t inOffsetInBytes,
     uint64_t inSizeInBytes)
-    : partIndex(inPartIndex), partNumber(inPartNumber), offsetInBytes(inOffsetInBytes), sizeInBytes(inSizeInBytes)
+    : partIndex(inPartIndex), partNumber(inPartNumber), offsetInBytes(inOffsetInBytes), sizeInBytes(inSizeInBytes),
+      publisher(inPublisher)
 {
+}
+
+Metric &MultipartTransferState::PartInfo::GetOrCreateMetricToUpdate(Vector<Metric> &metrics, const char *metricName)
+{
+    DateTime now = DateTime::Now();
+
+    if (metrics.size() == 0 || metrics.back().Timestamp != now)
+    {
+        Metric metric;
+        metric.MetricName = metricName;
+        metric.Timestamp = now;
+        metric.Value = 0.0f;
+        metric.Unit = MetricUnit::Bytes;
+
+        metrics.push_back(metric);
+    }
+
+    return metrics.back();
+}
+
+void MultipartTransferState::PartInfo::FlushMetricsVector(Vector<Metric> &metrics)
+{
+    for (size_t i = 0; i < metrics.size(); ++i)
+    {
+        publisher->AddDataPoint(metrics[i]);
+    }
+
+    metrics.clear();
+}
+
+void MultipartTransferState::PartInfo::AddDataUpMetric(uint64_t dataUp)
+{
+    Metric &metric = GetOrCreateMetricToUpdate(uploadMetrics, "BytesUp");
+
+    metric.Value += (double)dataUp;
+}
+
+void MultipartTransferState::PartInfo::AddDataDownMetric(uint64_t dataDown)
+{
+    Metric &metric = GetOrCreateMetricToUpdate(downloadMetrics, "BytesDown");
+
+    metric.Value += (double)dataDown;
+}
+
+void MultipartTransferState::PartInfo::FlushDataUpMetrics()
+{
+    FlushMetricsVector(uploadMetrics);
+}
+
+void MultipartTransferState::PartInfo::FlushDataDownMetrics()
+{
+    FlushMetricsVector(downloadMetrics);
 }
 
 MultipartTransferState::MultipartTransferState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts)
@@ -54,11 +110,6 @@ void MultipartTransferState::SetProcessPartCallback(const ProcessPartCallback &p
 void MultipartTransferState::SetFinishedCallback(const FinishedCallback &finishedCallback)
 {
     m_finishedCallback = finishedCallback;
-}
-
-void MultipartTransferState::SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &connection)
-{
-    m_connection = connection;
 }
 
 void MultipartTransferState::SetFinished(int32_t errorCode)
@@ -108,11 +159,6 @@ uint32_t MultipartTransferState::GetNumPartsCompleted() const
 uint64_t MultipartTransferState::GetObjectSize() const
 {
     return m_objectSize;
-}
-
-std::shared_ptr<Http::HttpClientConnection> MultipartTransferState::GetConnection() const
-{
-    return m_connection;
 }
 
 MultipartUploadState::MultipartUploadState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts)

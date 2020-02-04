@@ -18,10 +18,11 @@
 #include <memory>
 #include <queue>
 
+#include "MultipartTransferState.h"
 #include <aws/common/mutex.h>
 #include <aws/crt/Types.h>
-#include "MultipartTransferState.h"
 
+struct CanaryApp;
 class S3ObjectTransport;
 
 namespace Aws
@@ -38,9 +39,14 @@ namespace Aws
 class MultipartTransferProcessor
 {
   public:
-    MultipartTransferProcessor(Aws::Crt::Io::EventLoopGroup &elGroup, std::uint32_t streamsAvailable);
+    MultipartTransferProcessor(
+        CanaryApp &canaryApp,
+        Aws::Crt::Io::EventLoopGroup &elGroup,
+        std::uint32_t streamsAvailable);
 
     void PushQueue(const std::shared_ptr<MultipartTransferState> &uploadState);
+
+    void RepushQueue(const std::shared_ptr<MultipartTransferState> &state, uint32_t partIndex);
 
   private:
     static const uint32_t NumPartsPerTask;
@@ -66,6 +72,7 @@ class MultipartTransferProcessor
             const std::shared_ptr<Aws::Crt::Vector<QueuedPart>> &parts);
     };
 
+    CanaryApp &m_canaryApp;
     aws_event_loop *m_schedulingLoop;
     std::atomic<uint32_t> m_streamsAvailable;
     std::mutex m_partQueueMutex;

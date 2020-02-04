@@ -28,8 +28,11 @@ struct CanaryApp
     Aws::Crt::String region;
     double cutOffTimeSmallObjects;
     double cutOffTimeLargeObjects;
+    uint32_t mtu;
     bool measureLargeTransfer;
     bool measureSmallTransfer;
+    bool usingNumaControl;
+    bool sendEncrypted;
 
     std::shared_ptr<MetricsPublisher> publisher;
     std::shared_ptr<S3ObjectTransport> transport;

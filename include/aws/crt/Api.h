@@ -34,12 +34,17 @@ namespace Aws
             NonBlocking
         };
 
+        enum
+        {
+            AWS_CRT_CPP_PACKAGE = 10
+        };
+
         enum LogSubject
         {
-            AWS_LS_CRT_CPP_GENERAL = 0x1C00,
+            AWS_LS_CRT_CPP_GENERAL = AWS_LOG_SUBJECT_BEGIN_RANGE(AWS_CRT_CPP_PACKAGE),
             AWS_LS_CRT_CPP_CANARY,
 
-            AWS_LS_CRT_CPP_LAST = (AWS_LS_CRT_CPP_GENERAL + AWS_LOG_SUBJECT_SPACE_SIZE - 1)
+            AWS_LS_CRT_CPP_LAST = AWS_ERROR_ENUM_END_RANGE(AWS_CRT_CPP_PACKAGE)
         };
 
         class AWS_CRT_CPP_API ApiHandle
