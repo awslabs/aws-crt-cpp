@@ -143,16 +143,13 @@ void S3ObjectTransport::MakeSignedRequest_SendRequest(
 
 void S3ObjectTransport::AddContentLengthHeader(
     std::shared_ptr<Http::HttpRequest> request,
-    aws_input_stream *inputStream)
+    const std::shared_ptr<Aws::Crt::Io::InputStream> &body)
 {
     Http::HttpHeader contentLength;
     contentLength.name = ByteCursorFromCString("content-length");
 
-    int64_t streamLen = 0;
-
-    aws_input_stream_get_length(inputStream, &streamLen);
     StringStream intValue;
-    intValue << streamLen;
+    intValue << body->GetLength();
     String contentLengthVal = intValue.str();
     contentLength.value = ByteCursorFromCString(contentLengthVal.c_str());
     request->AddHeader(contentLength);
@@ -160,42 +157,39 @@ void S3ObjectTransport::AddContentLengthHeader(
 
 void S3ObjectTransport::PutObject(
     const Aws::Crt::String &key,
-    aws_input_stream *inputStream,
+    const std::shared_ptr<Aws::Crt::Io::InputStream> &body,
     const PutObjectFinished &finishedCallback)
 {
-    AWS_FATAL_ASSERT(inputStream != nullptr);
+    AWS_FATAL_ASSERT(body.get() != nullptr);
 
-    m_connManager->AcquireConnection([this, key, inputStream, finishedCallback](
-                                         std::shared_ptr<Http::HttpClientConnection> conn, int connErrorCode) {
-        if (connErrorCode != AWS_ERROR_SUCCESS)
-        {
-            aws_input_stream_destroy(inputStream);
-            finishedCallback(connErrorCode, nullptr);
-            return;
-        }
+    m_connManager->AcquireConnection(
+        [this, key, body, finishedCallback](std::shared_ptr<Http::HttpClientConnection> conn, int connErrorCode) {
+            if (connErrorCode != AWS_ERROR_SUCCESS)
+            {
+                finishedCallback(connErrorCode, nullptr);
+                return;
+            }
 
-        PutObject(conn, key, inputStream, 0, finishedCallback);
-    });
+            PutObject(conn, key, body, 0, finishedCallback);
+        });
 }
 
 void S3ObjectTransport::PutObject(
     const std::shared_ptr<Http::HttpClientConnection> &conn,
     const Aws::Crt::String &key,
-    aws_input_stream *inputStream,
+    const std::shared_ptr<Io::InputStream> &body,
     uint32_t flags,
     const PutObjectFinished &finishedCallback)
 {
-    AWS_FATAL_ASSERT(inputStream != nullptr);
+    AWS_FATAL_ASSERT(body.get() != nullptr);
 
     auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
 
-    AddContentLengthHeader(request, inputStream);
+    AddContentLengthHeader(request, body);
 
     request->AddHeader(m_hostHeader);
     request->AddHeader(m_contentTypeHeader);
-
-    // By passing the stream here, the request is accepting ownership of the memory for inputStream.
-    aws_http_message_set_body_stream(request->GetUnderlyingMessage(), inputStream);
+    request->SetBody(body);
     request->SetMethod(aws_http_method_put);
 
     StringStream keyPathStream;
@@ -289,7 +283,7 @@ void S3ObjectTransport::PutObjectMultipart(
     uploadState->SetProcessPartCallback(
         [this, uploadState, sendPart, finishedCallback](
             MultipartTransferState::PartInfo &partInfo, MultipartTransferState::PartFinishedCallback partFinished) {
-            aws_input_stream *partInputStream = sendPart(partInfo);
+            std::shared_ptr<Io::InputStream> partInputStream = sendPart(partInfo);
 
             UploadPart(uploadState, partInfo, partInputStream, partFinished);
         });
@@ -346,7 +340,7 @@ void S3ObjectTransport::PutObjectMultipart(
 void S3ObjectTransport::UploadPart(
     const std::shared_ptr<MultipartUploadState> &state,
     MultipartTransferState::PartInfo &partInfo,
-    aws_input_stream *partInputStream,
+    const std::shared_ptr<Io::InputStream> &partInputStream,
     const MultipartTransferState::PartFinishedCallback &partFinished)
 {
     StringStream keyPathStream;
@@ -371,7 +365,7 @@ void S3ObjectTransport::UploadPart(
 
                 DateTime uploadEndTime = DateTime::Now();
                 double interval = (double)(uploadEndTime.Millis() - partInfo.uploadStartTime.Millis());
-                int sampleMax = 20;
+                int sampleMax = 1;
 
                 AWS_LOGF_INFO(
                     AWS_LS_CRT_CPP_CANARY,
@@ -720,11 +714,11 @@ void S3ObjectTransport::CompleteMultipartUpload(
 
     *xmlContents << "</CompleteMultipartUpload>";
 
-    // By passing the stream here, the request is accepting ownership of the memory for inputStream.
-    aws_input_stream *inputStream = Aws::Crt::Io::AwsInputStreamNewCpp(xmlContents, aws_default_allocator());
-    aws_http_message_set_body_stream(request->GetUnderlyingMessage(), inputStream);
+    std::shared_ptr<Io::StdIOStreamInputStream> body =
+        MakeShared<Io::StdIOStreamInputStream>(g_allocator, xmlContents, g_allocator);
+    request->SetBody(body);
 
-    AddContentLengthHeader(request, inputStream);
+    AddContentLengthHeader(request, body);
 
     StringStream keyPathStream;
     keyPathStream << "/" << key << "?uploadId=" << uploadId;
