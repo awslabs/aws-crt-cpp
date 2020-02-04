@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2010-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -23,51 +23,23 @@
 
 #include <sstream>
 
-static int s_StreamTestCreateDestroyWrapperFirst(struct aws_allocator *allocator, void *ctx)
+static int s_StreamTestCreateDestroyWrapper(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
 
     {
-        auto string_stream = std::make_shared<std::stringstream>("SomethingInteresting");
-        auto stream = std::static_pointer_cast<Aws::Crt::Io::IStream>(string_stream);
+        auto stringStream = Aws::Crt::MakeShared<std::stringstream>(allocator, "SomethingInteresting");
+        Aws::Crt::Io::StdIOStreamInputStream inputStream(stringStream, allocator);
 
-        aws_input_stream *wrapped_stream = Aws::Crt::Io::AwsInputStreamNewCpp(stream);
-
-        ASSERT_TRUE(wrapped_stream != nullptr);
-
-        aws_input_stream_destroy(wrapped_stream);
+        ASSERT_TRUE(static_cast<bool>(inputStream));
+        ASSERT_NOT_NULL(inputStream.GetUnderlyingStream());
     }
 
     return AWS_OP_SUCCESS;
 }
 
-AWS_TEST_CASE(StreamTestCreateDestroyWrapperFirst, s_StreamTestCreateDestroyWrapperFirst)
-
-static int s_StreamTestCreateDestroyWrapperLast(struct aws_allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-
-    {
-        aws_input_stream *wrapped_stream = nullptr;
-
-        {
-            auto string_stream = std::make_shared<std::stringstream>("SomethingInteresting");
-            auto stream = std::static_pointer_cast<Aws::Crt::Io::IStream>(string_stream);
-
-            wrapped_stream = Aws::Crt::Io::AwsInputStreamNewCpp(stream);
-
-            ASSERT_TRUE(wrapped_stream != nullptr);
-        }
-
-        aws_input_stream_destroy(wrapped_stream);
-    }
-
-    return AWS_OP_SUCCESS;
-}
-
-AWS_TEST_CASE(StreamTestCreateDestroyWrapperLast, s_StreamTestCreateDestroyWrapperLast)
+AWS_TEST_CASE(StreamTestCreateDestroyWrapper, s_StreamTestCreateDestroyWrapper)
 
 static const char *STREAM_CONTENTS = "SomeContents";
 
@@ -77,16 +49,13 @@ static int s_StreamTestLength(struct aws_allocator *allocator, void *ctx)
     Aws::Crt::ApiHandle apiHandle(allocator);
 
     {
-        auto string_stream = std::make_shared<std::stringstream>(STREAM_CONTENTS);
-        auto stream = std::static_pointer_cast<Aws::Crt::Io::IStream>(string_stream);
+        auto stringStream = Aws::Crt::MakeShared<std::stringstream>(allocator, STREAM_CONTENTS);
 
-        aws_input_stream *wrapped_stream = Aws::Crt::Io::AwsInputStreamNewCpp(stream);
+        Aws::Crt::Io::StdIOStreamInputStream wrappedStream(stringStream, allocator);
 
         int64_t length = 0;
-        ASSERT_SUCCESS(aws_input_stream_get_length(wrapped_stream, &length));
+        ASSERT_SUCCESS(aws_input_stream_get_length(wrappedStream.GetUnderlyingStream(), &length));
         ASSERT_TRUE(length == strlen(STREAM_CONTENTS));
-
-        aws_input_stream_destroy(wrapped_stream);
     }
 
     return AWS_OP_SUCCESS;
@@ -100,21 +69,20 @@ static int s_StreamTestRead(struct aws_allocator *allocator, void *ctx)
     Aws::Crt::ApiHandle apiHandle(allocator);
 
     {
-        auto string_stream = std::make_shared<Aws::Crt::StringStream>(STREAM_CONTENTS);
+        auto stringStream = Aws::Crt::MakeShared<Aws::Crt::StringStream>(allocator, STREAM_CONTENTS);
 
-        aws_input_stream *wrapped_stream = Aws::Crt::Io::AwsInputStreamNewCpp(string_stream);
+        Aws::Crt::Io::StdIOStreamInputStream wrappedStream(stringStream, allocator);
 
         aws_byte_buf buffer;
         AWS_ZERO_STRUCT(buffer);
         aws_byte_buf_init(&buffer, allocator, 256);
 
-        aws_input_stream_read(wrapped_stream, &buffer);
+        aws_input_stream_read(wrappedStream.GetUnderlyingStream(), &buffer);
 
         ASSERT_TRUE(buffer.len == strlen(STREAM_CONTENTS));
         ASSERT_BIN_ARRAYS_EQUALS(STREAM_CONTENTS, buffer.len, buffer.buffer, buffer.len);
 
         aws_byte_buf_clean_up(&buffer);
-        aws_input_stream_destroy(wrapped_stream);
     }
 
     return AWS_OP_SUCCESS;
@@ -130,24 +98,22 @@ static int s_StreamTestSeekBegin(struct aws_allocator *allocator, void *ctx)
     Aws::Crt::ApiHandle apiHandle(allocator);
 
     {
-        auto string_stream = std::make_shared<std::stringstream>(STREAM_CONTENTS);
-        auto stream = std::static_pointer_cast<Aws::Crt::Io::IStream>(string_stream);
+        auto stringStream = Aws::Crt::MakeShared<Aws::Crt::StringStream>(allocator, STREAM_CONTENTS);
 
-        aws_input_stream *wrapped_stream = Aws::Crt::Io::AwsInputStreamNewCpp(stream);
+        Aws::Crt::Io::StdIOStreamInputStream wrappedStream(stringStream, allocator);
 
-        ASSERT_SUCCESS(aws_input_stream_seek(wrapped_stream, BEGIN_SEEK_OFFSET, AWS_SSB_BEGIN));
+        ASSERT_SUCCESS(aws_input_stream_seek(wrappedStream.GetUnderlyingStream(), BEGIN_SEEK_OFFSET, AWS_SSB_BEGIN));
 
         aws_byte_buf buffer;
         AWS_ZERO_STRUCT(buffer);
         aws_byte_buf_init(&buffer, allocator, 256);
 
-        aws_input_stream_read(wrapped_stream, &buffer);
+        aws_input_stream_read(wrappedStream.GetUnderlyingStream(), &buffer);
 
         ASSERT_TRUE(buffer.len == strlen(STREAM_CONTENTS) - BEGIN_SEEK_OFFSET);
         ASSERT_BIN_ARRAYS_EQUALS(STREAM_CONTENTS + BEGIN_SEEK_OFFSET, buffer.len, buffer.buffer, buffer.len);
 
         aws_byte_buf_clean_up(&buffer);
-        aws_input_stream_destroy(wrapped_stream);
     }
 
     return AWS_OP_SUCCESS;
@@ -163,25 +129,23 @@ static int s_StreamTestSeekEnd(struct aws_allocator *allocator, void *ctx)
     Aws::Crt::ApiHandle apiHandle(allocator);
 
     {
-        auto string_stream = std::make_shared<std::stringstream>(STREAM_CONTENTS);
-        auto stream = std::static_pointer_cast<Aws::Crt::Io::IStream>(string_stream);
+        auto stringStream = Aws::Crt::MakeShared<Aws::Crt::StringStream>(allocator, STREAM_CONTENTS);
 
-        aws_input_stream *wrapped_stream = Aws::Crt::Io::AwsInputStreamNewCpp(stream);
+        Aws::Crt::Io::StdIOStreamInputStream wrappedStream(stringStream, allocator);
 
-        ASSERT_SUCCESS(aws_input_stream_seek(wrapped_stream, END_SEEK_OFFSET, AWS_SSB_END));
+        ASSERT_SUCCESS(aws_input_stream_seek(wrappedStream.GetUnderlyingStream(), END_SEEK_OFFSET, AWS_SSB_END));
 
         aws_byte_buf buffer;
         AWS_ZERO_STRUCT(buffer);
         aws_byte_buf_init(&buffer, allocator, 256);
 
-        aws_input_stream_read(wrapped_stream, &buffer);
+        aws_input_stream_read(wrappedStream.GetUnderlyingStream(), &buffer);
 
         ASSERT_TRUE(buffer.len == -END_SEEK_OFFSET);
         ASSERT_BIN_ARRAYS_EQUALS(
             STREAM_CONTENTS + strlen(STREAM_CONTENTS) + END_SEEK_OFFSET, buffer.len, buffer.buffer, buffer.len);
 
         aws_byte_buf_clean_up(&buffer);
-        aws_input_stream_destroy(wrapped_stream);
     }
 
     return AWS_OP_SUCCESS;

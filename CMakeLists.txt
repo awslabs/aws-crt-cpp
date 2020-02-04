@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.1)
-
+project(aws-crt-cpp CXX C)
 option(BUILD_DEPS "Builds aws common runtime dependencies as part of build, only do this if you don't want to control your dependency chain." OFF)
+
+include(CTest)
 
 if (DEFINED CMAKE_PREFIX_PATH)
     file(TO_CMAKE_PATH "${CMAKE_PREFIX_PATH}" CMAKE_PREFIX_PATH)
@@ -25,95 +27,47 @@ if (NOT CMAKE_CXX_STANDARD)
 endif()
 
 if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "RelWithDebInfo")
+    # setting this breaks C++ builds in visualc++, so don't do it.
+    if (NOT WIN32)
+        set(CMAKE_BUILD_TYPE "RelWithDebInfo")
+    endif()
 endif()
 
-set(AWS_CRT_CPP_VERSION "v0.6.8")
+set(AWS_CRT_CPP_VERSION "v0.7.3")
 
 configure_file(include/aws/crt/Config.h.in ${CMAKE_CURRENT_LIST_DIR}/include/aws/crt/Config.h @ONLY)
-
-if (BUILD_DEPS)
-    set(AWS_DEPS_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/deps CACHE STRING "If BUILD_DEPS is on, aws common runtime dependencies build in this directory.")
-    if (DEFINED CMAKE_INSTALL_PREFIX)
-        set(AWS_DEPS_INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
-    else()
-        set(AWS_DEPS_INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/deps/install)
-    endif()
-
-    if (NOT DEFINED CMAKE_PREFIX_PATH)
-        set(CMAKE_PREFIX_PATH ${AWS_DEPS_INSTALL_DIR})
-    endif()
-
-    file(MAKE_DIRECTORY ${AWS_DEPS_BUILD_DIR})
-    if(TARGET_ARCH STREQUAL "ANDROID")
-        execute_process(
-                COMMAND ${CMAKE_COMMAND} -G ${CMAKE_GENERATOR}
-                -DTARGET_ARCH=${TARGET_ARCH}
-                -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
-                -DANDROID_NATIVE_API_LEVEL=${ANDROID_NATIVE_API_LEVEL}
-                -DANDROID_ABI=${ANDROID_ABI}
-                -DANDROID_TOOLCHAIN_NAME=${ANDROID_TOOLCHAIN_NAME}
-                -DANDROID_STANDALONE_TOOLCHAIN=${ANDROID_STANDALONE_TOOLCHAIN}
-                -DANDROID_STL=${ANDROID_STL}
-                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-                -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
-                -DCMAKE_INSTALL_PREFIX=${AWS_DEPS_INSTALL_DIR}
-                -DCMAKE_PREFIX_PATH=${AWS_DEPS_INSTALL_DIR}
-                -DGIT_EXECUTABLE=${GIT_EXECUTABLE}
-                -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-		-DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
-		${CMAKE_CURRENT_SOURCE_DIR}/aws-common-runtime
-                WORKING_DIRECTORY ${AWS_DEPS_BUILD_DIR}
-        )
-
-    else()
-        execute_process(
-                COMMAND ${CMAKE_COMMAND} -G ${CMAKE_GENERATOR}
-                -DTARGET_ARCH=${TARGET_ARCH}
-                -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
-                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-                -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
-                -DCMAKE_PREFIX_PATH=${AWS_DEPS_INSTALL_DIR}
-                -DCMAKE_INSTALL_PREFIX=${AWS_DEPS_INSTALL_DIR}
-                -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
-                -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=${CMAKE_CURRENT_BINARY_DIR}/bin
-                -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-		-DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
-                ${CMAKE_CURRENT_SOURCE_DIR}/aws-common-runtime
-                WORKING_DIRECTORY ${AWS_DEPS_BUILD_DIR}
-                RESULT_VARIABLE BUILD_AWSCRT_EXIT_CODE
-        )
-    endif()
-
-    if (NOT ${BUILD_AWSCRT_EXIT_CODE} EQUAL 0)
-        message(FATAL_ERROR "Failed to configure aws crt libraries.")
-    endif()
-    execute_process(COMMAND ${CMAKE_COMMAND} --build ${AWS_DEPS_BUILD_DIR} --config ${CMAKE_BUILD_TYPE}
-            RESULT_VARIABLE BUILD_AWSCRT_EXIT_CODE)
-
-    if (NOT ${BUILD_AWSCRT_EXIT_CODE} EQUAL 0)
-        message(FATAL_ERROR "Failed to build aws crt libraries.")
-    endif()
-    message(STATUS "AWS Common Runtime is installed at: ${AWS_DEPS_INSTALL_DIR}")
-
-    #the following two lines are done in this branch intentionally, don't move it. project() does some magic that
-    #we don't want happening until we're done with the above code.
-    list(APPEND CMAKE_PREFIX_PATH "${AWS_DEPS_INSTALL_DIR}")
-
-    project(aws-crt-cpp)
-
-else()
-    #the following two lines are done in this branch intentionally, don't move it. project() does some magic that
-    #we want happening exactly right now.
-    project(aws-crt-cpp)
-
-endif()
 
 # This is required in order to append /lib/cmake to each element in CMAKE_PREFIX_PATH
 set(AWS_MODULE_DIR "/${CMAKE_INSTALL_LIBDIR}/cmake")
 string(REPLACE ";" "${AWS_MODULE_DIR};" AWS_MODULE_PATH "${CMAKE_PREFIX_PATH}${AWS_MODULE_DIR}")
 # Append that generated list to the module search path
 list(APPEND CMAKE_MODULE_PATH ${AWS_MODULE_PATH})
+
+if (BUILD_DEPS)
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/aws-common-runtime/aws-c-common/cmake")
+
+    include(AwsFindPackage)
+
+    set(IN_SOURCE_BUILD ON)
+    set(BUILD_TESTING_PREV ${BUILD_TESTING})
+    set(BUILD_TESTING OFF)
+    add_subdirectory(aws-common-runtime/aws-c-common)
+
+    if (UNIX AND NOT APPLE)
+        add_subdirectory(aws-common-runtime/s2n)
+    endif()
+
+    add_subdirectory(aws-common-runtime/aws-c-io)
+    add_subdirectory(aws-common-runtime/aws-c-cal)
+    add_subdirectory(aws-common-runtime/aws-c-compression)
+    add_subdirectory(aws-common-runtime/aws-c-http)
+    add_subdirectory(aws-common-runtime/aws-c-auth)
+    add_subdirectory(aws-common-runtime/aws-c-mqtt)
+    set(BUILD_TESTING ${BUILD_TESTING_PREV})
+else()
+    include(AwsFindPackage)
+    set(IN_SOURCE_BUILD OFF)
+endif()
 
 include(AwsCFlags)
 include(AwsSharedLibSetup)
@@ -226,38 +180,41 @@ if (WIN32)
     endif ()
 endif()
 
-add_library(${CMAKE_PROJECT_NAME} ${AWS_CRT_CPP_SRC})
+add_library(${PROJECT_NAME} ${AWS_CRT_CPP_SRC})
 
 if (BUILD_SHARED_LIBS)
-    target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC -DAWS_CRT_CPP_USE_IMPORT_EXPORT)
-    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE -DAWS_CRT_CPP_EXPORTS)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC -DAWS_CRT_CPP_USE_IMPORT_EXPORT)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE -DAWS_CRT_CPP_EXPORTS)
 endif()
 
-set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
-set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
+set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
 
-aws_prepare_symbol_visibility_args(${CMAKE_PROJECT_NAME} "AWS_CRT_CPP")
+aws_prepare_symbol_visibility_args(${PROJECT_NAME} "AWS_CRT_CPP")
 
 #set warnings
 if (MSVC)
-    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
+    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
 else ()
-    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
 endif ()
 
 if (CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE MATCHES Debug)
-    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE "-DDEBUG_BUILD")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE "-DDEBUG_BUILD")
 endif ()
 
-target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
+target_include_directories(${PROJECT_NAME} PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>)
 
-find_package(aws-c-http REQUIRED)
-find_package(aws-c-mqtt REQUIRED)
-find_package(aws-c-cal REQUIRED)
-find_package(aws-c-auth REQUIRED)
-target_link_libraries(${CMAKE_PROJECT_NAME} AWS::aws-c-auth AWS::aws-c-cal AWS::aws-c-http AWS::aws-c-mqtt)
+aws_use_package(aws-c-http)
+aws_use_package(aws-c-mqtt)
+aws_use_package(aws-c-cal)
+aws_use_package(aws-c-auth)
+aws_use_package(aws-c-common)
+aws_use_package(aws-c-io)
+
+target_link_libraries(${PROJECT_NAME} ${DEP_AWS_LIBS})
 
 install(FILES ${AWS_CRT_HEADERS} DESTINATION "include/aws/crt" COMPONENT Development)
 install(FILES ${AWS_CRT_AUTH_HEADERS} DESTINATION "include/aws/crt/auth" COMPONENT Development)
@@ -269,8 +226,8 @@ install(FILES ${AWS_CRT_HTTP_HEADERS} DESTINATION "include/aws/crt/http" COMPONE
 install(FILES ${AWS_CRT_EXTERNAL_HEADERS} DESTINATION "include/aws/crt/external" COMPONENT Development)
 
 install(
-        TARGETS ${CMAKE_PROJECT_NAME}
-        EXPORT ${CMAKE_PROJECT_NAME}-targets
+        TARGETS ${PROJECT_NAME}
+        EXPORT ${PROJECT_NAME}-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Development
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Development
         RUNTIME DESTINATION bin COMPONENT Runtime
@@ -282,19 +239,24 @@ else()
     set (TARGET_DIR "static")
 endif()
 
-install(EXPORT "${CMAKE_PROJECT_NAME}-targets"
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/${CMAKE_PROJECT_NAME}/cmake/${TARGET_DIR}"
+install(EXPORT "${PROJECT_NAME}-targets"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}/cmake/${TARGET_DIR}"
         NAMESPACE AWS::
         COMPONENT Development)
 
-configure_file("cmake/${CMAKE_PROJECT_NAME}-config.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}-config.cmake"
+configure_file("cmake/${PROJECT_NAME}-config.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
         @ONLY)
 
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}-config.cmake"
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/${CMAKE_PROJECT_NAME}/cmake/"
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}/cmake/"
         COMPONENT Development)
 
-enable_testing()
-add_subdirectory(tests)
 add_subdirectory(canary)
+
+if (NOT CMAKE_CROSSCOMPILING)
+    if (BUILD_TESTING)
+        add_subdirectory(tests)
+    endif()
+endif()
+
