@@ -17,6 +17,7 @@
 #include <atomic>
 #include <aws/common/mutex.h>
 #include <aws/common/string.h>
+#include <aws/crt/DateTime.h>
 #include <aws/crt/Types.h>
 #include <aws/crt/http/HttpConnection.h>
 #include <mutex>
@@ -32,13 +33,14 @@ class MultipartTransferState
         uint32_t partNumber;
         uint64_t offsetInBytes;
         uint64_t sizeInBytes;
+        Aws::Crt::DateTime uploadStartTime;
 
         PartInfo();
         PartInfo(uint32_t partIndex, uint32_t partNumber, uint64_t offsetInBytes, uint64_t sizeInBytes);
     };
 
     using PartFinishedCallback = std::function<void()>;
-    using ProcessPartCallback = std::function<void(const PartInfo &partInfo, PartFinishedCallback callback)>;
+    using ProcessPartCallback = std::function<void(PartInfo &partInfo, PartFinishedCallback callback)>;
     using FinishedCallback = std::function<void(int32_t errorCode)>;
 
     MultipartTransferState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts);

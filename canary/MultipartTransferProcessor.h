@@ -18,9 +18,9 @@
 #include <memory>
 #include <queue>
 
+#include "MultipartTransferState.h"
 #include <aws/common/mutex.h>
 #include <aws/crt/Types.h>
-#include "MultipartTransferState.h"
 
 class S3ObjectTransport;
 

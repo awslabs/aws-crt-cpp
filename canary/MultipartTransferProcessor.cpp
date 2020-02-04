@@ -15,11 +15,11 @@
 
 #include "MultipartTransferProcessor.h"
 #include "S3ObjectTransport.h"
+#include <aws/crt/Api.h>
 #include <aws/crt/Types.h>
 #include <aws/crt/io/EventLoopGroup.h>
 #include <aws/crt/io/Stream.h>
 #include <aws/io/stream.h>
-#include <aws/crt/Api.h>
 
 #if defined(_WIN32)
 #    undef min
@@ -106,7 +106,7 @@ void MultipartTransferProcessor::ProcessNextParts(uint32_t streamsReturning)
             ProcessPartRangeTaskArgs *args =
                 New<ProcessPartRangeTaskArgs>(g_allocator, *this, partRangeStart, partRangeLength, partsShared);
 
-            aws_task* processPartRangeTask = New<aws_task>(g_allocator);
+            aws_task *processPartRangeTask = New<aws_task>(g_allocator);
             aws_task_init(
                 processPartRangeTask,
                 MultipartTransferProcessor::s_ProcessPartRangeTask,
