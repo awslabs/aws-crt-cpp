@@ -14,6 +14,7 @@
  */
 #include "MetricsPublisher.h"
 #include "CanaryApp.h"
+#include "MeasureTransferRate.h"
 
 #include <aws/crt/http/HttpConnectionManager.h>
 #include <aws/crt/http/HttpRequestResponse.h>
@@ -21,21 +22,29 @@
 #include <aws/common/clock.h>
 #include <aws/common/task_scheduler.h>
 #include <condition_variable>
+#include <inttypes.h>
 #include <iostream>
+#include <time.h>
 
 using namespace Aws::Crt;
+
+void Metric::SetTimestampNow()
+{
+    Timestamp = DateTime::Now();
+    //    static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(time.time_since_epoch()).count());
+}
 
 MetricsPublisher::MetricsPublisher(
     CanaryApp &canaryApp,
     const char *metricNamespace,
-    std::chrono::seconds publishFrequency)
+    std::chrono::milliseconds publishFrequency)
     : m_canaryApp(canaryApp)
 {
     Namespace = metricNamespace;
 
     AWS_ZERO_STRUCT(m_publishTask);
     m_publishFrequencyNs =
-        aws_timestamp_convert(publishFrequency.count(), AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_NANOS, NULL);
+        aws_timestamp_convert(publishFrequency.count(), AWS_TIMESTAMP_MILLIS, AWS_TIMESTAMP_NANOS, NULL);
     m_publishTask.fn = MetricsPublisher::s_OnPublishTask;
     m_publishTask.arg = this;
 
@@ -149,6 +158,8 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
     const char *platformName = m_canaryApp.platformName.c_str();
     const char *toolName = m_canaryApp.toolName.c_str();
     const char *instanceType = m_canaryApp.instanceType.c_str();
+    const uint64_t largeObjectPartSize =
+        MeasureTransferRate::LargeObjectSize / MeasureTransferRate::LargeObjectNumParts;
 
     for (const auto &metric : metrics)
     {
@@ -158,10 +169,12 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
         auto dateBuf = ByteBufFromEmptyArray(dateBuffer, AWS_ARRAY_SIZE(dateBuffer));
         metric.Timestamp.ToGmtString(DateFormat::ISO_8601, dateBuf);
         String dateStr((char *)dateBuf.buffer, dateBuf.len);
+
         bodyStream << "MetricData.member." << metricCount << ".Timestamp=" << dateStr << "&";
         bodyStream.precision(17);
         bodyStream << "MetricData.member." << metricCount << ".Value=" << std::fixed << metric.Value << "&";
         bodyStream << "MetricData.member." << metricCount << ".Unit=" << s_UnitToStr(metric.Unit) << "&";
+        bodyStream << "MetricData.member." << metricCount << ".StorageResolution=1&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.1.Name=Platform&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.1.Value=" << platformName << "&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.2.Name=ToolName&";
@@ -170,6 +183,25 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.3.Value=" << instanceType << "&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Name=TransferSize&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Value=" << transferSizeString << "&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.5.Name=UsingNumaControl&";
+        bodyStream << "MetricData.member." << metricCount
+                   << ".Dimensions.member.5.Value=" << m_canaryApp.usingNumaControl << "&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.6.Name=Encrypted&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.6.Value=" << m_canaryApp.sendEncrypted
+                   << "&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.7.Name=MTU&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.7.Value=" << m_canaryApp.mtu << "&";
+
+        if (m_transferSize == MetricTransferSize::Large)
+        {
+            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.8.Name=NumParts&";
+            bodyStream << "MetricData.member." << metricCount
+                       << ".Dimensions.member.8.Value=" << MeasureTransferRate::LargeObjectNumParts << "&";
+            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.9.Name=PartSize&";
+            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.9.Value=" << largeObjectPartSize
+                       << "&";
+        }
+
         metricCount++;
     }
 
@@ -179,7 +211,47 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
 void MetricsPublisher::AddDataPoint(const Metric &metricData)
 {
     std::lock_guard<std::mutex> locker(m_publishDataLock);
-    m_publishData.push_back(metricData);
+
+    bool foundMatch = false;
+
+    for (Metric &metric : m_publishData)
+    {
+        if (metric.Timestamp == metricData.Timestamp && metric.MetricName == metricData.MetricName)
+        {
+            metric.Value += metricData.Value;
+            foundMatch = true;
+            break;
+        }
+    }
+
+    if (!foundMatch)
+    {
+        m_publishData.push_back(metricData);
+    }
+}
+
+void MetricsPublisher::AddTransferStatusDataPoint(bool transferSuccess)
+{
+    if (transferSuccess)
+    {
+        Metric successMetric;
+        successMetric.MetricName = "SuccessfulTransfer";
+        successMetric.Unit = MetricUnit::Count;
+        successMetric.Value = 1;
+        successMetric.SetTimestampNow();
+
+        AddDataPoint(successMetric);
+    }
+    else
+    {
+        Metric failureMetric;
+        failureMetric.MetricName = "FailedTransfer";
+        failureMetric.Unit = MetricUnit::Count;
+        failureMetric.Value = 1;
+        failureMetric.SetTimestampNow();
+
+        AddDataPoint(failureMetric);
+    }
 }
 
 void MetricsPublisher::WaitForLastPublish()
@@ -193,103 +265,134 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
 {
     (void)task;
 
-    if (status == AWS_TASK_STATUS_RUN_READY)
+    if (status != AWS_TASK_STATUS_RUN_READY)
     {
-        auto publisher = static_cast<MetricsPublisher *>(arg);
-        Vector<Metric> metricsCpy;
-        {
-            std::lock_guard<std::mutex> locker(publisher->m_publishDataLock);
-            if (publisher->m_publishData.empty())
-            {
-                uint64_t now = 0;
-                aws_event_loop_current_clock_time(publisher->m_schedulingLoop, &now);
-                aws_event_loop_schedule_task_future(
-                    publisher->m_schedulingLoop, &publisher->m_publishTask, now + publisher->m_publishFrequencyNs);
-                publisher->m_waitForLastPublishCV.notify_all();
-                return;
-            }
+        return;
+    }
 
-            {
-                metricsCpy = std::move(publisher->m_publishData);
-                publisher->m_publishData = Vector<Metric>();
-            }
+    auto publisher = static_cast<MetricsPublisher *>(arg);
+
+    Vector<Metric> metricsCpy;
+    {
+        std::lock_guard<std::mutex> locker(publisher->m_publishDataLock);
+        if (publisher->m_publishData.empty())
+        {
+            uint64_t now = 0;
+            aws_event_loop_current_clock_time(publisher->m_schedulingLoop, &now);
+            aws_event_loop_schedule_task_future(
+                publisher->m_schedulingLoop, &publisher->m_publishTask, now + publisher->m_publishFrequencyNs);
+            publisher->m_waitForLastPublishCV.notify_all();
+            return;
         }
 
-        while (!metricsCpy.empty())
         {
-            bool finalRun = false;
-            /* max of 20 per request */
-            Vector<Metric> metricsSlice;
-            while (!metricsCpy.empty() && metricsSlice.size() < 20)
-            {
-                metricsSlice.push_back(metricsCpy.back());
-                metricsCpy.pop_back();
-            }
-
-            finalRun = metricsCpy.empty();
-
-            auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
-            request->AddHeader(publisher->m_hostHeader);
-            request->AddHeader(publisher->m_contentTypeHeader);
-            request->AddHeader(publisher->m_apiVersionHeader);
-
-            auto bodyStream = MakeShared<StringStream>(g_allocator);
-            publisher->PreparePayload(*bodyStream, metricsSlice);
-
-            Http::HttpHeader contentLength;
-            contentLength.name = ByteCursorFromCString("content-length");
-
-            StringStream intValue;
-            intValue << bodyStream->tellp();
-            String contentLengthVal = intValue.str();
-            contentLength.value = ByteCursorFromCString(contentLengthVal.c_str());
-            request->AddHeader(contentLength);
-
-            request->SetBody(bodyStream);
-            request->SetMethod(aws_http_method_post);
-
-            ByteCursor path = ByteCursorFromCString("/");
-            request->SetPath(path);
-
-            Auth::AwsSigningConfig signingConfig(g_allocator);
-            signingConfig.SetRegion(publisher->m_canaryApp.region);
-            signingConfig.SetCredentialsProvider(publisher->m_canaryApp.credsProvider);
-            signingConfig.SetService("monitoring");
-            signingConfig.SetBodySigningType(Auth::BodySigningType::SignBody);
-            signingConfig.SetSigningTimepoint(DateTime::Now());
-            signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
-
-            publisher->m_canaryApp.signer->SignRequest(
-                request,
-                signingConfig,
-                [bodyStream, publisher, finalRun](
-                    const std::shared_ptr<Aws::Crt::Http::HttpRequest> &signedRequest, int signingError) {
-                    if (signingError == AWS_OP_SUCCESS)
-                    {
-                        publisher->m_connManager->AcquireConnection(
-                            [publisher, signedRequest, finalRun](
-                                std::shared_ptr<Http::HttpClientConnection> conn, int connError) {
-                                if (connError == AWS_OP_SUCCESS)
-                                {
-                                    Http::HttpRequestOptions requestOptions;
-                                    AWS_ZERO_STRUCT(requestOptions);
-                                    requestOptions.request = signedRequest.get();
-                                    requestOptions.onStreamComplete = [signedRequest, conn](Http::HttpStream &, int) {};
-                                    conn->NewClientStream(requestOptions);
-                                }
-
-                                if (finalRun)
-                                {
-                                    uint64_t now = 0;
-                                    aws_event_loop_current_clock_time(publisher->m_schedulingLoop, &now);
-                                    aws_event_loop_schedule_task_future(
-                                        publisher->m_schedulingLoop,
-                                        &publisher->m_publishTask,
-                                        now + publisher->m_publishFrequencyNs);
-                                }
-                            });
-                    }
-                });
+            metricsCpy = std::move(publisher->m_publishData);
+            publisher->m_publishData = Vector<Metric>();
         }
+    }
+
+    while (!metricsCpy.empty())
+    {
+        bool finalRun = false;
+        /* max of 20 per request */
+        Vector<Metric> metricsSlice;
+        while (!metricsCpy.empty() && metricsSlice.size() < 20)
+        {
+            metricsSlice.push_back(metricsCpy.back());
+            metricsCpy.pop_back();
+        }
+
+        AWS_LOGF_INFO(
+            AWS_LS_CRT_CPP_CANARY,
+            "METRICS - Processing %d metrics,  %d left.",
+            (uint32_t)metricsSlice.size(),
+            (uint32_t)metricsCpy.size());
+
+        finalRun = metricsCpy.empty();
+
+        auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
+        request->AddHeader(publisher->m_hostHeader);
+        request->AddHeader(publisher->m_contentTypeHeader);
+        request->AddHeader(publisher->m_apiVersionHeader);
+
+        auto bodyStream = MakeShared<StringStream>(g_allocator);
+        publisher->PreparePayload(*bodyStream, metricsSlice);
+
+        Http::HttpHeader contentLength;
+        contentLength.name = ByteCursorFromCString("content-length");
+
+        StringStream intValue;
+        intValue << bodyStream->tellp();
+        String contentLengthVal = intValue.str();
+        contentLength.value = ByteCursorFromCString(contentLengthVal.c_str());
+        request->AddHeader(contentLength);
+
+        request->SetBody(bodyStream);
+        request->SetMethod(aws_http_method_post);
+
+        ByteCursor path = ByteCursorFromCString("/");
+        request->SetPath(path);
+
+        Auth::AwsSigningConfig signingConfig(g_allocator);
+        signingConfig.SetRegion(publisher->m_canaryApp.region);
+        signingConfig.SetCredentialsProvider(publisher->m_canaryApp.credsProvider);
+        signingConfig.SetService("monitoring");
+        signingConfig.SetBodySigningType(Auth::BodySigningType::SignBody);
+        signingConfig.SetSigningTimepoint(DateTime::Now());
+        signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
+
+        publisher->m_canaryApp.signer->SignRequest(
+            request,
+            signingConfig,
+            [bodyStream, publisher, finalRun](
+                const std::shared_ptr<Aws::Crt::Http::HttpRequest> &signedRequest, int signingError) {
+                if (signingError == AWS_OP_SUCCESS)
+                {
+                    publisher->m_connManager->AcquireConnection(
+                        [publisher, signedRequest, finalRun](
+                            std::shared_ptr<Http::HttpClientConnection> conn, int connError) {
+                            if (connError == AWS_OP_SUCCESS)
+                            {
+                                Http::HttpRequestOptions requestOptions;
+                                AWS_ZERO_STRUCT(requestOptions);
+                                requestOptions.request = signedRequest.get();
+                                requestOptions.onStreamComplete = [signedRequest, conn](Http::HttpStream &stream, int) {
+                                    if (stream.GetResponseStatusCode() != 200)
+                                    {
+                                        AWS_LOGF_ERROR(
+                                            AWS_LS_CRT_CPP_CANARY,
+                                            "METRICS Error in metrics stream complete: %d",
+                                            stream.GetResponseStatusCode());
+                                    }
+                                };
+                                conn->NewClientStream(requestOptions);
+                            }
+                            else
+                            {
+                                AWS_LOGF_ERROR(
+                                    AWS_LS_CRT_CPP_CANARY,
+                                    "METRICS Error acquiring connection to send metrics: %d",
+                                    connError);
+                            }
+
+                            if (finalRun)
+                            {
+                                uint64_t now = 0;
+                                aws_event_loop_current_clock_time(publisher->m_schedulingLoop, &now);
+                                aws_event_loop_schedule_task_future(
+                                    publisher->m_schedulingLoop,
+                                    &publisher->m_publishTask,
+                                    now + publisher->m_publishFrequencyNs);
+                            }
+                        });
+                }
+                else
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_CRT_CPP_CANARY, "METRICS Error signing request for sending metric: %d", signingError);
+                }
+            });
+
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }

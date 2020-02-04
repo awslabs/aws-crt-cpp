@@ -20,6 +20,7 @@
 #include <aws/crt/http/HttpConnectionManager.h>
 
 #include <chrono>
+#include <map>
 #include <mutex>
 
 enum class MetricUnit
@@ -65,6 +66,8 @@ struct Metric
     Aws::Crt::DateTime Timestamp;
     double Value;
     Aws::Crt::String MetricName;
+
+    void SetTimestampNow();
 };
 
 struct CanaryApp;
@@ -78,7 +81,7 @@ class MetricsPublisher
     MetricsPublisher(
         CanaryApp &canaryApp,
         const char *metricNamespace,
-        std::chrono::seconds publishFrequency = std::chrono::seconds(1));
+        std::chrono::milliseconds publishFrequency = std::chrono::milliseconds(1000));
 
     ~MetricsPublisher();
 
@@ -86,6 +89,8 @@ class MetricsPublisher
      * Add a data point to the outgoing metrics collection.
      */
     void AddDataPoint(const Metric &metricData);
+
+    void AddTransferStatusDataPoint(bool transferSuccess);
 
     /*
      * Set the transfer size we are currently recording metrics for.  (Will
@@ -104,9 +109,9 @@ class MetricsPublisher
     Aws::Crt::Optional<Aws::Crt::String> Namespace;
 
   private:
-    void PreparePayload(Aws::Crt::StringStream &bodyStream, const Aws::Crt::Vector<Metric> &);
-
     static void s_OnPublishTask(aws_task *task, void *arg, aws_task_status status);
+
+    void PreparePayload(Aws::Crt::StringStream &bodyStream, const Aws::Crt::Vector<Metric> &);
 
     MetricTransferSize m_transferSize;
     CanaryApp &m_canaryApp;

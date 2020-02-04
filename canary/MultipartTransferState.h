@@ -14,14 +14,23 @@
  */
 #pragma once
 
+#include "MetricsPublisher.h"
 #include <atomic>
 #include <aws/common/mutex.h>
 #include <aws/common/string.h>
+#include <aws/crt/DateTime.h>
 #include <aws/crt/Types.h>
 #include <aws/crt/http/HttpConnection.h>
 #include <mutex>
 
 class S3ObjectTransport;
+struct CanaryApp;
+
+enum class PartFinishResponse
+{
+    Done,
+    Retry
+};
 
 class MultipartTransferState
 {
@@ -32,13 +41,37 @@ class MultipartTransferState
         uint32_t partNumber;
         uint64_t offsetInBytes;
         uint64_t sizeInBytes;
+        Aws::Crt::DateTime uploadStartTime;
 
         PartInfo();
-        PartInfo(uint32_t partIndex, uint32_t partNumber, uint64_t offsetInBytes, uint64_t sizeInBytes);
+        PartInfo(
+            std::shared_ptr<MetricsPublisher> publisher,
+            uint32_t partIndex,
+            uint32_t partNumber,
+            uint64_t offsetInBytes,
+            uint64_t sizeInBytes);
+
+        void AddDataUpMetric(uint64_t dataUp);
+
+        void AddDataDownMetric(uint64_t dataDown);
+
+        void FlushDataUpMetrics();
+
+        void FlushDataDownMetrics();
+
+      private:
+        Aws::Crt::Vector<Metric> uploadMetrics;
+        Aws::Crt::Vector<Metric> downloadMetrics;
+        std::shared_ptr<MetricsPublisher> publisher;
+
+        Metric &GetOrCreateMetricToUpdate(Aws::Crt::Vector<Metric> &partMetrics, const char *metricName);
+
+        void FlushMetricsVector(Aws::Crt::Vector<Metric> &metrics);
     };
 
-    using PartFinishedCallback = std::function<void()>;
-    using ProcessPartCallback = std::function<void(const PartInfo &partInfo, PartFinishedCallback callback)>;
+    using PartFinishedCallback = std::function<void(PartFinishResponse response)>;
+    using ProcessPartCallback =
+        std::function<void(const std::shared_ptr<PartInfo> &partInfo, PartFinishedCallback callback)>;
     using FinishedCallback = std::function<void(int32_t errorCode)>;
 
     MultipartTransferState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts);
@@ -47,7 +80,6 @@ class MultipartTransferState
 
     void SetProcessPartCallback(const ProcessPartCallback &processPartCallback);
     void SetFinishedCallback(const FinishedCallback &finishedCallback);
-    void SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &connection);
 
     void SetFinished(int32_t errorCode = AWS_ERROR_SUCCESS);
     bool IncNumPartsCompleted();
@@ -57,7 +89,6 @@ class MultipartTransferState
     uint32_t GetNumParts() const;
     uint32_t GetNumPartsCompleted() const;
     uint64_t GetObjectSize() const;
-    std::shared_ptr<Aws::Crt::Http::HttpClientConnection> GetConnection() const;
 
     template <typename... TArgs> void ProcessPart(TArgs &&... Args) const
     {
@@ -71,7 +102,6 @@ class MultipartTransferState
     std::atomic<uint32_t> m_numPartsCompleted;
     uint64_t m_objectSize;
     Aws::Crt::String m_key;
-    std::shared_ptr<Aws::Crt::Http::HttpClientConnection> m_connection;
     ProcessPartCallback m_processPartCallback;
     FinishedCallback m_finishedCallback;
 };

@@ -196,6 +196,11 @@ namespace Aws
             {
                 return (HttpVersion)aws_http_connection_get_version(m_connection);
             }
+            Aws::Crt::String HttpClientConnection::GetResolvedHost() { 
+				aws_channel* channel = aws_http_connection_get_channel(m_connection);
+                aws_socket *socket = (aws_socket*)aws_channel_get_user_data(channel);
+				return Aws::Crt::String(socket->remote_endpoint.address);
+			}
 
             int HttpStream::s_onIncomingHeaders(
                 struct aws_http_stream *,
@@ -322,6 +327,7 @@ namespace Aws
                   ManualWindowManagement(false)
             {
             }
+
         } // namespace Http
     }     // namespace Crt
 } // namespace Aws

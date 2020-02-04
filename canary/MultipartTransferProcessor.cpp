@@ -14,12 +14,17 @@
  */
 
 #include "MultipartTransferProcessor.h"
+#include "CanaryApp.h"
 #include "S3ObjectTransport.h"
+
+#include <aws/crt/Api.h>
 #include <aws/crt/Types.h>
 #include <aws/crt/io/EventLoopGroup.h>
 #include <aws/crt/io/Stream.h>
 #include <aws/io/stream.h>
-#include <aws/crt/Api.h>
+
+#include <aws/common/clock.h>
+#include <aws/common/system_info.h>
 
 #if defined(_WIN32)
 #    undef min
@@ -27,7 +32,7 @@
 
 using namespace Aws::Crt;
 
-const uint32_t MultipartTransferProcessor::NumPartsPerTask = 25;
+const uint32_t MultipartTransferProcessor::NumPartsPerTask = 100;
 
 MultipartTransferProcessor::ProcessPartRangeTaskArgs::ProcessPartRangeTaskArgs(
     MultipartTransferProcessor &inTransferProcessor,
@@ -40,8 +45,10 @@ MultipartTransferProcessor::ProcessPartRangeTaskArgs::ProcessPartRangeTaskArgs(
 }
 
 MultipartTransferProcessor::MultipartTransferProcessor(
+    CanaryApp &canaryApp,
     Aws::Crt::Io::EventLoopGroup &elGroup,
     std::uint32_t streamsAvailable)
+    : m_canaryApp(canaryApp)
 {
     m_streamsAvailable = streamsAvailable;
     m_schedulingLoop = aws_event_loop_group_get_next_loop(elGroup.GetUnderlyingHandle());
@@ -50,8 +57,7 @@ MultipartTransferProcessor::MultipartTransferProcessor(
 void MultipartTransferProcessor::ProcessNextParts(uint32_t streamsReturning)
 {
     std::shared_ptr<MultipartTransferState> state;
-    Vector<QueuedPart> parts;
-    std::shared_ptr<Vector<QueuedPart>> partsShared;
+    std::shared_ptr<Vector<QueuedPart>> parts = MakeShared<Vector<QueuedPart>>(g_allocator);
 
     // Grab all of the streams available in the shared pool and add our own number of streams
     // that we know locally can be returned.  If we don't end up needing that stream (or
@@ -62,10 +68,9 @@ void MultipartTransferProcessor::ProcessNextParts(uint32_t streamsReturning)
     uint32_t numStreamsToConsume = m_streamsAvailable.exchange(0) + streamsReturning;
 
     // Grab all of the parts that we can consume and put them into our local parts vector.
-    uint32_t numPartsToProcess = PopQueue(numStreamsToConsume, parts);
+    uint32_t numPartsToProcess = PopQueue(numStreamsToConsume, *parts);
 
-    // Figure out how many tasks this should be distributed among.  If only 1, we'll
-    // do the processing from the current thread.
+    // Figure out how many tasks this should be distributed among.
     uint32_t numTasksNeeded = numPartsToProcess / NumPartsPerTask;
 
     m_streamsAvailable += (numStreamsToConsume - numPartsToProcess);
@@ -79,53 +84,42 @@ void MultipartTransferProcessor::ProcessNextParts(uint32_t streamsReturning)
     {
         return;
     }
-    else if (numTasksNeeded == 1)
-    {
-        ProcessPartRange(parts, 0, numPartsToProcess);
-    }
-    else if (numTasksNeeded > 1)
-    {
-        // Multiple tasks will be reading from the queue, so move it into a shared pointer
-        // that will auto-cleanup once the tasks referencing it go away.
-        partsShared = MakeShared<Vector<QueuedPart>>(g_allocator);
-        *partsShared = std::move(parts);
 
-        uint32_t numParts = static_cast<uint32_t>(partsShared->size());
+    uint32_t numParts = static_cast<uint32_t>(parts->size());
 
-        // Setup and create each task needed
-        for (uint32_t i = 0; i < numTasksNeeded; ++i)
+    // Setup and create each task needed
+    for (uint32_t i = 0; i < numTasksNeeded; ++i)
+    {
+        uint32_t partRangeStart = i * NumPartsPerTask;
+        uint32_t partRangeLength = NumPartsPerTask;
+
+        if ((partRangeStart + partRangeLength) > numParts)
         {
-            uint32_t partRangeStart = i * NumPartsPerTask;
-            uint32_t partRangeLength = NumPartsPerTask;
-
-            if ((partRangeStart + partRangeLength) > numParts)
-            {
-                partRangeLength = numParts - partRangeStart;
-            }
-
-            ProcessPartRangeTaskArgs *args =
-                New<ProcessPartRangeTaskArgs>(g_allocator, *this, partRangeStart, partRangeLength, partsShared);
-
-            aws_task* processPartRangeTask = New<aws_task>(g_allocator);
-            aws_task_init(
-                processPartRangeTask,
-                MultipartTransferProcessor::s_ProcessPartRangeTask,
-                reinterpret_cast<void *>(args),
-                "ProcessPartRangeTask");
-
-            aws_event_loop_schedule_task_now(m_schedulingLoop, processPartRangeTask);
+            partRangeLength = numParts - partRangeStart;
         }
+
+        ProcessPartRangeTaskArgs *args =
+            New<ProcessPartRangeTaskArgs>(g_allocator, *this, partRangeStart, partRangeLength, parts);
+
+        aws_task *processPartRangeTask = New<aws_task>(g_allocator);
+        aws_task_init(
+            processPartRangeTask,
+            MultipartTransferProcessor::s_ProcessPartRangeTask,
+            reinterpret_cast<void *>(args),
+            "ProcessPartRangeTask");
+
+        aws_event_loop_schedule_task_now(m_schedulingLoop, processPartRangeTask);
     }
 }
 
-void MultipartTransferProcessor::s_ProcessPartRangeTask(aws_task *task, void *arg, aws_task_status status)
+void MultipartTransferProcessor::s_ProcessPartRangeTask(aws_task *task, void *argsVoid, aws_task_status status)
 {
     if (status != AWS_TASK_STATUS_RUN_READY)
     {
         return;
     }
 
-    ProcessPartRangeTaskArgs *args = reinterpret_cast<ProcessPartRangeTaskArgs *>(arg);
+    ProcessPartRangeTaskArgs *args = reinterpret_cast<ProcessPartRangeTaskArgs *>(argsVoid);
     args->transferProcessor.ProcessPartRange(*args->parts, args->partRangeStart, args->partRangeLength);
 
     Delete(task, g_allocator);
@@ -156,13 +150,33 @@ void MultipartTransferProcessor::ProcessPartRange(
         uint32_t partIndex = parts[i].partIndex;
         uint32_t partNumber = partIndex + 1;
 
-        uint64_t partByteStart = partIndex * S3ObjectTransport::MaxPartSizeBytes;
-        uint64_t partByteRemainder = state->GetObjectSize() - (partIndex * S3ObjectTransport::MaxPartSizeBytes);
-        uint64_t partByteSize = std::min(partByteRemainder, S3ObjectTransport::MaxPartSizeBytes);
+        uint64_t partByteInterval = state->GetObjectSize() / static_cast<uint64_t>(state->GetNumParts());
+        uint64_t partByteStart = partIndex * partByteInterval;
+        uint64_t partByteSize = partByteInterval;
 
-        MultipartTransferState::PartInfo partInfo(partIndex, partNumber, partByteStart, partByteSize);
+        if (partNumber == state->GetNumParts())
+        {
+            partByteSize += state->GetObjectSize() % static_cast<uint64_t>(state->GetNumParts());
+        }
 
-        state->ProcessPart(partInfo, [this]() { ProcessNextParts(1); });
+        std::shared_ptr<MultipartTransferState::PartInfo> partInfo = MakeShared<MultipartTransferState::PartInfo>(
+            g_allocator, m_canaryApp.publisher, partIndex, partNumber, partByteStart, partByteSize);
+
+        // TODO should state and partInfo be captured as weak pointers here?
+        state->ProcessPart(partInfo, [this, state, partInfo](PartFinishResponse response) {
+            if (response == PartFinishResponse::Done)
+            {
+                ProcessNextParts(1);
+            }
+            else if (response == PartFinishResponse::Retry)
+            {
+                RepushQueue(state, partInfo->partIndex);
+            }
+            else
+            {
+                AWS_FATAL_ASSERT(false);
+            }
+        });
     }
 
     if (numSkipped > 0)
@@ -184,6 +198,18 @@ void MultipartTransferProcessor::PushQueue(const std::shared_ptr<MultipartTransf
     }
 
     ProcessNextParts(0);
+}
+
+void MultipartTransferProcessor::RepushQueue(const std::shared_ptr<MultipartTransferState> &state, uint32_t partIndex)
+{
+    {
+        std::lock_guard<std::mutex> lock(m_partQueueMutex);
+
+        QueuedPart queuedPart = {state, partIndex};
+        m_partQueue.push(queuedPart);
+    }
+
+    ProcessNextParts(1);
 }
 
 uint32_t MultipartTransferProcessor::PopQueue(uint32_t numRequested, Vector<QueuedPart> &parts)

@@ -99,6 +99,13 @@ namespace Aws
 
                 return true;
             }
+
+            size_t DefaultHostResolver::GetHostAddressCount(const String &host) noexcept
+            {
+                aws_string *hostNameString = aws_string_new_from_array(m_allocator, reinterpret_cast<const uint8_t *>(host.data()), host.length());
+
+                return aws_host_resolver_get_host_address_count(&m_resolver, hostNameString);
+            }
         } // namespace Io
     }     // namespace Crt
 } // namespace Aws
