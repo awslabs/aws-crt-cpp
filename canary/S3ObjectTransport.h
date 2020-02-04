@@ -19,6 +19,7 @@
 #include <aws/crt/DateTime.h>
 #include <aws/crt/auth/Sigv4Signing.h>
 #include <aws/crt/http/HttpConnectionManager.h>
+#include <aws/crt/io/Stream.h>
 
 #include <queue>
 
@@ -32,7 +33,8 @@ using PutObjectMultipartFinished = std::function<void(int32_t errorCode, uint32_
 using GetObjectMultipartFinished = std::function<void(int32_t errorCode)>;
 
 // Note: Any stream returned here will be cleaned up by the caller.
-using SendPartCallback = std::function<struct aws_input_stream *(const MultipartTransferState::PartInfo &partInfo)>;
+using SendPartCallback =
+    std::function<std::shared_ptr<Aws::Crt::Io::InputStream>(const MultipartTransferState::PartInfo &partInfo)>;
 using ReceivePartCallback =
     std::function<void(const MultipartTransferState::PartInfo &partInfo, const Aws::Crt::ByteCursor &data)>;
 
@@ -59,7 +61,7 @@ class S3ObjectTransport
     // Note: PutObject is responsible for making sure that inputStream will be cleaned up.
     void PutObject(
         const Aws::Crt::String &key,
-        struct aws_input_stream *inputStream,
+        const std::shared_ptr<Aws::Crt::Io::InputStream> &inputStream,
         const PutObjectFinished &finishedCallback);
 
     void PutObjectMultipart(
@@ -99,14 +101,14 @@ class S3ObjectTransport
     void PutObject(
         const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &conn,
         const Aws::Crt::String &key,
-        struct aws_input_stream *inputStream,
+        const std::shared_ptr<Aws::Crt::Io::InputStream> &body,
         uint32_t flags,
         const PutObjectFinished &onFinished);
 
     void UploadPart(
         const std::shared_ptr<MultipartUploadState> &state,
         MultipartTransferState::PartInfo &partInfo,
-        aws_input_stream *partInputStream,
+        const std::shared_ptr<Aws::Crt::Io::InputStream> &body,
         const MultipartTransferState::PartFinishedCallback &partFinished);
 
     void GetObject(
@@ -135,7 +137,9 @@ class S3ObjectTransport
         const Aws::Crt::Http::HttpRequestOptions &requestOptions,
         const std::shared_ptr<Aws::Crt::Http::HttpRequest> &signedRequest);
 
-    void AddContentLengthHeader(std::shared_ptr<Aws::Crt::Http::HttpRequest> request, aws_input_stream *inputStream);
+    void AddContentLengthHeader(
+        std::shared_ptr<Aws::Crt::Http::HttpRequest> request,
+        const std::shared_ptr<Aws::Crt::Io::InputStream> &body);
 
     void CreateMultipartUpload(
         const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &conn,
