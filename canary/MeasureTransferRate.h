@@ -3,7 +3,7 @@
 #include <aws/crt/DateTime.h>
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/Types.h>
-#include <aws/io/stream.h>
+#include <aws/crt/io/Stream.h>
 #include <chrono>
 #include <functional>
 
@@ -11,6 +11,26 @@ class S3ObjectTransport;
 class MetricsPublisher;
 struct aws_event_loop;
 struct CanaryApp;
+
+class MeasureTransferRateStream : public Aws::Crt::Io::InputStream
+{
+  public:
+    MeasureTransferRateStream(CanaryApp &canaryApp, Aws::Crt::Allocator *allocator, uint64_t length);
+
+    virtual bool IsValid() const noexcept override;
+
+  private:
+    CanaryApp &m_canaryApp;
+    Aws::Crt::Allocator *m_allocator;
+    uint64_t m_length;
+    uint64_t m_written;
+    Aws::Crt::DateTime m_timestamp;
+
+    virtual bool ReadImpl(Aws::Crt::ByteBuf &buffer) noexcept override;
+    virtual Aws::Crt::Io::StreamStatus GetStatusImpl() const noexcept override;
+    virtual int64_t GetLengthImpl() const noexcept override;
+    virtual bool SeekImpl(Aws::Crt::Io::OffsetType offset, Aws::Crt::Io::StreamSeekBasis basis) noexcept override;
+};
 
 class MeasureTransferRate
 {
@@ -26,16 +46,6 @@ class MeasureTransferRate
         MeasureTransferRate &measureTransferRate;
     };
 
-    struct TemplateStream
-    {
-        aws_input_stream inputStream;
-        MetricsPublisher *publisher;
-        size_t length;
-        size_t written;
-        int iterations;
-        Aws::Crt::DateTime timestamp;
-    };
-
     using NotifyUploadFinished = std::function<void(int32_t errorCode)>;
     using NotifyDownloadProgress = std::function<void(uint64_t dataLength)>;
     using NotifyDownloadFinished = std::function<void(int32_t errorCode)>;
@@ -48,6 +58,7 @@ class MeasureTransferRate
         const NotifyUploadFinished &notifyUploadFinished,
         const NotifyDownloadFinished &notifyDownloadFinished)>;
 
+    friend class MeasureTransferRateStream; // TODO
     static size_t BodyTemplateSize;
     static char *BodyTemplate;
     static const uint64_t SmallObjectSize;
@@ -55,24 +66,9 @@ class MeasureTransferRate
     static const std::chrono::milliseconds AllocationMetricFrequency;
     static const uint64_t AllocationMetricFrequencyNS;
 
-    static aws_input_stream_vtable s_templateStreamVTable;
-
     CanaryApp &m_canaryApp;
     aws_event_loop *m_schedulingLoop;
     aws_task m_measureAllocationsTask;
-
-    static int s_templateStreamRead(struct aws_input_stream *stream, struct aws_byte_buf *dest);
-    static int s_templateStreamGetStatus(struct aws_input_stream *stream, struct aws_stream_status *status);
-    static int s_templateStreamSeek(
-        struct aws_input_stream *stream,
-        aws_off_t offset,
-        enum aws_stream_seek_basis basis);
-    static int s_templateStreamGetLength(struct aws_input_stream *stream, int64_t *length);
-    static void s_templateStreamDestroy(struct aws_input_stream *stream);
-    static aws_input_stream *s_createTemplateStream(
-        Aws::Crt::Allocator *allocator,
-        MetricsPublisher *publisher,
-        size_t length);
 
     template <typename TPeformTransferType>
     void PerformMeasurement(

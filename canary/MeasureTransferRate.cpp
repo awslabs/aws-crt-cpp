@@ -20,25 +20,24 @@ const uint64_t MeasureTransferRate::AllocationMetricFrequencyNS = aws_timestamp_
     AWS_TIMESTAMP_NANOS,
     NULL);
 
-aws_input_stream_vtable MeasureTransferRate::s_templateStreamVTable = {s_templateStreamSeek,
-                                                                       s_templateStreamRead,
-                                                                       s_templateStreamGetStatus,
-                                                                       s_templateStreamGetLength,
-                                                                       s_templateStreamDestroy};
-
-int MeasureTransferRate::s_templateStreamRead(struct aws_input_stream *stream, struct aws_byte_buf *dest)
+bool MeasureTransferRateStream::IsValid() const noexcept
 {
-    auto templateStream = static_cast<TemplateStream *>(stream->impl);
+    return true; // TODO return !is_end_of_stream?
+}
 
-    size_t totalBufferSpace = dest->capacity - dest->len;
-    size_t unwritten = templateStream->length - templateStream->written;
+bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
+{
+    (void)m_canaryApp;
+    (void)m_allocator;
+
+    size_t totalBufferSpace = dest.capacity - dest.len;
+    size_t unwritten = m_length - m_written;
     size_t totalToWrite = totalBufferSpace > unwritten ? unwritten : totalBufferSpace;
     size_t writtenOut = 0;
 
-    if (templateStream->written == 0)
+    if (m_written == 0)
     {
-        templateStream->iterations = 0;
-        templateStream->timestamp = DateTime::Now();
+        m_timestamp = DateTime::Now();
     }
 
     while (totalToWrite)
@@ -46,89 +45,65 @@ int MeasureTransferRate::s_templateStreamRead(struct aws_input_stream *stream, s
         size_t toWrite = MeasureTransferRate::BodyTemplateSize - 1 > totalToWrite
                              ? totalToWrite
                              : MeasureTransferRate::BodyTemplateSize - 1;
-        ByteCursor outCur = ByteCursorFromArray((const uint8_t *)BodyTemplate, toWrite);
+        ByteCursor outCur = ByteCursorFromArray((const uint8_t *)MeasureTransferRate::BodyTemplate, toWrite);
 
-        aws_byte_buf_append(dest, &outCur);
+        aws_byte_buf_append(&dest, &outCur);
 
         writtenOut += toWrite;
         totalToWrite = totalToWrite - toWrite;
-        ++templateStream->iterations;
     }
 
     // A quick way for us to measure how much data we've actually written to S3 storage.  (This working is reliant
     // on this function only being used when we are reading data from the stream while sending that data to S3.)
-    templateStream->written += writtenOut;
+    m_written += writtenOut;
 
-    if (templateStream->length == templateStream->written)
+    if (m_length == m_written)
     {
-        DateTime endTime = DateTime::Now();
-        AWS_LOGF_INFO(
-            AWS_LS_CRT_CPP_CANARY,
-            "Time taken to write chunk %" PRId64 " milliseconds with %d iterations",
-            endTime.Millis() - templateStream->timestamp.Millis(),
-            templateStream->iterations);
+        /*
+                DateTime endTime = DateTime::Now();
+                AWS_LOGF_INFO(
+                    AWS_LS_CRT_CPP_CANARY,
+                    "Time taken to write chunk %" PRId64 " milliseconds",
+                    endTime.Millis() - m_timestamp.Millis());
 
-        /*        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Sending BytesUp metric for %" PRId64 " bytes",
-           templateStream->length); Metric uploadMetric; uploadMetric.MetricName = "BytesUp"; uploadMetric.Timestamp =
-           DateTime::Now(); uploadMetric.Value = (double)templateStream->length; uploadMetric.Unit = MetricUnit::Bytes;
+                AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Sending BytesUp metric for %" PRId64 " bytes",
+                   m_length);
+            Metric uploadMetric;
+            uploadMetric.MetricName = "BytesUp";
+            uploadMetric.Timestamp = DateTime::Now();
+            uploadMetric.Value = (double)m_length;
+            uploadMetric.Unit = MetricUnit::Bytes;
 
-                templateStream->publisher->AddDataPoint(uploadMetric);
+                m_canaryApp.publisher->AddDataPoint(uploadMetric);
         */
     }
 
-    return AWS_OP_SUCCESS;
+    return true;
 }
 
-int MeasureTransferRate::s_templateStreamGetStatus(struct aws_input_stream *stream, struct aws_stream_status *status)
+Io::StreamStatus MeasureTransferRateStream::GetStatusImpl() const noexcept
 {
-    auto templateStream = static_cast<TemplateStream *>(stream->impl);
+    Io::StreamStatus status;
+    status.is_end_of_stream = m_written == m_length;
+    status.is_valid = !status.is_end_of_stream;
 
-    status->is_end_of_stream = templateStream->written == templateStream->length;
-    status->is_valid = !status->is_end_of_stream;
-
-    return AWS_OP_SUCCESS;
+    return status;
 }
 
-int MeasureTransferRate::s_templateStreamSeek(
-    struct aws_input_stream *stream,
-    aws_off_t offset,
-    enum aws_stream_seek_basis basis)
+bool MeasureTransferRateStream::SeekImpl(Io::OffsetType offset, Io::StreamSeekBasis basis) noexcept
 {
-    (void)offset;
-    (void)basis;
-
-    auto templateStream = static_cast<TemplateStream *>(stream->impl);
-    templateStream->written = 0;
-    return AWS_OP_SUCCESS;
+    m_written = 0;
+    return true;
 }
 
-int MeasureTransferRate::s_templateStreamGetLength(struct aws_input_stream *stream, int64_t *length)
+int64_t MeasureTransferRateStream::GetLengthImpl() const noexcept
 {
-    auto templateStream = static_cast<TemplateStream *>(stream->impl);
-    *length = templateStream->length;
-    return AWS_OP_SUCCESS;
+    return m_length;
 }
 
-void MeasureTransferRate::s_templateStreamDestroy(struct aws_input_stream *stream)
+MeasureTransferRateStream::MeasureTransferRateStream(CanaryApp &canaryApp, Allocator *allocator, uint64_t length)
+    : m_canaryApp(canaryApp), m_allocator(allocator), m_length(length), m_written(0)
 {
-    auto templateStream = static_cast<TemplateStream *>(stream->impl);
-    Delete(templateStream, stream->allocator);
-}
-
-aws_input_stream *MeasureTransferRate::s_createTemplateStream(
-    Allocator *alloc,
-    MetricsPublisher *publisher,
-    size_t length)
-{
-    auto templateStream = New<TemplateStream>(alloc);
-    templateStream->publisher = publisher;
-    templateStream->length = length;
-    templateStream->written = 0;
-    templateStream->inputStream.allocator = alloc;
-    templateStream->inputStream.impl = templateStream;
-    templateStream->inputStream.vtable = &s_templateStreamVTable;
-
-    return &templateStream->inputStream;
 }
 
 MeasureTransferRate::MeasureTransferRate(CanaryApp &canaryApp) : m_canaryApp(canaryApp)
@@ -345,7 +320,7 @@ void MeasureTransferRate::s_TransferSmallObject(
 
     transport->PutObject(
         key,
-        s_createTemplateStream(allocator, publisher.get(), objectSize),
+        MakeShared<MeasureTransferRateStream>(allocator, canaryApp, allocator, objectSize),
         [transport, key, notifyUploadFinished, notifyDownloadProgress, notifyDownloadFinished](
             int32_t errorCode, std::shared_ptr<Aws::Crt::String>) {
             notifyUploadFinished(errorCode);
@@ -375,14 +350,13 @@ void MeasureTransferRate::s_TransferLargeObject(
 {
     CanaryApp &canaryApp = measureTransferRate.m_canaryApp;
     Allocator *allocator = canaryApp.traceAllocator;
-    std::shared_ptr<MetricsPublisher> publisher = canaryApp.publisher;
     std::shared_ptr<S3ObjectTransport> transport = canaryApp.transport;
 
     transport->PutObjectMultipart(
         key,
         objectSize,
-        [allocator, publisher](const MultipartTransferState::PartInfo &partInfo) {
-            return s_createTemplateStream(allocator, publisher.get(), partInfo.sizeInBytes);
+        [allocator, &canaryApp](const MultipartTransferState::PartInfo &partInfo) {
+            return MakeShared<MeasureTransferRateStream>(allocator, canaryApp, allocator, partInfo.sizeInBytes);
         },
         [transport, key, notifyUploadFinished, notifyDownloadProgress, notifyDownloadFinished](
             int32_t errorCode, uint32_t numParts) {
