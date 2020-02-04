@@ -20,10 +20,7 @@ namespace Aws
                 // resources to clean up in the future.
             }
 
-            int64_t InputStream::GetLength() const noexcept
-            {
-                return GetLengthImpl();
-            }
+            int64_t InputStream::GetLength() const noexcept { return GetLengthImpl(); }
 
             int InputStream::s_Seek(aws_input_stream *stream, aws_off_t offset, enum aws_stream_seek_basis basis)
             {

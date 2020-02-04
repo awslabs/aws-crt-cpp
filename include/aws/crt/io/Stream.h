@@ -40,8 +40,8 @@ namespace Aws
 
                 explicit operator bool() const noexcept { return IsValid(); }
                 virtual bool IsValid() const noexcept = 0;
-                
-		int64_t GetLength() const noexcept;
+
+                int64_t GetLength() const noexcept;
 
                 aws_input_stream *GetUnderlyingStream() noexcept { return &m_underlying_stream; }
 
