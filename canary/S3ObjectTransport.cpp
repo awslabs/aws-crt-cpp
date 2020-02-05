@@ -32,9 +32,9 @@
 
 using namespace Aws::Crt;
 
-const uint64_t S3ObjectTransport::MaxPartSizeBytes = 500ULL * 1000ULL * 1000ULL;
+const uint64_t S3ObjectTransport::MaxPartSizeBytes = 500ULL * 1000ULL * 1000ULL / 8ULL;
 const uint32_t S3ObjectTransport::MaxStreams =
-    (100ULL * 1000ULL * 1000ULL * 1000ULL) / S3ObjectTransport::MaxPartSizeBytes;
+    (100ULL * 1000ULL * 1000ULL * 1000ULL / 8ULL) / S3ObjectTransport::MaxPartSizeBytes;
 const int32_t S3ObjectTransport::S3GetObjectResponseStatus_PartialContent = 206;
 const bool S3ObjectTransport::SingleConnectionPerMultipartUpload = false;
 
@@ -362,7 +362,7 @@ void S3ObjectTransport::UploadPart(
             if (errorCode == AWS_ERROR_SUCCESS)
             {
                 state->SetETag(partInfo.partIndex, *etag);
-
+/*
                 DateTime uploadEndTime = DateTime::Now();
                 double interval = (double)(uploadEndTime.Millis() - partInfo.uploadStartTime.Millis());
                 int sampleMax = 1;
@@ -389,6 +389,7 @@ void S3ObjectTransport::UploadPart(
 
                     m_canaryApp.publisher->AddDataPoint(uploadMetric);
                 }
+*/
 
                 if (state->IncNumPartsCompleted())
                 {

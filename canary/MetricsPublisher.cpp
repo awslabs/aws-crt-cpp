@@ -22,6 +22,7 @@
 #include <aws/common/task_scheduler.h>
 #include <condition_variable>
 #include <iostream>
+#include <inttypes.h>
 
 using namespace Aws::Crt;
 
@@ -29,7 +30,7 @@ MetricsPublisher::MetricsPublisher(
     CanaryApp &canaryApp,
     const char *metricNamespace,
     std::chrono::seconds publishFrequency)
-    : m_canaryApp(canaryApp)
+    : m_canaryApp(canaryApp), m_dataUp(0LL), m_dataDown(0LL)
 {
     Namespace = metricNamespace;
 
@@ -82,6 +83,16 @@ MetricsPublisher::~MetricsPublisher()
 void MetricsPublisher::SetMetricTransferSize(MetricTransferSize transferSize)
 {
     m_transferSize = transferSize;
+}
+
+void MetricsPublisher::AddDataUp(uint64_t dataUp)
+{
+    m_dataUp += dataUp;
+}
+
+void MetricsPublisher::AddDataDown(uint64_t dataDown)
+{
+    m_dataDown += dataDown;
 }
 
 static const char *s_UnitToStr(MetricUnit unit)
@@ -196,7 +207,37 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
     if (status == AWS_TASK_STATUS_RUN_READY)
     {
         auto publisher = static_cast<MetricsPublisher *>(arg);
-        Vector<Metric> metricsCpy;
+
+        uint64_t dataUp = publisher->m_dataUp.exchange(0);
+	uint64_t dataDown = publisher->m_dataDown.exchange(0);
+
+        if (dataUp > 0)
+        {
+            Metric uploadMetric;
+            uploadMetric.MetricName = "BytesUp";
+            uploadMetric.Timestamp = DateTime::Now();
+            uploadMetric.Value = (double)dataUp*8.0/1000.0/1000.0/1000.0;
+            uploadMetric.Unit = MetricUnit::Gigabits;
+
+            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Emitting BytesUp metric for %f Gb", uploadMetric.Value);
+
+            publisher->AddDataPoint(uploadMetric);
+        }
+
+        if (dataDown > 0)
+        {
+            Metric downloadMetric;
+            downloadMetric.MetricName = "BytesDown";
+            downloadMetric.Timestamp = DateTime::Now();
+            downloadMetric.Value = (double)dataDown*8.0/1000.0/1000.0/1000.0;
+            downloadMetric.Unit = MetricUnit::Gigabits;
+
+            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Emitting BytesDown metric for %f Gb", downloadMetric.Value);
+
+            publisher->AddDataPoint(downloadMetric);
+        }
+
+	Vector<Metric> metricsCpy;
         {
             std::lock_guard<std::mutex> locker(publisher->m_publishDataLock);
             if (publisher->m_publishData.empty())

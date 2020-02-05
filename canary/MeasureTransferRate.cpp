@@ -8,11 +8,11 @@
 
 using namespace Aws::Crt;
 
-size_t MeasureTransferRate::BodyTemplateSize = 500 * 1000 * 1000;
+size_t MeasureTransferRate::BodyTemplateSize = 500 * 1000 * 1000 / 8;
 char *MeasureTransferRate::BodyTemplate = nullptr;
 
 const uint64_t MeasureTransferRate::SmallObjectSize = 16ULL * 1024ULL * 1024ULL;
-const uint64_t MeasureTransferRate::LargeObjectSize = 1ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL;
+const uint64_t MeasureTransferRate::LargeObjectSize = 10000ULL * (500ULL * 1000ULL * 1000ULL / 8ULL); //1ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL;
 const std::chrono::milliseconds MeasureTransferRate::AllocationMetricFrequency(1000);
 const uint64_t MeasureTransferRate::AllocationMetricFrequencyNS = aws_timestamp_convert(
     MeasureTransferRate::AllocationMetricFrequency.count(),
@@ -52,6 +52,8 @@ bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
         writtenOut += toWrite;
         totalToWrite = totalToWrite - toWrite;
     }
+
+    m_canaryApp.publisher->AddDataUp(writtenOut);
 
     // A quick way for us to measure how much data we've actually written to S3 storage.  (This working is reliant
     // on this function only being used when we are reading data from the stream while sending that data to S3.)
@@ -168,10 +170,10 @@ void MeasureTransferRate::PerformMeasurement(
 
     time_t initialTime;
     time(&initialTime);
-
+/*
     std::mutex bytesDownMetricMutex;
     uint64_t bytesDownMetric = 0;
-
+*/
     while (continueInitiatingTransfers || inFlightUploadOrDownload > 0)
     {
         if (counter == 0)
@@ -216,7 +218,8 @@ void MeasureTransferRate::PerformMeasurement(
                 };
 
             NotifyDownloadProgress notifyDownloadProgress =
-                [publisher, &bytesDownMetric, &bytesDownMetricMutex](uint64_t dataLength) {
+                [publisher /*, &bytesDownMetric, &bytesDownMetricMutex */](uint64_t dataLength) {
+/*                    
                     uint64_t bytesToReport = 0;
 
                     {
@@ -242,6 +245,8 @@ void MeasureTransferRate::PerformMeasurement(
                     downMetric->Value = static_cast<double>(bytesToReport);
                     downMetric->Timestamp = DateTime::Now();
                     publisher->AddDataPoint(*downMetric);
+*/
+		    publisher->AddDataDown(dataLength);
                 };
 
             NotifyDownloadFinished notifyDownloadFinished = [publisher, &inFlightUploadOrDownload](int32_t errorCode) {
@@ -282,7 +287,7 @@ void MeasureTransferRate::PerformMeasurement(
     }
 
     aws_event_loop_cancel_task(m_schedulingLoop, &m_measureAllocationsTask);
-
+/*
     if (bytesDownMetric > 0)
     {
         AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Emitting BytesDown Metric %" PRId64, bytesDownMetric);
@@ -295,7 +300,7 @@ void MeasureTransferRate::PerformMeasurement(
 
         bytesDownMetric = 0;
     }
-
+*/
     publisher->WaitForLastPublish();
 
     if (BodyTemplate != nullptr)

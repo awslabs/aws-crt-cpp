@@ -79,6 +79,7 @@ void MultipartTransferProcessor::ProcessNextParts(uint32_t streamsReturning)
     {
         return;
     }
+    
     else if (numTasksNeeded == 1)
     {
         ProcessPartRange(parts, 0, numPartsToProcess);
