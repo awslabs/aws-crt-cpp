@@ -103,6 +103,10 @@ class MetricsPublisher
      */
     Aws::Crt::Optional<Aws::Crt::String> Namespace;
 
+    void AddDataUp(uint64_t dataUp);
+
+    void AddDataDown(uint64_t dataDown);
+
   private:
     void PreparePayload(Aws::Crt::StringStream &bodyStream, const Aws::Crt::Vector<Metric> &);
 
@@ -121,4 +125,7 @@ class MetricsPublisher
     aws_task m_publishTask;
     uint64_t m_publishFrequencyNs;
     std::condition_variable m_waitForLastPublishCV;
+
+    std::atomic<uint64_t> m_dataUp;
+    std::atomic<uint64_t> m_dataDown;
 };
