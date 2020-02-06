@@ -74,6 +74,7 @@ CanaryApp::CanaryApp(int argc, char *argv[])
         credsProvider = Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(chainConfig, traceAllocator);
     */
 
+    // TODO Take out before merging--this is a giant hack to filter just canary logs
     aws_logger_vtable *currentVTable = aws_logger_get()->vtable;
     void **logFunctionVoid = (void **)&currentVTable->log;
     *logFunctionVoid = (void *)filterLog;
