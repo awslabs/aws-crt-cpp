@@ -71,7 +71,7 @@ void MultipartTransferState::PartInfo::FlushMetricsVector(Vector<Metric> &metric
         metric.Value += metrics[i].Value;
     }
 
-    publisher->AddDataPoint(metric);
+    publisher->AddDataPointSum(metric);
     /*
         double total = 0.0;
 

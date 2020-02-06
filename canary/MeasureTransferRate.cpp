@@ -5,9 +5,12 @@
 #include "S3ObjectTransport.h"
 #include <aws/common/clock.h>
 #include <aws/common/system_info.h>
+#include <execinfo.h>
+#include <unistd.h>
 
 using namespace Aws::Crt;
 
+// TODO make handling of BodyTemplate less awkward.
 size_t MeasureTransferRate::BodyTemplateSize = 500ULL * 1000ULL * 1000ULL / 8ULL;
 char *MeasureTransferRate::BodyTemplate = nullptr;
 
@@ -55,7 +58,23 @@ bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
     }
 
     m_written += writtenOut;
+    /*
+        void *stackTrace[1024];
+        char **stackTraceStrings;
+        int stackDepth = backtrace(stackTrace, 1024);
 
+        stackTraceStrings = backtrace_symbols(stackTrace, stackDepth);
+
+        for(int i = 0; i < stackDepth; ++i)
+        {
+            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "[%d] %s", i, stackTraceStrings[i]);
+        }
+
+        free(stackTraceStrings);
+
+
+        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "!!!!!!! Wrote %" PRId64 " bytes.....", writtenOut);
+    */
     // A quick way for us to measure how much data we've actually written to S3 storage.  (This working is reliant
     // on this function only being used when we are reading data from the stream while sending that data to S3.)
     m_partInfo->AddDataUpMetric(writtenOut);
@@ -244,7 +263,11 @@ void MeasureTransferRate::PerformMeasurement(
 
     aws_event_loop_cancel_task(m_schedulingLoop, &m_measureAllocationsTask);
 
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
+
     publisher->WaitForLastPublish();
+
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
 
     if (BodyTemplate != nullptr)
     {
@@ -266,13 +289,12 @@ void MeasureTransferRate::s_TransferSmallObject(
     std::shared_ptr<MetricsPublisher> publisher = canaryApp.publisher;
     std::shared_ptr<S3ObjectTransport> transport = canaryApp.transport;
 
-    // TODO
-    MultipartTransferState::PartInfo nullPartInfo;
-    nullPartInfo.sizeInBytes = objectSize;
+    std::shared_ptr<MultipartTransferState::PartInfo> singlePart =
+        MakeShared<MultipartTransferState::PartInfo>(allocator, publisher, 0, 1, 0LL, objectSize);
 
     transport->PutObject(
         key,
-        MakeShared<MeasureTransferRateStream>(allocator, canaryApp, nullptr, allocator),
+        MakeShared<MeasureTransferRateStream>(allocator, canaryApp, singlePart, allocator),
         [transport, key, notifyUploadFinished, notifyDownloadProgress, notifyDownloadFinished](
             int32_t errorCode, std::shared_ptr<Aws::Crt::String>) {
             notifyUploadFinished(errorCode);
@@ -304,6 +326,8 @@ void MeasureTransferRate::s_TransferLargeObject(
     Allocator *allocator = canaryApp.traceAllocator;
     std::shared_ptr<S3ObjectTransport> transport = canaryApp.transport;
 
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting upload of object %s...", key.c_str());
+
     transport->PutObjectMultipart(
         key,
         objectSize,
@@ -313,6 +337,8 @@ void MeasureTransferRate::s_TransferLargeObject(
         [transport, key, notifyUploadFinished, notifyDownloadProgress, notifyDownloadFinished](
             int32_t errorCode, uint32_t numParts) {
             notifyUploadFinished(errorCode);
+
+            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Upload finished for object %s.  Starting download...", key.c_str());
 
             if (errorCode != AWS_ERROR_SUCCESS)
             {
@@ -327,7 +353,14 @@ void MeasureTransferRate::s_TransferLargeObject(
                     (void)partInfo;
                     notifyDownloadProgress(cur.len);
                 },
-                [notifyDownloadFinished](int32_t errorCode) { notifyDownloadFinished(errorCode); });
+                [notifyDownloadFinished, key](int32_t errorCode) {
+                    AWS_LOGF_INFO(
+                        AWS_LS_CRT_CPP_CANARY,
+                        "Download finished for object %s with error code %d",
+                        key.c_str(),
+                        errorCode);
+                    notifyDownloadFinished(errorCode);
+                });
         });
 }
 
