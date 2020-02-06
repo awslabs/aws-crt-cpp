@@ -14,6 +14,8 @@
  */
 
 #include "MultipartTransferState.h"
+#include "CanaryApp.h"
+#include "MetricsPublisher.h"
 #include "S3ObjectTransport.h"
 
 #include <aws/crt/Api.h>
@@ -26,12 +28,88 @@ using namespace Aws::Crt;
 
 MultipartTransferState::PartInfo::PartInfo() : partIndex(0), partNumber(0), offsetInBytes(0), sizeInBytes(0) {}
 MultipartTransferState::PartInfo::PartInfo(
+    std::shared_ptr<MetricsPublisher> inPublisher,
     uint32_t inPartIndex,
     uint32_t inPartNumber,
     uint64_t inOffsetInBytes,
     uint64_t inSizeInBytes)
-    : partIndex(inPartIndex), partNumber(inPartNumber), offsetInBytes(inOffsetInBytes), sizeInBytes(inSizeInBytes)
+    : partIndex(inPartIndex), partNumber(inPartNumber), offsetInBytes(inOffsetInBytes), sizeInBytes(inSizeInBytes),
+      publisher(inPublisher)
 {
+}
+
+Metric &MultipartTransferState::PartInfo::GetOrCreateMetricToUpdate(Vector<Metric> &metrics, const char *metricName)
+{
+    DateTime now = DateTime::Now();
+
+    if (metrics.size() == 0 || metrics.back().Timestamp != now)
+    {
+        Metric metric;
+        metric.MetricName = metricName;
+        metric.Timestamp = now;
+        metric.Value = 0.0f;
+        metric.Unit = MetricUnit::Bytes;
+
+        metrics.push_back(metric);
+    }
+
+    return metrics.back();
+}
+
+void MultipartTransferState::PartInfo::FlushMetricsVector(Vector<Metric> &metrics)
+{
+    if (metrics.size() == 0)
+    {
+        return;
+    }
+
+    Metric metric = metrics[0];
+
+    for (uint32_t i = 1; i < metrics.size(); ++i)
+    {
+        metric.Timestamp = metrics[i].Timestamp;
+        metric.Value += metrics[i].Value;
+    }
+
+    publisher->AddDataPoint(metric);
+    /*
+        double total = 0.0;
+
+        for (Metric &metric : metrics)
+        {
+        total += metric.Value / 1024.0 / 1024.0f;
+            //metric.Value = metric.Value * 8.0 / 1000.0 / 1000.0 / 1000.0;
+            //AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Emitting metric for %f Gb in part %d", metric.Value, partIndex);
+        publisher->AddDataPoint(metric);
+        }
+
+        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Total amount of metrics emitted for part %d was %f MB", partIndex, total);
+    */
+    metrics.clear();
+}
+
+void MultipartTransferState::PartInfo::AddDataUpMetric(uint64_t dataUp)
+{
+    Metric &metric = GetOrCreateMetricToUpdate(uploadMetrics, "BytesUp");
+
+    metric.Value += (double)dataUp;
+}
+
+void MultipartTransferState::PartInfo::AddDataDownMetric(uint64_t dataDown)
+{
+    Metric &metric = GetOrCreateMetricToUpdate(downloadMetrics, "BytesDown");
+
+    metric.Value += (double)dataDown;
+}
+
+void MultipartTransferState::PartInfo::FlushDataUpMetrics()
+{
+    FlushMetricsVector(uploadMetrics);
+}
+
+void MultipartTransferState::PartInfo::FlushDataDownMetrics()
+{
+    FlushMetricsVector(downloadMetrics);
 }
 
 MultipartTransferState::MultipartTransferState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts)

@@ -14,7 +14,9 @@
  */
 
 #include "MultipartTransferProcessor.h"
+#include "CanaryApp.h"
 #include "S3ObjectTransport.h"
+
 #include <aws/crt/Api.h>
 #include <aws/crt/Types.h>
 #include <aws/crt/io/EventLoopGroup.h>
@@ -40,8 +42,10 @@ MultipartTransferProcessor::ProcessPartRangeTaskArgs::ProcessPartRangeTaskArgs(
 }
 
 MultipartTransferProcessor::MultipartTransferProcessor(
+    CanaryApp &canaryApp,
     Aws::Crt::Io::EventLoopGroup &elGroup,
     std::uint32_t streamsAvailable)
+    : m_canaryApp(canaryApp)
 {
     m_streamsAvailable = streamsAvailable;
     m_schedulingLoop = aws_event_loop_group_get_next_loop(elGroup.GetUnderlyingHandle());
@@ -79,43 +83,36 @@ void MultipartTransferProcessor::ProcessNextParts(uint32_t streamsReturning)
     {
         return;
     }
-    
-    else if (numTasksNeeded == 1)
-    {
-        ProcessPartRange(parts, 0, numPartsToProcess);
-    }
-    else if (numTasksNeeded > 1)
-    {
-        // Multiple tasks will be reading from the queue, so move it into a shared pointer
-        // that will auto-cleanup once the tasks referencing it go away.
-        partsShared = MakeShared<Vector<QueuedPart>>(g_allocator);
-        *partsShared = std::move(parts);
 
-        uint32_t numParts = static_cast<uint32_t>(partsShared->size());
+    // Multiple tasks will be reading from the queue, so move it into a shared pointer
+    // that will auto-cleanup once the tasks referencing it go away.
+    partsShared = MakeShared<Vector<QueuedPart>>(g_allocator);
+    *partsShared = std::move(parts);
 
-        // Setup and create each task needed
-        for (uint32_t i = 0; i < numTasksNeeded; ++i)
+    uint32_t numParts = static_cast<uint32_t>(partsShared->size());
+
+    // Setup and create each task needed
+    for (uint32_t i = 0; i < numTasksNeeded; ++i)
+    {
+        uint32_t partRangeStart = i * NumPartsPerTask;
+        uint32_t partRangeLength = NumPartsPerTask;
+
+        if ((partRangeStart + partRangeLength) > numParts)
         {
-            uint32_t partRangeStart = i * NumPartsPerTask;
-            uint32_t partRangeLength = NumPartsPerTask;
-
-            if ((partRangeStart + partRangeLength) > numParts)
-            {
-                partRangeLength = numParts - partRangeStart;
-            }
-
-            ProcessPartRangeTaskArgs *args =
-                New<ProcessPartRangeTaskArgs>(g_allocator, *this, partRangeStart, partRangeLength, partsShared);
-
-            aws_task *processPartRangeTask = New<aws_task>(g_allocator);
-            aws_task_init(
-                processPartRangeTask,
-                MultipartTransferProcessor::s_ProcessPartRangeTask,
-                reinterpret_cast<void *>(args),
-                "ProcessPartRangeTask");
-
-            aws_event_loop_schedule_task_now(m_schedulingLoop, processPartRangeTask);
+            partRangeLength = numParts - partRangeStart;
         }
+
+        ProcessPartRangeTaskArgs *args =
+            New<ProcessPartRangeTaskArgs>(g_allocator, *this, partRangeStart, partRangeLength, partsShared);
+
+        aws_task *processPartRangeTask = New<aws_task>(g_allocator);
+        aws_task_init(
+            processPartRangeTask,
+            MultipartTransferProcessor::s_ProcessPartRangeTask,
+            reinterpret_cast<void *>(args),
+            "ProcessPartRangeTask");
+
+        aws_event_loop_schedule_task_now(m_schedulingLoop, processPartRangeTask);
     }
 }
 
@@ -161,7 +158,8 @@ void MultipartTransferProcessor::ProcessPartRange(
         uint64_t partByteRemainder = state->GetObjectSize() - (partIndex * S3ObjectTransport::MaxPartSizeBytes);
         uint64_t partByteSize = std::min(partByteRemainder, S3ObjectTransport::MaxPartSizeBytes);
 
-        MultipartTransferState::PartInfo partInfo(partIndex, partNumber, partByteStart, partByteSize);
+        std::shared_ptr<MultipartTransferState::PartInfo> partInfo = MakeShared<MultipartTransferState::PartInfo>(
+            g_allocator, m_canaryApp.publisher, partIndex, partNumber, partByteStart, partByteSize);
 
         state->ProcessPart(partInfo, [this]() { ProcessNextParts(1); });
     }
