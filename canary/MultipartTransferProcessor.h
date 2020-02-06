@@ -46,6 +46,8 @@ class MultipartTransferProcessor
 
     void PushQueue(const std::shared_ptr<MultipartTransferState> &uploadState);
 
+    void RepushQueue(const std::shared_ptr<MultipartTransferState> &state, uint32_t partIndex);
+
   private:
     static const uint32_t NumPartsPerTask;
 

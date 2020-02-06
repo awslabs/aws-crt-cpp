@@ -26,6 +26,12 @@
 class S3ObjectTransport;
 struct CanaryApp;
 
+enum class PartFinishResponse
+{
+    Done,
+    Retry
+};
+
 class MultipartTransferState
 {
   public:
@@ -63,7 +69,7 @@ class MultipartTransferState
         void FlushMetricsVector(Aws::Crt::Vector<Metric> &metrics);
     };
 
-    using PartFinishedCallback = std::function<void()>;
+    using PartFinishedCallback = std::function<void(PartFinishResponse response)>;
     using ProcessPartCallback =
         std::function<void(const std::shared_ptr<PartInfo> &partInfo, PartFinishedCallback callback)>;
     using FinishedCallback = std::function<void(int32_t errorCode)>;

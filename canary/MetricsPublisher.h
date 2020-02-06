@@ -20,6 +20,7 @@
 #include <aws/crt/http/HttpConnectionManager.h>
 
 #include <chrono>
+#include <map>
 #include <mutex>
 
 enum class MetricUnit
@@ -80,7 +81,7 @@ class MetricsPublisher
     MetricsPublisher(
         CanaryApp &canaryApp,
         const char *metricNamespace,
-        std::chrono::milliseconds publishFrequency = std::chrono::milliseconds(250));
+        std::chrono::milliseconds publishFrequency = std::chrono::milliseconds(1000));
 
     ~MetricsPublisher();
 
@@ -88,6 +89,8 @@ class MetricsPublisher
      * Add a data point to the outgoing metrics collection.
      */
     void AddDataPoint(const Metric &metricData);
+
+    void AddDataPointSum(const Metric &metricData);
 
     /*
      * Set the transfer size we are currently recording metrics for.  (Will
@@ -123,4 +126,7 @@ class MetricsPublisher
     aws_task m_publishTask;
     uint64_t m_publishFrequencyNs;
     std::condition_variable m_waitForLastPublishCV;
+
+    std::mutex m_dataPointSumLock;
+    std::map<Aws::Crt::String, Metric> m_dataPointSums;
 };

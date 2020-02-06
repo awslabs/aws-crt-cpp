@@ -34,7 +34,7 @@ using namespace Aws::Crt;
 
 const uint64_t S3ObjectTransport::MaxPartSizeBytes = 500ULL * 1000ULL * 1000ULL / 8ULL;
 const uint32_t S3ObjectTransport::MaxStreams =
-    (50ULL * 1000ULL * 1000ULL * 1000ULL / 8ULL) / S3ObjectTransport::MaxPartSizeBytes;
+    (100ULL * 1000ULL * 1000ULL * 1000ULL / 8ULL) / S3ObjectTransport::MaxPartSizeBytes / 2;
 const int32_t S3ObjectTransport::S3GetObjectResponseStatus_PartialContent = 206;
 const bool S3ObjectTransport::SingleConnectionPerMultipartUpload = false;
 
@@ -199,7 +199,7 @@ void S3ObjectTransport::PutObject(
     ByteCursor path = ByteCursorFromCString(keyPath.c_str());
     request->SetPath(path);
 
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "PutObject initiated for path %s...", keyPath.c_str());
+    AWS_LOGF_DEBUG(AWS_LS_CRT_CPP_CANARY, "PutObject initiated for path %s...", keyPath.c_str());
 
     std::shared_ptr<String> etag = nullptr;
 
@@ -242,7 +242,7 @@ void S3ObjectTransport::PutObject(
                 errorCode = AWS_ERROR_UNKNOWN;
             }
 
-            aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_INFO;
+            aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_DEBUG;
 
             AWS_LOGF(
                 logLevel,
@@ -375,13 +375,19 @@ void S3ObjectTransport::UploadPart(
                         etags,
                         [state](int32_t errorCode) { state->SetFinished(errorCode); });
                 }
+
+                partFinished(PartFinishResponse::Done);
+
+                partInfo->FlushDataUpMetrics();
             }
             else
             {
-                state->SetFinished(errorCode);
+                partInfo->FlushDataUpMetrics();
+
+                partFinished(PartFinishResponse::Retry);
             }
 
-            AWS_LOGF_INFO(
+            AWS_LOGF_DEBUG(
                 AWS_LS_CRT_CPP_CANARY,
                 "UploadPart for path %s and part #%d (%d/%d) just returned code %d",
                 state->GetKey().c_str(),
@@ -389,10 +395,6 @@ void S3ObjectTransport::UploadPart(
                 state->GetNumPartsCompleted(),
                 state->GetNumParts(),
                 errorCode);
-
-            partFinished();
-
-            partInfo->FlushDataUpMetrics();
         });
 }
 
@@ -452,7 +454,7 @@ void S3ObjectTransport::GetObject(
                 errorCode = AWS_ERROR_UNKNOWN;
             }
 
-            aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_INFO;
+            aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_DEBUG;
 
             AWS_LOGF(
                 logLevel,
@@ -543,22 +545,24 @@ void S3ObjectTransport::GetPart(
                 AWS_LOGF_ERROR(
                     AWS_LS_CRT_CPP_CANARY, "Did not receive part #%d for %s", partInfo->partNumber, key.c_str());
 
-                downloadState->SetFinished(errorCode);
+                partInfo->FlushDataDownMetrics();
+
+                partFinished(PartFinishResponse::Retry);
             }
             else
             {
-                AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Received part #%d for %s", partInfo->partNumber, key.c_str());
+                AWS_LOGF_DEBUG(AWS_LS_CRT_CPP_CANARY, "Received part #%d for %s", partInfo->partNumber, key.c_str());
 
                 if (downloadState->IncNumPartsCompleted())
                 {
-                    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "All parts received for %s", key.c_str());
+                    AWS_LOGF_DEBUG(AWS_LS_CRT_CPP_CANARY, "Finished trying to get all parts for %s", key.c_str());
                     downloadState->SetFinished();
                 }
+
+                partFinished(PartFinishResponse::Done);
+
+                partInfo->FlushDataDownMetrics();
             }
-
-            partFinished();
-
-            partInfo->FlushDataDownMetrics();
         });
 }
 
@@ -636,7 +640,7 @@ void S3ObjectTransport::CreateMultipartUpload(
                 errorCode = AWS_ERROR_UNKNOWN;
             }
 
-            aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_INFO;
+            aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_DEBUG;
 
             AWS_LOGF(
                 logLevel,
@@ -657,7 +661,7 @@ void S3ObjectTransport::CreateMultipartUpload(
         finishedCallback(errorCode, *uploadId);
     };
 
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Creating multipart upload for %s...", keyPath.c_str());
+    AWS_LOGF_DEBUG(AWS_LS_CRT_CPP_CANARY, "Creating multipart upload for %s...", keyPath.c_str());
 
     MakeSignedRequest(
         conn, request, requestOptions, [finishedCallback](int32_t errorCode) { finishedCallback(errorCode, ""); });
@@ -670,7 +674,7 @@ void S3ObjectTransport::CompleteMultipartUpload(
     const Aws::Crt::Vector<Aws::Crt::String> &etags,
     const CompleteMultipartUploadFinished &finishedCallback)
 {
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Completing multipart upload for %s...", key.c_str());
+    AWS_LOGF_DEBUG(AWS_LS_CRT_CPP_CANARY, "Completing multipart upload for %s...", key.c_str());
 
     auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
     request->AddHeader(m_hostHeader);
@@ -715,7 +719,7 @@ void S3ObjectTransport::CompleteMultipartUpload(
                 errorCode = AWS_ERROR_UNKNOWN;
             }
 
-            aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_INFO;
+            aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_DEBUG;
 
             AWS_LOGF(
                 logLevel,
@@ -746,7 +750,7 @@ void S3ObjectTransport::AbortMultipartUpload(
     const Aws::Crt::String &uploadId,
     const AbortMultipartUploadFinished &finishedCallback)
 {
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Aborting multipart upload for %s...", key.c_str());
+    AWS_LOGF_DEBUG(AWS_LS_CRT_CPP_CANARY, "Aborting multipart upload for %s...", key.c_str());
 
     auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
     request->AddHeader(m_hostHeader);
@@ -766,7 +770,7 @@ void S3ObjectTransport::AbortMultipartUpload(
                 errorCode = AWS_ERROR_UNKNOWN;
             }
 
-            aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_INFO;
+            aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_DEBUG;
 
             AWS_LOGF(
                 logLevel,
