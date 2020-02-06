@@ -75,7 +75,6 @@ CanaryApp::CanaryApp(int argc, char *argv[])
     */
 
     aws_logger_vtable *currentVTable = aws_logger_get()->vtable;
-    // LogFunction function = currentVTable->log;
     void **logFunctionVoid = (void **)&currentVTable->log;
     *logFunctionVoid = (void *)filterLog;
 

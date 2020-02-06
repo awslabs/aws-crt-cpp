@@ -1,5 +1,6 @@
 #pragma once
 
+#include "MultipartTransferState.h"
 #include <aws/crt/DateTime.h>
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/Types.h>
@@ -15,16 +16,22 @@ struct CanaryApp;
 class MeasureTransferRateStream : public Aws::Crt::Io::InputStream
 {
   public:
-    MeasureTransferRateStream(CanaryApp &canaryApp, Aws::Crt::Allocator *allocator, uint64_t length);
+    MeasureTransferRateStream(
+        CanaryApp &canaryApp,
+        const std::shared_ptr<MultipartTransferState::PartInfo> &partInfo,
+        Aws::Crt::Allocator *allocator);
 
     virtual bool IsValid() const noexcept override;
 
   private:
     CanaryApp &m_canaryApp;
+    std::shared_ptr<MultipartTransferState::PartInfo> m_partInfo;
     Aws::Crt::Allocator *m_allocator;
-    uint64_t m_length;
     uint64_t m_written;
     Aws::Crt::DateTime m_timestamp;
+
+    const MultipartTransferState::PartInfo &GetPartInfo() const;
+    MultipartTransferState::PartInfo &GetPartInfo();
 
     virtual bool ReadImpl(Aws::Crt::ByteBuf &buffer) noexcept override;
     virtual Aws::Crt::Io::StreamStatus GetStatusImpl() const noexcept override;

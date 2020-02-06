@@ -14,6 +14,7 @@
  */
 #pragma once
 
+#include "MetricsPublisher.h"
 #include <atomic>
 #include <aws/common/mutex.h>
 #include <aws/common/string.h>
@@ -23,6 +24,7 @@
 #include <mutex>
 
 class S3ObjectTransport;
+struct CanaryApp;
 
 class MultipartTransferState
 {
@@ -36,11 +38,34 @@ class MultipartTransferState
         Aws::Crt::DateTime uploadStartTime;
 
         PartInfo();
-        PartInfo(uint32_t partIndex, uint32_t partNumber, uint64_t offsetInBytes, uint64_t sizeInBytes);
+        PartInfo(
+            std::shared_ptr<MetricsPublisher> publisher,
+            uint32_t partIndex,
+            uint32_t partNumber,
+            uint64_t offsetInBytes,
+            uint64_t sizeInBytes);
+
+        void AddDataUpMetric(uint64_t dataUp);
+
+        void AddDataDownMetric(uint64_t dataDown);
+
+        void FlushDataUpMetrics();
+
+        void FlushDataDownMetrics();
+
+      private:
+        Aws::Crt::Vector<Metric> uploadMetrics;
+        Aws::Crt::Vector<Metric> downloadMetrics;
+        std::shared_ptr<MetricsPublisher> publisher;
+
+        Metric &GetOrCreateMetricToUpdate(Aws::Crt::Vector<Metric> &partMetrics, const char *metricName);
+
+        void FlushMetricsVector(Aws::Crt::Vector<Metric> &metrics);
     };
 
     using PartFinishedCallback = std::function<void()>;
-    using ProcessPartCallback = std::function<void(PartInfo &partInfo, PartFinishedCallback callback)>;
+    using ProcessPartCallback =
+        std::function<void(const std::shared_ptr<PartInfo> &partInfo, PartFinishedCallback callback)>;
     using FinishedCallback = std::function<void(int32_t errorCode)>;
 
     MultipartTransferState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts);

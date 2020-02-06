@@ -65,6 +65,8 @@ struct Metric
     Aws::Crt::DateTime Timestamp;
     double Value;
     Aws::Crt::String MetricName;
+
+    void SetTimestampNow();
 };
 
 struct CanaryApp;
@@ -78,7 +80,7 @@ class MetricsPublisher
     MetricsPublisher(
         CanaryApp &canaryApp,
         const char *metricNamespace,
-        std::chrono::seconds publishFrequency = std::chrono::seconds(1));
+        std::chrono::milliseconds publishFrequency = std::chrono::milliseconds(250));
 
     ~MetricsPublisher();
 
@@ -103,14 +105,10 @@ class MetricsPublisher
      */
     Aws::Crt::Optional<Aws::Crt::String> Namespace;
 
-    void AddDataUp(uint64_t dataUp);
-
-    void AddDataDown(uint64_t dataDown);
-
   private:
-    void PreparePayload(Aws::Crt::StringStream &bodyStream, const Aws::Crt::Vector<Metric> &);
-
     static void s_OnPublishTask(aws_task *task, void *arg, aws_task_status status);
+
+    void PreparePayload(Aws::Crt::StringStream &bodyStream, const Aws::Crt::Vector<Metric> &);
 
     MetricTransferSize m_transferSize;
     CanaryApp &m_canaryApp;
@@ -125,7 +123,4 @@ class MetricsPublisher
     aws_task m_publishTask;
     uint64_t m_publishFrequencyNs;
     std::condition_variable m_waitForLastPublishCV;
-
-    std::atomic<uint64_t> m_dataUp;
-    std::atomic<uint64_t> m_dataDown;
 };

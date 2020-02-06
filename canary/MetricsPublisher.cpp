@@ -21,22 +21,29 @@
 #include <aws/common/clock.h>
 #include <aws/common/task_scheduler.h>
 #include <condition_variable>
-#include <iostream>
 #include <inttypes.h>
+#include <iostream>
+#include <time.h>
 
 using namespace Aws::Crt;
+
+void Metric::SetTimestampNow()
+{
+    Timestamp = DateTime::Now();
+    //    static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(time.time_since_epoch()).count());
+}
 
 MetricsPublisher::MetricsPublisher(
     CanaryApp &canaryApp,
     const char *metricNamespace,
-    std::chrono::seconds publishFrequency)
-    : m_canaryApp(canaryApp), m_dataUp(0LL), m_dataDown(0LL)
+    std::chrono::milliseconds publishFrequency)
+    : m_canaryApp(canaryApp)
 {
     Namespace = metricNamespace;
 
     AWS_ZERO_STRUCT(m_publishTask);
     m_publishFrequencyNs =
-        aws_timestamp_convert(publishFrequency.count(), AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_NANOS, NULL);
+        aws_timestamp_convert(publishFrequency.count(), AWS_TIMESTAMP_MILLIS, AWS_TIMESTAMP_NANOS, NULL);
     m_publishTask.fn = MetricsPublisher::s_OnPublishTask;
     m_publishTask.arg = this;
 
@@ -83,16 +90,6 @@ MetricsPublisher::~MetricsPublisher()
 void MetricsPublisher::SetMetricTransferSize(MetricTransferSize transferSize)
 {
     m_transferSize = transferSize;
-}
-
-void MetricsPublisher::AddDataUp(uint64_t dataUp)
-{
-    m_dataUp += dataUp;
-}
-
-void MetricsPublisher::AddDataDown(uint64_t dataDown)
-{
-    m_dataDown += dataDown;
 }
 
 static const char *s_UnitToStr(MetricUnit unit)
@@ -167,8 +164,21 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
         uint8_t dateBuffer[AWS_DATE_TIME_STR_MAX_LEN];
         AWS_ZERO_ARRAY(dateBuffer);
         auto dateBuf = ByteBufFromEmptyArray(dateBuffer, AWS_ARRAY_SIZE(dateBuffer));
+
         metric.Timestamp.ToGmtString(DateFormat::ISO_8601, dateBuf);
         String dateStr((char *)dateBuf.buffer, dateBuf.len);
+
+        /*
+                uint64_t millis = metric.Timestamp - timestamp.Millis();
+                StringStream millisStr;
+                millisStr << millis;
+                dateStr.pop_back();
+                dateStr += millisStr;
+                dateStr += "Z";
+        */
+        // AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Emitting metric at time %s with value %f and name %s", dateStr.c_str(),
+        // metric.Value, metric.MetricName.c_str());
+
         bodyStream << "MetricData.member." << metricCount << ".Timestamp=" << dateStr << "&";
         bodyStream.precision(17);
         bodyStream << "MetricData.member." << metricCount << ".Value=" << std::fixed << metric.Value << "&";
@@ -181,6 +191,8 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.3.Value=" << instanceType << "&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Name=TransferSize&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Value=" << transferSizeString << "&";
+
+        // AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "%s", bodyStream.str().c_str());
         metricCount++;
     }
 
@@ -208,36 +220,7 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
     {
         auto publisher = static_cast<MetricsPublisher *>(arg);
 
-        uint64_t dataUp = publisher->m_dataUp.exchange(0);
-	uint64_t dataDown = publisher->m_dataDown.exchange(0);
-
-        if (dataUp > 0)
-        {
-            Metric uploadMetric;
-            uploadMetric.MetricName = "BytesUp";
-            uploadMetric.Timestamp = DateTime::Now();
-            uploadMetric.Value = (double)dataUp*8.0/1000.0/1000.0/1000.0;
-            uploadMetric.Unit = MetricUnit::Gigabits;
-
-            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Emitting BytesUp metric for %f Gb", uploadMetric.Value);
-
-            publisher->AddDataPoint(uploadMetric);
-        }
-
-        if (dataDown > 0)
-        {
-            Metric downloadMetric;
-            downloadMetric.MetricName = "BytesDown";
-            downloadMetric.Timestamp = DateTime::Now();
-            downloadMetric.Value = (double)dataDown*8.0/1000.0/1000.0/1000.0;
-            downloadMetric.Unit = MetricUnit::Gigabits;
-
-            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Emitting BytesDown metric for %f Gb", downloadMetric.Value);
-
-            publisher->AddDataPoint(downloadMetric);
-        }
-
-	Vector<Metric> metricsCpy;
+        Vector<Metric> metricsCpy;
         {
             std::lock_guard<std::mutex> locker(publisher->m_publishDataLock);
             if (publisher->m_publishData.empty())
