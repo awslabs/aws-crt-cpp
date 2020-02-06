@@ -8,11 +8,12 @@
 
 using namespace Aws::Crt;
 
-size_t MeasureTransferRate::BodyTemplateSize = 500 * 1000 * 1000 / 8;
+size_t MeasureTransferRate::BodyTemplateSize = 500ULL * 1000ULL * 1000ULL / 8ULL;
 char *MeasureTransferRate::BodyTemplate = nullptr;
 
 const uint64_t MeasureTransferRate::SmallObjectSize = 16ULL * 1024ULL * 1024ULL;
-const uint64_t MeasureTransferRate::LargeObjectSize = 10000ULL * (500ULL * 1000ULL * 1000ULL / 8ULL); //1ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL;
+const uint64_t MeasureTransferRate::LargeObjectSize =
+    10000ULL * (500ULL * 1000ULL * 1000ULL / 8ULL); // 1ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL;
 const std::chrono::milliseconds MeasureTransferRate::AllocationMetricFrequency(1000);
 const uint64_t MeasureTransferRate::AllocationMetricFrequencyNS = aws_timestamp_convert(
     MeasureTransferRate::AllocationMetricFrequency.count(),
@@ -31,7 +32,7 @@ bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
     (void)m_allocator;
 
     size_t totalBufferSpace = dest.capacity - dest.len;
-    size_t unwritten = m_length - m_written;
+    size_t unwritten = m_partInfo->sizeInBytes - m_written;
     size_t totalToWrite = totalBufferSpace > unwritten ? unwritten : totalBufferSpace;
     size_t writtenOut = 0;
 
@@ -53,32 +54,11 @@ bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
         totalToWrite = totalToWrite - toWrite;
     }
 
-    m_canaryApp.publisher->AddDataUp(writtenOut);
+    m_written += writtenOut;
 
     // A quick way for us to measure how much data we've actually written to S3 storage.  (This working is reliant
     // on this function only being used when we are reading data from the stream while sending that data to S3.)
-    m_written += writtenOut;
-
-    if (m_length == m_written)
-    {
-        /*
-                DateTime endTime = DateTime::Now();
-                AWS_LOGF_INFO(
-                    AWS_LS_CRT_CPP_CANARY,
-                    "Time taken to write chunk %" PRId64 " milliseconds",
-                    endTime.Millis() - m_timestamp.Millis());
-
-                AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Sending BytesUp metric for %" PRId64 " bytes",
-                   m_length);
-            Metric uploadMetric;
-            uploadMetric.MetricName = "BytesUp";
-            uploadMetric.Timestamp = DateTime::Now();
-            uploadMetric.Value = (double)m_length;
-            uploadMetric.Unit = MetricUnit::Bytes;
-
-                m_canaryApp.publisher->AddDataPoint(uploadMetric);
-        */
-    }
+    m_partInfo->AddDataUpMetric(writtenOut);
 
     return true;
 }
@@ -86,7 +66,7 @@ bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
 Io::StreamStatus MeasureTransferRateStream::GetStatusImpl() const noexcept
 {
     Io::StreamStatus status;
-    status.is_end_of_stream = m_written == m_length;
+    status.is_end_of_stream = m_written == m_partInfo->sizeInBytes;
     status.is_valid = !status.is_end_of_stream;
 
     return status;
@@ -100,11 +80,14 @@ bool MeasureTransferRateStream::SeekImpl(Io::OffsetType offset, Io::StreamSeekBa
 
 int64_t MeasureTransferRateStream::GetLengthImpl() const noexcept
 {
-    return m_length;
+    return m_partInfo->sizeInBytes;
 }
 
-MeasureTransferRateStream::MeasureTransferRateStream(CanaryApp &canaryApp, Allocator *allocator, uint64_t length)
-    : m_canaryApp(canaryApp), m_allocator(allocator), m_length(length), m_written(0)
+MeasureTransferRateStream::MeasureTransferRateStream(
+    CanaryApp &canaryApp,
+    const std::shared_ptr<MultipartTransferState::PartInfo> &partInfo,
+    Allocator *allocator)
+    : m_canaryApp(canaryApp), m_partInfo(partInfo), m_allocator(allocator), m_written(0)
 {
 }
 
@@ -159,29 +142,27 @@ void MeasureTransferRate::PerformMeasurement(
         totalToWrite -= toWrite;
     }
 
-    ScheduleMeasureAllocationsTask();
+    // ScheduleMeasureAllocationsTask();
 
     std::shared_ptr<MetricsPublisher> publisher = m_canaryApp.publisher;
 
     bool continueInitiatingTransfers = true;
+    std::atomic<bool> forceStop(false);
     uint64_t counter = INT64_MAX;
     std::atomic<size_t> inFlightUploads(0);
     std::atomic<size_t> inFlightUploadOrDownload(0);
 
     time_t initialTime;
     time(&initialTime);
-/*
-    std::mutex bytesDownMetricMutex;
-    uint64_t bytesDownMetric = 0;
-*/
-    while (continueInitiatingTransfers || inFlightUploadOrDownload > 0)
+
+    while (!forceStop && (continueInitiatingTransfers || inFlightUploadOrDownload > 0))
     {
         if (counter == 0)
         {
             counter = INT64_MAX;
         }
 
-        while (continueInitiatingTransfers && inFlightUploads < maxConcurrentTransfers)
+        while (!forceStop && (continueInitiatingTransfers && inFlightUploads < maxConcurrentTransfers))
         {
             StringStream keyStream;
             keyStream << "crt-canary-obj-large-" << counter--;
@@ -190,7 +171,7 @@ void MeasureTransferRate::PerformMeasurement(
             auto key = keyStream.str();
 
             NotifyUploadFinished notifyUploadFinished =
-                [publisher, &inFlightUploads, &inFlightUploadOrDownload](int32_t errorCode) {
+                [publisher, &inFlightUploads, &inFlightUploadOrDownload, &forceStop](int32_t errorCode) {
                     --inFlightUploads;
 
                     if (errorCode == AWS_ERROR_SUCCESS)
@@ -199,7 +180,7 @@ void MeasureTransferRate::PerformMeasurement(
                         successMetric.MetricName = "SuccessfulTransfer";
                         successMetric.Unit = MetricUnit::Count;
                         successMetric.Value = 1;
-                        successMetric.Timestamp = DateTime::Now();
+                        successMetric.SetTimestampNow();
 
                         publisher->AddDataPoint(successMetric);
                     }
@@ -209,70 +190,45 @@ void MeasureTransferRate::PerformMeasurement(
                         failureMetric.MetricName = "FailedTransfer";
                         failureMetric.Unit = MetricUnit::Count;
                         failureMetric.Value = 1;
-                        failureMetric.Timestamp = DateTime::Now();
+                        failureMetric.SetTimestampNow();
 
                         publisher->AddDataPoint(failureMetric);
-
                         --inFlightUploadOrDownload;
+                        forceStop = true;
                     }
                 };
 
-            NotifyDownloadProgress notifyDownloadProgress =
-                [publisher /*, &bytesDownMetric, &bytesDownMetricMutex */](uint64_t dataLength) {
-/*                    
-                    uint64_t bytesToReport = 0;
-
-                    {
-                        std::lock_guard<std::mutex> lock(bytesDownMetricMutex);
-                        bytesDownMetric += dataLength;
-                        const uint64_t Threshold = 10 * 1024 * 1024;
-                        if (bytesDownMetric > Threshold)
-                        {
-                            bytesToReport = bytesDownMetric;
-                            bytesDownMetric = 0;
-                        }
-                    }
-
-                    if (bytesToReport == 0)
-                    {
-                        return;
-                    }
-
-                    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Emitting BytesDown Metric %" PRId64, bytesToReport);
-                    std::shared_ptr<Metric> downMetric = MakeShared<Metric>(g_allocator);
-                    downMetric->MetricName = "BytesDown";
-                    downMetric->Unit = MetricUnit::Bytes;
-                    downMetric->Value = static_cast<double>(bytesToReport);
-                    downMetric->Timestamp = DateTime::Now();
-                    publisher->AddDataPoint(*downMetric);
-*/
-		    publisher->AddDataDown(dataLength);
-                };
-
-            NotifyDownloadFinished notifyDownloadFinished = [publisher, &inFlightUploadOrDownload](int32_t errorCode) {
-                if (errorCode == AWS_ERROR_SUCCESS)
-                {
-                    Metric successMetric;
-                    successMetric.MetricName = "SuccessfulTransfer";
-                    successMetric.Unit = MetricUnit::Count;
-                    successMetric.Value = 1;
-                    successMetric.Timestamp = DateTime::Now();
-
-                    publisher->AddDataPoint(successMetric);
-                }
-                else
-                {
-                    Metric failureMetric;
-                    failureMetric.MetricName = "FailedTransfer";
-                    failureMetric.Unit = MetricUnit::Count;
-                    failureMetric.Value = 1;
-                    failureMetric.Timestamp = DateTime::Now();
-
-                    publisher->AddDataPoint(failureMetric);
-                }
-
-                --inFlightUploadOrDownload;
+            NotifyDownloadProgress notifyDownloadProgress = [publisher](uint64_t dataLength) {
+                (void)dataLength;
+                //    publisher->AddDataDown(dataLength);
             };
+
+            NotifyDownloadFinished notifyDownloadFinished =
+                [publisher, &inFlightUploadOrDownload, &forceStop](int32_t errorCode) {
+                    if (errorCode == AWS_ERROR_SUCCESS)
+                    {
+                        Metric successMetric;
+                        successMetric.MetricName = "SuccessfulTransfer";
+                        successMetric.Unit = MetricUnit::Count;
+                        successMetric.Value = 1;
+                        successMetric.SetTimestampNow();
+
+                        publisher->AddDataPoint(successMetric);
+                    }
+                    else
+                    {
+                        Metric failureMetric;
+                        failureMetric.MetricName = "FailedTransfer";
+                        failureMetric.Unit = MetricUnit::Count;
+                        failureMetric.Value = 1;
+                        failureMetric.SetTimestampNow();
+
+                        publisher->AddDataPoint(failureMetric);
+                        forceStop = true;
+                    }
+
+                    --inFlightUploadOrDownload;
+                };
 
             performTransfer(
                 *this, key, objectSize, notifyUploadFinished, notifyDownloadProgress, notifyDownloadFinished);
@@ -287,20 +243,7 @@ void MeasureTransferRate::PerformMeasurement(
     }
 
     aws_event_loop_cancel_task(m_schedulingLoop, &m_measureAllocationsTask);
-/*
-    if (bytesDownMetric > 0)
-    {
-        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Emitting BytesDown Metric %" PRId64, bytesDownMetric);
-        std::shared_ptr<Metric> downMetric = MakeShared<Metric>(g_allocator);
-        downMetric->MetricName = "BytesDown";
-        downMetric->Unit = MetricUnit::Bytes;
-        downMetric->Value = static_cast<double>(bytesDownMetric);
-        downMetric->Timestamp = DateTime::Now();
-        publisher->AddDataPoint(*downMetric);
 
-        bytesDownMetric = 0;
-    }
-*/
     publisher->WaitForLastPublish();
 
     if (BodyTemplate != nullptr)
@@ -323,9 +266,13 @@ void MeasureTransferRate::s_TransferSmallObject(
     std::shared_ptr<MetricsPublisher> publisher = canaryApp.publisher;
     std::shared_ptr<S3ObjectTransport> transport = canaryApp.transport;
 
+    // TODO
+    MultipartTransferState::PartInfo nullPartInfo;
+    nullPartInfo.sizeInBytes = objectSize;
+
     transport->PutObject(
         key,
-        MakeShared<MeasureTransferRateStream>(allocator, canaryApp, allocator, objectSize),
+        MakeShared<MeasureTransferRateStream>(allocator, canaryApp, nullptr, allocator),
         [transport, key, notifyUploadFinished, notifyDownloadProgress, notifyDownloadFinished](
             int32_t errorCode, std::shared_ptr<Aws::Crt::String>) {
             notifyUploadFinished(errorCode);
@@ -360,8 +307,8 @@ void MeasureTransferRate::s_TransferLargeObject(
     transport->PutObjectMultipart(
         key,
         objectSize,
-        [allocator, &canaryApp](const MultipartTransferState::PartInfo &partInfo) {
-            return MakeShared<MeasureTransferRateStream>(allocator, canaryApp, allocator, partInfo.sizeInBytes);
+        [allocator, &canaryApp](const std::shared_ptr<MultipartTransferState::PartInfo> &partInfo) {
+            return MakeShared<MeasureTransferRateStream>(allocator, canaryApp, partInfo, allocator);
         },
         [transport, key, notifyUploadFinished, notifyDownloadProgress, notifyDownloadFinished](
             int32_t errorCode, uint32_t numParts) {
@@ -375,7 +322,8 @@ void MeasureTransferRate::s_TransferLargeObject(
             transport->GetObjectMultipart(
                 key,
                 numParts,
-                [notifyDownloadProgress](const MultipartTransferState::PartInfo &partInfo, const ByteCursor &cur) {
+                [notifyDownloadProgress](
+                    const std::shared_ptr<MultipartTransferState::PartInfo> &partInfo, const ByteCursor &cur) {
                     (void)partInfo;
                     notifyDownloadProgress(cur.len);
                 },
@@ -408,7 +356,7 @@ void MeasureTransferRate::s_MeasureAllocations(aws_task *task, void *arg, aws_ta
     Metric memMetric;
     memMetric.Unit = MetricUnit::Bytes;
     memMetric.Value = (double)aws_mem_tracer_bytes(traceAllocator);
-    memMetric.Timestamp = DateTime::Now();
+    memMetric.SetTimestampNow();
     memMetric.MetricName = "BytesAllocated";
     publisher->AddDataPoint(memMetric);
 
