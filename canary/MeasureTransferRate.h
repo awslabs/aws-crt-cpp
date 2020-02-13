@@ -72,6 +72,7 @@ class MeasureTransferRate
     static const uint64_t LargeObjectSize;
     static const std::chrono::milliseconds AllocationMetricFrequency;
     static const uint64_t AllocationMetricFrequencyNS;
+    static const uint32_t LargeObjectNumParts;
 
     CanaryApp &m_canaryApp;
     aws_event_loop *m_schedulingLoop;

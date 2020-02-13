@@ -5,18 +5,21 @@
 #include "S3ObjectTransport.h"
 #include <aws/common/clock.h>
 #include <aws/common/system_info.h>
+#include <aws/crt/http/HttpConnection.h>
 #include <execinfo.h>
 #include <unistd.h>
 
 using namespace Aws::Crt;
 
 // TODO make handling of BodyTemplate less awkward.
-size_t MeasureTransferRate::BodyTemplateSize = 500ULL * 1000ULL * 1000ULL / 8ULL;
+size_t MeasureTransferRate::BodyTemplateSize = 128ULL * 1024ULL * 1024ULL; // 125ULL * 1000ULL * 1000ULL / 8ULL;
 char *MeasureTransferRate::BodyTemplate = nullptr;
 
 const uint64_t MeasureTransferRate::SmallObjectSize = 16ULL * 1024ULL * 1024ULL;
+const uint32_t MeasureTransferRate::LargeObjectNumParts = 8192ULL;
 const uint64_t MeasureTransferRate::LargeObjectSize =
-    10000ULL * (500ULL * 1000ULL * 1000ULL / 8ULL); // 1ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL;
+    (uint64_t)MeasureTransferRate::LargeObjectNumParts *
+    MeasureTransferRate::BodyTemplateSize; // 1ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL;
 const std::chrono::milliseconds MeasureTransferRate::AllocationMetricFrequency(1000);
 const uint64_t MeasureTransferRate::AllocationMetricFrequencyNS = aws_timestamp_convert(
     MeasureTransferRate::AllocationMetricFrequency.count(),
@@ -58,23 +61,7 @@ bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
     }
 
     m_written += writtenOut;
-    /*
-        void *stackTrace[1024];
-        char **stackTraceStrings;
-        int stackDepth = backtrace(stackTrace, 1024);
 
-        stackTraceStrings = backtrace_symbols(stackTrace, stackDepth);
-
-        for(int i = 0; i < stackDepth; ++i)
-        {
-            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "[%d] %s", i, stackTraceStrings[i]);
-        }
-
-        free(stackTraceStrings);
-
-
-        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "!!!!!!! Wrote %" PRId64 " bytes.....", writtenOut);
-    */
     // A quick way for us to measure how much data we've actually written to S3 storage.  (This working is reliant
     // on this function only being used when we are reading data from the stream while sending that data to S3.)
     m_partInfo->AddDataUpMetric(writtenOut);
@@ -132,6 +119,26 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
 
 void MeasureTransferRate::MeasureLargeObjectTransfer()
 {
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Warming DNS cache...");
+    m_canaryApp.transport->WarmDNSCache();
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "DNS cache warmed.");
+
+    Metric numPartsMetric;
+    numPartsMetric.MetricName = "LargeObjectNumParts";
+    numPartsMetric.Unit = MetricUnit::Count;
+    numPartsMetric.Value = MeasureTransferRate::LargeObjectNumParts;
+    numPartsMetric.SetTimestampNow();
+
+    m_canaryApp.publisher->AddDataPoint(numPartsMetric);
+
+    Metric partSizeMetric;
+    partSizeMetric.MetricName = "PartSize";
+    partSizeMetric.Unit = MetricUnit::Bytes;
+    partSizeMetric.Value = MeasureTransferRate::BodyTemplateSize;
+    partSizeMetric.SetTimestampNow();
+
+    m_canaryApp.publisher->AddDataPoint(partSizeMetric);
+
     PerformMeasurement(
         1, LargeObjectSize, m_canaryApp.cutOffTimeLargeObjects, MeasureTransferRate::s_TransferLargeObject);
 }
@@ -161,7 +168,7 @@ void MeasureTransferRate::PerformMeasurement(
         totalToWrite -= toWrite;
     }
 
-    // ScheduleMeasureAllocationsTask();
+    ScheduleMeasureAllocationsTask();
 
     std::shared_ptr<MetricsPublisher> publisher = m_canaryApp.publisher;
 
@@ -184,7 +191,7 @@ void MeasureTransferRate::PerformMeasurement(
         while (!forceStop && (continueInitiatingTransfers && inFlightUploads < maxConcurrentTransfers))
         {
             StringStream keyStream;
-            keyStream << "crt-canary-obj-large-" << counter--;
+            keyStream << "crt-canary-obj-large-" << counter--; // TODO pull out name into argument
             ++inFlightUploads;
             ++inFlightUploadOrDownload;
             auto key = keyStream.str();
@@ -218,8 +225,7 @@ void MeasureTransferRate::PerformMeasurement(
                 };
 
             NotifyDownloadProgress notifyDownloadProgress = [publisher](uint64_t dataLength) {
-                (void)dataLength;
-                //    publisher->AddDataDown(dataLength);
+                //AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Received %" PRId64 " bytes", dataLength);
             };
 
             NotifyDownloadFinished notifyDownloadFinished =
@@ -331,6 +337,7 @@ void MeasureTransferRate::s_TransferLargeObject(
     transport->PutObjectMultipart(
         key,
         objectSize,
+        MeasureTransferRate::LargeObjectNumParts,
         [allocator, &canaryApp](const std::shared_ptr<MultipartTransferState::PartInfo> &partInfo) {
             return MakeShared<MeasureTransferRateStream>(allocator, canaryApp, partInfo, allocator);
         },
@@ -345,22 +352,23 @@ void MeasureTransferRate::s_TransferLargeObject(
                 return;
             }
 
-            transport->GetObjectMultipart(
-                key,
-                numParts,
-                [notifyDownloadProgress](
-                    const std::shared_ptr<MultipartTransferState::PartInfo> &partInfo, const ByteCursor &cur) {
-                    (void)partInfo;
-                    notifyDownloadProgress(cur.len);
-                },
-                [notifyDownloadFinished, key](int32_t errorCode) {
-                    AWS_LOGF_INFO(
-                        AWS_LS_CRT_CPP_CANARY,
-                        "Download finished for object %s with error code %d",
-                        key.c_str(),
-                        errorCode);
-                    notifyDownloadFinished(errorCode);
-                });
+            notifyDownloadFinished(AWS_ERROR_SUCCESS);
+            /*
+                        transport->GetObjectMultipart(
+                            key,
+                            numParts,
+                            [notifyDownloadProgress](
+                                const std::shared_ptr<MultipartTransferState::PartInfo> &partInfo, const ByteCursor
+               &cur) { (void)partInfo; notifyDownloadProgress(cur.len);
+                            },
+                            [notifyDownloadFinished, key](int32_t errorCode) {
+                                AWS_LOGF_INFO(
+                                    AWS_LS_CRT_CPP_CANARY,
+                                    "Download finished for object %s with error code %d",
+                                    key.c_str(),
+                                    errorCode);
+                                notifyDownloadFinished(errorCode);
+                            });*/
         });
 }
 
@@ -393,7 +401,7 @@ void MeasureTransferRate::s_MeasureAllocations(aws_task *task, void *arg, aws_ta
     memMetric.MetricName = "BytesAllocated";
     publisher->AddDataPoint(memMetric);
 
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Emitting BytesAllocated Metric %" PRId64, (uint64_t)memMetric.Value);
+    AWS_LOGF_DEBUG(AWS_LS_CRT_CPP_CANARY, "Emitting BytesAllocated Metric %" PRId64, (uint64_t)memMetric.Value);
 
     measureTransferRate->ScheduleMeasureAllocationsTask();
 }
