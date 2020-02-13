@@ -65,9 +65,9 @@ class MeasureTransferRate
         const NotifyUploadFinished &notifyUploadFinished,
         const NotifyDownloadFinished &notifyDownloadFinished)>;
 
-    friend class MeasureTransferRateStream; // TODO
+    friend class MeasureTransferRateStream; // TODO use of friend here shouldn't be necessary
     static size_t BodyTemplateSize;
-    static char *BodyTemplate;
+    //static thread_local char *BodyTemplate;
     static const uint64_t SmallObjectSize;
     static const uint64_t LargeObjectSize;
     static const std::chrono::milliseconds AllocationMetricFrequency;
@@ -80,6 +80,7 @@ class MeasureTransferRate
 
     template <typename TPeformTransferType>
     void PerformMeasurement(
+        const char *filenamePrefix,
         uint32_t maxConcurrentTransfers,
         uint64_t objectSize,
         double cutOffTime,

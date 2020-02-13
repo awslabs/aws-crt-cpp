@@ -35,7 +35,7 @@
 
 using namespace Aws::Crt;
 
-const uint32_t S3ObjectTransport::MaxStreams = 250;
+const uint32_t S3ObjectTransport::MaxStreams = 1000;
 
 const int32_t S3ObjectTransport::S3GetObjectResponseStatus_PartialContent = 206;
 const bool S3ObjectTransport::SingleConnectionPerMultipartUpload = false;
@@ -300,8 +300,7 @@ void S3ObjectTransport::PutObject(
         request,
         requestOptions,
         [keyPath, finishedCallback](std::shared_ptr<Http::HttpClientConnection> conn, int32_t errorCode) {
-
-	    if (errorCode != AWS_ERROR_SUCCESS)
+            if (errorCode != AWS_ERROR_SUCCESS)
             {
                 AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Making signed request failed with error code %d", errorCode);
                 finishedCallback(errorCode, nullptr);
