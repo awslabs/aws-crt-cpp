@@ -84,4 +84,7 @@ class MultipartTransferProcessor
     void ProcessNextParts(uint32_t streamsReturning);
     void ProcessPartRange(const Aws::Crt::Vector<QueuedPart> &parts, uint32_t partRangeStart, uint32_t partRangeLength);
     uint32_t PopQueue(uint32_t numRequested, Aws::Crt::Vector<QueuedPart> &parts);
+
+    void ScheduleLogOutputTask();
+    static void s_LogOutputTask(aws_task *task, void *arg, aws_task_status status);
 };

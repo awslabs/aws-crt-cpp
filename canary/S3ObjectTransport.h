@@ -51,7 +51,6 @@ enum class EPutObjectFlags : uint32_t
 class S3ObjectTransport
 {
   public:
-    static const uint64_t MaxPartSizeBytes;
     static const uint32_t MaxStreams;
     static const int32_t S3GetObjectResponseStatus_PartialContent;
     static const bool SingleConnectionPerMultipartUpload;
@@ -67,6 +66,7 @@ class S3ObjectTransport
     void PutObjectMultipart(
         const Aws::Crt::String &key,
         std::uint64_t objectSize,
+        std::uint32_t numParts,
         SendPartCallback sendPart,
         const PutObjectMultipartFinished &finishedCallback);
 
@@ -81,12 +81,16 @@ class S3ObjectTransport
         const ReceivePartCallback &receivePart,
         const GetObjectMultipartFinished &finishedCallback);
 
+    int32_t GetOpenConnectionCount();
+
+    void WarmDNSCache();
+
   private:
     using CreateMultipartUploadFinished = std::function<void(int32_t error, const Aws::Crt::String &uploadId)>;
     using CompleteMultipartUploadFinished = std::function<void(int32_t error)>;
     using AbortMultipartUploadFinished = std::function<void(int32_t error)>;
 
-    using ErrorCallback = std::function<void(int32_t errorCode)>;
+    using SignedRequestCallback = std::function<void(std::shared_ptr<Aws::Crt::Http::HttpClientConnection> conn, int32_t errorCode)>;
 
     CanaryApp &m_canaryApp;
     std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> m_connManager;
@@ -124,13 +128,11 @@ class S3ObjectTransport
         const ReceivePartCallback &receiveObjectPartData,
         const MultipartTransferState::PartFinishedCallback &partFinished);
 
-    uint32_t GetNumParts(uint64_t objectSize) const;
-
     void MakeSignedRequest(
         const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &existingConn,
         const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
         const Aws::Crt::Http::HttpRequestOptions &requestOptions,
-        ErrorCallback errorCallback);
+        SignedRequestCallback callback);
 
     void MakeSignedRequest_SendRequest(
         const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &conn,

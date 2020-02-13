@@ -63,28 +63,11 @@ void MultipartTransferState::PartInfo::FlushMetricsVector(Vector<Metric> &metric
         return;
     }
 
-    Metric metric = metrics[0];
-
-    for (uint32_t i = 1; i < metrics.size(); ++i)
+    for (uint32_t i = 0; i < metrics.size(); ++i)
     {
-        metric.Timestamp = metrics[i].Timestamp;
-        metric.Value += metrics[i].Value;
+        publisher->AddDataPointSum(metrics[i]);
     }
 
-    publisher->AddDataPointSum(metric);
-    /*
-        double total = 0.0;
-
-        for (Metric &metric : metrics)
-        {
-        total += metric.Value / 1024.0 / 1024.0f;
-            //metric.Value = metric.Value * 8.0 / 1000.0 / 1000.0 / 1000.0;
-            //AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Emitting metric for %f Gb in part %d", metric.Value, partIndex);
-        publisher->AddDataPoint(metric);
-        }
-
-        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Total amount of metrics emitted for part %d was %f MB", partIndex, total);
-    */
     metrics.clear();
 }
 

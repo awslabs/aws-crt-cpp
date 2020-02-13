@@ -16,6 +16,10 @@ extern "C"
 #include <aws/common/log_formatter.h>
 #include <aws/common/log_writer.h>
 
+#ifdef __linux__
+#    include <sys/resource.h>
+#endif
+
 using namespace Aws::Crt;
 
 int filterLog(
@@ -25,9 +29,12 @@ int filterLog(
     const char *format,
     ...)
 {
-    if (subject != AWS_LS_CRT_CPP_CANARY)
+    if (log_level != AWS_LL_ERROR)
     {
-        return 0;
+        if (subject != AWS_LS_CRT_CPP_CANARY)
+        {
+            return AWS_OP_SUCCESS;
+        }
     }
 
     va_list format_args;
@@ -66,24 +73,25 @@ CanaryApp::CanaryApp(int argc, char *argv[])
       toolName("NA"), instanceType("unknown"), region("us-west-2"), cutOffTimeSmallObjects(10.0),
       cutOffTimeLargeObjects(10.0), measureLargeTransfer(false), measureSmallTransfer(false)
 {
-    apiHandle.InitializeLogging(LogLevel::Info, stderr);
-    /*
-        Auth::CredentialsProviderChainDefaultConfig chainConfig;
-        chainConfig.Bootstrap = &bootstrap;
+#ifdef __linux__
+    rlimit fdsLimit;
+    getrlimit(RLIMIT_NOFILE, &fdsLimit);
+    fdsLimit.rlim_cur = 4096;
+    setrlimit(RLIMIT_NOFILE, &fdsLimit);
+#endif
 
-        credsProvider = Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(chainConfig, traceAllocator);
-    */
+    apiHandle.InitializeLogging(LogLevel::Info, stderr);
+
+    Auth::CredentialsProviderChainDefaultConfig chainConfig;
+    chainConfig.Bootstrap = &bootstrap;
+
+    credsProvider = Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(chainConfig, traceAllocator);
 
     // TODO Take out before merging--this is a giant hack to filter just canary logs
     aws_logger_vtable *currentVTable = aws_logger_get()->vtable;
     void **logFunctionVoid = (void **)&currentVTable->log;
     *logFunctionVoid = (void *)filterLog;
-
-    Auth::CredentialsProviderImdsConfig imdsConfig;
-    imdsConfig.Bootstrap = &bootstrap;
-
-    credsProvider = Auth::CredentialsProvider::CreateCredentialsProviderImds(imdsConfig, traceAllocator);
-
+    
     signer = MakeShared<Auth::Sigv4HttpRequestSigner>(traceAllocator, traceAllocator);
 
     Io::TlsContextOptions tlsContextOptions = Io::TlsContextOptions::InitDefaultClient(traceAllocator);
