@@ -67,8 +67,8 @@ int filterLog(
 }
 
 CanaryApp::CanaryApp(int argc, char *argv[])
-    : traceAllocator(aws_mem_tracer_new(DefaultAllocator(), NULL, AWS_MEMTRACE_BYTES, 0)), apiHandle(traceAllocator),
-      eventLoopGroup(traceAllocator), defaultHostResolver(eventLoopGroup, 60, 1000, traceAllocator),
+    : traceAllocator(DefaultAllocator()), apiHandle(traceAllocator), eventLoopGroup(traceAllocator),
+      defaultHostResolver(eventLoopGroup, 60, 1000, traceAllocator),
       bootstrap(eventLoopGroup, defaultHostResolver, traceAllocator), platformName(CanaryUtil::GetPlatformName()),
       toolName("NA"), instanceType("unknown"), region("us-west-2"), cutOffTimeSmallObjects(10.0),
       cutOffTimeLargeObjects(10.0), measureLargeTransfer(false), measureSmallTransfer(false)
@@ -79,19 +79,19 @@ CanaryApp::CanaryApp(int argc, char *argv[])
     fdsLimit.rlim_cur = 4096;
     setrlimit(RLIMIT_NOFILE, &fdsLimit);
 #endif
-
+/*
     apiHandle.InitializeLogging(LogLevel::Info, stderr);
-
-    Auth::CredentialsProviderChainDefaultConfig chainConfig;
-    chainConfig.Bootstrap = &bootstrap;
-
-    credsProvider = Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(chainConfig, traceAllocator);
 
     // TODO Take out before merging--this is a giant hack to filter just canary logs
     aws_logger_vtable *currentVTable = aws_logger_get()->vtable;
     void **logFunctionVoid = (void **)&currentVTable->log;
     *logFunctionVoid = (void *)filterLog;
-    
+*/
+    Auth::CredentialsProviderChainDefaultConfig chainConfig;
+    chainConfig.Bootstrap = &bootstrap;
+
+    credsProvider = Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(chainConfig, traceAllocator);
+
     signer = MakeShared<Auth::Sigv4HttpRequestSigner>(traceAllocator, traceAllocator);
 
     Io::TlsContextOptions tlsContextOptions = Io::TlsContextOptions::InitDefaultClient(traceAllocator);
