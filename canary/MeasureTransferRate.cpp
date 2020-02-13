@@ -13,10 +13,10 @@ using namespace Aws::Crt;
 
 // TODO make handling of BodyTemplate less awkward.
 size_t MeasureTransferRate::BodyTemplateSize = 128ULL * 1024ULL * 1024ULL; // 125ULL * 1000ULL * 1000ULL / 8ULL;
-char *MeasureTransferRate::BodyTemplate = nullptr;
+thread_local char* BodyTemplate = nullptr;
 
 const uint64_t MeasureTransferRate::SmallObjectSize = 16ULL * 1024ULL * 1024ULL;
-const uint32_t MeasureTransferRate::LargeObjectNumParts = 8192ULL;
+const uint32_t MeasureTransferRate::LargeObjectNumParts = 8192;
 const uint64_t MeasureTransferRate::LargeObjectSize =
     (uint64_t)MeasureTransferRate::LargeObjectNumParts *
     MeasureTransferRate::BodyTemplateSize; // 1ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL;
@@ -34,8 +34,27 @@ bool MeasureTransferRateStream::IsValid() const noexcept
 
 bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
 {
-    (void)m_canaryApp;
-    (void)m_allocator;
+    if (BodyTemplate == nullptr)
+    {
+        char BodyTemplateData[] =
+            "This is a test string for use with canary testing against Amazon Simple Storage Service";
+        BodyTemplate = new char[MeasureTransferRate::BodyTemplateSize];
+        BodyTemplate[MeasureTransferRate::BodyTemplateSize - 1] = '\0';
+
+        size_t totalToWrite = MeasureTransferRate::BodyTemplateSize;
+        char *BodyTemplatePos = BodyTemplate;
+
+        while (totalToWrite)
+        {
+            size_t toWrite = AWS_ARRAY_SIZE(BodyTemplateData) - 1 > totalToWrite ? totalToWrite
+                                                                                 : AWS_ARRAY_SIZE(BodyTemplateData) - 1;
+
+            memcpy(BodyTemplatePos, BodyTemplateData, toWrite);
+
+            BodyTemplatePos += toWrite;
+            totalToWrite -= toWrite;
+        }
+    }
 
     size_t totalBufferSpace = dest.capacity - dest.len;
     size_t unwritten = m_partInfo->sizeInBytes - m_written;
@@ -52,7 +71,7 @@ bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
         size_t toWrite = MeasureTransferRate::BodyTemplateSize - 1 > totalToWrite
                              ? totalToWrite
                              : MeasureTransferRate::BodyTemplateSize - 1;
-        ByteCursor outCur = ByteCursorFromArray((const uint8_t *)MeasureTransferRate::BodyTemplate, toWrite);
+        ByteCursor outCur = ByteCursorFromArray((const uint8_t *)BodyTemplate, toWrite);
 
         aws_byte_buf_append(&dest, &outCur);
 
@@ -95,6 +114,8 @@ MeasureTransferRateStream::MeasureTransferRateStream(
     Allocator *allocator)
     : m_canaryApp(canaryApp), m_partInfo(partInfo), m_allocator(allocator), m_written(0)
 {
+    (void)m_canaryApp;
+    (void)m_allocator;
 }
 
 MeasureTransferRate::MeasureTransferRate(CanaryApp &canaryApp) : m_canaryApp(canaryApp)
@@ -113,8 +134,16 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
     uint32_t threadCount = static_cast<uint32_t>(aws_system_info_processor_count());
     uint32_t maxInFlight = threadCount * 10;
 
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Warming DNS cache...");
+    m_canaryApp.transport->WarmDNSCache();
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "DNS cache warmed.");
+
     PerformMeasurement(
-        maxInFlight, SmallObjectSize, m_canaryApp.cutOffTimeSmallObjects, MeasureTransferRate::s_TransferSmallObject);
+        "crt-canary-obj-",
+        maxInFlight,
+        SmallObjectSize,
+        m_canaryApp.cutOffTimeSmallObjects,
+        MeasureTransferRate::s_TransferSmallObject);
 }
 
 void MeasureTransferRate::MeasureLargeObjectTransfer()
@@ -140,35 +169,22 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
     m_canaryApp.publisher->AddDataPoint(partSizeMetric);
 
     PerformMeasurement(
-        1, LargeObjectSize, m_canaryApp.cutOffTimeLargeObjects, MeasureTransferRate::s_TransferLargeObject);
+        "crt-canary-obj-large-",
+        1,
+        LargeObjectSize,
+        m_canaryApp.cutOffTimeLargeObjects,
+        MeasureTransferRate::s_TransferLargeObject);
 }
 
 template <typename TPeformTransferType>
 void MeasureTransferRate::PerformMeasurement(
+    const char *filenamePrefix,
     uint32_t maxConcurrentTransfers,
     uint64_t objectSize,
     double cutOffTime,
     const TPeformTransferType &&performTransfer)
 {
-    char BodyTemplateData[] = "This is a test string for use with canary testing against Amazon Simple Storage Service";
-    BodyTemplate = new char[BodyTemplateSize];
-    BodyTemplate[BodyTemplateSize - 1] = '\0';
-
-    size_t totalToWrite = BodyTemplateSize;
-    char *BodyTemplatePos = BodyTemplate;
-
-    while (totalToWrite)
-    {
-        size_t toWrite =
-            AWS_ARRAY_SIZE(BodyTemplateData) - 1 > totalToWrite ? totalToWrite : AWS_ARRAY_SIZE(BodyTemplateData) - 1;
-
-        memcpy(BodyTemplatePos, BodyTemplateData, toWrite);
-
-        BodyTemplatePos += toWrite;
-        totalToWrite -= toWrite;
-    }
-
-    ScheduleMeasureAllocationsTask();
+    // ScheduleMeasureAllocationsTask();
 
     std::shared_ptr<MetricsPublisher> publisher = m_canaryApp.publisher;
 
@@ -191,7 +207,7 @@ void MeasureTransferRate::PerformMeasurement(
         while (!forceStop && (continueInitiatingTransfers && inFlightUploads < maxConcurrentTransfers))
         {
             StringStream keyStream;
-            keyStream << "crt-canary-obj-large-" << counter--; // TODO pull out name into argument
+            keyStream << filenamePrefix << counter--;
             ++inFlightUploads;
             ++inFlightUploadOrDownload;
             auto key = keyStream.str();
@@ -225,7 +241,7 @@ void MeasureTransferRate::PerformMeasurement(
                 };
 
             NotifyDownloadProgress notifyDownloadProgress = [publisher](uint64_t dataLength) {
-                //AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Received %" PRId64 " bytes", dataLength);
+                // AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Received %" PRId64 " bytes", dataLength);
             };
 
             NotifyDownloadFinished notifyDownloadFinished =
