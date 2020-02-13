@@ -23,13 +23,16 @@
 #include <aws/crt/io/Stream.h>
 #include <aws/io/stream.h>
 
+#include <aws/common/clock.h>
+#include <aws/common/system_info.h>
+
 #if defined(_WIN32)
 #    undef min
 #endif
 
 using namespace Aws::Crt;
 
-const uint32_t MultipartTransferProcessor::NumPartsPerTask = 10;
+const uint32_t MultipartTransferProcessor::NumPartsPerTask = 100;
 
 MultipartTransferProcessor::ProcessPartRangeTaskArgs::ProcessPartRangeTaskArgs(
     MultipartTransferProcessor &inTransferProcessor,
@@ -49,6 +52,8 @@ MultipartTransferProcessor::MultipartTransferProcessor(
 {
     m_streamsAvailable = streamsAvailable;
     m_schedulingLoop = aws_event_loop_group_get_next_loop(elGroup.GetUnderlyingHandle());
+
+    ScheduleLogOutputTask();
 }
 
 void MultipartTransferProcessor::ProcessNextParts(uint32_t streamsReturning)
@@ -67,8 +72,7 @@ void MultipartTransferProcessor::ProcessNextParts(uint32_t streamsReturning)
     // Grab all of the parts that we can consume and put them into our local parts vector.
     uint32_t numPartsToProcess = PopQueue(numStreamsToConsume, *parts);
 
-    // Figure out how many tasks this should be distributed among.  If only 1, we'll
-    // do the processing from the current thread.
+    // Figure out how many tasks this should be distributed among.
     uint32_t numTasksNeeded = numPartsToProcess / NumPartsPerTask;
 
     m_streamsAvailable += (numStreamsToConsume - numPartsToProcess);
@@ -110,14 +114,14 @@ void MultipartTransferProcessor::ProcessNextParts(uint32_t streamsReturning)
     }
 }
 
-void MultipartTransferProcessor::s_ProcessPartRangeTask(aws_task *task, void *arg, aws_task_status status)
+void MultipartTransferProcessor::s_ProcessPartRangeTask(aws_task *task, void *argsVoid, aws_task_status status)
 {
     if (status != AWS_TASK_STATUS_RUN_READY)
     {
         return;
     }
 
-    ProcessPartRangeTaskArgs *args = reinterpret_cast<ProcessPartRangeTaskArgs *>(arg);
+    ProcessPartRangeTaskArgs *args = reinterpret_cast<ProcessPartRangeTaskArgs *>(argsVoid);
     args->transferProcessor.ProcessPartRange(*args->parts, args->partRangeStart, args->partRangeLength);
 
     Delete(task, g_allocator);
@@ -148,14 +152,19 @@ void MultipartTransferProcessor::ProcessPartRange(
         uint32_t partIndex = parts[i].partIndex;
         uint32_t partNumber = partIndex + 1;
 
-        uint64_t partByteStart = partIndex * S3ObjectTransport::MaxPartSizeBytes;
-        uint64_t partByteRemainder = state->GetObjectSize() - (partIndex * S3ObjectTransport::MaxPartSizeBytes);
-        uint64_t partByteSize = std::min(partByteRemainder, S3ObjectTransport::MaxPartSizeBytes);
+        uint64_t partByteInterval = state->GetObjectSize() / static_cast<uint64_t>(state->GetNumParts());
+        uint64_t partByteStart = partIndex * partByteInterval;
+        uint64_t partByteSize = partByteInterval;
+
+        if (partNumber == state->GetNumParts())
+        {
+            partByteSize += state->GetObjectSize() % static_cast<uint64_t>(state->GetNumParts());
+        }
 
         std::shared_ptr<MultipartTransferState::PartInfo> partInfo = MakeShared<MultipartTransferState::PartInfo>(
             g_allocator, m_canaryApp.publisher, partIndex, partNumber, partByteStart, partByteSize);
 
-        // TODO should state and partInfo be captured as week pointers here?
+        // TODO should state and partInfo be captured as weak pointers here?
         state->ProcessPart(partInfo, [this, state, partInfo](PartFinishResponse response) {
             if (response == PartFinishResponse::Done)
             {
@@ -224,4 +233,60 @@ uint32_t MultipartTransferProcessor::PopQueue(uint32_t numRequested, Vector<Queu
     }
 
     return numAdded;
+}
+
+// TODO either remove entirely or move somewhere else.  This should be in a more general place as it logs output
+// from multiple systems.
+void MultipartTransferProcessor::ScheduleLogOutputTask()
+{
+    aws_task *logOutputTask = New<aws_task>(g_allocator);
+    aws_task_init(
+        logOutputTask, MultipartTransferProcessor::s_LogOutputTask, reinterpret_cast<void *>(this), "LogOutputTask");
+
+    const uint64_t frequency = aws_timestamp_convert(5000, AWS_TIMESTAMP_MILLIS, AWS_TIMESTAMP_NANOS, NULL);
+
+    uint64_t now = 0;
+    aws_event_loop_current_clock_time(m_schedulingLoop, &now);
+    aws_event_loop_schedule_task_future(m_schedulingLoop, logOutputTask, now + frequency);
+}
+
+void MultipartTransferProcessor::s_LogOutputTask(aws_task *task, void *arg, aws_task_status status)
+{
+    if (status != AWS_TASK_STATUS_RUN_READY)
+    {
+        return;
+    }
+
+    Delete(task, g_allocator);
+    task = nullptr;
+
+    MultipartTransferProcessor *processor = reinterpret_cast<MultipartTransferProcessor *>(arg);
+    std::shared_ptr<S3ObjectTransport> transport = processor->m_canaryApp.transport;
+
+    uint32_t queueSize = 0;
+
+    {
+        std::lock_guard<std::mutex> lock(processor->m_partQueueMutex);
+
+        queueSize = (uint32_t)processor->m_partQueue.size();
+    }
+
+    int32_t openConnectionCount = transport->GetOpenConnectionCount();
+
+    Metric connMetric;
+    connMetric.Unit = MetricUnit::Bytes;
+    connMetric.Value = (double)openConnectionCount;
+    connMetric.SetTimestampNow();
+    connMetric.MetricName = "NumConnections";
+    processor->m_canaryApp.publisher->AddDataPoint(connMetric);
+
+    AWS_LOGF_INFO(
+        AWS_LS_CRT_CPP_CANARY,
+        "Streams-available:%d  Number-of-parts-in-queue:%d  Open-connections:%d",
+        processor->m_streamsAvailable.load(),
+
+        queueSize,
+        openConnectionCount);
+
+    processor->ScheduleLogOutputTask();
 }
