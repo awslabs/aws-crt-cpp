@@ -58,12 +58,7 @@ Metric &MultipartTransferState::PartInfo::GetOrCreateMetricToUpdate(Vector<Metri
 
 void MultipartTransferState::PartInfo::FlushMetricsVector(Vector<Metric> &metrics)
 {
-    if (metrics.size() == 0)
-    {
-        return;
-    }
-
-    for (uint32_t i = 0; i < metrics.size(); ++i)
+    for (size_t i = 0; i < metrics.size(); ++i)
     {
         publisher->AddDataPointSum(metrics[i]);
     }
