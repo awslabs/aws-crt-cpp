@@ -337,7 +337,8 @@ void MeasureTransferRate::s_TransferSmallObject(
 
             transport->GetObject(
                 key,
-                [notifyDownloadProgress](const Http::HttpStream &, const ByteCursor &cur) {
+                [singlePart, notifyDownloadProgress](const Http::HttpStream &, const ByteCursor &cur) {
+                    singlePart->AddDataDownMetric(cur.len);
                     notifyDownloadProgress(cur.len);
                 },
                 [singlePart, notifyDownloadFinished](int32_t errorCode) {
