@@ -14,6 +14,7 @@
  */
 #include "MetricsPublisher.h"
 #include "CanaryApp.h"
+#include "MeasureTransferRate.h"
 
 #include <aws/crt/http/HttpConnectionManager.h>
 #include <aws/crt/http/HttpRequestResponse.h>
@@ -157,6 +158,8 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
     const char *platformName = m_canaryApp.platformName.c_str();
     const char *toolName = m_canaryApp.toolName.c_str();
     const char *instanceType = m_canaryApp.instanceType.c_str();
+    const uint64_t largeObjectPartSize =
+        MeasureTransferRate::LargeObjectSize / MeasureTransferRate::LargeObjectNumParts;
 
     for (const auto &metric : metrics)
     {
@@ -167,21 +170,11 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
         metric.Timestamp.ToGmtString(DateFormat::ISO_8601, dateBuf);
         String dateStr((char *)dateBuf.buffer, dateBuf.len);
 
-        /*
-                uint64_t millis = metric.Timestamp - timestamp.Millis();
-                StringStream millisStr;
-                millisStr << millis;
-                dateStr.pop_back();
-                dateStr += millisStr;
-                dateStr += "Z";
-        */
-        // AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Emitting metric at time %s with value %f and name %s", dateStr.c_str(),
-        // metric.Value, metric.MetricName.c_str());
-
         bodyStream << "MetricData.member." << metricCount << ".Timestamp=" << dateStr << "&";
         bodyStream.precision(17);
         bodyStream << "MetricData.member." << metricCount << ".Value=" << std::fixed << metric.Value << "&";
         bodyStream << "MetricData.member." << metricCount << ".Unit=" << s_UnitToStr(metric.Unit) << "&";
+        bodyStream << "MetricData.member." << metricCount << ".StorageResolution=" << 1 << "&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.1.Name=Platform&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.1.Value=" << platformName << "&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.2.Name=ToolName&";
@@ -190,8 +183,20 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.3.Value=" << instanceType << "&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Name=TransferSize&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Value=" << transferSizeString << "&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.5.Name=UsingNumaControl&";
+        bodyStream << "MetricData.member." << metricCount
+                   << ".Dimensions.member.5.Value=" << m_canaryApp.usingNumaControl << "&";
 
-        // AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "%s", bodyStream.str().c_str());
+        if (m_transferSize == MetricTransferSize::Large)
+        {
+            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.6.Name=NumParts&";
+            bodyStream << "MetricData.member." << metricCount
+                       << ".Dimensions.member.6.Value=" << MeasureTransferRate::LargeObjectNumParts << "&";
+            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.7.Name=PartSize&";
+            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.7.Value=" << largeObjectPartSize
+                       << "&";
+        }
+
         metricCount++;
     }
 
@@ -225,7 +230,23 @@ void MetricsPublisher::AddDataPointSum(const Metric &metricData)
 void MetricsPublisher::AddDataPoint(const Metric &metricData)
 {
     std::lock_guard<std::mutex> locker(m_publishDataLock);
-    m_publishData.push_back(metricData);
+
+    bool foundMatch = false;
+
+    for (Metric &metric : m_publishData)
+    {
+        if (metric.Timestamp == metricData.Timestamp && metric.MetricName == metricData.MetricName)
+        {
+            metric.Value += metricData.Value;
+            foundMatch = true;
+            break;
+        }
+    }
+
+    if (!foundMatch)
+    {
+        m_publishData.push_back(metricData);
+    }
 }
 
 void MetricsPublisher::WaitForLastPublish()
@@ -294,6 +315,12 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
             metricsCpy.pop_back();
         }
 
+        AWS_LOGF_INFO(
+            AWS_LS_CRT_CPP_CANARY,
+            "METRICS - Processing %d metrics,  %d left.",
+            (uint32_t)metricsSlice.size(),
+            (uint32_t)metricsCpy.size());
+
         finalRun = metricsCpy.empty();
 
         auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
@@ -342,8 +369,24 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
                                 Http::HttpRequestOptions requestOptions;
                                 AWS_ZERO_STRUCT(requestOptions);
                                 requestOptions.request = signedRequest.get();
-                                requestOptions.onStreamComplete = [signedRequest, conn](Http::HttpStream &, int) {};
+                                requestOptions.onStreamComplete = [signedRequest,
+                                                                   conn](Http::HttpStream &stream, int errorCode) {
+                                    if (stream.GetResponseStatusCode() != 200)
+                                    {
+                                        AWS_LOGF_ERROR(
+                                            AWS_LS_CRT_CPP_CANARY,
+                                            "METRICS Error in metrics stream complete: %d",
+                                            stream.GetResponseStatusCode());
+                                    }
+                                };
                                 conn->NewClientStream(requestOptions);
+                            }
+                            else
+                            {
+                                AWS_LOGF_ERROR(
+                                    AWS_LS_CRT_CPP_CANARY,
+                                    "METRICS Error acquiring connection to send metrics: %d",
+                                    connError);
                             }
 
                             if (finalRun)
@@ -356,6 +399,11 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
                                     now + publisher->m_publishFrequencyNs);
                             }
                         });
+                }
+                else
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_CRT_CPP_CANARY, "METRICS Error signing request for sending metric: %d", signingError);
                 }
             });
 

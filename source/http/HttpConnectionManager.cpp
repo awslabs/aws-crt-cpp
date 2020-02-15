@@ -74,14 +74,13 @@ namespace Aws
                 managerOptions.max_connections = m_options.MaxConnections;
                 managerOptions.socket_options = &connectionOptions.SocketOptions.GetImpl();
                 managerOptions.initial_window_size = connectionOptions.InitialWindowSize;
-/*
-		// TODO should be on heap?
-		aws_http_connection_monitoring_options monitoringOptions;
-		AWS_ZERO_STRUCT(monitoringOptions);
-		monitoringOptions.allowable_throughput_failure_interval_seconds = 30;
-		monitoringOptions.minimum_throughput_bytes_per_second = 1;		
-		managerOptions.monitoring_options = &monitoringOptions;
-*/
+
+                // TODO needs to be generalized
+                aws_http_connection_monitoring_options monitoringOptions;
+                AWS_ZERO_STRUCT(monitoringOptions);
+                monitoringOptions.allowable_throughput_failure_interval_seconds = 2;
+                monitoringOptions.minimum_throughput_bytes_per_second = 1 * 1024 * 1024;
+                managerOptions.monitoring_options = &monitoringOptions;
 
                 if (options.EnableBlockingShutdown)
                 {
@@ -135,6 +134,11 @@ namespace Aws
                     m_shutdownPromise.get_future().get();
                 }
                 m_connectionManager = nullptr;
+            }
+
+            int32_t HttpClientConnectionManager::GetOpenConnectionCount()
+            {
+                return aws_http_connection_manager_get_open_connection_count(m_connectionManager);
             }
 
             bool HttpClientConnectionManager::AcquireConnection(
@@ -218,7 +222,6 @@ namespace Aws
 
                 callback(connectionObj, AWS_OP_SUCCESS);
             }
-
         } // namespace Http
     }     // namespace Crt
 } // namespace Aws

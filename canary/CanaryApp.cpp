@@ -67,11 +67,11 @@ int filterLog(
 }
 
 CanaryApp::CanaryApp(int argc, char *argv[])
-    : traceAllocator(DefaultAllocator()), apiHandle(traceAllocator), eventLoopGroup(traceAllocator),
+    : traceAllocator(DefaultAllocator()), apiHandle(traceAllocator), eventLoopGroup(32, traceAllocator),
       defaultHostResolver(eventLoopGroup, 60, 1000, traceAllocator),
       bootstrap(eventLoopGroup, defaultHostResolver, traceAllocator), platformName(CanaryUtil::GetPlatformName()),
       toolName("NA"), instanceType("unknown"), region("us-west-2"), cutOffTimeSmallObjects(10.0),
-      cutOffTimeLargeObjects(10.0), measureLargeTransfer(false), measureSmallTransfer(false)
+      cutOffTimeLargeObjects(10.0), measureLargeTransfer(false), measureSmallTransfer(false), usingNumaControl(false)
 {
 #ifdef __linux__
     rlimit fdsLimit;
@@ -79,14 +79,7 @@ CanaryApp::CanaryApp(int argc, char *argv[])
     fdsLimit.rlim_cur = 4096;
     setrlimit(RLIMIT_NOFILE, &fdsLimit);
 #endif
-/*
-    apiHandle.InitializeLogging(LogLevel::Info, stderr);
 
-    // TODO Take out before merging--this is a giant hack to filter just canary logs
-    aws_logger_vtable *currentVTable = aws_logger_get()->vtable;
-    void **logFunctionVoid = (void **)&currentVTable->log;
-    *logFunctionVoid = (void *)filterLog;
-*/
     Auth::CredentialsProviderChainDefaultConfig chainConfig;
     chainConfig.Bootstrap = &bootstrap;
 
@@ -105,6 +98,8 @@ CanaryApp::CanaryApp(int argc, char *argv[])
         CutOffTimelarge,
         MeasureLargeTransfer,
         MeasureSmallTransfer,
+        Logging,
+        UsingNumaControl,
 
         MAX
     };
@@ -114,9 +109,11 @@ CanaryApp::CanaryApp(int argc, char *argv[])
                                       {"cutOffTimeSmall", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'c'},
                                       {"cutOffTimeLarge", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'C'},
                                       {"measureLargeTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'l'},
-                                      {"measureSmallTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 's'}};
+                                      {"measureSmallTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 's'},
+                                      {"logging", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'd'},
+                                      {"usingNumaControl", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'n'}};
 
-    const char *optstring = "t:i:c:C:ls";
+    const char *optstring = "t:i:c:C:ls:d:n";
     toolName = argc >= 1 ? argv[0] : "NA";
 
     size_t dirStart = toolName.rfind('\\');
@@ -127,6 +124,7 @@ CanaryApp::CanaryApp(int argc, char *argv[])
     }
 
     int cliOptionIndex = 0;
+    bool loggingOn = false;
 
     while (aws_cli_getopt_long(argc, argv, optstring, options, &cliOptionIndex) != -1)
     {
@@ -150,10 +148,26 @@ CanaryApp::CanaryApp(int argc, char *argv[])
             case CLIOption::MeasureSmallTransfer:
                 measureSmallTransfer = true;
                 break;
+            case CLIOption::Logging:
+                loggingOn = true;
+                break;
+            case CLIOption::UsingNumaControl:
+                usingNumaControl = true;
+                break;
             default:
                 AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Unknown CLI option used.");
                 break;
         }
+    }
+
+    if (loggingOn)
+    {
+        apiHandle.InitializeLogging(LogLevel::Info, stderr);
+
+        // TODO Take out before merging--this is a giant hack to filter just canary logs
+        aws_logger_vtable *currentVTable = aws_logger_get()->vtable;
+        void **logFunctionVoid = (void **)&currentVTable->log;
+        *logFunctionVoid = (void *)filterLog;
     }
 
     publisher = MakeShared<MetricsPublisher>(g_allocator, *this, "CRT-CPP-Canary");

@@ -35,7 +35,7 @@
 
 using namespace Aws::Crt;
 
-const uint32_t S3ObjectTransport::MaxStreams = 1000;
+const uint32_t S3ObjectTransport::MaxStreams = 100;
 
 const int32_t S3ObjectTransport::S3GetObjectResponseStatus_PartialContent = 206;
 const bool S3ObjectTransport::SingleConnectionPerMultipartUpload = false;
@@ -130,7 +130,7 @@ void S3ObjectTransport::MakeSignedRequest(
                 m_connManager->AcquireConnection(
                     [this, requestOptions, signedRequest, callback](
                         std::shared_ptr<Http::HttpClientConnection> conn, int connErrorCode) {
-                        if (!conn->IsOpen() && connErrorCode == AWS_ERROR_SUCCESS)
+                        if ((conn == nullptr || !conn->IsOpen()) && connErrorCode == AWS_ERROR_SUCCESS)
                         {
                             connErrorCode = AWS_ERROR_UNKNOWN;
                         }
@@ -285,7 +285,7 @@ void S3ObjectTransport::PutObject(
         }
         else
         {
-            AWS_LOGF_ERROR(
+            AWS_LOGF_DEBUG(
                 AWS_LS_CRT_CPP_CANARY,
                 "PutObject finished for path %s with error '%s'",
                 keyPath.c_str(),
@@ -429,6 +429,14 @@ void S3ObjectTransport::UploadPart(
 
                 partInfo->FlushDataUpMetrics();
 
+                Metric successMetric;
+                successMetric.MetricName = "SuccessfulTransfer";
+                successMetric.Unit = MetricUnit::Count;
+                successMetric.Value = 1;
+                successMetric.SetTimestampNow();
+
+                m_canaryApp.publisher->AddDataPoint(successMetric);
+
                 AWS_LOGF_INFO(
                     AWS_LS_CRT_CPP_CANARY,
                     "UploadPart for path %s and part #%d (%d/%d) just returned code %d",
@@ -446,6 +454,13 @@ void S3ObjectTransport::UploadPart(
                     partInfo->partNumber,
                     errorCode,
                     aws_error_debug_str(errorCode));
+                Metric failureMetric;
+                failureMetric.MetricName = "FailedTransfer";
+                failureMetric.Unit = MetricUnit::Count;
+                failureMetric.Value = 1;
+                failureMetric.SetTimestampNow();
+
+                m_canaryApp.publisher->AddDataPoint(failureMetric);
 
                 partInfo->FlushDataUpMetrics();
 
