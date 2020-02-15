@@ -12,14 +12,13 @@
 using namespace Aws::Crt;
 
 // TODO make handling of BodyTemplate less awkward.
-size_t MeasureTransferRate::BodyTemplateSize = 128ULL * 1024ULL * 1024ULL; // 125ULL * 1000ULL * 1000ULL / 8ULL;
-thread_local char* BodyTemplate = nullptr;
+size_t MeasureTransferRate::BodyTemplateSize = 4ULL * 1024ULL;
+thread_local char *BodyTemplate = nullptr;
 
 const uint64_t MeasureTransferRate::SmallObjectSize = 16ULL * 1024ULL * 1024ULL;
 const uint32_t MeasureTransferRate::LargeObjectNumParts = 8192;
 const uint64_t MeasureTransferRate::LargeObjectSize =
-    (uint64_t)MeasureTransferRate::LargeObjectNumParts *
-    MeasureTransferRate::BodyTemplateSize; // 1ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL;
+    (uint64_t)MeasureTransferRate::LargeObjectNumParts * (128ULL * 1024ULL * 1024ULL);
 const std::chrono::milliseconds MeasureTransferRate::AllocationMetricFrequency(1000);
 const uint64_t MeasureTransferRate::AllocationMetricFrequencyNS = aws_timestamp_convert(
     MeasureTransferRate::AllocationMetricFrequency.count(),
@@ -38,6 +37,7 @@ bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
     {
         char BodyTemplateData[] =
             "This is a test string for use with canary testing against Amazon Simple Storage Service";
+
         BodyTemplate = new char[MeasureTransferRate::BodyTemplateSize];
         BodyTemplate[MeasureTransferRate::BodyTemplateSize - 1] = '\0';
 
@@ -131,7 +131,7 @@ MeasureTransferRate::MeasureTransferRate(CanaryApp &canaryApp) : m_canaryApp(can
 
 void MeasureTransferRate::MeasureSmallObjectTransfer()
 {
-    uint32_t threadCount = static_cast<uint32_t>(aws_system_info_processor_count());
+    uint32_t threadCount = 32; // static_cast<uint32_t>(aws_system_info_processor_count());
     uint32_t maxInFlight = threadCount * 10;
 
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Warming DNS cache...");
@@ -139,10 +139,11 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "DNS cache warmed.");
 
     PerformMeasurement(
-        "crt-canary-obj-",
+        "crt-canary-obj-small-",
         maxInFlight,
         SmallObjectSize,
         m_canaryApp.cutOffTimeSmallObjects,
+        true,
         MeasureTransferRate::s_TransferSmallObject);
 }
 
@@ -152,27 +153,12 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
     m_canaryApp.transport->WarmDNSCache();
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "DNS cache warmed.");
 
-    Metric numPartsMetric;
-    numPartsMetric.MetricName = "LargeObjectNumParts";
-    numPartsMetric.Unit = MetricUnit::Count;
-    numPartsMetric.Value = MeasureTransferRate::LargeObjectNumParts;
-    numPartsMetric.SetTimestampNow();
-
-    m_canaryApp.publisher->AddDataPoint(numPartsMetric);
-
-    Metric partSizeMetric;
-    partSizeMetric.MetricName = "PartSize";
-    partSizeMetric.Unit = MetricUnit::Bytes;
-    partSizeMetric.Value = MeasureTransferRate::BodyTemplateSize;
-    partSizeMetric.SetTimestampNow();
-
-    m_canaryApp.publisher->AddDataPoint(partSizeMetric);
-
     PerformMeasurement(
         "crt-canary-obj-large-",
         1,
         LargeObjectSize,
         m_canaryApp.cutOffTimeLargeObjects,
+        false,
         MeasureTransferRate::s_TransferLargeObject);
 }
 
@@ -182,6 +168,7 @@ void MeasureTransferRate::PerformMeasurement(
     uint32_t maxConcurrentTransfers,
     uint64_t objectSize,
     double cutOffTime,
+    bool transferStatusMetricPerWorkload,
     const TPeformTransferType &&performTransfer)
 {
     // ScheduleMeasureAllocationsTask();
@@ -191,32 +178,40 @@ void MeasureTransferRate::PerformMeasurement(
     bool continueInitiatingTransfers = true;
     std::atomic<bool> forceStop(false);
     uint64_t counter = INT64_MAX;
-    std::atomic<size_t> inFlightUploads(0);
-    std::atomic<size_t> inFlightUploadOrDownload(0);
+
+    std::atomic<uint32_t> numInProgress(0);
 
     time_t initialTime;
     time(&initialTime);
 
-    while (!forceStop && (continueInitiatingTransfers || inFlightUploadOrDownload > 0))
+    AWS_LOGF_INFO(
+        AWS_LS_CRT_CPP_CANARY, "Starting performance measurement.  Measuring for at least %f seconds.", cutOffTime);
+
+    // uint32_t currentConnectionCount = m_canaryApp.transport->GetOpenConnectionCount();
+
+    while (!forceStop && (continueInitiatingTransfers || m_canaryApp.transport->GetOpenConnectionCount() > 0))
     {
         if (counter == 0)
         {
             counter = INT64_MAX;
         }
 
-        while (!forceStop && (continueInitiatingTransfers && inFlightUploads < maxConcurrentTransfers))
+        while (
+            !forceStop &&
+            (continueInitiatingTransfers &&
+             numInProgress <
+                 maxConcurrentTransfers)) // m_canaryApp.transport->GetOpenConnectionCount() < maxConcurrentTransfers))
         {
             StringStream keyStream;
             keyStream << filenamePrefix << counter--;
-            ++inFlightUploads;
-            ++inFlightUploadOrDownload;
             auto key = keyStream.str();
+            ++numInProgress;
 
-            NotifyUploadFinished notifyUploadFinished =
-                [publisher, &inFlightUploads, &inFlightUploadOrDownload, &forceStop](int32_t errorCode) {
-                    --inFlightUploads;
-
-                    if (errorCode == AWS_ERROR_SUCCESS)
+            NotifyUploadFinished notifyUploadFinished = [publisher,
+                                                         transferStatusMetricPerWorkload](int32_t errorCode) {
+                if (errorCode == AWS_ERROR_SUCCESS)
+                {
+                    if (transferStatusMetricPerWorkload)
                     {
                         Metric successMetric;
                         successMetric.MetricName = "SuccessfulTransfer";
@@ -226,7 +221,10 @@ void MeasureTransferRate::PerformMeasurement(
 
                         publisher->AddDataPoint(successMetric);
                     }
-                    else
+                }
+                else
+                {
+                    if (transferStatusMetricPerWorkload)
                     {
                         Metric failureMetric;
                         failureMetric.MetricName = "FailedTransfer";
@@ -235,52 +233,60 @@ void MeasureTransferRate::PerformMeasurement(
                         failureMetric.SetTimestampNow();
 
                         publisher->AddDataPoint(failureMetric);
-                        --inFlightUploadOrDownload;
-                        forceStop = true;
                     }
-                };
+                    // forceStop = true;
+                }
+            };
 
             NotifyDownloadProgress notifyDownloadProgress = [publisher](uint64_t dataLength) {
                 // AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Received %" PRId64 " bytes", dataLength);
             };
 
             NotifyDownloadFinished notifyDownloadFinished =
-                [publisher, &inFlightUploadOrDownload, &forceStop](int32_t errorCode) {
-                    if (errorCode == AWS_ERROR_SUCCESS)
+                [publisher, transferStatusMetricPerWorkload, &numInProgress](int32_t errorCode) {
+                    if (transferStatusMetricPerWorkload)
                     {
-                        Metric successMetric;
-                        successMetric.MetricName = "SuccessfulTransfer";
-                        successMetric.Unit = MetricUnit::Count;
-                        successMetric.Value = 1;
-                        successMetric.SetTimestampNow();
+                        if (errorCode == AWS_ERROR_SUCCESS)
+                        {
+                            Metric successMetric;
+                            successMetric.MetricName = "SuccessfulTransfer";
+                            successMetric.Unit = MetricUnit::Count;
+                            successMetric.Value = 1;
+                            successMetric.SetTimestampNow();
 
-                        publisher->AddDataPoint(successMetric);
+                            publisher->AddDataPoint(successMetric);
+                        }
+                        else
+                        {
+                            Metric failureMetric;
+                            failureMetric.MetricName = "FailedTransfer";
+                            failureMetric.Unit = MetricUnit::Count;
+                            failureMetric.Value = 1;
+                            failureMetric.SetTimestampNow();
+
+                            publisher->AddDataPoint(failureMetric);
+                            // forceStop = true;
+                        }
                     }
-                    else
-                    {
-                        Metric failureMetric;
-                        failureMetric.MetricName = "FailedTransfer";
-                        failureMetric.Unit = MetricUnit::Count;
-                        failureMetric.Value = 1;
-                        failureMetric.SetTimestampNow();
 
-                        publisher->AddDataPoint(failureMetric);
-                        forceStop = true;
-                    }
-
-                    --inFlightUploadOrDownload;
+                    --numInProgress;
                 };
 
             performTransfer(
                 *this, key, objectSize, notifyUploadFinished, notifyDownloadProgress, notifyDownloadFinished);
         }
 
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        // std::this_thread::sleep_for(std::chrono::seconds(1));
 
         time_t currentTime;
         time(&currentTime);
         double elapsedSeconds = difftime(currentTime, initialTime);
+        bool wasInitiatingTransfers = continueInitiatingTransfers;
         continueInitiatingTransfers = elapsedSeconds <= cutOffTime;
+        if (!continueInitiatingTransfers && wasInitiatingTransfers)
+        {
+            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Minimum running time has elapsed.  No longer initiating transfers.");
+        }
     }
 
     aws_event_loop_cancel_task(m_schedulingLoop, &m_measureAllocationsTask);
@@ -317,22 +323,27 @@ void MeasureTransferRate::s_TransferSmallObject(
     transport->PutObject(
         key,
         MakeShared<MeasureTransferRateStream>(allocator, canaryApp, singlePart, allocator),
-        [transport, key, notifyUploadFinished, notifyDownloadProgress, notifyDownloadFinished](
+        [singlePart, transport, key, notifyUploadFinished, notifyDownloadProgress, notifyDownloadFinished](
             int32_t errorCode, std::shared_ptr<Aws::Crt::String>) {
             notifyUploadFinished(errorCode);
 
             if (errorCode != AWS_ERROR_SUCCESS)
             {
-                notifyDownloadFinished(AWS_ERROR_UNKNOWN);
+                notifyDownloadFinished(errorCode);
                 return;
             }
+
+            singlePart->FlushDataUpMetrics();
 
             transport->GetObject(
                 key,
                 [notifyDownloadProgress](const Http::HttpStream &, const ByteCursor &cur) {
                     notifyDownloadProgress(cur.len);
                 },
-                [notifyDownloadFinished](int32_t errorCode) { notifyDownloadFinished(errorCode); });
+                [singlePart, notifyDownloadFinished](int32_t errorCode) {
+                    singlePart->FlushDataDownMetrics();
+                    notifyDownloadFinished(errorCode);
+                });
         });
 }
 

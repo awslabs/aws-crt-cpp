@@ -42,6 +42,13 @@ class MeasureTransferRateStream : public Aws::Crt::Io::InputStream
 class MeasureTransferRate
 {
   public:
+    static size_t BodyTemplateSize;
+    static const uint64_t SmallObjectSize;
+    static const uint64_t LargeObjectSize;
+    static const std::chrono::milliseconds AllocationMetricFrequency;
+    static const uint64_t AllocationMetricFrequencyNS;
+    static const uint32_t LargeObjectNumParts;
+
     MeasureTransferRate(CanaryApp &canaryApp);
 
     void MeasureSmallObjectTransfer();
@@ -66,13 +73,6 @@ class MeasureTransferRate
         const NotifyDownloadFinished &notifyDownloadFinished)>;
 
     friend class MeasureTransferRateStream; // TODO use of friend here shouldn't be necessary
-    static size_t BodyTemplateSize;
-    //static thread_local char *BodyTemplate;
-    static const uint64_t SmallObjectSize;
-    static const uint64_t LargeObjectSize;
-    static const std::chrono::milliseconds AllocationMetricFrequency;
-    static const uint64_t AllocationMetricFrequencyNS;
-    static const uint32_t LargeObjectNumParts;
 
     CanaryApp &m_canaryApp;
     aws_event_loop *m_schedulingLoop;
@@ -84,6 +84,7 @@ class MeasureTransferRate
         uint32_t maxConcurrentTransfers,
         uint64_t objectSize,
         double cutOffTime,
+        bool transferStatusMetricPerWorkload,
         const TPeformTransferType &&performTransfer);
 
     static void s_TransferSmallObject(

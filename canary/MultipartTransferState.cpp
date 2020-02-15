@@ -60,7 +60,7 @@ void MultipartTransferState::PartInfo::FlushMetricsVector(Vector<Metric> &metric
 {
     for (size_t i = 0; i < metrics.size(); ++i)
     {
-        publisher->AddDataPointSum(metrics[i]);
+        publisher->AddDataPoint(metrics[i]);
     }
 
     metrics.clear();

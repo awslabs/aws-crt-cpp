@@ -90,7 +90,8 @@ class S3ObjectTransport
     using CompleteMultipartUploadFinished = std::function<void(int32_t error)>;
     using AbortMultipartUploadFinished = std::function<void(int32_t error)>;
 
-    using SignedRequestCallback = std::function<void(std::shared_ptr<Aws::Crt::Http::HttpClientConnection> conn, int32_t errorCode)>;
+    using SignedRequestCallback =
+        std::function<void(std::shared_ptr<Aws::Crt::Http::HttpClientConnection> conn, int32_t errorCode)>;
 
     CanaryApp &m_canaryApp;
     std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> m_connManager;
