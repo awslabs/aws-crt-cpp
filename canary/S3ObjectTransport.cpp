@@ -26,8 +26,8 @@
 #include <inttypes.h>
 #include <iostream>
 
-#include <execinfo.h>
-#include <unistd.h>
+//#include <execinfo.h>
+//#include <unistd.h>
 
 #if defined(_WIN32)
 #    undef min
@@ -48,18 +48,21 @@ S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::Strin
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
     m_endpoint = m_bucketName + ".s3." + canaryApp.region + ".amazonaws.com";
     connectionManagerOptions.ConnectionOptions.HostName = m_endpoint;
-    connectionManagerOptions.ConnectionOptions.Port = 443;
+    connectionManagerOptions.ConnectionOptions.Port = canaryApp.sendEncrypted ? 443 : 80;
     connectionManagerOptions.ConnectionOptions.SocketOptions.SetConnectTimeoutMs(3000);
     connectionManagerOptions.ConnectionOptions.SocketOptions.SetSocketType(AWS_SOCKET_STREAM);
     connectionManagerOptions.ConnectionOptions.InitialWindowSize = SIZE_MAX;
 
-    aws_byte_cursor serverName = ByteCursorFromCString(m_endpoint.c_str());
+	if (canaryApp.sendEncrypted)
+	{
+        aws_byte_cursor serverName = ByteCursorFromCString(m_endpoint.c_str());
+        auto connOptions = canaryApp.tlsContext.NewConnectionOptions();
+        connOptions.SetServerName(serverName);
+        connectionManagerOptions.ConnectionOptions.TlsOptions = connOptions;
+	}
 
-    auto connOptions = canaryApp.tlsContext.NewConnectionOptions();
-    connOptions.SetServerName(serverName);
-    connectionManagerOptions.ConnectionOptions.TlsOptions = connOptions;
     connectionManagerOptions.ConnectionOptions.Bootstrap = &canaryApp.bootstrap;
-    connectionManagerOptions.MaxConnections = 10000;
+    connectionManagerOptions.MaxConnections = 5000;
 
     m_connManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, g_allocator);
@@ -71,7 +74,7 @@ S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::Strin
     m_contentTypeHeader.value = ByteCursorFromCString("text/plain");
 }
 
-int32_t S3ObjectTransport::GetOpenConnectionCount()
+size_t S3ObjectTransport::GetOpenConnectionCount()
 {
     return m_connManager->GetOpenConnectionCount();
 }
@@ -274,7 +277,7 @@ void S3ObjectTransport::PutObject(
                 errorCode = AWS_ERROR_UNKNOWN;
             }
 
-            aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_DEBUG;
+            aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_INFO;
 
             AWS_LOGF(
                 logLevel,

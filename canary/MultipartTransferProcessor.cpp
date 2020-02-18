@@ -271,7 +271,7 @@ void MultipartTransferProcessor::s_LogOutputTask(aws_task *task, void *arg, aws_
         queueSize = (uint32_t)processor->m_partQueue.size();
     }
 
-    int32_t openConnectionCount = transport->GetOpenConnectionCount();
+    size_t openConnectionCount = transport->GetOpenConnectionCount();
 
     Metric connMetric;
     connMetric.Unit = MetricUnit::Bytes;

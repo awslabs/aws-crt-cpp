@@ -81,7 +81,7 @@ class S3ObjectTransport
         const ReceivePartCallback &receivePart,
         const GetObjectMultipartFinished &finishedCallback);
 
-    int32_t GetOpenConnectionCount();
+    size_t GetOpenConnectionCount();
 
     void WarmDNSCache();
 

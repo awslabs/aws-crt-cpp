@@ -186,14 +186,17 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.5.Name=UsingNumaControl&";
         bodyStream << "MetricData.member." << metricCount
                    << ".Dimensions.member.5.Value=" << m_canaryApp.usingNumaControl << "&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.6.Name=Encrypted&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.6.Value=" << m_canaryApp.sendEncrypted
+                   << "&";
 
         if (m_transferSize == MetricTransferSize::Large)
         {
-            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.6.Name=NumParts&";
+            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.7.Name=NumParts&";
             bodyStream << "MetricData.member." << metricCount
-                       << ".Dimensions.member.6.Value=" << MeasureTransferRate::LargeObjectNumParts << "&";
-            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.7.Name=PartSize&";
-            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.7.Value=" << largeObjectPartSize
+                       << ".Dimensions.member.7.Value=" << MeasureTransferRate::LargeObjectNumParts << "&";
+            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.8.Name=PartSize&";
+            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.8.Value=" << largeObjectPartSize
                        << "&";
         }
 
@@ -369,8 +372,7 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
                                 Http::HttpRequestOptions requestOptions;
                                 AWS_ZERO_STRUCT(requestOptions);
                                 requestOptions.request = signedRequest.get();
-                                requestOptions.onStreamComplete = [signedRequest,
-                                                                   conn](Http::HttpStream &stream, int errorCode) {
+                                requestOptions.onStreamComplete = [signedRequest, conn](Http::HttpStream &stream, int) {
                                     if (stream.GetResponseStatusCode() != 200)
                                     {
                                         AWS_LOGF_ERROR(

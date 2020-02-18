@@ -71,7 +71,8 @@ CanaryApp::CanaryApp(int argc, char *argv[])
       defaultHostResolver(eventLoopGroup, 60, 1000, traceAllocator),
       bootstrap(eventLoopGroup, defaultHostResolver, traceAllocator), platformName(CanaryUtil::GetPlatformName()),
       toolName("NA"), instanceType("unknown"), region("us-west-2"), cutOffTimeSmallObjects(10.0),
-      cutOffTimeLargeObjects(10.0), measureLargeTransfer(false), measureSmallTransfer(false), usingNumaControl(false)
+      cutOffTimeLargeObjects(10.0), measureLargeTransfer(false), measureSmallTransfer(false), usingNumaControl(false),
+      sendEncrypted(false)
 {
 #ifdef __linux__
     rlimit fdsLimit;
@@ -100,6 +101,7 @@ CanaryApp::CanaryApp(int argc, char *argv[])
         MeasureSmallTransfer,
         Logging,
         UsingNumaControl,
+        SendEncrypted,
 
         MAX
     };
@@ -111,9 +113,10 @@ CanaryApp::CanaryApp(int argc, char *argv[])
                                       {"measureLargeTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'l'},
                                       {"measureSmallTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 's'},
                                       {"logging", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'd'},
-                                      {"usingNumaControl", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'n'}};
+                                      {"usingNumaControl", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'n'},
+                                      {"sendEncrypted", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'e'}};
 
-    const char *optstring = "t:i:c:C:ls:d:n";
+    const char *optstring = "t:i:c:C:ls:d:n:e";
     toolName = argc >= 1 ? argv[0] : "NA";
 
     size_t dirStart = toolName.rfind('\\');
@@ -154,6 +157,9 @@ CanaryApp::CanaryApp(int argc, char *argv[])
             case CLIOption::UsingNumaControl:
                 usingNumaControl = true;
                 break;
+            case CLIOption::SendEncrypted:
+                sendEncrypted = true;
+				break;
             default:
                 AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Unknown CLI option used.");
                 break;
