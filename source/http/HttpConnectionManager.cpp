@@ -126,7 +126,7 @@ namespace Aws
                 m_connectionManager = nullptr;
             }
 
-            int32_t HttpClientConnectionManager::GetOpenConnectionCount()
+            size_t HttpClientConnectionManager::GetOpenConnectionCount()
             {
                 return aws_http_connection_manager_get_open_connection_count(m_connectionManager);
             }

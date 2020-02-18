@@ -68,7 +68,7 @@ namespace Aws
               public:
                 ~HttpClientConnectionManager();
 
-                int32_t GetOpenConnectionCount();
+                size_t GetOpenConnectionCount();
 
                 /**
                  * Acquires a connection from the pool. onClientConnectionAvailable will be invoked upon an available

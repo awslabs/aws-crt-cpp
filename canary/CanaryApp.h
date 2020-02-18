@@ -31,6 +31,7 @@ struct CanaryApp
     bool measureLargeTransfer;
     bool measureSmallTransfer;
     bool usingNumaControl;
+    bool sendEncrypted;
 
     std::shared_ptr<MetricsPublisher> publisher;
     std::shared_ptr<S3ObjectTransport> transport;
