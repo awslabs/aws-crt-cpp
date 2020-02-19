@@ -99,6 +99,11 @@ namespace Aws
 
                 return true;
             }
+
+            size_t DefaultHostResolver::GetHostCount() noexcept
+            {
+                return aws_host_resolver_get_host_count(&m_resolver);
+            }
         } // namespace Io
     }     // namespace Crt
 } // namespace Aws
