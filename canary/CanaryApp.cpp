@@ -68,7 +68,7 @@ int filterLog(
 
 CanaryApp::CanaryApp(int argc, char *argv[])
     : traceAllocator(DefaultAllocator()), apiHandle(traceAllocator), eventLoopGroup(32, traceAllocator),
-      defaultHostResolver(eventLoopGroup, 60, 1000, traceAllocator),
+      defaultHostResolver(eventLoopGroup, 160, 1000, traceAllocator),
       bootstrap(eventLoopGroup, defaultHostResolver, traceAllocator), platformName(CanaryUtil::GetPlatformName()),
       toolName("NA"), instanceType("unknown"), region("us-west-2"), cutOffTimeSmallObjects(10.0),
       cutOffTimeLargeObjects(10.0), measureLargeTransfer(false), measureSmallTransfer(false), usingNumaControl(false),
@@ -159,7 +159,7 @@ CanaryApp::CanaryApp(int argc, char *argv[])
                 break;
             case CLIOption::SendEncrypted:
                 sendEncrypted = true;
-				break;
+                break;
             default:
                 AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Unknown CLI option used.");
                 break;

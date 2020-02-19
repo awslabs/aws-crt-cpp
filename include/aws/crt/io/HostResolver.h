@@ -45,6 +45,7 @@ namespace Aws
                 virtual bool ResolveHost(const String &host, const OnHostResolved &onResolved) noexcept = 0;
                 virtual aws_host_resolver *GetUnderlyingHandle() noexcept = 0;
                 virtual aws_host_resolution_config *GetConfig() noexcept = 0;
+                virtual size_t GetHostCount() noexcept = 0;
             };
 
             class DefaultHostResolver final : public HostResolver
@@ -75,6 +76,8 @@ namespace Aws
                 bool ResolveHost(const String &host, const OnHostResolved &onResolved) noexcept override;
                 aws_host_resolver *GetUnderlyingHandle() noexcept override { return &m_resolver; }
                 aws_host_resolution_config *GetConfig() noexcept override { return &m_config; }
+
+                size_t GetHostCount() noexcept override;
 
               private:
                 aws_host_resolver m_resolver;
