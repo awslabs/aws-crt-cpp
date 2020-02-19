@@ -83,6 +83,8 @@ class S3ObjectTransport
 
     size_t GetOpenConnectionCount();
 
+    const Aws::Crt::String &GetEndPoint() const { return m_endpoint; }
+
     void WarmDNSCache();
 
   private:
