@@ -68,7 +68,7 @@ int filterLog(
 
 CanaryApp::CanaryApp(int argc, char *argv[])
     : traceAllocator(DefaultAllocator()), apiHandle(traceAllocator), eventLoopGroup(32, traceAllocator),
-      defaultHostResolver(eventLoopGroup, 160, 1000, traceAllocator),
+      defaultHostResolver(eventLoopGroup, 60, 1000, traceAllocator),
       bootstrap(eventLoopGroup, defaultHostResolver, traceAllocator), platformName(CanaryUtil::GetPlatformName()),
       toolName("NA"), instanceType("unknown"), region("us-west-2"), cutOffTimeSmallObjects(10.0),
       cutOffTimeLargeObjects(10.0), measureLargeTransfer(false), measureSmallTransfer(false), usingNumaControl(false),
@@ -168,7 +168,7 @@ CanaryApp::CanaryApp(int argc, char *argv[])
 
     if (loggingOn)
     {
-        apiHandle.InitializeLogging(LogLevel::Info, stderr);
+        apiHandle.InitializeLogging(LogLevel::Debug, stderr);
 
         // TODO Take out before merging--this is a giant hack to filter just canary logs
         aws_logger_vtable *currentVTable = aws_logger_get()->vtable;

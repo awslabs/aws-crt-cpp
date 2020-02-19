@@ -279,23 +279,24 @@ void MultipartTransferProcessor::s_LogOutputTask(aws_task *task, void *arg, aws_
     connMetric.MetricName = "NumConnections";
     processor->m_canaryApp.publisher->AddDataPoint(connMetric);
 
-    size_t hostCount = processor->m_canaryApp.defaultHostResolver.GetHostCount();
+	const Aws::Crt::String &s3Endpoint = processor->m_canaryApp.transport->GetEndPoint();
+    size_t s3AddressCount = processor->m_canaryApp.defaultHostResolver.GetHostAddressCount(s3Endpoint);
 
-    Metric resolvedHostsMetric;
-    resolvedHostsMetric.Unit = MetricUnit::Count;
-    resolvedHostsMetric.Value = (double)hostCount;
-    resolvedHostsMetric.SetTimestampNow();
-    resolvedHostsMetric.MetricName = "ResolvedHostsCount";
-    processor->m_canaryApp.publisher->AddDataPoint(resolvedHostsMetric);
+    Metric s3AddressCountMetric;
+    s3AddressCountMetric.Unit = MetricUnit::Count;
+    s3AddressCountMetric.Value = (double)s3AddressCount;
+    s3AddressCountMetric.SetTimestampNow();
+    s3AddressCountMetric.MetricName = "S3AddressCount";
+    processor->m_canaryApp.publisher->AddDataPoint(s3AddressCountMetric);
 
     AWS_LOGF_INFO(
         AWS_LS_CRT_CPP_CANARY,
-        "Streams-available:%d  Number-of-parts-in-queue:%d  Open-connections:%d  Number-of-hosts: %d",
+        "Streams-available:%d  Number-of-parts-in-queue:%d  Open-connections:%d  Number-of-s3-addresses: %d",
         processor->m_streamsAvailable.load(),
 
         queueSize,
         (uint32_t)openConnectionCount,
-        (uint32_t)hostCount);
+        (uint32_t)s3AddressCount);
 
     processor->ScheduleLogOutputTask();
 }
