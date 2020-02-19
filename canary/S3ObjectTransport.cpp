@@ -53,13 +53,13 @@ S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::Strin
     connectionManagerOptions.ConnectionOptions.SocketOptions.SetSocketType(AWS_SOCKET_STREAM);
     connectionManagerOptions.ConnectionOptions.InitialWindowSize = SIZE_MAX;
 
-	if (canaryApp.sendEncrypted)
-	{
+    if (canaryApp.sendEncrypted)
+    {
         aws_byte_cursor serverName = ByteCursorFromCString(m_endpoint.c_str());
         auto connOptions = canaryApp.tlsContext.NewConnectionOptions();
         connOptions.SetServerName(serverName);
         connectionManagerOptions.ConnectionOptions.TlsOptions = connOptions;
-	}
+    }
 
     connectionManagerOptions.ConnectionOptions.Bootstrap = &canaryApp.bootstrap;
     connectionManagerOptions.MaxConnections = 5000;
@@ -88,7 +88,7 @@ void S3ObjectTransport::WarmDNSCache()
             (void)errorCode;
         });
 
-    std::this_thread::sleep_for(std::chrono::seconds(30));
+    std::this_thread::sleep_for(std::chrono::seconds(15 * 60));
 }
 
 void S3ObjectTransport::MakeSignedRequest(

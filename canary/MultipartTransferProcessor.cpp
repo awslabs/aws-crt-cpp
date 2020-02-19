@@ -235,8 +235,8 @@ uint32_t MultipartTransferProcessor::PopQueue(uint32_t numRequested, Vector<Queu
     return numAdded;
 }
 
-// TODO either remove entirely or move somewhere else.  This should be in a more general place as it logs output
-// from multiple systems.
+// TODO either remove entirely or move somewhere else.  This should be in a more general place and is responsible
+// for more than logging now.
 void MultipartTransferProcessor::ScheduleLogOutputTask()
 {
     aws_task *logOutputTask = New<aws_task>(g_allocator);
@@ -267,26 +267,35 @@ void MultipartTransferProcessor::s_LogOutputTask(aws_task *task, void *arg, aws_
 
     {
         std::lock_guard<std::mutex> lock(processor->m_partQueueMutex);
-
         queueSize = (uint32_t)processor->m_partQueue.size();
     }
 
     size_t openConnectionCount = transport->GetOpenConnectionCount();
 
     Metric connMetric;
-    connMetric.Unit = MetricUnit::Bytes;
+    connMetric.Unit = MetricUnit::Count;
     connMetric.Value = (double)openConnectionCount;
     connMetric.SetTimestampNow();
     connMetric.MetricName = "NumConnections";
     processor->m_canaryApp.publisher->AddDataPoint(connMetric);
 
+    size_t hostCount = processor->m_canaryApp.defaultHostResolver.GetHostCount();
+
+    Metric resolvedHostsMetric;
+    resolvedHostsMetric.Unit = MetricUnit::Count;
+    resolvedHostsMetric.Value = (double)hostCount;
+    resolvedHostsMetric.SetTimestampNow();
+    resolvedHostsMetric.MetricName = "ResolvedHostsCount";
+    processor->m_canaryApp.publisher->AddDataPoint(resolvedHostsMetric);
+
     AWS_LOGF_INFO(
         AWS_LS_CRT_CPP_CANARY,
-        "Streams-available:%d  Number-of-parts-in-queue:%d  Open-connections:%d",
+        "Streams-available:%d  Number-of-parts-in-queue:%d  Open-connections:%d  Number-of-hosts: %d",
         processor->m_streamsAvailable.load(),
 
         queueSize,
-        openConnectionCount);
+        (uint32_t)openConnectionCount,
+        (uint32_t)hostCount);
 
     processor->ScheduleLogOutputTask();
 }
