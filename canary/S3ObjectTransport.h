@@ -22,6 +22,7 @@
 #include <aws/crt/io/Stream.h>
 
 #include <queue>
+#include <set>
 
 #include "MultipartTransferProcessor.h"
 #include "MultipartTransferState.h"
@@ -53,7 +54,6 @@ class S3ObjectTransport
   public:
     static const uint32_t MaxStreams;
     static const int32_t S3GetObjectResponseStatus_PartialContent;
-    static const bool SingleConnectionPerMultipartUpload;
 
     S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::String &bucket);
 
@@ -61,6 +61,7 @@ class S3ObjectTransport
     void PutObject(
         const Aws::Crt::String &key,
         const std::shared_ptr<Aws::Crt::Io::InputStream> &inputStream,
+        std::uint32_t flags,
         const PutObjectFinished &finishedCallback);
 
     void PutObjectMultipart(
@@ -72,6 +73,7 @@ class S3ObjectTransport
 
     void GetObject(
         const Aws::Crt::String &key,
+        std::uint32_t partNumber,
         Aws::Crt::Http::OnIncomingBody onIncomingBody,
         const GetObjectFinished &getObjectFinished);
 
@@ -83,7 +85,9 @@ class S3ObjectTransport
 
     size_t GetOpenConnectionCount();
 
-    const Aws::Crt::String &GetEndPoint() const { return m_endpoint; }
+    size_t GetUniqueEndpointsUsedCount() const { return m_uniqueEndpointsUsed.size(); }
+
+    const Aws::Crt::String &GetEndpoint() const { return m_endpoint; }
 
     void WarmDNSCache();
 
@@ -102,28 +106,16 @@ class S3ObjectTransport
     Aws::Crt::Http::HttpHeader m_contentTypeHeader;
     Aws::Crt::String m_endpoint;
 
+    std::set<Aws::Crt::String> m_uniqueEndpointsUsed;
+
     MultipartTransferProcessor m_uploadProcessor;
     MultipartTransferProcessor m_downloadProcessor;
-
-    void PutObject(
-        const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &conn,
-        const Aws::Crt::String &key,
-        const std::shared_ptr<Aws::Crt::Io::InputStream> &body,
-        uint32_t flags,
-        const PutObjectFinished &onFinished);
 
     void UploadPart(
         const std::shared_ptr<MultipartUploadState> &state,
         const std::shared_ptr<MultipartTransferState::PartInfo> &partInfo,
         const std::shared_ptr<Aws::Crt::Io::InputStream> &body,
         const MultipartTransferState::PartFinishedCallback &partFinished);
-
-    void GetObject(
-        const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &conn,
-        const Aws::Crt::String &key,
-        std::uint32_t partNumber,
-        Aws::Crt::Http::OnIncomingBody onIncomingBody,
-        const GetObjectFinished &getObjectFinished);
 
     void GetPart(
         const std::shared_ptr<MultipartDownloadState> &downloadState,
@@ -132,7 +124,6 @@ class S3ObjectTransport
         const MultipartTransferState::PartFinishedCallback &partFinished);
 
     void MakeSignedRequest(
-        const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &existingConn,
         const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
         const Aws::Crt::Http::HttpRequestOptions &requestOptions,
         SignedRequestCallback callback);
@@ -146,20 +137,15 @@ class S3ObjectTransport
         std::shared_ptr<Aws::Crt::Http::HttpRequest> request,
         const std::shared_ptr<Aws::Crt::Io::InputStream> &body);
 
-    void CreateMultipartUpload(
-        const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &conn,
-        const Aws::Crt::String &key,
-        const CreateMultipartUploadFinished &finishedCallback);
+    void CreateMultipartUpload(const Aws::Crt::String &key, const CreateMultipartUploadFinished &finishedCallback);
 
     void CompleteMultipartUpload(
-        const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &conn,
         const Aws::Crt::String &key,
         const Aws::Crt::String &uploadId,
         const Aws::Crt::Vector<Aws::Crt::String> &etags,
         const CompleteMultipartUploadFinished &finishedCallback);
 
     void AbortMultipartUpload(
-        const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &conn,
         const Aws::Crt::String &key,
         const Aws::Crt::String &uploadId,
         const AbortMultipartUploadFinished &finishedCallback);

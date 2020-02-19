@@ -80,7 +80,6 @@ class MultipartTransferState
 
     void SetProcessPartCallback(const ProcessPartCallback &processPartCallback);
     void SetFinishedCallback(const FinishedCallback &finishedCallback);
-    void SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &connection);
 
     void SetFinished(int32_t errorCode = AWS_ERROR_SUCCESS);
     bool IncNumPartsCompleted();
@@ -90,7 +89,6 @@ class MultipartTransferState
     uint32_t GetNumParts() const;
     uint32_t GetNumPartsCompleted() const;
     uint64_t GetObjectSize() const;
-    std::shared_ptr<Aws::Crt::Http::HttpClientConnection> GetConnection() const;
 
     template <typename... TArgs> void ProcessPart(TArgs &&... Args) const
     {
@@ -104,7 +102,6 @@ class MultipartTransferState
     std::atomic<uint32_t> m_numPartsCompleted;
     uint64_t m_objectSize;
     Aws::Crt::String m_key;
-    std::shared_ptr<Aws::Crt::Http::HttpClientConnection> m_connection;
     ProcessPartCallback m_processPartCallback;
     FinishedCallback m_finishedCallback;
 };

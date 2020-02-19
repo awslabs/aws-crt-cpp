@@ -112,11 +112,6 @@ void MultipartTransferState::SetFinishedCallback(const FinishedCallback &finishe
     m_finishedCallback = finishedCallback;
 }
 
-void MultipartTransferState::SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &connection)
-{
-    m_connection = connection;
-}
-
 void MultipartTransferState::SetFinished(int32_t errorCode)
 {
     bool wasCompleted = m_isFinished.exchange(true);
@@ -164,11 +159,6 @@ uint32_t MultipartTransferState::GetNumPartsCompleted() const
 uint64_t MultipartTransferState::GetObjectSize() const
 {
     return m_objectSize;
-}
-
-std::shared_ptr<Http::HttpClientConnection> MultipartTransferState::GetConnection() const
-{
-    return m_connection;
 }
 
 MultipartUploadState::MultipartUploadState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts)
