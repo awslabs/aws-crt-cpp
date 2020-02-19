@@ -280,7 +280,7 @@ void MultipartTransferProcessor::s_LogOutputTask(aws_task *task, void *arg, aws_
     processor->m_canaryApp.publisher->AddDataPoint(connMetric);
 
 	const Aws::Crt::String &s3Endpoint = processor->m_canaryApp.transport->GetEndPoint();
-    size_t s3AddressCount = processor->m_canaryApp.defaultHostResolver.GetHostAddressCount(s3Endpoint);
+    size_t s3AddressCount = processor->m_canaryApp.hostResolver->GetHostAddressCount(s3Endpoint);
 
     Metric s3AddressCountMetric;
     s3AddressCountMetric.Unit = MetricUnit::Count;

@@ -17,7 +17,7 @@ struct CanaryApp
     Aws::Crt::Allocator *traceAllocator;
     Aws::Crt::ApiHandle apiHandle;
     Aws::Crt::Io::EventLoopGroup eventLoopGroup;
-    Aws::Crt::Io::DefaultHostResolver defaultHostResolver;
+    std::shared_ptr<Aws::Crt::Io::DefaultHostResolver> hostResolver;
     Aws::Crt::Io::ClientBootstrap bootstrap;
     Aws::Crt::Io::TlsContext tlsContext;
     std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> credsProvider;

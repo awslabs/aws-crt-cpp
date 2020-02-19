@@ -68,8 +68,8 @@ int filterLog(
 
 CanaryApp::CanaryApp(int argc, char *argv[])
     : traceAllocator(DefaultAllocator()), apiHandle(traceAllocator), eventLoopGroup(32, traceAllocator),
-      defaultHostResolver(eventLoopGroup, 60, 1000, traceAllocator),
-      bootstrap(eventLoopGroup, defaultHostResolver, traceAllocator), platformName(CanaryUtil::GetPlatformName()),
+      hostResolver(std::make_shared<Aws::Crt::Io::DefaultHostResolver>(eventLoopGroup, 60, 1000, traceAllocator)),
+      bootstrap(eventLoopGroup, *hostResolver, traceAllocator), platformName(CanaryUtil::GetPlatformName()),
       toolName("NA"), instanceType("unknown"), region("us-west-2"), cutOffTimeSmallObjects(10.0),
       cutOffTimeLargeObjects(10.0), measureLargeTransfer(false), measureSmallTransfer(false), usingNumaControl(false),
       sendEncrypted(false)

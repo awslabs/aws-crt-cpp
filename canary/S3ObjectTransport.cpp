@@ -81,7 +81,7 @@ size_t S3ObjectTransport::GetOpenConnectionCount()
 
 void S3ObjectTransport::WarmDNSCache()
 {
-    m_canaryApp.defaultHostResolver.ResolveHost(
+    m_canaryApp.hostResolver->ResolveHost(
         m_endpoint, [](Io::HostResolver &resolver, const Vector<Io::HostAddress> &addresses, int errorCode) {
             (void)resolver;
             (void)addresses;
