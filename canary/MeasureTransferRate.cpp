@@ -219,7 +219,7 @@ void MeasureTransferRate::PerformMeasurement(
                             successMetric.Value = 1;
                             successMetric.SetTimestampNow();
 
-                            // publisher->AddDataPoint(successMetric);
+                            publisher->AddDataPoint(successMetric);
                         }
                         else
                         {
@@ -229,7 +229,7 @@ void MeasureTransferRate::PerformMeasurement(
                             failureMetric.Value = 1;
                             failureMetric.SetTimestampNow();
 
-                            // publisher->AddDataPoint(failureMetric);
+                            publisher->AddDataPoint(failureMetric);
                             // forceStop = true;
                         }
                     }
