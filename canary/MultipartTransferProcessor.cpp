@@ -52,8 +52,6 @@ MultipartTransferProcessor::MultipartTransferProcessor(
 {
     m_streamsAvailable = streamsAvailable;
     m_schedulingLoop = aws_event_loop_group_get_next_loop(elGroup.GetUnderlyingHandle());
-
-    ScheduleLogOutputTask();
 }
 
 void MultipartTransferProcessor::ProcessNextParts(uint32_t streamsReturning)
@@ -233,70 +231,4 @@ uint32_t MultipartTransferProcessor::PopQueue(uint32_t numRequested, Vector<Queu
     }
 
     return numAdded;
-}
-
-// TODO either remove entirely or move somewhere else.  This should be in a more general place and is responsible
-// for more than logging now.
-void MultipartTransferProcessor::ScheduleLogOutputTask()
-{
-    aws_task *logOutputTask = New<aws_task>(g_allocator);
-    aws_task_init(
-        logOutputTask, MultipartTransferProcessor::s_LogOutputTask, reinterpret_cast<void *>(this), "LogOutputTask");
-
-    const uint64_t frequency = aws_timestamp_convert(5000, AWS_TIMESTAMP_MILLIS, AWS_TIMESTAMP_NANOS, NULL);
-
-    uint64_t now = 0;
-    aws_event_loop_current_clock_time(m_schedulingLoop, &now);
-    aws_event_loop_schedule_task_future(m_schedulingLoop, logOutputTask, now + frequency);
-}
-
-void MultipartTransferProcessor::s_LogOutputTask(aws_task *task, void *arg, aws_task_status status)
-{
-    if (status != AWS_TASK_STATUS_RUN_READY)
-    {
-        return;
-    }
-
-    Delete(task, g_allocator);
-    task = nullptr;
-
-    MultipartTransferProcessor *processor = reinterpret_cast<MultipartTransferProcessor *>(arg);
-    std::shared_ptr<S3ObjectTransport> transport = processor->m_canaryApp.transport;
-
-    uint32_t queueSize = 0;
-
-    {
-        std::lock_guard<std::mutex> lock(processor->m_partQueueMutex);
-        queueSize = (uint32_t)processor->m_partQueue.size();
-    }
-
-    size_t openConnectionCount = transport->GetOpenConnectionCount();
-
-    Metric connMetric;
-    connMetric.Unit = MetricUnit::Count;
-    connMetric.Value = (double)openConnectionCount;
-    connMetric.SetTimestampNow();
-    connMetric.MetricName = "NumConnections";
-    processor->m_canaryApp.publisher->AddDataPoint(connMetric);
-
-	const Aws::Crt::String &s3Endpoint = processor->m_canaryApp.transport->GetEndPoint();
-    size_t s3AddressCount = processor->m_canaryApp.defaultHostResolver.GetHostAddressCount(s3Endpoint);
-
-    Metric s3AddressCountMetric;
-    s3AddressCountMetric.Unit = MetricUnit::Count;
-    s3AddressCountMetric.Value = (double)s3AddressCount;
-    s3AddressCountMetric.SetTimestampNow();
-    s3AddressCountMetric.MetricName = "S3AddressCount";
-    processor->m_canaryApp.publisher->AddDataPoint(s3AddressCountMetric);
-
-    AWS_LOGF_INFO(
-        AWS_LS_CRT_CPP_CANARY,
-        "Streams-available:%d  Number-of-parts-in-queue:%d  Open-connections:%d  Number-of-s3-addresses: %d",
-        processor->m_streamsAvailable.load(),
-
-        queueSize,
-        (uint32_t)openConnectionCount,
-        (uint32_t)s3AddressCount);
-
-    processor->ScheduleLogOutputTask();
 }

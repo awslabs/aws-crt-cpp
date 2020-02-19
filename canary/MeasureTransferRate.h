@@ -76,7 +76,7 @@ class MeasureTransferRate
 
     CanaryApp &m_canaryApp;
     aws_event_loop *m_schedulingLoop;
-    aws_task m_measureAllocationsTask;
+    aws_task m_pulseMetricsTask;
 
     template <typename TPeformTransferType>
     void PerformMeasurement(
@@ -103,7 +103,7 @@ class MeasureTransferRate
         const NotifyDownloadProgress &notifyDownloadProgress,
         const NotifyDownloadFinished &notifyDownloadFinished);
 
-    void ScheduleMeasureAllocationsTask();
+    void SchedulePulseMetrics();
 
-    static void s_MeasureAllocations(aws_task *task, void *arg, aws_task_status status);
+    static void s_PulseMetricsTask(aws_task *task, void *arg, aws_task_status status);
 };

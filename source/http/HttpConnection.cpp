@@ -202,6 +202,12 @@ namespace Aws
 
             void HttpClientConnection::Close() noexcept { aws_http_connection_close(m_connection); }
 
+            Aws::Crt::String HttpClientConnection::GetResolvedHost() { 
+				aws_channel* channel = aws_http_connection_get_channel(m_connection);
+                aws_socket *socket = (aws_socket*)aws_channel_get_user_data(channel);
+				return Aws::Crt::String(socket->remote_endpoint.address);
+			}
+
             int HttpStream::s_onIncomingHeaders(
                 struct aws_http_stream *,
                 enum aws_http_header_block headerBlock,
@@ -327,6 +333,7 @@ namespace Aws
                   ManualWindowManagement(false)
             {
             }
+
         } // namespace Http
     }     // namespace Crt
 } // namespace Aws
