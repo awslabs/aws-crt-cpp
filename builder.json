@@ -4,5 +4,60 @@
         "-DBUILD_DEPS=ON",
         "-DPERFORM_HEADER_CHECK=OFF",
         "-DS2N_NO_PQ_ASM=ON"
-    ]
+    ],
+    "compilers": {
+        "gcc": {
+            "versions": {
+                "4.8": {
+                    "compiler_packages": [
+                        "g++"
+                    ]
+                },
+                "5": {
+                    "compiler_packages": [
+                        "g++-5"
+                    ]
+                },
+                "6": {
+                    "compiler_packages": [
+                        "g++-6"
+                    ]
+                },
+                "7": {
+                    "compiler_packages": [
+                        "g++-7"
+                    ]
+                }
+            }
+        },
+        "clang": {
+            "versions": {
+                "3": {
+                    "compiler_packages": [
+                        "clang++-3.9"
+                    ]
+                },
+                "6": {
+                    "compiler_packages": [
+                        "clang++-6.0"
+                    ]
+                },
+                "7": {
+                    "compiler_packages": [
+                        "clang++-7"
+                    ]
+                },
+                "8": {
+                    "packages": [
+                        "clang++-8"
+                    ]
+                },
+                "9": {
+                    "packages": [
+                        "clang++-9"
+                    ]
+                }
+            }
+        }
+    }
 }
