@@ -79,7 +79,7 @@ namespace Aws
                 aws_http_connection_monitoring_options monitoringOptions;
                 AWS_ZERO_STRUCT(monitoringOptions);
                 monitoringOptions.allowable_throughput_failure_interval_seconds = 2;
-                monitoringOptions.minimum_throughput_bytes_per_second = 1 * 1024 * 1024;
+                monitoringOptions.minimum_throughput_bytes_per_second = 1 * 1024;
                 managerOptions.monitoring_options = &monitoringOptions;
 
                 if (options.EnableBlockingShutdown)

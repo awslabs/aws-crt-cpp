@@ -68,11 +68,12 @@ int filterLog(
 
 CanaryApp::CanaryApp(int argc, char *argv[])
     : traceAllocator(DefaultAllocator()), apiHandle(traceAllocator), eventLoopGroup(32, traceAllocator),
-      hostResolver(std::make_shared<Aws::Crt::Io::DefaultHostResolver>(eventLoopGroup, 60, 1000, traceAllocator)),
-      bootstrap(eventLoopGroup, *hostResolver, traceAllocator), platformName(CanaryUtil::GetPlatformName()),
+      hostResolutionConfig{ CustomHostResolver::resolveHost, 1000, &customResolver },
+      hostResolver(eventLoopGroup, 60, 1000, traceAllocator, &hostResolutionConfig),
+      bootstrap(eventLoopGroup, hostResolver, traceAllocator), customResolver(), platformName(CanaryUtil::GetPlatformName()),
       toolName("NA"), instanceType("unknown"), region("us-west-2"), cutOffTimeSmallObjects(10.0),
-      cutOffTimeLargeObjects(10.0), measureLargeTransfer(false), measureSmallTransfer(false), usingNumaControl(false),
-      sendEncrypted(false)
+      cutOffTimeLargeObjects(10.0), measureLargeTransfer(true), measureSmallTransfer(false), usingNumaControl(false),
+      sendEncrypted(false), seedCount(0)
 {
 #ifdef __linux__
     rlimit fdsLimit;
@@ -102,6 +103,7 @@ CanaryApp::CanaryApp(int argc, char *argv[])
         Logging,
         UsingNumaControl,
         SendEncrypted,
+        SeedCount,
 
         MAX
     };
@@ -114,9 +116,10 @@ CanaryApp::CanaryApp(int argc, char *argv[])
                                       {"measureSmallTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 's'},
                                       {"logging", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'd'},
                                       {"usingNumaControl", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'n'},
-                                      {"sendEncrypted", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'e'}};
+                                      {"sendEncrypted", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'e'},
+                                      {"seedCount", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'z'}};
 
-    const char *optstring = "t:i:c:C:ls:d:n:e";
+    const char *optstring = "t:i:c:C:lsdnez:";
     toolName = argc >= 1 ? argv[0] : "NA";
 
     size_t dirStart = toolName.rfind('\\');
@@ -127,7 +130,7 @@ CanaryApp::CanaryApp(int argc, char *argv[])
     }
 
     int cliOptionIndex = 0;
-    bool loggingOn = false;
+    bool loggingOn = true;
 
     while (aws_cli_getopt_long(argc, argv, optstring, options, &cliOptionIndex) != -1)
     {
@@ -160,11 +163,16 @@ CanaryApp::CanaryApp(int argc, char *argv[])
             case CLIOption::SendEncrypted:
                 sendEncrypted = true;
                 break;
+            case CLIOption::SeedCount:
+                seedCount = atoi(aws_cli_optarg);
+                break;
             default:
                 AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Unknown CLI option used.");
                 break;
         }
     }
+
+    customResolver.setSeedCount(seedCount);
 
     if (loggingOn)
     {

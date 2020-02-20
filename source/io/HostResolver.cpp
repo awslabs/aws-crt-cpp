@@ -43,6 +43,28 @@ namespace Aws
                 m_config.max_ttl = maxTTL;
             }
 
+            DefaultHostResolver::DefaultHostResolver(
+                EventLoopGroup &elGroup,
+                size_t maxHosts,
+                size_t maxTTL,
+                Allocator *allocator,
+                struct aws_host_resolution_config *config) noexcept
+                : m_allocator(allocator), m_initialized(true)
+            {
+                if (aws_host_resolver_init_default(&m_resolver, allocator, maxHosts, elGroup.GetUnderlyingHandle()))
+                {
+                    m_initialized = false;
+                }
+
+                if (config != NULL) {
+                    m_config = *config;
+                } else {
+                    m_config.impl = aws_default_dns_resolve;
+                    m_config.impl_data = nullptr;
+                    m_config.max_ttl = maxTTL;
+                }
+            }
+
             DefaultHostResolver::~DefaultHostResolver()
             {
                 if (m_initialized)

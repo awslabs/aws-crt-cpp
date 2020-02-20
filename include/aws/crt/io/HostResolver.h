@@ -60,6 +60,14 @@ namespace Aws
                     size_t maxHosts,
                     size_t maxTTL,
                     Allocator *allocator = DefaultAllocator()) noexcept;
+
+                DefaultHostResolver(
+                  EventLoopGroup &elGroup,
+                  size_t maxHosts,
+                  size_t maxTTL,
+                  Allocator *allocator,
+                  struct aws_host_resolution_config *config) noexcept;
+
                 ~DefaultHostResolver();
                 DefaultHostResolver(const DefaultHostResolver &) = delete;
                 DefaultHostResolver &operator=(const DefaultHostResolver &) = delete;
