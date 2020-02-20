@@ -132,14 +132,14 @@ void S3ObjectTransport::MakeSignedRequest(
                     connErrorCode = AWS_ERROR_UNKNOWN;
                 }
 
-				Aws::Crt::String resolvedHost = conn->GetResolvedHost();
-
-				m_uniqueEndpointsUsed.insert(std::move(resolvedHost));
-
                 if (connErrorCode == AWS_ERROR_SUCCESS)
                 {
+                    Aws::Crt::String resolvedHost = conn->GetResolvedHost();
+
+                    m_uniqueEndpointsUsed.insert(std::move(resolvedHost));
+
                     MakeSignedRequest_SendRequest(conn, requestOptions, signedRequest);
-                }
+				}
 
                 if (callback != nullptr)
                 {
