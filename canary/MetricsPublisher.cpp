@@ -189,14 +189,16 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.6.Name=Encrypted&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.6.Value=" << m_canaryApp.sendEncrypted
                    << "&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.7.Name=MTU&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.7.Value=" << m_canaryApp.mtu << "&";
 
         if (m_transferSize == MetricTransferSize::Large)
         {
-            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.7.Name=NumParts&";
+            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.8.Name=NumParts&";
             bodyStream << "MetricData.member." << metricCount
-                       << ".Dimensions.member.7.Value=" << MeasureTransferRate::LargeObjectNumParts << "&";
-            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.8.Name=PartSize&";
-            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.8.Value=" << largeObjectPartSize
+                       << ".Dimensions.member.8.Value=" << MeasureTransferRate::LargeObjectNumParts << "&";
+            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.9.Name=PartSize&";
+            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.9.Value=" << largeObjectPartSize
                        << "&";
         }
 

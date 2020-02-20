@@ -78,7 +78,7 @@ size_t S3ObjectTransport::GetOpenConnectionCount()
     return m_connManager->GetOpenConnectionCount();
 }
 
-void S3ObjectTransport::WarmDNSCache() 
+void S3ObjectTransport::WarmDNSCache()
 {
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Warming DNS cache...");
 
@@ -89,13 +89,13 @@ void S3ObjectTransport::WarmDNSCache()
             (void)errorCode;
         });
 
-	// TODO use a proper future or signal
-	while ((m_canaryApp.defaultHostResolver.GetHostAddressCount(m_endpoint) / 2) < 160)
-	{
+    // TODO use a proper future or signal
+    while ((m_canaryApp.defaultHostResolver.GetHostAddressCount(m_endpoint) / 2) < 160)
+    {
         std::this_thread::sleep_for(std::chrono::seconds(1));
-	}
+    }
 
-	AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "DNS cache warmed.");
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "DNS cache warmed.");
 }
 
 void S3ObjectTransport::MakeSignedRequest(
@@ -139,7 +139,7 @@ void S3ObjectTransport::MakeSignedRequest(
                     m_uniqueEndpointsUsed.insert(std::move(resolvedHost));
 
                     MakeSignedRequest_SendRequest(conn, requestOptions, signedRequest);
-				}
+                }
 
                 if (callback != nullptr)
                 {

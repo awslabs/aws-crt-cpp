@@ -102,6 +102,7 @@ CanaryApp::CanaryApp(int argc, char *argv[])
         Logging,
         UsingNumaControl,
         SendEncrypted,
+        MTU,
 
         MAX
     };
@@ -114,9 +115,10 @@ CanaryApp::CanaryApp(int argc, char *argv[])
                                       {"measureSmallTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 's'},
                                       {"logging", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'd'},
                                       {"usingNumaControl", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'n'},
-                                      {"sendEncrypted", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'e'}};
+                                      {"sendEncrypted", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'e'},
+                                      {"mtu", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'm'}};
 
-    const char *optstring = "t:i:c:C:ls:d:n:e";
+    const char *optstring = "t:i:c:C:lsdnem:";
     toolName = argc >= 1 ? argv[0] : "NA";
 
     size_t dirStart = toolName.rfind('\\');
@@ -160,7 +162,10 @@ CanaryApp::CanaryApp(int argc, char *argv[])
             case CLIOption::SendEncrypted:
                 sendEncrypted = true;
                 break;
-            default:
+            case CLIOption::MTU:
+                mtu = atoi(aws_cli_optarg);
+                break;
+	    default:
                 AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Unknown CLI option used.");
                 break;
         }
