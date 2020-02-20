@@ -28,6 +28,7 @@ struct CanaryApp
     Aws::Crt::String region;
     double cutOffTimeSmallObjects;
     double cutOffTimeLargeObjects;
+    uint32_t mtu;
     bool measureLargeTransfer;
     bool measureSmallTransfer;
     bool usingNumaControl;
