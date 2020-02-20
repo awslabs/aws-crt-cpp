@@ -5,6 +5,9 @@
 #include "aws/io/host_resolver.h"
 #include <aws/common/string.h>
 
+#if defined(_MSC_VER)
+#pragma warning(disable : 4996)
+#endif
 
 CustomHostResolver::CustomHostResolver() :
     lock(),
