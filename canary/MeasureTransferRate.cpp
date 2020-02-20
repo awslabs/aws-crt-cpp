@@ -367,6 +367,7 @@ void MeasureTransferRate::s_TransferLargeObject(
 
             if (errorCode != AWS_ERROR_SUCCESS)
             {
+                notifyDownloadFinished(AWS_ERROR_UNKNOWN);
                 return;
             }
 
