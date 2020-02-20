@@ -90,12 +90,10 @@ void S3ObjectTransport::WarmDNSCache()
         });
 
 	// TODO use a proper future or signal
-    /*
 	while ((m_canaryApp.defaultHostResolver.GetHostAddressCount(m_endpoint) / 2) < 160)
 	{
         std::this_thread::sleep_for(std::chrono::seconds(1));
 	}
-	*/
 
 	AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "DNS cache warmed.");
 }
