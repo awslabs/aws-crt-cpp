@@ -1,3 +1,6 @@
 {
-    "name": "aws-crt-cpp"
+    "name": "aws-crt-cpp",
+    "cmake_args": [
+        "-DBUILD_DEPS=ON"
+    ]
 }
