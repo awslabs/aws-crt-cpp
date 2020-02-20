@@ -19,7 +19,7 @@ const uint64_t MeasureTransferRate::SmallObjectSize = 16ULL * 1024ULL * 1024ULL;
 const uint32_t MeasureTransferRate::LargeObjectNumParts = 8192;
 const uint64_t MeasureTransferRate::LargeObjectSize =
     (uint64_t)MeasureTransferRate::LargeObjectNumParts * (128ULL * 1024ULL * 1024ULL);
-const std::chrono::milliseconds MeasureTransferRate::AllocationMetricFrequency(1000);
+const std::chrono::milliseconds MeasureTransferRate::AllocationMetricFrequency(5000);
 const uint64_t MeasureTransferRate::AllocationMetricFrequencyNS = aws_timestamp_convert(
     MeasureTransferRate::AllocationMetricFrequency.count(),
     AWS_TIMESTAMP_MILLIS,
@@ -219,7 +219,7 @@ void MeasureTransferRate::PerformMeasurement(
                             successMetric.Value = 1;
                             successMetric.SetTimestampNow();
 
-                            publisher->AddDataPoint(successMetric);
+                            //publisher->AddDataPoint(successMetric);
                         }
                         else
                         {
@@ -229,7 +229,7 @@ void MeasureTransferRate::PerformMeasurement(
                             failureMetric.Value = 1;
                             failureMetric.SetTimestampNow();
 
-                            publisher->AddDataPoint(failureMetric);
+                            //publisher->AddDataPoint(failureMetric);
                             // forceStop = true;
                         }
                     }
@@ -309,6 +309,8 @@ void MeasureTransferRate::s_TransferSmallObject(
 
             singlePart->FlushDataUpMetrics();
 
+			notifyDownloadFinished(AWS_ERROR_SUCCESS);
+            /*
             transport->GetObject(
                 key,
                 0,
@@ -319,7 +321,7 @@ void MeasureTransferRate::s_TransferSmallObject(
                 [singlePart, notifyDownloadFinished](int32_t errorCode) {
                     singlePart->FlushDataDownMetrics();
                     notifyDownloadFinished(errorCode);
-                });
+                });*/
         });
 }
 
