@@ -21,7 +21,7 @@ public:
       struct aws_array_list *output_addresses,
       void *user_data);
 
-  void setSeedCount(uint32_t seedCount) { this->seedCount = seedCount; }
+  void setSeedCount(uint32_t count) { seedCount = count; }
 
 private:
 
