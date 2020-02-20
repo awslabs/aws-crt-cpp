@@ -99,6 +99,9 @@ Io::StreamStatus MeasureTransferRateStream::GetStatusImpl() const noexcept
 
 bool MeasureTransferRateStream::SeekImpl(Io::OffsetType offset, Io::StreamSeekBasis basis) noexcept
 {
+    (void)basis;
+    (void)offset;
+
     m_written = 0;
     return true;
 }
@@ -239,6 +242,7 @@ void MeasureTransferRate::PerformMeasurement(
             };
 
             NotifyDownloadProgress notifyDownloadProgress = [publisher](uint64_t dataLength) {
+              (void)dataLength;
                 // AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Received %" PRId64 " bytes", dataLength);
             };
 
@@ -371,6 +375,7 @@ void MeasureTransferRate::s_TransferLargeObject(
         },
         [transport, key, notifyUploadFinished, notifyDownloadProgress, notifyDownloadFinished](
             int32_t errorCode, uint32_t numParts) {
+          (void)numParts;
             notifyUploadFinished(errorCode);
 
             AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Upload finished for object %s.  Starting download...", key.c_str());
