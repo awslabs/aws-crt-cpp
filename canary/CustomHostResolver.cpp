@@ -92,7 +92,7 @@ void CustomHostResolver::initResolvers(struct aws_allocator *allocator) {
     struct aws_dns_resolver_udp_channel_options resolver_options;
     AWS_ZERO_STRUCT(resolver_options);
     resolver_options.bootstrap = bootstrap;
-    resolver_options.host = aws_byte_cursor_from_c_str("10.106.49.51");
+    resolver_options.host = aws_byte_cursor_from_c_str("205.251.194.41");
     resolver_options.port = 53;
     resolver_options.on_destroyed_callback = onResolverDestroyed;
     resolver_options.on_destroyed_user_data = this;
@@ -153,6 +153,8 @@ void CustomHostResolver::onQueryComplete(struct aws_dns_query_result *result, in
 
 void CustomHostResolver::makeQueries(const struct aws_string *host_name) {
 
+    (void)host_name;
+
     {
         std::lock_guard<std::mutex> guard(lock);
         queryCount = seedCount;
@@ -160,7 +162,7 @@ void CustomHostResolver::makeQueries(const struct aws_string *host_name) {
         struct aws_dns_query query;
         AWS_ZERO_STRUCT(query);
         query.query_type = AWS_DNS_RR_A;
-        query.hostname = aws_byte_cursor_from_string(host_name);
+        query.hostname = aws_byte_cursor_from_c_str("s3-r-w.us-west-2.amazonaws.com");
         query.on_completed_callback = onQueryComplete;
         query.user_data = this;
 
