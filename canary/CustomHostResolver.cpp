@@ -12,6 +12,7 @@ CustomHostResolver::CustomHostResolver() :
     seeded(false),
     seedCount(0),
     seedStartTimeNs(0),
+    alloc(nullptr),
     elGroup(),
     oldResolver(),
     bootstrap(nullptr),
@@ -102,7 +103,7 @@ void CustomHostResolver::initResolvers(struct aws_allocator *allocator) {
 
     resolverShutdownsRemaining = 1;
 
-    this->allocator = allocator;
+    this->alloc = allocator;
 }
 
 void CustomHostResolver::onQueryComplete(struct aws_dns_query_result *result, int error_code, void *user_data) {
@@ -131,12 +132,12 @@ void CustomHostResolver::onQueryComplete(struct aws_dns_query_result *result, in
                     (int) record->data.buffer[2], (int) record->data.buffer[3]);
 
             host_address.record_type = AWS_ADDRESS_RECORD_TYPE_A;
-            host_address.address = aws_string_new_from_c_str(resolver->allocator, buffer);
+            host_address.address = aws_string_new_from_c_str(resolver->alloc, buffer);
             host_address.weight = 0;
-            host_address.allocator = resolver->allocator;
+            host_address.allocator = resolver->alloc;
             host_address.use_count = 0;
             host_address.connection_failure_count = 0;
-            host_address.host = aws_string_new_from_string(resolver->allocator, resolver->hostToLookup);
+            host_address.host = aws_string_new_from_string(resolver->alloc, resolver->hostToLookup);
 
             {
                 ++resolver->answerCount;

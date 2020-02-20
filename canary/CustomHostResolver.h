@@ -48,7 +48,7 @@ private:
 
   uint64_t seedStartTimeNs;
 
-  struct aws_allocator *allocator;
+  struct aws_allocator *alloc;
   struct aws_event_loop_group elGroup;
   struct aws_host_resolver oldResolver;
   struct aws_client_bootstrap *bootstrap;
