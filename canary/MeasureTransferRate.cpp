@@ -6,7 +6,7 @@
 #include <aws/common/clock.h>
 #include <aws/common/system_info.h>
 #include <aws/crt/http/HttpConnection.h>
-#include <execinfo.h>
+//#include <execinfo.h>
 #include <unistd.h>
 
 using namespace Aws::Crt;
