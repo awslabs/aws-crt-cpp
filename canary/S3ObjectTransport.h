@@ -100,16 +100,21 @@ class S3ObjectTransport
         std::function<void(std::shared_ptr<Aws::Crt::Http::HttpClientConnection> conn, int32_t errorCode)>;
 
     CanaryApp &m_canaryApp;
-    std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> m_connManager;
     const Aws::Crt::String m_bucketName;
     Aws::Crt::Http::HttpHeader m_hostHeader;
     Aws::Crt::Http::HttpHeader m_contentTypeHeader;
     Aws::Crt::String m_endpoint;
 
+    std::vector<std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager>> m_connManagers;
+    std::atomic<bool> m_connManagersReady;
+    std::atomic<uint32_t> m_connManagersUseCount;
+
     std::set<Aws::Crt::String> m_uniqueEndpointsUsed;
 
     MultipartTransferProcessor m_uploadProcessor;
     MultipartTransferProcessor m_downloadProcessor;
+
+	std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> GetNextConnManager();
 
     void UploadPart(
         const std::shared_ptr<MultipartUploadState> &state,

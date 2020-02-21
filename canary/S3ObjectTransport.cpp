@@ -39,29 +39,9 @@ const int32_t S3ObjectTransport::S3GetObjectResponseStatus_PartialContent = 206;
 S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::String &bucket)
     : m_canaryApp(canaryApp), m_bucketName(bucket),
       m_uploadProcessor(canaryApp, canaryApp.eventLoopGroup, S3ObjectTransport::MaxStreams),
-      m_downloadProcessor(canaryApp, canaryApp.eventLoopGroup, S3ObjectTransport::MaxStreams)
+      m_downloadProcessor(canaryApp, canaryApp.eventLoopGroup, S3ObjectTransport::MaxStreams), m_connManagersUseCount(0)
 {
-    Http::HttpClientConnectionManagerOptions connectionManagerOptions;
-    m_endpoint = m_bucketName + ".s3." + canaryApp.region + ".amazonaws.com";
-    connectionManagerOptions.ConnectionOptions.HostName = m_endpoint;
-    connectionManagerOptions.ConnectionOptions.Port = canaryApp.sendEncrypted ? 443 : 80;
-    connectionManagerOptions.ConnectionOptions.SocketOptions.SetConnectTimeoutMs(3000);
-    connectionManagerOptions.ConnectionOptions.SocketOptions.SetSocketType(AWS_SOCKET_STREAM);
-    connectionManagerOptions.ConnectionOptions.InitialWindowSize = SIZE_MAX;
-
-    if (canaryApp.sendEncrypted)
-    {
-        aws_byte_cursor serverName = ByteCursorFromCString(m_endpoint.c_str());
-        auto connOptions = canaryApp.tlsContext.NewConnectionOptions();
-        connOptions.SetServerName(serverName);
-        connectionManagerOptions.ConnectionOptions.TlsOptions = connOptions;
-    }
-
-    connectionManagerOptions.ConnectionOptions.Bootstrap = &canaryApp.bootstrap;
-    connectionManagerOptions.MaxConnections = 5000;
-
-    m_connManager =
-        Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, g_allocator);
+    m_endpoint = m_bucketName + ".s3." + m_canaryApp.region + ".amazonaws.com";
 
     m_hostHeader.name = ByteCursorFromCString("host");
     m_hostHeader.value = ByteCursorFromCString(m_endpoint.c_str());
@@ -72,7 +52,19 @@ S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::Strin
 
 size_t S3ObjectTransport::GetOpenConnectionCount()
 {
-    return m_connManager->GetOpenConnectionCount();
+    if (!m_connManagersReady)
+    {
+        return 0;
+    }
+
+	uint32_t total = 0;
+
+    for (const std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> &manager : m_connManagers)
+    {
+        total += (uint32_t)manager->GetOpenConnectionCount();
+    }
+
+    return total;
 }
 
 void S3ObjectTransport::WarmDNSCache()
@@ -82,13 +74,71 @@ void S3ObjectTransport::WarmDNSCache()
     m_canaryApp.defaultHostResolver.ResolveHost(
         m_endpoint, [](Io::HostResolver &, const Vector<Io::HostAddress> &, int) {});
 
+    const uint32_t desiredNumberOfAddresses = 100; // 160
+
     // TODO use a proper future or signal
-    while ((m_canaryApp.defaultHostResolver.GetHostAddressCount(m_endpoint) / 2) < 30) // 160
+    while ((m_canaryApp.defaultHostResolver.GetHostAddressCount(m_endpoint) / 2) < desiredNumberOfAddresses)
     {
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
+    {
+        std::atomic<uint32_t> numAddressesRetrieved(0);
+        std::mutex connManagersInitializeMutex;
+
+        for (uint32_t i = 0; i < desiredNumberOfAddresses; ++i)
+        {
+            m_canaryApp.defaultHostResolver.ResolveHost(
+                m_endpoint,
+                [this, &numAddressesRetrieved, &connManagersInitializeMutex](Io::HostResolver &, const Vector<Io::HostAddress> &addresses, int) {
+                    for (const Io::HostAddress &addr : addresses)
+                    {
+                        std::lock_guard<std::mutex> lock(connManagersInitializeMutex);
+
+                        Http::HttpClientConnectionManagerOptions connectionManagerOptions;
+
+                        connectionManagerOptions.ConnectionOptions.HostName = (const char *)addr.address->bytes;
+                        connectionManagerOptions.ConnectionOptions.Port = m_canaryApp.sendEncrypted ? 443 : 80;
+                        connectionManagerOptions.ConnectionOptions.SocketOptions.SetConnectTimeoutMs(3000);
+                        connectionManagerOptions.ConnectionOptions.SocketOptions.SetSocketType(AWS_SOCKET_STREAM);
+                        connectionManagerOptions.ConnectionOptions.InitialWindowSize = SIZE_MAX;
+
+                        if (m_canaryApp.sendEncrypted)
+                        {
+                            aws_byte_cursor serverName = ByteCursorFromCString(m_endpoint.c_str());
+                            auto connOptions = m_canaryApp.tlsContext.NewConnectionOptions();
+                            connOptions.SetServerName(serverName);
+                            connectionManagerOptions.ConnectionOptions.TlsOptions = connOptions;
+                        }
+
+                        connectionManagerOptions.ConnectionOptions.Bootstrap = &m_canaryApp.bootstrap;
+                        connectionManagerOptions.MaxConnections = 5000;
+
+                        std::shared_ptr<Http::HttpClientConnectionManager> connManager =
+                            Http::HttpClientConnectionManager::NewClientConnectionManager(
+                                connectionManagerOptions, g_allocator);
+
+                        m_connManagers.push_back(connManager);
+                    }
+
+                    numAddressesRetrieved += (uint32_t)addresses.size();
+                });
+        }
+
+        while (numAddressesRetrieved < desiredNumberOfAddresses)
+        {
+        }
+
+        m_connManagersReady = true;
+    }
+
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "DNS cache warmed.");
+}
+
+std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> S3ObjectTransport::GetNextConnManager()
+{
+    uint32_t index = ((m_connManagersUseCount.fetch_add(1) + 1) / 10) % m_connManagers.size();
+    return m_connManagers[index];
 }
 
 void S3ObjectTransport::MakeSignedRequest(
@@ -118,8 +168,10 @@ void S3ObjectTransport::MakeSignedRequest(
                 return;
             }
 
-            m_connManager->AcquireConnection([this, requestOptions, signedRequest, callback](
-                                                 std::shared_ptr<Http::HttpClientConnection> conn, int connErrorCode) {
+            std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> connManager = GetNextConnManager();
+
+            connManager->AcquireConnection([this, requestOptions, signedRequest, callback](
+                                               std::shared_ptr<Http::HttpClientConnection> conn, int connErrorCode) {
                 if ((conn == nullptr || !conn->IsOpen()) && connErrorCode == AWS_ERROR_SUCCESS)
                 {
                     connErrorCode = AWS_ERROR_UNKNOWN;
@@ -128,6 +180,8 @@ void S3ObjectTransport::MakeSignedRequest(
                 if (connErrorCode == AWS_ERROR_SUCCESS)
                 {
                     Aws::Crt::String resolvedHost = conn->GetResolvedHost();
+
+                    // AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Resolved host is: %s", resolvedHost.c_str());
 
                     m_uniqueEndpointsUsed.insert(std::move(resolvedHost));
 
@@ -204,7 +258,7 @@ void S3ObjectTransport::PutObject(
     ByteCursor path = ByteCursorFromCString(keyPath.c_str());
     request->SetPath(path);
 
-    AWS_LOGF_DEBUG(AWS_LS_CRT_CPP_CANARY, "PutObject initiated for path %s...", keyPath.c_str());
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "PutObject initiated for path %s...", keyPath.c_str());
 
     std::shared_ptr<String> etag = nullptr;
 
