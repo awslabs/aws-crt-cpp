@@ -173,7 +173,7 @@ CanaryApp::CanaryApp(int argc, char *argv[])
 
     if (loggingOn)
     {
-        apiHandle.InitializeLogging(LogLevel::Debug, stderr);
+        apiHandle.InitializeLogging(LogLevel::Info, stderr);
 
         // TODO Take out before merging--this is a giant hack to filter just canary logs
         aws_logger_vtable *currentVTable = aws_logger_get()->vtable;
