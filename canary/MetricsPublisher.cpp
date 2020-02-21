@@ -174,7 +174,7 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
         bodyStream.precision(17);
         bodyStream << "MetricData.member." << metricCount << ".Value=" << std::fixed << metric.Value << "&";
         bodyStream << "MetricData.member." << metricCount << ".Unit=" << s_UnitToStr(metric.Unit) << "&";
-        bodyStream << "MetricData.member." << metricCount << ".StorageResolution=" << 1 << "&";
+        bodyStream << "MetricData.member." << metricCount << ".StorageResolution=1&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.1.Name=Platform&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.1.Value=" << platformName << "&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.2.Name=ToolName&";
@@ -208,30 +208,6 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
     bodyStream << "Version=2010-08-01";
 }
 
-void MetricsPublisher::AddDataPointSum(const Metric &metricData)
-{
-    std::lock_guard<std::mutex> locker(m_dataPointSumLock);
-
-    uint8_t dateBuffer[AWS_DATE_TIME_STR_MAX_LEN];
-    AWS_ZERO_ARRAY(dateBuffer);
-    auto dateBuf = ByteBufFromEmptyArray(dateBuffer, AWS_ARRAY_SIZE(dateBuffer));
-    metricData.Timestamp.ToGmtString(DateFormat::ISO_8601, dateBuf);
-    String dateStr((char *)dateBuf.buffer, dateBuf.len);
-
-    String metricKey = metricData.MetricName + dateStr;
-
-    auto it = m_dataPointSums.find(metricKey);
-
-    if (it != m_dataPointSums.end())
-    {
-        it->second.Value += metricData.Value;
-    }
-    else
-    {
-        m_dataPointSums.insert(std::pair<Aws::Crt::String, Metric>(metricKey, metricData));
-    }
-}
-
 void MetricsPublisher::AddDataPoint(const Metric &metricData)
 {
     std::lock_guard<std::mutex> locker(m_publishDataLock);
@@ -254,29 +230,35 @@ void MetricsPublisher::AddDataPoint(const Metric &metricData)
     }
 }
 
+void MetricsPublisher::AddTransferStatusDataPoint(bool transferSuccess)
+{
+    if (transferSuccess)
+    {
+        Metric successMetric;
+        successMetric.MetricName = "SuccessfulTransfer";
+        successMetric.Unit = MetricUnit::Count;
+        successMetric.Value = 1;
+        successMetric.SetTimestampNow();
+
+        AddDataPoint(successMetric);
+    }
+    else
+    {
+        Metric failureMetric;
+        failureMetric.MetricName = "FailedTransfer";
+        failureMetric.Unit = MetricUnit::Count;
+        failureMetric.Value = 1;
+        failureMetric.SetTimestampNow();
+
+        AddDataPoint(failureMetric);
+    }
+}
+
 void MetricsPublisher::WaitForLastPublish()
 {
-    {
-        std::lock_guard<std::mutex> locker(m_dataPointSumLock);
+    std::unique_lock<std::mutex> locker(m_publishDataLock);
 
-        for (auto it = m_dataPointSums.begin(); it != m_dataPointSums.end(); ++it)
-        {
-            AWS_LOGF_INFO(
-                AWS_LS_CRT_CPP_CANARY,
-                "Logging %s at value %f Gb",
-                it->first.c_str(),
-                it->second.Value * 8.0 / 1000.0 / 1000.0 / 1000.0);
-            AddDataPoint(it->second);
-        }
-
-        m_dataPointSums.clear();
-    }
-
-    {
-        std::unique_lock<std::mutex> locker(m_publishDataLock);
-
-        m_waitForLastPublishCV.wait(locker, [this]() { return m_publishData.size() == 0; });
-    }
+    m_waitForLastPublishCV.wait(locker, [this]() { return m_publishData.size() == 0; });
 }
 
 void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_status status)

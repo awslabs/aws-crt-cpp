@@ -26,9 +26,6 @@
 #include <inttypes.h>
 #include <iostream>
 
-//#include <execinfo.h>
-//#include <unistd.h>
-
 #if defined(_WIN32)
 #    undef min
 #endif
@@ -83,17 +80,22 @@ void S3ObjectTransport::WarmDNSCache()
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Warming DNS cache...");
 
     m_canaryApp.defaultHostResolver.ResolveHost(
-        m_endpoint, [](Io::HostResolver &resolver, const Vector<Io::HostAddress> &addresses, int errorCode) {
-            (void)resolver;
-            (void)addresses;
-            (void)errorCode;
+        m_endpoint, [](Io::HostResolver &, const Vector<Io::HostAddress> &, int) {
         });
 
     // TODO use a proper future or signal
-    while ((m_canaryApp.defaultHostResolver.GetHostAddressCount(m_endpoint) / 2) < 160)
+    while ((m_canaryApp.defaultHostResolver.GetHostAddressCount(m_endpoint) / 2) < 30) // 160
     {
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
+
+     m_canaryApp.defaultHostResolver.ResolveHost(
+        m_endpoint, [](Io::HostResolver &resolver, const Vector<Io::HostAddress> &addresses, int errorCode) {
+            for(uint32_t i = 0; i < addresses.size(); ++i)
+            {
+                AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Found address %d: %s", i, aws_string_c_str(addresses[i].address));
+            }
+        });
 
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "DNS cache warmed.");
 }
@@ -384,13 +386,7 @@ void S3ObjectTransport::UploadPart(
 
                 partInfo->FlushDataUpMetrics();
 
-                Metric successMetric;
-                successMetric.MetricName = "SuccessfulTransfer";
-                successMetric.Unit = MetricUnit::Count;
-                successMetric.Value = 1;
-                successMetric.SetTimestampNow();
-
-                m_canaryApp.publisher->AddDataPoint(successMetric);
+                m_canaryApp.publisher->AddTransferStatusDataPoint(true);
 
                 AWS_LOGF_INFO(
                     AWS_LS_CRT_CPP_CANARY,
@@ -409,13 +405,8 @@ void S3ObjectTransport::UploadPart(
                     partInfo->partNumber,
                     errorCode,
                     aws_error_debug_str(errorCode));
-                Metric failureMetric;
-                failureMetric.MetricName = "FailedTransfer";
-                failureMetric.Unit = MetricUnit::Count;
-                failureMetric.Value = 1;
-                failureMetric.SetTimestampNow();
 
-                m_canaryApp.publisher->AddDataPoint(failureMetric);
+                m_canaryApp.publisher->AddTransferStatusDataPoint(false);
 
                 partInfo->FlushDataUpMetrics();
 

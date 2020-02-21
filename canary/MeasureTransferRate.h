@@ -50,27 +50,20 @@ class MeasureTransferRate
     static const uint32_t LargeObjectNumParts;
 
     MeasureTransferRate(CanaryApp &canaryApp);
+    ~MeasureTransferRate();
 
     void MeasureSmallObjectTransfer();
     void MeasureLargeObjectTransfer();
 
   private:
+
     struct MeasureAllocationsArgs
     {
         MeasureTransferRate &measureTransferRate;
     };
 
-    using NotifyUploadFinished = std::function<void(int32_t errorCode)>;
-    using NotifyDownloadProgress = std::function<void(uint64_t dataLength)>;
-    using NotifyDownloadFinished = std::function<void(int32_t errorCode)>;
-    using PerformTransfer = std::function<void(
-        Aws::Crt::Allocator *allocator,
-        S3ObjectTransport &transport,
-        MetricsPublisher &publisher,
-        const Aws::Crt::String &key,
-        uint64_t objectSize,
-        const NotifyUploadFinished &notifyUploadFinished,
-        const NotifyDownloadFinished &notifyDownloadFinished)>;
+    using NotifyTransferFinished = std::function<void(int32_t errorCode)>;
+    using TransferFunction = std::function<void(Aws::Crt::String && key, uint64_t objectSize, NotifyTransferFinished && notifyTransferFinished)>;
 
     friend class MeasureTransferRateStream; // TODO use of friend here shouldn't be necessary
 
@@ -78,30 +71,13 @@ class MeasureTransferRate
     aws_event_loop *m_schedulingLoop;
     aws_task m_pulseMetricsTask;
 
-    template <typename TPeformTransferType>
-    void PerformMeasurement(
+    uint32_t PerformMeasurement(
         const char *filenamePrefix,
         uint32_t maxConcurrentTransfers,
+        uint32_t maxTotalTransfers,
         uint64_t objectSize,
         double cutOffTime,
-        bool transferStatusMetricPerWorkload,
-        const TPeformTransferType &&performTransfer);
-
-    static void s_TransferSmallObject(
-        MeasureTransferRate &measureTransferRate,
-        const Aws::Crt::String &key,
-        uint64_t objectSize,
-        const NotifyUploadFinished &notifyUploadFinished,
-        const NotifyDownloadProgress &notifyDownloadProgress,
-        const NotifyDownloadFinished &notifyDownloadFinished);
-
-    static void s_TransferLargeObject(
-        MeasureTransferRate &measureTransferRate,
-        const Aws::Crt::String &key,
-        uint64_t objectSize,
-        const NotifyUploadFinished &notifyUploadFinished,
-        const NotifyDownloadProgress &notifyDownloadProgress,
-        const NotifyDownloadFinished &notifyDownloadFinished);
+        TransferFunction && transferFunction);
 
     void SchedulePulseMetrics();
 
