@@ -62,7 +62,7 @@ S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::Strin
     }
 
     connectionManagerOptions.ConnectionOptions.Bootstrap = &canaryApp.bootstrap;
-    connectionManagerOptions.MaxConnections = 5000;
+    connectionManagerOptions.MaxConnections = 10;
 
     m_connManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, g_allocator);
