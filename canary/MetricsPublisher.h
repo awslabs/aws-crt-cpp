@@ -90,7 +90,7 @@ class MetricsPublisher
      */
     void AddDataPoint(const Metric &metricData);
 
-    void AddDataPointSum(const Metric &metricData);
+    void AddTransferStatusDataPoint(bool transferSuccess);     
 
     /*
      * Set the transfer size we are currently recording metrics for.  (Will
@@ -126,7 +126,4 @@ class MetricsPublisher
     aws_task m_publishTask;
     uint64_t m_publishFrequencyNs;
     std::condition_variable m_waitForLastPublishCV;
-
-    std::mutex m_dataPointSumLock;
-    std::map<Aws::Crt::String, Metric> m_dataPointSums;
 };

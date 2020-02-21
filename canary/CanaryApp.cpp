@@ -71,7 +71,7 @@ CanaryApp::CanaryApp(int argc, char *argv[])
       defaultHostResolver(eventLoopGroup, 60, 1000, traceAllocator),
       bootstrap(eventLoopGroup, defaultHostResolver, traceAllocator), platformName(CanaryUtil::GetPlatformName()),
       toolName("NA"), instanceType("unknown"), region("us-west-2"), cutOffTimeSmallObjects(10.0),
-      cutOffTimeLargeObjects(10.0), measureLargeTransfer(false), measureSmallTransfer(false), usingNumaControl(false),
+      cutOffTimeLargeObjects(10.0), mtu(0), measureLargeTransfer(false), measureSmallTransfer(false), usingNumaControl(false),
       sendEncrypted(false)
 {
 #ifdef __linux__
@@ -84,12 +84,12 @@ CanaryApp::CanaryApp(int argc, char *argv[])
     Auth::CredentialsProviderChainDefaultConfig chainConfig;
     chainConfig.Bootstrap = &bootstrap;
 
-    credsProvider = Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(chainConfig, traceAllocator);
+    credsProvider = Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(chainConfig, g_allocator);
 
-    signer = MakeShared<Auth::Sigv4HttpRequestSigner>(traceAllocator, traceAllocator);
+    signer = MakeShared<Auth::Sigv4HttpRequestSigner>(g_allocator, g_allocator);
 
-    Io::TlsContextOptions tlsContextOptions = Io::TlsContextOptions::InitDefaultClient(traceAllocator);
-    tlsContext = Io::TlsContext(tlsContextOptions, Io::TlsMode::CLIENT, traceAllocator);
+    Io::TlsContextOptions tlsContextOptions = Io::TlsContextOptions::InitDefaultClient(g_allocator);
+    tlsContext = Io::TlsContext(tlsContextOptions, Io::TlsMode::CLIENT, g_allocator);
 
     enum class CLIOption
     {
@@ -103,7 +103,7 @@ CanaryApp::CanaryApp(int argc, char *argv[])
         UsingNumaControl,
         SendEncrypted,
         MTU,
-
+        
         MAX
     };
 
@@ -165,7 +165,7 @@ CanaryApp::CanaryApp(int argc, char *argv[])
             case CLIOption::MTU:
                 mtu = atoi(aws_cli_optarg);
                 break;
-	    default:
+	        default:
                 AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Unknown CLI option used.");
                 break;
         }
