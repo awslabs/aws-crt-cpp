@@ -56,14 +56,14 @@ class MeasureTransferRate
     void MeasureLargeObjectTransfer();
 
   private:
-
     struct MeasureAllocationsArgs
     {
         MeasureTransferRate &measureTransferRate;
     };
 
     using NotifyTransferFinished = std::function<void(int32_t errorCode)>;
-    using TransferFunction = std::function<void(Aws::Crt::String && key, uint64_t objectSize, NotifyTransferFinished && notifyTransferFinished)>;
+    using TransferFunction = std::function<
+        void(Aws::Crt::String &&key, uint64_t objectSize, NotifyTransferFinished &&notifyTransferFinished)>;
 
     friend class MeasureTransferRateStream; // TODO use of friend here shouldn't be necessary
 
@@ -77,7 +77,7 @@ class MeasureTransferRate
         uint32_t maxTotalTransfers,
         uint64_t objectSize,
         double cutOffTime,
-        TransferFunction && transferFunction);
+        TransferFunction &&transferFunction);
 
     void SchedulePulseMetrics();
 

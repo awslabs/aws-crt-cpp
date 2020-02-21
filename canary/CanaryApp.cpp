@@ -71,8 +71,8 @@ CanaryApp::CanaryApp(int argc, char *argv[])
       defaultHostResolver(eventLoopGroup, 60, 1000, traceAllocator),
       bootstrap(eventLoopGroup, defaultHostResolver, traceAllocator), platformName(CanaryUtil::GetPlatformName()),
       toolName("NA"), instanceType("unknown"), region("us-west-2"), cutOffTimeSmallObjects(10.0),
-      cutOffTimeLargeObjects(10.0), mtu(0), measureLargeTransfer(false), measureSmallTransfer(false), usingNumaControl(false),
-      sendEncrypted(false)
+      cutOffTimeLargeObjects(10.0), mtu(0), measureLargeTransfer(false), measureSmallTransfer(false),
+      usingNumaControl(false), sendEncrypted(false)
 {
 #ifdef __linux__
     rlimit fdsLimit;
@@ -103,7 +103,7 @@ CanaryApp::CanaryApp(int argc, char *argv[])
         UsingNumaControl,
         SendEncrypted,
         MTU,
-        
+
         MAX
     };
 
@@ -165,7 +165,7 @@ CanaryApp::CanaryApp(int argc, char *argv[])
             case CLIOption::MTU:
                 mtu = atoi(aws_cli_optarg);
                 break;
-	        default:
+            default:
                 AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Unknown CLI option used.");
                 break;
         }

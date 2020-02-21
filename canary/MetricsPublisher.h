@@ -90,7 +90,7 @@ class MetricsPublisher
      */
     void AddDataPoint(const Metric &metricData);
 
-    void AddTransferStatusDataPoint(bool transferSuccess);     
+    void AddTransferStatusDataPoint(bool transferSuccess);
 
     /*
      * Set the transfer size we are currently recording metrics for.  (Will
