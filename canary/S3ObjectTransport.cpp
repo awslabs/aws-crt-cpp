@@ -37,9 +37,9 @@ const uint32_t S3ObjectTransport::MaxStreams = 500;
 const int32_t S3ObjectTransport::S3GetObjectResponseStatus_PartialContent = 206;
 
 S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::String &bucket)
-    : m_canaryApp(canaryApp), m_bucketName(bucket),
+    : m_canaryApp(canaryApp), m_bucketName(bucket), m_connManagersReady(false), m_connManagersUseCount(0),
       m_uploadProcessor(canaryApp, canaryApp.eventLoopGroup, S3ObjectTransport::MaxStreams),
-      m_downloadProcessor(canaryApp, canaryApp.eventLoopGroup, S3ObjectTransport::MaxStreams), m_connManagersUseCount(0)
+      m_downloadProcessor(canaryApp, canaryApp.eventLoopGroup, S3ObjectTransport::MaxStreams)
 {
     m_endpoint = m_bucketName + ".s3." + m_canaryApp.region + ".amazonaws.com";
 
@@ -57,7 +57,7 @@ size_t S3ObjectTransport::GetOpenConnectionCount()
         return 0;
     }
 
-	uint32_t total = 0;
+    uint32_t total = 0;
 
     for (const std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> &manager : m_connManagers)
     {
@@ -90,7 +90,8 @@ void S3ObjectTransport::WarmDNSCache()
         {
             m_canaryApp.defaultHostResolver.ResolveHost(
                 m_endpoint,
-                [this, &numAddressesRetrieved, &connManagersInitializeMutex](Io::HostResolver &, const Vector<Io::HostAddress> &addresses, int) {
+                [this, &numAddressesRetrieved, &connManagersInitializeMutex](
+                    Io::HostResolver &, const Vector<Io::HostAddress> &addresses, int) {
                     for (const Io::HostAddress &addr : addresses)
                     {
                         std::lock_guard<std::mutex> lock(connManagersInitializeMutex);

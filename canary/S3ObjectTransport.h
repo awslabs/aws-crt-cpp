@@ -114,7 +114,7 @@ class S3ObjectTransport
     MultipartTransferProcessor m_uploadProcessor;
     MultipartTransferProcessor m_downloadProcessor;
 
-	std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> GetNextConnManager();
+    std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> GetNextConnManager();
 
     void UploadPart(
         const std::shared_ptr<MultipartUploadState> &state,
