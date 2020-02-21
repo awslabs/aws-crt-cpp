@@ -88,14 +88,6 @@ void S3ObjectTransport::WarmDNSCache()
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
-    m_canaryApp.defaultHostResolver.ResolveHost(
-        m_endpoint, [](Io::HostResolver &resolver, const Vector<Io::HostAddress> &addresses, int errorCode) {
-            for (uint32_t i = 0; i < addresses.size(); ++i)
-            {
-                AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Found address %d: %s", i, aws_string_c_str(addresses[i].address));
-            }
-        });
-
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "DNS cache warmed.");
 }
 
