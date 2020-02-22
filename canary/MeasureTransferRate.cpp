@@ -163,12 +163,16 @@ uint32_t MeasureTransferRate::PerformMeasurement(
             counter = INT64_MAX;
         }
 
-        while (!forceStop && (continueInitiatingTransfers && numInProgress < maxConcurrentTransfers))
+		uint32_t numTransfersThisIteration = 0;
+
+        while (!forceStop && (continueInitiatingTransfers && numInProgress < maxConcurrentTransfers &&
+                              numTransfersThisIteration < maxConcurrentTransfers))
         {
             StringStream keyStream;
             keyStream << filenamePrefix << counter--;
             String key = keyStream.str();
             ++numInProgress;
+            ++numTransfersThisIteration;
 
             NotifyTransferFinished notifyTransferFinished =
                 [publisher, &numCompleted, &numInProgress](int32_t errorCode) {
