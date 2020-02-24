@@ -68,7 +68,7 @@ int filterLog(
 
 CanaryApp::CanaryApp(int argc, char *argv[])
     : traceAllocator(DefaultAllocator()), apiHandle(traceAllocator), eventLoopGroup(72, traceAllocator),
-      defaultHostResolver(eventLoopGroup, 60, 7200, traceAllocator),
+      defaultHostResolver(eventLoopGroup, 60, 3600, traceAllocator),
       bootstrap(eventLoopGroup, defaultHostResolver, traceAllocator), platformName(CanaryUtil::GetPlatformName()),
       toolName("NA"), instanceType("unknown"), region("us-west-2"), cutOffTimeSmallObjects(10.0),
       cutOffTimeLargeObjects(10.0), mtu(0), measureLargeTransfer(false), measureSmallTransfer(false),
