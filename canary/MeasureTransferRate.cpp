@@ -15,7 +15,7 @@ using namespace Aws::Crt;
 size_t MeasureTransferRate::BodyTemplateSize = 4ULL * 1024ULL;
 thread_local char *BodyTemplate = nullptr;
 
-const uint64_t MeasureTransferRate::SmallObjectSize = 16ULL * 1024ULL * 1024ULL;
+const uint64_t MeasureTransferRate::SmallObjectSize = 5ULL * 1024ULL * 1024ULL * 1024ULL;
 const uint32_t MeasureTransferRate::LargeObjectNumParts = 8192;
 const uint64_t MeasureTransferRate::LargeObjectSize =
     (uint64_t)MeasureTransferRate::LargeObjectNumParts * (128ULL * 1024ULL * 1024ULL);
@@ -215,7 +215,7 @@ uint32_t MeasureTransferRate::PerformMeasurement(
 
 void MeasureTransferRate::MeasureSmallObjectTransfer()
 {
-    uint32_t numTransfers = 8000;
+    uint32_t numTransfers = 160;
     const char *filenamePrefix = "crt-canary-obj-small-";
 
     PerformMeasurement(
