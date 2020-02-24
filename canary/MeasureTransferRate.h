@@ -73,13 +73,21 @@ class MeasureTransferRate
 
     uint32_t PerformMeasurement(
         const char *filenamePrefix,
-        uint32_t maxConcurrentTransfers,
-        uint32_t maxTotalTransfers,
+        uint32_t numTransfers,
         uint64_t objectSize,
-        double cutOffTime,
         TransferFunction &&transferFunction);
 
     void SchedulePulseMetrics();
 
     static void s_PulseMetricsTask(aws_task *task, void *arg, aws_task_status status);
+
+	struct MeasurementTaskArgs
+    {
+        Aws::Crt::String key;
+        uint64_t objectSize;
+        NotifyTransferFinished notifyTransferFinished;
+        TransferFunction transferFunction;
+    };
+
+    static void s_PerformMeasurementTask(aws_task *task, void *arg, aws_task_status status);
 };

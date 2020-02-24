@@ -89,7 +89,7 @@ class S3ObjectTransport
 
     const Aws::Crt::String &GetEndpoint() const { return m_endpoint; }
 
-    void WarmDNSCache();
+    void WarmDNSCache(uint32_t numTransfers);
 
   private:
     using CreateMultipartUploadFinished = std::function<void(int32_t error, const Aws::Crt::String &uploadId)>;
@@ -105,9 +105,10 @@ class S3ObjectTransport
     Aws::Crt::Http::HttpHeader m_contentTypeHeader;
     Aws::Crt::String m_endpoint;
 
+    std::vector<std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager>> m_connManagerTrashCan;
     std::vector<std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager>> m_connManagers;
-    std::atomic<bool> m_connManagersReady;
     std::atomic<uint32_t> m_connManagersUseCount;
+    std::atomic<uint32_t> m_activeRequestsCount;
 
     std::set<Aws::Crt::String> m_uniqueEndpointsUsed;
 
