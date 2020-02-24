@@ -215,9 +215,7 @@ uint32_t MeasureTransferRate::PerformMeasurement(
 
 void MeasureTransferRate::MeasureSmallObjectTransfer()
 {
-    //uint32_t threadCount = 72; // static_cast<uint32_t>(aws_system_info_processor_count());
-    uint32_t numTransfers = 4000;
-     //threadCount * 10;
+    uint32_t numTransfers = 8000;
     const char *filenamePrefix = "crt-canary-obj-small-";
 
     PerformMeasurement(

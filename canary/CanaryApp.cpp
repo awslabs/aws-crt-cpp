@@ -77,7 +77,7 @@ CanaryApp::CanaryApp(int argc, char *argv[])
 #ifdef __linux__
     rlimit fdsLimit;
     getrlimit(RLIMIT_NOFILE, &fdsLimit);
-    fdsLimit.rlim_cur = 4096;
+    fdsLimit.rlim_cur = 8192;
     setrlimit(RLIMIT_NOFILE, &fdsLimit);
 #endif
 
