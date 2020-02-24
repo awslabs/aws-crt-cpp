@@ -181,7 +181,7 @@ CanaryApp::CanaryApp(int argc, char *argv[])
         *logFunctionVoid = (void *)filterLog;
     }
 
-    publisher = MakeShared<MetricsPublisher>(g_allocator, *this, "CRT-CPP-Canary");
+    publisher = MakeShared<MetricsPublisher>(g_allocator, *this, "CRT-CPP-Canary-V2");
     transport = MakeShared<S3ObjectTransport>(g_allocator, *this, "aws-crt-canary-bucket");
     measureTransferRate = MakeShared<MeasureTransferRate>(g_allocator, *this);
 }
