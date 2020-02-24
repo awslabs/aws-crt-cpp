@@ -37,9 +37,10 @@ const uint32_t S3ObjectTransport::MaxStreams = 500;
 const int32_t S3ObjectTransport::S3GetObjectResponseStatus_PartialContent = 206;
 
 S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::String &bucket)
-    : m_canaryApp(canaryApp), m_bucketName(bucket), m_connManagersReady(false), m_connManagersUseCount(0),
+    : m_canaryApp(canaryApp), m_bucketName(bucket),
       m_uploadProcessor(canaryApp, canaryApp.eventLoopGroup, S3ObjectTransport::MaxStreams),
-      m_downloadProcessor(canaryApp, canaryApp.eventLoopGroup, S3ObjectTransport::MaxStreams)
+      m_downloadProcessor(canaryApp, canaryApp.eventLoopGroup, S3ObjectTransport::MaxStreams),
+      m_connManagersUseCount(0), m_activeRequestsCount(0)
 {
     m_endpoint = m_bucketName + ".s3." + m_canaryApp.region + ".amazonaws.com";
 
@@ -52,29 +53,33 @@ S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::Strin
 
 size_t S3ObjectTransport::GetOpenConnectionCount()
 {
-    if (!m_connManagersReady)
-    {
-        return 0;
-    }
-
-    uint32_t total = 0;
-
-    for (const std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> &manager : m_connManagers)
-    {
-        total += (uint32_t)manager->GetOpenConnectionCount();
-    }
-
-    return total;
+    return m_activeRequestsCount;
 }
 
-void S3ObjectTransport::WarmDNSCache()
+void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
 {
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Warming DNS cache...");
 
     m_canaryApp.defaultHostResolver.ResolveHost(
         m_endpoint, [](Io::HostResolver &, const Vector<Io::HostAddress> &, int) {});
 
-    const uint32_t desiredNumberOfAddresses = 100; // 160
+    // TODO should have more of a safe guard for people reading from the m_connManagers
+    // vector.  For now, we will assume callers are using it correctly.
+    for (size_t i = 0; i < m_connManagers.size(); ++i)
+    {
+        m_connManagerTrashCan.push_back(m_connManagers[i]);
+    }
+
+    m_connManagers.clear();
+    m_connManagersUseCount = 0;
+
+    const uint32_t transfersPerAddresses = 10;
+    uint32_t desiredNumberOfAddresses = numTransfers / transfersPerAddresses;
+
+    if ((numTransfers % transfersPerAddresses) > 0)
+    {
+        ++desiredNumberOfAddresses;
+    }
 
     // TODO use a proper future or signal
     while ((m_canaryApp.defaultHostResolver.GetHostAddressCount(m_endpoint) / 2) < desiredNumberOfAddresses)
@@ -129,8 +134,6 @@ void S3ObjectTransport::WarmDNSCache()
         while (numAddressesRetrieved < desiredNumberOfAddresses)
         {
         }
-
-        m_connManagersReady = true;
     }
 
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "DNS cache warmed.");
@@ -184,7 +187,7 @@ void S3ObjectTransport::MakeSignedRequest(
 
                     // AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Resolved host is: %s", resolvedHost.c_str());
 
-                    m_uniqueEndpointsUsed.insert(std::move(resolvedHost));
+                    // m_uniqueEndpointsUsed.insert(std::move(resolvedHost));
 
                     MakeSignedRequest_SendRequest(conn, requestOptions, signedRequest);
                 }
@@ -207,15 +210,19 @@ void S3ObjectTransport::MakeSignedRequest_SendRequest(
     Http::HttpRequestOptions requestOptionsToSend = requestOptions;
     requestOptionsToSend.request = signedRequest.get();
 
+    ++m_activeRequestsCount;
+
     // NOTE: The captures of the connection and signed request is a work around to keep those shared
     // pointers alive until the stream is finished.  Tasks can be scheduled that rely on these things
     // being alive which can cause crashes when they aren't around.
     requestOptionsToSend.onStreamComplete =
-        [conn, requestOptions, signedRequest](Http::HttpStream &stream, int errorCode) {
+        [this, conn, requestOptions, signedRequest](Http::HttpStream &stream, int errorCode) {
             if (requestOptions.onStreamComplete != nullptr)
             {
                 requestOptions.onStreamComplete(stream, errorCode);
             }
+
+            --m_activeRequestsCount;
         };
 
     conn->NewClientStream(requestOptionsToSend);

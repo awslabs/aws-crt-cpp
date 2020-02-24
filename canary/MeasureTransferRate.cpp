@@ -133,76 +133,81 @@ MeasureTransferRate::MeasureTransferRate(CanaryApp &canaryApp) : m_canaryApp(can
 
 MeasureTransferRate::~MeasureTransferRate() {}
 
+void MeasureTransferRate::s_PerformMeasurementTask(aws_task *task, void *arg, aws_task_status status)
+{
+	if (status != AWS_TASK_STATUS_RUN_READY)
+	{
+        return;
+	}
+
+    MeasurementTaskArgs *args = (MeasurementTaskArgs *)arg;
+
+    args->transferFunction(std::move(args->key), args->objectSize, std::move(args->notifyTransferFinished));
+
+    Aws::Crt::Delete<MeasurementTaskArgs>(args, g_allocator);
+    Aws::Crt::Delete<aws_task>(task, g_allocator);
+}
+
 uint32_t MeasureTransferRate::PerformMeasurement(
     const char *filenamePrefix,
-    uint32_t maxConcurrentTransfers,
-    uint32_t maxTotalTransfers,
+    uint32_t numTransfers,
     uint64_t objectSize,
-    double cutOffTime,
     TransferFunction &&transferFunction)
 {
-    std::shared_ptr<MetricsPublisher> publisher = m_canaryApp.publisher;
-
-    bool continueInitiatingTransfers = true;
     uint64_t counter = INT64_MAX;
-
-    std::atomic<bool> forceStop(false);
     std::atomic<uint32_t> numInProgress(0);
     std::atomic<uint32_t> numCompleted(0);
 
-    time_t initialTime;
-    time(&initialTime);
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting performance measurement.");
 
-    AWS_LOGF_INFO(
-        AWS_LS_CRT_CPP_CANARY, "Starting performance measurement.  Measuring for at least %f seconds.", cutOffTime);
+    m_canaryApp.transport->WarmDNSCache(numTransfers);
 
-    while (!forceStop && (continueInitiatingTransfers || m_canaryApp.transport->GetOpenConnectionCount() > 0))
+    const uint64_t delayNS = aws_timestamp_convert(1000ULL, AWS_TIMESTAMP_MILLIS, AWS_TIMESTAMP_NANOS, NULL);
+    uint64_t now = 0;
+    aws_event_loop_current_clock_time(m_schedulingLoop, &now);
+    uint64_t measurmentTaskTime = now + delayNS;
+
+    for (uint32_t i = 0; i < numTransfers; ++i)
     {
         if (counter == 0)
         {
             counter = INT64_MAX;
         }
 
-		uint32_t numTransfersThisIteration = 0;
+        StringStream keyStream;
+        keyStream << filenamePrefix << counter--;
+        String key = keyStream.str();
+        ++numInProgress;
 
-        while (!forceStop && (continueInitiatingTransfers && numInProgress < maxConcurrentTransfers &&
-                              numTransfersThisIteration < maxConcurrentTransfers))
-        {
-            StringStream keyStream;
-            keyStream << filenamePrefix << counter--;
-            String key = keyStream.str();
-            ++numInProgress;
-            ++numTransfersThisIteration;
+        NotifyTransferFinished notifyTransferFinished = [&numCompleted, &numInProgress](int32_t errorCode) {
+            if (errorCode == AWS_ERROR_SUCCESS)
+            {
+                ++numCompleted;
+            }
+            else
+            {
+                // forceStop = true;
+            }
 
-            NotifyTransferFinished notifyTransferFinished =
-                [publisher, &numCompleted, &numInProgress](int32_t errorCode) {
-                    if (errorCode == AWS_ERROR_SUCCESS)
-                    {
-                        ++numCompleted;
-                    }
-                    else
-                    {
-                        // forceStop = true;
-                    }
+            --numInProgress;
+        };
 
-                    --numInProgress;
-                };
+        // transferFunction(std::move(key), objectSize, std::move(notifyTransferFinished));
 
-            transferFunction(std::move(key), objectSize, std::move(notifyTransferFinished));
-        }
+        MeasurementTaskArgs *args = Aws::Crt::New<MeasurementTaskArgs>(g_allocator);
+        args->key = std::move(key);
+        args->objectSize = objectSize;
+        args->transferFunction = transferFunction;
+        args->notifyTransferFinished = std::move(notifyTransferFinished);
 
-        time_t currentTime;
-        time(&currentTime);
-        double elapsedSeconds = difftime(currentTime, initialTime);
-        bool wasInitiatingTransfers = continueInitiatingTransfers;
+        aws_task *task = Aws::Crt::New<aws_task>(g_allocator);
+        aws_task_init(task, MeasureTransferRate::s_PerformMeasurementTask, (void *)args, "PerformMeasurmentTask");
 
-        continueInitiatingTransfers =
-            elapsedSeconds <= cutOffTime && (maxTotalTransfers == 0 || numCompleted < maxTotalTransfers);
+        aws_event_loop_schedule_task_future(m_schedulingLoop, task, measurmentTaskTime);
+    }
 
-        if (!continueInitiatingTransfers && wasInitiatingTransfers)
-        {
-            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "No longer initiating transfers.");
-        }
+    while (numInProgress > 0)
+    {
     }
 
     return numCompleted.load();
@@ -210,18 +215,15 @@ uint32_t MeasureTransferRate::PerformMeasurement(
 
 void MeasureTransferRate::MeasureSmallObjectTransfer()
 {
-    uint32_t threadCount = 32; // static_cast<uint32_t>(aws_system_info_processor_count());
-    uint32_t maxInFlight = threadCount * 30;
+    //uint32_t threadCount = 72; // static_cast<uint32_t>(aws_system_info_processor_count());
+    uint32_t numTransfers = 4000;
+     //threadCount * 10;
     const char *filenamePrefix = "crt-canary-obj-small-";
 
-    m_canaryApp.transport->WarmDNSCache();
-
-    uint32_t numUploaded = PerformMeasurement(
+    PerformMeasurement(
         filenamePrefix,
-        maxInFlight,
-        0,
+        numTransfers,
         SmallObjectSize,
-        m_canaryApp.cutOffTimeSmallObjects,
         [this](String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
             std::shared_ptr<MultipartTransferState::PartInfo> singlePart = MakeShared<MultipartTransferState::PartInfo>(
                 m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, 0LL, SmallObjectSize);
@@ -240,10 +242,8 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
 
     PerformMeasurement(
         filenamePrefix,
-        maxInFlight,
-        numUploaded,
+        numTransfers,
         SmallObjectSize,
-        m_canaryApp.cutOffTimeSmallObjects,
         [this](String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
             std::shared_ptr<MultipartTransferState::PartInfo> singlePart = MakeShared<MultipartTransferState::PartInfo>(
                 m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, 0LL, SmallObjectSize);
@@ -271,14 +271,10 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
 {
     const char *filenamePrefix = "crt-canary-obj-large-";
 
-    m_canaryApp.transport->WarmDNSCache();
-
-    uint32_t numUploaded = PerformMeasurement(
+    PerformMeasurement(
         filenamePrefix,
         1,
-        0,
         LargeObjectSize,
-        m_canaryApp.cutOffTimeLargeObjects,
         [this](String &&key, uint64_t objectSize, NotifyTransferFinished &&notifyTransferFinished) {
             AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting upload of object %s...", key.c_str());
 
@@ -304,9 +300,7 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
     PerformMeasurement(
         filenamePrefix,
         1,
-        numUploaded,
         LargeObjectSize,
-        m_canaryApp.cutOffTimeLargeObjects,
         [this](String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
             AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting download of object %s...", key.c_str());
 
