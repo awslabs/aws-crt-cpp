@@ -13,7 +13,7 @@
                         "g++-4.8"
                     ],
                     "yum_packages": [
-                        "gcc-g++"
+                        "gcc-c++"
                     ]
                 },
                 "5": {
@@ -31,7 +31,7 @@
                         "g++-7"
                     ],
                     "yum_packages": [
-                        "gcc-g++"
+                        "gcc-c++"
                     ]
                 }
             }
