@@ -11,6 +11,9 @@
                 "4.8": {
                     "packages": [
                         "g++-4.8"
+                    ],
+                    "yum_packages": [
+                        "gcc-g++"
                     ]
                 },
                 "5": {
@@ -26,6 +29,9 @@
                 "7": {
                     "packages": [
                         "g++-7"
+                    ],
+                    "yum_packages": [
+                        "gcc-g++"
                     ]
                 }
             }
