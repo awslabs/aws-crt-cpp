@@ -76,7 +76,7 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_VERSION }}/builder', 'builder.pyz')"
-        python builder.pyz -p ${{ env.PACKAGE_NAME }} build downstream
+        python builder.pyz -p ${{ env.PACKAGE_NAME }} build downstream --dump-config
 
   osx:
     runs-on: macos-latest
