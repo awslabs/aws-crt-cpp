@@ -29,7 +29,7 @@ jobs:
         echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u awslabs --password-stdin
         export DOCKER_IMAGE=docker.pkg.github.com/awslabs/aws-crt-builder/aws-crt-${{ matrix.image }}:${{ env.BUILDER_VERSION }}
         docker pull $DOCKER_IMAGE
-        docker run --env GITHUB_REF $DOCKER_IMAGE -p ${{ env.PACKAGE_NAME }} build
+        docker run --env GITHUB_REF $DOCKER_IMAGE build -p ${{ env.PACKAGE_NAME }}
 
   al2:
     runs-on: ubuntu-latest
@@ -40,7 +40,7 @@ jobs:
         echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u awslabs --password-stdin
         export DOCKER_IMAGE=docker.pkg.github.com/awslabs/aws-crt-builder/aws-crt-al2-x64:${{ env.BUILDER_VERSION }}
         docker pull $DOCKER_IMAGE
-        docker run --env GITHUB_REF $DOCKER_IMAGE -p ${{ env.PACKAGE_NAME }} build downstream
+        docker run --env GITHUB_REF $DOCKER_IMAGE build -p ${{ env.PACKAGE_NAME }} downstream
       
   clang-compat:
     runs-on: ubuntu-latest
@@ -54,7 +54,7 @@ jobs:
         echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u awslabs --password-stdin
         export DOCKER_IMAGE=docker.pkg.github.com/awslabs/aws-crt-builder/aws-crt-${{ env.LINUX_BASE_IMAGE }}:${{ env.BUILDER_VERSION }}
         docker pull $DOCKER_IMAGE
-        docker run --env GITHUB_REF $DOCKER_IMAGE -p ${{ env.PACKAGE_NAME }} build --compiler=clang-${{ matrix.version }}
+        docker run --env GITHUB_REF $DOCKER_IMAGE build -p ${{ env.PACKAGE_NAME }} --compiler=clang-${{ matrix.version }}
 
   gcc-compat:
     runs-on: ubuntu-latest
@@ -68,7 +68,7 @@ jobs:
         echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u awslabs --password-stdin
         export DOCKER_IMAGE=docker.pkg.github.com/awslabs/aws-crt-builder/aws-crt-${{ env.LINUX_BASE_IMAGE }}:${{ env.BUILDER_VERSION }}
         docker pull $DOCKER_IMAGE
-        docker run --env GITHUB_REF $DOCKER_IMAGE -p ${{ env.PACKAGE_NAME }} build --compiler=gcc-${{ matrix.version }}
+        docker run --env GITHUB_REF $DOCKER_IMAGE build -p ${{ env.PACKAGE_NAME }} --compiler=gcc-${{ matrix.version }}
 
   windows:
     runs-on: windows-latest
@@ -76,7 +76,7 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_VERSION }}/builder', 'builder.pyz')"
-        python builder.pyz -p ${{ env.PACKAGE_NAME }} build downstream --dump-config
+        python builder.pyz build -p ${{ env.PACKAGE_NAME }} downstream --dump-config
 
   osx:
     runs-on: macos-latest
@@ -85,6 +85,6 @@ jobs:
       run: |
         python3 -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_VERSION }}/builder', 'builder')"
         chmod a+x builder
-        ./builder -p ${{ env.PACKAGE_NAME }} build downstream
+        ./builder build -p ${{ env.PACKAGE_NAME }} downstream
 
         
