@@ -1,0 +1,8 @@
+{
+    "name": "aws-crt-cpp",
+    "!cmake_args": [
+        "-DBUILD_DEPS=ON",
+        "-DPERFORM_HEADER_CHECK=OFF",
+        "-DS2N_NO_PQ_ASM=ON"
+    ]
+}
