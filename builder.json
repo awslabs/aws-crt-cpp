@@ -4,5 +4,6 @@
         "-DBUILD_DEPS=ON",
         "-DPERFORM_HEADER_CHECK=OFF",
         "-DS2N_NO_PQ_ASM=ON"
-    ]
+    ],
+    "imports": ["s2n"]
 }
