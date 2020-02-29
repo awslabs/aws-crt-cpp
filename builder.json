@@ -5,6 +5,12 @@
         "-DPERFORM_HEADER_CHECK=OFF",
         "-DS2N_NO_PQ_ASM=ON"
     ],
-    "imports": ["s2n"],
+    "targets": {
+        "linux" : {
+            "imports": [
+                "s2n"
+            ]
+        }
+    },
     "search_dirs": ["aws-common-runtime"]
 }
