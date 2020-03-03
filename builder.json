@@ -12,5 +12,14 @@
             ]
         }
     },
-    "search_dirs": ["aws-common-runtime"]
+    "search_dirs": ["aws-common-runtime"],
+    "hosts": {
+        "manylinux": {
+            "architectures": {
+                "x86": {
+                    "!compiler_packages": []
+                }
+            }
+        }
+    }
 }
