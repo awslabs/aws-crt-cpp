@@ -94,9 +94,6 @@ jobs:
         arch: [linux-armv6, linux-armv7, linux-arm64]
   
     steps:
-    - name: Checkout Source
-      uses: actions/checkout@v1
-
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
         python3 -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_VERSION }}/builder?run=${{ env.RUN }}', 'builder')"
