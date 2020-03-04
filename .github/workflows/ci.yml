@@ -7,8 +7,7 @@ on:
       - '!master'
 
 env:
-  # WILL CHANGE TO LATEST VERSION BEFORE MERGE
-  BUILDER_VERSION: cpp-fixes
+  BUILDER_VERSION: v0.5.0
   BUILDER_HOST: https://d19elf31gohf1l.cloudfront.net
   PACKAGE_NAME: aws-crt-cpp
   LINUX_BASE_IMAGE: ubuntu-16-x64
