@@ -4,5 +4,22 @@
         "-DBUILD_DEPS=ON",
         "-DPERFORM_HEADER_CHECK=OFF",
         "-DS2N_NO_PQ_ASM=ON"
-    ]
+    ],
+    "targets": {
+        "linux" : {
+            "imports": [
+                "s2n"
+            ]
+        }
+    },
+    "search_dirs": ["aws-common-runtime"],
+    "hosts": {
+        "manylinux": {
+            "architectures": {
+                "x86": {
+                    "!yum_compiler_packages": []
+                }
+            }
+        }
+    }
 }
