@@ -8,5 +8,5 @@ class CanaryUtil
   public:
     CanaryUtil() = delete;
 
-    static Aws::Crt::String GetPlatformName();
+    static std::string GetPlatformName();
 };

@@ -53,24 +53,64 @@ enum class MetricUnit
     None,
 };
 
-enum class MetricTransferSize
+enum class MetricName
+{
+    BytesUp,
+    BytesDown,
+    NumConnections,
+    BytesAllocated,
+    S3UploadAddressCount,
+    S3DownloadAddressCount,
+    SuccessfulTransfer,
+    FailedTransfer,
+    AvgEventLoopGroupTickElapsed,
+    AvgEventLoopTaskRunElapsed,
+    MinEventLoopGroupTickElapsed,
+    MinEventLoopTaskRunElapsed,
+    MaxEventLoopGroupTickElapsed,
+    MaxEventLoopTaskRunElapsed,
+    NumIOSubs,
+
+    Invalid
+};
+
+enum class MetricTransferType
 {
     None,
-    Small,
-    Large
+    SinglePart,
+};
+
+struct MetricKey
+{
+    MetricName Name;
+    uint64_t TimestampSeconds;
+
+    bool operator<(const MetricKey &otherKey) const
+    {
+        if (TimestampSeconds == otherKey.TimestampSeconds)
+        {
+            return (uint32_t)Name < (uint32_t)otherKey.Name;
+        }
+
+        return TimestampSeconds < otherKey.TimestampSeconds;
+    }
 };
 
 struct Metric
 {
     MetricUnit Unit;
-    Aws::Crt::DateTime Timestamp;
+    MetricName Name;
+    uint64_t Timestamp;
     double Value;
-    Aws::Crt::String MetricName;
+
+    Metric();
+    Metric(MetricName Name, MetricUnit unit, double value);
+    Metric(MetricName Name, MetricUnit unit, uint64_t timestamp, double value);
 
     void SetTimestampNow();
 };
 
-struct CanaryApp;
+class CanaryApp;
 
 /**
  * Publishes an aggregated metrics collection to cloud watch at 'publishFrequency'
@@ -88,7 +128,11 @@ class MetricsPublisher
     /**
      * Add a data point to the outgoing metrics collection.
      */
+    void AddDataPoints(const Aws::Crt::Vector<Metric> &metricData);
+
     void AddDataPoint(const Metric &metricData);
+
+    void AddTransferStatusDataPoint(uint64_t timestamp, bool transferSuccess);
 
     void AddTransferStatusDataPoint(bool transferSuccess);
 
@@ -96,12 +140,18 @@ class MetricsPublisher
      * Set the transfer size we are currently recording metrics for.  (Will
      * be recorded with each metric.)
      */
-    void SetMetricTransferSize(MetricTransferSize transferSize);
+    void SetMetricTransferType(MetricTransferType transferType);
+
+    void SchedulePublish();
 
     /**
      * Wait until all queued metrics have been published.
      */
     void WaitForLastPublish();
+
+    void UploadBackup();
+
+    void RehydrateBackup(const char *s3Path);
 
     /**
      * namespace to use for the metrics
@@ -111,12 +161,25 @@ class MetricsPublisher
   private:
     static void s_OnPublishTask(aws_task *task, void *arg, aws_task_status status);
 
-    void PreparePayload(Aws::Crt::StringStream &bodyStream, const Aws::Crt::Vector<Metric> &);
+    MetricTransferType GetTransferType() const;
+    Aws::Crt::String GetPlatformName() const;
+    Aws::Crt::String GetToolName() const;
+    Aws::Crt::String GetInstanceType() const;
+    bool IsSendingEncrypted() const;
 
-    MetricTransferSize m_transferSize;
+    void WriteToBackup(const Aws::Crt::Vector<Metric> &metrics);
+
+    void AddDataPointInternal(const Metric &newMetric);
+
+    void PreparePayload(Aws::Crt::StringStream &bodyStream, const Aws::Crt::Vector<Metric> &metrics);
+
+    MetricTransferType m_transferType;
     CanaryApp &m_canaryApp;
     std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> m_connManager;
     Aws::Crt::Vector<Metric> m_publishData;
+    std::map<MetricKey, size_t> m_publishDataLU;
+    Aws::Crt::Vector<Metric> m_publishDataTaskCopy;
+    Aws::Crt::Vector<Metric> m_metricsBackup;
     Aws::Crt::Http::HttpHeader m_hostHeader;
     Aws::Crt::Http::HttpHeader m_contentTypeHeader;
     Aws::Crt::Http::HttpHeader m_apiVersionHeader;
@@ -126,4 +189,11 @@ class MetricsPublisher
     aws_task m_publishTask;
     uint64_t m_publishFrequencyNs;
     std::condition_variable m_waitForLastPublishCV;
+
+    Aws::Crt::Optional<MetricTransferType> m_transferTypeOverride;
+    Aws::Crt::Optional<Aws::Crt::String> m_platformNameOverride;
+    Aws::Crt::Optional<Aws::Crt::String> m_toolNameOverride;
+    Aws::Crt::Optional<Aws::Crt::String> m_instanceTypeOverride;
+    Aws::Crt::Optional<bool> m_sendEncryptedOverride;
+    Aws::Crt::Optional<uint64_t> m_replayId;
 };

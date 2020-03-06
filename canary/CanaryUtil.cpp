@@ -5,7 +5,7 @@
 
 using namespace Aws::Crt;
 
-String CanaryUtil::GetPlatformName()
+std::string CanaryUtil::GetPlatformName()
 {
 #ifdef WIN32
     return "windows";

@@ -3,12 +3,9 @@
 #include "MeasureTransferRate.h"
 #include "MetricsPublisher.h"
 #include "S3ObjectTransport.h"
-extern "C"
-{
-#include <aws/common/command_line_parser.h>
-}
 
 #include <aws/crt/Api.h>
+#include <aws/crt/JsonObject.h>
 #include <aws/crt/Types.h>
 #include <aws/crt/auth/Credentials.h>
 
@@ -16,8 +13,11 @@ extern "C"
 #include <aws/common/log_formatter.h>
 #include <aws/common/log_writer.h>
 
-#ifdef __linux__
+#ifndef WIN32
 #    include <sys/resource.h>
+#    include <sys/types.h>
+#    include <sys/wait.h>
+#    include <unistd.h>
 #endif
 
 using namespace Aws::Crt;
@@ -66,114 +66,38 @@ int filterLog(
     return AWS_OP_SUCCESS;
 }
 
-CanaryApp::CanaryApp(int argc, char *argv[])
-    : traceAllocator(DefaultAllocator()), apiHandle(traceAllocator), eventLoopGroup(72, traceAllocator),
-      defaultHostResolver(eventLoopGroup, 60, 3600, traceAllocator),
-      bootstrap(eventLoopGroup, defaultHostResolver, traceAllocator), platformName(CanaryUtil::GetPlatformName()),
-      toolName("NA"), instanceType("unknown"), region("us-west-2"), cutOffTimeSmallObjects(10.0),
-      cutOffTimeLargeObjects(10.0), mtu(0), measureLargeTransfer(false), measureSmallTransfer(false),
-      usingNumaControl(false), sendEncrypted(false)
+CanaryAppOptions::CanaryAppOptions() noexcept
+    : platformName(CanaryUtil::GetPlatformName()), toolName("NA"), instanceType("unknown"), region("us-west-2"),
+      readFromParentPipe(-1), writeToParentPipe(-1), numUpTransfers(1), numUpConcurrentTransfers(0),
+      numDownTransfers(1), numDownConcurrentTransfers(0), childProcessIndex(0),
+      measureSinglePartTransfer(false), measureHttpTransfer(false), usingNumaControl(false), downloadOnly(false),
+      sendEncrypted(false), loggingEnabled(false), rehydrateBackup(false), isParentProcess(false), isChildProcess(false)
 {
-#ifdef __linux__
+}
+
+CanaryAppChildProcess::CanaryAppChildProcess() noexcept : pid(0), readFromChildPipe(-1), writeToChildPipe(-1) {}
+
+CanaryAppChildProcess::CanaryAppChildProcess(pid_t inPid, int32_t inReadPipe, int32_t inWritePipe) noexcept
+    : pid(inPid), readFromChildPipe(inReadPipe), writeToChildPipe(inWritePipe)
+{
+}
+
+CanaryApp::CanaryApp(CanaryAppOptions &&inOptions, std::vector<CanaryAppChildProcess> &&inChildren) noexcept
+    : m_options(inOptions), m_traceAllocator(DefaultAllocator()), m_apiHandle(m_traceAllocator),
+      m_eventLoopGroup((!inOptions.isChildProcess && !inOptions.isParentProcess) ? 72 : 2, m_traceAllocator),
+      m_defaultHostResolver(m_eventLoopGroup, 60, 3600, m_traceAllocator),
+      m_bootstrap(m_eventLoopGroup, m_defaultHostResolver, m_traceAllocator), children(inChildren)
+{
+#ifndef WIN32
     rlimit fdsLimit;
     getrlimit(RLIMIT_NOFILE, &fdsLimit);
     fdsLimit.rlim_cur = 8192;
     setrlimit(RLIMIT_NOFILE, &fdsLimit);
 #endif
 
-    Auth::CredentialsProviderChainDefaultConfig chainConfig;
-    chainConfig.Bootstrap = &bootstrap;
-
-    credsProvider = Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(chainConfig, g_allocator);
-
-    signer = MakeShared<Auth::Sigv4HttpRequestSigner>(g_allocator, g_allocator);
-
-    Io::TlsContextOptions tlsContextOptions = Io::TlsContextOptions::InitDefaultClient(g_allocator);
-    tlsContext = Io::TlsContext(tlsContextOptions, Io::TlsMode::CLIENT, g_allocator);
-
-    enum class CLIOption
+    if (m_options.loggingEnabled)
     {
-        ToolName,
-        InstanceType,
-        CutOffTimeSmall,
-        CutOffTimelarge,
-        MeasureLargeTransfer,
-        MeasureSmallTransfer,
-        Logging,
-        UsingNumaControl,
-        SendEncrypted,
-        MTU,
-
-        MAX
-    };
-
-    const aws_cli_option options[] = {{"toolName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 't'},
-                                      {"instanceType", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'i'},
-                                      {"cutOffTimeSmall", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'c'},
-                                      {"cutOffTimeLarge", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'C'},
-                                      {"measureLargeTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'l'},
-                                      {"measureSmallTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 's'},
-                                      {"logging", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'd'},
-                                      {"usingNumaControl", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'n'},
-                                      {"sendEncrypted", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'e'},
-                                      {"mtu", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'm'}};
-
-    const char *optstring = "t:i:c:C:lsdnem:";
-    toolName = argc >= 1 ? argv[0] : "NA";
-
-    size_t dirStart = toolName.rfind('\\');
-
-    if (dirStart != String::npos)
-    {
-        toolName = toolName.substr(dirStart + 1);
-    }
-
-    int cliOptionIndex = 0;
-    bool loggingOn = false;
-
-    while (aws_cli_getopt_long(argc, argv, optstring, options, &cliOptionIndex) != -1)
-    {
-        switch ((CLIOption)cliOptionIndex)
-        {
-            case CLIOption::ToolName:
-                toolName = aws_cli_optarg;
-                break;
-            case CLIOption::InstanceType:
-                instanceType = aws_cli_optarg;
-                break;
-            case CLIOption::CutOffTimeSmall:
-                cutOffTimeSmallObjects = atof(aws_cli_optarg);
-                break;
-            case CLIOption::CutOffTimelarge:
-                cutOffTimeLargeObjects = atof(aws_cli_optarg);
-                break;
-            case CLIOption::MeasureLargeTransfer:
-                measureLargeTransfer = true;
-                break;
-            case CLIOption::MeasureSmallTransfer:
-                measureSmallTransfer = true;
-                break;
-            case CLIOption::Logging:
-                loggingOn = true;
-                break;
-            case CLIOption::UsingNumaControl:
-                usingNumaControl = true;
-                break;
-            case CLIOption::SendEncrypted:
-                sendEncrypted = true;
-                break;
-            case CLIOption::MTU:
-                mtu = atoi(aws_cli_optarg);
-                break;
-            default:
-                AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Unknown CLI option used.");
-                break;
-        }
-    }
-
-    if (loggingOn)
-    {
-        apiHandle.InitializeLogging(LogLevel::Info, stderr);
+        m_apiHandle.InitializeLogging(LogLevel::Info, stderr);
 
         // TODO Take out before merging--this is a giant hack to filter just canary logs
         aws_logger_vtable *currentVTable = aws_logger_get()->vtable;
@@ -181,7 +105,214 @@ CanaryApp::CanaryApp(int argc, char *argv[])
         *logFunctionVoid = (void *)filterLog;
     }
 
-    publisher = MakeShared<MetricsPublisher>(g_allocator, *this, "CRT-CPP-Canary-V2");
-    transport = MakeShared<S3ObjectTransport>(g_allocator, *this, "aws-crt-canary-bucket");
-    measureTransferRate = MakeShared<MeasureTransferRate>(g_allocator, *this);
+    Auth::CredentialsProviderChainDefaultConfig chainConfig;
+    chainConfig.Bootstrap = &m_bootstrap;
+
+    m_credsProvider = Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(chainConfig, g_allocator);
+
+    m_signer = MakeShared<Auth::Sigv4HttpRequestSigner>(g_allocator, g_allocator);
+
+    Io::TlsContextOptions tlsContextOptions = Io::TlsContextOptions::InitDefaultClient(g_allocator);
+    m_tlsContext = Io::TlsContext(tlsContextOptions, Io::TlsMode::CLIENT, g_allocator);
+
+    m_publisher = MakeShared<MetricsPublisher>(g_allocator, *this, "CRT-CPP-Canary-V2");
+    m_uploadTransport = MakeShared<S3ObjectTransport>(g_allocator, *this, "aws-crt-canary-bucket");
+    m_downloadTransport = MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.downloadBucketName.c_str());
+    m_measureTransferRate = MakeShared<MeasureTransferRate>(g_allocator, *this);
+}
+
+void CanaryApp::WriteToChildProcess(uint32_t index, const char *key, const char *value)
+{
+#ifndef WIN32
+    const CanaryAppChildProcess &child = children[index]; // TODO bounds fatal assert?
+
+    AWS_LOGF_INFO(
+        AWS_LS_CRT_CPP_CANARY, "Writing %s:%s to child %d through pipe %d", key, value, index, child.writeToChildPipe);
+
+    WriteKeyValueToPipe(key, value, child.writeToChildPipe);
+#else
+    AWS_FATAL_ASSERT(false);
+#endif
+}
+
+void CanaryApp::WriteToParentProcess(const char *key, const char *value)
+{
+#ifndef WIN32
+    AWS_LOGF_INFO(
+        AWS_LS_CRT_CPP_CANARY, "Writing %s:%s to parent through pipe %d", key, value, m_options.writeToParentPipe);
+
+    WriteKeyValueToPipe(key, value, m_options.writeToParentPipe);
+#else
+    AWS_FATAL_ASSERT(false);
+#endif
+}
+
+String CanaryApp::ReadFromChildProcess(uint32_t index, const char *key)
+{
+#ifndef WIN32
+    CanaryAppChildProcess &child = children[index];
+
+    AWS_LOGF_INFO(
+        AWS_LS_CRT_CPP_CANARY,
+        "Reading value of %s from child %d through pipe %d...",
+        key,
+        index,
+        child.readFromChildPipe);
+
+    String value = ReadValueFromPipe(key, child.readFromChildPipe, child.valuesFromChild);
+
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Got value %s from child %d", value.c_str(), index);
+
+    return value;
+#else
+    AWS_FATAL_ASSERT(false);
+    return "";
+#endif
+}
+
+String CanaryApp::ReadFromParentProcess(const char *key)
+{
+#ifndef WIN32
+    AWS_LOGF_INFO(
+        AWS_LS_CRT_CPP_CANARY, "Reading value of %s from parent through pipe %d...", key, m_options.readFromParentPipe);
+
+    String value = ReadValueFromPipe(key, m_options.readFromParentPipe, valuesFromParent);
+
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Got value %s from parent", value.c_str());
+
+    return value;
+#else
+    AWS_FATAL_ASSERT(false);
+    return "";
+#endif
+}
+
+#ifndef WIN32
+
+void CanaryApp::WriteKeyValueToPipe(const char *key, const char *value, uint32_t writePipe)
+{
+    const char nullTerm = '\0';
+
+    write(writePipe, key, strlen(key));
+    write(writePipe, &nullTerm, 1);
+    write(writePipe, value, strlen(value));
+    write(writePipe, &nullTerm, 1);
+}
+
+String CanaryApp::ReadValueFromPipe(const char *key, int32_t readPipe, std::map<String, String> &keyValuePairs)
+{
+    auto it = keyValuePairs.find(key);
+
+    if (it != keyValuePairs.end())
+    {
+        return it->second;
+    }
+
+    std::pair<String, String> keyValuePair;
+
+    do
+    {
+        keyValuePair = ReadNextKeyValuePairFromPipe(readPipe);
+        keyValuePairs.insert(keyValuePair);
+
+    } while (keyValuePair.first != key);
+
+    return keyValuePair.second;
+}
+
+std::pair<String, String> CanaryApp::ReadNextKeyValuePairFromPipe(int32_t readPipe)
+{
+    char c;
+    String currentBuffer;
+    std::pair<String, String> keyValuePair;
+    uint32_t index = 0;
+
+    while (index < 2)
+    {
+        int32_t readResult = read(readPipe, &c, 1);
+
+        if (readResult == -1)
+        {
+            AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Read returned error %d", readResult);
+            break;
+        }
+
+        if (readResult == 0)
+        {
+            continue;
+        }
+
+        if (c == '\0')
+        {
+            if (index == 0)
+            {
+                keyValuePair.first = std::move(currentBuffer);
+            }
+            else
+            {
+                keyValuePair.second = std::move(currentBuffer);
+            }
+
+            ++index;
+        }
+        else
+        {
+            currentBuffer += c;
+        }
+    }
+
+    return keyValuePair;
+}
+
+#endif
+
+void CanaryApp::Run()
+{
+    if (m_options.rehydrateBackup)
+    {
+        m_publisher->RehydrateBackup(m_options.rehydrateBackupObjectName.c_str());
+    }
+
+    if (m_options.measureSinglePartTransfer)
+    {
+        m_publisher->SetMetricTransferType(MetricTransferType::SinglePart);
+        m_measureTransferRate->MeasureSinglePartObjectTransfer();
+    }
+
+    if (m_options.measureHttpTransfer)
+    {
+        m_publisher->SetMetricTransferType(MetricTransferType::SinglePart);
+        m_measureTransferRate->MeasureHttpTransfer();
+    }
+
+#ifndef WIN32
+    for (CanaryAppChildProcess &childProcess : children)
+    {
+        if (childProcess.readFromChildPipe != -1)
+        {
+            close(childProcess.readFromChildPipe);
+            childProcess.readFromChildPipe = -1;
+        }
+
+        if (childProcess.writeToChildPipe != -1)
+        {
+            close(childProcess.writeToChildPipe);
+            childProcess.writeToChildPipe = -1;
+        }
+    }
+
+    if (m_options.readFromParentPipe != -1)
+    {
+        close(m_options.readFromParentPipe);
+        m_options.readFromParentPipe = -1;
+    }
+
+    if (m_options.writeToParentPipe != -1)
+    {
+        close(m_options.writeToParentPipe);
+        m_options.writeToParentPipe = -1;
+    }
+
+    children.clear();
+#endif
 }
