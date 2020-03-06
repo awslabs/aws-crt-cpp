@@ -24,23 +24,239 @@
 #include <aws/io/stream.h>
 #include <time.h>
 
+#ifndef WIN32
+#    include <sys/resource.h>
+#    include <sys/types.h>
+#    include <sys/wait.h>
+#    include <unistd.h>
+#endif
+
+extern "C"
+{
+#include <aws/common/command_line_parser.h>
+}
+
 using namespace Aws::Crt;
+
+void ParseTransferPair(const char *str, uint32_t &outUpValue, uint32_t &outDownValue)
+{
+    std::string numTransfersStr = str;
+    int32_t index = numTransfersStr.find(":");
+
+    if (index == -1)
+    {
+        int32_t numTransfers = atoi(numTransfersStr.c_str());
+        outUpValue = numTransfers;
+        outDownValue = numTransfers;
+    }
+    else
+    {
+        numTransfersStr[index] = '\0';
+        outUpValue = atoi(numTransfersStr.c_str());
+        outDownValue = atoi(numTransfersStr.c_str() + index + 1);
+    }
+}
+
+void InitNumConcurrentTransfers(uint32_t numTransfers, uint32_t &inOutNumConcurrentTransfers)
+{
+    if (inOutNumConcurrentTransfers == 0)
+    {
+        inOutNumConcurrentTransfers = numTransfers;
+    }
+
+    inOutNumConcurrentTransfers = std::min(inOutNumConcurrentTransfers, numTransfers);
+}
 
 int main(int argc, char *argv[])
 {
-    CanaryApp canaryApp(argc, argv);
-
-    if (canaryApp.measureSmallTransfer)
+    enum class CLIOption
     {
-        canaryApp.publisher->SetMetricTransferSize(MetricTransferSize::Small);
-        canaryApp.measureTransferRate->MeasureSmallObjectTransfer();
+        ToolName,
+        InstanceType,
+        MeasureSinglePartTransfer,
+        MeasureHttpTransfer,
+        Logging,
+        SendEncrypted,
+        Fork,
+        NumTransfers,
+        NumConcurrentTransfers,
+        DownloadOnly,
+        RehydrateBackup,
+        DownloadBucketName,
+        DownloadObjectName,
+
+        MAX
+    };
+
+    const aws_cli_option options[] = {{"toolName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 't'},
+                                      {"instanceType", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'i'},
+                                      {"measureSinglePartTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 's'},
+                                      {"measureHttpTransfer", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'h'},
+                                      {"logging", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'd'},
+                                      {"sendEncrypted", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'e'},
+                                      {"fork", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'f'},
+                                      {"numTransfers", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'n'},
+                                      {"numConcurrentTransfers", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'c'},
+                                      {"downloadOnly", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'z'},
+                                      {"rehydrateBackup", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'r'},
+                                      {"downloadBucketName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'b'},
+                                      {"downloadObjectName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'o'}};
+
+    const char *optstring = "t:i:sh:dCem:fn:c:zr:b:o:";
+
+    CanaryAppOptions canaryAppOptions;
+
+    if (argc >= 1)
+    {
+        std::string &toolName = canaryAppOptions.toolName;
+        toolName = argv[0];
+        size_t dirStart = toolName.rfind('\\');
+
+        if (dirStart != std::string::npos)
+        {
+            toolName = toolName.substr(dirStart + 1);
+        }
     }
 
-    if (canaryApp.measureLargeTransfer)
+    int cliOptionIndex = 0;
+    bool forkProcesses = false;
+
+    while (aws_cli_getopt_long(argc, argv, optstring, options, &cliOptionIndex) != -1)
     {
-        canaryApp.publisher->SetMetricTransferSize(MetricTransferSize::Large);
-        canaryApp.measureTransferRate->MeasureLargeObjectTransfer();
+        switch ((CLIOption)cliOptionIndex)
+        {
+            case CLIOption::ToolName:
+                canaryAppOptions.toolName = aws_cli_optarg;
+                break;
+            case CLIOption::InstanceType:
+                canaryAppOptions.instanceType = aws_cli_optarg;
+                break;
+            case CLIOption::MeasureSinglePartTransfer:
+                canaryAppOptions.measureSinglePartTransfer = true;
+                break;
+            case CLIOption::MeasureHttpTransfer:
+                canaryAppOptions.measureHttpTransfer = true;
+                canaryAppOptions.httpTestEndpoint = aws_cli_optarg;
+                break;
+            case CLIOption::Logging:
+                canaryAppOptions.loggingEnabled = true;
+                break;
+            case CLIOption::SendEncrypted:
+                canaryAppOptions.sendEncrypted = true;
+                break;
+            case CLIOption::Fork:
+#ifndef WIN32
+                forkProcesses = true;
+#else
+                AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Fork mode not supported on Windows.");
+#endif
+                break;
+            case CLIOption::NumTransfers:
+                ParseTransferPair(aws_cli_optarg, canaryAppOptions.numUpTransfers, canaryAppOptions.numDownTransfers);
+                break;
+            case CLIOption::NumConcurrentTransfers:
+                ParseTransferPair(
+                    aws_cli_optarg,
+                    canaryAppOptions.numUpConcurrentTransfers,
+                    canaryAppOptions.numDownConcurrentTransfers);
+                break;
+            case CLIOption::DownloadOnly:
+                canaryAppOptions.downloadOnly = true;
+                break;
+            case CLIOption::RehydrateBackup:
+                canaryAppOptions.rehydrateBackupObjectName = aws_cli_optarg;
+                canaryAppOptions.rehydrateBackup = true;
+                break;
+            case CLIOption::DownloadBucketName:
+                canaryAppOptions.downloadBucketName = aws_cli_optarg;
+                break;
+            case CLIOption::DownloadObjectName:
+                canaryAppOptions.downloadObjectName = aws_cli_optarg;
+                break;
+            default:
+                AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Unknown CLI option used.");
+                break;
+        }
     }
+
+    InitNumConcurrentTransfers(canaryAppOptions.numUpTransfers, canaryAppOptions.numUpConcurrentTransfers);
+    InitNumConcurrentTransfers(canaryAppOptions.numDownTransfers, canaryAppOptions.numDownConcurrentTransfers);
+
+    std::vector<CanaryAppChildProcess> children;
+
+#ifndef WIN32
+    if (forkProcesses)
+    {
+        canaryAppOptions.isParentProcess = true;
+
+        uint32_t maxNumTransfers = std::max(canaryAppOptions.numUpTransfers, canaryAppOptions.numDownTransfers);
+
+        for (uint32_t i = 0; i < maxNumTransfers; ++i)
+        {
+            int32_t pipeParentToChild[2];
+            int32_t pipeChildToParent[2];
+
+            pipe(pipeParentToChild);
+            pipe(pipeChildToParent);
+
+            pid_t childPid = fork();
+
+            if (childPid == 0)
+            {
+                canaryAppOptions.isParentProcess = false;
+                canaryAppOptions.isChildProcess = true;
+                canaryAppOptions.readFromParentPipe = pipeParentToChild[0];
+                canaryAppOptions.writeToParentPipe = pipeChildToParent[1];
+                canaryAppOptions.childProcessIndex = i;
+                canaryAppOptions.numUpTransfers = 1;
+                canaryAppOptions.numUpConcurrentTransfers = 1;
+                canaryAppOptions.numDownTransfers = 1;
+                canaryAppOptions.numDownConcurrentTransfers = 1;
+                break;
+            }
+            else
+            {
+                if (childPid == -1)
+                {
+                    AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Error creating child process.");
+
+                    close(pipeChildToParent[0]);
+                    close(pipeChildToParent[1]);
+                    close(pipeParentToChild[0]);
+                    close(pipeParentToChild[1]);
+                }
+                else
+                {
+                    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Created child process for transfer %d", i);
+
+                    children.emplace_back(childPid, pipeChildToParent[0], pipeParentToChild[1]);
+                }
+            }
+        }
+    }
+#endif
+
+    CanaryApp canaryApp(std::move(canaryAppOptions), std::move(children));
+    canaryApp.Run();
+
+#ifndef WIN32
+    if (forkProcesses && canaryApp.GetOptions().isParentProcess)
+    {
+        bool waitingForChildren = true;
+
+        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Waiting for child processes to complete...");
+
+        while (waitingForChildren)
+        {
+            int status = 0;
+            wait(&status);
+
+            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "One or more child processes completed.");
+
+            waitingForChildren = errno != ECHILD;
+        }
+    }
+#endif
 
     return 0;
 }
