@@ -24,7 +24,7 @@
 #include <mutex>
 
 class S3ObjectTransport;
-struct CanaryApp;
+class CanaryApp;
 
 enum class PartFinishResponse
 {

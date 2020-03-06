@@ -67,12 +67,11 @@ int filterLog(
 }
 
 CanaryApp::CanaryApp(int argc, char *argv[])
-    : traceAllocator(DefaultAllocator()), apiHandle(traceAllocator), eventLoopGroup(72, traceAllocator),
+    : traceAllocator(DefaultAllocator()), apiHandle(traceAllocator), eventLoopGroup(2, traceAllocator),
       defaultHostResolver(eventLoopGroup, 60, 3600, traceAllocator),
       bootstrap(eventLoopGroup, defaultHostResolver, traceAllocator), platformName(CanaryUtil::GetPlatformName()),
-      toolName("NA"), instanceType("unknown"), region("us-west-2"), cutOffTimeSmallObjects(10.0),
-      cutOffTimeLargeObjects(10.0), mtu(0), measureLargeTransfer(false), measureSmallTransfer(false),
-      usingNumaControl(false), sendEncrypted(false)
+      toolName("NA"), instanceType("unknown"), region("us-west-2"), mtu(0), measureLargeTransfer(false),
+      measureSmallTransfer(false), usingNumaControl(false), sendEncrypted(false), forkProcesses(false)
 {
 #ifdef __linux__
     rlimit fdsLimit;
@@ -95,30 +94,28 @@ CanaryApp::CanaryApp(int argc, char *argv[])
     {
         ToolName,
         InstanceType,
-        CutOffTimeSmall,
-        CutOffTimelarge,
         MeasureLargeTransfer,
         MeasureSmallTransfer,
         Logging,
         UsingNumaControl,
         SendEncrypted,
         MTU,
+        Fork,
 
         MAX
     };
 
     const aws_cli_option options[] = {{"toolName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 't'},
                                       {"instanceType", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'i'},
-                                      {"cutOffTimeSmall", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'c'},
-                                      {"cutOffTimeLarge", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'C'},
                                       {"measureLargeTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'l'},
                                       {"measureSmallTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 's'},
                                       {"logging", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'd'},
                                       {"usingNumaControl", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'n'},
                                       {"sendEncrypted", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'e'},
-                                      {"mtu", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'm'}};
+                                      {"mtu", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'm'},
+                                      {"fork", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'f'}};
 
-    const char *optstring = "t:i:c:C:lsdnem:";
+    const char *optstring = "t:i:c:C:lsdnem:f";
     toolName = argc >= 1 ? argv[0] : "NA";
 
     size_t dirStart = toolName.rfind('\\');
@@ -141,12 +138,6 @@ CanaryApp::CanaryApp(int argc, char *argv[])
             case CLIOption::InstanceType:
                 instanceType = aws_cli_optarg;
                 break;
-            case CLIOption::CutOffTimeSmall:
-                cutOffTimeSmallObjects = atof(aws_cli_optarg);
-                break;
-            case CLIOption::CutOffTimelarge:
-                cutOffTimeLargeObjects = atof(aws_cli_optarg);
-                break;
             case CLIOption::MeasureLargeTransfer:
                 measureLargeTransfer = true;
                 break;
@@ -164,6 +155,9 @@ CanaryApp::CanaryApp(int argc, char *argv[])
                 break;
             case CLIOption::MTU:
                 mtu = atoi(aws_cli_optarg);
+                break;
+            case CLIOption::Fork:
+                forkProcesses = true;
                 break;
             default:
                 AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Unknown CLI option used.");

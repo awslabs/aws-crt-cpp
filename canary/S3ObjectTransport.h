@@ -39,7 +39,7 @@ using SendPartCallback = std::function<std::shared_ptr<Aws::Crt::Io::InputStream
 using ReceivePartCallback = std::function<
     void(const std::shared_ptr<MultipartTransferState::PartInfo> &partInfo, const Aws::Crt::ByteCursor &data)>;
 
-struct CanaryApp;
+class CanaryApp;
 
 struct aws_allocator;
 struct aws_event_loop;
@@ -91,6 +91,8 @@ class S3ObjectTransport
 
     void WarmDNSCache(uint32_t numTransfers);
 
+    void RecreateConnectionMangers();
+
   private:
     using CreateMultipartUploadFinished = std::function<void(int32_t error, const Aws::Crt::String &uploadId)>;
     using CompleteMultipartUploadFinished = std::function<void(int32_t error)>;
@@ -107,6 +109,8 @@ class S3ObjectTransport
 
     std::vector<std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager>> m_connManagerTrashCan;
     std::vector<std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager>> m_connManagers;
+    std::vector<Aws::Crt::Http::HttpClientConnectionManagerOptions> m_connManagerOptions;
+    
     std::atomic<uint32_t> m_connManagersUseCount;
     std::atomic<uint32_t> m_activeRequestsCount;
 

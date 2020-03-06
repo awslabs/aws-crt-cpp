@@ -70,7 +70,7 @@ struct Metric
     void SetTimestampNow();
 };
 
-struct CanaryApp;
+class CanaryApp;
 
 /**
  * Publishes an aggregated metrics collection to cloud watch at 'publishFrequency'

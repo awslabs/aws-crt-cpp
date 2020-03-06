@@ -10,8 +10,8 @@
 
 class S3ObjectTransport;
 class MetricsPublisher;
+class CanaryApp;
 struct aws_event_loop;
-struct CanaryApp;
 
 class MeasureTransferRateStream : public Aws::Crt::Io::InputStream
 {
@@ -71,7 +71,7 @@ class MeasureTransferRate
     aws_event_loop *m_schedulingLoop;
     aws_task m_pulseMetricsTask;
 
-    uint32_t PerformMeasurement(
+    bool PerformMeasurement(
         const char *filenamePrefix,
         uint32_t numTransfers,
         uint64_t objectSize,
@@ -80,14 +80,4 @@ class MeasureTransferRate
     void SchedulePulseMetrics();
 
     static void s_PulseMetricsTask(aws_task *task, void *arg, aws_task_status status);
-
-	struct MeasurementTaskArgs
-    {
-        Aws::Crt::String key;
-        uint64_t objectSize;
-        NotifyTransferFinished notifyTransferFinished;
-        TransferFunction transferFunction;
-    };
-
-    static void s_PerformMeasurementTask(aws_task *task, void *arg, aws_task_status status);
 };

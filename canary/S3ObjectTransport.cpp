@@ -81,62 +81,87 @@ void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
         ++desiredNumberOfAddresses;
     }
 
-    // TODO use a proper future or signal
     while ((m_canaryApp.defaultHostResolver.GetHostAddressCount(m_endpoint) / 2) < desiredNumberOfAddresses)
     {
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
+    while((uint32_t)m_connManagers.size() < desiredNumberOfAddresses)
     {
-        std::atomic<uint32_t> numAddressesRetrieved(0);
-        std::mutex connManagersInitializeMutex;
+        std::mutex adressRetrievedMutex;
+        std::condition_variable addressRetrievedSignal;
+        uint32_t numAddressesRetrieved = 0;
 
-        for (uint32_t i = 0; i < desiredNumberOfAddresses; ++i)
-        {
-            m_canaryApp.defaultHostResolver.ResolveHost(
-                m_endpoint,
-                [this, &numAddressesRetrieved, &connManagersInitializeMutex](
-                    Io::HostResolver &, const Vector<Io::HostAddress> &addresses, int) {
-                    for (const Io::HostAddress &addr : addresses)
+        m_canaryApp.defaultHostResolver.ResolveHost(
+            m_endpoint,
+            [this, &numAddressesRetrieved, &adressRetrievedMutex, &addressRetrievedSignal](
+                Io::HostResolver &, const Vector<Io::HostAddress> &addresses, int) {
+                
+                uint32_t numAddressesUsed = 0;
+
+                for (const Io::HostAddress &addr : addresses)
+                {
+                    if(addr.record_type == AWS_ADDRESS_RECORD_TYPE_AAAA)
                     {
-                        std::lock_guard<std::mutex> lock(connManagersInitializeMutex);
-
-                        Http::HttpClientConnectionManagerOptions connectionManagerOptions;
-
-                        connectionManagerOptions.ConnectionOptions.HostName = (const char *)addr.address->bytes;
-                        connectionManagerOptions.ConnectionOptions.Port = m_canaryApp.sendEncrypted ? 443 : 80;
-                        connectionManagerOptions.ConnectionOptions.SocketOptions.SetConnectTimeoutMs(3000);
-                        connectionManagerOptions.ConnectionOptions.SocketOptions.SetSocketType(AWS_SOCKET_STREAM);
-                        connectionManagerOptions.ConnectionOptions.InitialWindowSize = SIZE_MAX;
-
-                        if (m_canaryApp.sendEncrypted)
-                        {
-                            aws_byte_cursor serverName = ByteCursorFromCString(m_endpoint.c_str());
-                            auto connOptions = m_canaryApp.tlsContext.NewConnectionOptions();
-                            connOptions.SetServerName(serverName);
-                            connectionManagerOptions.ConnectionOptions.TlsOptions = connOptions;
-                        }
-
-                        connectionManagerOptions.ConnectionOptions.Bootstrap = &m_canaryApp.bootstrap;
-                        connectionManagerOptions.MaxConnections = 5000;
-
-                        std::shared_ptr<Http::HttpClientConnectionManager> connManager =
-                            Http::HttpClientConnectionManager::NewClientConnectionManager(
-                                connectionManagerOptions, g_allocator);
-
-                        m_connManagers.push_back(connManager);
+                        continue;
                     }
 
-                    numAddressesRetrieved += (uint32_t)addresses.size();
-                });
-        }
+                    Http::HttpClientConnectionManagerOptions connectionManagerOptions;
 
-        while (numAddressesRetrieved < desiredNumberOfAddresses)
-        {
-        }
+                    connectionManagerOptions.ConnectionOptions.HostName = (const char *)addr.address->bytes;
+                    connectionManagerOptions.ConnectionOptions.Port = m_canaryApp.sendEncrypted ? 443 : 80;
+                    connectionManagerOptions.ConnectionOptions.SocketOptions.SetConnectTimeoutMs(3000);
+                    connectionManagerOptions.ConnectionOptions.SocketOptions.SetSocketType(AWS_SOCKET_STREAM);
+                    connectionManagerOptions.ConnectionOptions.InitialWindowSize = SIZE_MAX;
+
+                    if (m_canaryApp.sendEncrypted)
+                    {
+                        aws_byte_cursor serverName = ByteCursorFromCString(m_endpoint.c_str());
+                        auto connOptions = m_canaryApp.tlsContext.NewConnectionOptions();
+                        connOptions.SetServerName(serverName);
+                        connectionManagerOptions.ConnectionOptions.TlsOptions = connOptions;
+                    }
+
+                    connectionManagerOptions.ConnectionOptions.Bootstrap = &m_canaryApp.bootstrap;
+                    connectionManagerOptions.MaxConnections = 5000;
+
+                    std::shared_ptr<Http::HttpClientConnectionManager> connManager =
+                        Http::HttpClientConnectionManager::NewClientConnectionManager(
+                            connectionManagerOptions, g_allocator);
+
+                    m_connManagerOptions.push_back(connectionManagerOptions);
+                    m_connManagers.push_back(connManager);
+
+                    ++numAddressesUsed;
+                }
+
+                {
+                    std::lock_guard<std::mutex> lock(adressRetrievedMutex);
+                    numAddressesRetrieved += numAddressesUsed;
+                }
+
+                addressRetrievedSignal.notify_one();
+            });
+
+        std::unique_lock<std::mutex> waitLock(adressRetrievedMutex);
+        addressRetrievedSignal.wait(waitLock, [&numAddressesRetrieved]() { return numAddressesRetrieved >= 1; });         
     }
 
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "DNS cache warmed.");
+}
+
+void S3ObjectTransport::RecreateConnectionMangers()
+{
+    m_connManagers.clear();
+
+    for(const Http::HttpClientConnectionManagerOptions & options : m_connManagerOptions)
+    {
+        std::shared_ptr<Http::HttpClientConnectionManager> connManager =
+            Http::HttpClientConnectionManager::NewClientConnectionManager(
+                options, g_allocator);
+
+        m_connManagers.push_back(connManager);
+    }
 }
 
 std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> S3ObjectTransport::GetNextConnManager()
@@ -176,6 +201,7 @@ void S3ObjectTransport::MakeSignedRequest(
 
             connManager->AcquireConnection([this, requestOptions, signedRequest, callback](
                                                std::shared_ptr<Http::HttpClientConnection> conn, int connErrorCode) {
+
                 if ((conn == nullptr || !conn->IsOpen()) && connErrorCode == AWS_ERROR_SUCCESS)
                 {
                     connErrorCode = AWS_ERROR_UNKNOWN;
@@ -217,6 +243,7 @@ void S3ObjectTransport::MakeSignedRequest_SendRequest(
     // being alive which can cause crashes when they aren't around.
     requestOptionsToSend.onStreamComplete =
         [this, conn, requestOptions, signedRequest](Http::HttpStream &stream, int errorCode) {
+
             if (requestOptions.onStreamComplete != nullptr)
             {
                 requestOptions.onStreamComplete(stream, errorCode);

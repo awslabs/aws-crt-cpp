@@ -3,11 +3,15 @@
 #include "CanaryUtil.h"
 #include "MetricsPublisher.h"
 #include "S3ObjectTransport.h"
+#include <condition_variable>
+#include <mutex>
 #include <aws/common/clock.h>
 #include <aws/common/system_info.h>
 #include <aws/crt/http/HttpConnection.h>
-//#include <execinfo.h>
-//#include <unistd.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <iostream>
 
 using namespace Aws::Crt;
 
@@ -133,39 +137,22 @@ MeasureTransferRate::MeasureTransferRate(CanaryApp &canaryApp) : m_canaryApp(can
 
 MeasureTransferRate::~MeasureTransferRate() {}
 
-void MeasureTransferRate::s_PerformMeasurementTask(aws_task *task, void *arg, aws_task_status status)
-{
-	if (status != AWS_TASK_STATUS_RUN_READY)
-	{
-        return;
-	}
-
-    MeasurementTaskArgs *args = (MeasurementTaskArgs *)arg;
-
-    args->transferFunction(std::move(args->key), args->objectSize, std::move(args->notifyTransferFinished));
-
-    Aws::Crt::Delete<MeasurementTaskArgs>(args, g_allocator);
-    Aws::Crt::Delete<aws_task>(task, g_allocator);
-}
-
-uint32_t MeasureTransferRate::PerformMeasurement(
+bool MeasureTransferRate::PerformMeasurement(
     const char *filenamePrefix,
     uint32_t numTransfers,
     uint64_t objectSize,
     TransferFunction &&transferFunction)
 {
     uint64_t counter = INT64_MAX;
-    std::atomic<uint32_t> numInProgress(0);
     std::atomic<uint32_t> numCompleted(0);
-
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting performance measurement.");
 
     m_canaryApp.transport->WarmDNSCache(numTransfers);
 
-    const uint64_t delayNS = aws_timestamp_convert(1000ULL, AWS_TIMESTAMP_MILLIS, AWS_TIMESTAMP_NANOS, NULL);
-    uint64_t now = 0;
-    aws_event_loop_current_clock_time(m_schedulingLoop, &now);
-    uint64_t measurmentTaskTime = now + delayNS;
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting performance measurement.");
+
+    std::mutex completionMutex; 
+    std::condition_variable completionSignal;
+    bool isChildProcess = false;
 
     for (uint32_t i = 0; i < numTransfers; ++i)
     {
@@ -173,44 +160,95 @@ uint32_t MeasureTransferRate::PerformMeasurement(
         {
             counter = INT64_MAX;
         }
+        else
+        {
+            --counter;
+        }
+        
+        if(m_canaryApp.forkProcesses)
+        {
+            pid_t childId = fork();
+            isChildProcess = childId == 0;
 
-        StringStream keyStream;
-        keyStream << filenamePrefix << counter--;
-        String key = keyStream.str();
-        ++numInProgress;
-
-        NotifyTransferFinished notifyTransferFinished = [&numCompleted, &numInProgress](int32_t errorCode) {
-            if (errorCode == AWS_ERROR_SUCCESS)
+            if(!isChildProcess)
             {
-                ++numCompleted;
+                if(childId == -1)
+                {
+                    AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Error creating child process.");
+                }
+                else
+                {
+                    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Created child process for transfer %d", i);
+                }
+                
+                continue;
             }
             else
             {
-                // forceStop = true;
+                m_canaryApp.apiHandle.InitializeLogging(LogLevel::Debug, stderr);
+                m_canaryApp.transport->RecreateConnectionMangers();
             }
+        }
 
-            --numInProgress;
+        StringStream keyStream;
+        keyStream << filenamePrefix << counter;
+        String key = keyStream.str();
+
+        NotifyTransferFinished notifyTransferFinished = [&completionSignal, &numCompleted, numTransfers, isChildProcess](int32_t errorCode) {
+            uint32_t numCompletedLocal = numCompleted.fetch_add(1)+1;
+
+            if(isChildProcess)
+            {
+                if(numCompletedLocal == 1)
+                {
+                    completionSignal.notify_one();
+                } 
+            }
+            else if(numCompletedLocal == numTransfers)
+            {         
+                completionSignal.notify_one();
+            }
         };
 
-        // transferFunction(std::move(key), objectSize, std::move(notifyTransferFinished));
+        transferFunction(std::move(key), objectSize, std::move(notifyTransferFinished));
 
-        MeasurementTaskArgs *args = Aws::Crt::New<MeasurementTaskArgs>(g_allocator);
-        args->key = std::move(key);
-        args->objectSize = objectSize;
-        args->transferFunction = transferFunction;
-        args->notifyTransferFinished = std::move(notifyTransferFinished);
-
-        aws_task *task = Aws::Crt::New<aws_task>(g_allocator);
-        aws_task_init(task, MeasureTransferRate::s_PerformMeasurementTask, (void *)args, "PerformMeasurmentTask");
-
-        aws_event_loop_schedule_task_future(m_schedulingLoop, task, measurmentTaskTime);
+        if(isChildProcess)
+        {
+            break;
+        }
     }
 
-    while (numInProgress > 0)
+    if(m_canaryApp.forkProcesses)
     {
+        if(isChildProcess)
+        {
+            std::unique_lock<std::mutex> guard(completionMutex);
+            completionSignal.wait(guard, [&numCompleted]() { return numCompleted.load() >= 1; });
+        }
+        else
+        {
+            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Waiting for child processes to complete.");
+
+            bool waitingForChildren = true;
+
+            while(waitingForChildren)
+            {
+                int status = 0;
+                wait(&status);
+
+                AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "One or more child processes completed.");
+
+                waitingForChildren = errno != ECHILD;
+            }
+        }
+    }
+    else
+    {
+        std::unique_lock<std::mutex> guard(completionMutex);
+        completionSignal.wait(guard, [&numCompleted, numTransfers]() { return numCompleted.load() >= numTransfers; });
     }
 
-    return numCompleted.load();
+    return isChildProcess;
 }
 
 void MeasureTransferRate::MeasureSmallObjectTransfer()
@@ -218,7 +256,7 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
     uint32_t numTransfers = 160;
     const char *filenamePrefix = "crt-canary-obj-small-";
 
-    PerformMeasurement(
+    bool isChildProcess = PerformMeasurement(
         filenamePrefix,
         numTransfers,
         SmallObjectSize,
@@ -238,26 +276,29 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
                 });
         });
 
-    PerformMeasurement(
-        filenamePrefix,
-        numTransfers,
-        SmallObjectSize,
-        [this](String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
-            std::shared_ptr<MultipartTransferState::PartInfo> singlePart = MakeShared<MultipartTransferState::PartInfo>(
-                m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, 0LL, SmallObjectSize);
+    if(!isChildProcess)
+    {
+        PerformMeasurement(
+            filenamePrefix,
+            numTransfers,
+            SmallObjectSize,
+            [this](String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
+                std::shared_ptr<MultipartTransferState::PartInfo> singlePart = MakeShared<MultipartTransferState::PartInfo>(
+                    m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, 0LL, SmallObjectSize);
 
-            m_canaryApp.transport->GetObject(
-                key,
-                0,
-                [singlePart](const Http::HttpStream &, const ByteCursor &cur) {
-                    singlePart->AddDataDownMetric(cur.len);
-                },
-                [this, singlePart, notifyTransferFinished](int32_t errorCode) {
-                    m_canaryApp.publisher->AddTransferStatusDataPoint(errorCode == AWS_ERROR_SUCCESS);
-                    singlePart->FlushDataDownMetrics();
-                    notifyTransferFinished(errorCode);
-                });
-        });
+                m_canaryApp.transport->GetObject(
+                    key,
+                    0,
+                    [singlePart](const Http::HttpStream &, const ByteCursor &cur) {
+                        singlePart->AddDataDownMetric(cur.len);
+                    },
+                    [this, singlePart, notifyTransferFinished](int32_t errorCode) {
+                        m_canaryApp.publisher->AddTransferStatusDataPoint(errorCode == AWS_ERROR_SUCCESS);
+                        singlePart->FlushDataDownMetrics();
+                        notifyTransferFinished(errorCode);
+                    });
+            });
+    }
 
     aws_event_loop_cancel_task(m_schedulingLoop, &m_pulseMetricsTask);
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
@@ -269,7 +310,7 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
 {
     const char *filenamePrefix = "crt-canary-obj-large-";
 
-    PerformMeasurement(
+    bool isChildProcess = PerformMeasurement(
         filenamePrefix,
         1,
         LargeObjectSize,
@@ -284,7 +325,7 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
                     return MakeShared<MeasureTransferRateStream>(
                         m_canaryApp.traceAllocator, m_canaryApp, partInfo, m_canaryApp.traceAllocator);
                 },
-                [this, key, notifyTransferFinished](int32_t errorCode, uint32_t) {
+                [key, notifyTransferFinished](int32_t errorCode, uint32_t) {
                     AWS_LOGF_INFO(
                         AWS_LS_CRT_CPP_CANARY,
                         "Upload finished for object %s with error code %d",
@@ -295,26 +336,29 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
                 });
         });
 
-    PerformMeasurement(
-        filenamePrefix,
-        1,
-        LargeObjectSize,
-        [this](String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
-            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting download of object %s...", key.c_str());
+    if(!isChildProcess)
+    {
+        PerformMeasurement(
+            filenamePrefix,
+            1,
+            LargeObjectSize,
+            [this](String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
+                AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting download of object %s...", key.c_str());
 
-            m_canaryApp.transport->GetObjectMultipart(
-                key,
-                MeasureTransferRate::LargeObjectNumParts,
-                [](const std::shared_ptr<MultipartTransferState::PartInfo> &, const ByteCursor &) {},
-                [notifyTransferFinished, key](int32_t errorCode) {
-                    AWS_LOGF_INFO(
-                        AWS_LS_CRT_CPP_CANARY,
-                        "Download finished for object %s with error code %d",
-                        key.c_str(),
-                        errorCode);
-                    notifyTransferFinished(errorCode);
-                });
-        });
+                m_canaryApp.transport->GetObjectMultipart(
+                    key,
+                    MeasureTransferRate::LargeObjectNumParts,
+                    [](const std::shared_ptr<MultipartTransferState::PartInfo> &, const ByteCursor &) {},
+                    [notifyTransferFinished, key](int32_t errorCode) {
+                        AWS_LOGF_INFO(
+                            AWS_LS_CRT_CPP_CANARY,
+                            "Download finished for object %s with error code %d",
+                            key.c_str(),
+                            errorCode);
+                        notifyTransferFinished(errorCode);
+                    });
+            });
+    }
 
     aws_event_loop_cancel_task(m_schedulingLoop, &m_pulseMetricsTask);
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
