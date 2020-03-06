@@ -22,7 +22,7 @@
 #include <aws/common/mutex.h>
 #include <aws/crt/Types.h>
 
-struct CanaryApp;
+class CanaryApp;
 class S3ObjectTransport;
 
 namespace Aws

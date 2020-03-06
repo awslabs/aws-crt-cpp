@@ -10,8 +10,10 @@ class MetricsPublisher;
 class S3ObjectTransport;
 class MeasureTransferRate;
 
-struct CanaryApp
+class CanaryApp
 {
+public:
+
     CanaryApp(int argc, char *argv[]);
 
     Aws::Crt::Allocator *traceAllocator;
@@ -22,17 +24,19 @@ struct CanaryApp
     Aws::Crt::Io::TlsContext tlsContext;
     std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> credsProvider;
     std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> signer;
+
     Aws::Crt::String platformName;
     Aws::Crt::String toolName;
     Aws::Crt::String instanceType;
     Aws::Crt::String region;
-    double cutOffTimeSmallObjects;
-    double cutOffTimeLargeObjects;
+
     uint32_t mtu;
-    bool measureLargeTransfer;
-    bool measureSmallTransfer;
-    bool usingNumaControl;
-    bool sendEncrypted;
+
+    uint32_t measureLargeTransfer : 1;
+    uint32_t measureSmallTransfer : 1;
+    uint32_t usingNumaControl : 1;
+    uint32_t sendEncrypted : 1;
+    uint32_t forkProcesses : 1;
 
     std::shared_ptr<MetricsPublisher> publisher;
     std::shared_ptr<S3ObjectTransport> transport;
