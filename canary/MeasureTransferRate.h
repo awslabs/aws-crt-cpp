@@ -71,8 +71,9 @@ class MeasureTransferRate
     aws_event_loop *m_schedulingLoop;
     aws_task m_pulseMetricsTask;
 
-    bool PerformMeasurement(
+    void PerformMeasurement(
         const char *filenamePrefix,
+        const char *keyPrefix,
         uint32_t numTransfers,
         uint64_t objectSize,
         TransferFunction &&transferFunction);

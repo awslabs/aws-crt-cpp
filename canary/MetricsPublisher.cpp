@@ -49,7 +49,7 @@ MetricsPublisher::MetricsPublisher(
     m_publishTask.arg = this;
 
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
-    m_endpoint = "monitoring." + canaryApp.region + ".amazonaws.com";
+    m_endpoint = String() + "monitoring." + canaryApp.GetOptions().region.c_str() + ".amazonaws.com";
 
     connectionManagerOptions.ConnectionOptions.HostName = m_endpoint;
     connectionManagerOptions.ConnectionOptions.Port = 443;
@@ -153,11 +153,13 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
         bodyStream << "Namespace=" << *Namespace << "&";
     }
 
+    const CanaryAppOptions &options = m_canaryApp.GetOptions();
+
     size_t metricCount = 1;
     const char *transferSizeString = s_MetricTransferToString(m_transferSize);
-    const char *platformName = m_canaryApp.platformName.c_str();
-    const char *toolName = m_canaryApp.toolName.c_str();
-    const char *instanceType = m_canaryApp.instanceType.c_str();
+    const char *platformName = options.platformName.c_str();
+    const char *toolName = options.toolName.c_str();
+    const char *instanceType = options.instanceType.c_str();
     const uint64_t largeObjectPartSize =
         MeasureTransferRate::LargeObjectSize / MeasureTransferRate::LargeObjectNumParts;
 
@@ -184,13 +186,13 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Name=TransferSize&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Value=" << transferSizeString << "&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.5.Name=UsingNumaControl&";
-        bodyStream << "MetricData.member." << metricCount
-                   << ".Dimensions.member.5.Value=" << m_canaryApp.usingNumaControl << "&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.5.Value=" << options.usingNumaControl
+                   << "&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.6.Name=Encrypted&";
-        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.6.Value=" << m_canaryApp.sendEncrypted
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.6.Value=" << options.sendEncrypted
                    << "&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.7.Name=MTU&";
-        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.7.Value=" << m_canaryApp.mtu << "&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.7.Value=" << options.mtu << "&";
 
         if (m_transferSize == MetricTransferSize::Large)
         {
@@ -334,7 +336,7 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
         request->SetPath(path);
 
         Auth::AwsSigningConfig signingConfig(g_allocator);
-        signingConfig.SetRegion(publisher->m_canaryApp.region);
+        signingConfig.SetRegion(publisher->m_canaryApp.GetOptions().region.c_str());
         signingConfig.SetCredentialsProvider(publisher->m_canaryApp.credsProvider);
         signingConfig.SetService("monitoring");
         signingConfig.SetBodySigningType(Auth::BodySigningType::SignBody);

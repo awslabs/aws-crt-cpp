@@ -53,6 +53,7 @@ class S3ObjectTransport
 {
   public:
     static const uint32_t MaxStreams;
+    static const uint32_t TransfersPerAddress;
     static const int32_t S3GetObjectResponseStatus_PartialContent;
 
     S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::String &bucket);
@@ -91,7 +92,11 @@ class S3ObjectTransport
 
     void WarmDNSCache(uint32_t numTransfers);
 
-    void RecreateConnectionMangers();
+    void SpawnConnectionManagers();
+
+    const Aws::Crt::String &GetAddressForTransfer(uint32_t index);
+
+    void SeedAddressCache(const Aws::Crt::String &address);
 
   private:
     using CreateMultipartUploadFinished = std::function<void(int32_t error, const Aws::Crt::String &uploadId)>;
@@ -109,8 +114,8 @@ class S3ObjectTransport
 
     std::vector<std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager>> m_connManagerTrashCan;
     std::vector<std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager>> m_connManagers;
-    std::vector<Aws::Crt::Http::HttpClientConnectionManagerOptions> m_connManagerOptions;
-    
+    std::vector<Aws::Crt::String> m_addressCache;
+
     std::atomic<uint32_t> m_connManagersUseCount;
     std::atomic<uint32_t> m_activeRequestsCount;
 
