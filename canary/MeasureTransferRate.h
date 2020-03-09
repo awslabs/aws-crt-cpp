@@ -75,6 +75,7 @@ class MeasureTransferRate
         const char *filenamePrefix,
         const char *keyPrefix,
         uint32_t numTransfers,
+        uint32_t numTransfersToWarmDNSCache,
         uint64_t objectSize,
         TransferFunction &&transferFunction);
 
