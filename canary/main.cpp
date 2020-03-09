@@ -150,9 +150,6 @@ int main(int argc, char *argv[])
                 canaryAppOptions.writeToParentPipe = pipeChildToParent[1];
                 canaryAppOptions.childProcessIndex = i;
                 canaryAppOptions.numTransfers = 1;
-
-                close(pipeParentToChild[1]);
-                close(pipeChildToParent[0]);
                 break;
             }
             else
@@ -171,9 +168,6 @@ int main(int argc, char *argv[])
                     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Created child process for transfer %d", i);
 
                     children.emplace_back(childPid, pipeChildToParent[0], pipeParentToChild[1]);
-
-                    close(pipeChildToParent[1]);
-                    close(pipeParentToChild[0]);
                 }
             }
         }
