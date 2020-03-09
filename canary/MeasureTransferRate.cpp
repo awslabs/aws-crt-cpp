@@ -140,6 +140,7 @@ void MeasureTransferRate::PerformMeasurement(
     const char *filenamePrefix,
     const char *keyPrefix,
     uint32_t numTransfers,
+    uint32_t numTransfersToWarmDNSCache,
     uint64_t objectSize,
     TransferFunction &&transferFunction)
 {
@@ -150,7 +151,7 @@ void MeasureTransferRate::PerformMeasurement(
 
     if (m_canaryApp.GetOptions().isParentProcess)
     {
-        m_canaryApp.transport->WarmDNSCache(numTransfers);
+        m_canaryApp.transport->WarmDNSCache(numTransfersToWarmDNSCache);
 
         for (uint32_t i = 0; i < numTransfers; ++i)
         {
@@ -176,7 +177,7 @@ void MeasureTransferRate::PerformMeasurement(
     }
     else
     {
-        m_canaryApp.transport->WarmDNSCache(numTransfers);
+        m_canaryApp.transport->WarmDNSCache(numTransfersToWarmDNSCache);
         m_canaryApp.transport->SpawnConnectionManagers();
     }
 
@@ -228,6 +229,7 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
         filenamePrefix,
         "smallObjectUp-",
         m_canaryApp.GetOptions().numTransfers,
+        m_canaryApp.GetOptions().numTransfers,
         SmallObjectSize,
         [this](String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
             std::shared_ptr<MultipartTransferState::PartInfo> singlePart = MakeShared<MultipartTransferState::PartInfo>(
@@ -248,6 +250,7 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
     PerformMeasurement(
         filenamePrefix,
         "smallObjectDown-",
+        m_canaryApp.GetOptions().numTransfers,
         m_canaryApp.GetOptions().numTransfers,
         SmallObjectSize,
         [this](String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
@@ -281,6 +284,7 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
         filenamePrefix,
         "largeObjectUp-",
         m_canaryApp.GetOptions().numTransfers,
+        S3ObjectTransport::MaxStreams,
         LargeObjectSize,
         [this](String &&key, uint64_t objectSize, NotifyTransferFinished &&notifyTransferFinished) {
             AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting upload of object %s...", key.c_str());
@@ -308,6 +312,7 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
         filenamePrefix,
         "largeObjectDown-",
         m_canaryApp.GetOptions().numTransfers,
+        S3ObjectTransport::MaxStreams,
         LargeObjectSize,
         [this](String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
             AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting download of object %s...", key.c_str());
