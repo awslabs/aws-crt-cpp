@@ -182,6 +182,8 @@ endif()
 
 add_library(${PROJECT_NAME} ${AWS_CRT_CPP_SRC})
 
+target_compile_definitions(${PROJECT_NAME} PRIVATE -DCJSON_HIDE_SYMBOLS)
+
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(${PROJECT_NAME} PUBLIC -DAWS_CRT_CPP_USE_IMPORT_EXPORT)
     target_compile_definitions(${PROJECT_NAME} PRIVATE -DAWS_CRT_CPP_EXPORTS)
