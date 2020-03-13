@@ -52,13 +52,15 @@ class MeasureTransferRate
     MeasureTransferRate(CanaryApp &canaryApp);
     ~MeasureTransferRate();
 
+    void MeasureHttpTransfer();
     void MeasureSmallObjectTransfer();
     void MeasureLargeObjectTransfer();
 
   private:
-    struct MeasureAllocationsArgs
+    enum MeasurementFlags
     {
-        MeasureTransferRate &measureTransferRate;
+        NoFileSuffix = 0x00000001,
+        DontWarmDNSCache = 0x00000002
     };
 
     using NotifyTransferFinished = std::function<void(int32_t errorCode)>;
@@ -77,6 +79,7 @@ class MeasureTransferRate
         uint32_t numTransfers,
         uint32_t numTransfersToWarmDNSCache,
         uint64_t objectSize,
+        uint32_t flags,
         TransferFunction &&transferFunction);
 
     void SchedulePulseMetrics();

@@ -46,6 +46,7 @@ int main(int argc, char *argv[])
         InstanceType,
         MeasureLargeTransfer,
         MeasureSmallTransfer,
+        MeasureHttpTransfer,
         Logging,
         UsingNumaControl,
         SendEncrypted,
@@ -60,6 +61,7 @@ int main(int argc, char *argv[])
                                       {"instanceType", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'i'},
                                       {"measureLargeTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'l'},
                                       {"measureSmallTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 's'},
+                                      {"measureHttpTransfer", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'h'},
                                       {"logging", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'd'},
                                       {"usingNumaControl", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'c'},
                                       {"sendEncrypted", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'e'},
@@ -67,7 +69,7 @@ int main(int argc, char *argv[])
                                       {"fork", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'f'},
                                       {"numTransfers", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'n'}};
 
-    const char *optstring = "t:i:lsdcem:fn:";
+    const char *optstring = "t:i:lsh:dcem:fn:";
 
     CanaryAppOptions canaryAppOptions;
 
@@ -101,6 +103,10 @@ int main(int argc, char *argv[])
                 break;
             case CLIOption::MeasureSmallTransfer:
                 canaryAppOptions.measureSmallTransfer = true;
+                break;
+            case CLIOption::MeasureHttpTransfer:
+                canaryAppOptions.measureHttpTransfer = true;
+                canaryAppOptions.httpTestEndpoint = aws_cli_optarg;
                 break;
             case CLIOption::Logging:
                 canaryAppOptions.loggingEnabled = true;
