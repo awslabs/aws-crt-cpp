@@ -64,7 +64,15 @@ class MultipartTransferState
         Aws::Crt::Vector<Metric> downloadMetrics;
         std::shared_ptr<MetricsPublisher> publisher;
 
-        Metric &GetOrCreateMetricToUpdate(Aws::Crt::Vector<Metric> &partMetrics, const char *metricName);
+        void DistributeDataUsedOverTime(
+            Aws::Crt::Vector<Metric> &metrics,
+            const char *metricName,
+            uint64_t beginTime,
+            double dataUsed);
+
+        void PushMetric(Aws::Crt::Vector<Metric> &metrics, const char *metricName, double dataUsed);
+
+        void PushAndTryToMerge(Aws::Crt::Vector<Metric> & metrics, const char* metricName, uint64_t timestamp, double dataUsed);
 
         void FlushMetricsVector(Aws::Crt::Vector<Metric> &metrics);
     };

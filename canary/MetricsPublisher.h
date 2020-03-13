@@ -63,7 +63,8 @@ enum class MetricTransferSize
 struct Metric
 {
     MetricUnit Unit;
-    Aws::Crt::DateTime Timestamp;
+    uint64_t Timestamp;
+    // Aws::Crt::DateTime Timestamp;
     double Value;
     Aws::Crt::String MetricName;
 
@@ -88,6 +89,8 @@ class MetricsPublisher
     /**
      * Add a data point to the outgoing metrics collection.
      */
+    void AddDataPoints(const Aws::Crt::Vector<Metric> &metricData);
+
     void AddDataPoint(const Metric &metricData);
 
     void AddTransferStatusDataPoint(bool transferSuccess);
