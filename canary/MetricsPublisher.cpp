@@ -30,8 +30,9 @@ using namespace Aws::Crt;
 
 void Metric::SetTimestampNow()
 {
-    Timestamp = DateTime::Now();
-    //    static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(time.time_since_epoch()).count());
+    uint64_t current_time = 0;
+    aws_sys_clock_get_ticks(&current_time);
+    Timestamp = (time_t)aws_timestamp_convert(current_time, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, NULL);
 }
 
 MetricsPublisher::MetricsPublisher(
@@ -169,7 +170,8 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
         uint8_t dateBuffer[AWS_DATE_TIME_STR_MAX_LEN];
         AWS_ZERO_ARRAY(dateBuffer);
         auto dateBuf = ByteBufFromEmptyArray(dateBuffer, AWS_ARRAY_SIZE(dateBuffer));
-        metric.Timestamp.ToGmtString(DateFormat::ISO_8601, dateBuf);
+        DateTime metricDateTime(metric.Timestamp);
+        metricDateTime.ToGmtString(DateFormat::ISO_8601, dateBuf);
         String dateStr((char *)dateBuf.buffer, dateBuf.len);
 
         bodyStream << "MetricData.member." << metricCount << ".Timestamp=" << dateStr << "&";
@@ -210,7 +212,7 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
     bodyStream << "Version=2010-08-01";
 }
 
-void MetricsPublisher::AddDataPoint(const Metric &metricData)
+void MetricsPublisher::AddDataPoint(const Metric &newMetric)
 {
     std::lock_guard<std::mutex> locker(m_publishDataLock);
 
@@ -218,9 +220,9 @@ void MetricsPublisher::AddDataPoint(const Metric &metricData)
 
     for (Metric &metric : m_publishData)
     {
-        if (metric.Timestamp == metricData.Timestamp && metric.MetricName == metricData.MetricName)
+        if (metric.Timestamp == newMetric.Timestamp && metric.MetricName == newMetric.MetricName)
         {
-            metric.Value += metricData.Value;
+            metric.Value += newMetric.Value;
             foundMatch = true;
             break;
         }
@@ -228,8 +230,23 @@ void MetricsPublisher::AddDataPoint(const Metric &metricData)
 
     if (!foundMatch)
     {
-        m_publishData.push_back(metricData);
+        m_publishData.push_back(newMetric);
     }
+}
+
+void MetricsPublisher::AddDataPoints(const Vector<Metric> &newMetrics)
+{
+    std::lock_guard<std::mutex> locker(m_publishDataLock);
+
+    uint32_t numBefore = (uint32_t)m_publishData.size();
+
+    for (const Metric &newMetric : newMetrics)
+    {
+        m_publishData.push_back(newMetric);
+    }
+
+    AWS_LOGF_INFO(
+        AWS_LS_CRT_CPP_CANARY, "Number of metrics before/after: %d/%d", numBefore, (uint32_t)m_publishData.size());
 }
 
 void MetricsPublisher::AddTransferStatusDataPoint(bool transferSuccess)
@@ -395,6 +412,6 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
                 }
             });
 
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 }
