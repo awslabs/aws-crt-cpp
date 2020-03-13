@@ -25,6 +25,7 @@ struct CanaryAppOptions
     std::string toolName;
     std::string instanceType;
     std::string region;
+    std::string httpTestEndpoint;
 
     int32_t readFromParentPipe;
     int32_t writeToParentPipe;
@@ -34,6 +35,7 @@ struct CanaryAppOptions
 
     uint32_t measureLargeTransfer : 1;
     uint32_t measureSmallTransfer : 1;
+    uint32_t measureHttpTransfer : 1;
     uint32_t usingNumaControl : 1;
     uint32_t sendEncrypted : 1;
     uint32_t loggingEnabled : 1;
