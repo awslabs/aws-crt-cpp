@@ -142,13 +142,11 @@ void MeasureTransferRate::PerformMeasurement(
     const char *filenamePrefix,
     const char *keyPrefix,
     uint32_t numTransfers,
-    uint32_t numTransfersToWarmDNSCache,
+    uint32_t numConcurrentTransfers,
     uint64_t objectSize,
     uint32_t flags,
     TransferFunction &&transferFunction)
 {
-    std::atomic<uint32_t> numCompleted(0);
-
     String addressKey = String() + keyPrefix + "address";
     String finishedKey = String() + keyPrefix + "finished";
 
@@ -156,7 +154,7 @@ void MeasureTransferRate::PerformMeasurement(
     {
         if ((flags & (uint32_t)MeasurementFlags::DontWarmDNSCache) == 0)
         {
-            m_canaryApp.transport->WarmDNSCache(numTransfersToWarmDNSCache);
+            m_canaryApp.transport->WarmDNSCache(numConcurrentTransfers);
         }
 
         for (uint32_t i = 0; i < numTransfers; ++i)
@@ -185,7 +183,7 @@ void MeasureTransferRate::PerformMeasurement(
     {
         if ((flags & (uint32_t)MeasurementFlags::DontWarmDNSCache) == 0)
         {
-            m_canaryApp.transport->WarmDNSCache(numTransfersToWarmDNSCache);
+            m_canaryApp.transport->WarmDNSCache(numConcurrentTransfers);
         }
 
         m_canaryApp.transport->SpawnConnectionManagers();
@@ -193,8 +191,11 @@ void MeasureTransferRate::PerformMeasurement(
 
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting performance measurement.");
 
-    std::mutex completionMutex;
-    std::condition_variable completionSignal;
+    std::mutex transferCompletedMutex;
+    std::condition_variable transferCompletedSignal;
+
+    std::atomic<uint32_t> numCompleted(0);
+    std::atomic<uint32_t> numInProgress(0);
 
     uint64_t counter = INT64_MAX - (int64_t)m_canaryApp.GetOptions().childProcessIndex;
 
@@ -215,30 +216,45 @@ void MeasureTransferRate::PerformMeasurement(
 
         String key = keyStream.str();
 
+        ++numInProgress;
+
         NotifyTransferFinished notifyTransferFinished =
-            [&completionSignal, &numCompleted, numTransfers](int32_t errorCode) {
+            [&transferCompletedSignal, &numCompleted, &numInProgress](int32_t errorCode) {
                 if (errorCode != AWS_ERROR_SUCCESS)
                 {
-                    AWS_LOGF_ERROR(
+                    AWS_LOGF_INFO(
                         AWS_LS_CRT_CPP_CANARY,
                         "Transfer finished with error %d: '%s'",
                         errorCode,
                         aws_error_debug_str(errorCode));
                 }
 
-                uint32_t numCompletedLocal = numCompleted.fetch_add(1) + 1;
+                --numInProgress;
+                ++numCompleted;
 
-                if (numCompletedLocal == numTransfers)
-                {
-                    completionSignal.notify_one();
-                }
+                transferCompletedSignal.notify_one();
             };
 
+        AWS_LOGF_INFO(
+            AWS_LS_CRT_CPP_CANARY,
+            "Beginning transfer %d - Num Concurrent:%d/%d  Total:%d/%d",
+            i,
+            numInProgress.load(),
+            numConcurrentTransfers,
+            numCompleted.load(),
+            numTransfers);
+
         transferFunction(std::move(key), objectSize, std::move(notifyTransferFinished));
+
+        std::unique_lock<std::mutex> guard(transferCompletedMutex);
+        transferCompletedSignal.wait(guard, [&numInProgress, numConcurrentTransfers]() {
+            return numInProgress.load() < numConcurrentTransfers;
+        });
     }
 
-    std::unique_lock<std::mutex> guard(completionMutex);
-    completionSignal.wait(guard, [&numCompleted, numTransfers]() { return numCompleted.load() >= numTransfers; });
+    std::unique_lock<std::mutex> guard(transferCompletedMutex);
+    transferCompletedSignal.wait(
+        guard, [&numCompleted, numTransfers]() { return numCompleted.load() >= numTransfers; });
 
     if (m_canaryApp.GetOptions().isChildProcess)
     {
@@ -272,7 +288,7 @@ void MeasureTransferRate::MeasureHttpTransfer()
         testFilename.c_str(),
         "httpTransferDown-",
         m_canaryApp.GetOptions().numTransfers,
-        0,
+        m_canaryApp.GetOptions().numConcurrentTransfers,
         SmallObjectSize,
         (uint32_t)MeasurementFlags::DontWarmDNSCache | (uint32_t)MeasurementFlags::NoFileSuffix,
         [this, connManager, &testFilename, &hostHeader](
@@ -328,12 +344,11 @@ void MeasureTransferRate::MeasureHttpTransfer()
                     }
 
                     m_canaryApp.publisher->AddTransferStatusDataPoint(errorCode == AWS_ERROR_SUCCESS);
-                    singlePart->FlushDataDownMetrics();
 
                     notifyTransferFinished(errorCode);
-                };
 
-            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Acquiring connection for HTTP Request for %s...", keyPath.c_str());
+                    singlePart->FlushDataDownMetrics();
+                };
 
             connManager->AcquireConnection([requestOptions, notifyTransferFinished, request](
                                                std::shared_ptr<Http::HttpClientConnection> conn, int connErrorCode) {
@@ -346,17 +361,10 @@ void MeasureTransferRate::MeasureHttpTransfer()
 
                 if (connErrorCode == AWS_ERROR_SUCCESS)
                 {
-                    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Acquiring connection succeeded.");
-
                     conn->NewClientStream(requestOptions);
                 }
                 else
                 {
-                    AWS_LOGF_ERROR(
-                        AWS_LS_CRT_CPP_CANARY,
-                        "Acquiring connection failed with error '%s'",
-                        aws_error_debug_str(connErrorCode));
-
                     notifyTransferFinished(connErrorCode);
                 }
             });
@@ -376,7 +384,7 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
         filenamePrefix,
         "smallObjectUp-",
         m_canaryApp.GetOptions().numTransfers,
-        m_canaryApp.GetOptions().numTransfers,
+        m_canaryApp.GetOptions().numConcurrentTransfers,
         SmallObjectSize,
         0,
         [this](String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
@@ -401,7 +409,7 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
         filenamePrefix,
         "smallObjectDown-",
         m_canaryApp.GetOptions().numTransfers,
-        m_canaryApp.GetOptions().numTransfers,
+        m_canaryApp.GetOptions().numConcurrentTransfers,
         SmallObjectSize,
         0,
         [this](String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
@@ -437,7 +445,7 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
         filenamePrefix,
         "largeObjectUp-",
         m_canaryApp.GetOptions().numTransfers,
-        S3ObjectTransport::MaxStreams,
+        m_canaryApp.GetOptions().numConcurrentTransfers,
         LargeObjectSize,
         0,
         [this](String &&key, uint64_t objectSize, NotifyTransferFinished &&notifyTransferFinished) {
@@ -465,7 +473,7 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
     PerformMeasurement(
         filenamePrefix,
         "largeObjectDown-",
-        m_canaryApp.GetOptions().numTransfers,
+        m_canaryApp.GetOptions().numConcurrentTransfers,
         S3ObjectTransport::MaxStreams,
         LargeObjectSize,
         0,

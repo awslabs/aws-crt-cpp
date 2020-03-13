@@ -31,6 +31,7 @@ struct CanaryAppOptions
     int32_t writeToParentPipe;
     uint32_t mtu;
     uint32_t numTransfers;
+    uint32_t numConcurrentTransfers;
     uint32_t childProcessIndex;
 
     uint32_t measureLargeTransfer : 1;

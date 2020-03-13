@@ -53,6 +53,7 @@ int main(int argc, char *argv[])
         MTU,
         Fork,
         NumTransfers,
+        NumConcurrentTransfers,
 
         MAX
     };
@@ -63,13 +64,14 @@ int main(int argc, char *argv[])
                                       {"measureSmallTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 's'},
                                       {"measureHttpTransfer", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'h'},
                                       {"logging", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'd'},
-                                      {"usingNumaControl", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'c'},
+                                      {"usingNumaControl", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'C'},
                                       {"sendEncrypted", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'e'},
                                       {"mtu", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'm'},
                                       {"fork", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'f'},
-                                      {"numTransfers", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'n'}};
+                                      {"numTransfers", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'n'},
+                                      {"numConcurrentTransfers", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'c'}};
 
-    const char *optstring = "t:i:lsh:dcem:fn:";
+    const char *optstring = "t:i:lsh:dCem:fn:c:";
 
     CanaryAppOptions canaryAppOptions;
 
@@ -121,10 +123,17 @@ int main(int argc, char *argv[])
                 canaryAppOptions.mtu = atoi(aws_cli_optarg);
                 break;
             case CLIOption::Fork:
+#ifndef WIN32
                 forkProcesses = true;
+#else
+                AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Fork mode not supported on Windows.");
+#endif
                 break;
             case CLIOption::NumTransfers:
                 canaryAppOptions.numTransfers = (uint32_t)atoi(aws_cli_optarg);
+                break;
+            case CLIOption::NumConcurrentTransfers:
+                canaryAppOptions.numConcurrentTransfers = (uint32_t)std::max(0, atoi(aws_cli_optarg));
                 break;
             default:
                 AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Unknown CLI option used.");
@@ -132,8 +141,17 @@ int main(int argc, char *argv[])
         }
     }
 
+    if (canaryAppOptions.numConcurrentTransfers == 0)
+    {
+        canaryAppOptions.numConcurrentTransfers = canaryAppOptions.numTransfers;
+    }
+
+    canaryAppOptions.numConcurrentTransfers =
+        std::min(canaryAppOptions.numConcurrentTransfers, canaryAppOptions.numTransfers);
+
     std::vector<CanaryAppChildProcess> children;
 
+#ifndef WIN32
     if (forkProcesses)
     {
         canaryAppOptions.isParentProcess = true;
@@ -178,10 +196,12 @@ int main(int argc, char *argv[])
             }
         }
     }
+#endif
 
     CanaryApp canaryApp(std::move(canaryAppOptions), std::move(children));
     canaryApp.Run();
 
+#ifndef WIN32
     if (forkProcesses && canaryApp.GetOptions().isParentProcess)
     {
         bool waitingForChildren = true;
@@ -198,6 +218,7 @@ int main(int argc, char *argv[])
             waitingForChildren = errno != ECHILD;
         }
     }
+#endif
 
     return 0;
 }
