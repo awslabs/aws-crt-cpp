@@ -72,7 +72,11 @@ class MultipartTransferState
 
         void PushMetric(Aws::Crt::Vector<Metric> &metrics, const char *metricName, double dataUsed);
 
-        void PushAndTryToMerge(Aws::Crt::Vector<Metric> & metrics, const char* metricName, uint64_t timestamp, double dataUsed);
+        void PushAndTryToMerge(
+            Aws::Crt::Vector<Metric> &metrics,
+            const char *metricName,
+            uint64_t timestamp,
+            double dataUsed);
 
         void FlushMetricsVector(Aws::Crt::Vector<Metric> &metrics);
     };

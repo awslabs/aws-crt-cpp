@@ -64,9 +64,11 @@ struct Metric
 {
     MetricUnit Unit;
     uint64_t Timestamp;
-    // Aws::Crt::DateTime Timestamp;
     double Value;
     Aws::Crt::String MetricName;
+
+    Metric();
+    Metric(const char *MetricName, MetricUnit unit, double Value);
 
     void SetTimestampNow();
 };
@@ -113,6 +115,8 @@ class MetricsPublisher
 
   private:
     static void s_OnPublishTask(aws_task *task, void *arg, aws_task_status status);
+
+    void AddDataPointInternal(const Metric &newMetric);
 
     void PreparePayload(Aws::Crt::StringStream &bodyStream, const Aws::Crt::Vector<Metric> &);
 

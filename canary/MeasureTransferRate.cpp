@@ -563,6 +563,81 @@ void MeasureTransferRate::s_PulseMetricsTask(aws_task *task, void *arg, aws_task
     }
 
     {
+        aws_event_loop_group *eventLoopGroup = canaryApp.eventLoopGroup.GetUnderlyingHandle();
+        size_t numEventLoops = aws_array_list_length(&eventLoopGroup->event_loops);
+
+        size_t totalTickElapsedTimeMS = 0;
+        size_t totalTaskRunElapsedTimeMS = 0;
+        size_t totalIOSubs = 0;
+        size_t minTickElapsedTimeMS = 0;
+        size_t minTaskRunElapsedTimeMS = 0;
+        size_t maxTickElapsedTimeMS = 0;
+        size_t maxTaskRunElapsedTimeMS = 0;
+
+        for (size_t i = 0; i < numEventLoops; ++i)
+        {
+            aws_event_loop *eventLoop = nullptr;
+            aws_array_list_get_at(&eventLoopGroup->event_loops, (void *)&eventLoop, i);
+
+            size_t tickElapsedTimeNS = aws_atomic_load_int(&eventLoop->tick_elapsed_time);
+            size_t taskRunElapsedTimeNS = aws_atomic_load_int(&eventLoop->task_elapsed_time);
+            size_t numIOSubs = aws_atomic_load_int(&eventLoop->num_io_subscriptions);
+
+            size_t tickElapsedTimeMS =
+                aws_timestamp_convert(tickElapsedTimeNS, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, nullptr);
+            size_t taskRunElapsedTimeMS =
+                aws_timestamp_convert(taskRunElapsedTimeNS, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, nullptr);
+
+            if (i == 0)
+            {
+                minTickElapsedTimeMS = tickElapsedTimeMS;
+                minTaskRunElapsedTimeMS = taskRunElapsedTimeMS;
+                maxTickElapsedTimeMS = tickElapsedTimeMS;
+                maxTaskRunElapsedTimeMS = taskRunElapsedTimeMS;
+            }
+            else
+            {
+                minTickElapsedTimeMS = std::min(minTickElapsedTimeMS, tickElapsedTimeMS);
+                minTaskRunElapsedTimeMS = std::min(minTaskRunElapsedTimeMS, taskRunElapsedTimeMS);
+                maxTickElapsedTimeMS = std::max(maxTickElapsedTimeMS, tickElapsedTimeMS);
+                maxTaskRunElapsedTimeMS = std::max(maxTaskRunElapsedTimeMS, taskRunElapsedTimeMS);
+            }
+
+            totalTickElapsedTimeMS += tickElapsedTimeMS;
+            totalTaskRunElapsedTimeMS += taskRunElapsedTimeMS;
+            totalIOSubs += numIOSubs;
+        }
+
+        Metric avgEventLoopGroupTickElapsed(
+            "AvgEventLoopGroupTickElapsed",
+            MetricUnit::Milliseconds,
+            (double)totalTickElapsedTimeMS / (double)numEventLoops);
+        Metric avgEventLoopGroupTaskRunElapsed(
+            "AvgEventLoopTaskRunElapsed",
+            MetricUnit::Milliseconds,
+            (double)totalTaskRunElapsedTimeMS / (double)numEventLoops);
+        Metric minEventLoopGroupTickElapsed(
+            "MinEventLoopGroupTickElapsed", MetricUnit::Milliseconds, (double)minTickElapsedTimeMS);
+        Metric minEventLoopGroupTaskRunElapsed(
+            "MinEventLoopTaskRunElapsed", MetricUnit::Milliseconds, (double)minTaskRunElapsedTimeMS);
+        Metric maxEventLoopGroupTickElapsed(
+            "MaxEventLoopGroupTickElapsed", MetricUnit::Milliseconds, (double)maxTickElapsedTimeMS);
+        Metric maxEventLoopGroupTaskRunElapsed(
+            "MaxEventLoopTaskRunElapsed", MetricUnit::Milliseconds, (double)maxTaskRunElapsedTimeMS);
+
+        Metric numIOSubs("NumIOSubs", MetricUnit::Count, (double)totalIOSubs);
+
+        publisher->AddDataPoint(avgEventLoopGroupTickElapsed);
+        publisher->AddDataPoint(avgEventLoopGroupTaskRunElapsed);
+        publisher->AddDataPoint(minEventLoopGroupTickElapsed);
+        publisher->AddDataPoint(minEventLoopGroupTaskRunElapsed);
+        publisher->AddDataPoint(maxEventLoopGroupTickElapsed);
+        publisher->AddDataPoint(maxEventLoopGroupTaskRunElapsed);
+        publisher->AddDataPoint(numIOSubs);
+    }
+
+    /*
+    {
         size_t uniqueEndpointsUsed = transport->GetUniqueEndpointsUsedCount();
 
         Metric uniqueEndpointsUsedMetric;
@@ -574,6 +649,7 @@ void MeasureTransferRate::s_PulseMetricsTask(aws_task *task, void *arg, aws_task
 
         AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Number-of-unique-endpoints-used:%d", (uint32_t)uniqueEndpointsUsed);
     }
+    */
 
     measureTransferRate->SchedulePulseMetrics();
 }

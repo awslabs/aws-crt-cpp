@@ -87,7 +87,8 @@ void MultipartTransferState::PartInfo::DistributeDataUsedOverTime(
 
             for (uint64_t i = 0; i < numInteriorSeconds; ++i)
             {
-                PushAndTryToMerge(metrics, metricName, (interiorBeginSecond * 1000) + (i * 1000), interiorSecondDataUsed);
+                PushAndTryToMerge(
+                    metrics, metricName, (interiorBeginSecond * 1000) + (i * 1000), interiorSecondDataUsed);
             }
         }
 
@@ -95,17 +96,21 @@ void MultipartTransferState::PartInfo::DistributeDataUsedOverTime(
     }
 }
 
-void MultipartTransferState::PartInfo::PushAndTryToMerge(Vector<Metric> & metrics, const char* metricName, uint64_t timestamp, double dataUsed)
+void MultipartTransferState::PartInfo::PushAndTryToMerge(
+    Vector<Metric> &metrics,
+    const char *metricName,
+    uint64_t timestamp,
+    double dataUsed)
 {
     bool pushNew = true;
     DateTime newDateTime(timestamp);
 
     if (metrics.size() > 0)
     {
-        Metric & lastMetric = metrics.back();
+        Metric &lastMetric = metrics.back();
         DateTime lastDateTime(lastMetric.Timestamp);
 
-        if(newDateTime == lastDateTime)
+        if (newDateTime == lastDateTime)
         {
             lastMetric.Value += dataUsed;
             lastMetric.Timestamp = std::max(lastMetric.Timestamp, timestamp);
@@ -155,6 +160,21 @@ void MultipartTransferState::PartInfo::FlushMetricsVector(Vector<Metric> &metric
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Adding %d data points", (uint32_t)metrics.size());
 
     publisher->AddDataPoints(metrics);
+    /*
+        Vector<Metric> connMetrics;
+
+        for(Metric & metric : metrics)
+        {
+            Metric connMetric;
+            connMetric.MetricName = "Connection";
+            connMetric.Timestamp = metric.Timestamp;
+            connMetric.Value = 1.0;
+            connMetric.Unit = MetricUnit::Count;
+
+            connMetrics.push_back(std::move(connMetric));
+        }
+
+        publisher->AddDataPoints(connMetrics);*/
 
     metrics.clear();
 }
