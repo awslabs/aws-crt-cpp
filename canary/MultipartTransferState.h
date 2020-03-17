@@ -66,15 +66,15 @@ class MultipartTransferState
 
         void DistributeDataUsedOverTime(
             Aws::Crt::Vector<Metric> &metrics,
-            const char *metricName,
+            MetricName metricName,
             uint64_t beginTime,
             double dataUsed);
 
-        void PushMetric(Aws::Crt::Vector<Metric> &metrics, const char *metricName, double dataUsed);
+        void PushMetric(Aws::Crt::Vector<Metric> &metrics, MetricName metricName, double dataUsed);
 
         void PushAndTryToMerge(
             Aws::Crt::Vector<Metric> &metrics,
-            const char *metricName,
+            MetricName metricName,
             uint64_t timestamp,
             double dataUsed);
 

@@ -53,6 +53,24 @@ enum class MetricUnit
     None,
 };
 
+enum class MetricName
+{
+    BytesUp,
+    BytesDown,
+    NumConnections,
+    BytesAllocated,
+    S3AddressCount,
+    SuccessfulTransfer,
+    FailedTransfer,
+    AvgEventLoopGroupTickElapsed,
+    AvgEventLoopTaskRunElapsed,
+    MinEventLoopGroupTickElapsed,
+    MinEventLoopTaskRunElapsed,
+    MaxEventLoopGroupTickElapsed,
+    MaxEventLoopTaskRunElapsed,
+    NumIOSubs
+};
+
 enum class MetricTransferSize
 {
     None,
@@ -60,15 +78,31 @@ enum class MetricTransferSize
     Large
 };
 
+struct MetricKey
+{
+    MetricName Name;
+    uint64_t TimestampSeconds;
+
+    bool operator<(const MetricKey &otherKey) const
+    {
+        if (TimestampSeconds == otherKey.TimestampSeconds)
+        {
+            return (uint32_t)Name < (uint32_t)otherKey.Name;
+        }
+
+        return TimestampSeconds < otherKey.TimestampSeconds;
+    }
+};
+
 struct Metric
 {
     MetricUnit Unit;
+    MetricName Name;
     uint64_t Timestamp;
     double Value;
-    Aws::Crt::String MetricName;
 
     Metric();
-    Metric(const char *MetricName, MetricUnit unit, double Value);
+    Metric(MetricName Name, MetricUnit unit, double Value);
 
     void SetTimestampNow();
 };
@@ -103,6 +137,8 @@ class MetricsPublisher
      */
     void SetMetricTransferSize(MetricTransferSize transferSize);
 
+    void SchedulePublish();
+
     /**
      * Wait until all queued metrics have been published.
      */
@@ -124,6 +160,8 @@ class MetricsPublisher
     CanaryApp &m_canaryApp;
     std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> m_connManager;
     Aws::Crt::Vector<Metric> m_publishData;
+    std::map<MetricKey, size_t> m_publishDataLU;
+    Aws::Crt::Vector<Metric> m_publishDataTaskCopy;
     Aws::Crt::Http::HttpHeader m_hostHeader;
     Aws::Crt::Http::HttpHeader m_contentTypeHeader;
     Aws::Crt::Http::HttpHeader m_apiVersionHeader;

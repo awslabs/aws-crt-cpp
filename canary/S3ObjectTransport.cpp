@@ -68,12 +68,12 @@ void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
         ++desiredNumberOfAddresses;
     }
 
-/*
-    {
-        aws_host_resolver *resolver = m_canaryApp.defaultHostResolver.GetUnderlyingHandle();
-        aws_host_resolver_purge_cache(resolver);
-    }
-*/
+    /*
+        {
+            aws_host_resolver *resolver = m_canaryApp.defaultHostResolver.GetUnderlyingHandle();
+            aws_host_resolver_purge_cache(resolver);
+        }
+    */
 
     m_canaryApp.defaultHostResolver.ResolveHost(
         m_endpoint, [](Io::HostResolver &, const Vector<Io::HostAddress> &, int) {});

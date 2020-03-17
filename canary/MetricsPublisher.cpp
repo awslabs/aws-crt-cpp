@@ -30,7 +30,7 @@ using namespace Aws::Crt;
 
 Metric::Metric() {}
 
-Metric::Metric(const char *metricName, MetricUnit unit, double value) : Unit(unit), Value(value), MetricName(metricName)
+Metric::Metric(MetricName name, MetricUnit unit, double value) : Unit(unit), Name(name), Value(value)
 {
     SetTimestampNow();
 }
@@ -77,9 +77,7 @@ MetricsPublisher::MetricsPublisher(
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, g_allocator);
 
     m_schedulingLoop = aws_event_loop_group_get_next_loop(canaryApp.eventLoopGroup.GetUnderlyingHandle());
-    uint64_t now = 0;
-    aws_event_loop_current_clock_time(m_schedulingLoop, &now);
-    aws_event_loop_schedule_task_future(m_schedulingLoop, &m_publishTask, now + m_publishFrequencyNs);
+    SchedulePublish();
 
     m_hostHeader.name = ByteCursorFromCString("host");
     m_hostHeader.value = ByteCursorFromCString(m_endpoint.c_str());
@@ -94,6 +92,13 @@ MetricsPublisher::MetricsPublisher(
 MetricsPublisher::~MetricsPublisher()
 {
     aws_event_loop_cancel_task(m_schedulingLoop, &m_publishTask);
+}
+
+void MetricsPublisher::SchedulePublish()
+{
+    uint64_t now = 0;
+    aws_event_loop_current_clock_time(m_schedulingLoop, &now);
+    aws_event_loop_schedule_task_future(m_schedulingLoop, &m_publishTask, now + m_publishFrequencyNs);
 }
 
 void MetricsPublisher::SetMetricTransferSize(MetricTransferSize transferSize)
@@ -140,6 +145,31 @@ static const char *s_UnitToStr(MetricUnit unit)
     return s_unitStr[index];
 }
 
+static const char *s_MetricNameToStr(MetricName name)
+{
+    static const char *s_metricNameStr[] = {"BytesUp",
+                                            "BytesDown",
+                                            "NumConnections",
+                                            "BytesAllocated",
+                                            "S3AddressCount",
+                                            "SuccessfulTransfer",
+                                            "FailedTransfer",
+                                            "AvgEventLoopGroupTickElapsed",
+                                            "AvgEventLoopTaskRunElapsed",
+                                            "MinEventLoopGroupTickElapsed",
+                                            "MinEventLoopTaskRunElapsed",
+                                            "MaxEventLoopGroupTickElapsed",
+                                            "MaxEventLoopTaskRunElapsed",
+                                            "NumIOSubs"};
+
+    auto index = static_cast<size_t>(name);
+    if (index >= AWS_ARRAY_SIZE(s_metricNameStr))
+    {
+        return "None";
+    }
+    return s_metricNameStr[index];
+}
+
 static const char *s_MetricTransferToString(MetricTransferSize transferSize)
 {
     static const char *s_transferSizeStr[] = {"None", "Small", "Large"};
@@ -173,7 +203,7 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
 
     for (const auto &metric : metrics)
     {
-        bodyStream << "MetricData.member." << metricCount << ".MetricName=" << metric.MetricName << "&";
+        bodyStream << "MetricData.member." << metricCount << ".MetricName=" << s_MetricNameToStr(metric.Name) << "&";
         uint8_t dateBuffer[AWS_DATE_TIME_STR_MAX_LEN];
         AWS_ZERO_ARRAY(dateBuffer);
         auto dateBuf = ByteBufFromEmptyArray(dateBuffer, AWS_ARRAY_SIZE(dateBuffer));
@@ -230,36 +260,34 @@ void MetricsPublisher::AddDataPoints(const Vector<Metric> &newMetrics)
 {
     std::lock_guard<std::mutex> locker(m_publishDataLock);
 
-    uint32_t numBefore = (uint32_t)m_publishData.size();
-
     for (const Metric &newMetric : newMetrics)
     {
         AddDataPointInternal(newMetric);
     }
-
-    AWS_LOGF_INFO(
-        AWS_LS_CRT_CPP_CANARY, "Number of metrics before/after: %d/%d", numBefore, (uint32_t)m_publishData.size());
 }
 
 void MetricsPublisher::AddDataPointInternal(const Metric &newMetric)
 {
-    bool foundMatch = false;
+    MetricKey metricKey;
+    metricKey.Name = newMetric.Name;
+    metricKey.TimestampSeconds = newMetric.Timestamp / 1000;
 
-    // TODO average size of m_publishData may justify doing a lookup here
-    // instead of a linear search, especially in the case of AddDataPoints.
-    for (Metric &existingMetric : m_publishData)
+    auto it = m_publishDataLU.find(metricKey);
+
+    if (it != m_publishDataLU.end())
     {
-        if (existingMetric.Timestamp == newMetric.Timestamp && existingMetric.MetricName == newMetric.MetricName)
-        {
-            existingMetric.Value += newMetric.Value;
-            foundMatch = true;
-            break;
-        }
-    }
+        size_t index = it->second;
 
-    if (!foundMatch)
+        Metric &metric = m_publishData[index];
+        metric.Value += newMetric.Value;
+    }
+    else
     {
         m_publishData.push_back(newMetric);
+
+        std::pair<MetricKey, size_t> keyValue(metricKey, m_publishData.size() - 1);
+
+        m_publishDataLU.insert(keyValue);
     }
 }
 
@@ -268,7 +296,7 @@ void MetricsPublisher::AddTransferStatusDataPoint(bool transferSuccess)
     if (transferSuccess)
     {
         Metric successMetric;
-        successMetric.MetricName = "SuccessfulTransfer";
+        successMetric.Name = MetricName::SuccessfulTransfer;
         successMetric.Unit = MetricUnit::Count;
         successMetric.Value = 1;
         successMetric.SetTimestampNow();
@@ -278,7 +306,7 @@ void MetricsPublisher::AddTransferStatusDataPoint(bool transferSuccess)
     else
     {
         Metric failureMetric;
-        failureMetric.MetricName = "FailedTransfer";
+        failureMetric.Name = MetricName::FailedTransfer;
         failureMetric.Unit = MetricUnit::Count;
         failureMetric.Value = 1;
         failureMetric.SetTimestampNow();
@@ -305,7 +333,7 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
 
     auto publisher = static_cast<MetricsPublisher *>(arg);
 
-    Vector<Metric> metricsCpy;
+    if (publisher->m_publishDataTaskCopy.size() == 0)
     {
         std::lock_guard<std::mutex> locker(publisher->m_publishDataLock);
 
@@ -322,113 +350,98 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
 
         // Create a copy of the metrics to publish from
         {
-            metricsCpy = std::move(publisher->m_publishData);
+            publisher->m_publishDataTaskCopy = std::move(publisher->m_publishData);
             publisher->m_publishData = Vector<Metric>();
+            publisher->m_publishDataLU.clear();
         }
     }
 
-    while (!metricsCpy.empty())
+    /* max of 20 per request */
+    Vector<Metric> metricsSlice;
+    while (!publisher->m_publishDataTaskCopy.empty() && metricsSlice.size() < 20)
     {
-        bool finalRun = false;
-        /* max of 20 per request */
-        Vector<Metric> metricsSlice;
-        while (!metricsCpy.empty() && metricsSlice.size() < 20)
-        {
-            metricsSlice.push_back(metricsCpy.back());
-            metricsCpy.pop_back();
-        }
+        metricsSlice.push_back(publisher->m_publishDataTaskCopy.back());
+        publisher->m_publishDataTaskCopy.pop_back();
+    }
 
-        AWS_LOGF_INFO(
-            AWS_LS_CRT_CPP_CANARY,
-            "METRICS - Processing %d metrics,  %d left.",
-            (uint32_t)metricsSlice.size(),
-            (uint32_t)metricsCpy.size());
+    AWS_LOGF_INFO(
+        AWS_LS_CRT_CPP_CANARY,
+        "METRICS - Processing %d metrics,  %d left.",
+        (uint32_t)metricsSlice.size(),
+        (uint32_t)publisher->m_publishDataTaskCopy.size());
 
-        finalRun = metricsCpy.empty();
+    auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
+    request->AddHeader(publisher->m_hostHeader);
+    request->AddHeader(publisher->m_contentTypeHeader);
+    request->AddHeader(publisher->m_apiVersionHeader);
 
-        auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
-        request->AddHeader(publisher->m_hostHeader);
-        request->AddHeader(publisher->m_contentTypeHeader);
-        request->AddHeader(publisher->m_apiVersionHeader);
+    auto bodyStream = MakeShared<StringStream>(g_allocator);
+    publisher->PreparePayload(*bodyStream, metricsSlice);
 
-        auto bodyStream = MakeShared<StringStream>(g_allocator);
-        publisher->PreparePayload(*bodyStream, metricsSlice);
+    Http::HttpHeader contentLength;
+    contentLength.name = ByteCursorFromCString("content-length");
 
-        Http::HttpHeader contentLength;
-        contentLength.name = ByteCursorFromCString("content-length");
+    StringStream intValue;
+    intValue << bodyStream->tellp();
+    String contentLengthVal = intValue.str();
+    contentLength.value = ByteCursorFromCString(contentLengthVal.c_str());
+    request->AddHeader(contentLength);
 
-        StringStream intValue;
-        intValue << bodyStream->tellp();
-        String contentLengthVal = intValue.str();
-        contentLength.value = ByteCursorFromCString(contentLengthVal.c_str());
-        request->AddHeader(contentLength);
+    request->SetBody(bodyStream);
+    request->SetMethod(aws_http_method_post);
 
-        request->SetBody(bodyStream);
-        request->SetMethod(aws_http_method_post);
+    ByteCursor path = ByteCursorFromCString("/");
+    request->SetPath(path);
 
-        ByteCursor path = ByteCursorFromCString("/");
-        request->SetPath(path);
+    Auth::AwsSigningConfig signingConfig(g_allocator);
+    signingConfig.SetRegion(publisher->m_canaryApp.GetOptions().region.c_str());
+    signingConfig.SetCredentialsProvider(publisher->m_canaryApp.credsProvider);
+    signingConfig.SetService("monitoring");
+    signingConfig.SetBodySigningType(Auth::BodySigningType::SignBody);
+    signingConfig.SetSigningTimepoint(DateTime::Now());
+    signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
 
-        Auth::AwsSigningConfig signingConfig(g_allocator);
-        signingConfig.SetRegion(publisher->m_canaryApp.GetOptions().region.c_str());
-        signingConfig.SetCredentialsProvider(publisher->m_canaryApp.credsProvider);
-        signingConfig.SetService("monitoring");
-        signingConfig.SetBodySigningType(Auth::BodySigningType::SignBody);
-        signingConfig.SetSigningTimepoint(DateTime::Now());
-        signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
-
-        publisher->m_canaryApp.signer->SignRequest(
-            request,
-            signingConfig,
-            [bodyStream, publisher, finalRun](
-                const std::shared_ptr<Aws::Crt::Http::HttpRequest> &signedRequest, int signingError) {
-                if (signingError == AWS_OP_SUCCESS)
-                {
-                    publisher->m_connManager->AcquireConnection(
-                        [publisher, signedRequest, finalRun](
-                            std::shared_ptr<Http::HttpClientConnection> conn, int connError) {
-                            if (connError == AWS_OP_SUCCESS)
-                            {
-                                Http::HttpRequestOptions requestOptions;
-                                AWS_ZERO_STRUCT(requestOptions);
-                                requestOptions.request = signedRequest.get();
-                                requestOptions.onStreamComplete = [signedRequest, conn](Http::HttpStream &stream, int) {
-                                    if (stream.GetResponseStatusCode() != 200)
-                                    {
-                                        AWS_LOGF_ERROR(
-                                            AWS_LS_CRT_CPP_CANARY,
-                                            "METRICS Error in metrics stream complete: %d",
-                                            stream.GetResponseStatusCode());
-                                    }
-                                };
-                                conn->NewClientStream(requestOptions);
-                            }
-                            else
+    publisher->m_canaryApp.signer->SignRequest(
+        request,
+        signingConfig,
+        [bodyStream, publisher](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &signedRequest, int signingError) {
+            if (signingError == AWS_OP_SUCCESS)
+            {
+                publisher->m_connManager->AcquireConnection([publisher, signedRequest](
+                                                                std::shared_ptr<Http::HttpClientConnection> conn,
+                                                                int connError) {
+                    if (connError == AWS_OP_SUCCESS)
+                    {
+                        Http::HttpRequestOptions requestOptions;
+                        AWS_ZERO_STRUCT(requestOptions);
+                        requestOptions.request = signedRequest.get();
+                        requestOptions.onStreamComplete = [signedRequest, conn](Http::HttpStream &stream, int) {
+                            if (stream.GetResponseStatusCode() != 200)
                             {
                                 AWS_LOGF_ERROR(
                                     AWS_LS_CRT_CPP_CANARY,
-                                    "METRICS Error acquiring connection to send metrics: %d",
-                                    connError);
+                                    "METRICS Error in metrics stream complete: %d",
+                                    stream.GetResponseStatusCode());
                             }
+                        };
+                        conn->NewClientStream(requestOptions);
+                    }
+                    else
+                    {
+                        AWS_LOGF_ERROR(
+                            AWS_LS_CRT_CPP_CANARY, "METRICS Error acquiring connection to send metrics: %d", connError);
+                    }
 
-                            if (finalRun)
-                            {
-                                uint64_t now = 0;
-                                aws_event_loop_current_clock_time(publisher->m_schedulingLoop, &now);
-                                aws_event_loop_schedule_task_future(
-                                    publisher->m_schedulingLoop,
-                                    &publisher->m_publishTask,
-                                    now + publisher->m_publishFrequencyNs);
-                            }
-                        });
-                }
-                else
-                {
-                    AWS_LOGF_ERROR(
-                        AWS_LS_CRT_CPP_CANARY, "METRICS Error signing request for sending metric: %d", signingError);
-                }
-            });
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    }
+                    uint64_t now = 0;
+                    aws_event_loop_current_clock_time(publisher->m_schedulingLoop, &now);
+                    aws_event_loop_schedule_task_future(
+                        publisher->m_schedulingLoop, &publisher->m_publishTask, now + publisher->m_publishFrequencyNs);
+                });
+            }
+            else
+            {
+                AWS_LOGF_ERROR(
+                    AWS_LS_CRT_CPP_CANARY, "METRICS Error signing request for sending metric: %d", signingError);
+            }
+        });
 }

@@ -529,7 +529,7 @@ void MeasureTransferRate::s_PulseMetricsTask(aws_task *task, void *arg, aws_task
     memMetric.Unit = MetricUnit::Bytes;
     memMetric.Value = (double)aws_mem_tracer_bytes(traceAllocator);
     memMetric.SetTimestampNow();
-    memMetric.MetricName = "BytesAllocated";
+    memMetric.Name = MetricName::BytesAllocated;
     publisher->AddDataPoint(memMetric);
 
     AWS_LOGF_DEBUG(AWS_LS_CRT_CPP_CANARY, "Emitting BytesAllocated Metric %" PRId64, (uint64_t)memMetric.Value);
@@ -538,11 +538,8 @@ void MeasureTransferRate::s_PulseMetricsTask(aws_task *task, void *arg, aws_task
     {
         size_t openConnectionCount = transport->GetOpenConnectionCount();
 
-        Metric connMetric;
-        connMetric.Unit = MetricUnit::Count;
-        connMetric.Value = (double)openConnectionCount;
-        connMetric.SetTimestampNow();
-        connMetric.MetricName = "NumConnections";
+        Metric connMetric(MetricName::NumConnections, MetricUnit::Count, (double)openConnectionCount);
+
         publisher->AddDataPoint(connMetric);
 
         AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Open-connections:%d", (uint32_t)openConnectionCount);
@@ -550,13 +547,11 @@ void MeasureTransferRate::s_PulseMetricsTask(aws_task *task, void *arg, aws_task
 
     {
         const Aws::Crt::String &s3Endpoint = transport->GetEndpoint();
+
         size_t s3AddressCount = canaryApp.defaultHostResolver.GetHostAddressCount(s3Endpoint);
 
-        Metric s3AddressCountMetric;
-        s3AddressCountMetric.Unit = MetricUnit::Count;
-        s3AddressCountMetric.Value = (double)s3AddressCount;
-        s3AddressCountMetric.SetTimestampNow();
-        s3AddressCountMetric.MetricName = "S3AddressCount";
+        Metric s3AddressCountMetric(MetricName::S3AddressCount, MetricUnit::Count, (double)s3AddressCount);
+
         publisher->AddDataPoint(s3AddressCountMetric);
 
         AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Number-of-s3-addresses:%d", (uint32_t)s3AddressCount);
@@ -609,23 +604,23 @@ void MeasureTransferRate::s_PulseMetricsTask(aws_task *task, void *arg, aws_task
         }
 
         Metric avgEventLoopGroupTickElapsed(
-            "AvgEventLoopGroupTickElapsed",
+            MetricName::AvgEventLoopGroupTickElapsed,
             MetricUnit::Milliseconds,
             (double)totalTickElapsedTimeMS / (double)numEventLoops);
         Metric avgEventLoopGroupTaskRunElapsed(
-            "AvgEventLoopTaskRunElapsed",
+            MetricName::AvgEventLoopTaskRunElapsed,
             MetricUnit::Milliseconds,
             (double)totalTaskRunElapsedTimeMS / (double)numEventLoops);
         Metric minEventLoopGroupTickElapsed(
-            "MinEventLoopGroupTickElapsed", MetricUnit::Milliseconds, (double)minTickElapsedTimeMS);
+            MetricName::MinEventLoopGroupTickElapsed, MetricUnit::Milliseconds, (double)minTickElapsedTimeMS);
         Metric minEventLoopGroupTaskRunElapsed(
-            "MinEventLoopTaskRunElapsed", MetricUnit::Milliseconds, (double)minTaskRunElapsedTimeMS);
+            MetricName::MinEventLoopTaskRunElapsed, MetricUnit::Milliseconds, (double)minTaskRunElapsedTimeMS);
         Metric maxEventLoopGroupTickElapsed(
-            "MaxEventLoopGroupTickElapsed", MetricUnit::Milliseconds, (double)maxTickElapsedTimeMS);
+            MetricName::MaxEventLoopGroupTickElapsed, MetricUnit::Milliseconds, (double)maxTickElapsedTimeMS);
         Metric maxEventLoopGroupTaskRunElapsed(
-            "MaxEventLoopTaskRunElapsed", MetricUnit::Milliseconds, (double)maxTaskRunElapsedTimeMS);
+            MetricName::MaxEventLoopTaskRunElapsed, MetricUnit::Milliseconds, (double)maxTaskRunElapsedTimeMS);
 
-        Metric numIOSubs("NumIOSubs", MetricUnit::Count, (double)totalIOSubs);
+        Metric numIOSubs(MetricName::NumIOSubs, MetricUnit::Count, (double)totalIOSubs);
 
         publisher->AddDataPoint(avgEventLoopGroupTickElapsed);
         publisher->AddDataPoint(avgEventLoopGroupTaskRunElapsed);
