@@ -43,7 +43,7 @@ MultipartTransferState::PartInfo::PartInfo(
 
 void MultipartTransferState::PartInfo::DistributeDataUsedOverTime(
     Vector<Metric> &metrics,
-    const char *metricName,
+    MetricName metricName,
     uint64_t beginTime,
     double dataUsed)
 {
@@ -98,7 +98,7 @@ void MultipartTransferState::PartInfo::DistributeDataUsedOverTime(
 
 void MultipartTransferState::PartInfo::PushAndTryToMerge(
     Vector<Metric> &metrics,
-    const char *metricName,
+    MetricName metricName,
     uint64_t timestamp,
     double dataUsed)
 {
@@ -122,7 +122,7 @@ void MultipartTransferState::PartInfo::PushAndTryToMerge(
     if (pushNew)
     {
         Metric metric;
-        metric.MetricName = metricName;
+        metric.Name = metricName;
         metric.Timestamp = timestamp;
         metric.Value = dataUsed;
         metric.Unit = MetricUnit::Bytes;
@@ -131,7 +131,7 @@ void MultipartTransferState::PartInfo::PushAndTryToMerge(
     }
 }
 
-void MultipartTransferState::PartInfo::PushMetric(Vector<Metric> &metrics, const char *metricName, double dataUsed)
+void MultipartTransferState::PartInfo::PushMetric(Vector<Metric> &metrics, MetricName metricName, double dataUsed)
 {
     uint64_t current_time = 0;
     aws_sys_clock_get_ticks(&current_time);
@@ -140,7 +140,7 @@ void MultipartTransferState::PartInfo::PushMetric(Vector<Metric> &metrics, const
     if (metrics.size() == 0)
     {
         Metric metric;
-        metric.MetricName = metricName;
+        metric.Name = metricName;
         metric.Timestamp = now;
         metric.Value = dataUsed;
         metric.Unit = MetricUnit::Bytes;
@@ -174,19 +174,20 @@ void MultipartTransferState::PartInfo::FlushMetricsVector(Vector<Metric> &metric
             connMetrics.push_back(std::move(connMetric));
         }
 
-        publisher->AddDataPoints(connMetrics);*/
+        publisher->AddDataPoints(connMetrics);
+    */
 
     metrics.clear();
 }
 
 void MultipartTransferState::PartInfo::AddDataUpMetric(uint64_t dataUp)
 {
-    PushMetric(uploadMetrics, "BytesUp", (double)dataUp);
+    PushMetric(uploadMetrics, MetricName::BytesUp, (double)dataUp);
 }
 
 void MultipartTransferState::PartInfo::AddDataDownMetric(uint64_t dataDown)
 {
-    PushMetric(downloadMetrics, "BytesDown", (double)dataDown);
+    PushMetric(downloadMetrics, MetricName::BytesDown, (double)dataDown);
 }
 
 void MultipartTransferState::PartInfo::FlushDataUpMetrics()
