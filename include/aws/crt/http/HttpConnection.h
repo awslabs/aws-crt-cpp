@@ -199,6 +199,13 @@ namespace Aws
                  */
                 virtual int GetResponseStatusCode() const noexcept override;
 
+                /**
+                 * Activates the request's outgoing stream processing.
+                 *
+                 * Returns true on success, false otherwise.
+                 */
+                bool Activate() noexcept;
+
               private:
                 HttpClientStream(const std::shared_ptr<HttpClientConnection> &connection) noexcept;
 
@@ -333,6 +340,14 @@ namespace Aws
                  * Optional.
                  */
                 Optional<HttpClientConnectionProxyOptions> ProxyOptions;
+
+                /**
+                 * If set to true, then the TCP read back pressure mechanism will be enabled. You should
+                 * only use this if you're allowing http response body data to escape the callbacks. E.g. you're
+                 * putting the data into a queue for another thread to process and need to make sure the memory
+                 * usage is bounded.
+                 */
+                bool EnableReadBackPressure;
             };
 
             /**
@@ -356,6 +371,8 @@ namespace Aws
                  * not be freed until the stream is completed.
                  *
                  * Returns an instance of HttpStream upon success and nullptr on failure.
+                 *
+                 * You must call HttpClientStream::Activate() to begin outgoing processing of the stream.
                  */
                 std::shared_ptr<HttpClientStream> NewClientStream(const HttpRequestOptions &requestOptions) noexcept;
 

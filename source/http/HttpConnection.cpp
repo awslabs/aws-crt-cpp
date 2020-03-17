@@ -130,6 +130,7 @@ namespace Aws
                 options.socket_options = &connectionOptions.SocketOptions.GetImpl();
                 options.on_setup = HttpClientConnection::s_onClientConnectionSetup;
                 options.on_shutdown = HttpClientConnection::s_onClientConnectionShutdown;
+                options.enable_read_back_pressure = connectionOptions.EnableReadBackPressure;
 
                 if (aws_http_client_connect(&options))
                 {
@@ -300,6 +301,8 @@ namespace Aws
 
                 return -1;
             }
+
+            bool HttpClientStream::Activate() noexcept { return aws_http_stream_activate(m_stream) == 0; }
 
             void HttpStream::UpdateWindow(std::size_t incrementSize) noexcept
             {

@@ -189,7 +189,9 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     host_header.value = uri.GetHostName();
     request.AddHeader(host_header);
 
-    connection->NewClientStream(requestOptions);
+    auto stream = connection->NewClientStream(requestOptions);
+    ASSERT_TRUE(stream->Activate());
+
     semaphore.wait(semaphoreULock, [&]() { return streamCompleted; });
     ASSERT_INT_EQUALS(200, responseCode);
 
