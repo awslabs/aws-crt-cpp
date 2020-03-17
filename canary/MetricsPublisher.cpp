@@ -28,6 +28,13 @@
 
 using namespace Aws::Crt;
 
+Metric::Metric() {}
+
+Metric::Metric(const char *metricName, MetricUnit unit, double value) : Unit(unit), Value(value), MetricName(metricName)
+{
+    SetTimestampNow();
+}
+
 void Metric::SetTimestampNow()
 {
     uint64_t current_time = 0;
@@ -216,22 +223,7 @@ void MetricsPublisher::AddDataPoint(const Metric &newMetric)
 {
     std::lock_guard<std::mutex> locker(m_publishDataLock);
 
-    bool foundMatch = false;
-
-    for (Metric &metric : m_publishData)
-    {
-        if (metric.Timestamp == newMetric.Timestamp && metric.MetricName == newMetric.MetricName)
-        {
-            metric.Value += newMetric.Value;
-            foundMatch = true;
-            break;
-        }
-    }
-
-    if (!foundMatch)
-    {
-        m_publishData.push_back(newMetric);
-    }
+    AddDataPointInternal(newMetric);
 }
 
 void MetricsPublisher::AddDataPoints(const Vector<Metric> &newMetrics)
@@ -242,11 +234,33 @@ void MetricsPublisher::AddDataPoints(const Vector<Metric> &newMetrics)
 
     for (const Metric &newMetric : newMetrics)
     {
-        m_publishData.push_back(newMetric);
+        AddDataPointInternal(newMetric);
     }
 
     AWS_LOGF_INFO(
         AWS_LS_CRT_CPP_CANARY, "Number of metrics before/after: %d/%d", numBefore, (uint32_t)m_publishData.size());
+}
+
+void MetricsPublisher::AddDataPointInternal(const Metric &newMetric)
+{
+    bool foundMatch = false;
+
+    // TODO average size of m_publishData may justify doing a lookup here
+    // instead of a linear search, especially in the case of AddDataPoints.
+    for (Metric &existingMetric : m_publishData)
+    {
+        if (existingMetric.Timestamp == newMetric.Timestamp && existingMetric.MetricName == newMetric.MetricName)
+        {
+            existingMetric.Value += newMetric.Value;
+            foundMatch = true;
+            break;
+        }
+    }
+
+    if (!foundMatch)
+    {
+        m_publishData.push_back(newMetric);
+    }
 }
 
 void MetricsPublisher::AddTransferStatusDataPoint(bool transferSuccess)
@@ -294,6 +308,8 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
     Vector<Metric> metricsCpy;
     {
         std::lock_guard<std::mutex> locker(publisher->m_publishDataLock);
+
+        // If there's no data left, schedule the next publish and send a notify that we've published everything we have.
         if (publisher->m_publishData.empty())
         {
             uint64_t now = 0;
@@ -304,6 +320,7 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
             return;
         }
 
+        // Create a copy of the metrics to publish from
         {
             metricsCpy = std::move(publisher->m_publishData);
             publisher->m_publishData = Vector<Metric>();

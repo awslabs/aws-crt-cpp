@@ -68,6 +68,13 @@ void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
         ++desiredNumberOfAddresses;
     }
 
+/*
+    {
+        aws_host_resolver *resolver = m_canaryApp.defaultHostResolver.GetUnderlyingHandle();
+        aws_host_resolver_purge_cache(resolver);
+    }
+*/
+
     m_canaryApp.defaultHostResolver.ResolveHost(
         m_endpoint, [](Io::HostResolver &, const Vector<Io::HostAddress> &, int) {});
 
@@ -214,8 +221,7 @@ void S3ObjectTransport::MakeSignedRequest(
 
                 if (connErrorCode == AWS_ERROR_SUCCESS)
                 {
-                    Aws::Crt::String resolvedHost = conn->GetResolvedHost();
-
+                    // Aws::Crt::String resolvedHost = conn->GetResolvedHost();
                     // AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Resolved host is: %s", resolvedHost.c_str());
                     // m_uniqueEndpointsUsed.insert(std::move(resolvedHost));
 
