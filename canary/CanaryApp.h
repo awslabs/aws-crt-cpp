@@ -74,6 +74,7 @@ class CanaryApp
     std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> signer;
     std::shared_ptr<MetricsPublisher> publisher;
     std::shared_ptr<S3ObjectTransport> transport;
+    std::shared_ptr<S3ObjectTransport> transportSecondary;
     std::shared_ptr<MeasureTransferRate> measureTransferRate;
 
     const CanaryAppOptions &GetOptions() { return options; }

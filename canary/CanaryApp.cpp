@@ -117,6 +117,7 @@ CanaryApp::CanaryApp(CanaryAppOptions &&inOptions, std::vector<CanaryAppChildPro
 
     publisher = MakeShared<MetricsPublisher>(g_allocator, *this, "CRT-CPP-Canary-V2");
     transport = MakeShared<S3ObjectTransport>(g_allocator, *this, "aws-crt-canary-bucket");
+    transportSecondary = MakeShared<S3ObjectTransport>(g_allocator, *this, "aws-crt-test-stuff-us-west-2");
     measureTransferRate = MakeShared<MeasureTransferRate>(g_allocator, *this);
 }
 

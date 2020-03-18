@@ -150,16 +150,18 @@ void MeasureTransferRate::PerformMeasurement(
     String addressKey = String() + keyPrefix + "address";
     String finishedKey = String() + keyPrefix + "finished";
 
+    std::shared_ptr<S3ObjectTransport> transport = (flags & (uint32_t)MeasurementFlags::SecondaryTransport) == 0 ? m_canaryApp.transport : m_canaryApp.transportSecondary;
+
     if (m_canaryApp.GetOptions().isParentProcess)
     {
         if ((flags & (uint32_t)MeasurementFlags::DontWarmDNSCache) == 0)
         {
-            m_canaryApp.transport->WarmDNSCache(numConcurrentTransfers);
+            transport->WarmDNSCache(numConcurrentTransfers);
         }
 
         for (uint32_t i = 0; i < numTransfers; ++i)
         {
-            const String &address = m_canaryApp.transport->GetAddressForTransfer(i);
+            const String &address = transport->GetAddressForTransfer(i);
             m_canaryApp.WriteToChildProcess(i, addressKey.c_str(), address.c_str());
         }
 
@@ -176,17 +178,17 @@ void MeasureTransferRate::PerformMeasurement(
 
         AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Child got back address %s", address.c_str());
 
-        m_canaryApp.transport->SeedAddressCache(address);
-        m_canaryApp.transport->SpawnConnectionManagers();
+        transport->SeedAddressCache(address);
+        transport->SpawnConnectionManagers();
     }
     else
     {
         if ((flags & (uint32_t)MeasurementFlags::DontWarmDNSCache) == 0)
         {
-            m_canaryApp.transport->WarmDNSCache(numConcurrentTransfers);
+            transport->WarmDNSCache(numConcurrentTransfers);
         }
 
-        m_canaryApp.transport->SpawnConnectionManagers();
+        transport->SpawnConnectionManagers();
     }
 
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting performance measurement.");
@@ -378,10 +380,8 @@ void MeasureTransferRate::MeasureHttpTransfer()
 
 void MeasureTransferRate::MeasureSmallObjectTransfer()
 {
-    const char *filenamePrefix = "crt-canary-obj-small-";
-
     PerformMeasurement(
-        filenamePrefix,
+        "crt-canary-obj-small-",
         "smallObjectUp-",
         m_canaryApp.GetOptions().numTransfers,
         m_canaryApp.GetOptions().numConcurrentTransfers,
@@ -405,20 +405,25 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
                 });
         });
 
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
+    m_canaryApp.publisher->SchedulePublish();
+    m_canaryApp.publisher->WaitForLastPublish();
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
+
     PerformMeasurement(
-        filenamePrefix,
+        "crt-canary-obj.txt",
         "smallObjectDown-",
-        m_canaryApp.GetOptions().numTransfers,
-        m_canaryApp.GetOptions().numConcurrentTransfers,
+        160, //m_canaryApp.GetOptions().numTransfers,
+        160, //m_canaryApp.GetOptions().numConcurrentTransfers,
         SmallObjectSize,
-        0,
+        (uint32_t)MeasurementFlags::NoFileSuffix | (uint32_t)MeasurementFlags::SecondaryTransport,
         [this](String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
             std::shared_ptr<MultipartTransferState::PartInfo> singlePart = MakeShared<MultipartTransferState::PartInfo>(
                 m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, 0LL, SmallObjectSize);
 
             singlePart->AddDataDownMetric(0);
 
-            m_canaryApp.transport->GetObject(
+            m_canaryApp.transportSecondary->GetObject(
                 key,
                 0,
                 [singlePart](const Http::HttpStream &, const ByteCursor &cur) {
@@ -433,6 +438,7 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
 
     aws_event_loop_cancel_task(m_schedulingLoop, &m_pulseMetricsTask);
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
+    m_canaryApp.publisher->SchedulePublish();
     m_canaryApp.publisher->WaitForLastPublish();
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
 }

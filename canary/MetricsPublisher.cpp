@@ -77,8 +77,8 @@ MetricsPublisher::MetricsPublisher(
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, g_allocator);
 
     m_schedulingLoop = aws_event_loop_group_get_next_loop(canaryApp.eventLoopGroup.GetUnderlyingHandle());
-    SchedulePublish();
-
+    //SchedulePublish();
+    
     m_hostHeader.name = ByteCursorFromCString("host");
     m_hostHeader.value = ByteCursorFromCString(m_endpoint.c_str());
 
@@ -340,10 +340,7 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
         // If there's no data left, schedule the next publish and send a notify that we've published everything we have.
         if (publisher->m_publishData.empty())
         {
-            uint64_t now = 0;
-            aws_event_loop_current_clock_time(publisher->m_schedulingLoop, &now);
-            aws_event_loop_schedule_task_future(
-                publisher->m_schedulingLoop, &publisher->m_publishTask, now + publisher->m_publishFrequencyNs);
+            //publisher->SchedulePublish();
             publisher->m_waitForLastPublishCV.notify_all();
             return;
         }
@@ -432,10 +429,7 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
                             AWS_LS_CRT_CPP_CANARY, "METRICS Error acquiring connection to send metrics: %d", connError);
                     }
 
-                    uint64_t now = 0;
-                    aws_event_loop_current_clock_time(publisher->m_schedulingLoop, &now);
-                    aws_event_loop_schedule_task_future(
-                        publisher->m_schedulingLoop, &publisher->m_publishTask, now + publisher->m_publishFrequencyNs);
+                    publisher->SchedulePublish();
                 });
             }
             else

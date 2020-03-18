@@ -59,8 +59,9 @@ class MeasureTransferRate
   private:
     enum MeasurementFlags
     {
-        NoFileSuffix = 0x00000001,
-        DontWarmDNSCache = 0x00000002
+        NoFileSuffix =       0x00000001,
+        DontWarmDNSCache =   0x00000002,
+        SecondaryTransport = 0x00000004
     };
 
     using NotifyTransferFinished = std::function<void(int32_t errorCode)>;
