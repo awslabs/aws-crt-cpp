@@ -68,10 +68,10 @@ int filterLog(
 
 CanaryAppOptions::CanaryAppOptions() noexcept
     : platformName(CanaryUtil::GetPlatformName()), toolName("NA"), instanceType("unknown"), region("us-west-2"),
-      readFromParentPipe(-1), writeToParentPipe(-1), mtu(0), numTransfers(1), numConcurrentTransfers(0),
-      childProcessIndex(0), measureLargeTransfer(false), measureSmallTransfer(false), measureHttpTransfer(false),
-      usingNumaControl(false), sendEncrypted(false), loggingEnabled(false), isParentProcess(false),
-      isChildProcess(false)
+      readFromParentPipe(-1), writeToParentPipe(-1), mtu(0), numUpTransfers(1), numUpConcurrentTransfers(0),
+      numDownTransfers(1), numDownConcurrentTransfers(0), childProcessIndex(0), measureLargeTransfer(false),
+      measureSmallTransfer(false), measureHttpTransfer(false), usingNumaControl(false), sendEncrypted(false),
+      loggingEnabled(false), isParentProcess(false), isChildProcess(false)
 {
 }
 
@@ -88,7 +88,7 @@ CanaryApp::CanaryApp(CanaryAppOptions &&inOptions, std::vector<CanaryAppChildPro
       defaultHostResolver(eventLoopGroup, 60, 3600, traceAllocator),
       bootstrap(eventLoopGroup, defaultHostResolver, traceAllocator), options(inOptions), children(inChildren)
 {
-#ifdef __linux__
+#ifndef WIN32
     rlimit fdsLimit;
     getrlimit(RLIMIT_NOFILE, &fdsLimit);
     fdsLimit.rlim_cur = 8192;
@@ -122,24 +122,33 @@ CanaryApp::CanaryApp(CanaryAppOptions &&inOptions, std::vector<CanaryAppChildPro
 
 void CanaryApp::WriteToChildProcess(uint32_t index, const char *key, const char *value)
 {
+#ifndef WIN32
     const CanaryAppChildProcess &child = children[index]; // TODO bounds fatal assert?
 
     AWS_LOGF_INFO(
         AWS_LS_CRT_CPP_CANARY, "Writing %s:%s to child %d through pipe %d", key, value, index, child.writeToChildPipe);
 
     WriteKeyValueToPipe(key, value, child.writeToChildPipe);
+#else
+    AWS_FATAL_ASSERT(false);
+#endif
 }
 
 void CanaryApp::WriteToParentProcess(const char *key, const char *value)
 {
+#ifndef WIN32
     AWS_LOGF_INFO(
         AWS_LS_CRT_CPP_CANARY, "Writing %s:%s to parent through pipe %d", key, value, options.writeToParentPipe);
 
     WriteKeyValueToPipe(key, value, options.writeToParentPipe);
+#else
+    AWS_FATAL_ASSERT(false);
+#endif
 }
 
 String CanaryApp::ReadFromChildProcess(uint32_t index, const char *key)
 {
+#ifndef WIN32
     CanaryAppChildProcess &child = children[index];
 
     AWS_LOGF_INFO(
@@ -154,10 +163,15 @@ String CanaryApp::ReadFromChildProcess(uint32_t index, const char *key)
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Got value %s from child %d", value.c_str(), index);
 
     return value;
+#else
+    AWS_FATAL_ASSERT(false);
+    return "";
+#endif
 }
 
 String CanaryApp::ReadFromParentProcess(const char *key)
 {
+#ifndef WIN32
     AWS_LOGF_INFO(
         AWS_LS_CRT_CPP_CANARY, "Reading value of %s from parent through pipe %d...", key, options.readFromParentPipe);
 
@@ -166,10 +180,17 @@ String CanaryApp::ReadFromParentProcess(const char *key)
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Got value %s from parent", value.c_str());
 
     return value;
+#else
+    AWS_FATAL_ASSERT(false);
+    return "";
+#endif
 }
+
+#ifndef WIN32
 
 void CanaryApp::WriteKeyValueToPipe(const char *key, const char *value, uint32_t writePipe)
 {
+
     const char nullTerm = '\0';
 
     write(writePipe, key, strlen(key));
@@ -243,6 +264,8 @@ std::pair<String, String> CanaryApp::ReadNextKeyValuePairFromPipe(int32_t readPi
     return keyValuePair;
 }
 
+#endif
+
 void CanaryApp::Run()
 {
     if (options.measureSmallTransfer)
@@ -263,6 +286,7 @@ void CanaryApp::Run()
         measureTransferRate->MeasureHttpTransfer();
     }
 
+#ifndef WIN32
     for (CanaryAppChildProcess &childProcess : children)
     {
         if (childProcess.readFromChildPipe != -1)
@@ -291,4 +315,5 @@ void CanaryApp::Run()
     }
 
     children.clear();
+#endif
 }

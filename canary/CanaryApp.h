@@ -30,8 +30,10 @@ struct CanaryAppOptions
     int32_t readFromParentPipe;
     int32_t writeToParentPipe;
     uint32_t mtu;
-    uint32_t numTransfers;
-    uint32_t numConcurrentTransfers;
+    uint32_t numUpTransfers;
+    uint32_t numUpConcurrentTransfers;
+    uint32_t numDownTransfers;
+    uint32_t numDownConcurrentTransfers;
     uint32_t childProcessIndex;
 
     uint32_t measureLargeTransfer : 1;
@@ -86,6 +88,8 @@ class CanaryApp
 
   private:
     CanaryAppOptions options;
+
+#ifndef WIN32
     std::vector<CanaryAppChildProcess> children;
     std::map<Aws::Crt::String, Aws::Crt::String> valuesFromParent;
 
@@ -96,4 +100,5 @@ class CanaryApp
         int32_t readPipe,
         std::map<Aws::Crt::String, Aws::Crt::String> &keyValuePairs);
     std::pair<Aws::Crt::String, Aws::Crt::String> ReadNextKeyValuePairFromPipe(int32_t readPipe);
+#endif
 };
