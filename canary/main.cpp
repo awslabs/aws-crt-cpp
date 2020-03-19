@@ -38,6 +38,35 @@ extern "C"
 
 using namespace Aws::Crt;
 
+void ParseTransferPair(const char *str, uint32_t &outUpValue, uint32_t &outDownValue)
+{
+    std::string numTransfersStr = str;
+    int32_t index = numTransfersStr.find(":");
+
+    if (index == -1)
+    {
+        int32_t numTransfers = atoi(numTransfersStr.c_str());
+        outUpValue = numTransfers;
+        outDownValue = numTransfers;
+    }
+    else
+    {
+        numTransfersStr[index] = '\0';
+        outUpValue = atoi(numTransfersStr.c_str());
+        outDownValue = atoi(numTransfersStr.c_str() + index + 1);
+    }
+}
+
+void InitNumConcurrentTransfers(uint32_t numTransfers, uint32_t &inOutNumConcurrentTransfers)
+{
+    if (inOutNumConcurrentTransfers == 0)
+    {
+        inOutNumConcurrentTransfers = numTransfers;
+    }
+
+    inOutNumConcurrentTransfers = std::min(inOutNumConcurrentTransfers, numTransfers);
+}
+
 int main(int argc, char *argv[])
 {
     enum class CLIOption
@@ -48,9 +77,7 @@ int main(int argc, char *argv[])
         MeasureSmallTransfer,
         MeasureHttpTransfer,
         Logging,
-        UsingNumaControl,
         SendEncrypted,
-        MTU,
         Fork,
         NumTransfers,
         NumConcurrentTransfers,
@@ -64,9 +91,7 @@ int main(int argc, char *argv[])
                                       {"measureSmallTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 's'},
                                       {"measureHttpTransfer", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'h'},
                                       {"logging", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'd'},
-                                      {"usingNumaControl", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'C'},
                                       {"sendEncrypted", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'e'},
-                                      {"mtu", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'm'},
                                       {"fork", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'f'},
                                       {"numTransfers", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'n'},
                                       {"numConcurrentTransfers", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'c'}};
@@ -113,14 +138,8 @@ int main(int argc, char *argv[])
             case CLIOption::Logging:
                 canaryAppOptions.loggingEnabled = true;
                 break;
-            case CLIOption::UsingNumaControl:
-                canaryAppOptions.usingNumaControl = true;
-                break;
             case CLIOption::SendEncrypted:
                 canaryAppOptions.sendEncrypted = true;
-                break;
-            case CLIOption::MTU:
-                canaryAppOptions.mtu = atoi(aws_cli_optarg);
                 break;
             case CLIOption::Fork:
 #ifndef WIN32
@@ -130,10 +149,13 @@ int main(int argc, char *argv[])
 #endif
                 break;
             case CLIOption::NumTransfers:
-                canaryAppOptions.numTransfers = (uint32_t)atoi(aws_cli_optarg);
+                ParseTransferPair(aws_cli_optarg, canaryAppOptions.numUpTransfers, canaryAppOptions.numDownTransfers);
                 break;
             case CLIOption::NumConcurrentTransfers:
-                canaryAppOptions.numConcurrentTransfers = (uint32_t)std::max(0, atoi(aws_cli_optarg));
+                ParseTransferPair(
+                    aws_cli_optarg,
+                    canaryAppOptions.numUpConcurrentTransfers,
+                    canaryAppOptions.numDownConcurrentTransfers);
                 break;
             default:
                 AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Unknown CLI option used.");
@@ -141,13 +163,8 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (canaryAppOptions.numConcurrentTransfers == 0)
-    {
-        canaryAppOptions.numConcurrentTransfers = canaryAppOptions.numTransfers;
-    }
-
-    canaryAppOptions.numConcurrentTransfers =
-        std::min(canaryAppOptions.numConcurrentTransfers, canaryAppOptions.numTransfers);
+    InitNumConcurrentTransfers(canaryAppOptions.numUpTransfers, canaryAppOptions.numUpConcurrentTransfers);
+    InitNumConcurrentTransfers(canaryAppOptions.numDownTransfers, canaryAppOptions.numDownConcurrentTransfers);
 
     std::vector<CanaryAppChildProcess> children;
 
@@ -156,7 +173,9 @@ int main(int argc, char *argv[])
     {
         canaryAppOptions.isParentProcess = true;
 
-        for (uint32_t i = 0; i < canaryAppOptions.numTransfers; ++i)
+        uint32_t maxNumTransfers = std::max(canaryAppOptions.numUpTransfers, canaryAppOptions.numDownTransfers);
+
+        for (uint32_t i = 0; i < maxNumTransfers; ++i)
         {
             int32_t pipeParentToChild[2];
             int32_t pipeChildToParent[2];
@@ -173,7 +192,10 @@ int main(int argc, char *argv[])
                 canaryAppOptions.readFromParentPipe = pipeParentToChild[0];
                 canaryAppOptions.writeToParentPipe = pipeChildToParent[1];
                 canaryAppOptions.childProcessIndex = i;
-                canaryAppOptions.numTransfers = 1;
+                canaryAppOptions.numUpTransfers = 1;
+                canaryAppOptions.numUpConcurrentTransfers = 1;
+                canaryAppOptions.numDownTransfers = 1;
+                canaryAppOptions.numDownConcurrentTransfers = 1;
                 break;
             }
             else

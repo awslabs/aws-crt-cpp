@@ -150,7 +150,9 @@ void MeasureTransferRate::PerformMeasurement(
     String addressKey = String() + keyPrefix + "address";
     String finishedKey = String() + keyPrefix + "finished";
 
-    std::shared_ptr<S3ObjectTransport> transport = (flags & (uint32_t)MeasurementFlags::SecondaryTransport) == 0 ? m_canaryApp.transport : m_canaryApp.transportSecondary;
+    std::shared_ptr<S3ObjectTransport> transport = (flags & (uint32_t)MeasurementFlags::SecondaryTransport) == 0
+                                                       ? m_canaryApp.transport
+                                                       : m_canaryApp.transportSecondary;
 
     if (m_canaryApp.GetOptions().isParentProcess)
     {
@@ -289,8 +291,8 @@ void MeasureTransferRate::MeasureHttpTransfer()
     PerformMeasurement(
         testFilename.c_str(),
         "httpTransferDown-",
-        m_canaryApp.GetOptions().numTransfers,
-        m_canaryApp.GetOptions().numConcurrentTransfers,
+        m_canaryApp.GetOptions().numDownTransfers,
+        m_canaryApp.GetOptions().numDownConcurrentTransfers,
         SmallObjectSize,
         (uint32_t)MeasurementFlags::DontWarmDNSCache | (uint32_t)MeasurementFlags::NoFileSuffix,
         [this, connManager, &testFilename, &hostHeader](
@@ -380,11 +382,19 @@ void MeasureTransferRate::MeasureHttpTransfer()
 
 void MeasureTransferRate::MeasureSmallObjectTransfer()
 {
+    AWS_LOGF_INFO(
+        AWS_LS_CRT_CPP_CANARY,
+        "Measurements: %d,%d %d,%d",
+        m_canaryApp.GetOptions().numUpTransfers,
+        m_canaryApp.GetOptions().numUpConcurrentTransfers,
+        m_canaryApp.GetOptions().numDownTransfers,
+        m_canaryApp.GetOptions().numDownConcurrentTransfers);
+
     PerformMeasurement(
         "crt-canary-obj-small-",
         "smallObjectUp-",
-        m_canaryApp.GetOptions().numTransfers,
-        m_canaryApp.GetOptions().numConcurrentTransfers,
+        m_canaryApp.GetOptions().numUpTransfers,
+        m_canaryApp.GetOptions().numUpConcurrentTransfers,
         SmallObjectSize,
         0,
         [this](String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
@@ -413,8 +423,8 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
     PerformMeasurement(
         "crt-canary-obj.txt",
         "smallObjectDown-",
-        160, //m_canaryApp.GetOptions().numTransfers,
-        160, //m_canaryApp.GetOptions().numConcurrentTransfers,
+        m_canaryApp.GetOptions().numDownTransfers,
+        m_canaryApp.GetOptions().numDownConcurrentTransfers,
         SmallObjectSize,
         (uint32_t)MeasurementFlags::NoFileSuffix | (uint32_t)MeasurementFlags::SecondaryTransport,
         [this](String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
@@ -450,8 +460,8 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
     PerformMeasurement(
         filenamePrefix,
         "largeObjectUp-",
-        m_canaryApp.GetOptions().numTransfers,
-        m_canaryApp.GetOptions().numConcurrentTransfers,
+        m_canaryApp.GetOptions().numUpTransfers,
+        m_canaryApp.GetOptions().numUpConcurrentTransfers,
         LargeObjectSize,
         0,
         [this](String &&key, uint64_t objectSize, NotifyTransferFinished &&notifyTransferFinished) {
@@ -479,8 +489,8 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
     PerformMeasurement(
         filenamePrefix,
         "largeObjectDown-",
-        m_canaryApp.GetOptions().numConcurrentTransfers,
-        S3ObjectTransport::MaxStreams,
+        m_canaryApp.GetOptions().numDownTransfers,
+        m_canaryApp.GetOptions().numDownConcurrentTransfers,
         LargeObjectSize,
         0,
         [this](String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {

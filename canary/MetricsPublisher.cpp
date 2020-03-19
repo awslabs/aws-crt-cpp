@@ -77,8 +77,8 @@ MetricsPublisher::MetricsPublisher(
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, g_allocator);
 
     m_schedulingLoop = aws_event_loop_group_get_next_loop(canaryApp.eventLoopGroup.GetUnderlyingHandle());
-    //SchedulePublish();
-    
+    // SchedulePublish();
+
     m_hostHeader.name = ByteCursorFromCString("host");
     m_hostHeader.value = ByteCursorFromCString(m_endpoint.c_str());
 
@@ -224,22 +224,17 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.3.Value=" << instanceType << "&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Name=TransferSize&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Value=" << transferSizeString << "&";
-        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.5.Name=UsingNumaControl&";
-        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.5.Value=" << options.usingNumaControl
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.5.Name=Encrypted&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.5.Value=" << options.sendEncrypted
                    << "&";
-        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.6.Name=Encrypted&";
-        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.6.Value=" << options.sendEncrypted
-                   << "&";
-        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.7.Name=MTU&";
-        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.7.Value=" << options.mtu << "&";
 
         if (m_transferSize == MetricTransferSize::Large)
         {
-            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.8.Name=NumParts&";
+            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.6.Name=NumParts&";
             bodyStream << "MetricData.member." << metricCount
-                       << ".Dimensions.member.8.Value=" << MeasureTransferRate::LargeObjectNumParts << "&";
-            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.9.Name=PartSize&";
-            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.9.Value=" << largeObjectPartSize
+                       << ".Dimensions.member.6.Value=" << MeasureTransferRate::LargeObjectNumParts << "&";
+            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.7.Name=PartSize&";
+            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.7.Value=" << largeObjectPartSize
                        << "&";
         }
 
@@ -340,7 +335,7 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
         // If there's no data left, schedule the next publish and send a notify that we've published everything we have.
         if (publisher->m_publishData.empty())
         {
-            //publisher->SchedulePublish();
+            // publisher->SchedulePublish();
             publisher->m_waitForLastPublishCV.notify_all();
             return;
         }
