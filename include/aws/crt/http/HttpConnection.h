@@ -127,7 +127,7 @@ namespace Aws
              * Represents a single http message exchange (request/response) or in H2, it can also represent
              * a PUSH_PROMISE followed by the accompanying Response.
              */
-            class AWS_CRT_CPP_API HttpStream
+            class AWS_CRT_CPP_API HttpStream : public std::enable_shared_from_this<HttpStream>
             {
               public:
                 virtual ~HttpStream();
@@ -184,10 +184,17 @@ namespace Aws
                 friend class HttpClientConnection;
             };
 
+            struct ClientStreamCallbackData
+            {
+                ClientStreamCallbackData() : allocator(nullptr), stream(nullptr) {}
+                Allocator *allocator;
+                std::shared_ptr<HttpStream> stream;
+            };
+
             class AWS_CRT_CPP_API HttpClientStream final : public HttpStream
             {
               public:
-                ~HttpClientStream() = default;
+                ~HttpClientStream();
                 HttpClientStream(const HttpClientStream &) = delete;
                 HttpClientStream(HttpClientStream &&) = delete;
                 HttpClientStream &operator=(const HttpClientStream &) = delete;
@@ -209,6 +216,7 @@ namespace Aws
               private:
                 HttpClientStream(const std::shared_ptr<HttpClientConnection> &connection) noexcept;
 
+                ClientStreamCallbackData m_callbackData;
                 friend class HttpClientConnection;
             };
 

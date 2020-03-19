@@ -204,3 +204,113 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
 }
 
 AWS_TEST_CASE(HttpDownloadNoBackPressure, s_TestHttpDownloadNoBackPressure)
+
+static int s_TestHttpStreamUnActivated(struct aws_allocator *allocator, void *ctx) {
+    (void) ctx;
+    Aws::Crt::ApiHandle apiHandle(allocator);
+    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
+    Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+    ASSERT_TRUE(tlsContext);
+
+    Aws::Crt::Io::TlsConnectionOptions tlsConnectionOptions = tlsContext.NewConnectionOptions();
+
+    ByteCursor cursor = ByteCursorFromCString("https://aws-crt-test-stuff.s3.amazonaws.com/http_test_doc.txt");
+    Io::Uri uri(cursor, allocator);
+
+    auto hostName = uri.GetHostName();
+    tlsConnectionOptions.SetServerName(hostName);
+
+    Aws::Crt::Io::SocketOptions socketOptions;
+    socketOptions.SetConnectTimeoutMs(1000);
+
+    Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+    ASSERT_TRUE(eventLoopGroup);
+
+    Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+    ASSERT_TRUE(defaultHostResolver);
+
+    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+    ASSERT_TRUE(clientBootstrap);
+
+    std::shared_ptr<Http::HttpClientConnection> connection(nullptr);
+    bool errorOccured = true;
+    bool connectionShutdown = false;
+
+    std::condition_variable semaphore;
+    std::mutex semaphoreLock;
+
+    auto onConnectionSetup = [&](const std::shared_ptr<Http::HttpClientConnection> &newConnection, int errorCode) {
+        std::lock_guard<std::mutex> lockGuard(semaphoreLock);
+
+        if (!errorCode) {
+            connection = newConnection;
+            errorOccured = false;
+        } else {
+            connectionShutdown = true;
+        }
+
+        semaphore.notify_one();
+    };
+
+    auto onConnectionShutdown = [&](Http::HttpClientConnection &newConnection, int errorCode) {
+        std::lock_guard<std::mutex> lockGuard(semaphoreLock);
+
+        connectionShutdown = true;
+        if (errorCode) {
+            errorOccured = true;
+        }
+
+        semaphore.notify_one();
+    };
+
+    Http::HttpClientConnectionOptions httpClientConnectionOptions;
+    httpClientConnectionOptions.Bootstrap = &clientBootstrap;
+    httpClientConnectionOptions.OnConnectionSetupCallback = onConnectionSetup;
+    httpClientConnectionOptions.OnConnectionShutdownCallback = onConnectionShutdown;
+    httpClientConnectionOptions.SocketOptions = socketOptions;
+    httpClientConnectionOptions.TlsOptions = tlsConnectionOptions;
+    httpClientConnectionOptions.HostName = String((const char *) hostName.ptr, hostName.len);
+    httpClientConnectionOptions.Port = 443;
+
+    std::unique_lock<std::mutex> semaphoreULock(semaphoreLock);
+    ASSERT_TRUE(Http::HttpClientConnection::CreateConnection(httpClientConnectionOptions, allocator));
+    semaphore.wait(semaphoreULock, [&]() { return connection || connectionShutdown; });
+
+    ASSERT_FALSE(errorOccured);
+    ASSERT_FALSE(connectionShutdown);
+    ASSERT_TRUE(connection);
+
+    Http::HttpRequest request;
+    Http::HttpRequestOptions requestOptions;
+    requestOptions.request = &request;
+
+    requestOptions.onStreamComplete = [&](Http::HttpStream &, int) {
+        //do nothing.
+    };
+    requestOptions.onIncomingHeadersBlockDone = nullptr;
+    requestOptions.onIncomingHeaders =
+            [&](Http::HttpStream &, enum aws_http_header_block, const Http::HttpHeader *, std::size_t) {
+                //do nothing
+            };
+    requestOptions.onIncomingBody = [&](Http::HttpStream &, const ByteCursor &) {
+        //do nothing
+    };
+
+    request.SetMethod(ByteCursorFromCString("GET"));
+    request.SetPath(uri.GetPathAndQuery());
+
+    Http::HttpHeader host_header;
+    host_header.name = ByteCursorFromCString("host");
+    host_header.value = uri.GetHostName();
+    request.AddHeader(host_header);
+
+    // don't activate it and let it go out of scope.
+    auto stream = connection->NewClientStream(requestOptions);
+    stream = nullptr;
+    connection->Close();
+    semaphore.wait(semaphoreULock, [&]() { return connectionShutdown; });
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(HttpStreamUnActivated, s_TestHttpStreamUnActivated)

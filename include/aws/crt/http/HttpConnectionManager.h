@@ -99,12 +99,12 @@ namespace Aws
                  */
                 static std::shared_ptr<HttpClientConnectionManager> NewClientConnectionManager(
                     const HttpClientConnectionManagerOptions &connectionManagerOptions,
-                    Allocator *allocator = DefaultAllocator()) noexcept;
+                    Allocator *allocator = g_allocator) noexcept;
 
               private:
                 HttpClientConnectionManager(
                     const HttpClientConnectionManagerOptions &options,
-                    Allocator *allocator = DefaultAllocator()) noexcept;
+                    Allocator *allocator = g_allocator) noexcept;
 
                 Allocator *m_allocator;
 

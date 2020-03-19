@@ -146,12 +146,6 @@ namespace Aws
             {
             }
 
-            struct ClientStreamCallbackData
-            {
-                Allocator *allocator;
-                std::shared_ptr<HttpClientStream> stream;
-            };
-
             std::shared_ptr<HttpClientStream> HttpClientConnection::NewClientStream(
                 const HttpRequestOptions &requestOptions) noexcept
             {
@@ -173,37 +167,35 @@ namespace Aws
 
                 if (toSeat)
                 {
-                    auto *callbackData = New<ClientStreamCallbackData>(m_allocator);
-                    if (!callbackData)
-                    {
-                        aws_mem_release(m_allocator, toSeat);
-                        return nullptr;
-                    }
-
                     toSeat = new (toSeat) HttpClientStream(this->shared_from_this());
 
                     Allocator *captureAllocator = m_allocator;
-                    callbackData->stream = std::shared_ptr<HttpClientStream>(
-                        toSeat, [captureAllocator](HttpStream *stream) { Delete(stream, captureAllocator); });
+                    std::shared_ptr<HttpClientStream> stream(
+                        toSeat, [captureAllocator](HttpStream *stream)
+                        {
+                            Delete(stream, captureAllocator);
+                        }, StlAllocator<HttpClientStream>(captureAllocator));
 
-                    toSeat->m_onIncomingBody = requestOptions.onIncomingBody;
-                    toSeat->m_onIncomingHeaders = requestOptions.onIncomingHeaders;
-                    toSeat->m_onIncomingHeadersBlockDone = requestOptions.onIncomingHeadersBlockDone;
-                    toSeat->m_onStreamComplete = requestOptions.onStreamComplete;
+                    stream->m_onIncomingBody = requestOptions.onIncomingBody;
+                    stream->m_onIncomingHeaders = requestOptions.onIncomingHeaders;
+                    stream->m_onIncomingHeadersBlockDone = requestOptions.onIncomingHeadersBlockDone;
+                    stream->m_onStreamComplete = requestOptions.onStreamComplete;
+                    stream->m_callbackData.allocator = m_allocator;
 
-                    callbackData->allocator = m_allocator;
-                    options.user_data = callbackData;
-                    toSeat->m_stream = aws_http_connection_make_request(m_connection, &options);
+                    // we purposefully do not set m_callbackData::stream because we don't want the reference count
+                    // incremented until the request is kicked off via HttpClientStream::Activate(). Activate()
+                    // increments the ref count.
+                    options.user_data = &stream->m_callbackData;
+                    stream->m_stream = aws_http_connection_make_request(m_connection, &options);
 
-                    if (!toSeat->m_stream)
+                    if (!stream->m_stream)
                     {
-                        callbackData->stream = nullptr;
-                        Delete(callbackData, m_allocator);
+                        stream = nullptr;
                         m_lastError = aws_last_error();
                         return nullptr;
                     }
 
-                    return callbackData->stream;
+                    return stream;
                 }
 
                 m_lastError = aws_last_error();
@@ -261,9 +253,7 @@ namespace Aws
             {
                 auto callbackData = static_cast<ClientStreamCallbackData *>(userData);
                 callbackData->stream->m_onStreamComplete(*callbackData->stream, errorCode);
-
                 callbackData->stream = nullptr;
-                Delete(callbackData, callbackData->allocator);
             }
 
             HttpStream::HttpStream(const std::shared_ptr<HttpClientConnection> &connection) noexcept
@@ -291,6 +281,10 @@ namespace Aws
             {
             }
 
+            HttpClientStream::~HttpClientStream()
+            {
+            }
+
             int HttpClientStream::GetResponseStatusCode() const noexcept
             {
                 int status = 0;
@@ -302,7 +296,15 @@ namespace Aws
                 return -1;
             }
 
-            bool HttpClientStream::Activate() noexcept { return aws_http_stream_activate(m_stream) == 0; }
+            bool HttpClientStream::Activate() noexcept {
+                m_callbackData.stream = shared_from_this();
+                if (aws_http_stream_activate(m_stream)) {
+                    m_callbackData.stream = nullptr;
+                    return false;
+                }
+
+                return true;
+            }
 
             void HttpStream::UpdateWindow(std::size_t incrementSize) noexcept
             {
@@ -317,7 +319,8 @@ namespace Aws
 
             HttpClientConnectionOptions::HttpClientConnectionOptions()
                 : Bootstrap(nullptr), InitialWindowSize(SIZE_MAX), OnConnectionSetupCallback(),
-                  OnConnectionShutdownCallback(), HostName(), Port(0), SocketOptions(), TlsOptions(), ProxyOptions()
+                  OnConnectionShutdownCallback(), HostName(), Port(0), SocketOptions(),
+                  TlsOptions(), ProxyOptions(), EnableReadBackPressure(false)
             {
             }
         } // namespace Http

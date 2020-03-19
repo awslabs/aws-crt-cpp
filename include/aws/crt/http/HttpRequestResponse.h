@@ -85,7 +85,7 @@ namespace Aws
                 friend class Mqtt::MqttConnection;
 
               public:
-                HttpRequest(Allocator *allocator = DefaultAllocator());
+                HttpRequest(Allocator *allocator = g_allocator);
 
                 /**
                  * Gets the value of the Http method associated with this request
@@ -117,7 +117,7 @@ namespace Aws
             class AWS_CRT_CPP_API HttpResponse : public HttpMessage
             {
               public:
-                HttpResponse(Allocator *allocator = DefaultAllocator());
+                HttpResponse(Allocator *allocator = g_allocator);
 
                 /**
                  * Gets the integral Http response code associated with this response

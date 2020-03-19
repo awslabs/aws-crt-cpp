@@ -34,7 +34,7 @@ namespace Aws
                 ClientBootstrap(
                     EventLoopGroup &elGroup,
                     HostResolver &resolver,
-                    Allocator *allocator = DefaultAllocator()) noexcept;
+                    Allocator *allocator = g_allocator) noexcept;
                 ~ClientBootstrap();
                 ClientBootstrap(const ClientBootstrap &) = delete;
                 ClientBootstrap &operator=(const ClientBootstrap &) = delete;

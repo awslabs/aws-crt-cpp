@@ -40,12 +40,12 @@ namespace Aws
             class AWS_CRT_CPP_API Credentials
             {
               public:
-                Credentials(aws_credentials *credentials, Allocator *allocator = DefaultAllocator()) noexcept;
+                Credentials(aws_credentials *credentials, Allocator *allocator = g_allocator) noexcept;
                 Credentials(
                     ByteCursor access_key_id,
                     ByteCursor secret_access_key,
                     ByteCursor session_token,
-                    Allocator *allocator = DefaultAllocator()) noexcept;
+                    Allocator *allocator = g_allocator) noexcept;
 
                 ~Credentials();
 
@@ -243,7 +243,7 @@ namespace Aws
               public:
                 CredentialsProvider(
                     aws_credentials_provider *provider,
-                    Allocator *allocator = DefaultAllocator()) noexcept;
+                    Allocator *allocator = g_allocator) noexcept;
 
                 virtual ~CredentialsProvider();
 
@@ -278,27 +278,27 @@ namespace Aws
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderStatic(
                     const CredentialsProviderStaticConfig &config,
-                    Allocator *allocator = DefaultAllocator());
+                    Allocator *allocator = g_allocator);
 
                 /**
                  * Creates a provider that returns credentials sourced from environment variables
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderEnvironment(
-                    Allocator *allocator = DefaultAllocator());
+                    Allocator *allocator = g_allocator);
 
                 /**
                  * Creates a provider that returns credentials sourced from config files
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderProfile(
                     const CredentialsProviderProfileConfig &config,
-                    Allocator *allocator = DefaultAllocator());
+                    Allocator *allocator = g_allocator);
 
                 /**
                  * Creates a provider that returns credentials sourced from Ec2 instance metadata service
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderImds(
                     const CredentialsProviderImdsConfig &config,
-                    Allocator *allocator = DefaultAllocator());
+                    Allocator *allocator = g_allocator);
 
                 /**
                  * Creates a provider that sources credentials by querying a series of providers and
@@ -306,7 +306,7 @@ namespace Aws
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderChain(
                     const CredentialsProviderChainConfig &config,
-                    Allocator *allocator = DefaultAllocator());
+                    Allocator *allocator = g_allocator);
 
                 /*
                  * Creates a provider that puts a simple time-based cache in front of its queries
@@ -314,7 +314,7 @@ namespace Aws
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderCached(
                     const CredentialsProviderCachedConfig &config,
-                    Allocator *allocator = DefaultAllocator());
+                    Allocator *allocator = g_allocator);
 
                 /**
                  * Creates the SDK-standard default credentials provider which is a cache-fronted chain of:
@@ -324,7 +324,7 @@ namespace Aws
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderChainDefault(
                     const CredentialsProviderChainDefaultConfig &config,
-                    Allocator *allocator = DefaultAllocator());
+                    Allocator *allocator = g_allocator);
 
               private:
                 static void s_onCredentialsResolved(aws_credentials *credentials, void *user_data);

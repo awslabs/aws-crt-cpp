@@ -86,7 +86,7 @@ namespace Aws
             WebsocketConfig(
                 const Crt::String &signingRegion,
                 Crt::Io::ClientBootstrap *bootstrap,
-                Crt::Allocator *allocator = Crt::DefaultAllocator()) noexcept;
+                Crt::Allocator *allocator = Crt::g_allocator) noexcept;
 
             /**
              * Create a websocket configuration for use with a custom credentials provider. Signing region will be use
@@ -95,7 +95,7 @@ namespace Aws
             WebsocketConfig(
                 const Crt::String &signingRegion,
                 const std::shared_ptr<Crt::Auth::ICredentialsProvider> &credentialsProvider,
-                Crt::Allocator *allocator = Crt::DefaultAllocator()) noexcept;
+                Crt::Allocator *allocator = Crt::g_allocator) noexcept;
 
             /**
              * Create a websocket configuration for use with a custom credentials provider, and a custom signer.
@@ -140,7 +140,7 @@ namespace Aws
             MqttClientConnectionConfigBuilder(
                 const char *certPath,
                 const char *pkeyPath,
-                Crt::Allocator *allocator = Crt::DefaultAllocator()) noexcept;
+                Crt::Allocator *allocator = Crt::g_allocator) noexcept;
 
             /**
              * Sets the builder up for MTLS using cert and pkey. These are in-memory buffers and must be in the PEM
@@ -149,14 +149,14 @@ namespace Aws
             MqttClientConnectionConfigBuilder(
                 const Crt::ByteCursor &cert,
                 const Crt::ByteCursor &pkey,
-                Crt::Allocator *allocator = Crt::DefaultAllocator()) noexcept;
+                Crt::Allocator *allocator = Crt::g_allocator) noexcept;
 
             /**
              * Sets the builder up for Websocket connection.
              */
             MqttClientConnectionConfigBuilder(
                 const WebsocketConfig &config,
-                Crt::Allocator *allocator = Crt::DefaultAllocator()) noexcept;
+                Crt::Allocator *allocator = Crt::g_allocator) noexcept;
 
             /**
              * Sets endpoint to connect to.
@@ -236,7 +236,7 @@ namespace Aws
           public:
             MqttClient(
                 Crt::Io::ClientBootstrap &bootstrap,
-                Crt::Allocator *allocator = Crt::DefaultAllocator()) noexcept;
+                Crt::Allocator *allocator = Crt::g_allocator) noexcept;
 
             std::shared_ptr<Crt::Mqtt::MqttConnection> NewConnection(const MqttClientConnectionConfig &config) noexcept;
 
