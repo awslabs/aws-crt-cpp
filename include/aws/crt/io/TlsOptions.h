@@ -172,10 +172,7 @@ namespace Aws
             {
               public:
                 TlsContext() noexcept;
-                TlsContext(
-                    TlsContextOptions &options,
-                    TlsMode mode,
-                    Allocator *allocator = g_allocator) noexcept;
+                TlsContext(TlsContextOptions &options, TlsMode mode, Allocator *allocator = g_allocator) noexcept;
                 ~TlsContext() = default;
                 TlsContext(const TlsContext &) noexcept = default;
                 TlsContext &operator=(const TlsContext &) noexcept = default;

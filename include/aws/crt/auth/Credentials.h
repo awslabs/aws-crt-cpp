@@ -241,9 +241,7 @@ namespace Aws
             class AWS_CRT_CPP_API CredentialsProvider : public ICredentialsProvider
             {
               public:
-                CredentialsProvider(
-                    aws_credentials_provider *provider,
-                    Allocator *allocator = g_allocator) noexcept;
+                CredentialsProvider(aws_credentials_provider *provider, Allocator *allocator = g_allocator) noexcept;
 
                 virtual ~CredentialsProvider();
 

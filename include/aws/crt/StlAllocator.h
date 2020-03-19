@@ -30,20 +30,11 @@ namespace Aws
           public:
             using Base = std::allocator<T>;
 
-            StlAllocator() noexcept : Base()
-            {
-                m_allocator = g_allocator;
-            }
+            StlAllocator() noexcept : Base() { m_allocator = g_allocator; }
 
-            StlAllocator(Allocator *allocator) noexcept : Base ()
-            {
-                m_allocator = allocator;
-            }
+            StlAllocator(Allocator *allocator) noexcept : Base() { m_allocator = allocator; }
 
-            StlAllocator(const StlAllocator<T> &a) noexcept : Base(a)
-            {
-                m_allocator = a.m_allocator;
-            }
+            StlAllocator(const StlAllocator<T> &a) noexcept : Base(a) { m_allocator = a.m_allocator; }
 
             template <class U> StlAllocator(const StlAllocator<U> &a) noexcept : Base(a)
             {

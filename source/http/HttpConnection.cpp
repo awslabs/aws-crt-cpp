@@ -163,7 +163,7 @@ namespace Aws
 
                 /* Do the same ref counting trick we did with HttpClientConnection. We need to maintain a reference
                  * internally (regardless of what the user does), until the Stream shuts down. */
-                auto *toSeat = static_cast<HttpClientStream *>(aws_mem_acquire(m_allocator, sizeof(HttpStream)));
+                auto *toSeat = static_cast<HttpClientStream *>(aws_mem_acquire(m_allocator, sizeof(HttpClientStream)));
 
                 if (toSeat)
                 {
@@ -171,10 +171,9 @@ namespace Aws
 
                     Allocator *captureAllocator = m_allocator;
                     std::shared_ptr<HttpClientStream> stream(
-                        toSeat, [captureAllocator](HttpStream *stream)
-                        {
-                            Delete(stream, captureAllocator);
-                        }, StlAllocator<HttpClientStream>(captureAllocator));
+                        toSeat,
+                        [captureAllocator](HttpStream *stream) { Delete(stream, captureAllocator); },
+                        StlAllocator<HttpClientStream>(captureAllocator));
 
                     stream->m_onIncomingBody = requestOptions.onIncomingBody;
                     stream->m_onIncomingHeaders = requestOptions.onIncomingHeaders;
@@ -281,9 +280,7 @@ namespace Aws
             {
             }
 
-            HttpClientStream::~HttpClientStream()
-            {
-            }
+            HttpClientStream::~HttpClientStream() {}
 
             int HttpClientStream::GetResponseStatusCode() const noexcept
             {
@@ -296,9 +293,11 @@ namespace Aws
                 return -1;
             }
 
-            bool HttpClientStream::Activate() noexcept {
+            bool HttpClientStream::Activate() noexcept
+            {
                 m_callbackData.stream = shared_from_this();
-                if (aws_http_stream_activate(m_stream)) {
+                if (aws_http_stream_activate(m_stream))
+                {
                     m_callbackData.stream = nullptr;
                     return false;
                 }
@@ -319,8 +318,8 @@ namespace Aws
 
             HttpClientConnectionOptions::HttpClientConnectionOptions()
                 : Bootstrap(nullptr), InitialWindowSize(SIZE_MAX), OnConnectionSetupCallback(),
-                  OnConnectionShutdownCallback(), HostName(), Port(0), SocketOptions(),
-                  TlsOptions(), ProxyOptions(), EnableReadBackPressure(false)
+                  OnConnectionShutdownCallback(), HostName(), Port(0), SocketOptions(), TlsOptions(), ProxyOptions(),
+                  EnableReadBackPressure(false)
             {
             }
         } // namespace Http

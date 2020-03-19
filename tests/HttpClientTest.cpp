@@ -205,8 +205,9 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
 
 AWS_TEST_CASE(HttpDownloadNoBackPressure, s_TestHttpDownloadNoBackPressure)
 
-static int s_TestHttpStreamUnActivated(struct aws_allocator *allocator, void *ctx) {
-    (void) ctx;
+static int s_TestHttpStreamUnActivated(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
@@ -242,10 +243,13 @@ static int s_TestHttpStreamUnActivated(struct aws_allocator *allocator, void *ct
     auto onConnectionSetup = [&](const std::shared_ptr<Http::HttpClientConnection> &newConnection, int errorCode) {
         std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
-        if (!errorCode) {
+        if (!errorCode)
+        {
             connection = newConnection;
             errorOccured = false;
-        } else {
+        }
+        else
+        {
             connectionShutdown = true;
         }
 
@@ -256,7 +260,8 @@ static int s_TestHttpStreamUnActivated(struct aws_allocator *allocator, void *ct
         std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
         connectionShutdown = true;
-        if (errorCode) {
+        if (errorCode)
+        {
             errorOccured = true;
         }
 
@@ -269,7 +274,7 @@ static int s_TestHttpStreamUnActivated(struct aws_allocator *allocator, void *ct
     httpClientConnectionOptions.OnConnectionShutdownCallback = onConnectionShutdown;
     httpClientConnectionOptions.SocketOptions = socketOptions;
     httpClientConnectionOptions.TlsOptions = tlsConnectionOptions;
-    httpClientConnectionOptions.HostName = String((const char *) hostName.ptr, hostName.len);
+    httpClientConnectionOptions.HostName = String((const char *)hostName.ptr, hostName.len);
     httpClientConnectionOptions.Port = 443;
 
     std::unique_lock<std::mutex> semaphoreULock(semaphoreLock);
@@ -285,15 +290,15 @@ static int s_TestHttpStreamUnActivated(struct aws_allocator *allocator, void *ct
     requestOptions.request = &request;
 
     requestOptions.onStreamComplete = [&](Http::HttpStream &, int) {
-        //do nothing.
+        // do nothing.
     };
     requestOptions.onIncomingHeadersBlockDone = nullptr;
     requestOptions.onIncomingHeaders =
-            [&](Http::HttpStream &, enum aws_http_header_block, const Http::HttpHeader *, std::size_t) {
-                //do nothing
-            };
+        [&](Http::HttpStream &, enum aws_http_header_block, const Http::HttpHeader *, std::size_t) {
+            // do nothing
+        };
     requestOptions.onIncomingBody = [&](Http::HttpStream &, const ByteCursor &) {
-        //do nothing
+        // do nothing
     };
 
     request.SetMethod(ByteCursorFromCString("GET"));
