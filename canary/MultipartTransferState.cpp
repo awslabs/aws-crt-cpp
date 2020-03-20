@@ -160,22 +160,15 @@ void MultipartTransferState::PartInfo::FlushMetricsVector(Vector<Metric> &metric
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Adding %d data points", (uint32_t)metrics.size());
 
     publisher->AddDataPoints(metrics);
-    /*
-        Vector<Metric> connMetrics;
 
-        for(Metric & metric : metrics)
-        {
-            Metric connMetric;
-            connMetric.MetricName = "Connection";
-            connMetric.Timestamp = metric.Timestamp;
-            connMetric.Value = 1.0;
-            connMetric.Unit = MetricUnit::Count;
+    Vector<Metric> connMetrics;
 
-            connMetrics.push_back(std::move(connMetric));
-        }
+    for(Metric & metric : metrics)
+    {
+        connMetrics.emplace_back(MetricName::NumConnections, MetricUnit::Count, metric.Timestamp, 1.0);
+    }
 
-        publisher->AddDataPoints(connMetrics);
-    */
+    publisher->AddDataPoints(connMetrics);
 
     metrics.clear();
 }
