@@ -550,7 +550,7 @@ void MeasureTransferRate::s_PulseMetricsTask(aws_task *task, void *arg, aws_task
 
     AWS_LOGF_DEBUG(AWS_LS_CRT_CPP_CANARY, "Emitting BytesAllocated Metric %" PRId64, (uint64_t)memMetric.Value);
     */
-
+/*
     {
         size_t openConnectionCount = transport->GetOpenConnectionCount();
 
@@ -560,6 +560,7 @@ void MeasureTransferRate::s_PulseMetricsTask(aws_task *task, void *arg, aws_task
 
         AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Open-connections:%d", (uint32_t)openConnectionCount);
     }
+*/
 
     {
         const Aws::Crt::String &s3Endpoint = transport->GetEndpoint();

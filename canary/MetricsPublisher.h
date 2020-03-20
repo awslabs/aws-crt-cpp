@@ -102,7 +102,8 @@ struct Metric
     double Value;
 
     Metric();
-    Metric(MetricName Name, MetricUnit unit, double Value);
+    Metric(MetricName Name, MetricUnit unit, double value);
+    Metric(MetricName Name, MetricUnit unit, uint64_t timestamp, double value);
 
     void SetTimestampNow();
 };

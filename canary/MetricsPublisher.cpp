@@ -35,6 +35,11 @@ Metric::Metric(MetricName name, MetricUnit unit, double value) : Unit(unit), Nam
     SetTimestampNow();
 }
 
+Metric::Metric(MetricName name, MetricUnit unit, uint64_t timestamp, double value) : Unit(unit), Name(name), Timestamp(timestamp), Value(value)
+{
+
+}
+
 void Metric::SetTimestampNow()
 {
     uint64_t current_time = 0;
