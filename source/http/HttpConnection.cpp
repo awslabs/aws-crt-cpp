@@ -130,7 +130,7 @@ namespace Aws
                 options.socket_options = &connectionOptions.SocketOptions.GetImpl();
                 options.on_setup = HttpClientConnection::s_onClientConnectionSetup;
                 options.on_shutdown = HttpClientConnection::s_onClientConnectionShutdown;
-                options.enable_read_back_pressure = connectionOptions.EnableReadBackPressure;
+                options.manual_window_management = connectionOptions.ManualWindowManagement;
 
                 if (aws_http_client_connect(&options))
                 {
@@ -319,7 +319,7 @@ namespace Aws
             HttpClientConnectionOptions::HttpClientConnectionOptions()
                 : Bootstrap(nullptr), InitialWindowSize(SIZE_MAX), OnConnectionSetupCallback(),
                   OnConnectionShutdownCallback(), HostName(), Port(0), SocketOptions(), TlsOptions(), ProxyOptions(),
-                  EnableReadBackPressure(false)
+                  ManualWindowManagement(false)
             {
             }
         } // namespace Http
