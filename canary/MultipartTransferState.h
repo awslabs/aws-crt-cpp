@@ -41,7 +41,7 @@ class MultipartTransferState
         uint32_t partNumber;
         uint64_t offsetInBytes;
         uint64_t sizeInBytes;
-        Aws::Crt::DateTime uploadStartTime;
+        uint32_t transferSuccess : 1;
 
         PartInfo();
         PartInfo(

@@ -81,6 +81,8 @@ int main(int argc, char *argv[])
         Fork,
         NumTransfers,
         NumConcurrentTransfers,
+        DownloadOnly,
+        RehydrateBackup,
 
         MAX
     };
@@ -94,9 +96,11 @@ int main(int argc, char *argv[])
                                       {"sendEncrypted", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'e'},
                                       {"fork", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'f'},
                                       {"numTransfers", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'n'},
-                                      {"numConcurrentTransfers", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'c'}};
+                                      {"numConcurrentTransfers", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'c'},
+                                      {"downloadOnly", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'z'},
+                                      {"rehydrateBackup", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'r'}};
 
-    const char *optstring = "t:i:lsh:dCem:fn:c:";
+    const char *optstring = "t:i:lsh:dCem:fn:c:zr:";
 
     CanaryAppOptions canaryAppOptions;
 
@@ -156,6 +160,13 @@ int main(int argc, char *argv[])
                     aws_cli_optarg,
                     canaryAppOptions.numUpConcurrentTransfers,
                     canaryAppOptions.numDownConcurrentTransfers);
+                break;
+            case CLIOption::DownloadOnly:
+                canaryAppOptions.downloadOnly = true;
+                break;
+            case CLIOption::RehydrateBackup:
+                canaryAppOptions.rehydrateBackupObjectName = aws_cli_optarg;
+                canaryAppOptions.rehydrateBackup = true;
                 break;
             default:
                 AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Unknown CLI option used.");

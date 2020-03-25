@@ -248,7 +248,7 @@ void MeasureTransferRate::PerformMeasurement(
             numCompleted.load(),
             numTransfers);
 
-        transferFunction(std::move(key), objectSize, std::move(notifyTransferFinished));
+        transferFunction(i, std::move(key), objectSize, std::move(notifyTransferFinished));
 
         std::unique_lock<std::mutex> guard(transferCompletedMutex);
         transferCompletedSignal.wait(guard, [&numInProgress, numConcurrentTransfers]() {
@@ -277,10 +277,18 @@ void MeasureTransferRate::MeasureHttpTransfer()
 
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
     connectionManagerOptions.ConnectionOptions.HostName = endpoint;
-    connectionManagerOptions.ConnectionOptions.Port = 5001;
+    connectionManagerOptions.ConnectionOptions.Port = m_canaryApp.GetOptions().sendEncrypted ? 443 : 5001;
     connectionManagerOptions.ConnectionOptions.SocketOptions.SetConnectTimeoutMs(3000);
     connectionManagerOptions.ConnectionOptions.SocketOptions.SetSocketType(AWS_SOCKET_STREAM);
     connectionManagerOptions.ConnectionOptions.InitialWindowSize = SIZE_MAX;
+
+    if (m_canaryApp.GetOptions().sendEncrypted)
+    {
+        aws_byte_cursor serverName = ByteCursorFromCString(endpoint.c_str());
+        auto connOptions = m_canaryApp.tlsContext.NewConnectionOptions();
+        connOptions.SetServerName(serverName);
+        connectionManagerOptions.ConnectionOptions.TlsOptions = connOptions;
+    }
 
     connectionManagerOptions.ConnectionOptions.Bootstrap = &m_canaryApp.bootstrap;
     connectionManagerOptions.MaxConnections = 5000;
@@ -296,7 +304,7 @@ void MeasureTransferRate::MeasureHttpTransfer()
         SmallObjectSize,
         (uint32_t)MeasurementFlags::DontWarmDNSCache | (uint32_t)MeasurementFlags::NoFileSuffix,
         [this, connManager, &testFilename, &hostHeader](
-            String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
+            uint32_t, String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
             std::shared_ptr<MultipartTransferState::PartInfo> singlePart = MakeShared<MultipartTransferState::PartInfo>(
                 m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, 0LL, SmallObjectSize);
             singlePart->AddDataDownMetric(0);
@@ -319,7 +327,7 @@ void MeasureTransferRate::MeasureHttpTransfer()
             };
 
             requestOptions.onStreamComplete =
-                [this, keyPath, singlePart, notifyTransferFinished](Http::HttpStream &stream, int error) {
+                [keyPath, singlePart, notifyTransferFinished](Http::HttpStream &stream, int error) {
                     int errorCode = error;
 
                     if (errorCode == AWS_ERROR_SUCCESS)
@@ -346,8 +354,6 @@ void MeasureTransferRate::MeasureHttpTransfer()
                             keyPath.c_str(),
                             aws_error_debug_str(errorCode));
                     }
-
-                    m_canaryApp.publisher->AddTransferStatusDataPoint(errorCode == AWS_ERROR_SUCCESS);
 
                     notifyTransferFinished(errorCode);
 
@@ -376,8 +382,13 @@ void MeasureTransferRate::MeasureHttpTransfer()
 
     aws_event_loop_cancel_task(m_schedulingLoop, &m_pulseMetricsTask);
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
+    m_canaryApp.publisher->SchedulePublish();
     m_canaryApp.publisher->WaitForLastPublish();
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
+
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup...");
+    m_canaryApp.publisher->UploadBackup();
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup finished.");
 }
 
 void MeasureTransferRate::MeasureSmallObjectTransfer()
@@ -390,35 +401,61 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
         m_canaryApp.GetOptions().numDownTransfers,
         m_canaryApp.GetOptions().numDownConcurrentTransfers);
 
-    PerformMeasurement(
-        "crt-canary-obj-small-",
-        "smallObjectUp-",
-        m_canaryApp.GetOptions().numUpTransfers,
-        m_canaryApp.GetOptions().numUpConcurrentTransfers,
-        SmallObjectSize,
-        0,
-        [this](String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
+    Vector<std::shared_ptr<MultipartTransferState::PartInfo>> uploads;
+    Vector<std::shared_ptr<MultipartTransferState::PartInfo>> downloads;
+
+    if (!m_canaryApp.GetOptions().downloadOnly)
+    {
+        for (uint32_t i = 0; i < m_canaryApp.GetOptions().numUpTransfers; ++i)
+        {
             std::shared_ptr<MultipartTransferState::PartInfo> singlePart = MakeShared<MultipartTransferState::PartInfo>(
                 m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, 0LL, SmallObjectSize);
 
-            singlePart->AddDataUpMetric(0);
+            uploads.push_back(singlePart);
+        }
 
-            m_canaryApp.transport->PutObject(
-                key,
-                MakeShared<MeasureTransferRateStream>(
-                    m_canaryApp.traceAllocator, m_canaryApp, singlePart, m_canaryApp.traceAllocator),
-                0,
-                [this, singlePart, notifyTransferFinished](int32_t errorCode, std::shared_ptr<Aws::Crt::String>) {
-                    m_canaryApp.publisher->AddTransferStatusDataPoint(errorCode == AWS_ERROR_SUCCESS);
-                    singlePart->FlushDataUpMetrics();
-                    notifyTransferFinished(errorCode);
-                });
-        });
+        PerformMeasurement(
+            "crt-canary-obj-small-",
+            "smallObjectUp-",
+            m_canaryApp.GetOptions().numUpTransfers,
+            m_canaryApp.GetOptions().numUpConcurrentTransfers,
+            SmallObjectSize,
+            0,
+            [this, &uploads](
+                uint32_t transferIndex, String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
+                std::shared_ptr<MultipartTransferState::PartInfo> singlePart = uploads[transferIndex];
 
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
-    m_canaryApp.publisher->SchedulePublish();
-    m_canaryApp.publisher->WaitForLastPublish();
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
+                singlePart->AddDataUpMetric(0);
+
+                m_canaryApp.transport->PutObject(
+                    key,
+                    MakeShared<MeasureTransferRateStream>(
+                        m_canaryApp.traceAllocator, m_canaryApp, singlePart, m_canaryApp.traceAllocator),
+                    0,
+                    [singlePart, notifyTransferFinished](int32_t errorCode, std::shared_ptr<Aws::Crt::String>) {
+                        singlePart->transferSuccess = errorCode == AWS_ERROR_SUCCESS;
+                        notifyTransferFinished(errorCode);
+                    });
+            });
+
+        for (uint32_t i = 0; i < m_canaryApp.GetOptions().numUpTransfers; ++i)
+        {
+            uploads[i]->FlushDataUpMetrics();
+        }
+
+        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
+        m_canaryApp.publisher->SchedulePublish();
+        m_canaryApp.publisher->WaitForLastPublish();
+        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
+    }
+
+    for (uint32_t i = 0; i < m_canaryApp.GetOptions().numDownTransfers; ++i)
+    {
+        std::shared_ptr<MultipartTransferState::PartInfo> singlePart = MakeShared<MultipartTransferState::PartInfo>(
+            m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, 0LL, SmallObjectSize);
+
+        downloads.emplace_back(singlePart);
+    }
 
     PerformMeasurement(
         "crt-canary-obj.txt",
@@ -427,9 +464,9 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
         m_canaryApp.GetOptions().numDownConcurrentTransfers,
         SmallObjectSize,
         (uint32_t)MeasurementFlags::NoFileSuffix | (uint32_t)MeasurementFlags::SecondaryTransport,
-        [this](String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
-            std::shared_ptr<MultipartTransferState::PartInfo> singlePart = MakeShared<MultipartTransferState::PartInfo>(
-                m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, 0LL, SmallObjectSize);
+        [this,
+         &downloads](uint32_t transferIndex, String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
+            std::shared_ptr<MultipartTransferState::PartInfo> singlePart = downloads[transferIndex];
 
             singlePart->AddDataDownMetric(0);
 
@@ -439,18 +476,26 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
                 [singlePart](const Http::HttpStream &, const ByteCursor &cur) {
                     singlePart->AddDataDownMetric(cur.len);
                 },
-                [this, singlePart, notifyTransferFinished](int32_t errorCode) {
-                    m_canaryApp.publisher->AddTransferStatusDataPoint(errorCode == AWS_ERROR_SUCCESS);
-                    singlePart->FlushDataDownMetrics();
+                [singlePart, notifyTransferFinished](int32_t errorCode) {
+                    singlePart->transferSuccess = errorCode == AWS_ERROR_SUCCESS;
                     notifyTransferFinished(errorCode);
                 });
         });
+
+    for (uint32_t i = 0; i < m_canaryApp.GetOptions().numDownTransfers; ++i)
+    {
+        downloads[i]->FlushDataDownMetrics();
+    }
 
     aws_event_loop_cancel_task(m_schedulingLoop, &m_pulseMetricsTask);
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
     m_canaryApp.publisher->SchedulePublish();
     m_canaryApp.publisher->WaitForLastPublish();
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
+
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup...");
+    m_canaryApp.publisher->UploadBackup();
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup finished.");
 }
 
 void MeasureTransferRate::MeasureLargeObjectTransfer()
@@ -464,7 +509,7 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
         m_canaryApp.GetOptions().numUpConcurrentTransfers,
         LargeObjectSize,
         0,
-        [this](String &&key, uint64_t objectSize, NotifyTransferFinished &&notifyTransferFinished) {
+        [this](uint32_t, String &&key, uint64_t objectSize, NotifyTransferFinished &&notifyTransferFinished) {
             AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting upload of object %s...", key.c_str());
 
             m_canaryApp.transport->PutObjectMultipart(
@@ -493,7 +538,7 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
         m_canaryApp.GetOptions().numDownConcurrentTransfers,
         LargeObjectSize,
         0,
-        [this](String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
+        [this](uint32_t, String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
             AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting download of object %s...", key.c_str());
 
             m_canaryApp.transport->GetObjectMultipart(
@@ -512,8 +557,13 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
 
     aws_event_loop_cancel_task(m_schedulingLoop, &m_pulseMetricsTask);
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
+    m_canaryApp.publisher->SchedulePublish();
     m_canaryApp.publisher->WaitForLastPublish();
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
+
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup...");
+    m_canaryApp.publisher->UploadBackup();
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup finished.");
 }
 
 void MeasureTransferRate::SchedulePulseMetrics()
@@ -550,17 +600,17 @@ void MeasureTransferRate::s_PulseMetricsTask(aws_task *task, void *arg, aws_task
 
     AWS_LOGF_DEBUG(AWS_LS_CRT_CPP_CANARY, "Emitting BytesAllocated Metric %" PRId64, (uint64_t)memMetric.Value);
     */
-/*
-    {
-        size_t openConnectionCount = transport->GetOpenConnectionCount();
+    /*
+        {
+            size_t openConnectionCount = transport->GetOpenConnectionCount();
 
-        Metric connMetric(MetricName::NumConnections, MetricUnit::Count, (double)openConnectionCount);
+            Metric connMetric(MetricName::NumConnections, MetricUnit::Count, (double)openConnectionCount);
 
-        publisher->AddDataPoint(connMetric);
+            publisher->AddDataPoint(connMetric);
 
-        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Open-connections:%d", (uint32_t)openConnectionCount);
-    }
-*/
+            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Open-connections:%d", (uint32_t)openConnectionCount);
+        }
+    */
 
     {
         const Aws::Crt::String &s3Endpoint = transport->GetEndpoint();

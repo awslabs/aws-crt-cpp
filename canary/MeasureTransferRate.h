@@ -65,8 +65,11 @@ class MeasureTransferRate
     };
 
     using NotifyTransferFinished = std::function<void(int32_t errorCode)>;
-    using TransferFunction = std::function<
-        void(Aws::Crt::String &&key, uint64_t objectSize, NotifyTransferFinished &&notifyTransferFinished)>;
+    using TransferFunction = std::function<void(
+        uint32_t transferIndex,
+        Aws::Crt::String &&key,
+        uint64_t objectSize,
+        NotifyTransferFinished &&notifyTransferFinished)>;
 
     friend class MeasureTransferRateStream; // TODO use of friend here shouldn't be necessary
 

@@ -26,6 +26,7 @@ struct CanaryAppOptions
     std::string instanceType;
     std::string region;
     std::string httpTestEndpoint;
+    std::string rehydrateBackupObjectName;
 
     int32_t readFromParentPipe;
     int32_t writeToParentPipe;
@@ -40,8 +41,10 @@ struct CanaryAppOptions
     uint32_t measureSmallTransfer : 1;
     uint32_t measureHttpTransfer : 1;
     uint32_t usingNumaControl : 1;
+    uint32_t downloadOnly : 1;
     uint32_t sendEncrypted : 1;
     uint32_t loggingEnabled : 1;
+    uint32_t rehydrateBackup : 1;
     uint32_t isParentProcess : 1;
     uint32_t isChildProcess : 1;
 };

@@ -68,7 +68,9 @@ enum class MetricName
     MinEventLoopTaskRunElapsed,
     MaxEventLoopGroupTickElapsed,
     MaxEventLoopTaskRunElapsed,
-    NumIOSubs
+    NumIOSubs,
+
+    Invalid
 };
 
 enum class MetricTransferSize
@@ -130,6 +132,8 @@ class MetricsPublisher
 
     void AddDataPoint(const Metric &metricData);
 
+    void AddTransferStatusDataPoint(uint64_t timestamp, bool transferSuccess);
+
     void AddTransferStatusDataPoint(bool transferSuccess);
 
     /*
@@ -145,6 +149,10 @@ class MetricsPublisher
      */
     void WaitForLastPublish();
 
+    void UploadBackup();
+
+    void RehydrateBackup(const char *s3Path);
+
     /**
      * namespace to use for the metrics
      */
@@ -153,9 +161,18 @@ class MetricsPublisher
   private:
     static void s_OnPublishTask(aws_task *task, void *arg, aws_task_status status);
 
+    MetricTransferSize GetTransferSize() const;
+    Aws::Crt::String GetPlatformName() const;
+    Aws::Crt::String GetToolName() const;
+    Aws::Crt::String GetInstanceType() const;
+    uint64_t GetLargeObjectPartSize() const;
+    bool IsSendingEncrypted() const;
+
+    void WriteToBackup(const Aws::Crt::Vector<Metric> &metrics);
+
     void AddDataPointInternal(const Metric &newMetric);
 
-    void PreparePayload(Aws::Crt::StringStream &bodyStream, const Aws::Crt::Vector<Metric> &);
+    void PreparePayload(Aws::Crt::StringStream &bodyStream, const Aws::Crt::Vector<Metric> &metrics);
 
     MetricTransferSize m_transferSize;
     CanaryApp &m_canaryApp;
@@ -163,6 +180,7 @@ class MetricsPublisher
     Aws::Crt::Vector<Metric> m_publishData;
     std::map<MetricKey, size_t> m_publishDataLU;
     Aws::Crt::Vector<Metric> m_publishDataTaskCopy;
+    Aws::Crt::Vector<Metric> m_metricsBackup;
     Aws::Crt::Http::HttpHeader m_hostHeader;
     Aws::Crt::Http::HttpHeader m_contentTypeHeader;
     Aws::Crt::Http::HttpHeader m_apiVersionHeader;
@@ -172,4 +190,12 @@ class MetricsPublisher
     aws_task m_publishTask;
     uint64_t m_publishFrequencyNs;
     std::condition_variable m_waitForLastPublishCV;
+
+    Aws::Crt::Optional<MetricTransferSize> m_transferSizeOverride;
+    Aws::Crt::Optional<Aws::Crt::String> m_platformNameOverride;
+    Aws::Crt::Optional<Aws::Crt::String> m_toolNameOverride;
+    Aws::Crt::Optional<Aws::Crt::String> m_instanceTypeOverride;
+    Aws::Crt::Optional<uint64_t> m_largeObjectPartSizeOverride;
+    Aws::Crt::Optional<bool> m_sendEncryptedOverride;
+    Aws::Crt::Optional<uint64_t> m_replayId;
 };
