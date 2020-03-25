@@ -32,54 +32,55 @@ enum class PartFinishResponse
     Retry
 };
 
+struct PartInfo
+{
+    uint32_t partIndex;
+    uint32_t partNumber;
+    uint64_t offsetInBytes;
+    uint64_t sizeInBytes;
+    uint32_t transferSuccess : 1;
+
+    PartInfo();
+    PartInfo(
+        std::shared_ptr<MetricsPublisher> publisher,
+        uint32_t partIndex,
+        uint32_t partNumber,
+        uint64_t offsetInBytes,
+        uint64_t sizeInBytes);
+
+    void AddDataUpMetric(uint64_t dataUp);
+
+    void AddDataDownMetric(uint64_t dataDown);
+
+    void FlushDataUpMetrics();
+
+    void FlushDataDownMetrics();
+
+  private:
+    Aws::Crt::Vector<Metric> uploadMetrics;
+    Aws::Crt::Vector<Metric> downloadMetrics;
+    std::shared_ptr<MetricsPublisher> publisher;
+
+    void DistributeDataUsedOverTime(
+        Aws::Crt::Vector<Metric> &metrics,
+        MetricName metricName,
+        uint64_t beginTime,
+        double dataUsed);
+
+    void PushMetric(Aws::Crt::Vector<Metric> &metrics, MetricName metricName, double dataUsed);
+
+    void PushAndTryToMerge(
+        Aws::Crt::Vector<Metric> &metrics,
+        MetricName metricName,
+        uint64_t timestamp,
+        double dataUsed);
+
+    void FlushMetricsVector(Aws::Crt::Vector<Metric> &metrics);
+};
+
 class MultipartTransferState
 {
   public:
-    struct PartInfo
-    {
-        uint32_t partIndex;
-        uint32_t partNumber;
-        uint64_t offsetInBytes;
-        uint64_t sizeInBytes;
-        uint32_t transferSuccess : 1;
-
-        PartInfo();
-        PartInfo(
-            std::shared_ptr<MetricsPublisher> publisher,
-            uint32_t partIndex,
-            uint32_t partNumber,
-            uint64_t offsetInBytes,
-            uint64_t sizeInBytes);
-
-        void AddDataUpMetric(uint64_t dataUp);
-
-        void AddDataDownMetric(uint64_t dataDown);
-
-        void FlushDataUpMetrics();
-
-        void FlushDataDownMetrics();
-
-      private:
-        Aws::Crt::Vector<Metric> uploadMetrics;
-        Aws::Crt::Vector<Metric> downloadMetrics;
-        std::shared_ptr<MetricsPublisher> publisher;
-
-        void DistributeDataUsedOverTime(
-            Aws::Crt::Vector<Metric> &metrics,
-            MetricName metricName,
-            uint64_t beginTime,
-            double dataUsed);
-
-        void PushMetric(Aws::Crt::Vector<Metric> &metrics, MetricName metricName, double dataUsed);
-
-        void PushAndTryToMerge(
-            Aws::Crt::Vector<Metric> &metrics,
-            MetricName metricName,
-            uint64_t timestamp,
-            double dataUsed);
-
-        void FlushMetricsVector(Aws::Crt::Vector<Metric> &metrics);
-    };
 
     using PartFinishedCallback = std::function<void(PartFinishResponse response)>;
     using ProcessPartCallback =

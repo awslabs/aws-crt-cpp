@@ -35,9 +35,9 @@ using GetObjectMultipartFinished = std::function<void(int32_t errorCode)>;
 
 // Note: Any stream returned here will be cleaned up by the caller.
 using SendPartCallback = std::function<std::shared_ptr<Aws::Crt::Io::InputStream>(
-    const std::shared_ptr<MultipartTransferState::PartInfo> &partInfo)>;
+    const std::shared_ptr<PartInfo> &partInfo)>;
 using ReceivePartCallback = std::function<
-    void(const std::shared_ptr<MultipartTransferState::PartInfo> &partInfo, const Aws::Crt::ByteCursor &data)>;
+    void(const std::shared_ptr<PartInfo> &partInfo, const Aws::Crt::ByteCursor &data)>;
 
 class CanaryApp;
 
@@ -128,13 +128,13 @@ class S3ObjectTransport
 
     void UploadPart(
         const std::shared_ptr<MultipartUploadState> &state,
-        const std::shared_ptr<MultipartTransferState::PartInfo> &partInfo,
+        const std::shared_ptr<PartInfo> &partInfo,
         const std::shared_ptr<Aws::Crt::Io::InputStream> &body,
         const MultipartTransferState::PartFinishedCallback &partFinished);
 
     void GetPart(
         const std::shared_ptr<MultipartDownloadState> &downloadState,
-        const std::shared_ptr<MultipartTransferState::PartInfo> &partInfo,
+        const std::shared_ptr<PartInfo> &partInfo,
         const ReceivePartCallback &receiveObjectPartData,
         const MultipartTransferState::PartFinishedCallback &partFinished);
 
