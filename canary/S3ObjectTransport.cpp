@@ -400,10 +400,10 @@ void S3ObjectTransport::PutObjectMultipart(
     // In this case, it will try to upload it.
     uploadState->SetProcessPartCallback(
         [this, uploadState, sendPart, finishedCallback](
-            const std::shared_ptr<PartInfo> &partInfo, MultipartTransferState::PartFinishedCallback partFinished) {
-            std::shared_ptr<Io::InputStream> partInputStream = sendPart(partInfo);
+            const std::shared_ptr<TransferState> &transferState, MultipartTransferState::PartFinishedCallback partFinished) {
+            std::shared_ptr<Io::InputStream> partInputStream = sendPart(transferState);
 
-            UploadPart(uploadState, partInfo, partInputStream, partFinished);
+            UploadPart(uploadState, transferState, partInputStream, partFinished);
         });
 
     // Set the callback that will be called when something flags the upload state as finished.  Finished
@@ -437,12 +437,12 @@ void S3ObjectTransport::PutObjectMultipart(
 
 void S3ObjectTransport::UploadPart(
     const std::shared_ptr<MultipartUploadState> &state,
-    const std::shared_ptr<PartInfo> &partInfo,
+    const std::shared_ptr<TransferState> &transferState,
     const std::shared_ptr<Io::InputStream> &partInputStream,
     const MultipartTransferState::PartFinishedCallback &partFinished)
 {
     StringStream keyPathStream;
-    keyPathStream << state->GetKey() << "?partNumber=" << partInfo->GetPartNumber()
+    keyPathStream << state->GetKey() << "?partNumber=" << transferState->GetPartNumber()
                   << "&uploadId=" << state->GetUploadId();
 
     String keyPathStr = keyPathStream.str();
@@ -451,7 +451,7 @@ void S3ObjectTransport::UploadPart(
         keyPathStr,
         partInputStream,
         (uint32_t)EPutObjectFlags::RetrieveETag,
-        [this, state, partInfo, partFinished, keyPathStr](int32_t errorCode, std::shared_ptr<Aws::Crt::String> etag) {
+        [this, state, transferState, partFinished, keyPathStr](int32_t errorCode, std::shared_ptr<Aws::Crt::String> etag) {
             if (etag == nullptr)
             {
                 errorCode = AWS_ERROR_UNKNOWN;
@@ -459,7 +459,7 @@ void S3ObjectTransport::UploadPart(
 
             if (errorCode == AWS_ERROR_SUCCESS)
             {
-                state->SetETag(partInfo->GetPartIndex(), *etag);
+                state->SetETag(transferState->GetPartIndex(), *etag);
 
                 if (state->IncNumPartsCompleted())
                 {
@@ -473,7 +473,7 @@ void S3ObjectTransport::UploadPart(
 
                 partFinished(PartFinishResponse::Done);
 
-                partInfo->FlushDataUpMetrics();
+                transferState->FlushDataUpMetrics();
 
                 m_canaryApp.publisher->AddTransferStatusDataPoint(true);
 
@@ -481,7 +481,7 @@ void S3ObjectTransport::UploadPart(
                     AWS_LS_CRT_CPP_CANARY,
                     "UploadPart for path %s and part #%d (%d/%d) just returned code %d",
                     state->GetKey().c_str(),
-                    partInfo->GetPartNumber(),
+                    transferState->GetPartNumber(),
                     state->GetNumPartsCompleted(),
                     state->GetNumParts(),
                     errorCode);
@@ -491,13 +491,13 @@ void S3ObjectTransport::UploadPart(
                 AWS_LOGF_ERROR(
                     AWS_LS_CRT_CPP_CANARY,
                     "Upload part #%d failed with error code %d (\"%s\")",
-                    partInfo->GetPartNumber(),
+                    transferState->GetPartNumber(),
                     errorCode,
                     aws_error_debug_str(errorCode));
 
                 m_canaryApp.publisher->AddTransferStatusDataPoint(false);
 
-                partInfo->FlushDataUpMetrics();
+                transferState->FlushDataUpMetrics();
 
                 partFinished(PartFinishResponse::Retry);
             }
@@ -586,9 +586,9 @@ void S3ObjectTransport::GetObjectMultipart(
     // Set the callback that the MultipartTransferProcessor will use to process the part.
     // In this case, try to download it.
     downloadState->SetProcessPartCallback([this, downloadState, receivePart](
-                                              const std::shared_ptr<PartInfo> &partInfo,
+                                              const std::shared_ptr<TransferState> &transferState,
                                               const MultipartTransferState::PartFinishedCallback &partFinished) {
-        GetPart(downloadState, partInfo, receivePart, partFinished);
+        GetPart(downloadState, transferState, receivePart, partFinished);
     });
 
     // Set the callback that will be called when something flags the upload state as finished.  Finished
@@ -600,36 +600,36 @@ void S3ObjectTransport::GetObjectMultipart(
 
 void S3ObjectTransport::GetPart(
     const std::shared_ptr<MultipartDownloadState> &downloadState,
-    const std::shared_ptr<PartInfo> &partInfo,
+    const std::shared_ptr<TransferState> &transferState,
     const ReceivePartCallback &receiveObjectPartData,
     const MultipartTransferState::PartFinishedCallback &partFinished)
 {
     GetObject(
         downloadState->GetKey(),
-        partInfo->GetPartNumber(),
-        [downloadState, partInfo, receiveObjectPartData](Http::HttpStream &stream, const ByteCursor &data) {
+        transferState->GetPartNumber(),
+        [downloadState, transferState, receiveObjectPartData](Http::HttpStream &stream, const ByteCursor &data) {
             (void)stream;
 
-            partInfo->AddDataDownMetric(data.len);
+            transferState->AddDataDownMetric(data.len);
 
-            receiveObjectPartData(partInfo, data);
+            receiveObjectPartData(transferState, data);
         },
-        [downloadState, partInfo, partFinished](int32_t errorCode) {
+        [downloadState, transferState, partFinished](int32_t errorCode) {
             const String &key = downloadState->GetKey();
 
             if (errorCode != AWS_ERROR_SUCCESS)
             {
                 AWS_LOGF_ERROR(
-                    AWS_LS_CRT_CPP_CANARY, "Did not receive part #%d for %s", partInfo->GetPartNumber(), key.c_str());
+                    AWS_LS_CRT_CPP_CANARY, "Did not receive part #%d for %s", transferState->GetPartNumber(), key.c_str());
 
-                partInfo->FlushDataDownMetrics();
+                transferState->FlushDataDownMetrics();
 
                 partFinished(PartFinishResponse::Retry);
             }
             else
             {
                 AWS_LOGF_INFO(
-                    AWS_LS_CRT_CPP_CANARY, "Received part #%d for %s", partInfo->GetPartNumber(), key.c_str());
+                    AWS_LS_CRT_CPP_CANARY, "Received part #%d for %s", transferState->GetPartNumber(), key.c_str());
 
                 if (downloadState->IncNumPartsCompleted())
                 {
@@ -639,7 +639,7 @@ void S3ObjectTransport::GetPart(
 
                 partFinished(PartFinishResponse::Done);
 
-                partInfo->FlushDataDownMetrics();
+                transferState->FlushDataDownMetrics();
             }
         });
 }

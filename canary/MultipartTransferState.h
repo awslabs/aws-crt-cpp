@@ -14,7 +14,6 @@
  */
 #pragma once
 
-#include "MetricsPublisher.h"
 #include <atomic>
 #include <aws/common/mutex.h>
 #include <aws/common/string.h>
@@ -22,6 +21,9 @@
 #include <aws/crt/Types.h>
 #include <aws/crt/http/HttpConnection.h>
 #include <mutex>
+
+#include "MetricsPublisher.h"
+#include "TransferState.h"
 
 class S3ObjectTransport;
 class CanaryApp;
@@ -32,65 +34,12 @@ enum class PartFinishResponse
     Retry
 };
 
-class PartInfo
-{
-  public:
-    PartInfo();
-    PartInfo(
-        std::shared_ptr<MetricsPublisher> publisher,
-        uint32_t partIndex,
-        uint32_t partNumber,
-        uint64_t sizeInBytes);
-
-    uint32_t GetPartIndex() const { return m_partIndex; }
-
-    uint32_t GetPartNumber() const { return m_partNumber; }
-
-    uint64_t GetSizeInBytes() const { return m_sizeInBytes; }
-
-    void SetTransferSuccess(bool success) { m_transferSuccess = success; }
-
-    void AddDataUpMetric(uint64_t dataUp);
-
-    void AddDataDownMetric(uint64_t dataDown);
-
-    void FlushDataUpMetrics();
-
-    void FlushDataDownMetrics();
-
-  private:
-    uint32_t m_partIndex;
-    uint32_t m_partNumber;
-    uint64_t m_sizeInBytes;
-    uint32_t m_transferSuccess : 1;
-
-    Aws::Crt::Vector<Metric> m_uploadMetrics;
-    Aws::Crt::Vector<Metric> m_downloadMetrics;
-    std::shared_ptr<MetricsPublisher> m_publisher;
-
-    void DistributeDataUsedOverTime(
-        Aws::Crt::Vector<Metric> &metrics,
-        MetricName metricName,
-        uint64_t beginTime,
-        double dataUsed);
-
-    void PushMetric(Aws::Crt::Vector<Metric> &metrics, MetricName metricName, double dataUsed);
-
-    void PushAndTryToMerge(
-        Aws::Crt::Vector<Metric> &metrics,
-        MetricName metricName,
-        uint64_t timestamp,
-        double dataUsed);
-
-    void FlushMetricsVector(Aws::Crt::Vector<Metric> &metrics);
-};
-
 class MultipartTransferState
 {
   public:
     using PartFinishedCallback = std::function<void(PartFinishResponse response)>;
     using ProcessPartCallback =
-        std::function<void(const std::shared_ptr<PartInfo> &partInfo, PartFinishedCallback callback)>;
+        std::function<void(const std::shared_ptr<TransferState> &transferState, PartFinishedCallback callback)>;
     using FinishedCallback = std::function<void(int32_t errorCode)>;
 
     MultipartTransferState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts);
