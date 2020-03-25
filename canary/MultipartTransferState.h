@@ -34,8 +34,7 @@ enum class PartFinishResponse
 
 class PartInfo
 {
-public:
-
+  public:
     PartInfo();
     PartInfo(
         std::shared_ptr<MetricsPublisher> publisher,
@@ -43,25 +42,13 @@ public:
         uint32_t partNumber,
         uint64_t sizeInBytes);
 
-    uint32_t GetPartIndex() const
-    {
-      return partIndex;
-    }
+    uint32_t GetPartIndex() const { return m_partIndex; }
 
-    uint32_t GetPartNumber() const
-    {
-      return partNumber;
-    }
+    uint32_t GetPartNumber() const { return m_partNumber; }
 
-    uint64_t GetSizeInBytes() const
-    {
-      return sizeInBytes;
-    }
+    uint64_t GetSizeInBytes() const { return m_sizeInBytes; }
 
-    void SetTransferSuccess(bool success)
-    {
-      transferSuccess = success;
-    }
+    void SetTransferSuccess(bool success) { m_transferSuccess = success; }
 
     void AddDataUpMetric(uint64_t dataUp);
 
@@ -72,14 +59,14 @@ public:
     void FlushDataDownMetrics();
 
   private:
-    uint32_t partIndex;
-    uint32_t partNumber;
-    uint64_t sizeInBytes;
-    uint32_t transferSuccess : 1;
+    uint32_t m_partIndex;
+    uint32_t m_partNumber;
+    uint64_t m_sizeInBytes;
+    uint32_t m_transferSuccess : 1;
 
-    Aws::Crt::Vector<Metric> uploadMetrics;
-    Aws::Crt::Vector<Metric> downloadMetrics;
-    std::shared_ptr<MetricsPublisher> publisher;
+    Aws::Crt::Vector<Metric> m_uploadMetrics;
+    Aws::Crt::Vector<Metric> m_downloadMetrics;
+    std::shared_ptr<MetricsPublisher> m_publisher;
 
     void DistributeDataUsedOverTime(
         Aws::Crt::Vector<Metric> &metrics,
@@ -101,7 +88,6 @@ public:
 class MultipartTransferState
 {
   public:
-
     using PartFinishedCallback = std::function<void(PartFinishResponse response)>;
     using ProcessPartCallback =
         std::function<void(const std::shared_ptr<PartInfo> &partInfo, PartFinishedCallback callback)>;

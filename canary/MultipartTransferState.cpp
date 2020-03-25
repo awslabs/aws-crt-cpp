@@ -29,17 +29,14 @@
 
 using namespace Aws::Crt;
 
-PartInfo::PartInfo()
-    : partIndex(0), partNumber(0), sizeInBytes(0), transferSuccess(false)
-{
-}
+PartInfo::PartInfo() : m_partIndex(0), m_partNumber(0), m_sizeInBytes(0), m_transferSuccess(false) {}
 PartInfo::PartInfo(
     std::shared_ptr<MetricsPublisher> inPublisher,
     uint32_t inPartIndex,
     uint32_t inPartNumber,
     uint64_t inSizeInBytes)
-    : partIndex(inPartIndex), partNumber(inPartNumber), sizeInBytes(inSizeInBytes),
-      transferSuccess(false), publisher(inPublisher)
+    : m_partIndex(inPartIndex), m_partNumber(inPartNumber), m_sizeInBytes(inSizeInBytes), m_transferSuccess(false),
+      m_publisher(inPublisher)
 {
 }
 
@@ -98,11 +95,7 @@ void PartInfo::DistributeDataUsedOverTime(
     }
 }
 
-void PartInfo::PushAndTryToMerge(
-    Vector<Metric> &metrics,
-    MetricName metricName,
-    uint64_t timestamp,
-    double dataUsed)
+void PartInfo::PushAndTryToMerge(Vector<Metric> &metrics, MetricName metricName, uint64_t timestamp, double dataUsed)
 {
     bool pushNew = true;
     DateTime newDateTime(timestamp);
@@ -164,10 +157,10 @@ void PartInfo::FlushMetricsVector(Vector<Metric> &metrics)
     if (metrics.size() > 0)
     {
         Metric &metric = metrics.back();
-        publisher->AddTransferStatusDataPoint(metric.Timestamp, transferSuccess);
+        m_publisher->AddTransferStatusDataPoint(metric.Timestamp, m_transferSuccess);
     }
 
-    publisher->AddDataPoints(metrics);
+    m_publisher->AddDataPoints(metrics);
 
     Vector<Metric> connMetrics;
 
@@ -176,29 +169,29 @@ void PartInfo::FlushMetricsVector(Vector<Metric> &metrics)
         connMetrics.emplace_back(MetricName::NumConnections, MetricUnit::Count, metric.Timestamp, 1.0);
     }
 
-    publisher->AddDataPoints(connMetrics);
+    m_publisher->AddDataPoints(connMetrics);
 
     metrics.clear();
 }
 
 void PartInfo::AddDataUpMetric(uint64_t dataUp)
 {
-    PushMetric(uploadMetrics, MetricName::BytesUp, (double)dataUp);
+    PushMetric(m_uploadMetrics, MetricName::BytesUp, (double)dataUp);
 }
 
 void PartInfo::AddDataDownMetric(uint64_t dataDown)
 {
-    PushMetric(downloadMetrics, MetricName::BytesDown, (double)dataDown);
+    PushMetric(m_downloadMetrics, MetricName::BytesDown, (double)dataDown);
 }
 
 void PartInfo::FlushDataUpMetrics()
 {
-    FlushMetricsVector(uploadMetrics);
+    FlushMetricsVector(m_uploadMetrics);
 }
 
 void PartInfo::FlushDataDownMetrics()
 {
-    FlushMetricsVector(downloadMetrics);
+    FlushMetricsVector(m_downloadMetrics);
 }
 
 MultipartTransferState::MultipartTransferState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts)

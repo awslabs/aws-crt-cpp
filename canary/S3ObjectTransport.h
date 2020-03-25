@@ -34,10 +34,10 @@ using PutObjectMultipartFinished = std::function<void(int32_t errorCode, uint32_
 using GetObjectMultipartFinished = std::function<void(int32_t errorCode)>;
 
 // Note: Any stream returned here will be cleaned up by the caller.
-using SendPartCallback = std::function<std::shared_ptr<Aws::Crt::Io::InputStream>(
-    const std::shared_ptr<PartInfo> &partInfo)>;
-using ReceivePartCallback = std::function<
-    void(const std::shared_ptr<PartInfo> &partInfo, const Aws::Crt::ByteCursor &data)>;
+using SendPartCallback =
+    std::function<std::shared_ptr<Aws::Crt::Io::InputStream>(const std::shared_ptr<PartInfo> &partInfo)>;
+using ReceivePartCallback =
+    std::function<void(const std::shared_ptr<PartInfo> &partInfo, const Aws::Crt::ByteCursor &data)>;
 
 class CanaryApp;
 
