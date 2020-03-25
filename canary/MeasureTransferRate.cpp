@@ -59,7 +59,7 @@ bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
     }
 
     size_t totalBufferSpace = dest.capacity - dest.len;
-    size_t unwritten = m_partInfo->GetSizeInBytes() - m_written;
+    size_t unwritten = m_transferState->GetSizeInBytes() - m_written;
     size_t totalToWrite = totalBufferSpace > unwritten ? unwritten : totalBufferSpace;
     size_t writtenOut = 0;
 
@@ -85,7 +85,7 @@ bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
 
     // A quick way for us to measure how much data we've actually written to S3 storage.  (This working is reliant
     // on this function only being used when we are reading data from the stream while sending that data to S3.)
-    m_partInfo->AddDataUpMetric(writtenOut);
+    m_transferState->AddDataUpMetric(writtenOut);
 
     return true;
 }
@@ -93,7 +93,7 @@ bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
 Io::StreamStatus MeasureTransferRateStream::GetStatusImpl() const noexcept
 {
     Io::StreamStatus status;
-    status.is_end_of_stream = m_written == m_partInfo->GetSizeInBytes();
+    status.is_end_of_stream = m_written == m_transferState->GetSizeInBytes();
     status.is_valid = !status.is_end_of_stream;
 
     return status;
@@ -107,14 +107,14 @@ bool MeasureTransferRateStream::SeekImpl(Io::OffsetType, Io::StreamSeekBasis) no
 
 int64_t MeasureTransferRateStream::GetLengthImpl() const noexcept
 {
-    return m_partInfo->GetSizeInBytes();
+    return m_transferState->GetSizeInBytes();
 }
 
 MeasureTransferRateStream::MeasureTransferRateStream(
     CanaryApp &canaryApp,
-    const std::shared_ptr<PartInfo> &partInfo,
+    const std::shared_ptr<TransferState> &transferState,
     Allocator *allocator)
-    : m_canaryApp(canaryApp), m_partInfo(partInfo), m_allocator(allocator), m_written(0)
+    : m_canaryApp(canaryApp), m_transferState(transferState), m_allocator(allocator), m_written(0)
 {
     (void)m_canaryApp;
     (void)m_allocator;
@@ -305,8 +305,8 @@ void MeasureTransferRate::MeasureHttpTransfer()
         (uint32_t)MeasurementFlags::DontWarmDNSCache | (uint32_t)MeasurementFlags::NoFileSuffix,
         [this, connManager, &testFilename, &hostHeader](
             uint32_t, String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
-            std::shared_ptr<PartInfo> singlePart =
-                MakeShared<PartInfo>(m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, SmallObjectSize);
+            std::shared_ptr<TransferState> singlePart =
+                MakeShared<TransferState>(m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, SmallObjectSize);
             singlePart->AddDataDownMetric(0);
 
             auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
@@ -401,15 +401,15 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
         m_canaryApp.GetOptions().numDownTransfers,
         m_canaryApp.GetOptions().numDownConcurrentTransfers);
 
-    Vector<std::shared_ptr<PartInfo>> uploads;
-    Vector<std::shared_ptr<PartInfo>> downloads;
+    Vector<std::shared_ptr<TransferState>> uploads;
+    Vector<std::shared_ptr<TransferState>> downloads;
 
     if (!m_canaryApp.GetOptions().downloadOnly)
     {
         for (uint32_t i = 0; i < m_canaryApp.GetOptions().numUpTransfers; ++i)
         {
-            std::shared_ptr<PartInfo> singlePart =
-                MakeShared<PartInfo>(m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, SmallObjectSize);
+            std::shared_ptr<TransferState> singlePart =
+                MakeShared<TransferState>(m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, SmallObjectSize);
 
             uploads.push_back(singlePart);
         }
@@ -423,7 +423,7 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
             0,
             [this, &uploads](
                 uint32_t transferIndex, String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
-                std::shared_ptr<PartInfo> singlePart = uploads[transferIndex];
+                std::shared_ptr<TransferState> singlePart = uploads[transferIndex];
 
                 singlePart->AddDataUpMetric(0);
 
@@ -451,8 +451,8 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
 
     for (uint32_t i = 0; i < m_canaryApp.GetOptions().numDownTransfers; ++i)
     {
-        std::shared_ptr<PartInfo> singlePart =
-            MakeShared<PartInfo>(m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, SmallObjectSize);
+        std::shared_ptr<TransferState> singlePart =
+            MakeShared<TransferState>(m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, SmallObjectSize);
 
         downloads.emplace_back(singlePart);
     }
@@ -466,7 +466,7 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
         (uint32_t)MeasurementFlags::NoFileSuffix | (uint32_t)MeasurementFlags::SecondaryTransport,
         [this,
          &downloads](uint32_t transferIndex, String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
-            std::shared_ptr<PartInfo> singlePart = downloads[transferIndex];
+            std::shared_ptr<TransferState> singlePart = downloads[transferIndex];
 
             singlePart->AddDataDownMetric(0);
 
@@ -516,9 +516,9 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
                 key,
                 objectSize,
                 MeasureTransferRate::LargeObjectNumParts,
-                [this](const std::shared_ptr<PartInfo> &partInfo) {
+                [this](const std::shared_ptr<TransferState> &transferState) {
                     return MakeShared<MeasureTransferRateStream>(
-                        m_canaryApp.traceAllocator, m_canaryApp, partInfo, m_canaryApp.traceAllocator);
+                        m_canaryApp.traceAllocator, m_canaryApp, transferState, m_canaryApp.traceAllocator);
                 },
                 [key, notifyTransferFinished](int32_t errorCode, uint32_t) {
                     AWS_LOGF_INFO(
@@ -544,7 +544,7 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
             m_canaryApp.transport->GetObjectMultipart(
                 key,
                 MeasureTransferRate::LargeObjectNumParts,
-                [](const std::shared_ptr<PartInfo> &, const ByteCursor &) {},
+                [](const std::shared_ptr<TransferState> &, const ByteCursor &) {},
                 [notifyTransferFinished, key](int32_t errorCode) {
                     AWS_LOGF_INFO(
                         AWS_LS_CRT_CPP_CANARY,
