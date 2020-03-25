@@ -78,7 +78,7 @@ void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
     m_canaryApp.defaultHostResolver.ResolveHost(
         m_endpoint, [](Io::HostResolver &, const Vector<Io::HostAddress> &, int) {});
 
-    while ((m_canaryApp.defaultHostResolver.GetHostAddressCount(m_endpoint) / 2) < desiredNumberOfAddresses)
+    while (m_canaryApp.defaultHostResolver.GetHostAddressCount(m_endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A) < desiredNumberOfAddresses)
     {
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }

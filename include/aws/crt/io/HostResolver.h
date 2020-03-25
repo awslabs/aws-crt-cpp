@@ -38,7 +38,7 @@ namespace Aws
                 virtual aws_host_resolver *GetUnderlyingHandle() noexcept = 0;
                 /// @private
                 virtual aws_host_resolution_config *GetConfig() noexcept = 0;
-                virtual size_t GetHostAddressCount(const String &host) noexcept = 0;
+                virtual size_t GetHostAddressCount(const String &host, uint32_t flags) noexcept = 0;
             };
 
             class DefaultHostResolver final : public HostResolver
@@ -83,7 +83,7 @@ namespace Aws
                 /// @private
                 aws_host_resolution_config *GetConfig() noexcept override { return &m_config; }
 
-                size_t GetHostAddressCount(const String &host) noexcept override;
+                size_t GetHostAddressCount(const String &host, uint32_t flags) noexcept override;
 
               private:
                 aws_host_resolver m_resolver;
