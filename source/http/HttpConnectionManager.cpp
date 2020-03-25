@@ -75,14 +75,6 @@ namespace Aws
                 managerOptions.socket_options = &connectionOptions.SocketOptions.GetImpl();
                 managerOptions.initial_window_size = connectionOptions.InitialWindowSize;
 
-                // TODO needs to be generalized
-                aws_http_connection_monitoring_options monitoringOptions;
-                AWS_ZERO_STRUCT(monitoringOptions);
-                monitoringOptions.allowable_throughput_failure_interval_seconds = 60;
-                monitoringOptions.minimum_throughput_bytes_per_second = 1 * 1024 * 1024;
-
-                managerOptions.monitoring_options = &monitoringOptions;
-
                 if (options.EnableBlockingShutdown)
                 {
                     managerOptions.shutdown_complete_callback = s_shutdownCompleted;
@@ -135,11 +127,6 @@ namespace Aws
                     m_shutdownPromise.get_future().get();
                 }
                 m_connectionManager = nullptr;
-            }
-
-            size_t HttpClientConnectionManager::GetOpenConnectionCount()
-            {
-                return aws_http_connection_manager_get_open_connection_count(m_connectionManager);
             }
 
             bool HttpClientConnectionManager::AcquireConnection(

@@ -401,8 +401,6 @@ namespace Aws
 
                 int LastError() const noexcept { return m_lastError; }
 
-                Aws::Crt::String GetResolvedHost();
-
                 /**
                  * Create a new Https Connection to hostName:port, using `socketOptions` for tcp options and
                  * `tlsConnOptions` for TLS/SSL options. If `tlsConnOptions` is null http (plain-text) will be used.
