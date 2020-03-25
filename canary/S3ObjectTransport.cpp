@@ -443,8 +443,6 @@ void S3ObjectTransport::UploadPart(
     StringStream keyPathStream;
     keyPathStream << state->GetKey() << "?partNumber=" << partInfo->partNumber << "&uploadId=" << state->GetUploadId();
 
-    partInfo->uploadStartTime = DateTime::Now();
-
     String keyPathStr = keyPathStream.str();
 
     PutObject(

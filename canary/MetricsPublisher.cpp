@@ -15,7 +15,9 @@
 #include "MetricsPublisher.h"
 #include "CanaryApp.h"
 #include "MeasureTransferRate.h"
+#include "S3ObjectTransport.h"
 
+#include <aws/crt/JsonObject.h>
 #include <aws/crt/http/HttpConnectionManager.h>
 #include <aws/crt/http/HttpRequestResponse.h>
 
@@ -28,6 +30,124 @@
 
 using namespace Aws::Crt;
 
+static const char *s_s3BackupBucket = "aws-crt-canary-bucket";
+
+static const char *s_metricUnitStr[] = {
+    "Seconds",
+    "Microseconds",
+    "Milliseconds",
+    "Bytes",
+    "Kilobytes",
+    "Megabytes",
+    "Gigabytes",
+    "Terabytes",
+    "Bits",
+    "Kilobits",
+    "Gigabits",
+    "Terabits",
+    "Percent",
+    "Count",
+    "Bytes%2FSecond",
+    "Kilobytes%2FSecond",
+    "Megabytes%2FSecond",
+    "Gigabytes%2FSecond",
+    "Terabytes%2FSecond",
+    "Bits%2FSecond",
+    "Kilobits%2FSecond",
+    "Megabits%2FSecond",
+    "Gigabits%2FSecond",
+    "Terabits%2FSecond",
+    "Counts%2FSecond",
+    "None",
+};
+
+static const char *s_metricNameStr[] = {"BytesUp",
+                                        "BytesDown",
+                                        "NumConnections",
+                                        "BytesAllocated",
+                                        "S3AddressCount",
+                                        "SuccessfulTransfer",
+                                        "FailedTransfer",
+                                        "AvgEventLoopGroupTickElapsed",
+                                        "AvgEventLoopTaskRunElapsed",
+                                        "MinEventLoopGroupTickElapsed",
+                                        "MinEventLoopTaskRunElapsed",
+                                        "MaxEventLoopGroupTickElapsed",
+                                        "MaxEventLoopTaskRunElapsed",
+                                        "NumIOSubs",
+                                        "Invalid"};
+
+static const char *s_transferSizeStr[] = {"None", "Small", "Large"};
+
+static const char *s_UnitToStr(MetricUnit unit)
+{
+    auto index = static_cast<size_t>(unit);
+    if (index >= AWS_ARRAY_SIZE(s_metricUnitStr))
+    {
+        return "None";
+    }
+    return s_metricUnitStr[index];
+}
+
+static MetricUnit s_StringToMetricUnit(const char *str)
+{
+    for (size_t i = 0; i < AWS_ARRAY_SIZE(s_metricUnitStr); ++i)
+    {
+        if (!strcmp(str, s_metricUnitStr[i]))
+        {
+            return (MetricUnit)i;
+        }
+    }
+
+    return MetricUnit::None;
+}
+
+static const char *s_MetricNameToStr(MetricName name)
+{
+    auto index = static_cast<size_t>(name);
+    if (index >= AWS_ARRAY_SIZE(s_metricNameStr))
+    {
+        return "None";
+    }
+    return s_metricNameStr[index];
+}
+
+static MetricName s_StringToMetricName(const char *str)
+{
+    for (size_t i = 0; i < AWS_ARRAY_SIZE(s_metricNameStr); ++i)
+    {
+        if (!strcmp(str, s_metricNameStr[i]))
+        {
+            return (MetricName)i;
+        }
+    }
+
+    return MetricName::Invalid;
+}
+
+static const char *s_MetricTransferSizeToString(MetricTransferSize transferSize)
+{
+    auto index = static_cast<size_t>(transferSize);
+    if (index >= AWS_ARRAY_SIZE(s_transferSizeStr))
+    {
+        return "None";
+    }
+    return s_transferSizeStr[index];
+}
+
+static MetricTransferSize s_StringToMetricTransferSize(const char *str)
+{
+    for (size_t i = 0; i < AWS_ARRAY_SIZE(s_transferSizeStr); ++i)
+    {
+        if (!strcmp(str, s_transferSizeStr[i]))
+        {
+            return (MetricTransferSize)i;
+        }
+    }
+
+    return MetricTransferSize::None;
+}
+
 Metric::Metric() {}
 
 Metric::Metric(MetricName name, MetricUnit unit, double value) : Unit(unit), Name(name), Value(value)
@@ -35,9 +155,9 @@ Metric::Metric(MetricName name, MetricUnit unit, double value) : Unit(unit), Nam
     SetTimestampNow();
 }
 
-Metric::Metric(MetricName name, MetricUnit unit, uint64_t timestamp, double value) : Unit(unit), Name(name), Timestamp(timestamp), Value(value)
+Metric::Metric(MetricName name, MetricUnit unit, uint64_t timestamp, double value)
+    : Unit(unit), Name(name), Timestamp(timestamp), Value(value)
 {
-
 }
 
 void Metric::SetTimestampNow()
@@ -99,6 +219,41 @@ MetricsPublisher::~MetricsPublisher()
     aws_event_loop_cancel_task(m_schedulingLoop, &m_publishTask);
 }
 
+MetricTransferSize MetricsPublisher::GetTransferSize() const
+{
+    return m_transferSizeOverride.has_value() ? m_transferSizeOverride.value() : m_transferSize;
+}
+
+String MetricsPublisher::GetPlatformName() const
+{
+    return m_platformNameOverride.has_value() ? m_platformNameOverride.value()
+                                              : String(m_canaryApp.GetOptions().platformName);
+}
+
+String MetricsPublisher::GetToolName() const
+{
+    return m_toolNameOverride.has_value() ? m_toolNameOverride.value() : String(m_canaryApp.GetOptions().toolName);
+}
+
+String MetricsPublisher::GetInstanceType() const
+{
+    return m_instanceTypeOverride.has_value() ? m_instanceTypeOverride.value()
+                                              : String(m_canaryApp.GetOptions().instanceType);
+}
+
+uint64_t MetricsPublisher::GetLargeObjectPartSize() const
+{
+    return m_largeObjectPartSizeOverride.has_value()
+               ? m_largeObjectPartSizeOverride.value()
+               : MeasureTransferRate::LargeObjectSize / MeasureTransferRate::LargeObjectNumParts;
+}
+
+bool MetricsPublisher::IsSendingEncrypted() const
+{
+    return m_sendEncryptedOverride.has_value() ? m_sendEncryptedOverride.value()
+                                               : m_canaryApp.GetOptions().sendEncrypted;
+}
+
 void MetricsPublisher::SchedulePublish()
 {
     uint64_t now = 0;
@@ -111,83 +266,7 @@ void MetricsPublisher::SetMetricTransferSize(MetricTransferSize transferSize)
     m_transferSize = transferSize;
 }
 
-static const char *s_UnitToStr(MetricUnit unit)
-{
-    static const char *s_unitStr[] = {
-        "Seconds",
-        "Microseconds",
-        "Milliseconds",
-        "Bytes",
-        "Kilobytes",
-        "Megabytes",
-        "Gigabytes",
-        "Terabytes",
-        "Bits",
-        "Kilobits",
-        "Gigabits",
-        "Terabits",
-        "Percent",
-        "Count",
-        "Bytes%2FSecond",
-        "Kilobytes%2FSecond",
-        "Megabytes%2FSecond",
-        "Gigabytes%2FSecond",
-        "Terabytes%2FSecond",
-        "Bits%2FSecond",
-        "Kilobits%2FSecond",
-        "Megabits%2FSecond",
-        "Gigabits%2FSecond",
-        "Terabits%2FSecond",
-        "Counts%2FSecond",
-        "None",
-    };
-
-    auto index = static_cast<size_t>(unit);
-    if (index >= AWS_ARRAY_SIZE(s_unitStr))
-    {
-        return "None";
-    }
-    return s_unitStr[index];
-}
-
-static const char *s_MetricNameToStr(MetricName name)
-{
-    static const char *s_metricNameStr[] = {"BytesUp",
-                                            "BytesDown",
-                                            "NumConnections",
-                                            "BytesAllocated",
-                                            "S3AddressCount",
-                                            "SuccessfulTransfer",
-                                            "FailedTransfer",
-                                            "AvgEventLoopGroupTickElapsed",
-                                            "AvgEventLoopTaskRunElapsed",
-                                            "MinEventLoopGroupTickElapsed",
-                                            "MinEventLoopTaskRunElapsed",
-                                            "MaxEventLoopGroupTickElapsed",
-                                            "MaxEventLoopTaskRunElapsed",
-                                            "NumIOSubs"};
-
-    auto index = static_cast<size_t>(name);
-    if (index >= AWS_ARRAY_SIZE(s_metricNameStr))
-    {
-        return "None";
-    }
-    return s_metricNameStr[index];
-}
-
-static const char *s_MetricTransferToString(MetricTransferSize transferSize)
-{
-    static const char *s_transferSizeStr[] = {"None", "Small", "Large"};
-
-    auto index = static_cast<size_t>(transferSize);
-    if (index >= AWS_ARRAY_SIZE(s_transferSizeStr))
-    {
-        return "None";
-    }
-    return s_transferSizeStr[index];
-}
-
-void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const Vector<Metric> &metrics)
+void MetricsPublisher::PreparePayload(StringStream &bodyStream, const Vector<Metric> &metrics)
 {
     bodyStream << "Action=PutMetricData&";
 
@@ -196,17 +275,16 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
         bodyStream << "Namespace=" << *Namespace << "&";
     }
 
-    const CanaryAppOptions &options = m_canaryApp.GetOptions();
+    String transferSizeString = s_MetricTransferSizeToString(GetTransferSize());
+    String platformName = GetPlatformName();
+    String toolName = GetToolName();
+    String instanceType = GetInstanceType();
+    const uint64_t largeObjectPartSize = GetLargeObjectPartSize();
+    bool encrypted = IsSendingEncrypted();
 
-    size_t metricCount = 1;
-    const char *transferSizeString = s_MetricTransferToString(m_transferSize);
-    const char *platformName = options.platformName.c_str();
-    const char *toolName = options.toolName.c_str();
-    const char *instanceType = options.instanceType.c_str();
-    const uint64_t largeObjectPartSize =
-        MeasureTransferRate::LargeObjectSize / MeasureTransferRate::LargeObjectNumParts;
+    size_t metricCount = 0;
 
-    for (const auto &metric : metrics)
+    for (const Metric &metric : metrics)
     {
         bodyStream << "MetricData.member." << metricCount << ".MetricName=" << s_MetricNameToStr(metric.Name) << "&";
         uint8_t dateBuffer[AWS_DATE_TIME_STR_MAX_LEN];
@@ -220,6 +298,7 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
         bodyStream.precision(17);
         bodyStream << "MetricData.member." << metricCount << ".Value=" << std::fixed << metric.Value << "&";
         bodyStream << "MetricData.member." << metricCount << ".Unit=" << s_UnitToStr(metric.Unit) << "&";
+
         bodyStream << "MetricData.member." << metricCount << ".StorageResolution=1&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.1.Name=Platform&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.1.Value=" << platformName << "&";
@@ -230,8 +309,9 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Name=TransferSize&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Value=" << transferSizeString << "&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.5.Name=Encrypted&";
-        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.5.Value=" << options.sendEncrypted
-                   << "&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.5.Value=" << encrypted << "&";
+
+        uint32_t nextDimensionIndex = 6;
 
         if (m_transferSize == MetricTransferSize::Large)
         {
@@ -241,12 +321,211 @@ void MetricsPublisher::PreparePayload(Aws::Crt::StringStream &bodyStream, const 
             bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.7.Name=PartSize&";
             bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.7.Value=" << largeObjectPartSize
                        << "&";
+
+            nextDimensionIndex = 8;
+        }
+
+        if (m_replayId.has_value())
+        {
+            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member." << nextDimensionIndex
+                       << ".Name=ReplayId&";
+            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member." << nextDimensionIndex
+                       << ".Value=" << m_replayId.value() << "&";
         }
 
         metricCount++;
     }
 
     bodyStream << "Version=2010-08-01";
+}
+
+void MetricsPublisher::WriteToBackup(const Vector<Metric> &metrics)
+{
+    for (const Metric &metric : metrics)
+    {
+        m_metricsBackup.push_back(metric);
+    }
+}
+
+void MetricsPublisher::UploadBackup()
+{
+    std::shared_ptr<S3ObjectTransport> transport =
+        MakeShared<S3ObjectTransport>(g_allocator, m_canaryApp, s_s3BackupBucket);
+
+    std::shared_ptr<StringStream> backupContents = MakeShared<StringStream>(g_allocator);
+    String tabs;
+
+    String transferSizeString = s_MetricTransferSizeToString(GetTransferSize());
+    String platformName = GetPlatformName();
+    String toolName = GetToolName();
+    String instanceType = GetInstanceType();
+    uint64_t largeObjectPartSize = GetLargeObjectPartSize();
+    bool encrypted = IsSendingEncrypted();
+
+    StringStream s3BackupPath;
+
+    {
+        uint64_t currentTicks = 0;
+        aws_sys_clock_get_ticks(&currentTicks);
+        uint64_t timestampNow = aws_timestamp_convert(currentTicks, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, NULL);
+
+        uint8_t dateBuffer[AWS_DATE_TIME_STR_MAX_LEN];
+        AWS_ZERO_ARRAY(dateBuffer);
+        auto dateBuf = ByteBufFromEmptyArray(dateBuffer, AWS_ARRAY_SIZE(dateBuffer));
+        DateTime metricDateTime(timestampNow);
+        metricDateTime.ToGmtString(DateFormat::ISO_8601, dateBuf);
+        String dateStr((char *)dateBuf.buffer, dateBuf.len);
+        s3BackupPath << toolName << "/" << platformName << "/" << instanceType << "/" << dateStr << "-" << currentTicks
+                     << ".json";
+    }
+
+    *backupContents << tabs << "{" << std::endl;
+
+    tabs.push_back('\t');
+
+    *backupContents << tabs << "\"TransferSize\": " << instanceType << "\"," << std::endl;
+    *backupContents << tabs << "\"PlatformName\": " << platformName << "\"," << std::endl;
+    *backupContents << tabs << "\"ToolName\": " << toolName << "\"," << std::endl;
+    *backupContents << tabs << "\"InstanceType\": " << instanceType << "\"," << std::endl;
+    *backupContents << tabs << "\"LargeObjectPartSize\": " << largeObjectPartSize << "\"," << std::endl;
+    *backupContents << tabs << "\"Encrypted\": " << encrypted << "\"," << std::endl;
+    *backupContents << tabs << "\"Metrics\": [" << std::endl;
+
+    tabs.push_back('\t');
+
+    for (size_t i = 0; i < m_metricsBackup.size(); ++i)
+    {
+        const Metric &metric = m_metricsBackup[i];
+
+        *backupContents << "{" << std::endl;
+
+        tabs.push_back('\t');
+
+        *backupContents << tabs << " \"Timestamp\" : \"" << metric.Timestamp << "\", " << std::endl;
+        *backupContents << tabs << " \"Value\" : " << std::fixed << metric.Value << ", " << std::endl;
+        *backupContents << tabs << " \"Unit\" : \"" << s_UnitToStr(metric.Unit) << "\" " << std::endl;
+
+        tabs.pop_back();
+
+        *backupContents << tabs << "}";
+
+        if (i < m_metricsBackup.size() - 1)
+        {
+            *backupContents << ",";
+        }
+
+        *backupContents << std::endl;
+    }
+
+    tabs.pop_back();
+
+    *backupContents << tabs << "]";
+
+    tabs.pop_back();
+
+    *backupContents << tabs << "}";
+
+    std::mutex signalMutex;
+    std::condition_variable signal;
+    bool signalVal = false;
+
+    std::shared_ptr<Io::StdIOStreamInputStream> inputStream =
+        MakeShared<Io::StdIOStreamInputStream>(g_allocator, backupContents);
+
+    transport->PutObject(
+        s3BackupPath.str(),
+        inputStream,
+        0,
+        [&signalMutex, &signalVal, &signal](int32_t errorCode, std::shared_ptr<Aws::Crt::String>) {
+            {
+                std::lock_guard<std::mutex> locker(signalMutex);
+                signalVal = true;
+            }
+
+            signal.notify_one();
+        });
+
+    std::unique_lock<std::mutex> lock(signalMutex);
+    signal.wait(lock, [&signalVal]() { return signalVal; });
+}
+
+void MetricsPublisher::RehydrateBackup(const char *s3Path)
+{
+    std::shared_ptr<S3ObjectTransport> transport =
+        MakeShared<S3ObjectTransport>(g_allocator, m_canaryApp, s_s3BackupBucket);
+    StringStream contents;
+    std::mutex signalMutex;
+    std::condition_variable signal;
+    bool signalVal = false;
+
+    transport->GetObject(
+        s3Path,
+        0,
+        [transport, &contents](const Http::HttpStream &, const ByteCursor &cur) { contents << cur.ptr; },
+        [transport, &signalMutex, &signal, &signalVal](int32_t errorCode) {
+            if (errorCode != AWS_ERROR_SUCCESS)
+            {
+                AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Failed to rehydrate file: file download returned error.");
+                return;
+            }
+
+            {
+                std::lock_guard<std::mutex> locker(signalMutex);
+                signalVal = true;
+            }
+
+            signal.notify_one();
+        });
+
+    std::unique_lock<std::mutex> lock(signalMutex);
+    signal.wait(lock, [&signalVal]() { return signalVal; });
+
+    String contentsStr = contents.str();
+    JsonObject jsonObject(contentsStr);
+    JsonView jsonView = jsonObject.View();
+
+    String transferSizeStr = jsonView.GetString("TransferSize");
+
+    m_transferSizeOverride = s_StringToMetricTransferSize(transferSizeStr.c_str());
+    m_platformNameOverride = jsonView.GetString("PlatformName");
+    m_toolNameOverride = jsonView.GetString("ToolName");
+    m_instanceTypeOverride = jsonView.GetString("InstanceType");
+    m_largeObjectPartSizeOverride = jsonView.GetInt64("LargeObjectPartSize");
+    m_sendEncryptedOverride = jsonView.GetBool("Encrypted");
+
+    uint64_t currentTicks = 0;
+    aws_sys_clock_get_ticks(&currentTicks);
+    m_replayId = currentTicks;
+
+    Vector<JsonView> metricsJson = jsonView.GetArray("Metrics");
+
+    for (const JsonView &metricJson : metricsJson)
+    {
+        String metricNameStr = metricJson.GetString("MetricName");
+        String metricUnitStr = metricJson.GetString("MetricUnit");
+
+        String metricTimestampStr = metricJson.GetString("Timestamp");
+        uint64_t metricTimestamp = std::stoull(metricTimestampStr.c_str());
+
+        Metric metric(
+            s_StringToMetricName(metricNameStr.c_str()),
+            s_StringToMetricUnit(metricUnitStr.c_str()),
+            metricTimestamp,
+            metricJson.GetDouble("Value"));
+
+        AddDataPoint(metric);
+    }
+
+    SchedulePublish();
+    WaitForLastPublish();
+
+    m_transferSizeOverride = Optional<MetricTransferSize>();
+    m_platformNameOverride = Optional<String>();
+    m_toolNameOverride = Optional<String>();
+    m_instanceTypeOverride = Optional<String>();
+    m_largeObjectPartSizeOverride = Optional<uint64_t>();
+    m_sendEncryptedOverride = Optional<bool>();
+    m_replayId = Optional<uint64_t>();
 }
 
 void MetricsPublisher::AddDataPoint(const Metric &newMetric)
@@ -293,26 +572,22 @@ void MetricsPublisher::AddDataPointInternal(const Metric &newMetric)
 
 void MetricsPublisher::AddTransferStatusDataPoint(bool transferSuccess)
 {
-    if (transferSuccess)
-    {
-        Metric successMetric;
-        successMetric.Name = MetricName::SuccessfulTransfer;
-        successMetric.Unit = MetricUnit::Count;
-        successMetric.Value = 1;
-        successMetric.SetTimestampNow();
+    uint64_t currentTime = 0;
+    aws_sys_clock_get_ticks(&currentTime);
+    uint64_t timestamp = aws_timestamp_convert(currentTime, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, NULL);
 
-        AddDataPoint(successMetric);
-    }
-    else
-    {
-        Metric failureMetric;
-        failureMetric.Name = MetricName::FailedTransfer;
-        failureMetric.Unit = MetricUnit::Count;
-        failureMetric.Value = 1;
-        failureMetric.SetTimestampNow();
+    AddTransferStatusDataPoint(timestamp, transferSuccess);
+}
 
-        AddDataPoint(failureMetric);
-    }
+void MetricsPublisher::AddTransferStatusDataPoint(uint64_t timestamp, bool transferSuccess)
+{
+    Metric metric(
+        (transferSuccess) ? MetricName::SuccessfulTransfer : MetricName::FailedTransfer,
+        MetricUnit::Count,
+        timestamp,
+        1.0);
+
+    AddDataPoint(metric);
 }
 
 void MetricsPublisher::WaitForLastPublish()
@@ -360,6 +635,8 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
         metricsSlice.push_back(publisher->m_publishDataTaskCopy.back());
         publisher->m_publishDataTaskCopy.pop_back();
     }
+
+    publisher->WriteToBackup(metricsSlice);
 
     AWS_LOGF_INFO(
         AWS_LS_CRT_CPP_CANARY,

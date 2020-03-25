@@ -29,7 +29,10 @@
 
 using namespace Aws::Crt;
 
-MultipartTransferState::PartInfo::PartInfo() : partIndex(0), partNumber(0), offsetInBytes(0), sizeInBytes(0) {}
+MultipartTransferState::PartInfo::PartInfo()
+    : partIndex(0), partNumber(0), offsetInBytes(0), sizeInBytes(0), transferSuccess(false)
+{
+}
 MultipartTransferState::PartInfo::PartInfo(
     std::shared_ptr<MetricsPublisher> inPublisher,
     uint32_t inPartIndex,
@@ -37,7 +40,7 @@ MultipartTransferState::PartInfo::PartInfo(
     uint64_t inOffsetInBytes,
     uint64_t inSizeInBytes)
     : partIndex(inPartIndex), partNumber(inPartNumber), offsetInBytes(inOffsetInBytes), sizeInBytes(inSizeInBytes),
-      publisher(inPublisher)
+      transferSuccess(false), publisher(inPublisher)
 {
 }
 
@@ -88,7 +91,7 @@ void MultipartTransferState::PartInfo::DistributeDataUsedOverTime(
             for (uint64_t i = 0; i < numInteriorSeconds; ++i)
             {
                 PushAndTryToMerge(
-                    metrics, metricName, (interiorBeginSecond * 1000) + (i * 1000), interiorSecondDataUsed);
+                    metrics, metricName, (interiorBeginSecond * 1000ULL) + (i * 1000ULL), interiorSecondDataUsed);
             }
         }
 
@@ -159,11 +162,17 @@ void MultipartTransferState::PartInfo::FlushMetricsVector(Vector<Metric> &metric
 {
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Adding %d data points", (uint32_t)metrics.size());
 
+    if (metrics.size() > 0)
+    {
+        Metric &metric = metrics.back();
+        publisher->AddTransferStatusDataPoint(metric.Timestamp, transferSuccess);
+    }
+
     publisher->AddDataPoints(metrics);
 
     Vector<Metric> connMetrics;
 
-    for(Metric & metric : metrics)
+    for (Metric &metric : metrics)
     {
         connMetrics.emplace_back(MetricName::NumConnections, MetricUnit::Count, metric.Timestamp, 1.0);
     }
