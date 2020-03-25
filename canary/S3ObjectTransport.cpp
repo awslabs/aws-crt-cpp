@@ -398,7 +398,7 @@ void S3ObjectTransport::PutObjectMultipart(
     // Set the callback that the MultipartTransferProcessor will use to process the part.
     // In this case, it will try to upload it.
     uploadState->SetProcessPartCallback([this, uploadState, sendPart, finishedCallback](
-                                            const std::shared_ptr<MultipartTransferState::PartInfo> &partInfo,
+                                            const std::shared_ptr<PartInfo> &partInfo,
                                             MultipartTransferState::PartFinishedCallback partFinished) {
         std::shared_ptr<Io::InputStream> partInputStream = sendPart(partInfo);
 
@@ -436,7 +436,7 @@ void S3ObjectTransport::PutObjectMultipart(
 
 void S3ObjectTransport::UploadPart(
     const std::shared_ptr<MultipartUploadState> &state,
-    const std::shared_ptr<MultipartTransferState::PartInfo> &partInfo,
+    const std::shared_ptr<PartInfo> &partInfo,
     const std::shared_ptr<Io::InputStream> &partInputStream,
     const MultipartTransferState::PartFinishedCallback &partFinished)
 {
@@ -584,7 +584,7 @@ void S3ObjectTransport::GetObjectMultipart(
     // Set the callback that the MultipartTransferProcessor will use to process the part.
     // In this case, try to download it.
     downloadState->SetProcessPartCallback([this, downloadState, receivePart](
-                                              const std::shared_ptr<MultipartTransferState::PartInfo> &partInfo,
+                                              const std::shared_ptr<PartInfo> &partInfo,
                                               const MultipartTransferState::PartFinishedCallback &partFinished) {
         GetPart(downloadState, partInfo, receivePart, partFinished);
     });
@@ -598,7 +598,7 @@ void S3ObjectTransport::GetObjectMultipart(
 
 void S3ObjectTransport::GetPart(
     const std::shared_ptr<MultipartDownloadState> &downloadState,
-    const std::shared_ptr<MultipartTransferState::PartInfo> &partInfo,
+    const std::shared_ptr<PartInfo> &partInfo,
     const ReceivePartCallback &receiveObjectPartData,
     const MultipartTransferState::PartFinishedCallback &partFinished)
 {

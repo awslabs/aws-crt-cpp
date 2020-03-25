@@ -18,20 +18,20 @@ class MeasureTransferRateStream : public Aws::Crt::Io::InputStream
   public:
     MeasureTransferRateStream(
         CanaryApp &canaryApp,
-        const std::shared_ptr<MultipartTransferState::PartInfo> &partInfo,
+        const std::shared_ptr<PartInfo> &partInfo,
         Aws::Crt::Allocator *allocator);
 
     virtual bool IsValid() const noexcept override;
 
   private:
     CanaryApp &m_canaryApp;
-    std::shared_ptr<MultipartTransferState::PartInfo> m_partInfo;
+    std::shared_ptr<PartInfo> m_partInfo;
     Aws::Crt::Allocator *m_allocator;
     uint64_t m_written;
     Aws::Crt::DateTime m_timestamp;
 
-    const MultipartTransferState::PartInfo &GetPartInfo() const;
-    MultipartTransferState::PartInfo &GetPartInfo();
+    const PartInfo &GetPartInfo() const;
+    PartInfo &GetPartInfo();
 
     virtual bool ReadImpl(Aws::Crt::ByteBuf &buffer) noexcept override;
     virtual Aws::Crt::Io::StreamStatus GetStatusImpl() const noexcept override;

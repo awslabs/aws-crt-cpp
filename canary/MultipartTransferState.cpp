@@ -29,11 +29,11 @@
 
 using namespace Aws::Crt;
 
-MultipartTransferState::PartInfo::PartInfo()
+PartInfo::PartInfo()
     : partIndex(0), partNumber(0), offsetInBytes(0), sizeInBytes(0), transferSuccess(false)
 {
 }
-MultipartTransferState::PartInfo::PartInfo(
+PartInfo::PartInfo(
     std::shared_ptr<MetricsPublisher> inPublisher,
     uint32_t inPartIndex,
     uint32_t inPartNumber,
@@ -44,7 +44,7 @@ MultipartTransferState::PartInfo::PartInfo(
 {
 }
 
-void MultipartTransferState::PartInfo::DistributeDataUsedOverTime(
+void PartInfo::DistributeDataUsedOverTime(
     Vector<Metric> &metrics,
     MetricName metricName,
     uint64_t beginTime,
@@ -99,7 +99,7 @@ void MultipartTransferState::PartInfo::DistributeDataUsedOverTime(
     }
 }
 
-void MultipartTransferState::PartInfo::PushAndTryToMerge(
+void PartInfo::PushAndTryToMerge(
     Vector<Metric> &metrics,
     MetricName metricName,
     uint64_t timestamp,
@@ -134,7 +134,7 @@ void MultipartTransferState::PartInfo::PushAndTryToMerge(
     }
 }
 
-void MultipartTransferState::PartInfo::PushMetric(Vector<Metric> &metrics, MetricName metricName, double dataUsed)
+void PartInfo::PushMetric(Vector<Metric> &metrics, MetricName metricName, double dataUsed)
 {
     uint64_t current_time = 0;
     aws_sys_clock_get_ticks(&current_time);
@@ -158,7 +158,7 @@ void MultipartTransferState::PartInfo::PushMetric(Vector<Metric> &metrics, Metri
     }
 }
 
-void MultipartTransferState::PartInfo::FlushMetricsVector(Vector<Metric> &metrics)
+void PartInfo::FlushMetricsVector(Vector<Metric> &metrics)
 {
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Adding %d data points", (uint32_t)metrics.size());
 
@@ -182,22 +182,22 @@ void MultipartTransferState::PartInfo::FlushMetricsVector(Vector<Metric> &metric
     metrics.clear();
 }
 
-void MultipartTransferState::PartInfo::AddDataUpMetric(uint64_t dataUp)
+void PartInfo::AddDataUpMetric(uint64_t dataUp)
 {
     PushMetric(uploadMetrics, MetricName::BytesUp, (double)dataUp);
 }
 
-void MultipartTransferState::PartInfo::AddDataDownMetric(uint64_t dataDown)
+void PartInfo::AddDataDownMetric(uint64_t dataDown)
 {
     PushMetric(downloadMetrics, MetricName::BytesDown, (double)dataDown);
 }
 
-void MultipartTransferState::PartInfo::FlushDataUpMetrics()
+void PartInfo::FlushDataUpMetrics()
 {
     FlushMetricsVector(uploadMetrics);
 }
 
-void MultipartTransferState::PartInfo::FlushDataDownMetrics()
+void PartInfo::FlushDataDownMetrics()
 {
     FlushMetricsVector(downloadMetrics);
 }
