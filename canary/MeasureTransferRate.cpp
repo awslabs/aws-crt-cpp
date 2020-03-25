@@ -59,7 +59,7 @@ bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
     }
 
     size_t totalBufferSpace = dest.capacity - dest.len;
-    size_t unwritten = m_partInfo->sizeInBytes - m_written;
+    size_t unwritten = m_partInfo->GetSizeInBytes() - m_written;
     size_t totalToWrite = totalBufferSpace > unwritten ? unwritten : totalBufferSpace;
     size_t writtenOut = 0;
 
@@ -93,7 +93,7 @@ bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
 Io::StreamStatus MeasureTransferRateStream::GetStatusImpl() const noexcept
 {
     Io::StreamStatus status;
-    status.is_end_of_stream = m_written == m_partInfo->sizeInBytes;
+    status.is_end_of_stream = m_written == m_partInfo->GetSizeInBytes();
     status.is_valid = !status.is_end_of_stream;
 
     return status;
@@ -107,7 +107,7 @@ bool MeasureTransferRateStream::SeekImpl(Io::OffsetType, Io::StreamSeekBasis) no
 
 int64_t MeasureTransferRateStream::GetLengthImpl() const noexcept
 {
-    return m_partInfo->sizeInBytes;
+    return m_partInfo->GetSizeInBytes();
 }
 
 MeasureTransferRateStream::MeasureTransferRateStream(
@@ -306,7 +306,7 @@ void MeasureTransferRate::MeasureHttpTransfer()
         [this, connManager, &testFilename, &hostHeader](
             uint32_t, String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
             std::shared_ptr<PartInfo> singlePart = MakeShared<PartInfo>(
-                m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, 0LL, SmallObjectSize);
+                m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, SmallObjectSize);
             singlePart->AddDataDownMetric(0);
 
             auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
@@ -410,7 +410,7 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
         for (uint32_t i = 0; i < m_canaryApp.GetOptions().numUpTransfers; ++i)
         {
             std::shared_ptr<PartInfo> singlePart = MakeShared<PartInfo>(
-                m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, 0LL, SmallObjectSize);
+                m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, SmallObjectSize);
 
             uploads.push_back(singlePart);
         }
@@ -434,7 +434,7 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
                         m_canaryApp.traceAllocator, m_canaryApp, singlePart, m_canaryApp.traceAllocator),
                     0,
                     [singlePart, notifyTransferFinished](int32_t errorCode, std::shared_ptr<Aws::Crt::String>) {
-                        singlePart->transferSuccess = errorCode == AWS_ERROR_SUCCESS;
+                        singlePart->SetTransferSuccess(errorCode == AWS_ERROR_SUCCESS);
                         notifyTransferFinished(errorCode);
                     });
             });
@@ -453,7 +453,7 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
     for (uint32_t i = 0; i < m_canaryApp.GetOptions().numDownTransfers; ++i)
     {
         std::shared_ptr<PartInfo> singlePart = MakeShared<PartInfo>(
-            m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, 0LL, SmallObjectSize);
+            m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, SmallObjectSize);
 
         downloads.emplace_back(singlePart);
     }
@@ -478,7 +478,7 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
                     singlePart->AddDataDownMetric(cur.len);
                 },
                 [singlePart, notifyTransferFinished](int32_t errorCode) {
-                    singlePart->transferSuccess = errorCode == AWS_ERROR_SUCCESS;
+                    singlePart->SetTransferSuccess(errorCode == AWS_ERROR_SUCCESS);
                     notifyTransferFinished(errorCode);
                 });
         });
