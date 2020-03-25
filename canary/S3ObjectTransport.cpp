@@ -442,7 +442,8 @@ void S3ObjectTransport::UploadPart(
     const MultipartTransferState::PartFinishedCallback &partFinished)
 {
     StringStream keyPathStream;
-    keyPathStream << state->GetKey() << "?partNumber=" << partInfo->GetPartNumber() << "&uploadId=" << state->GetUploadId();
+    keyPathStream << state->GetKey() << "?partNumber=" << partInfo->GetPartNumber()
+                  << "&uploadId=" << state->GetUploadId();
 
     String keyPathStr = keyPathStream.str();
 
@@ -627,7 +628,8 @@ void S3ObjectTransport::GetPart(
             }
             else
             {
-                AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Received part #%d for %s", partInfo->GetPartNumber(), key.c_str());
+                AWS_LOGF_INFO(
+                    AWS_LS_CRT_CPP_CANARY, "Received part #%d for %s", partInfo->GetPartNumber(), key.c_str());
 
                 if (downloadState->IncNumPartsCompleted())
                 {

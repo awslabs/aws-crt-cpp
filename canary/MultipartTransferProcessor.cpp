@@ -158,8 +158,8 @@ void MultipartTransferProcessor::ProcessPartRange(
             partByteSize += state->GetObjectSize() % static_cast<uint64_t>(state->GetNumParts());
         }
 
-        std::shared_ptr<PartInfo> partInfo = MakeShared<PartInfo>(
-            g_allocator, m_canaryApp.publisher, partIndex, partNumber, partByteSize);
+        std::shared_ptr<PartInfo> partInfo =
+            MakeShared<PartInfo>(g_allocator, m_canaryApp.publisher, partIndex, partNumber, partByteSize);
 
         // TODO should state and partInfo be captured as weak pointers here?
         state->ProcessPart(partInfo, [this, state, partInfo](PartFinishResponse response) {
