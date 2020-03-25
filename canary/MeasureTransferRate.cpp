@@ -615,7 +615,7 @@ void MeasureTransferRate::s_PulseMetricsTask(aws_task *task, void *arg, aws_task
     {
         const Aws::Crt::String &s3Endpoint = transport->GetEndpoint();
 
-        size_t s3AddressCount = canaryApp.defaultHostResolver.GetHostAddressCount(s3Endpoint);
+        size_t s3AddressCount = canaryApp.defaultHostResolver.GetHostAddressCount(s3Endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
 
         Metric s3AddressCountMetric(MetricName::S3AddressCount, MetricUnit::Count, (double)s3AddressCount);
 
@@ -624,6 +624,7 @@ void MeasureTransferRate::s_PulseMetricsTask(aws_task *task, void *arg, aws_task
         AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Number-of-s3-addresses:%d", (uint32_t)s3AddressCount);
     }
 
+    /*
     {
         aws_event_loop_group *eventLoopGroup = canaryApp.eventLoopGroup.GetUnderlyingHandle();
         size_t numEventLoops = aws_array_list_length(&eventLoopGroup->event_loops);
@@ -697,6 +698,7 @@ void MeasureTransferRate::s_PulseMetricsTask(aws_task *task, void *arg, aws_task
         publisher->AddDataPoint(maxEventLoopGroupTaskRunElapsed);
         publisher->AddDataPoint(numIOSubs);
     }
+    */
 
     /*
     {
