@@ -30,16 +30,15 @@
 using namespace Aws::Crt;
 
 PartInfo::PartInfo()
-    : partIndex(0), partNumber(0), offsetInBytes(0), sizeInBytes(0), transferSuccess(false)
+    : partIndex(0), partNumber(0), sizeInBytes(0), transferSuccess(false)
 {
 }
 PartInfo::PartInfo(
     std::shared_ptr<MetricsPublisher> inPublisher,
     uint32_t inPartIndex,
     uint32_t inPartNumber,
-    uint64_t inOffsetInBytes,
     uint64_t inSizeInBytes)
-    : partIndex(inPartIndex), partNumber(inPartNumber), offsetInBytes(inOffsetInBytes), sizeInBytes(inSizeInBytes),
+    : partIndex(inPartIndex), partNumber(inPartNumber), sizeInBytes(inSizeInBytes),
       transferSuccess(false), publisher(inPublisher)
 {
 }

@@ -32,21 +32,36 @@ enum class PartFinishResponse
     Retry
 };
 
-struct PartInfo
+class PartInfo
 {
-    uint32_t partIndex;
-    uint32_t partNumber;
-    uint64_t offsetInBytes;
-    uint64_t sizeInBytes;
-    uint32_t transferSuccess : 1;
+public:
 
     PartInfo();
     PartInfo(
         std::shared_ptr<MetricsPublisher> publisher,
         uint32_t partIndex,
         uint32_t partNumber,
-        uint64_t offsetInBytes,
         uint64_t sizeInBytes);
+
+    uint32_t GetPartIndex() const
+    {
+      return partIndex;
+    }
+
+    uint32_t GetPartNumber() const
+    {
+      return partNumber;
+    }
+
+    uint64_t GetSizeInBytes() const
+    {
+      return sizeInBytes;
+    }
+
+    void SetTransferSuccess(bool success)
+    {
+      transferSuccess = success;
+    }
 
     void AddDataUpMetric(uint64_t dataUp);
 
@@ -57,6 +72,11 @@ struct PartInfo
     void FlushDataDownMetrics();
 
   private:
+    uint32_t partIndex;
+    uint32_t partNumber;
+    uint64_t sizeInBytes;
+    uint32_t transferSuccess : 1;
+
     Aws::Crt::Vector<Metric> uploadMetrics;
     Aws::Crt::Vector<Metric> downloadMetrics;
     std::shared_ptr<MetricsPublisher> publisher;
