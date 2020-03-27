@@ -77,8 +77,8 @@ void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
     m_canaryApp.GetDefaultHostResolver().ResolveHost(
         m_endpoint, [](Io::HostResolver &, const Vector<Io::HostAddress> &, int) {});
 
-    while (m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(m_endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A) <
-           desiredNumberOfAddresses)
+    while (m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(
+               m_endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A) < desiredNumberOfAddresses)
     {
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
@@ -397,13 +397,13 @@ void S3ObjectTransport::PutObjectMultipart(
 
     // Set the callback that the MultipartTransferProcessor will use to process the part.
     // In this case, it will try to upload it.
-    uploadState->SetProcessPartCallback(
-        [this, uploadState, sendPart, finishedCallback](
-            const std::shared_ptr<TransferState> &transferState, MultipartTransferState::PartFinishedCallback partFinished) {
-            std::shared_ptr<Io::InputStream> partInputStream = sendPart(transferState);
+    uploadState->SetProcessPartCallback([this, uploadState, sendPart, finishedCallback](
+                                            const std::shared_ptr<TransferState> &transferState,
+                                            MultipartTransferState::PartFinishedCallback partFinished) {
+        std::shared_ptr<Io::InputStream> partInputStream = sendPart(transferState);
 
-            UploadPart(uploadState, transferState, partInputStream, partFinished);
-        });
+        UploadPart(uploadState, transferState, partInputStream, partFinished);
+    });
 
     // Set the callback that will be called when something flags the upload state as finished.  Finished
     // can happen due to success or failure.
@@ -450,7 +450,8 @@ void S3ObjectTransport::UploadPart(
         keyPathStr,
         partInputStream,
         (uint32_t)EPutObjectFlags::RetrieveETag,
-        [this, state, transferState, partFinished, keyPathStr](int32_t errorCode, std::shared_ptr<Aws::Crt::String> etag) {
+        [this, state, transferState, partFinished, keyPathStr](
+            int32_t errorCode, std::shared_ptr<Aws::Crt::String> etag) {
             if (etag == nullptr)
             {
                 errorCode = AWS_ERROR_UNKNOWN;
@@ -619,7 +620,10 @@ void S3ObjectTransport::GetPart(
             if (errorCode != AWS_ERROR_SUCCESS)
             {
                 AWS_LOGF_ERROR(
-                    AWS_LS_CRT_CPP_CANARY, "Did not receive part #%d for %s", transferState->GetPartNumber(), key.c_str());
+                    AWS_LS_CRT_CPP_CANARY,
+                    "Did not receive part #%d for %s",
+                    transferState->GetPartNumber(),
+                    key.c_str());
 
                 transferState->FlushDataDownMetrics();
 

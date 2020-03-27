@@ -88,7 +88,11 @@ void TransferState::DistributeDataUsedOverTime(
     }
 }
 
-void TransferState::PushAndTryToMerge(Vector<Metric> &metrics, MetricName metricName, uint64_t timestamp, double dataUsed)
+void TransferState::PushAndTryToMerge(
+    Vector<Metric> &metrics,
+    MetricName metricName,
+    uint64_t timestamp,
+    double dataUsed)
 {
     bool pushNew = true;
     DateTime newDateTime(timestamp);

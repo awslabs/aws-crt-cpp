@@ -209,8 +209,8 @@ void MeasureTransferRate::MeasureHttpTransfer()
         (uint32_t)MeasurementFlags::DontWarmDNSCache | (uint32_t)MeasurementFlags::NoFileSuffix,
         [this, connManager, &testFilename, &hostHeader](
             uint32_t, String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
-            std::shared_ptr<TransferState> singlePart =
-                MakeShared<TransferState>(m_canaryApp.GetTraceAllocator(), m_canaryApp.GetMetricsPublisher(), 0, 1, SmallObjectSize);
+            std::shared_ptr<TransferState> singlePart = MakeShared<TransferState>(
+                m_canaryApp.GetTraceAllocator(), m_canaryApp.GetMetricsPublisher(), 0, 1, SmallObjectSize);
             singlePart->AddDataDownMetric(0);
 
             auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
@@ -313,8 +313,8 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
     {
         for (uint32_t i = 0; i < m_canaryApp.GetOptions().numUpTransfers; ++i)
         {
-            std::shared_ptr<TransferState> singlePart =
-                MakeShared<TransferState>(m_canaryApp.GetTraceAllocator(), m_canaryApp.GetMetricsPublisher(), 0, 1, SmallObjectSize);
+            std::shared_ptr<TransferState> singlePart = MakeShared<TransferState>(
+                m_canaryApp.GetTraceAllocator(), m_canaryApp.GetMetricsPublisher(), 0, 1, SmallObjectSize);
 
             uploads.push_back(singlePart);
         }
@@ -356,8 +356,8 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
 
     for (uint32_t i = 0; i < m_canaryApp.GetOptions().numDownTransfers; ++i)
     {
-        std::shared_ptr<TransferState> singlePart =
-            MakeShared<TransferState>(m_canaryApp.GetTraceAllocator(), m_canaryApp.GetMetricsPublisher(), 0, 1, SmallObjectSize);
+        std::shared_ptr<TransferState> singlePart = MakeShared<TransferState>(
+            m_canaryApp.GetTraceAllocator(), m_canaryApp.GetMetricsPublisher(), 0, 1, SmallObjectSize);
 
         downloads.emplace_back(singlePart);
     }
@@ -520,8 +520,8 @@ void MeasureTransferRate::s_PulseMetricsTask(aws_task *task, void *arg, aws_task
     {
         const Aws::Crt::String &s3Endpoint = transport->GetEndpoint();
 
-        size_t s3AddressCount =
-            canaryApp.GetDefaultHostResolver().GetHostAddressCount(s3Endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
+        size_t s3AddressCount = canaryApp.GetDefaultHostResolver().GetHostAddressCount(
+            s3Endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
 
         Metric s3AddressCountMetric(MetricName::S3AddressCount, MetricUnit::Count, (double)s3AddressCount);
 

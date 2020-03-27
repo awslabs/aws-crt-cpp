@@ -7,8 +7,8 @@
 #include <chrono>
 #include <functional>
 
-#include "MultipartTransferState.h"
 #include "MeasureTransferRateStream.h"
+#include "MultipartTransferState.h"
 
 class S3ObjectTransport;
 class MetricsPublisher;
@@ -18,7 +18,6 @@ struct aws_event_loop;
 class MeasureTransferRate
 {
   public:
-
     static const uint64_t SmallObjectSize;
     static const uint64_t LargeObjectSize;
     static const std::chrono::milliseconds AllocationMetricFrequency;

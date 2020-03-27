@@ -6,7 +6,7 @@ namespace
 {
     size_t BodyTemplateSize = 4ULL * 1024ULL;
     thread_local char *BodyTemplate = nullptr;
-}
+} // namespace
 
 bool MeasureTransferRateStream::IsValid() const noexcept
 {
@@ -45,9 +45,7 @@ bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
 
     while (totalToWrite)
     {
-        size_t toWrite = BodyTemplateSize - 1 > totalToWrite
-                             ? totalToWrite
-                             : BodyTemplateSize - 1;
+        size_t toWrite = BodyTemplateSize - 1 > totalToWrite ? totalToWrite : BodyTemplateSize - 1;
         ByteCursor outCur = ByteCursorFromArray((const uint8_t *)BodyTemplate, toWrite);
 
         aws_byte_buf_append(&dest, &outCur);
