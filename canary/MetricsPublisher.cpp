@@ -242,13 +242,6 @@ String MetricsPublisher::GetInstanceType() const
                                               : String(m_canaryApp.GetOptions().instanceType);
 }
 
-uint64_t MetricsPublisher::GetLargeObjectPartSize() const
-{
-    return m_largeObjectPartSizeOverride.has_value()
-               ? m_largeObjectPartSizeOverride.value()
-               : MeasureTransferRate::LargeObjectSize / MeasureTransferRate::LargeObjectNumParts;
-}
-
 bool MetricsPublisher::IsSendingEncrypted() const
 {
     return m_sendEncryptedOverride.has_value() ? m_sendEncryptedOverride.value()
@@ -280,7 +273,6 @@ void MetricsPublisher::PreparePayload(StringStream &bodyStream, const Vector<Met
     String platformName = GetPlatformName();
     String toolName = GetToolName();
     String instanceType = GetInstanceType();
-    const uint64_t largeObjectPartSize = GetLargeObjectPartSize();
     bool encrypted = IsSendingEncrypted();
 
     size_t metricCount = 0;
@@ -312,26 +304,10 @@ void MetricsPublisher::PreparePayload(StringStream &bodyStream, const Vector<Met
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.5.Name=Encrypted&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.5.Value=" << encrypted << "&";
 
-        uint32_t nextDimensionIndex = 6;
-
-        if (m_transferSize == MetricTransferSize::Large)
-        {
-            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.6.Name=NumParts&";
-            bodyStream << "MetricData.member." << metricCount
-                       << ".Dimensions.member.6.Value=" << MeasureTransferRate::LargeObjectNumParts << "&";
-            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.7.Name=PartSize&";
-            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.7.Value=" << largeObjectPartSize
-                       << "&";
-
-            nextDimensionIndex = 8;
-        }
-
         if (m_replayId.has_value())
         {
-            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member." << nextDimensionIndex
-                       << ".Name=ReplayId&";
-            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member." << nextDimensionIndex
-                       << ".Value=" << m_replayId.value() << "&";
+            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.6.Name=ReplayId&";
+            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.6.Value=" << m_replayId.value() << "&";
         }
 
         metricCount++;
@@ -360,7 +336,6 @@ void MetricsPublisher::UploadBackup()
     String platformName = GetPlatformName();
     String toolName = GetToolName();
     String instanceType = GetInstanceType();
-    uint64_t largeObjectPartSize = GetLargeObjectPartSize();
     bool encrypted = IsSendingEncrypted();
 
     StringStream s3BackupPath;
@@ -388,7 +363,6 @@ void MetricsPublisher::UploadBackup()
     *backupContents << tabs << "\"PlatformName\": " << platformName << "\"," << std::endl;
     *backupContents << tabs << "\"ToolName\": " << toolName << "\"," << std::endl;
     *backupContents << tabs << "\"InstanceType\": " << instanceType << "\"," << std::endl;
-    *backupContents << tabs << "\"LargeObjectPartSize\": " << largeObjectPartSize << "\"," << std::endl;
     *backupContents << tabs << "\"Encrypted\": " << encrypted << "\"," << std::endl;
     *backupContents << tabs << "\"Metrics\": [" << std::endl;
 
@@ -491,7 +465,6 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
     m_platformNameOverride = jsonView.GetString("PlatformName");
     m_toolNameOverride = jsonView.GetString("ToolName");
     m_instanceTypeOverride = jsonView.GetString("InstanceType");
-    m_largeObjectPartSizeOverride = jsonView.GetInt64("LargeObjectPartSize");
     m_sendEncryptedOverride = jsonView.GetBool("Encrypted");
 
     uint64_t currentTicks = 0;
@@ -524,7 +497,6 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
     m_platformNameOverride = Optional<String>();
     m_toolNameOverride = Optional<String>();
     m_instanceTypeOverride = Optional<String>();
-    m_largeObjectPartSizeOverride = Optional<uint64_t>();
     m_sendEncryptedOverride = Optional<bool>();
     m_replayId = Optional<uint64_t>();
 }

@@ -69,7 +69,7 @@ int filterLog(
 CanaryAppOptions::CanaryAppOptions() noexcept
     : platformName(CanaryUtil::GetPlatformName()), toolName("NA"), instanceType("unknown"), region("us-west-2"),
       readFromParentPipe(-1), writeToParentPipe(-1), numUpTransfers(1), numUpConcurrentTransfers(0),
-      numDownTransfers(1), numDownConcurrentTransfers(0), childProcessIndex(0), measureLargeTransfer(false),
+      numDownTransfers(1), numDownConcurrentTransfers(0), childProcessIndex(0),
       measureSmallTransfer(false), measureHttpTransfer(false), usingNumaControl(false), downloadOnly(false),
       sendEncrypted(false), loggingEnabled(false), rehydrateBackup(false), isParentProcess(false), isChildProcess(false)
 {
@@ -277,12 +277,6 @@ void CanaryApp::Run()
     {
         m_publisher->SetMetricTransferSize(MetricTransferSize::Small);
         m_measureTransferRate->MeasureSmallObjectTransfer();
-    }
-
-    if (m_options.measureLargeTransfer)
-    {
-        m_publisher->SetMetricTransferSize(MetricTransferSize::Large);
-        m_measureTransferRate->MeasureLargeObjectTransfer();
     }
 
     if (m_options.measureHttpTransfer)

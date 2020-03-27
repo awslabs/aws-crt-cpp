@@ -78,7 +78,6 @@ enum class MetricTransferSize
 {
     None,
     Small,
-    Large
 };
 
 struct MetricKey
@@ -166,7 +165,6 @@ class MetricsPublisher
     Aws::Crt::String GetPlatformName() const;
     Aws::Crt::String GetToolName() const;
     Aws::Crt::String GetInstanceType() const;
-    uint64_t GetLargeObjectPartSize() const;
     bool IsSendingEncrypted() const;
 
     void WriteToBackup(const Aws::Crt::Vector<Metric> &metrics);
@@ -196,7 +194,6 @@ class MetricsPublisher
     Aws::Crt::Optional<Aws::Crt::String> m_platformNameOverride;
     Aws::Crt::Optional<Aws::Crt::String> m_toolNameOverride;
     Aws::Crt::Optional<Aws::Crt::String> m_instanceTypeOverride;
-    Aws::Crt::Optional<uint64_t> m_largeObjectPartSizeOverride;
     Aws::Crt::Optional<bool> m_sendEncryptedOverride;
     Aws::Crt::Optional<uint64_t> m_replayId;
 };
