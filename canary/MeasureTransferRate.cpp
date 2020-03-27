@@ -212,7 +212,7 @@ void MeasureTransferRate::MeasureHttpTransfer()
             const std::shared_ptr<S3ObjectTransport> &,
             NotifyTransferFinished &&notifyTransferFinished) {
             std::shared_ptr<TransferState> transferState = MakeShared<TransferState>(
-                m_canaryApp.GetTraceAllocator(), m_canaryApp.GetMetricsPublisher(), 0, 1, SmallObjectSize);
+                g_allocator, m_canaryApp.GetMetricsPublisher(), 0, 1, SmallObjectSize);
             transferState->AddDataDownMetric(0);
 
             auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
@@ -316,7 +316,7 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
         for (uint32_t i = 0; i < m_canaryApp.GetOptions().numUpTransfers; ++i)
         {
             std::shared_ptr<TransferState> transferState = MakeShared<TransferState>(
-                m_canaryApp.GetTraceAllocator(), m_canaryApp.GetMetricsPublisher(), 0, 1, SmallObjectSize);
+                g_allocator, m_canaryApp.GetMetricsPublisher(), 0, 1, SmallObjectSize);
 
             uploads.push_back(transferState);
         }
@@ -342,7 +342,7 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
                 transport->PutObject(
                     key,
                     MakeShared<MeasureTransferRateStream>(
-                        m_canaryApp.GetTraceAllocator(), m_canaryApp, transferState, m_canaryApp.GetTraceAllocator()),
+                        g_allocator, m_canaryApp, transferState, g_allocator),
                     0,
                     [transferState, notifyTransferFinished](int32_t errorCode, std::shared_ptr<Aws::Crt::String>) {
                         transferState->SetTransferSuccess(errorCode == AWS_ERROR_SUCCESS);
@@ -364,7 +364,7 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
     for (uint32_t i = 0; i < m_canaryApp.GetOptions().numDownTransfers; ++i)
     {
         std::shared_ptr<TransferState> transferState = MakeShared<TransferState>(
-            m_canaryApp.GetTraceAllocator(), m_canaryApp.GetMetricsPublisher(), 0, 1, SmallObjectSize);
+            g_allocator, m_canaryApp.GetMetricsPublisher(), 0, 1, SmallObjectSize);
 
         downloads.emplace_back(transferState);
     }
@@ -443,10 +443,10 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
                     MeasureTransferRate::LargeObjectNumParts,
                     [this](const std::shared_ptr<TransferState> &transferState) {
                         return MakeShared<MeasureTransferRateStream>(
-                            m_canaryApp.GetTraceAllocator(),
+                            g_allocator,
                             m_canaryApp,
                             transferState,
-                            m_canaryApp.GetTraceAllocator());
+                            g_allocator);
                     },
                     [key, notifyTransferFinished](int32_t errorCode, uint32_t) {
                         AWS_LOGF_INFO(
