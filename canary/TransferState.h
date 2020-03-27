@@ -14,8 +14,8 @@
  */
 #pragma once
 
-#include <aws/crt/Types.h>
 #include "MetricsPublisher.h"
+#include <aws/crt/Types.h>
 
 class TransferState
 {

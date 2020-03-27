@@ -30,7 +30,6 @@ struct CanaryAppOptions
 
     int32_t readFromParentPipe;
     int32_t writeToParentPipe;
-    uint32_t mtu;
     uint32_t numUpTransfers;
     uint32_t numUpConcurrentTransfers;
     uint32_t numDownTransfers;
@@ -69,27 +68,17 @@ class CanaryApp
     void Run();
 
     const CanaryAppOptions &GetOptions() { return m_options; }
-
     Aws::Crt::Allocator *GetTraceAllocator() { return m_traceAllocator; }
-
     Aws::Crt::Io::EventLoopGroup &GetEventLoopGroup() { return m_eventLoopGroup; }
-
     Aws::Crt::Io::DefaultHostResolver &GetDefaultHostResolver() { return m_defaultHostResolver; }
-
     Aws::Crt::Io::ClientBootstrap &GetBootstrap() { return m_bootstrap; }
-
-    Aws::Crt::Io::TlsContext & GetTlsContext() { return m_tlsContext; }
+    Aws::Crt::Io::TlsContext &GetTlsContext() { return m_tlsContext; }
 
     const std::shared_ptr<MetricsPublisher> &GetMetricsPublisher() const { return m_publisher; }
-
     const std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> &GetCredsProvider() const { return m_credsProvider; }
-
     const std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> &GetSigner() const { return m_signer; }
-
     const std::shared_ptr<S3ObjectTransport> &GetTransport0() const { return m_transport0; }
-
     const std::shared_ptr<S3ObjectTransport> &GetTransport1() const { return m_transport1; }
-
     const std::shared_ptr<MeasureTransferRate> &GetMeasureTransferRate() const { return m_measureTransferRate; }
 
     void WriteToChildProcess(uint32_t index, const char *key, const char *value);
@@ -99,7 +88,6 @@ class CanaryApp
     Aws::Crt::String ReadFromParentProcess(const char *key);
 
   private:
-
     CanaryAppOptions m_options;
 
     Aws::Crt::Allocator *m_traceAllocator;
