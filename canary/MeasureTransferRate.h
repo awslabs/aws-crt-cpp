@@ -8,7 +8,6 @@
 #include <functional>
 
 #include "MeasureTransferRateStream.h"
-#include "MultipartTransferState.h"
 
 class S3ObjectTransport;
 class MetricsPublisher;
@@ -19,17 +18,14 @@ class MeasureTransferRate
 {
   public:
     static const uint64_t SmallObjectSize;
-    static const uint64_t LargeObjectSize;
     static const std::chrono::milliseconds AllocationMetricFrequency;
     static const uint64_t AllocationMetricFrequencyNS;
-    static const uint32_t LargeObjectNumParts;
 
     MeasureTransferRate(CanaryApp &canaryApp);
     ~MeasureTransferRate();
 
     void MeasureHttpTransfer();
     void MeasureSmallObjectTransfer();
-    void MeasureLargeObjectTransfer();
 
   private:
     enum MeasurementFlags

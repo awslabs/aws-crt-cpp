@@ -14,9 +14,6 @@
 using namespace Aws::Crt;
 
 const uint64_t MeasureTransferRate::SmallObjectSize = 5ULL * 1024ULL * 1024ULL * 1024ULL;
-const uint32_t MeasureTransferRate::LargeObjectNumParts = 8192;
-const uint64_t MeasureTransferRate::LargeObjectSize =
-    (uint64_t)MeasureTransferRate::LargeObjectNumParts * (128ULL * 1024ULL * 1024ULL);
 const std::chrono::milliseconds MeasureTransferRate::AllocationMetricFrequency(5000);
 const uint64_t MeasureTransferRate::AllocationMetricFrequencyNS = aws_timestamp_convert(
     MeasureTransferRate::AllocationMetricFrequency.count(),
@@ -402,91 +399,6 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
     {
         downloads[i]->FlushDataDownMetrics();
     }
-
-    aws_event_loop_cancel_task(m_schedulingLoop, &m_pulseMetricsTask);
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
-    m_canaryApp.GetMetricsPublisher()->SchedulePublish();
-    m_canaryApp.GetMetricsPublisher()->WaitForLastPublish();
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
-
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup...");
-    m_canaryApp.GetMetricsPublisher()->UploadBackup();
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup finished.");
-}
-
-void MeasureTransferRate::MeasureLargeObjectTransfer()
-{
-    const char *filenamePrefix = "crt-canary-obj-large-";
-
-    if (!m_canaryApp.GetOptions().downloadOnly)
-    {
-        PerformMeasurement(
-            filenamePrefix,
-            "largeObjectUp-",
-            m_canaryApp.GetOptions().numUpTransfers,
-            m_canaryApp.GetOptions().numUpConcurrentTransfers,
-            LargeObjectSize,
-            0,
-            m_canaryApp.GetUploadTransport(),
-            [this](
-                uint32_t,
-                String &&key,
-                uint64_t objectSize,
-                const std::shared_ptr<S3ObjectTransport> &transport,
-                NotifyTransferFinished &&notifyTransferFinished) {
-                AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting upload of object %s...", key.c_str());
-
-                transport->PutObjectMultipart(
-                    key,
-                    objectSize,
-                    MeasureTransferRate::LargeObjectNumParts,
-                    [this](const std::shared_ptr<TransferState> &transferState) {
-                        return MakeShared<MeasureTransferRateStream>(
-                            g_allocator,
-                            m_canaryApp,
-                            transferState,
-                            g_allocator);
-                    },
-                    [key, notifyTransferFinished](int32_t errorCode, uint32_t) {
-                        AWS_LOGF_INFO(
-                            AWS_LS_CRT_CPP_CANARY,
-                            "Upload finished for object %s with error code %d",
-                            key.c_str(),
-                            errorCode);
-
-                        notifyTransferFinished(errorCode);
-                    });
-            });
-    }
-
-    PerformMeasurement(
-        filenamePrefix,
-        "largeObjectDown-",
-        m_canaryApp.GetOptions().numDownTransfers,
-        m_canaryApp.GetOptions().numDownConcurrentTransfers,
-        LargeObjectSize,
-        0,
-        m_canaryApp.GetDownloadTransport(),
-        [](uint32_t,
-           String &&key,
-           uint64_t,
-           const std::shared_ptr<S3ObjectTransport> &transport,
-           NotifyTransferFinished &&notifyTransferFinished) {
-            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting download of object %s...", key.c_str());
-
-            transport->GetObjectMultipart(
-                key,
-                MeasureTransferRate::LargeObjectNumParts,
-                [](const std::shared_ptr<TransferState> &, const ByteCursor &) {},
-                [notifyTransferFinished, key](int32_t errorCode) {
-                    AWS_LOGF_INFO(
-                        AWS_LS_CRT_CPP_CANARY,
-                        "Download finished for object %s with error code %d",
-                        key.c_str(),
-                        errorCode);
-                    notifyTransferFinished(errorCode);
-                });
-        });
 
     aws_event_loop_cancel_task(m_schedulingLoop, &m_pulseMetricsTask);
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
