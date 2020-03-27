@@ -10,6 +10,11 @@
             "imports": [
                 "s2n"
             ]
+        },
+        "android": {
+            "imports": [
+                "s2n"
+            ]
         }
     },
     "search_dirs": ["aws-common-runtime"],
