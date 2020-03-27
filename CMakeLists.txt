@@ -33,7 +33,7 @@ if (NOT CMAKE_BUILD_TYPE)
     endif()
 endif()
 
-set(AWS_CRT_CPP_VERSION "v0.7.3")
+set(AWS_CRT_CPP_VERSION "v0.8.2")
 
 configure_file(include/aws/crt/Config.h.in ${CMAKE_CURRENT_LIST_DIR}/include/aws/crt/Config.h @ONLY)
 
