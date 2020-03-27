@@ -27,6 +27,8 @@ struct CanaryAppOptions
     std::string region;
     std::string httpTestEndpoint;
     std::string rehydrateBackupObjectName;
+    std::string downloadBucketName;
+    std::string downloadObjectName;
 
     int32_t readFromParentPipe;
     int32_t writeToParentPipe;
@@ -77,8 +79,8 @@ class CanaryApp
     const std::shared_ptr<MetricsPublisher> &GetMetricsPublisher() const { return m_publisher; }
     const std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> &GetCredsProvider() const { return m_credsProvider; }
     const std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> &GetSigner() const { return m_signer; }
-    const std::shared_ptr<S3ObjectTransport> &GetTransport0() const { return m_transport0; }
-    const std::shared_ptr<S3ObjectTransport> &GetTransport1() const { return m_transport1; }
+    const std::shared_ptr<S3ObjectTransport> &GetUploadTransport() const { return m_uploadTransport; }
+    const std::shared_ptr<S3ObjectTransport> &GetDownloadTransport() const { return m_downloadTransport; }
     const std::shared_ptr<MeasureTransferRate> &GetMeasureTransferRate() const { return m_measureTransferRate; }
 
     void WriteToChildProcess(uint32_t index, const char *key, const char *value);
@@ -100,8 +102,8 @@ class CanaryApp
     std::shared_ptr<MetricsPublisher> m_publisher;
     std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> m_credsProvider;
     std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> m_signer;
-    std::shared_ptr<S3ObjectTransport> m_transport0;
-    std::shared_ptr<S3ObjectTransport> m_transport1;
+    std::shared_ptr<S3ObjectTransport> m_uploadTransport;
+    std::shared_ptr<S3ObjectTransport> m_downloadTransport;
     std::shared_ptr<MeasureTransferRate> m_measureTransferRate;
 
 #ifndef WIN32

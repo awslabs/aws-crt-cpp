@@ -43,6 +43,7 @@ class MeasureTransferRate
         uint32_t transferIndex,
         Aws::Crt::String &&key,
         uint64_t objectSize,
+        const std::shared_ptr<S3ObjectTransport> &transport,
         NotifyTransferFinished &&notifyTransferFinished)>;
 
     CanaryApp &m_canaryApp;
@@ -56,6 +57,7 @@ class MeasureTransferRate
         uint32_t numConcurrentTransfers,
         uint64_t objectSize,
         uint32_t flags,
+        const std::shared_ptr<S3ObjectTransport> &transport,
         TransferFunction &&transferFunction);
 
     void SchedulePulseMetrics();

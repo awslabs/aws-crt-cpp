@@ -116,8 +116,8 @@ CanaryApp::CanaryApp(CanaryAppOptions &&inOptions, std::vector<CanaryAppChildPro
     m_tlsContext = Io::TlsContext(tlsContextOptions, Io::TlsMode::CLIENT, g_allocator);
 
     m_publisher = MakeShared<MetricsPublisher>(g_allocator, *this, "CRT-CPP-Canary-V2");
-    m_transport0 = MakeShared<S3ObjectTransport>(g_allocator, *this, "aws-crt-canary-bucket");
-    m_transport1 = MakeShared<S3ObjectTransport>(g_allocator, *this, "aws-crt-test-stuff-us-west-2");
+    m_uploadTransport = MakeShared<S3ObjectTransport>(g_allocator, *this, "aws-crt-canary-bucket");
+    m_downloadTransport = MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.downloadBucketName.c_str());
     m_measureTransferRate = MakeShared<MeasureTransferRate>(g_allocator, *this);
 }
 
