@@ -70,7 +70,7 @@ CanaryAppOptions::CanaryAppOptions() noexcept
     : platformName(CanaryUtil::GetPlatformName()), toolName("NA"), instanceType("unknown"), region("us-west-2"),
       readFromParentPipe(-1), writeToParentPipe(-1), numUpTransfers(1), numUpConcurrentTransfers(0),
       numDownTransfers(1), numDownConcurrentTransfers(0), childProcessIndex(0),
-      measureSmallTransfer(false), measureHttpTransfer(false), usingNumaControl(false), downloadOnly(false),
+      measureSinglePartTransfer(false), measureHttpTransfer(false), usingNumaControl(false), downloadOnly(false),
       sendEncrypted(false), loggingEnabled(false), rehydrateBackup(false), isParentProcess(false), isChildProcess(false)
 {
 }
@@ -273,15 +273,15 @@ void CanaryApp::Run()
         m_publisher->RehydrateBackup(m_options.rehydrateBackupObjectName.c_str());
     }
 
-    if (m_options.measureSmallTransfer)
+    if (m_options.measureSinglePartTransfer)
     {
-        m_publisher->SetMetricTransferSize(MetricTransferSize::Small);
-        m_measureTransferRate->MeasureSmallObjectTransfer();
+        m_publisher->SetMetricTransferType(MetricTransferType::SinglePart);
+        m_measureTransferRate->MeasureSinglePartObjectTransfer();
     }
 
     if (m_options.measureHttpTransfer)
     {
-        m_publisher->SetMetricTransferSize(MetricTransferSize::Small);
+        m_publisher->SetMetricTransferType(MetricTransferType::SinglePart);
         m_measureTransferRate->MeasureHttpTransfer();
     }
 

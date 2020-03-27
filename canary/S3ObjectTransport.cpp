@@ -18,7 +18,6 @@
 
 #include <aws/common/thread.h>
 #include <aws/crt/Api.h>
-#include <aws/crt/external/tinyxml2.h>
 #include <aws/crt/http/HttpConnectionManager.h>
 #include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Stream.h>
@@ -64,7 +63,7 @@ void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
     {
         ++desiredNumberOfAddresses;
     }
-    
+
     m_canaryApp.GetDefaultHostResolver().ResolveHost(
         m_endpoint, [](Io::HostResolver &, const Vector<Io::HostAddress> &, int) {});
 

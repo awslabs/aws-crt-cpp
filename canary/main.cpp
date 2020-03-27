@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
     {
         ToolName,
         InstanceType,
-        MeasureSmallTransfer,
+        MeasureSinglePartTransfer,
         MeasureHttpTransfer,
         Logging,
         SendEncrypted,
@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 
     const aws_cli_option options[] = {{"toolName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 't'},
                                       {"instanceType", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'i'},
-                                      {"measureSmallTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 's'},
+                                      {"measureSinglePartTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 's'},
                                       {"measureHttpTransfer", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'h'},
                                       {"logging", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'd'},
                                       {"sendEncrypted", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'e'},
@@ -131,8 +131,8 @@ int main(int argc, char *argv[])
             case CLIOption::InstanceType:
                 canaryAppOptions.instanceType = aws_cli_optarg;
                 break;
-            case CLIOption::MeasureSmallTransfer:
-                canaryAppOptions.measureSmallTransfer = true;
+            case CLIOption::MeasureSinglePartTransfer:
+                canaryAppOptions.measureSinglePartTransfer = true;
                 break;
             case CLIOption::MeasureHttpTransfer:
                 canaryAppOptions.measureHttpTransfer = true;

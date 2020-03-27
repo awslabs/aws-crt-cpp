@@ -78,7 +78,7 @@ static const char *s_metricNameStr[] = {"BytesUp",
                                         "NumIOSubs",
                                         "Invalid"};
 
-static const char *s_transferSizeStr[] = {"None", "Small", "Large"};
+static const char *s_transferTypeStr[] = {"None", "SinglePart" };
 
 static const char *s_UnitToStr(MetricUnit unit)
 {
@@ -126,27 +126,27 @@ static MetricName s_StringToMetricName(const char *str)
     return MetricName::Invalid;
 }
 
-static const char *s_MetricTransferSizeToString(MetricTransferSize transferSize)
+static const char *s_MetricTransferTypeToString(MetricTransferType transferType)
 {
-    auto index = static_cast<size_t>(transferSize);
-    if (index >= AWS_ARRAY_SIZE(s_transferSizeStr))
+    auto index = static_cast<size_t>(transferType);
+    if (index >= AWS_ARRAY_SIZE(s_transferTypeStr))
     {
         return "None";
     }
-    return s_transferSizeStr[index];
+    return s_transferTypeStr[index];
 }
 
-static MetricTransferSize s_StringToMetricTransferSize(const char *str)
+static MetricTransferType s_StringToMetricTransferType(const char *str)
 {
-    for (size_t i = 0; i < AWS_ARRAY_SIZE(s_transferSizeStr); ++i)
+    for (size_t i = 0; i < AWS_ARRAY_SIZE(s_transferTypeStr); ++i)
     {
-        if (!strcmp(str, s_transferSizeStr[i]))
+        if (!strcmp(str, s_transferTypeStr[i]))
         {
-            return (MetricTransferSize)i;
+            return (MetricTransferType)i;
         }
     }
 
-    return MetricTransferSize::None;
+    return MetricTransferType::None;
 }
 
 Metric::Metric() {}
@@ -220,9 +220,9 @@ MetricsPublisher::~MetricsPublisher()
     aws_event_loop_cancel_task(m_schedulingLoop, &m_publishTask);
 }
 
-MetricTransferSize MetricsPublisher::GetTransferSize() const
+MetricTransferType MetricsPublisher::GetTransferType() const
 {
-    return m_transferSizeOverride.has_value() ? m_transferSizeOverride.value() : m_transferSize;
+    return m_transferTypeOverride.has_value() ? m_transferTypeOverride.value() : m_transferType;
 }
 
 String MetricsPublisher::GetPlatformName() const
@@ -255,9 +255,9 @@ void MetricsPublisher::SchedulePublish()
     aws_event_loop_schedule_task_future(m_schedulingLoop, &m_publishTask, now + m_publishFrequencyNs);
 }
 
-void MetricsPublisher::SetMetricTransferSize(MetricTransferSize transferSize)
+void MetricsPublisher::SetMetricTransferType(MetricTransferType transferType)
 {
-    m_transferSize = transferSize;
+    m_transferType = transferType;
 }
 
 void MetricsPublisher::PreparePayload(StringStream &bodyStream, const Vector<Metric> &metrics)
@@ -269,7 +269,7 @@ void MetricsPublisher::PreparePayload(StringStream &bodyStream, const Vector<Met
         bodyStream << "Namespace=" << *Namespace << "&";
     }
 
-    String transferSizeString = s_MetricTransferSizeToString(GetTransferSize());
+    String transferTypeString = s_MetricTransferTypeToString(GetTransferType());
     String platformName = GetPlatformName();
     String toolName = GetToolName();
     String instanceType = GetInstanceType();
@@ -299,8 +299,8 @@ void MetricsPublisher::PreparePayload(StringStream &bodyStream, const Vector<Met
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.2.Value=" << toolName << "&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.3.Name=InstanceType&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.3.Value=" << instanceType << "&";
-        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Name=TransferSize&";
-        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Value=" << transferSizeString << "&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Name=TransferType&";
+        bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.4.Value=" << transferTypeString << "&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.5.Name=Encrypted&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.5.Value=" << encrypted << "&";
 
@@ -332,7 +332,7 @@ void MetricsPublisher::UploadBackup()
     std::shared_ptr<StringStream> backupContents = MakeShared<StringStream>(g_allocator);
     String tabs;
 
-    String transferSizeString = s_MetricTransferSizeToString(GetTransferSize());
+    String transferTypeString = s_MetricTransferTypeToString(GetTransferType());
     String platformName = GetPlatformName();
     String toolName = GetToolName();
     String instanceType = GetInstanceType();
@@ -359,7 +359,7 @@ void MetricsPublisher::UploadBackup()
 
     tabs.push_back('\t');
 
-    *backupContents << tabs << "\"TransferSize\": " << instanceType << "\"," << std::endl;
+    *backupContents << tabs << "\"TransferType\": " << instanceType << "\"," << std::endl;
     *backupContents << tabs << "\"PlatformName\": " << platformName << "\"," << std::endl;
     *backupContents << tabs << "\"ToolName\": " << toolName << "\"," << std::endl;
     *backupContents << tabs << "\"InstanceType\": " << instanceType << "\"," << std::endl;
@@ -459,9 +459,9 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
     JsonObject jsonObject(contentsStr);
     JsonView jsonView = jsonObject.View();
 
-    String transferSizeStr = jsonView.GetString("TransferSize");
+    String transferTypeStr = jsonView.GetString("TransferType");
 
-    m_transferSizeOverride = s_StringToMetricTransferSize(transferSizeStr.c_str());
+    m_transferTypeOverride = s_StringToMetricTransferType(transferTypeStr.c_str());
     m_platformNameOverride = jsonView.GetString("PlatformName");
     m_toolNameOverride = jsonView.GetString("ToolName");
     m_instanceTypeOverride = jsonView.GetString("InstanceType");
@@ -493,7 +493,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
     SchedulePublish();
     WaitForLastPublish();
 
-    m_transferSizeOverride = Optional<MetricTransferSize>();
+    m_transferTypeOverride = Optional<MetricTransferType>();
     m_platformNameOverride = Optional<String>();
     m_toolNameOverride = Optional<String>();
     m_instanceTypeOverride = Optional<String>();
