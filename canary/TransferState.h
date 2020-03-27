@@ -61,7 +61,7 @@ class TransferState
 
     void PushMetric(Aws::Crt::Vector<Metric> &metrics, MetricName metricName, double dataUsed);
 
-    void PushAndTryToMerge(
+    void PushMetricAndTryToMerge(
         Aws::Crt::Vector<Metric> &metrics,
         MetricName metricName,
         uint64_t timestamp,

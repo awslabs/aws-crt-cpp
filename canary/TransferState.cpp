@@ -57,14 +57,14 @@ void TransferState::DistributeDataUsedOverTime(
 
     if (timeSecondDelta == 0)
     {
-        PushAndTryToMerge(metrics, metricName, endTime, dataUsed);
+        PushMetricAndTryToMerge(metrics, metricName, endTime, dataUsed);
     }
     else
     {
         double beginDataUsedFraction = dataUsed * (double)(beginTimeOneMinusSecondFrac / (double)timeDelta);
         double endDataUsedFraction = dataUsed * (double)(endTimeSecondFrac / (double)timeDelta);
 
-        PushAndTryToMerge(metrics, metricName, beginTime, beginDataUsedFraction);
+        PushMetricAndTryToMerge(metrics, metricName, beginTime, beginDataUsedFraction);
 
         if (timeSecondDelta > 1)
         {
@@ -79,16 +79,16 @@ void TransferState::DistributeDataUsedOverTime(
 
             for (uint64_t i = 0; i < numInteriorSeconds; ++i)
             {
-                PushAndTryToMerge(
+                PushMetricAndTryToMerge(
                     metrics, metricName, (interiorBeginSecond * 1000ULL) + (i * 1000ULL), interiorSecondDataUsed);
             }
         }
 
-        PushAndTryToMerge(metrics, metricName, endTime, endDataUsedFraction);
+        PushMetricAndTryToMerge(metrics, metricName, endTime, endDataUsedFraction);
     }
 }
 
-void TransferState::PushAndTryToMerge(
+void TransferState::PushMetricAndTryToMerge(
     Vector<Metric> &metrics,
     MetricName metricName,
     uint64_t timestamp,

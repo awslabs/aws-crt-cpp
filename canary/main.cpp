@@ -83,6 +83,8 @@ int main(int argc, char *argv[])
         NumConcurrentTransfers,
         DownloadOnly,
         RehydrateBackup,
+        DownloadBucketName,
+        DownloadObjectName,
 
         MAX
     };
@@ -98,9 +100,11 @@ int main(int argc, char *argv[])
                                       {"numTransfers", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'n'},
                                       {"numConcurrentTransfers", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'c'},
                                       {"downloadOnly", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'z'},
-                                      {"rehydrateBackup", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'r'}};
+                                      {"rehydrateBackup", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'r'},
+                                      {"downloadBucketName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'b'},
+                                      {"downloadObjectName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'o'}};
 
-    const char *optstring = "t:i:lsh:dCem:fn:c:zr:";
+    const char *optstring = "t:i:lsh:dCem:fn:c:zr:b:o:";
 
     CanaryAppOptions canaryAppOptions;
 
@@ -167,6 +171,12 @@ int main(int argc, char *argv[])
             case CLIOption::RehydrateBackup:
                 canaryAppOptions.rehydrateBackupObjectName = aws_cli_optarg;
                 canaryAppOptions.rehydrateBackup = true;
+                break;
+            case CLIOption::DownloadBucketName:
+                canaryAppOptions.downloadBucketName = aws_cli_optarg;
+                break;
+            case CLIOption::DownloadObjectName:
+                canaryAppOptions.downloadObjectName = aws_cli_optarg;
                 break;
             default:
                 AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Unknown CLI option used.");
