@@ -74,10 +74,10 @@ enum class MetricName
     Invalid
 };
 
-enum class MetricTransferSize
+enum class MetricTransferType
 {
     None,
-    Small,
+    SinglePart,
 };
 
 struct MetricKey
@@ -140,7 +140,7 @@ class MetricsPublisher
      * Set the transfer size we are currently recording metrics for.  (Will
      * be recorded with each metric.)
      */
-    void SetMetricTransferSize(MetricTransferSize transferSize);
+    void SetMetricTransferType(MetricTransferType transferType);
 
     void SchedulePublish();
 
@@ -161,7 +161,7 @@ class MetricsPublisher
   private:
     static void s_OnPublishTask(aws_task *task, void *arg, aws_task_status status);
 
-    MetricTransferSize GetTransferSize() const;
+    MetricTransferType GetTransferType() const;
     Aws::Crt::String GetPlatformName() const;
     Aws::Crt::String GetToolName() const;
     Aws::Crt::String GetInstanceType() const;
@@ -173,7 +173,7 @@ class MetricsPublisher
 
     void PreparePayload(Aws::Crt::StringStream &bodyStream, const Aws::Crt::Vector<Metric> &metrics);
 
-    MetricTransferSize m_transferSize;
+    MetricTransferType m_transferType;
     CanaryApp &m_canaryApp;
     std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> m_connManager;
     Aws::Crt::Vector<Metric> m_publishData;
@@ -190,7 +190,7 @@ class MetricsPublisher
     uint64_t m_publishFrequencyNs;
     std::condition_variable m_waitForLastPublishCV;
 
-    Aws::Crt::Optional<MetricTransferSize> m_transferSizeOverride;
+    Aws::Crt::Optional<MetricTransferType> m_transferTypeOverride;
     Aws::Crt::Optional<Aws::Crt::String> m_platformNameOverride;
     Aws::Crt::Optional<Aws::Crt::String> m_toolNameOverride;
     Aws::Crt::Optional<Aws::Crt::String> m_instanceTypeOverride;

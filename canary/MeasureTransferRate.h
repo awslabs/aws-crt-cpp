@@ -17,7 +17,7 @@ struct aws_event_loop;
 class MeasureTransferRate
 {
   public:
-    static const uint64_t SmallObjectSize;
+    static const uint64_t SinglePartObjectSize;
     static const std::chrono::milliseconds AllocationMetricFrequency;
     static const uint64_t AllocationMetricFrequencyNS;
 
@@ -25,7 +25,7 @@ class MeasureTransferRate
     ~MeasureTransferRate();
 
     void MeasureHttpTransfer();
-    void MeasureSmallObjectTransfer();
+    void MeasureSinglePartObjectTransfer();
 
   private:
     enum MeasurementFlags

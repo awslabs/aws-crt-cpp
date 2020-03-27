@@ -13,7 +13,7 @@
 
 using namespace Aws::Crt;
 
-const uint64_t MeasureTransferRate::SmallObjectSize = 5ULL * 1024ULL * 1024ULL * 1024ULL;
+const uint64_t MeasureTransferRate::SinglePartObjectSize = 5ULL * 1024ULL * 1024ULL * 1024ULL;
 const std::chrono::milliseconds MeasureTransferRate::AllocationMetricFrequency(5000);
 const uint64_t MeasureTransferRate::AllocationMetricFrequencyNS = aws_timestamp_convert(
     MeasureTransferRate::AllocationMetricFrequency.count(),
@@ -199,7 +199,7 @@ void MeasureTransferRate::MeasureHttpTransfer()
         "httpTransferDown-",
         m_canaryApp.GetOptions().numDownTransfers,
         m_canaryApp.GetOptions().numDownConcurrentTransfers,
-        SmallObjectSize,
+        SinglePartObjectSize,
         (uint32_t)MeasurementFlags::DontWarmDNSCache | (uint32_t)MeasurementFlags::NoFileSuffix,
         nullptr,
         [this, connManager, &testFilename, &hostHeader](
@@ -209,7 +209,7 @@ void MeasureTransferRate::MeasureHttpTransfer()
             const std::shared_ptr<S3ObjectTransport> &,
             NotifyTransferFinished &&notifyTransferFinished) {
             std::shared_ptr<TransferState> transferState = MakeShared<TransferState>(
-                g_allocator, m_canaryApp.GetMetricsPublisher(), 0, 1, SmallObjectSize);
+                g_allocator, m_canaryApp.GetMetricsPublisher(), 0, 1, SinglePartObjectSize);
             transferState->AddDataDownMetric(0);
 
             auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
@@ -294,7 +294,7 @@ void MeasureTransferRate::MeasureHttpTransfer()
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup finished.");
 }
 
-void MeasureTransferRate::MeasureSmallObjectTransfer()
+void MeasureTransferRate::MeasureSinglePartObjectTransfer()
 {
     const char *filenamePrefix = "crt-canary-obj-small-";
     AWS_LOGF_INFO(
@@ -313,17 +313,17 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
         for (uint32_t i = 0; i < m_canaryApp.GetOptions().numUpTransfers; ++i)
         {
             std::shared_ptr<TransferState> transferState = MakeShared<TransferState>(
-                g_allocator, m_canaryApp.GetMetricsPublisher(), 0, 1, SmallObjectSize);
+                g_allocator, m_canaryApp.GetMetricsPublisher(), 0, 1, SinglePartObjectSize);
 
             uploads.push_back(transferState);
         }
 
         PerformMeasurement(
-            "crt-canary-obj-small-",
-            "smallObjectUp-",
+            "crt-canary-obj-single-part",
+            "singlePartObjectUp-",
             m_canaryApp.GetOptions().numUpTransfers,
             m_canaryApp.GetOptions().numUpConcurrentTransfers,
-            SmallObjectSize,
+            SinglePartObjectSize,
             0,
             m_canaryApp.GetUploadTransport(),
             [this, &uploads](
@@ -361,17 +361,17 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
     for (uint32_t i = 0; i < m_canaryApp.GetOptions().numDownTransfers; ++i)
     {
         std::shared_ptr<TransferState> transferState = MakeShared<TransferState>(
-            g_allocator, m_canaryApp.GetMetricsPublisher(), 0, 1, SmallObjectSize);
+            g_allocator, m_canaryApp.GetMetricsPublisher(), 0, 1, SinglePartObjectSize);
 
         downloads.emplace_back(transferState);
     }
 
     PerformMeasurement(
-        filenamePrefix,
-        "smallObjectDown-",
+        m_canaryApp.GetOptions().downloadObjectName.c_str(),
+        "singlePartObjectDown-",
         m_canaryApp.GetOptions().numDownTransfers,
         m_canaryApp.GetOptions().numDownConcurrentTransfers,
-        SmallObjectSize,
+        SinglePartObjectSize,
         (uint32_t)MeasurementFlags::NoFileSuffix,
         m_canaryApp.GetDownloadTransport(),
         [&downloads](

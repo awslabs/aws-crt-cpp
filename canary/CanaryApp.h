@@ -38,7 +38,7 @@ struct CanaryAppOptions
     uint32_t numDownConcurrentTransfers;
     uint32_t childProcessIndex;
 
-    uint32_t measureSmallTransfer : 1;
+    uint32_t measureSinglePartTransfer : 1;
     uint32_t measureHttpTransfer : 1;
     uint32_t usingNumaControl : 1;
     uint32_t downloadOnly : 1;
