@@ -166,7 +166,6 @@ void MeasureTransferRate::PerformMeasurement(
 
 void MeasureTransferRate::MeasureHttpTransfer()
 {
-    const String testFilename = "crt-canary-obj.txt";
     String endpoint = m_canaryApp.GetOptions().httpTestEndpoint.c_str();
 
     Aws::Crt::Http::HttpHeader hostHeader;
@@ -195,14 +194,14 @@ void MeasureTransferRate::MeasureHttpTransfer()
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, g_allocator);
 
     PerformMeasurement(
-        testFilename.c_str(),
+        m_canaryApp.GetOptions().downloadObjectName.c_str(),
         "httpTransferDown-",
         m_canaryApp.GetOptions().numDownTransfers,
         m_canaryApp.GetOptions().numDownConcurrentTransfers,
         SinglePartObjectSize,
         (uint32_t)MeasurementFlags::DontWarmDNSCache | (uint32_t)MeasurementFlags::NoFileSuffix,
         nullptr,
-        [this, connManager, &testFilename, &hostHeader](
+        [this, connManager, &hostHeader](
             uint32_t,
             String &&key,
             uint64_t,
@@ -217,7 +216,7 @@ void MeasureTransferRate::MeasureHttpTransfer()
             request->SetMethod(aws_http_method_get);
 
             StringStream keyPathStream;
-            keyPathStream << "/" << testFilename;
+            keyPathStream << "/" << key;
             String keyPath = keyPathStream.str();
             ByteCursor path = ByteCursorFromCString(keyPath.c_str());
             request->SetPath(path);
