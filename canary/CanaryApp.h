@@ -70,7 +70,6 @@ class CanaryApp
     void Run();
 
     const CanaryAppOptions &GetOptions() { return m_options; }
-    Aws::Crt::Allocator *GetTraceAllocator() { return m_traceAllocator; }
     Aws::Crt::Io::EventLoopGroup &GetEventLoopGroup() { return m_eventLoopGroup; }
     Aws::Crt::Io::DefaultHostResolver &GetDefaultHostResolver() { return m_defaultHostResolver; }
     Aws::Crt::Io::ClientBootstrap &GetBootstrap() { return m_bootstrap; }
