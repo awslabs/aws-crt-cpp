@@ -50,7 +50,7 @@ namespace Aws
                  * Initializes TlsContextOptions with secure by default options, with
                  * no client certificates.
                  */
-                static TlsContextOptions InitDefaultClient(Allocator *allocator = DefaultAllocator()) noexcept;
+                static TlsContextOptions InitDefaultClient(Allocator *allocator = g_allocator) noexcept;
                 /**
                  * Initializes TlsContextOptions with secure by default options, with
                  * client certificate and private key. These are paths to a file on disk. These files
@@ -59,7 +59,7 @@ namespace Aws
                 static TlsContextOptions InitClientWithMtls(
                     const char *cert_path,
                     const char *pkey_path,
-                    Allocator *allocator = DefaultAllocator()) noexcept;
+                    Allocator *allocator = g_allocator) noexcept;
 
                 /**
                  * Initializes TlsContextOptions with secure by default options, with
@@ -69,7 +69,7 @@ namespace Aws
                 static TlsContextOptions InitClientWithMtls(
                     const ByteCursor &cert,
                     const ByteCursor &pkey,
-                    Allocator *allocator = DefaultAllocator()) noexcept;
+                    Allocator *allocator = g_allocator) noexcept;
 
 #ifdef __APPLE__
                 /**
@@ -81,7 +81,7 @@ namespace Aws
                 static TlsContextOptions InitClientWithMtlsPkcs12(
                     const char *pkcs12_path,
                     const char *pkcs12_pwd,
-                    Allocator *allocator = DefaultAllocator()) noexcept;
+                    Allocator *allocator = g_allocator) noexcept;
 #endif
 
                 /**
@@ -172,10 +172,7 @@ namespace Aws
             {
               public:
                 TlsContext() noexcept;
-                TlsContext(
-                    TlsContextOptions &options,
-                    TlsMode mode,
-                    Allocator *allocator = DefaultAllocator()) noexcept;
+                TlsContext(TlsContextOptions &options, TlsMode mode, Allocator *allocator = g_allocator) noexcept;
                 ~TlsContext() = default;
                 TlsContext(const TlsContext &) noexcept = default;
                 TlsContext &operator=(const TlsContext &) noexcept = default;

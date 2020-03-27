@@ -94,12 +94,12 @@ namespace Aws
                 /**
                  * Creates an instance of a Streaming SHA256 Hash.
                  */
-                static Hash CreateSHA256(Allocator *allocator = DefaultAllocator()) noexcept;
+                static Hash CreateSHA256(Allocator *allocator = g_allocator) noexcept;
 
                 /**
                  * Creates an instance of a Streaming MD5 Hash.
                  */
-                static Hash CreateMD5(Allocator *allocator = DefaultAllocator()) noexcept;
+                static Hash CreateMD5(Allocator *allocator = g_allocator) noexcept;
 
                 /**
                  * Updates the running hash object with data in toHash. Returns true on success. Call

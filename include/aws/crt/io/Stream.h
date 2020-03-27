@@ -57,7 +57,7 @@ namespace Aws
                 Allocator *m_allocator;
                 aws_input_stream m_underlying_stream;
 
-                InputStream(Aws::Crt::Allocator *allocator = DefaultAllocator());
+                InputStream(Aws::Crt::Allocator *allocator = g_allocator);
 
                 /***
                  * Read up-to buffer::capacity - buffer::len into buffer::buffer
@@ -109,7 +109,7 @@ namespace Aws
               public:
                 StdIOStreamInputStream(
                     std::shared_ptr<Aws::Crt::Io::IStream> stream,
-                    Aws::Crt::Allocator *allocator = DefaultAllocator()) noexcept;
+                    Aws::Crt::Allocator *allocator = g_allocator) noexcept;
 
                 bool IsValid() const noexcept override;
 

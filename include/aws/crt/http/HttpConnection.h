@@ -127,7 +127,7 @@ namespace Aws
              * Represents a single http message exchange (request/response) or in H2, it can also represent
              * a PUSH_PROMISE followed by the accompanying Response.
              */
-            class AWS_CRT_CPP_API HttpStream
+            class AWS_CRT_CPP_API HttpStream : public std::enable_shared_from_this<HttpStream>
             {
               public:
                 virtual ~HttpStream();
@@ -184,10 +184,17 @@ namespace Aws
                 friend class HttpClientConnection;
             };
 
+            struct ClientStreamCallbackData
+            {
+                ClientStreamCallbackData() : allocator(nullptr), stream(nullptr) {}
+                Allocator *allocator;
+                std::shared_ptr<HttpStream> stream;
+            };
+
             class AWS_CRT_CPP_API HttpClientStream final : public HttpStream
             {
               public:
-                ~HttpClientStream() = default;
+                ~HttpClientStream();
                 HttpClientStream(const HttpClientStream &) = delete;
                 HttpClientStream(HttpClientStream &&) = delete;
                 HttpClientStream &operator=(const HttpClientStream &) = delete;
@@ -199,9 +206,17 @@ namespace Aws
                  */
                 virtual int GetResponseStatusCode() const noexcept override;
 
+                /**
+                 * Activates the request's outgoing stream processing.
+                 *
+                 * Returns true on success, false otherwise.
+                 */
+                bool Activate() noexcept;
+
               private:
                 HttpClientStream(const std::shared_ptr<HttpClientConnection> &connection) noexcept;
 
+                ClientStreamCallbackData m_callbackData;
                 friend class HttpClientConnection;
             };
 
@@ -333,6 +348,15 @@ namespace Aws
                  * Optional.
                  */
                 Optional<HttpClientConnectionProxyOptions> ProxyOptions;
+
+                /**
+                 * If set to true, then the TCP read back pressure mechanism will be enabled. You should
+                 * only use this if you're allowing http response body data to escape the callbacks. E.g. you're
+                 * putting the data into a queue for another thread to process and need to make sure the memory
+                 * usage is bounded. If this is enabled, you must call HttpStream::UpdateWindow() for every
+                 * byte read from the OnIncomingBody callback.
+                 */
+                bool ManualWindowManagement;
             };
 
             /**
@@ -356,6 +380,8 @@ namespace Aws
                  * not be freed until the stream is completed.
                  *
                  * Returns an instance of HttpStream upon success and nullptr on failure.
+                 *
+                 * You must call HttpClientStream::Activate() to begin outgoing processing of the stream.
                  */
                 std::shared_ptr<HttpClientStream> NewClientStream(const HttpRequestOptions &requestOptions) noexcept;
 

@@ -38,8 +38,8 @@ namespace Aws
             class AWS_CRT_CPP_API EventLoopGroup final
             {
               public:
-                EventLoopGroup(Allocator *allocator = DefaultAllocator()) noexcept;
-                EventLoopGroup(uint16_t threadCount, Allocator *allocator = DefaultAllocator()) noexcept;
+                EventLoopGroup(Allocator *allocator = g_allocator) noexcept;
+                EventLoopGroup(uint16_t threadCount, Allocator *allocator = g_allocator) noexcept;
                 ~EventLoopGroup();
                 EventLoopGroup(const EventLoopGroup &) = delete;
                 EventLoopGroup(EventLoopGroup &&) noexcept;

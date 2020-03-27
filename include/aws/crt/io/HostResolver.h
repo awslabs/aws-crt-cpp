@@ -58,7 +58,7 @@ namespace Aws
                     EventLoopGroup &elGroup,
                     size_t maxHosts,
                     size_t maxTTL,
-                    Allocator *allocator = DefaultAllocator()) noexcept;
+                    Allocator *allocator = g_allocator) noexcept;
                 ~DefaultHostResolver();
                 DefaultHostResolver(const DefaultHostResolver &) = delete;
                 DefaultHostResolver &operator=(const DefaultHostResolver &) = delete;
