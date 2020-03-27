@@ -68,21 +68,29 @@ class CanaryApp
 
     void Run();
 
-    Aws::Crt::Allocator *traceAllocator;
-    Aws::Crt::ApiHandle apiHandle;
-    Aws::Crt::Io::EventLoopGroup eventLoopGroup;
-    Aws::Crt::Io::DefaultHostResolver defaultHostResolver;
-    Aws::Crt::Io::ClientBootstrap bootstrap;
-    Aws::Crt::Io::TlsContext tlsContext;
+    const CanaryAppOptions &GetOptions() { return m_options; }
 
-    std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> credsProvider;
-    std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> signer;
-    std::shared_ptr<MetricsPublisher> publisher;
-    std::shared_ptr<S3ObjectTransport> transport;
-    std::shared_ptr<S3ObjectTransport> transportSecondary;
-    std::shared_ptr<MeasureTransferRate> measureTransferRate;
+    Aws::Crt::Allocator *GetTraceAllocator() { return m_traceAllocator; }
 
-    const CanaryAppOptions &GetOptions() { return options; }
+    Aws::Crt::Io::EventLoopGroup &GetEventLoopGroup() { return m_eventLoopGroup; }
+
+    Aws::Crt::Io::DefaultHostResolver &GetDefaultHostResolver() { return m_defaultHostResolver; }
+
+    Aws::Crt::Io::ClientBootstrap &GetBootstrap() { return m_bootstrap; }
+
+    Aws::Crt::Io::TlsContext & GetTlsContext() { return m_tlsContext; }
+
+    const std::shared_ptr<MetricsPublisher> &GetMetricsPublisher() const { return m_publisher; }
+
+    const std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> &GetCredsProvider() const { return m_credsProvider; }
+
+    const std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> &GetSigner() const { return m_signer; }
+
+    const std::shared_ptr<S3ObjectTransport> &GetTransport0() const { return m_transport0; }
+
+    const std::shared_ptr<S3ObjectTransport> &GetTransport1() const { return m_transport1; }
+
+    const std::shared_ptr<MeasureTransferRate> &GetMeasureTransferRate() const { return m_measureTransferRate; }
 
     void WriteToChildProcess(uint32_t index, const char *key, const char *value);
     void WriteToParentProcess(const char *key, const char *value);
@@ -91,7 +99,22 @@ class CanaryApp
     Aws::Crt::String ReadFromParentProcess(const char *key);
 
   private:
-    CanaryAppOptions options;
+
+    CanaryAppOptions m_options;
+
+    Aws::Crt::Allocator *m_traceAllocator;
+    Aws::Crt::ApiHandle m_apiHandle;
+    Aws::Crt::Io::EventLoopGroup m_eventLoopGroup;
+    Aws::Crt::Io::DefaultHostResolver m_defaultHostResolver;
+    Aws::Crt::Io::ClientBootstrap m_bootstrap;
+    Aws::Crt::Io::TlsContext m_tlsContext;
+
+    std::shared_ptr<MetricsPublisher> m_publisher;
+    std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> m_credsProvider;
+    std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> m_signer;
+    std::shared_ptr<S3ObjectTransport> m_transport0;
+    std::shared_ptr<S3ObjectTransport> m_transport1;
+    std::shared_ptr<MeasureTransferRate> m_measureTransferRate;
 
 #ifndef WIN32
     std::vector<CanaryAppChildProcess> children;

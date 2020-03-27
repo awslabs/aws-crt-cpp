@@ -192,16 +192,16 @@ MetricsPublisher::MetricsPublisher(
 
     aws_byte_cursor serverName = ByteCursorFromCString(connectionManagerOptions.ConnectionOptions.HostName.c_str());
 
-    auto connOptions = canaryApp.tlsContext.NewConnectionOptions();
+    auto connOptions = canaryApp.GetTlsContext().NewConnectionOptions();
     connOptions.SetServerName(serverName);
     connectionManagerOptions.ConnectionOptions.TlsOptions = connOptions;
-    connectionManagerOptions.ConnectionOptions.Bootstrap = &canaryApp.bootstrap;
+    connectionManagerOptions.ConnectionOptions.Bootstrap = &canaryApp.GetBootstrap();
     connectionManagerOptions.MaxConnections = 5;
 
     m_connManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, g_allocator);
 
-    m_schedulingLoop = aws_event_loop_group_get_next_loop(canaryApp.eventLoopGroup.GetUnderlyingHandle());
+    m_schedulingLoop = aws_event_loop_group_get_next_loop(canaryApp.GetEventLoopGroup().GetUnderlyingHandle());
     // SchedulePublish();
 
     m_hostHeader.name = ByteCursorFromCString("host");
@@ -669,13 +669,13 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
 
     Auth::AwsSigningConfig signingConfig(g_allocator);
     signingConfig.SetRegion(publisher->m_canaryApp.GetOptions().region.c_str());
-    signingConfig.SetCredentialsProvider(publisher->m_canaryApp.credsProvider);
+    signingConfig.SetCredentialsProvider(publisher->m_canaryApp.GetCredsProvider());
     signingConfig.SetService("monitoring");
     signingConfig.SetBodySigningType(Auth::BodySigningType::SignBody);
     signingConfig.SetSigningTimepoint(DateTime::Now());
     signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
 
-    publisher->m_canaryApp.signer->SignRequest(
+    publisher->m_canaryApp.GetSigner()->SignRequest(
         request,
         signingConfig,
         [bodyStream, publisher](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &signedRequest, int signingError) {
