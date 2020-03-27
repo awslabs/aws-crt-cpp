@@ -26,7 +26,7 @@ const uint64_t MeasureTransferRate::AllocationMetricFrequencyNS = aws_timestamp_
 
 MeasureTransferRate::MeasureTransferRate(CanaryApp &canaryApp) : m_canaryApp(canaryApp)
 {
-    m_schedulingLoop = aws_event_loop_group_get_next_loop(canaryApp.eventLoopGroup.GetUnderlyingHandle());
+    m_schedulingLoop = aws_event_loop_group_get_next_loop(canaryApp.GetEventLoopGroup().GetUnderlyingHandle());
 
     aws_task_init(
         &m_pulseMetricsTask,
@@ -55,8 +55,8 @@ void MeasureTransferRate::PerformMeasurement(
     String finishedKey = String() + keyPrefix + "finished";
 
     std::shared_ptr<S3ObjectTransport> transport = (flags & (uint32_t)MeasurementFlags::SecondaryTransport) == 0
-                                                       ? m_canaryApp.transport
-                                                       : m_canaryApp.transportSecondary;
+                                                       ? m_canaryApp.GetTransport0()
+                                                       : m_canaryApp.GetTransport1();
 
     if (m_canaryApp.GetOptions().isParentProcess)
     {
@@ -189,12 +189,12 @@ void MeasureTransferRate::MeasureHttpTransfer()
     if (m_canaryApp.GetOptions().sendEncrypted)
     {
         aws_byte_cursor serverName = ByteCursorFromCString(endpoint.c_str());
-        auto connOptions = m_canaryApp.tlsContext.NewConnectionOptions();
+        auto connOptions = m_canaryApp.GetTlsContext().NewConnectionOptions();
         connOptions.SetServerName(serverName);
         connectionManagerOptions.ConnectionOptions.TlsOptions = connOptions;
     }
 
-    connectionManagerOptions.ConnectionOptions.Bootstrap = &m_canaryApp.bootstrap;
+    connectionManagerOptions.ConnectionOptions.Bootstrap = &m_canaryApp.GetBootstrap();
     connectionManagerOptions.MaxConnections = 5000;
 
     std::shared_ptr<Http::HttpClientConnectionManager> connManager =
@@ -210,7 +210,7 @@ void MeasureTransferRate::MeasureHttpTransfer()
         [this, connManager, &testFilename, &hostHeader](
             uint32_t, String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
             std::shared_ptr<TransferState> singlePart =
-                MakeShared<TransferState>(m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, SmallObjectSize);
+                MakeShared<TransferState>(m_canaryApp.GetTraceAllocator(), m_canaryApp.GetMetricsPublisher(), 0, 1, SmallObjectSize);
             singlePart->AddDataDownMetric(0);
 
             auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
@@ -286,12 +286,12 @@ void MeasureTransferRate::MeasureHttpTransfer()
 
     aws_event_loop_cancel_task(m_schedulingLoop, &m_pulseMetricsTask);
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
-    m_canaryApp.publisher->SchedulePublish();
-    m_canaryApp.publisher->WaitForLastPublish();
+    m_canaryApp.GetMetricsPublisher()->SchedulePublish();
+    m_canaryApp.GetMetricsPublisher()->WaitForLastPublish();
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
 
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup...");
-    m_canaryApp.publisher->UploadBackup();
+    m_canaryApp.GetMetricsPublisher()->UploadBackup();
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup finished.");
 }
 
@@ -314,7 +314,7 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
         for (uint32_t i = 0; i < m_canaryApp.GetOptions().numUpTransfers; ++i)
         {
             std::shared_ptr<TransferState> singlePart =
-                MakeShared<TransferState>(m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, SmallObjectSize);
+                MakeShared<TransferState>(m_canaryApp.GetTraceAllocator(), m_canaryApp.GetMetricsPublisher(), 0, 1, SmallObjectSize);
 
             uploads.push_back(singlePart);
         }
@@ -332,10 +332,10 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
 
                 singlePart->AddDataUpMetric(0);
 
-                m_canaryApp.transport->PutObject(
+                m_canaryApp.GetTransport0()->PutObject(
                     key,
                     MakeShared<MeasureTransferRateStream>(
-                        m_canaryApp.traceAllocator, m_canaryApp, singlePart, m_canaryApp.traceAllocator),
+                        m_canaryApp.GetTraceAllocator(), m_canaryApp, singlePart, m_canaryApp.GetTraceAllocator()),
                     0,
                     [singlePart, notifyTransferFinished](int32_t errorCode, std::shared_ptr<Aws::Crt::String>) {
                         singlePart->SetTransferSuccess(errorCode == AWS_ERROR_SUCCESS);
@@ -349,15 +349,15 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
         }
 
         AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
-        m_canaryApp.publisher->SchedulePublish();
-        m_canaryApp.publisher->WaitForLastPublish();
+        m_canaryApp.GetMetricsPublisher()->SchedulePublish();
+        m_canaryApp.GetMetricsPublisher()->WaitForLastPublish();
         AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
     }
 
     for (uint32_t i = 0; i < m_canaryApp.GetOptions().numDownTransfers; ++i)
     {
         std::shared_ptr<TransferState> singlePart =
-            MakeShared<TransferState>(m_canaryApp.traceAllocator, m_canaryApp.publisher, 0, 1, SmallObjectSize);
+            MakeShared<TransferState>(m_canaryApp.GetTraceAllocator(), m_canaryApp.GetMetricsPublisher(), 0, 1, SmallObjectSize);
 
         downloads.emplace_back(singlePart);
     }
@@ -394,11 +394,12 @@ void MeasureTransferRate::MeasureSmallObjectTransfer()
 
     aws_event_loop_cancel_task(m_schedulingLoop, &m_pulseMetricsTask);
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
-    m_canaryApp.publisher->WaitForLastPublish();
+    m_canaryApp.GetMetricsPublisher()->SchedulePublish();
+    m_canaryApp.GetMetricsPublisher()->WaitForLastPublish();
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
 
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup...");
-    m_canaryApp.publisher->UploadBackup();
+    m_canaryApp.GetMetricsPublisher()->UploadBackup();
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup finished.");
 }
 
@@ -416,13 +417,13 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
         [this](uint32_t, String &&key, uint64_t objectSize, NotifyTransferFinished &&notifyTransferFinished) {
             AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting upload of object %s...", key.c_str());
 
-            m_canaryApp.transport->PutObjectMultipart(
+            m_canaryApp.GetTransport0()->PutObjectMultipart(
                 key,
                 objectSize,
                 MeasureTransferRate::LargeObjectNumParts,
                 [this](const std::shared_ptr<TransferState> &transferState) {
                     return MakeShared<MeasureTransferRateStream>(
-                        m_canaryApp.traceAllocator, m_canaryApp, transferState, m_canaryApp.traceAllocator);
+                        m_canaryApp.GetTraceAllocator(), m_canaryApp, transferState, m_canaryApp.GetTraceAllocator());
                 },
                 [key, notifyTransferFinished](int32_t errorCode, uint32_t) {
                     AWS_LOGF_INFO(
@@ -445,7 +446,7 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
         [this](uint32_t, String &&key, uint64_t, NotifyTransferFinished &&notifyTransferFinished) {
             AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting download of object %s...", key.c_str());
 
-            m_canaryApp.transport->GetObjectMultipart(
+            m_canaryApp.GetTransport0()->GetObjectMultipart(
                 key,
                 MeasureTransferRate::LargeObjectNumParts,
                 [](const std::shared_ptr<TransferState> &, const ByteCursor &) {},
@@ -461,12 +462,12 @@ void MeasureTransferRate::MeasureLargeObjectTransfer()
 
     aws_event_loop_cancel_task(m_schedulingLoop, &m_pulseMetricsTask);
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
-    m_canaryApp.publisher->SchedulePublish();
-    m_canaryApp.publisher->WaitForLastPublish();
+    m_canaryApp.GetMetricsPublisher()->SchedulePublish();
+    m_canaryApp.GetMetricsPublisher()->WaitForLastPublish();
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
 
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup...");
-    m_canaryApp.publisher->UploadBackup();
+    m_canaryApp.GetMetricsPublisher()->UploadBackup();
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup finished.");
 }
 
@@ -489,11 +490,11 @@ void MeasureTransferRate::s_PulseMetricsTask(aws_task *task, void *arg, aws_task
 
     MeasureTransferRate *measureTransferRate = reinterpret_cast<MeasureTransferRate *>(arg);
     CanaryApp &canaryApp = measureTransferRate->m_canaryApp;
-    std::shared_ptr<MetricsPublisher> publisher = canaryApp.publisher;
-    std::shared_ptr<S3ObjectTransport> transport = canaryApp.transport;
+    std::shared_ptr<MetricsPublisher> publisher = canaryApp.GetMetricsPublisher();
+    std::shared_ptr<S3ObjectTransport> transport = canaryApp.GetTransport0();
 
     /*
-    Allocator *traceAllocator = canaryApp.traceAllocator;
+    Allocator *traceAllocator = canaryApp.GetTraceAllocator();
 
     Metric memMetric;
     memMetric.Unit = MetricUnit::Bytes;
@@ -520,7 +521,7 @@ void MeasureTransferRate::s_PulseMetricsTask(aws_task *task, void *arg, aws_task
         const Aws::Crt::String &s3Endpoint = transport->GetEndpoint();
 
         size_t s3AddressCount =
-            canaryApp.defaultHostResolver.GetHostAddressCount(s3Endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
+            canaryApp.GetDefaultHostResolver().GetHostAddressCount(s3Endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
 
         Metric s3AddressCountMetric(MetricName::S3AddressCount, MetricUnit::Count, (double)s3AddressCount);
 
@@ -531,7 +532,7 @@ void MeasureTransferRate::s_PulseMetricsTask(aws_task *task, void *arg, aws_task
 
     /*
     {
-        aws_event_loop_group *eventLoopGroup = canaryApp.eventLoopGroup.GetUnderlyingHandle();
+        aws_event_loop_group *eventLoopGroup = canaryApp.GetEventLoopGroup().GetUnderlyingHandle();
         size_t numEventLoops = aws_array_list_length(&eventLoopGroup->event_loops);
 
         size_t totalTickElapsedTimeMS = 0;

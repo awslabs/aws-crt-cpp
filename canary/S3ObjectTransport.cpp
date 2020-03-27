@@ -38,10 +38,9 @@ const uint32_t S3ObjectTransport::TransfersPerAddress = 10;
 const int32_t S3ObjectTransport::S3GetObjectResponseStatus_PartialContent = 206;
 
 S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::String &bucket)
-    : m_canaryApp(canaryApp), m_bucketName(bucket),
-      m_uploadProcessor(canaryApp, canaryApp.eventLoopGroup, S3ObjectTransport::MaxStreams),
-      m_downloadProcessor(canaryApp, canaryApp.eventLoopGroup, S3ObjectTransport::MaxStreams),
-      m_connManagersUseCount(0), m_activeRequestsCount(0)
+    : m_canaryApp(canaryApp), m_bucketName(bucket), m_connManagersUseCount(0), m_activeRequestsCount(0),
+      m_uploadProcessor(canaryApp, canaryApp.GetEventLoopGroup(), S3ObjectTransport::MaxStreams),
+      m_downloadProcessor(canaryApp, canaryApp.GetEventLoopGroup(), S3ObjectTransport::MaxStreams)
 {
     m_endpoint = m_bucketName + ".s3." + m_canaryApp.GetOptions().region.c_str() + ".amazonaws.com";
 
@@ -70,15 +69,15 @@ void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
 
     /*
         {
-            aws_host_resolver *resolver = m_canaryApp.defaultHostResolver.GetUnderlyingHandle();
+            aws_host_resolver *resolver = m_canaryApp.GetDefaultHostResolver().GetUnderlyingHandle();
             aws_host_resolver_purge_cache(resolver);
         }
     */
 
-    m_canaryApp.defaultHostResolver.ResolveHost(
+    m_canaryApp.GetDefaultHostResolver().ResolveHost(
         m_endpoint, [](Io::HostResolver &, const Vector<Io::HostAddress> &, int) {});
 
-    while (m_canaryApp.defaultHostResolver.GetHostAddressCount(m_endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A) <
+    while (m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(m_endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A) <
            desiredNumberOfAddresses)
     {
         std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -92,7 +91,7 @@ void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
         std::condition_variable signal;
         bool resolveHostFinished = false;
 
-        m_canaryApp.defaultHostResolver.ResolveHost(
+        m_canaryApp.GetDefaultHostResolver().ResolveHost(
             m_endpoint,
             [this, &adressRetrievedMutex, &signal, &resolveHostFinished](
                 Io::HostResolver &, const Vector<Io::HostAddress> &addresses, int) {
@@ -167,12 +166,12 @@ void S3ObjectTransport::SpawnConnectionManagers()
         if (m_canaryApp.GetOptions().sendEncrypted)
         {
             aws_byte_cursor serverName = ByteCursorFromCString(m_endpoint.c_str());
-            auto connOptions = m_canaryApp.tlsContext.NewConnectionOptions();
+            auto connOptions = m_canaryApp.GetTlsContext().NewConnectionOptions();
             connOptions.SetServerName(serverName);
             connectionManagerOptions.ConnectionOptions.TlsOptions = connOptions;
         }
 
-        connectionManagerOptions.ConnectionOptions.Bootstrap = &m_canaryApp.bootstrap;
+        connectionManagerOptions.ConnectionOptions.Bootstrap = &m_canaryApp.GetBootstrap();
         connectionManagerOptions.MaxConnections = 5000;
 
         std::shared_ptr<Http::HttpClientConnectionManager> connManager =
@@ -191,13 +190,13 @@ void S3ObjectTransport::MakeSignedRequest(
 
     Auth::AwsSigningConfig signingConfig(g_allocator);
     signingConfig.SetRegion(region);
-    signingConfig.SetCredentialsProvider(m_canaryApp.credsProvider);
+    signingConfig.SetCredentialsProvider(m_canaryApp.GetCredsProvider());
     signingConfig.SetService("s3");
     signingConfig.SetBodySigningType(Auth::BodySigningType::UnsignedPayload);
     signingConfig.SetSigningTimepoint(DateTime::Now());
     signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
 
-    m_canaryApp.signer->SignRequest(
+    m_canaryApp.GetSigner()->SignRequest(
         request,
         signingConfig,
         [this, requestOptions, callback](
@@ -475,7 +474,7 @@ void S3ObjectTransport::UploadPart(
 
                 transferState->FlushDataUpMetrics();
 
-                m_canaryApp.publisher->AddTransferStatusDataPoint(true);
+                m_canaryApp.GetMetricsPublisher()->AddTransferStatusDataPoint(true);
 
                 AWS_LOGF_INFO(
                     AWS_LS_CRT_CPP_CANARY,
@@ -495,7 +494,7 @@ void S3ObjectTransport::UploadPart(
                     errorCode,
                     aws_error_debug_str(errorCode));
 
-                m_canaryApp.publisher->AddTransferStatusDataPoint(false);
+                m_canaryApp.GetMetricsPublisher()->AddTransferStatusDataPoint(false);
 
                 transferState->FlushDataUpMetrics();
 

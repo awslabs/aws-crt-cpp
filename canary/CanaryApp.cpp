@@ -83,10 +83,10 @@ CanaryAppChildProcess::CanaryAppChildProcess(pid_t inPid, int32_t inReadPipe, in
 }
 
 CanaryApp::CanaryApp(CanaryAppOptions &&inOptions, std::vector<CanaryAppChildProcess> &&inChildren) noexcept
-    : traceAllocator(DefaultAllocator()), apiHandle(traceAllocator),
-      eventLoopGroup((!inOptions.isChildProcess && !inOptions.isParentProcess) ? 72 : 2, traceAllocator),
-      defaultHostResolver(eventLoopGroup, 60, 3600, traceAllocator),
-      bootstrap(eventLoopGroup, defaultHostResolver, traceAllocator), options(inOptions), children(inChildren)
+    : m_options(inOptions), m_traceAllocator(DefaultAllocator()), m_apiHandle(m_traceAllocator),
+      m_eventLoopGroup((!inOptions.isChildProcess && !inOptions.isParentProcess) ? 72 : 2, m_traceAllocator),
+      m_defaultHostResolver(m_eventLoopGroup, 60, 3600, m_traceAllocator),
+      m_bootstrap(m_eventLoopGroup, m_defaultHostResolver, m_traceAllocator), children(inChildren)
 {
 #ifndef WIN32
     rlimit fdsLimit;
@@ -95,9 +95,9 @@ CanaryApp::CanaryApp(CanaryAppOptions &&inOptions, std::vector<CanaryAppChildPro
     setrlimit(RLIMIT_NOFILE, &fdsLimit);
 #endif
 
-    if (options.loggingEnabled)
+    if (m_options.loggingEnabled)
     {
-        apiHandle.InitializeLogging(LogLevel::Info, stderr);
+        m_apiHandle.InitializeLogging(LogLevel::Info, stderr);
 
         // TODO Take out before merging--this is a giant hack to filter just canary logs
         aws_logger_vtable *currentVTable = aws_logger_get()->vtable;
@@ -106,18 +106,19 @@ CanaryApp::CanaryApp(CanaryAppOptions &&inOptions, std::vector<CanaryAppChildPro
     }
 
     Auth::CredentialsProviderChainDefaultConfig chainConfig;
-    chainConfig.Bootstrap = &bootstrap;
+    chainConfig.Bootstrap = &m_bootstrap;
 
-    credsProvider = Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(chainConfig, g_allocator);
+    m_credsProvider = Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(chainConfig, g_allocator);
 
-    signer = MakeShared<Auth::Sigv4HttpRequestSigner>(g_allocator, g_allocator);
+    m_signer = MakeShared<Auth::Sigv4HttpRequestSigner>(g_allocator, g_allocator);
 
     Io::TlsContextOptions tlsContextOptions = Io::TlsContextOptions::InitDefaultClient(g_allocator);
-    tlsContext = Io::TlsContext(tlsContextOptions, Io::TlsMode::CLIENT, g_allocator);
+    m_tlsContext = Io::TlsContext(tlsContextOptions, Io::TlsMode::CLIENT, g_allocator);
 
-    publisher = MakeShared<MetricsPublisher>(g_allocator, *this, "CRT-CPP-Canary-V2");
-    transport = MakeShared<S3ObjectTransport>(g_allocator, *this, "aws-crt-canary-bucket");
-    measureTransferRate = MakeShared<MeasureTransferRate>(g_allocator, *this);
+    m_publisher = MakeShared<MetricsPublisher>(g_allocator, *this, "CRT-CPP-Canary-V2");
+    m_transport0 = MakeShared<S3ObjectTransport>(g_allocator, *this, "aws-crt-canary-bucket");
+    m_transport1 = MakeShared<S3ObjectTransport>(g_allocator, *this, "aws-crt-test-stuff-us-west-2");
+    m_measureTransferRate = MakeShared<MeasureTransferRate>(g_allocator, *this);
 }
 
 void CanaryApp::WriteToChildProcess(uint32_t index, const char *key, const char *value)
@@ -138,9 +139,9 @@ void CanaryApp::WriteToParentProcess(const char *key, const char *value)
 {
 #ifndef WIN32
     AWS_LOGF_INFO(
-        AWS_LS_CRT_CPP_CANARY, "Writing %s:%s to parent through pipe %d", key, value, options.writeToParentPipe);
+        AWS_LS_CRT_CPP_CANARY, "Writing %s:%s to parent through pipe %d", key, value, m_options.writeToParentPipe);
 
-    WriteKeyValueToPipe(key, value, options.writeToParentPipe);
+    WriteKeyValueToPipe(key, value, m_options.writeToParentPipe);
 #else
     AWS_FATAL_ASSERT(false);
 #endif
@@ -173,9 +174,9 @@ String CanaryApp::ReadFromParentProcess(const char *key)
 {
 #ifndef WIN32
     AWS_LOGF_INFO(
-        AWS_LS_CRT_CPP_CANARY, "Reading value of %s from parent through pipe %d...", key, options.readFromParentPipe);
+        AWS_LS_CRT_CPP_CANARY, "Reading value of %s from parent through pipe %d...", key, m_options.readFromParentPipe);
 
-    String value = ReadValueFromPipe(key, options.readFromParentPipe, valuesFromParent);
+    String value = ReadValueFromPipe(key, m_options.readFromParentPipe, valuesFromParent);
 
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Got value %s from parent", value.c_str());
 
@@ -267,27 +268,27 @@ std::pair<String, String> CanaryApp::ReadNextKeyValuePairFromPipe(int32_t readPi
 
 void CanaryApp::Run()
 {
-    if (options.rehydrateBackup)
+    if (m_options.rehydrateBackup)
     {
-        publisher->RehydrateBackup(options.rehydrateBackupObjectName.c_str());
+        m_publisher->RehydrateBackup(m_options.rehydrateBackupObjectName.c_str());
     }
 
-    if (options.measureSmallTransfer)
+    if (m_options.measureSmallTransfer)
     {
-        publisher->SetMetricTransferSize(MetricTransferSize::Small);
-        measureTransferRate->MeasureSmallObjectTransfer();
+        m_publisher->SetMetricTransferSize(MetricTransferSize::Small);
+        m_measureTransferRate->MeasureSmallObjectTransfer();
     }
 
-    if (options.measureLargeTransfer)
+    if (m_options.measureLargeTransfer)
     {
-        publisher->SetMetricTransferSize(MetricTransferSize::Large);
-        measureTransferRate->MeasureLargeObjectTransfer();
+        m_publisher->SetMetricTransferSize(MetricTransferSize::Large);
+        m_measureTransferRate->MeasureLargeObjectTransfer();
     }
 
-    if (options.measureHttpTransfer)
+    if (m_options.measureHttpTransfer)
     {
-        publisher->SetMetricTransferSize(MetricTransferSize::Small);
-        measureTransferRate->MeasureHttpTransfer();
+        m_publisher->SetMetricTransferSize(MetricTransferSize::Small);
+        m_measureTransferRate->MeasureHttpTransfer();
     }
 
 #ifndef WIN32
@@ -306,16 +307,16 @@ void CanaryApp::Run()
         }
     }
 
-    if (options.readFromParentPipe != -1)
+    if (m_options.readFromParentPipe != -1)
     {
-        close(options.readFromParentPipe);
-        options.readFromParentPipe = -1;
+        close(m_options.readFromParentPipe);
+        m_options.readFromParentPipe = -1;
     }
 
-    if (options.writeToParentPipe != -1)
+    if (m_options.writeToParentPipe != -1)
     {
-        close(options.writeToParentPipe);
-        options.writeToParentPipe = -1;
+        close(m_options.writeToParentPipe);
+        m_options.writeToParentPipe = -1;
     }
 
     children.clear();
