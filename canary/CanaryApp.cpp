@@ -69,9 +69,9 @@ int filterLog(
 CanaryAppOptions::CanaryAppOptions() noexcept
     : platformName(CanaryUtil::GetPlatformName()), toolName("NA"), instanceType("unknown"), region("us-west-2"),
       readFromParentPipe(-1), writeToParentPipe(-1), numUpTransfers(1), numUpConcurrentTransfers(0),
-      numDownTransfers(1), numDownConcurrentTransfers(0), childProcessIndex(0),
-      measureSinglePartTransfer(false), measureHttpTransfer(false), usingNumaControl(false), downloadOnly(false),
-      sendEncrypted(false), loggingEnabled(false), rehydrateBackup(false), isParentProcess(false), isChildProcess(false)
+      numDownTransfers(1), numDownConcurrentTransfers(0), childProcessIndex(0), measureSinglePartTransfer(false),
+      measureHttpTransfer(false), usingNumaControl(false), downloadOnly(false), sendEncrypted(false),
+      loggingEnabled(false), rehydrateBackup(false), isParentProcess(false), isChildProcess(false)
 {
 }
 
@@ -83,10 +83,10 @@ CanaryAppChildProcess::CanaryAppChildProcess(pid_t inPid, int32_t inReadPipe, in
 }
 
 CanaryApp::CanaryApp(CanaryAppOptions &&inOptions, std::vector<CanaryAppChildProcess> &&inChildren) noexcept
-    : m_options(inOptions), m_traceAllocator(DefaultAllocator()), m_apiHandle(m_traceAllocator),
-      m_eventLoopGroup((!inOptions.isChildProcess && !inOptions.isParentProcess) ? 72 : 2, m_traceAllocator),
-      m_defaultHostResolver(m_eventLoopGroup, 60, 3600, m_traceAllocator),
-      m_bootstrap(m_eventLoopGroup, m_defaultHostResolver, m_traceAllocator), children(inChildren)
+    : m_options(inOptions), m_apiHandle(g_allocator),
+      m_eventLoopGroup((!inOptions.isChildProcess && !inOptions.isParentProcess) ? 72 : 2, g_allocator),
+      m_defaultHostResolver(m_eventLoopGroup, 60, 3600, g_allocator),
+      m_bootstrap(m_eventLoopGroup, m_defaultHostResolver, g_allocator), children(inChildren)
 {
 #ifndef WIN32
     rlimit fdsLimit;
@@ -94,6 +94,9 @@ CanaryApp::CanaryApp(CanaryAppOptions &&inOptions, std::vector<CanaryAppChildPro
     fdsLimit.rlim_cur = 8192;
     setrlimit(RLIMIT_NOFILE, &fdsLimit);
 #endif
+
+    const size_t KB_256 = 256 * 1024;
+    g_aws_channel_max_fragment_size = KB_256;
 
     if (m_options.loggingEnabled)
     {

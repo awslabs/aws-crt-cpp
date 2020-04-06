@@ -78,7 +78,7 @@ static const char *s_metricNameStr[] = {"BytesUp",
                                         "NumIOSubs",
                                         "Invalid"};
 
-static const char *s_transferTypeStr[] = {"None", "SinglePart" };
+static const char *s_transferTypeStr[] = {"None", "SinglePart"};
 
 static const char *s_UnitToStr(MetricUnit unit)
 {
@@ -307,7 +307,8 @@ void MetricsPublisher::PreparePayload(StringStream &bodyStream, const Vector<Met
         if (m_replayId.has_value())
         {
             bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.6.Name=ReplayId&";
-            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.6.Value=" << m_replayId.value() << "&";
+            bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.6.Value=" << m_replayId.value()
+                       << "&";
         }
 
         metricCount++;
