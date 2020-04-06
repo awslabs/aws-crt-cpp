@@ -82,7 +82,6 @@ class S3ObjectTransport
     void SeedAddressCache(const Aws::Crt::String &address);
 
   private:
-
     using SignedRequestCallback =
         std::function<void(std::shared_ptr<Aws::Crt::Http::HttpClientConnection> conn, int32_t errorCode)>;
 

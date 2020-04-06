@@ -90,7 +90,6 @@ class CanaryApp
   private:
     CanaryAppOptions m_options;
 
-    Aws::Crt::Allocator *m_traceAllocator;
     Aws::Crt::ApiHandle m_apiHandle;
     Aws::Crt::Io::EventLoopGroup m_eventLoopGroup;
     Aws::Crt::Io::DefaultHostResolver m_defaultHostResolver;

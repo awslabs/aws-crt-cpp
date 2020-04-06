@@ -207,8 +207,8 @@ void MeasureTransferRate::MeasureHttpTransfer()
             uint64_t,
             const std::shared_ptr<S3ObjectTransport> &,
             NotifyTransferFinished &&notifyTransferFinished) {
-            std::shared_ptr<TransferState> transferState = MakeShared<TransferState>(
-                g_allocator, m_canaryApp.GetMetricsPublisher(), 0, 1, SinglePartObjectSize);
+            std::shared_ptr<TransferState> transferState =
+                MakeShared<TransferState>(g_allocator, m_canaryApp.GetMetricsPublisher(), 0, 1, SinglePartObjectSize);
             transferState->AddDataDownMetric(0);
 
             auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
@@ -310,8 +310,8 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
     {
         for (uint32_t i = 0; i < m_canaryApp.GetOptions().numUpTransfers; ++i)
         {
-            std::shared_ptr<TransferState> transferState = MakeShared<TransferState>(
-                g_allocator, m_canaryApp.GetMetricsPublisher(), 0, 1, SinglePartObjectSize);
+            std::shared_ptr<TransferState> transferState =
+                MakeShared<TransferState>(g_allocator, m_canaryApp.GetMetricsPublisher(), 0, 1, SinglePartObjectSize);
 
             uploads.push_back(transferState);
         }
@@ -336,8 +336,7 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
 
                 transport->PutObject(
                     key,
-                    MakeShared<MeasureTransferRateStream>(
-                        g_allocator, m_canaryApp, transferState, g_allocator),
+                    MakeShared<MeasureTransferRateStream>(g_allocator, m_canaryApp, transferState, g_allocator),
                     0,
                     [transferState, notifyTransferFinished](int32_t errorCode, std::shared_ptr<Aws::Crt::String>) {
                         transferState->SetTransferSuccess(errorCode == AWS_ERROR_SUCCESS);
@@ -358,8 +357,8 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
 
     for (uint32_t i = 0; i < m_canaryApp.GetOptions().numDownTransfers; ++i)
     {
-        std::shared_ptr<TransferState> transferState = MakeShared<TransferState>(
-            g_allocator, m_canaryApp.GetMetricsPublisher(), 0, 1, SinglePartObjectSize);
+        std::shared_ptr<TransferState> transferState =
+            MakeShared<TransferState>(g_allocator, m_canaryApp.GetMetricsPublisher(), 0, 1, SinglePartObjectSize);
 
         downloads.emplace_back(transferState);
     }
