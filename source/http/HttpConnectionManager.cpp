@@ -200,6 +200,7 @@ namespace Aws
 
                 callback(connectionObj, AWS_OP_SUCCESS);
             }
+
         } // namespace Http
     }     // namespace Crt
 } // namespace Aws
