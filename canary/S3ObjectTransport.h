@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2010-2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@
 #include <queue>
 #include <set>
 
+#include "MultipartTransferProcessor.h"
 #include "TransferState.h"
 
 class CanaryApp;
@@ -46,45 +47,93 @@ using SendPartCallback =
 using ReceivePartCallback =
     std::function<void(const std::shared_ptr<TransferState> &transferState, const Aws::Crt::ByteCursor &data)>;
 
+/*
+ * Makes available a handful of S3 operations invoked by using the REST API to a specific bucket.  Also had
+ * functionality for resolving a number of DNS addresses that transfers can be distributed across.
+ */
 class S3ObjectTransport
 {
   public:
-    static const uint32_t MaxStreams;
-    static const uint32_t TransfersPerAddress;
-    static const int32_t S3GetObjectResponseStatus_PartialContent;
-
     S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::String &bucket);
 
+    /*
+     * Returns the endpoint of the bucket being used.
+     */
+    const Aws::Crt::String &GetEndpoint() const { return m_endpoint; }
+
+    /*
+     * Upload a single part object, or a part of an object.
+     */
     void PutObject(
+        const std::shared_ptr<TransferState> &transferState,
         const Aws::Crt::String &key,
         const std::shared_ptr<Aws::Crt::Io::InputStream> &inputStream,
         std::uint32_t flags,
         const PutObjectFinished &finishedCallback);
 
+    /*
+     * Get a single part object, or a part of an object.
+     */
     void GetObject(
+        const std::shared_ptr<TransferState> &transferState,
         const Aws::Crt::String &key,
         std::uint32_t partNumber,
         Aws::Crt::Http::OnIncomingBody onIncomingBody,
         const GetObjectFinished &getObjectFinished);
 
-    size_t GetOpenConnectionCount();
+    /*
+     * Upload a multipart object.
+     */
+    std::shared_ptr<MultipartUploadState> PutObjectMultipart(
+        const Aws::Crt::String &key,
+        std::uint64_t objectSize,
+        std::uint32_t numParts,
+        SendPartCallback sendPart,
+        const PutObjectMultipartFinished &finishedCallback);
 
-    size_t GetUniqueEndpointsUsedCount() const { return m_uniqueEndpointsUsed.size(); }
+    /*
+     * Download a multipart object.
+     */
+    std::shared_ptr<MultipartDownloadState> GetObjectMultipart(
+        const Aws::Crt::String &key,
+        std::uint32_t numParts,
+        const ReceivePartCallback &receivePart,
+        const GetObjectMultipartFinished &finishedCallback);
 
-    const Aws::Crt::String &GetEndpoint() const { return m_endpoint; }
+    /*
+     * Given a number of transfers, resolve the appropriate amount of DNS addresses.
+     */
+    void WarmDNSCache(uint32_t numTransfers, uint32_t transfersPerAddress);
 
-    void WarmDNSCache(uint32_t numTransfers);
-
+    /*
+     * Used to spawn the required connection managers for each resolve DNS address.
+     */
     void SpawnConnectionManagers();
 
+    /*
+     * Throw away all connection manager state.
+     */
+    void PurgeConnectionManagers();
+
+    /*
+     * Query what address a transfer should use.  Exposed for use in fork mode, where
+     * addresses are distributed over child processes.
+     */
     const Aws::Crt::String &GetAddressForTransfer(uint32_t index);
 
+    /*
+     * Pass in address that be used in the address cache.  Currently only supports one
+     * address.  This is used by child processes in fork mode to enable them to use
+     * the resolved address passed by the parent process.
+     */
     void SeedAddressCache(const Aws::Crt::String &address);
 
   private:
-
     using SignedRequestCallback =
         std::function<void(std::shared_ptr<Aws::Crt::Http::HttpClientConnection> conn, int32_t errorCode)>;
+    using CreateMultipartUploadFinished = std::function<void(int32_t error, const Aws::Crt::String &uploadId)>;
+    using CompleteMultipartUploadFinished = std::function<void(int32_t error)>;
+    using AbortMultipartUploadFinished = std::function<void(int32_t error)>;
 
     CanaryApp &m_canaryApp;
     const Aws::Crt::String m_bucketName;
@@ -92,16 +141,20 @@ class S3ObjectTransport
     Aws::Crt::Http::HttpHeader m_contentTypeHeader;
     Aws::Crt::String m_endpoint;
 
-    std::vector<std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager>> m_connManagerTrashCan;
+    uint32_t m_transfersPerAddress;
+
     std::vector<std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager>> m_connManagers;
     std::vector<Aws::Crt::String> m_addressCache;
 
     std::atomic<uint32_t> m_connManagersUseCount;
     std::atomic<uint32_t> m_activeRequestsCount;
 
-    std::set<Aws::Crt::String> m_uniqueEndpointsUsed;
+    MultipartTransferProcessor m_uploadProcessor;
+    MultipartTransferProcessor m_downloadProcessor;
 
     std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> GetNextConnManager();
+
+    void EmitS3AddressCountMetric(size_t addressCount);
 
     void MakeSignedRequest(
         const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
@@ -114,6 +167,31 @@ class S3ObjectTransport
         const std::shared_ptr<Aws::Crt::Http::HttpRequest> &signedRequest);
 
     void AddContentLengthHeader(
-        std::shared_ptr<Aws::Crt::Http::HttpRequest> request,
+        const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
         const std::shared_ptr<Aws::Crt::Io::InputStream> &body);
+
+    void UploadPart(
+        const std::shared_ptr<MultipartUploadState> &state,
+        const std::shared_ptr<TransferState> &transferState,
+        const std::shared_ptr<Aws::Crt::Io::InputStream> &body,
+        const MultipartTransferState::PartFinishedCallback &partFinished);
+
+    void GetPart(
+        const std::shared_ptr<MultipartDownloadState> &downloadState,
+        const std::shared_ptr<TransferState> &transferState,
+        const ReceivePartCallback &receiveObjectPartData,
+        const MultipartTransferState::PartFinishedCallback &partFinished);
+
+    void CreateMultipartUpload(const Aws::Crt::String &key, const CreateMultipartUploadFinished &finishedCallback);
+
+    void CompleteMultipartUpload(
+        const Aws::Crt::String &key,
+        const Aws::Crt::String &uploadId,
+        const Aws::Crt::Vector<Aws::Crt::String> &etags,
+        const CompleteMultipartUploadFinished &finishedCallback);
+
+    void AbortMultipartUpload(
+        const Aws::Crt::String &key,
+        const Aws::Crt::String &uploadId,
+        const AbortMultipartUploadFinished &finishedCallback);
 };

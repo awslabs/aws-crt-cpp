@@ -28,9 +28,9 @@ namespace Aws
             Count
         };
         enum
-	{
+        {
             AWS_CRT_CPP_PACKAGE = 10
-	};
+        };
         enum LogSubject
         {
             AWS_LS_CRT_CPP_GENERAL = AWS_LOG_SUBJECT_BEGIN_RANGE(AWS_CRT_CPP_PACKAGE),
