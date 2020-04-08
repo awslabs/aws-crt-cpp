@@ -287,10 +287,11 @@ void MeasureTransferRate::MeasureHttpTransfer()
     m_canaryApp.GetMetricsPublisher()->SchedulePublish();
     m_canaryApp.GetMetricsPublisher()->WaitForLastPublish();
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
-
+/*
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup...");
     m_canaryApp.GetMetricsPublisher()->UploadBackup();
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup finished.");
+*/
 }
 
 void MeasureTransferRate::MeasureSinglePartObjectTransfer()
@@ -405,9 +406,11 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
     m_canaryApp.GetMetricsPublisher()->WaitForLastPublish();
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
 
+/*
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup...");
     m_canaryApp.GetMetricsPublisher()->UploadBackup();
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup finished.");
+*/
 }
 
 void MeasureTransferRate::SchedulePulseMetrics()
