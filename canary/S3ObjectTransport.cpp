@@ -62,20 +62,24 @@ void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
         ++desiredNumberOfAddresses;
     }
 
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Warming DNS cache: getting %d addresses for endpoint %s", desiredNumberOfAddresses, m_endpoint.c_str());
+    AWS_LOGF_INFO(
+        AWS_LS_CRT_CPP_CANARY,
+        "Warming DNS cache: getting %d addresses for endpoint %s",
+        desiredNumberOfAddresses,
+        m_endpoint.c_str());
 
     m_canaryApp.GetDefaultHostResolver().ResolveHost(
         m_endpoint, [](Io::HostResolver &, const Vector<Io::HostAddress> &, int) {});
 
-    uint32_t numAddresses = m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(
-               m_endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
+    uint32_t numAddresses =
+        m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(m_endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
 
     while (numAddresses < desiredNumberOfAddresses)
     {
         std::this_thread::sleep_for(std::chrono::seconds(1));
 
         numAddresses = m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(
-               m_endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);   
+            m_endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
     }
 
     m_addressCache.clear();
@@ -258,7 +262,7 @@ void S3ObjectTransport::MakeSignedRequest_SendRequest(
 
     std::shared_ptr<Http::HttpClientStream> clientStream = conn->NewClientStream(requestOptionsToSend);
 
-    if(clientStream == nullptr)
+    if (clientStream == nullptr)
     {
         AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Unable to open stream for S3ObjectTransport operation.");
     }

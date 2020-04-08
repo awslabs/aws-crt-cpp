@@ -233,7 +233,8 @@ String MetricsPublisher::GetPlatformName() const
 
 String MetricsPublisher::GetToolName() const
 {
-    return m_toolNameOverride.has_value() ? m_toolNameOverride.value() : String(m_canaryApp.GetOptions().toolName.c_str());
+    return m_toolNameOverride.has_value() ? m_toolNameOverride.value()
+                                          : String(m_canaryApp.GetOptions().toolName.c_str());
 }
 
 String MetricsPublisher::GetInstanceType() const
@@ -674,7 +675,7 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
                         };
                         std::shared_ptr<Http::HttpClientStream> clientStream = conn->NewClientStream(requestOptions);
 
-                        if(clientStream == nullptr)
+                        if (clientStream == nullptr)
                         {
                             AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "METRICS Error creating stream to publish metrics.");
                         }
