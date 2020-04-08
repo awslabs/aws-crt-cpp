@@ -18,14 +18,17 @@ class MeasureTransferRate
 {
   public:
     static const uint64_t SinglePartObjectSize;
+    static const uint64_t LargeObjectSize;
     static const std::chrono::milliseconds AllocationMetricFrequency;
     static const uint64_t AllocationMetricFrequencyNS;
+    static const uint32_t LargeObjectNumParts;
 
     MeasureTransferRate(CanaryApp &canaryApp);
     ~MeasureTransferRate();
 
     void MeasureHttpTransfer();
     void MeasureSinglePartObjectTransfer();
+    void MeasureMultiPartObjectTransfer();
 
   private:
     enum MeasurementFlags

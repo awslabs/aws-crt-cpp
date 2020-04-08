@@ -74,6 +74,7 @@ int main(int argc, char *argv[])
         ToolName,
         InstanceType,
         MeasureSinglePartTransfer,
+        MeasureMultiPartTransfer,
         MeasureHttpTransfer,
         Logging,
         SendEncrypted,
@@ -91,6 +92,7 @@ int main(int argc, char *argv[])
     const aws_cli_option options[] = {{"toolName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 't'},
                                       {"instanceType", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'i'},
                                       {"measureSinglePartTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 's'},
+                                      {"measureMultiPartTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'm'},
                                       {"measureHttpTransfer", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'h'},
                                       {"logging", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'd'},
                                       {"sendEncrypted", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'e'},
@@ -102,7 +104,7 @@ int main(int argc, char *argv[])
                                       {"downloadBucketName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'b'},
                                       {"downloadObjectName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'o'}};
 
-    const char *optstring = "t:i:sh:dCem:fn:c:zr:b:o:";
+    const char *optstring = "t:i:smh:dCem:fn:c:zr:b:o:";
 
     CanaryAppOptions canaryAppOptions;
 
@@ -133,6 +135,9 @@ int main(int argc, char *argv[])
                 break;
             case CLIOption::MeasureSinglePartTransfer:
                 canaryAppOptions.measureSinglePartTransfer = true;
+                break;
+            case CLIOption::MeasureMultiPartTransfer:
+                canaryAppOptions.measureMultiPartTransfer = true;
                 break;
             case CLIOption::MeasureHttpTransfer:
                 canaryAppOptions.measureHttpTransfer = true;

@@ -28,19 +28,15 @@ class TransferState
         uint64_t sizeInBytes);
 
     uint32_t GetPartIndex() const { return m_partIndex; }
-
     uint32_t GetPartNumber() const { return m_partNumber; }
-
     uint64_t GetSizeInBytes() const { return m_sizeInBytes; }
 
     void SetTransferSuccess(bool success) { m_transferSuccess = success; }
 
     void AddDataUpMetric(uint64_t dataUp);
-
     void AddDataDownMetric(uint64_t dataDown);
 
     void FlushDataUpMetrics();
-
     void FlushDataDownMetrics();
 
   private:
