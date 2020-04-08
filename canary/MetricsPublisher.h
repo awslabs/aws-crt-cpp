@@ -78,6 +78,7 @@ enum class MetricTransferType
 {
     None,
     SinglePart,
+    MultiPart,
 };
 
 struct MetricKey

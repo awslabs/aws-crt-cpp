@@ -78,7 +78,7 @@ static const char *s_metricNameStr[] = {"BytesUp",
                                         "NumIOSubs",
                                         "Invalid"};
 
-static const char *s_transferTypeStr[] = {"None", "SinglePart"};
+static const char *s_transferTypeStr[] = {"None", "SinglePart", "MultiPart"};
 
 static const char *s_UnitToStr(MetricUnit unit)
 {
