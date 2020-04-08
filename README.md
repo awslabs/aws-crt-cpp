@@ -9,6 +9,8 @@ C++ wrapper around the aws-c-* libraries. Provides Cross-Platform Transport Prot
 * aws-c-mqtt: MQTT client.
 * aws-c-auth: Auth signers such as Aws-auth sigv4
 * aws-c-http: HTTP 1.1 client, and websockets (H2 coming soon)
+* aws-checksums: Cross-Platform HW accelerated CRC32c and CRC32 with fallback to efficient SW implementations.
+* aws-c-event-stream: C99 implementation of the vnd.amazon.event-stream content-type.
 
 More protocols and utilities are coming soon, so stay tuned.
 
