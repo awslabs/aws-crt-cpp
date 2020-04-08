@@ -318,7 +318,7 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
         }
 
         PerformMeasurement(
-            "crt-canary-obj-single-part",
+            "crt-canary-obj-single-part-",
             "singlePartObjectUp-",
             m_canaryApp.GetOptions().numUpTransfers,
             m_canaryApp.GetOptions().numUpConcurrentTransfers,
