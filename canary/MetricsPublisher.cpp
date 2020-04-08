@@ -228,18 +228,18 @@ MetricTransferType MetricsPublisher::GetTransferType() const
 String MetricsPublisher::GetPlatformName() const
 {
     return m_platformNameOverride.has_value() ? m_platformNameOverride.value()
-                                              : String(m_canaryApp.GetOptions().platformName);
+                                              : String(m_canaryApp.GetOptions().platformName.c_str());
 }
 
 String MetricsPublisher::GetToolName() const
 {
-    return m_toolNameOverride.has_value() ? m_toolNameOverride.value() : String(m_canaryApp.GetOptions().toolName);
+    return m_toolNameOverride.has_value() ? m_toolNameOverride.value() : String(m_canaryApp.GetOptions().toolName.c_str());
 }
 
 String MetricsPublisher::GetInstanceType() const
 {
     return m_instanceTypeOverride.has_value() ? m_instanceTypeOverride.value()
-                                              : String(m_canaryApp.GetOptions().instanceType);
+                                              : String(m_canaryApp.GetOptions().instanceType.c_str());
 }
 
 bool MetricsPublisher::IsSendingEncrypted() const
@@ -672,7 +672,16 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
                                     stream.GetResponseStatusCode());
                             }
                         };
-                        conn->NewClientStream(requestOptions);
+                        std::shared_ptr<Http::HttpClientStream> clientStream = conn->NewClientStream(requestOptions);
+
+                        if(clientStream == nullptr)
+                        {
+                            AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "METRICS Error creating stream to publish metrics.");
+                        }
+                        else
+                        {
+                            clientStream->Activate();
+                        }
                     }
                     else
                     {
