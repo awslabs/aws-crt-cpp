@@ -38,26 +38,37 @@ CanaryAppOptions::CanaryAppOptions() noexcept
 {
 }
 
-CanaryAppChildProcess::CanaryAppChildProcess() noexcept : pid(0), readFromChildPipe(-1), writeToChildPipe(-1) {}
+#ifndef WIN32
+CanaryAppChildProcess::CanaryAppChildProcess() noexcept
+    :
+      pid(0),readFromChildPipe(-1), writeToChildPipe(-1)
+{
+}
 
 CanaryAppChildProcess::CanaryAppChildProcess(pid_t inPid, int32_t inReadPipe, int32_t inWritePipe) noexcept
     : pid(inPid), readFromChildPipe(inReadPipe), writeToChildPipe(inWritePipe)
 {
 }
+#endif
 
-CanaryApp::CanaryApp(CanaryAppOptions &&inOptions, std::vector<CanaryAppChildProcess> &&inChildren) noexcept
+
+CanaryApp::CanaryApp(CanaryAppOptions &&inOptions) noexcept
     : m_options(inOptions), m_apiHandle(g_allocator),
       m_eventLoopGroup((!inOptions.isChildProcess && !inOptions.isParentProcess) ? 72 : 2, g_allocator),
       m_defaultHostResolver(m_eventLoopGroup, 60, 3600, g_allocator),
-      m_bootstrap(m_eventLoopGroup, m_defaultHostResolver, g_allocator), children(inChildren)
+      m_bootstrap(m_eventLoopGroup, m_defaultHostResolver, g_allocator)
 {
 #ifndef WIN32
+    // Default FDS limit on Linux can be quite low at at 1024, so
+    // increase it for added headroom.
     rlimit fdsLimit;
     getrlimit(RLIMIT_NOFILE, &fdsLimit);
     fdsLimit.rlim_cur = 8192;
     setrlimit(RLIMIT_NOFILE, &fdsLimit);
 #endif
 
+    // Increase channel fragment size to 256k, due to the added
+    // throughput increase.
     const size_t KB_256 = 256 * 1024;
     g_aws_channel_max_fragment_size = KB_256;
 
@@ -85,6 +96,14 @@ CanaryApp::CanaryApp(CanaryAppOptions &&inOptions, std::vector<CanaryAppChildPro
     m_measureTransferRate = MakeShared<MeasureTransferRate>(g_allocator, *this);
 }
 
+#ifndef WIN32
+CanaryApp::CanaryApp(CanaryAppOptions &&inOptions, std::vector<CanaryAppChildProcess> &&inChildren) noexcept
+    : CanaryApp(std::move(inOptions))
+{
+    children = inChildren;
+}
+#endif
+
 void CanaryApp::WriteToChildProcess(uint32_t index, const char *key, const char *value)
 {
 #ifndef WIN32
@@ -95,6 +114,10 @@ void CanaryApp::WriteToChildProcess(uint32_t index, const char *key, const char 
 
     WriteKeyValueToPipe(key, value, child.writeToChildPipe);
 #else
+    (void)index;
+    (void)key;
+    (void)value;
+
     AWS_FATAL_ASSERT(false);
 #endif
 }
@@ -107,6 +130,9 @@ void CanaryApp::WriteToParentProcess(const char *key, const char *value)
 
     WriteKeyValueToPipe(key, value, m_options.writeToParentPipe);
 #else
+    (void)key;
+    (void)value;
+
     AWS_FATAL_ASSERT(false);
 #endif
 }
@@ -129,6 +155,9 @@ String CanaryApp::ReadFromChildProcess(uint32_t index, const char *key)
 
     return value;
 #else
+    (void)index;
+    (void)key;
+
     AWS_FATAL_ASSERT(false);
     return "";
 #endif
@@ -146,6 +175,7 @@ String CanaryApp::ReadFromParentProcess(const char *key)
 
     return value;
 #else
+    (void)key;
     AWS_FATAL_ASSERT(false);
     return "";
 #endif

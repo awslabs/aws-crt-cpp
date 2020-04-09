@@ -240,7 +240,14 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    CanaryApp canaryApp(std::move(canaryAppOptions), std::move(children));
+    CanaryApp canaryApp(
+        std::move(canaryAppOptions)
+#ifndef WIN32
+            ,
+        std::move(children)
+#endif
+    );
+
     canaryApp.Run();
 
 #ifndef WIN32
