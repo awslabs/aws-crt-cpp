@@ -31,15 +31,17 @@
 
 using namespace Aws::Crt;
 
-const uint32_t S3ObjectTransport::MaxStreams = 500;
-const uint32_t S3ObjectTransport::TransfersPerAddress = 10;
-
-const int32_t S3ObjectTransport::S3GetObjectResponseStatus_PartialContent = 206;
+namespace
+{
+    const uint32_t MaxStreams = 500;
+    const uint32_t TransfersPerAddress = 10;
+    const int32_t S3GetObjectResponseStatus_PartialContent = 206;
+} // namespace
 
 S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::String &bucket)
     : m_canaryApp(canaryApp), m_bucketName(bucket), m_connManagersUseCount(0), m_activeRequestsCount(0),
-      m_uploadProcessor(canaryApp, canaryApp.GetEventLoopGroup(), S3ObjectTransport::MaxStreams),
-      m_downloadProcessor(canaryApp, canaryApp.GetEventLoopGroup(), S3ObjectTransport::MaxStreams)
+      m_uploadProcessor(canaryApp, canaryApp.GetEventLoopGroup(), MaxStreams),
+      m_downloadProcessor(canaryApp, canaryApp.GetEventLoopGroup(), MaxStreams)
 {
     m_endpoint = m_bucketName + ".s3." + m_canaryApp.GetOptions().region.c_str() + ".amazonaws.com";
 
@@ -129,9 +131,11 @@ const String &S3ObjectTransport::GetAddressForTransfer(uint32_t index)
 
 std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> S3ObjectTransport::GetNextConnManager()
 {
-    if(m_connManagers.size() == 0)
+    if (m_connManagers.size() == 0)
     {
-        AWS_LOGF_WARN(AWS_LS_CRT_CPP_CANARY, "No connection managers currently available.  Warming DNS cache and spawning connection managers");
+        AWS_LOGF_WARN(
+            AWS_LS_CRT_CPP_CANARY,
+            "No connection managers currently available.  Warming DNS cache and spawning connection managers");
         WarmDNSCache(1);
         SpawnConnectionManagers();
     }
@@ -147,17 +151,17 @@ void S3ObjectTransport::SeedAddressCache(const String &address)
     m_addressCache.push_back(address);
 }
 
-void S3ObjectTransport::SpawnConnectionManagers()
+void S3ObjectTransport::PurgeConnectionManagers()
 {
     // TODO should have more of a safe guard for people reading from the m_connManagers
     // vector.  For now, we will assume callers are using it correctly.
-    for (size_t i = 0; i < m_connManagers.size(); ++i)
-    {
-        m_connManagerTrashCan.push_back(m_connManagers[i]);
-    }
-
     m_connManagers.clear();
     m_connManagersUseCount = 0;
+}
+
+void S3ObjectTransport::SpawnConnectionManagers()
+{
+    PurgeConnectionManagers();
 
     for (const String &address : m_addressCache)
     {
@@ -229,10 +233,6 @@ void S3ObjectTransport::MakeSignedRequest(
 
                 if (connErrorCode == AWS_ERROR_SUCCESS)
                 {
-                    // Aws::Crt::String resolvedHost = conn->GetResolvedHost();
-                    // AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Resolved host is: %s", resolvedHost.c_str());
-                    // m_uniqueEndpointsUsed.insert(std::move(resolvedHost));
-
                     MakeSignedRequest_SendRequest(conn, requestOptions, signedRequest);
                 }
 
@@ -245,7 +245,7 @@ void S3ObjectTransport::MakeSignedRequest(
 }
 
 void S3ObjectTransport::MakeSignedRequest_SendRequest(
-    const std::shared_ptr<Http::HttpClientConnection> &conn,
+    const std::shared_ptr<Http::HttpClientConnection> & conn,
     const Http::HttpRequestOptions &requestOptions,
     const std::shared_ptr<Http::HttpRequest> &signedRequest)
 {
@@ -260,13 +260,14 @@ void S3ObjectTransport::MakeSignedRequest_SendRequest(
     // pointers alive until the stream is finished.  Tasks can be scheduled that rely on these things
     // being alive which can cause crashes when they aren't around.
     requestOptionsToSend.onStreamComplete =
-        [this, conn, requestOptions, signedRequest](Http::HttpStream &stream, int errorCode) {
+        [this, conn, signedRequest, requestOptions](Http::HttpStream &stream, int errorCode) {
+
+            --m_activeRequestsCount;
+
             if (requestOptions.onStreamComplete != nullptr)
             {
                 requestOptions.onStreamComplete(stream, errorCode);
             }
-
-            --m_activeRequestsCount;
         };
 
     std::shared_ptr<Http::HttpClientStream> clientStream = conn->NewClientStream(requestOptionsToSend);
@@ -282,7 +283,7 @@ void S3ObjectTransport::MakeSignedRequest_SendRequest(
 }
 
 void S3ObjectTransport::AddContentLengthHeader(
-    std::shared_ptr<Http::HttpRequest> request,
+    const std::shared_ptr<Http::HttpRequest> &request,
     const std::shared_ptr<Aws::Crt::Io::InputStream> &body)
 {
     Http::HttpHeader contentLength;
@@ -557,6 +558,8 @@ void S3ObjectTransport::UploadPart(
 
     String keyPathStr = keyPathStream.str();
 
+    transferState->AddDataUpMetric(0LL);
+
     PutObject(
         keyPathStr,
         partInputStream,
@@ -584,9 +587,9 @@ void S3ObjectTransport::UploadPart(
 
                 partFinished(PartFinishResponse::Done);
 
-                transferState->FlushDataUpMetrics();
-
                 m_canaryApp.GetMetricsPublisher()->AddTransferStatusDataPoint(true);
+
+                transferState->FlushDataUpMetrics();
 
                 AWS_LOGF_INFO(
                     AWS_LS_CRT_CPP_CANARY,
@@ -621,6 +624,8 @@ void S3ObjectTransport::GetPart(
     const ReceivePartCallback &receiveObjectPartData,
     const MultipartTransferState::PartFinishedCallback &partFinished)
 {
+    transferState->AddDataDownMetric(0LL);
+
     GetObject(
         downloadState->GetKey(),
         transferState->GetPartNumber(),

@@ -49,8 +49,6 @@ class MultipartTransferProcessor
     void RepushQueue(const std::shared_ptr<MultipartTransferState> &state, uint32_t partIndex);
 
   private:
-    static const uint32_t NumPartsPerTask;
-
     struct QueuedPart
     {
         std::shared_ptr<MultipartTransferState> state;

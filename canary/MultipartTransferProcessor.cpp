@@ -32,7 +32,10 @@
 
 using namespace Aws::Crt;
 
-const uint32_t MultipartTransferProcessor::NumPartsPerTask = 100;
+namespace
+{
+    const uint32_t NumPartsPerTask = 100;
+}
 
 MultipartTransferProcessor::ProcessPartRangeTaskArgs::ProcessPartRangeTaskArgs(
     MultipartTransferProcessor &inTransferProcessor,
