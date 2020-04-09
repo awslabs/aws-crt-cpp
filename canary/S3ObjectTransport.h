@@ -115,6 +115,8 @@ class S3ObjectTransport
 
     std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> GetNextConnManager();
 
+    void EmitS3AddressCountMetric(uint32_t addressCount);
+
     void MakeSignedRequest(
         const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
         const Aws::Crt::Http::HttpRequestOptions &requestOptions,
@@ -126,7 +128,7 @@ class S3ObjectTransport
         const std::shared_ptr<Aws::Crt::Http::HttpRequest> &signedRequest);
 
     void AddContentLengthHeader(
-        const std::shared_ptr<Aws::Crt::Http::HttpRequest> & request,
+        const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
         const std::shared_ptr<Aws::Crt::Io::InputStream> &body);
 
     void UploadPart(

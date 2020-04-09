@@ -41,7 +41,6 @@ class MeasureTransferRate
 
     CanaryApp &m_canaryApp;
     aws_event_loop *m_schedulingLoop;
-    aws_task m_pulseMetricsTask;
 
     void PerformMeasurement(
         const char *filenamePrefix,
@@ -52,8 +51,4 @@ class MeasureTransferRate
         uint32_t flags,
         const std::shared_ptr<S3ObjectTransport> &transport,
         TransferFunction &&transferFunction);
-
-    void SchedulePulseMetrics();
-
-    static void s_PulseMetricsTask(aws_task *task, void *arg, aws_task_status status);
 };

@@ -57,6 +57,14 @@ size_t S3ObjectTransport::GetOpenConnectionCount()
     return m_activeRequestsCount;
 }
 
+void S3ObjectTransport::EmitS3AddressCountMetric(uint32_t addressCount)
+{
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Emitting S3 Address Count Metric: %d", addressCount);
+
+    Metric s3AddressCountMetric(MetricName::S3AddressCount, MetricUnit::Count, (double)addressCount);
+    m_canaryApp.GetMetricsPublisher()->AddDataPoint(s3AddressCountMetric);
+}
+
 void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
 {
     uint32_t desiredNumberOfAddresses = numTransfers / TransfersPerAddress;
@@ -78,12 +86,16 @@ void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
     uint32_t numAddresses =
         m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(m_endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
 
+    EmitS3AddressCountMetric(numAddresses);
+
     while (numAddresses < desiredNumberOfAddresses)
     {
         std::this_thread::sleep_for(std::chrono::seconds(1));
 
         numAddresses = m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(
             m_endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
+
+        EmitS3AddressCountMetric(numAddresses);
     }
 
     m_addressCache.clear();
@@ -153,8 +165,6 @@ void S3ObjectTransport::SeedAddressCache(const String &address)
 
 void S3ObjectTransport::PurgeConnectionManagers()
 {
-    // TODO should have more of a safe guard for people reading from the m_connManagers
-    // vector.  For now, we will assume callers are using it correctly.
     m_connManagers.clear();
     m_connManagersUseCount = 0;
 }
@@ -245,7 +255,7 @@ void S3ObjectTransport::MakeSignedRequest(
 }
 
 void S3ObjectTransport::MakeSignedRequest_SendRequest(
-    const std::shared_ptr<Http::HttpClientConnection> & conn,
+    const std::shared_ptr<Http::HttpClientConnection> &conn,
     const Http::HttpRequestOptions &requestOptions,
     const std::shared_ptr<Http::HttpRequest> &signedRequest)
 {
@@ -261,7 +271,6 @@ void S3ObjectTransport::MakeSignedRequest_SendRequest(
     // being alive which can cause crashes when they aren't around.
     requestOptionsToSend.onStreamComplete =
         [this, conn, signedRequest, requestOptions](Http::HttpStream &stream, int errorCode) {
-
             --m_activeRequestsCount;
 
             if (requestOptions.onStreamComplete != nullptr)

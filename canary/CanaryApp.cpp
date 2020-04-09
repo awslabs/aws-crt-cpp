@@ -127,7 +127,7 @@ CanaryApp::CanaryApp(CanaryAppOptions &&inOptions, std::vector<CanaryAppChildPro
 void CanaryApp::WriteToChildProcess(uint32_t index, const char *key, const char *value)
 {
 #ifndef WIN32
-    const CanaryAppChildProcess &child = children[index]; // TODO bounds fatal assert?
+    const CanaryAppChildProcess &child = children[index];
 
     AWS_LOGF_INFO(
         AWS_LS_CRT_CPP_CANARY, "Writing %s:%s to child %d through pipe %d", key, value, index, child.writeToChildPipe);

@@ -59,8 +59,7 @@ enum class MetricName
     BytesDown,
     NumConnections,
     BytesAllocated,
-    S3UploadAddressCount,
-    S3DownloadAddressCount,
+    S3AddressCount,
     SuccessfulTransfer,
     FailedTransfer,
     AvgEventLoopGroupTickElapsed,
@@ -79,6 +78,11 @@ enum class MetricTransferType
     None,
     SinglePart,
     MultiPart,
+};
+
+enum class UploadBackupOptions
+{
+    PrintPath = 0x00000001
 };
 
 struct MetricKey
@@ -143,14 +147,9 @@ class MetricsPublisher
      */
     void SetMetricTransferType(MetricTransferType transferType);
 
-    void SchedulePublish();
+    void FlushMetrics();
 
-    /**
-     * Wait until all queued metrics have been published.
-     */
-    void WaitForLastPublish();
-
-    Aws::Crt::String UploadBackup();
+    Aws::Crt::String UploadBackup(uint32_t options);
 
     void RehydrateBackup(const char *s3Path);
 
@@ -167,6 +166,10 @@ class MetricsPublisher
     Aws::Crt::String GetToolName() const;
     Aws::Crt::String GetInstanceType() const;
     bool IsSendingEncrypted() const;
+
+    void SchedulePublish();
+
+    void WaitForLastPublish();
 
     void WriteToBackup(const Aws::Crt::Vector<Metric> &metrics);
 

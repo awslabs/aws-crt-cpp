@@ -34,41 +34,38 @@ namespace
 {
     const char *S3BackupBucket = "aws-crt-canary-bucket";
 
-    const char *MetricUnitStr[] = {
-        "Seconds",
-        "Microseconds",
-        "Milliseconds",
-        "Bytes",
-        "Kilobytes",
-        "Megabytes",
-        "Gigabytes",
-        "Terabytes",
-        "Bits",
-        "Kilobits",
-        "Gigabits",
-        "Terabits",
-        "Percent",
-        "Count",
-        "Bytes%2FSecond",
-        "Kilobytes%2FSecond",
-        "Megabytes%2FSecond",
-        "Gigabytes%2FSecond",
-        "Terabytes%2FSecond",
-        "Bits%2FSecond",
-        "Kilobits%2FSecond",
-        "Megabits%2FSecond",
-        "Gigabits%2FSecond",
-        "Terabits%2FSecond",
-        "Counts%2FSecond",
-        "None",
-    };
+    const char *MetricUnitStr[] = {"Seconds",
+                                   "Microseconds",
+                                   "Milliseconds",
+                                   "Bytes",
+                                   "Kilobytes",
+                                   "Megabytes",
+                                   "Gigabytes",
+                                   "Terabytes",
+                                   "Bits",
+                                   "Kilobits",
+                                   "Gigabits",
+                                   "Terabits",
+                                   "Percent",
+                                   "Count",
+                                   "Bytes%2FSecond",
+                                   "Kilobytes%2FSecond",
+                                   "Megabytes%2FSecond",
+                                   "Gigabytes%2FSecond",
+                                   "Terabytes%2FSecond",
+                                   "Bits%2FSecond",
+                                   "Kilobits%2FSecond",
+                                   "Megabits%2FSecond",
+                                   "Gigabits%2FSecond",
+                                   "Terabits%2FSecond",
+                                   "Counts%2FSecond",
+                                   "None"};
 
     const char *MetricNameStr[] = {"BytesUp",
                                    "BytesDown",
                                    "NumConnections",
                                    "BytesAllocated",
-                                   "S3UploadAddressCount",
-                                   "S3DownloadAddressCount",
+                                   "S3AddressCount",
                                    "SuccessfulTransfer",
                                    "FailedTransfer",
                                    "AvgEventLoopGroupTickElapsed",
@@ -252,6 +249,14 @@ bool MetricsPublisher::IsSendingEncrypted() const
                                                : m_canaryApp.GetOptions().sendEncrypted;
 }
 
+void MetricsPublisher::FlushMetrics()
+{
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
+    m_canaryApp.GetMetricsPublisher()->SchedulePublish();
+    m_canaryApp.GetMetricsPublisher()->WaitForLastPublish();
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
+}
+
 void MetricsPublisher::SchedulePublish()
 {
     uint64_t now = 0;
@@ -329,8 +334,10 @@ void MetricsPublisher::WriteToBackup(const Vector<Metric> &metrics)
     }
 }
 
-String MetricsPublisher::UploadBackup()
+String MetricsPublisher::UploadBackup(uint32_t options)
 {
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup...");
+
     std::shared_ptr<S3ObjectTransport> transport =
         MakeShared<S3ObjectTransport>(g_allocator, m_canaryApp, S3BackupBucket);
 
@@ -343,9 +350,11 @@ String MetricsPublisher::UploadBackup()
     String instanceType = GetInstanceType();
     bool encrypted = IsSendingEncrypted();
 
-    StringStream s3BackupPath;
+    String s3BackupPath;
 
     {
+        StringStream s3BackupPathStream;
+
         uint64_t currentTicks = 0;
         aws_sys_clock_get_ticks(&currentTicks);
         uint64_t timestampNow = aws_timestamp_convert(currentTicks, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, NULL);
@@ -365,8 +374,10 @@ String MetricsPublisher::UploadBackup()
             }
         }
 
-        s3BackupPath << toolName << "/" << platformName << "/" << instanceType << "/" << dateStr << "-" << currentTicks
-                     << ".json";
+        s3BackupPathStream << toolName << "/" << platformName << "/" << instanceType << "/" << dateStr << "-"
+                           << currentTicks << ".json";
+
+        s3BackupPath = s3BackupPathStream.str();
     }
 
     *backupContents << tabs << "{" << std::endl;
@@ -423,7 +434,7 @@ String MetricsPublisher::UploadBackup()
         MakeShared<Io::StdIOStreamInputStream>(g_allocator, backupContents);
 
     transport->PutObject(
-        s3BackupPath.str(),
+        s3BackupPath,
         inputStream,
         0,
         [&signalMutex, &signalVal, &signal](int32_t errorCode, std::shared_ptr<Aws::Crt::String>) {
@@ -438,7 +449,14 @@ String MetricsPublisher::UploadBackup()
     std::unique_lock<std::mutex> lock(signalMutex);
     signal.wait(lock, [&signalVal]() { return signalVal; });
 
-    return s3BackupPath.str();
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup finished.");
+
+    if ((options & (uint32_t)UploadBackupOptions::PrintPath) != 0)
+    {
+        std::cout << "Path of back up is: " << s3BackupPath << std::endl;
+    }
+
+    return s3BackupPath;
 }
 
 void MetricsPublisher::RehydrateBackup(const char *s3Path)
@@ -651,7 +669,7 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
 
     AWS_LOGF_INFO(
         AWS_LS_CRT_CPP_CANARY,
-        "METRICS - Processing %d metrics,  %d left.",
+        "Processing %d metrics, %d left.",
         (uint32_t)metricsSlice.size(),
         (uint32_t)publisher->m_publishDataTaskCopy.size());
 
@@ -692,47 +710,46 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
         [bodyStream, publisher](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &signedRequest, int signingError) {
             if (signingError == AWS_OP_SUCCESS)
             {
-                publisher->m_connManager->AcquireConnection([publisher, signedRequest](
-                                                                std::shared_ptr<Http::HttpClientConnection> conn,
-                                                                int connError) {
-                    if (connError == AWS_OP_SUCCESS)
-                    {
-                        Http::HttpRequestOptions requestOptions;
-                        AWS_ZERO_STRUCT(requestOptions);
-                        requestOptions.request = signedRequest.get();
-                        requestOptions.onStreamComplete = [signedRequest, conn](Http::HttpStream &stream, int) {
-                            if (stream.GetResponseStatusCode() != 200)
-                            {
-                                AWS_LOGF_ERROR(
-                                    AWS_LS_CRT_CPP_CANARY,
-                                    "METRICS Error in metrics stream complete: %d",
-                                    stream.GetResponseStatusCode());
-                            }
-                        };
-                        std::shared_ptr<Http::HttpClientStream> clientStream = conn->NewClientStream(requestOptions);
-
-                        if (clientStream == nullptr)
+                publisher->m_connManager->AcquireConnection(
+                    [publisher, signedRequest](std::shared_ptr<Http::HttpClientConnection> conn, int connError) {
+                        if (connError == AWS_OP_SUCCESS)
                         {
-                            AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "METRICS Error creating stream to publish metrics.");
+                            Http::HttpRequestOptions requestOptions;
+                            AWS_ZERO_STRUCT(requestOptions);
+                            requestOptions.request = signedRequest.get();
+                            requestOptions.onStreamComplete = [signedRequest, conn](Http::HttpStream &stream, int) {
+                                if (stream.GetResponseStatusCode() != 200)
+                                {
+                                    AWS_LOGF_ERROR(
+                                        AWS_LS_CRT_CPP_CANARY,
+                                        "Error in metrics stream complete: %d",
+                                        stream.GetResponseStatusCode());
+                                }
+                            };
+                            std::shared_ptr<Http::HttpClientStream> clientStream =
+                                conn->NewClientStream(requestOptions);
+
+                            if (clientStream == nullptr)
+                            {
+                                AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Error creating stream to publish metrics.");
+                            }
+                            else
+                            {
+                                clientStream->Activate();
+                            }
                         }
                         else
                         {
-                            clientStream->Activate();
+                            AWS_LOGF_ERROR(
+                                AWS_LS_CRT_CPP_CANARY, "Error acquiring connection to send metrics: %d", connError);
                         }
-                    }
-                    else
-                    {
-                        AWS_LOGF_ERROR(
-                            AWS_LS_CRT_CPP_CANARY, "METRICS Error acquiring connection to send metrics: %d", connError);
-                    }
 
-                    publisher->SchedulePublish();
-                });
+                        publisher->SchedulePublish();
+                    });
             }
             else
             {
-                AWS_LOGF_ERROR(
-                    AWS_LS_CRT_CPP_CANARY, "METRICS Error signing request for sending metric: %d", signingError);
+                AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Error signing request for sending metric: %d", signingError);
             }
         });
 }

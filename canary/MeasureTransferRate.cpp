@@ -28,17 +28,6 @@ namespace
 MeasureTransferRate::MeasureTransferRate(CanaryApp &canaryApp) : m_canaryApp(canaryApp)
 {
     m_schedulingLoop = aws_event_loop_group_get_next_loop(canaryApp.GetEventLoopGroup().GetUnderlyingHandle());
-
-    aws_task_init(
-        &m_pulseMetricsTask,
-        MeasureTransferRate::s_PulseMetricsTask,
-        reinterpret_cast<void *>(this),
-        "MeasureTransferRate");
-
-    if (!canaryApp.GetOptions().isChildProcess)
-    {
-        SchedulePulseMetrics();
-    }
 }
 
 MeasureTransferRate::~MeasureTransferRate() {}
@@ -288,16 +277,8 @@ void MeasureTransferRate::MeasureHttpTransfer()
             });
         });
 
-    aws_event_loop_cancel_task(m_schedulingLoop, &m_pulseMetricsTask);
-
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
-    m_canaryApp.GetMetricsPublisher()->SchedulePublish();
-    m_canaryApp.GetMetricsPublisher()->WaitForLastPublish();
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
-
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup...");
-    m_canaryApp.GetMetricsPublisher()->UploadBackup();
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup finished.");
+    m_canaryApp.GetMetricsPublisher()->FlushMetrics();
+    m_canaryApp.GetMetricsPublisher()->UploadBackup((uint32_t)UploadBackupOptions::PrintPath);
 }
 
 void MeasureTransferRate::MeasureSinglePartObjectTransfer()
@@ -356,10 +337,7 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
             uploads[i]->FlushDataUpMetrics();
         }
 
-        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
-        m_canaryApp.GetMetricsPublisher()->SchedulePublish();
-        m_canaryApp.GetMetricsPublisher()->WaitForLastPublish();
-        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
+        m_canaryApp.GetMetricsPublisher()->FlushMetrics();
     }
 
     for (uint32_t i = 0; i < m_canaryApp.GetOptions().numDownTransfers; ++i)
@@ -405,15 +383,8 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
         downloads[i]->FlushDataDownMetrics();
     }
 
-    aws_event_loop_cancel_task(m_schedulingLoop, &m_pulseMetricsTask);
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
-    m_canaryApp.GetMetricsPublisher()->SchedulePublish();
-    m_canaryApp.GetMetricsPublisher()->WaitForLastPublish();
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
-
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup...");
-    m_canaryApp.GetMetricsPublisher()->UploadBackup();
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup finished.");
+    m_canaryApp.GetMetricsPublisher()->FlushMetrics();
+    m_canaryApp.GetMetricsPublisher()->UploadBackup((uint32_t)UploadBackupOptions::PrintPath);
 }
 
 void MeasureTransferRate::MeasureMultiPartObjectTransfer()
@@ -457,10 +428,7 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
                     });
             });
 
-        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
-        m_canaryApp.GetMetricsPublisher()->SchedulePublish();
-        m_canaryApp.GetMetricsPublisher()->WaitForLastPublish();
-        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
+        m_canaryApp.GetMetricsPublisher()->FlushMetrics();
     }
 
     PerformMeasurement(
@@ -492,151 +460,6 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
                 });
         });
 
-    aws_event_loop_cancel_task(m_schedulingLoop, &m_pulseMetricsTask);
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Flushing metrics...");
-    m_canaryApp.GetMetricsPublisher()->SchedulePublish();
-    m_canaryApp.GetMetricsPublisher()->WaitForLastPublish();
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
-
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup...");
-    m_canaryApp.GetMetricsPublisher()->UploadBackup();
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup finished.");
-}
-
-void MeasureTransferRate::SchedulePulseMetrics()
-{
-    uint64_t now = 0;
-    aws_event_loop_current_clock_time(m_schedulingLoop, &now);
-    aws_event_loop_schedule_task_future(m_schedulingLoop, &m_pulseMetricsTask, now + AllocationMetricFrequencyNS);
-}
-
-void MeasureTransferRate::s_PulseMetricsTask(aws_task *task, void *arg, aws_task_status status)
-{
-    (void)task;
-
-    if (status != AWS_TASK_STATUS_RUN_READY)
-    {
-        return;
-    }
-
-    MeasureTransferRate *measureTransferRate = reinterpret_cast<MeasureTransferRate *>(arg);
-    CanaryApp &canaryApp = measureTransferRate->m_canaryApp;
-    std::shared_ptr<MetricsPublisher> publisher = canaryApp.GetMetricsPublisher();
-
-    /*
-    Allocator *traceAllocator = canaryApp.GetTraceAllocator();
-
-    Metric memMetric;
-    memMetric.Unit = MetricUnit::Bytes;
-    memMetric.Value = (double)aws_mem_tracer_bytes(traceAllocator);
-    memMetric.SetTimestampNow();
-    memMetric.Name = MetricName::BytesAllocated;
-    publisher->AddDataPoint(memMetric);
-
-    AWS_LOGF_DEBUG(AWS_LS_CRT_CPP_CANARY, "Emitting BytesAllocated Metric %" PRId64, (uint64_t)memMetric.Value);
-    */
-
-    {
-        const Aws::Crt::String &s3Endpoint = canaryApp.GetUploadTransport()->GetEndpoint();
-
-        size_t s3AddressCount = canaryApp.GetDefaultHostResolver().GetHostAddressCount(
-            s3Endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
-
-        Metric s3AddressCountMetric(MetricName::S3UploadAddressCount, MetricUnit::Count, (double)s3AddressCount);
-
-        publisher->AddDataPoint(s3AddressCountMetric);
-
-        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Number-of-upload-s3-addresses:%d", (uint32_t)s3AddressCount);
-    }
-
-    {
-        const Aws::Crt::String &s3Endpoint = canaryApp.GetDownloadTransport()->GetEndpoint();
-
-        size_t s3AddressCount = canaryApp.GetDefaultHostResolver().GetHostAddressCount(
-            s3Endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
-
-        Metric s3AddressCountMetric(MetricName::S3DownloadAddressCount, MetricUnit::Count, (double)s3AddressCount);
-
-        publisher->AddDataPoint(s3AddressCountMetric);
-
-        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Number-of-download-s3-addresses:%d", (uint32_t)s3AddressCount);
-    }
-
-    /*
-    {
-        aws_event_loop_group *eventLoopGroup = canaryApp.GetEventLoopGroup().GetUnderlyingHandle();
-        size_t numEventLoops = aws_array_list_length(&eventLoopGroup->event_loops);
-
-        size_t totalTickElapsedTimeMS = 0;
-        size_t totalTaskRunElapsedTimeMS = 0;
-        size_t totalIOSubs = 0;
-        size_t minTickElapsedTimeMS = 0;
-        size_t minTaskRunElapsedTimeMS = 0;
-        size_t maxTickElapsedTimeMS = 0;
-        size_t maxTaskRunElapsedTimeMS = 0;
-
-        for (size_t i = 0; i < numEventLoops; ++i)
-        {
-            aws_event_loop *eventLoop = nullptr;
-            aws_array_list_get_at(&eventLoopGroup->event_loops, (void *)&eventLoop, i);
-
-            size_t tickElapsedTimeNS = aws_atomic_load_int(&eventLoop->tick_elapsed_time);
-            size_t taskRunElapsedTimeNS = aws_atomic_load_int(&eventLoop->task_elapsed_time);
-            size_t numIOSubs = aws_atomic_load_int(&eventLoop->num_io_subscriptions);
-
-            size_t tickElapsedTimeMS =
-                aws_timestamp_convert(tickElapsedTimeNS, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, nullptr);
-            size_t taskRunElapsedTimeMS =
-                aws_timestamp_convert(taskRunElapsedTimeNS, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, nullptr);
-
-            if (i == 0)
-            {
-                minTickElapsedTimeMS = tickElapsedTimeMS;
-                minTaskRunElapsedTimeMS = taskRunElapsedTimeMS;
-                maxTickElapsedTimeMS = tickElapsedTimeMS;
-                maxTaskRunElapsedTimeMS = taskRunElapsedTimeMS;
-            }
-            else
-            {
-                minTickElapsedTimeMS = std::min(minTickElapsedTimeMS, tickElapsedTimeMS);
-                minTaskRunElapsedTimeMS = std::min(minTaskRunElapsedTimeMS, taskRunElapsedTimeMS);
-                maxTickElapsedTimeMS = std::max(maxTickElapsedTimeMS, tickElapsedTimeMS);
-                maxTaskRunElapsedTimeMS = std::max(maxTaskRunElapsedTimeMS, taskRunElapsedTimeMS);
-            }
-
-            totalTickElapsedTimeMS += tickElapsedTimeMS;
-            totalTaskRunElapsedTimeMS += taskRunElapsedTimeMS;
-            totalIOSubs += numIOSubs;
-        }
-
-        Metric avgEventLoopGroupTickElapsed(
-            MetricName::AvgEventLoopGroupTickElapsed,
-            MetricUnit::Milliseconds,
-            (double)totalTickElapsedTimeMS / (double)numEventLoops);
-        Metric avgEventLoopGroupTaskRunElapsed(
-            MetricName::AvgEventLoopTaskRunElapsed,
-            MetricUnit::Milliseconds,
-            (double)totalTaskRunElapsedTimeMS / (double)numEventLoops);
-        Metric minEventLoopGroupTickElapsed(
-            MetricName::MinEventLoopGroupTickElapsed, MetricUnit::Milliseconds, (double)minTickElapsedTimeMS);
-        Metric minEventLoopGroupTaskRunElapsed(
-            MetricName::MinEventLoopTaskRunElapsed, MetricUnit::Milliseconds, (double)minTaskRunElapsedTimeMS);
-        Metric maxEventLoopGroupTickElapsed(
-            MetricName::MaxEventLoopGroupTickElapsed, MetricUnit::Milliseconds, (double)maxTickElapsedTimeMS);
-        Metric maxEventLoopGroupTaskRunElapsed(
-            MetricName::MaxEventLoopTaskRunElapsed, MetricUnit::Milliseconds, (double)maxTaskRunElapsedTimeMS);
-
-        Metric numIOSubs(MetricName::NumIOSubs, MetricUnit::Count, (double)totalIOSubs);
-
-        publisher->AddDataPoint(avgEventLoopGroupTickElapsed);
-        publisher->AddDataPoint(avgEventLoopGroupTaskRunElapsed);
-        publisher->AddDataPoint(minEventLoopGroupTickElapsed);
-        publisher->AddDataPoint(minEventLoopGroupTaskRunElapsed);
-        publisher->AddDataPoint(maxEventLoopGroupTickElapsed);
-        publisher->AddDataPoint(maxEventLoopGroupTaskRunElapsed);
-        publisher->AddDataPoint(numIOSubs);
-    }
-    */
-
-    measureTransferRate->SchedulePulseMetrics();
+    m_canaryApp.GetMetricsPublisher()->FlushMetrics();
+    m_canaryApp.GetMetricsPublisher()->UploadBackup((uint32_t)UploadBackupOptions::PrintPath);
 }
