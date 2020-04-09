@@ -129,6 +129,13 @@ const String &S3ObjectTransport::GetAddressForTransfer(uint32_t index)
 
 std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> S3ObjectTransport::GetNextConnManager()
 {
+    if(m_connManagers.size() == 0)
+    {
+        AWS_LOGF_WARN(AWS_LS_CRT_CPP_CANARY, "No connection managers currently available.  Warming DNS cache and spawning connection managers");
+        WarmDNSCache(1);
+        SpawnConnectionManagers();
+    }
+
     uint32_t index = ((m_connManagersUseCount.fetch_add(1) + 1) / TransfersPerAddress) % m_connManagers.size();
     return m_connManagers[index];
 }
@@ -700,7 +707,7 @@ void S3ObjectTransport::CreateMultipartUpload(
         }
 
         size_t uploadIdStart = uploadIdOpenIndex + uploadIdOpenTag.length();
-        size_t uploadIdLength = (uploadIdCloseIndex - 1) - uploadIdStart;
+        size_t uploadIdLength = uploadIdCloseIndex - uploadIdStart;
 
         *uploadId = dataString.substr(uploadIdStart, uploadIdLength);
     };

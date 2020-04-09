@@ -276,7 +276,7 @@ void MetricsPublisher::PreparePayload(StringStream &bodyStream, const Vector<Met
     String instanceType = GetInstanceType();
     bool encrypted = IsSendingEncrypted();
 
-    size_t metricCount = 0;
+    size_t metricCount = 1;
 
     for (const Metric &metric : metrics)
     {
@@ -353,6 +353,15 @@ void MetricsPublisher::UploadBackup()
         DateTime metricDateTime(timestampNow);
         metricDateTime.ToGmtString(DateFormat::ISO_8601, dateBuf);
         String dateStr((char *)dateBuf.buffer, dateBuf.len);
+
+        for(size_t i = 0; i < dateStr.length(); ++i)
+        {
+            if(dateStr[i] == ':')
+            {
+                dateStr[i] = '-';
+            }
+        }
+
         s3BackupPath << toolName << "/" << platformName << "/" << instanceType << "/" << dateStr << "-" << currentTicks
                      << ".json";
     }
