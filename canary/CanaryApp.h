@@ -51,22 +51,27 @@ struct CanaryAppOptions
     uint32_t isChildProcess : 1;
 };
 
+#ifndef WIN32
 struct CanaryAppChildProcess
 {
     CanaryAppChildProcess() noexcept;
     CanaryAppChildProcess(pid_t pid, int32_t readPipe, int32_t writePipe) noexcept;
-
     pid_t pid;
+
     int32_t readFromChildPipe;
     int32_t writeToChildPipe;
 
     std::map<Aws::Crt::String, Aws::Crt::String> valuesFromChild;
 };
+#endif
 
 class CanaryApp
 {
   public:
+    CanaryApp(CanaryAppOptions &&options) noexcept;
+#ifndef WIN32
     CanaryApp(CanaryAppOptions &&options, std::vector<CanaryAppChildProcess> &&children) noexcept;
+#endif
 
     void Run();
 
