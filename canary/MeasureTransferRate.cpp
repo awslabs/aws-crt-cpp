@@ -389,13 +389,13 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
 
 void MeasureTransferRate::MeasureMultiPartObjectTransfer()
 {
-    const char *filenamePrefix = "crt-canary-obj-large-";
+    const char *filenamePrefix = "crt-canary-obj-multipart-";
 
     if (!m_canaryApp.GetOptions().downloadOnly)
     {
         PerformMeasurement(
             filenamePrefix,
-            "largeObjectUp-",
+            "multiPartObjectUp-",
             m_canaryApp.GetOptions().numUpTransfers,
             m_canaryApp.GetOptions().numUpConcurrentTransfers,
             MultiPartObjectSize,
@@ -433,7 +433,7 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
 
     PerformMeasurement(
         filenamePrefix,
-        "largeObjectDown-",
+        "multiPartObjectDown-",
         m_canaryApp.GetOptions().numDownTransfers,
         m_canaryApp.GetOptions().numDownConcurrentTransfers,
         MultiPartObjectSize,
