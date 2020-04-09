@@ -16,7 +16,7 @@ struct CanaryAppOptions
 {
     CanaryAppOptions() noexcept;
 
-    // TODO these are currently std::strings due to fork mode needing
+    // These are currently std::strings due to fork mode needing
     // to fork before the apiHandle is ready, otherwise systems may not
     // be set up correctly in that subprocess.  Trying to use Aws::Crt::Strings
     // before the ApiHandle is ready has awkward side effects with g_allocator
