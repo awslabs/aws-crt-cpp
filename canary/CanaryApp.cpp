@@ -66,12 +66,19 @@ int filterLog(
     return AWS_OP_SUCCESS;
 }
 
+namespace
+{
+    const char *MetricNamespace = "CRT-CPP-Canary-V2";
+    const char *DefaultBucket = "aws-crt-canary-bucket";
+} // namespace
+
 CanaryAppOptions::CanaryAppOptions() noexcept
     : platformName(CanaryUtil::GetPlatformName()), toolName("NA"), instanceType("unknown"), region("us-west-2"),
       readFromParentPipe(-1), writeToParentPipe(-1), numUpTransfers(1), numUpConcurrentTransfers(0),
       numDownTransfers(1), numDownConcurrentTransfers(0), childProcessIndex(0), measureSinglePartTransfer(false),
       measureMultiPartTransfer(false), measureHttpTransfer(false), usingNumaControl(false), downloadOnly(false),
-      sendEncrypted(false), loggingEnabled(false), rehydrateBackup(false), isParentProcess(false), isChildProcess(false)
+      sendEncrypted(false), loggingEnabled(false), rehydrateBackup(false), forkModeEnabled(false),
+      isParentProcess(false), isChildProcess(false)
 {
 }
 
@@ -118,9 +125,12 @@ CanaryApp::CanaryApp(CanaryAppOptions &&inOptions, std::vector<CanaryAppChildPro
     Io::TlsContextOptions tlsContextOptions = Io::TlsContextOptions::InitDefaultClient(g_allocator);
     m_tlsContext = Io::TlsContext(tlsContextOptions, Io::TlsMode::CLIENT, g_allocator);
 
-    m_publisher = MakeShared<MetricsPublisher>(g_allocator, *this, "CRT-CPP-Canary-V2");
-    m_uploadTransport = MakeShared<S3ObjectTransport>(g_allocator, *this, "aws-crt-canary-bucket");
-    m_downloadTransport = MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.downloadBucketName.c_str());
+    const char *downloadBucket =
+        m_options.downloadBucketName.length() > 0 ? m_options.downloadBucketName.c_str() : DefaultBucket;
+
+    m_publisher = MakeShared<MetricsPublisher>(g_allocator, *this, MetricNamespace);
+    m_uploadTransport = MakeShared<S3ObjectTransport>(g_allocator, *this, DefaultBucket);
+    m_downloadTransport = MakeShared<S3ObjectTransport>(g_allocator, *this, downloadBucket);
     m_measureTransferRate = MakeShared<MeasureTransferRate>(g_allocator, *this);
 }
 

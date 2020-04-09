@@ -121,7 +121,6 @@ int main(int argc, char *argv[])
     }
 
     int cliOptionIndex = 0;
-    bool forkProcesses = false;
 
     while (aws_cli_getopt_long(argc, argv, optstring, options, &cliOptionIndex) != -1)
     {
@@ -151,7 +150,7 @@ int main(int argc, char *argv[])
                 break;
             case CLIOption::Fork:
 #ifndef WIN32
-                forkProcesses = true;
+                canaryAppOptions.forkModeEnabled = true;
 #else
                 AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Fork mode not supported on Windows.");
 #endif
@@ -190,7 +189,7 @@ int main(int argc, char *argv[])
     std::vector<CanaryAppChildProcess> children;
 
 #ifndef WIN32
-    if (forkProcesses)
+    if (canaryAppOptions.forkModeEnabled)
     {
         canaryAppOptions.isParentProcess = true;
 
@@ -245,7 +244,7 @@ int main(int argc, char *argv[])
     canaryApp.Run();
 
 #ifndef WIN32
-    if (forkProcesses && canaryApp.GetOptions().isParentProcess)
+    if (canaryApp.GetOptions().forkModeEnabled && canaryApp.GetOptions().isParentProcess)
     {
         bool waitingForChildren = true;
 

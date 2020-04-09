@@ -336,6 +336,12 @@ void MetricsPublisher::WriteToBackup(const Vector<Metric> &metrics)
 
 String MetricsPublisher::UploadBackup(uint32_t options)
 {
+    if (m_canaryApp.GetOptions().forkModeEnabled)
+    {
+        AWS_LOGF_WARN(AWS_LS_CRT_CPP_CANARY, "Metric backups not currently supported in fork mode.");
+        return String();
+    }
+
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup...");
 
     std::shared_ptr<S3ObjectTransport> transport =
@@ -542,10 +548,10 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
         << "~(id~'m1~visible~false))~(~'.~'BytesUp~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~(id~'m2~visible~false))~(~'.~'"
            "NumConnections~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~(id~'m3~visible~false))~(~'.~'FailedTransfer~'.~'.~'.~'."
            "~'.~'.~'.~'.~'.~'.~'.~'.~(id~'m4~visible~false))~(~'.~'SuccessfulTransfer~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~"
-           "'.~(id~'m5~visible~false))~(~'.~'S3UploadAddressCount~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~(id~'m6~visible~"
-           "false))~(~'.~'S3DownloadAddressCount~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~(id~'m7~visible~false)))~view~'"
-           "timeSeries~stacked~false~region~'us-west-2~stat~'Sum~period~1~title~'Replay*20Graph);query=~'*7bCRT-CPP-"
-           "Canary-V2*2cEncrypted*2cInstanceType*2cPlatform*2cReplayId*2cToolName*2cTransferType*7d";
+           "'.~(id~'m5~visible~false))~(~'.~'S3AddressCount~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~(id~'m6~stat~'Average~"
+           "visible~false)))~view~'timeSeries~stacked~false~region~'us-west-2~stat~'Sum~period~1~title~'Replay*20Graph)"
+           ";query=~'*7bCRT-CPP-Canary-V2*2cEncrypted*2cInstanceType*2cPlatform*2cReplayId*2cToolName*2cTransferType*"
+           "7d";
 
     std::cout << cloudWatchMetricsLink.str() << std::endl;
 

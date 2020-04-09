@@ -46,6 +46,7 @@ struct CanaryAppOptions
     uint32_t sendEncrypted : 1;
     uint32_t loggingEnabled : 1;
     uint32_t rehydrateBackup : 1;
+    uint32_t forkModeEnabled : 1;
     uint32_t isParentProcess : 1;
     uint32_t isChildProcess : 1;
 };
