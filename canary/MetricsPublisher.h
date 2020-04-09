@@ -150,7 +150,7 @@ class MetricsPublisher
      */
     void WaitForLastPublish();
 
-    void UploadBackup();
+    Aws::Crt::String UploadBackup();
 
     void RehydrateBackup(const char *s3Path);
 

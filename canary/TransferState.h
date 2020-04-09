@@ -47,7 +47,7 @@ class TransferState
 
     Aws::Crt::Vector<Metric> m_uploadMetrics;
     Aws::Crt::Vector<Metric> m_downloadMetrics;
-    std::shared_ptr<MetricsPublisher> m_publisher;
+    std::weak_ptr<MetricsPublisher> m_publisher;
 
     void DistributeDataUsedOverTime(
         Aws::Crt::Vector<Metric> &metrics,

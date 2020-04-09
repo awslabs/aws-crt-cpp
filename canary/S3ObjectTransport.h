@@ -50,10 +50,6 @@ using ReceivePartCallback =
 class S3ObjectTransport
 {
   public:
-    static const uint32_t MaxStreams;
-    static const uint32_t TransfersPerAddress;
-    static const int32_t S3GetObjectResponseStatus_PartialContent;
-
     S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::String &bucket);
 
     void PutObject(
@@ -89,6 +85,8 @@ class S3ObjectTransport
 
     void SpawnConnectionManagers();
 
+    void PurgeConnectionManagers();
+
     const Aws::Crt::String &GetAddressForTransfer(uint32_t index);
 
     void SeedAddressCache(const Aws::Crt::String &address);
@@ -106,7 +104,6 @@ class S3ObjectTransport
     Aws::Crt::Http::HttpHeader m_contentTypeHeader;
     Aws::Crt::String m_endpoint;
 
-    std::vector<std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager>> m_connManagerTrashCan;
     std::vector<std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager>> m_connManagers;
     std::vector<Aws::Crt::String> m_addressCache;
 
@@ -129,7 +126,7 @@ class S3ObjectTransport
         const std::shared_ptr<Aws::Crt::Http::HttpRequest> &signedRequest);
 
     void AddContentLengthHeader(
-        std::shared_ptr<Aws::Crt::Http::HttpRequest> request,
+        const std::shared_ptr<Aws::Crt::Http::HttpRequest> & request,
         const std::shared_ptr<Aws::Crt::Io::InputStream> &body);
 
     void UploadPart(

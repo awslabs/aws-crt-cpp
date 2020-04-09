@@ -151,22 +151,27 @@ void TransferState::FlushMetricsVector(Vector<Metric> &metrics)
 {
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Adding %d data points", (uint32_t)metrics.size());
 
-    if (metrics.size() > 0)
+    std::shared_ptr<MetricsPublisher> publisher = m_publisher.lock();
+
+    if (publisher != nullptr)
     {
-        Metric &metric = metrics.back();
-        m_publisher->AddTransferStatusDataPoint(metric.Timestamp, m_transferSuccess);
+        if (metrics.size() > 0)
+        {
+            Metric &metric = metrics.back();
+            publisher->AddTransferStatusDataPoint(metric.Timestamp, m_transferSuccess);
+        }
+
+        publisher->AddDataPoints(metrics);
+
+        Vector<Metric> connMetrics;
+
+        for (Metric &metric : metrics)
+        {
+            connMetrics.emplace_back(MetricName::NumConnections, MetricUnit::Count, metric.Timestamp, 1.0);
+        }
+
+        publisher->AddDataPoints(connMetrics);
     }
-
-    m_publisher->AddDataPoints(metrics);
-
-    Vector<Metric> connMetrics;
-
-    for (Metric &metric : metrics)
-    {
-        connMetrics.emplace_back(MetricName::NumConnections, MetricUnit::Count, metric.Timestamp, 1.0);
-    }
-
-    m_publisher->AddDataPoints(connMetrics);
 
     metrics.clear();
 }

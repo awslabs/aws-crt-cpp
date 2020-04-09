@@ -17,12 +17,6 @@ struct aws_event_loop;
 class MeasureTransferRate
 {
   public:
-    static const uint64_t SinglePartObjectSize;
-    static const uint64_t LargeObjectSize;
-    static const std::chrono::milliseconds AllocationMetricFrequency;
-    static const uint64_t AllocationMetricFrequencyNS;
-    static const uint32_t LargeObjectNumParts;
-
     MeasureTransferRate(CanaryApp &canaryApp);
     ~MeasureTransferRate();
 

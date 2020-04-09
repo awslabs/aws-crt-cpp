@@ -30,124 +30,127 @@
 
 using namespace Aws::Crt;
 
-static const char *s_s3BackupBucket = "aws-crt-canary-bucket";
-
-static const char *s_metricUnitStr[] = {
-    "Seconds",
-    "Microseconds",
-    "Milliseconds",
-    "Bytes",
-    "Kilobytes",
-    "Megabytes",
-    "Gigabytes",
-    "Terabytes",
-    "Bits",
-    "Kilobits",
-    "Gigabits",
-    "Terabits",
-    "Percent",
-    "Count",
-    "Bytes%2FSecond",
-    "Kilobytes%2FSecond",
-    "Megabytes%2FSecond",
-    "Gigabytes%2FSecond",
-    "Terabytes%2FSecond",
-    "Bits%2FSecond",
-    "Kilobits%2FSecond",
-    "Megabits%2FSecond",
-    "Gigabits%2FSecond",
-    "Terabits%2FSecond",
-    "Counts%2FSecond",
-    "None",
-};
-
-static const char *s_metricNameStr[] = {"BytesUp",
-                                        "BytesDown",
-                                        "NumConnections",
-                                        "BytesAllocated",
-                                        "S3UploadAddressCount",
-                                        "S3DownloadAddressCount",
-                                        "SuccessfulTransfer",
-                                        "FailedTransfer",
-                                        "AvgEventLoopGroupTickElapsed",
-                                        "AvgEventLoopTaskRunElapsed",
-                                        "MinEventLoopGroupTickElapsed",
-                                        "MinEventLoopTaskRunElapsed",
-                                        "MaxEventLoopGroupTickElapsed",
-                                        "MaxEventLoopTaskRunElapsed",
-                                        "NumIOSubs",
-                                        "Invalid"};
-
-static const char *s_transferTypeStr[] = {"None", "SinglePart", "MultiPart"};
-
-static const char *s_UnitToStr(MetricUnit unit)
+namespace
 {
-    auto index = static_cast<size_t>(unit);
-    if (index >= AWS_ARRAY_SIZE(s_metricUnitStr))
-    {
-        return "None";
-    }
-    return s_metricUnitStr[index];
-}
+    const char *S3BackupBucket = "aws-crt-canary-bucket";
 
-static MetricUnit s_StringToMetricUnit(const char *str)
-{
-    for (size_t i = 0; i < AWS_ARRAY_SIZE(s_metricUnitStr); ++i)
+    const char *MetricUnitStr[] = {
+        "Seconds",
+        "Microseconds",
+        "Milliseconds",
+        "Bytes",
+        "Kilobytes",
+        "Megabytes",
+        "Gigabytes",
+        "Terabytes",
+        "Bits",
+        "Kilobits",
+        "Gigabits",
+        "Terabits",
+        "Percent",
+        "Count",
+        "Bytes%2FSecond",
+        "Kilobytes%2FSecond",
+        "Megabytes%2FSecond",
+        "Gigabytes%2FSecond",
+        "Terabytes%2FSecond",
+        "Bits%2FSecond",
+        "Kilobits%2FSecond",
+        "Megabits%2FSecond",
+        "Gigabits%2FSecond",
+        "Terabits%2FSecond",
+        "Counts%2FSecond",
+        "None",
+    };
+
+    const char *MetricNameStr[] = {"BytesUp",
+                                   "BytesDown",
+                                   "NumConnections",
+                                   "BytesAllocated",
+                                   "S3UploadAddressCount",
+                                   "S3DownloadAddressCount",
+                                   "SuccessfulTransfer",
+                                   "FailedTransfer",
+                                   "AvgEventLoopGroupTickElapsed",
+                                   "AvgEventLoopTaskRunElapsed",
+                                   "MinEventLoopGroupTickElapsed",
+                                   "MinEventLoopTaskRunElapsed",
+                                   "MaxEventLoopGroupTickElapsed",
+                                   "MaxEventLoopTaskRunElapsed",
+                                   "NumIOSubs",
+                                   "Invalid"};
+
+    const char *TransferTypeStr[] = {"None", "SinglePart", "MultiPart"};
+
+    const char *UnitToStr(MetricUnit unit)
     {
-        if (!strcmp(str, s_metricUnitStr[i]))
+        auto index = static_cast<size_t>(unit);
+        if (index >= AWS_ARRAY_SIZE(MetricUnitStr))
         {
-            return (MetricUnit)i;
+            return "None";
         }
+        return MetricUnitStr[index];
     }
 
-    return MetricUnit::None;
-}
-
-static const char *s_MetricNameToStr(MetricName name)
-{
-    auto index = static_cast<size_t>(name);
-    if (index >= AWS_ARRAY_SIZE(s_metricNameStr))
+    MetricUnit StringToMetricUnit(const char *str)
     {
-        return "None";
-    }
-    return s_metricNameStr[index];
-}
-
-static MetricName s_StringToMetricName(const char *str)
-{
-    for (size_t i = 0; i < AWS_ARRAY_SIZE(s_metricNameStr); ++i)
-    {
-        if (!strcmp(str, s_metricNameStr[i]))
+        for (size_t i = 0; i < AWS_ARRAY_SIZE(MetricUnitStr); ++i)
         {
-            return (MetricName)i;
+            if (!strcmp(str, MetricUnitStr[i]))
+            {
+                return (MetricUnit)i;
+            }
         }
+
+        return MetricUnit::None;
     }
 
-    return MetricName::Invalid;
-}
-
-static const char *s_MetricTransferTypeToString(MetricTransferType transferType)
-{
-    auto index = static_cast<size_t>(transferType);
-    if (index >= AWS_ARRAY_SIZE(s_transferTypeStr))
+    const char *MetricNameToStr(MetricName name)
     {
-        return "None";
-    }
-    return s_transferTypeStr[index];
-}
-
-static MetricTransferType s_StringToMetricTransferType(const char *str)
-{
-    for (size_t i = 0; i < AWS_ARRAY_SIZE(s_transferTypeStr); ++i)
-    {
-        if (!strcmp(str, s_transferTypeStr[i]))
+        auto index = static_cast<size_t>(name);
+        if (index >= AWS_ARRAY_SIZE(MetricNameStr))
         {
-            return (MetricTransferType)i;
+            return "None";
         }
+        return MetricNameStr[index];
     }
 
-    return MetricTransferType::None;
-}
+    MetricName StringToMetricName(const char *str)
+    {
+        for (size_t i = 0; i < AWS_ARRAY_SIZE(MetricNameStr); ++i)
+        {
+            if (!strcmp(str, MetricNameStr[i]))
+            {
+                return (MetricName)i;
+            }
+        }
+
+        return MetricName::Invalid;
+    }
+
+    const char *MetricTransferTypeToString(MetricTransferType transferType)
+    {
+        auto index = static_cast<size_t>(transferType);
+        if (index >= AWS_ARRAY_SIZE(TransferTypeStr))
+        {
+            return "None";
+        }
+        return TransferTypeStr[index];
+    }
+
+    MetricTransferType StringToMetricTransferType(const char *str)
+    {
+        for (size_t i = 0; i < AWS_ARRAY_SIZE(TransferTypeStr); ++i)
+        {
+            if (!strcmp(str, TransferTypeStr[i]))
+            {
+                return (MetricTransferType)i;
+            }
+        }
+
+        return MetricTransferType::None;
+    }
+} // namespace
 
 Metric::Metric() {}
 
@@ -270,7 +273,7 @@ void MetricsPublisher::PreparePayload(StringStream &bodyStream, const Vector<Met
         bodyStream << "Namespace=" << *Namespace << "&";
     }
 
-    String transferTypeString = s_MetricTransferTypeToString(GetTransferType());
+    String transferTypeString = MetricTransferTypeToString(GetTransferType());
     String platformName = GetPlatformName();
     String toolName = GetToolName();
     String instanceType = GetInstanceType();
@@ -280,7 +283,7 @@ void MetricsPublisher::PreparePayload(StringStream &bodyStream, const Vector<Met
 
     for (const Metric &metric : metrics)
     {
-        bodyStream << "MetricData.member." << metricCount << ".MetricName=" << s_MetricNameToStr(metric.Name) << "&";
+        bodyStream << "MetricData.member." << metricCount << ".MetricName=" << MetricNameToStr(metric.Name) << "&";
         uint8_t dateBuffer[AWS_DATE_TIME_STR_MAX_LEN];
         AWS_ZERO_ARRAY(dateBuffer);
         auto dateBuf = ByteBufFromEmptyArray(dateBuffer, AWS_ARRAY_SIZE(dateBuffer));
@@ -291,7 +294,7 @@ void MetricsPublisher::PreparePayload(StringStream &bodyStream, const Vector<Met
         bodyStream << "MetricData.member." << metricCount << ".Timestamp=" << dateStr << "&";
         bodyStream.precision(17);
         bodyStream << "MetricData.member." << metricCount << ".Value=" << std::fixed << metric.Value << "&";
-        bodyStream << "MetricData.member." << metricCount << ".Unit=" << s_UnitToStr(metric.Unit) << "&";
+        bodyStream << "MetricData.member." << metricCount << ".Unit=" << UnitToStr(metric.Unit) << "&";
 
         bodyStream << "MetricData.member." << metricCount << ".StorageResolution=1&";
         bodyStream << "MetricData.member." << metricCount << ".Dimensions.member.1.Name=Platform&";
@@ -326,15 +329,15 @@ void MetricsPublisher::WriteToBackup(const Vector<Metric> &metrics)
     }
 }
 
-void MetricsPublisher::UploadBackup()
+String MetricsPublisher::UploadBackup()
 {
     std::shared_ptr<S3ObjectTransport> transport =
-        MakeShared<S3ObjectTransport>(g_allocator, m_canaryApp, s_s3BackupBucket);
+        MakeShared<S3ObjectTransport>(g_allocator, m_canaryApp, S3BackupBucket);
 
     std::shared_ptr<StringStream> backupContents = MakeShared<StringStream>(g_allocator);
     String tabs;
 
-    String transferTypeString = s_MetricTransferTypeToString(GetTransferType());
+    String transferTypeString = MetricTransferTypeToString(GetTransferType());
     String platformName = GetPlatformName();
     String toolName = GetToolName();
     String instanceType = GetInstanceType();
@@ -354,9 +357,9 @@ void MetricsPublisher::UploadBackup()
         metricDateTime.ToGmtString(DateFormat::ISO_8601, dateBuf);
         String dateStr((char *)dateBuf.buffer, dateBuf.len);
 
-        for(size_t i = 0; i < dateStr.length(); ++i)
+        for (size_t i = 0; i < dateStr.length(); ++i)
         {
-            if(dateStr[i] == ':')
+            if (dateStr[i] == ':')
             {
                 dateStr[i] = '-';
             }
@@ -370,11 +373,11 @@ void MetricsPublisher::UploadBackup()
 
     tabs.push_back('\t');
 
-    *backupContents << tabs << "\"TransferType\": " << instanceType << "\"," << std::endl;
-    *backupContents << tabs << "\"PlatformName\": " << platformName << "\"," << std::endl;
-    *backupContents << tabs << "\"ToolName\": " << toolName << "\"," << std::endl;
-    *backupContents << tabs << "\"InstanceType\": " << instanceType << "\"," << std::endl;
-    *backupContents << tabs << "\"Encrypted\": " << encrypted << "\"," << std::endl;
+    *backupContents << tabs << "\"TransferType\": \"" << transferTypeString << "\"," << std::endl;
+    *backupContents << tabs << "\"PlatformName\": \"" << platformName << "\"," << std::endl;
+    *backupContents << tabs << "\"ToolName\": \"" << toolName << "\"," << std::endl;
+    *backupContents << tabs << "\"InstanceType\": \"" << instanceType << "\"," << std::endl;
+    *backupContents << tabs << "\"Encrypted\": " << encrypted << "," << std::endl;
     *backupContents << tabs << "\"Metrics\": [" << std::endl;
 
     tabs.push_back('\t');
@@ -383,13 +386,14 @@ void MetricsPublisher::UploadBackup()
     {
         const Metric &metric = m_metricsBackup[i];
 
-        *backupContents << "{" << std::endl;
+        *backupContents << tabs << "{" << std::endl;
 
         tabs.push_back('\t');
 
+        *backupContents << tabs << " \"Name\" : \"" << MetricNameToStr(metric.Name) << "\", " << std::endl;
         *backupContents << tabs << " \"Timestamp\" : \"" << metric.Timestamp << "\", " << std::endl;
         *backupContents << tabs << " \"Value\" : " << std::fixed << metric.Value << ", " << std::endl;
-        *backupContents << tabs << " \"Unit\" : \"" << s_UnitToStr(metric.Unit) << "\" " << std::endl;
+        *backupContents << tabs << " \"Unit\" : \"" << UnitToStr(metric.Unit) << "\" " << std::endl;
 
         tabs.pop_back();
 
@@ -405,11 +409,11 @@ void MetricsPublisher::UploadBackup()
 
     tabs.pop_back();
 
-    *backupContents << tabs << "]";
+    *backupContents << tabs << "]" << std::endl;
 
     tabs.pop_back();
 
-    *backupContents << tabs << "}";
+    *backupContents << tabs << "}" << std::endl;
 
     std::mutex signalMutex;
     std::condition_variable signal;
@@ -433,12 +437,14 @@ void MetricsPublisher::UploadBackup()
 
     std::unique_lock<std::mutex> lock(signalMutex);
     signal.wait(lock, [&signalVal]() { return signalVal; });
+
+    return s3BackupPath.str();
 }
 
 void MetricsPublisher::RehydrateBackup(const char *s3Path)
 {
     std::shared_ptr<S3ObjectTransport> transport =
-        MakeShared<S3ObjectTransport>(g_allocator, m_canaryApp, s_s3BackupBucket);
+        MakeShared<S3ObjectTransport>(g_allocator, m_canaryApp, S3BackupBucket);
     StringStream contents;
     std::mutex signalMutex;
     std::condition_variable signal;
@@ -470,9 +476,9 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
     JsonObject jsonObject(contentsStr);
     JsonView jsonView = jsonObject.View();
 
-    String transferTypeStr = jsonView.GetString("TransferType");
+    String TransferTypeStr = jsonView.GetString("TransferType");
 
-    m_transferTypeOverride = s_StringToMetricTransferType(transferTypeStr.c_str());
+    m_transferTypeOverride = StringToMetricTransferType(TransferTypeStr.c_str());
     m_platformNameOverride = jsonView.GetString("PlatformName");
     m_toolNameOverride = jsonView.GetString("ToolName");
     m_instanceTypeOverride = jsonView.GetString("InstanceType");
@@ -486,15 +492,15 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
 
     for (const JsonView &metricJson : metricsJson)
     {
-        String metricNameStr = metricJson.GetString("MetricName");
-        String metricUnitStr = metricJson.GetString("MetricUnit");
+        String MetricNameStr = metricJson.GetString("Name");
+        String MetricUnitStr = metricJson.GetString("Unit");
 
         String metricTimestampStr = metricJson.GetString("Timestamp");
         uint64_t metricTimestamp = std::stoull(metricTimestampStr.c_str());
 
         Metric metric(
-            s_StringToMetricName(metricNameStr.c_str()),
-            s_StringToMetricUnit(metricUnitStr.c_str()),
+            StringToMetricName(MetricNameStr.c_str()),
+            StringToMetricUnit(MetricUnitStr.c_str()),
             metricTimestamp,
             metricJson.GetDouble("Value"));
 
@@ -503,6 +509,27 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
 
     SchedulePublish();
     WaitForLastPublish();
+
+    std::stringstream cloudWatchMetricsLink;
+
+    cloudWatchMetricsLink
+        << "https://" << m_canaryApp.GetOptions().region << ".console.aws.amazon.com/cloudwatch/"
+        << "home?region=" << m_canaryApp.GetOptions().region
+        << "#metricsV2:graph=~(metrics~(~(~(expression~'m1*2a8*2f1000*2f1000*2f1000~label~'BytesDownGb~id~'e1))~(~("
+           "expression~'m2*2a8*2f1000*2f1000*2f1000~label~'BytesUpGb~id~'e2))~(~'CRT-CPP-Canary-V2~'BytesDown"
+        << "~'Platform~'" << m_platformNameOverride.value().c_str() << "~'ToolName~'"
+        << m_toolNameOverride.value().c_str() << "~'Encrypted~'" << m_sendEncryptedOverride.value() << "~'ReplayId~'"
+        << m_replayId.value() << "~'InstanceType~'" << m_instanceTypeOverride.value().c_str() << "~'TransferType~'"
+        << TransferTypeStr.c_str()
+        << "~(id~'m1~visible~false))~(~'.~'BytesUp~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~(id~'m2~visible~false))~(~'.~'"
+           "NumConnections~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~(id~'m3~visible~false))~(~'.~'FailedTransfer~'.~'.~'.~'."
+           "~'.~'.~'.~'.~'.~'.~'.~'.~(id~'m4~visible~false))~(~'.~'SuccessfulTransfer~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~"
+           "'.~(id~'m5~visible~false))~(~'.~'S3UploadAddressCount~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~(id~'m6~visible~"
+           "false))~(~'.~'S3DownloadAddressCount~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~(id~'m7~visible~false)))~view~'"
+           "timeSeries~stacked~false~region~'us-west-2~stat~'Sum~period~1~title~'Replay*20Graph);query=~'*7bCRT-CPP-"
+           "Canary-V2*2cEncrypted*2cInstanceType*2cPlatform*2cReplayId*2cToolName*2cTransferType*7d";
+
+    std::cout << cloudWatchMetricsLink.str() << std::endl;
 
     m_transferTypeOverride = Optional<MetricTransferType>();
     m_platformNameOverride = Optional<String>();
