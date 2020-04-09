@@ -22,50 +22,6 @@
 
 using namespace Aws::Crt;
 
-int filterLog(
-    struct aws_logger *logger,
-    enum aws_log_level log_level,
-    aws_log_subject_t subject,
-    const char *format,
-    ...)
-{
-    if (log_level != AWS_LL_ERROR)
-    {
-        if (subject != AWS_LS_CRT_CPP_CANARY)
-        {
-            return AWS_OP_SUCCESS;
-        }
-    }
-
-    va_list format_args;
-    va_start(format_args, format);
-
-    struct aws_logger_pipeline *impl = (aws_logger_pipeline *)logger->p_impl;
-    struct aws_string *output = NULL;
-
-    AWS_ASSERT(impl->formatter->vtable->format != NULL);
-    int result = (impl->formatter->vtable->format)(impl->formatter, &output, log_level, subject, format, format_args);
-
-    va_end(format_args);
-
-    if (result != AWS_OP_SUCCESS || output == NULL)
-    {
-        return AWS_OP_ERR;
-    }
-
-    AWS_ASSERT(impl->channel->vtable->send != NULL);
-    if ((impl->channel->vtable->send)(impl->channel, output))
-    {
-        /*
-         * failure to send implies failure to transfer ownership
-         */
-        aws_string_destroy(output);
-        return AWS_OP_ERR;
-    }
-
-    return AWS_OP_SUCCESS;
-}
-
 namespace
 {
     const char *MetricNamespace = "CRT-CPP-Canary-V2";
@@ -108,11 +64,6 @@ CanaryApp::CanaryApp(CanaryAppOptions &&inOptions, std::vector<CanaryAppChildPro
     if (m_options.loggingEnabled)
     {
         m_apiHandle.InitializeLogging(LogLevel::Info, stderr);
-
-        // TODO Take out before merging--this is a giant hack to filter just canary logs
-        aws_logger_vtable *currentVTable = aws_logger_get()->vtable;
-        void **logFunctionVoid = (void **)&currentVTable->log;
-        *logFunctionVoid = (void *)filterLog;
     }
 
     Auth::CredentialsProviderChainDefaultConfig chainConfig;
