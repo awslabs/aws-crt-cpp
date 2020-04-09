@@ -57,7 +57,7 @@ void ParseTransferPair(const char *str, uint32_t &outUpValue, uint32_t &outDownV
     }
 }
 
-void InitNumConcurrentTransfers(uint32_t numTransfers, uint32_t &inOutNumConcurrentTransfers)
+void ClampConcurrentTransfers(uint32_t numTransfers, uint32_t &inOutNumConcurrentTransfers)
 {
     if (inOutNumConcurrentTransfers == 0)
     {
@@ -184,8 +184,8 @@ int main(int argc, char *argv[])
         }
     }
 
-    InitNumConcurrentTransfers(canaryAppOptions.numUpTransfers, canaryAppOptions.numUpConcurrentTransfers);
-    InitNumConcurrentTransfers(canaryAppOptions.numDownTransfers, canaryAppOptions.numDownConcurrentTransfers);
+    ClampConcurrentTransfers(canaryAppOptions.numUpTransfers, canaryAppOptions.numUpConcurrentTransfers);
+    ClampConcurrentTransfers(canaryAppOptions.numDownTransfers, canaryAppOptions.numDownConcurrentTransfers);
 
     std::vector<CanaryAppChildProcess> children;
 
