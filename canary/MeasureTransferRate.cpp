@@ -19,10 +19,6 @@ namespace
 
     const uint32_t MultiPartObjectNumParts = 8192;
     const uint64_t MultiPartObjectSize = (uint64_t)MultiPartObjectNumParts * (16ULL * 1024ULL * 1024ULL);
-
-    const std::chrono::milliseconds AllocationMetricFrequency(5000);
-    const uint64_t AllocationMetricFrequencyNS =
-        aws_timestamp_convert(AllocationMetricFrequency.count(), AWS_TIMESTAMP_MILLIS, AWS_TIMESTAMP_NANOS, NULL);
 } // namespace
 
 MeasureTransferRate::MeasureTransferRate(CanaryApp &canaryApp) : m_canaryApp(canaryApp)
