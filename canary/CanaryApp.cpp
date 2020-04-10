@@ -182,10 +182,33 @@ void CanaryApp::WriteKeyValueToPipe(const char *key, const char *value, uint32_t
 {
     const char nullTerm = '\0';
 
-    write(writePipe, key, strlen(key));
-    write(writePipe, &nullTerm, 1);
-    write(writePipe, value, strlen(value));
-    write(writePipe, &nullTerm, 1);
+    if(write(writePipe, key, strlen(key)) == -1)
+    {
+        AWS_LOGF_FATAL(AWS_LS_CRT_CPP_CANARY, "Writing key to pipe failed.");
+        exit(EXIT_FAILURE);
+        return;
+    }
+
+    if(write(writePipe, &nullTerm, 1) == -1)
+    {
+        AWS_LOGF_FATAL(AWS_LS_CRT_CPP_CANARY, "Writing key null terminator to pipe failed.");
+        exit(EXIT_FAILURE);
+        return;
+    }
+
+    if(write(writePipe, value, strlen(value)) == -1)
+    {
+        AWS_LOGF_FATAL(AWS_LS_CRT_CPP_CANARY, "Writing value to pipe failed.");
+        exit(EXIT_FAILURE);
+        return;
+    }
+
+    if(write(writePipe, &nullTerm, 1) == -1)
+    {
+        AWS_LOGF_FATAL(AWS_LS_CRT_CPP_CANARY, "Writing value null terminator to pipe failed.");
+        exit(EXIT_FAILURE);
+        return;
+    }
 }
 
 String CanaryApp::ReadValueFromPipe(const char *key, int32_t readPipe, std::map<String, String> &keyValuePairs)

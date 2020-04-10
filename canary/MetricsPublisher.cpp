@@ -718,7 +718,6 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
                         if (connError == AWS_OP_SUCCESS)
                         {
                             Http::HttpRequestOptions requestOptions;
-                            AWS_ZERO_STRUCT(requestOptions);
                             requestOptions.request = signedRequest.get();
                             requestOptions.onStreamComplete = [signedRequest, conn](Http::HttpStream &stream, int) {
                                 if (stream.GetResponseStatusCode() != 200)
