@@ -60,7 +60,7 @@ void TransferState::DistributeDataUsedOverSeconds(
 
     /*
      * This represents the number of second data points that this interval overlaps minus one, NOT
-     * the time delta in seconds.  There are basically three cases that we want to detect.
+     * the time delta in seconds.  There are three cases that we want to detect.
      *      * If equal to 0, then endTime and beginTime are in the same second:
      *
      *          0                1                2                3
@@ -79,7 +79,7 @@ void TransferState::DistributeDataUsedOverSeconds(
      *
      *
      *      * If greater than 1, then endTime and beginTime are in different seconds,
-     *        and have at least one full second inbetwen them.
+     *        and have at least one full second inbetween them:
      *
      *          0                1                2                3
      *          |----------------|----------------|----------------|
