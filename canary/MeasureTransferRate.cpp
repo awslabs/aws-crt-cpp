@@ -217,7 +217,6 @@ void MeasureTransferRate::MeasureHttpTransfer()
             request->SetPath(path);
 
             Http::HttpRequestOptions requestOptions;
-            AWS_ZERO_STRUCT(requestOptions);
             requestOptions.request = request.get();
             requestOptions.onIncomingBody = [transferState](const Http::HttpStream &, const ByteCursor &cur) {
                 transferState->AddDataDownMetric(cur.len);

@@ -24,7 +24,9 @@
 #include <aws/io/stream.h>
 #include <time.h>
 
-#ifndef WIN32
+#ifdef WIN32
+#    undef min
+#else
 #    include <sys/resource.h>
 #    include <sys/types.h>
 #    include <sys/wait.h>
@@ -41,9 +43,9 @@ using namespace Aws::Crt;
 void ParseTransferPair(const char *str, uint32_t &outUpValue, uint32_t &outDownValue)
 {
     std::string numTransfersStr = str;
-    int32_t index = numTransfersStr.find(":");
+    size_t index = numTransfersStr.find(":");
 
-    if (index == -1)
+    if (index == std::string::npos)
     {
         int32_t numTransfers = atoi(numTransfersStr.c_str());
         outUpValue = numTransfers;
@@ -186,9 +188,9 @@ int main(int argc, char *argv[])
     ClampConcurrentTransfers(canaryAppOptions.numUpTransfers, canaryAppOptions.numUpConcurrentTransfers);
     ClampConcurrentTransfers(canaryAppOptions.numDownTransfers, canaryAppOptions.numDownConcurrentTransfers);
 
+#ifndef WIN32
     std::vector<CanaryAppChildProcess> children;
 
-#ifndef WIN32
     if (canaryAppOptions.forkModeEnabled)
     {
         canaryAppOptions.isParentProcess = true;
@@ -200,8 +202,17 @@ int main(int argc, char *argv[])
             int32_t pipeParentToChild[2];
             int32_t pipeChildToParent[2];
 
-            pipe(pipeParentToChild);
-            pipe(pipeChildToParent);
+            if (pipe(pipeParentToChild) == -1)
+            {
+                AWS_LOGF_FATAL(AWS_LS_CRT_CPP_CANARY, "Could not create pipe from parent process to child process.");
+                exit(EXIT_FAILURE);
+            }
+
+            if (pipe(pipeChildToParent) == -1)
+            {
+                AWS_LOGF_FATAL(AWS_LS_CRT_CPP_CANARY, "Could not create pipe from child process to parent process.");
+                exit(EXIT_FAILURE);
+            }
 
             pid_t childPid = fork();
 
@@ -240,13 +251,11 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    CanaryApp canaryApp(
-        std::move(canaryAppOptions)
-#ifndef WIN32
-            ,
-        std::move(children)
+#ifdef WIN32
+    CanaryApp canaryApp(std::move(canaryAppOptions));
+#else
+    CanaryApp canaryApp(std::move(canaryAppOptions), std::move(children));
 #endif
-    );
 
     canaryApp.Run();
 

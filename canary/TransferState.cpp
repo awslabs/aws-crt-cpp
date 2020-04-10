@@ -20,6 +20,10 @@
 #include <aws/crt/Api.h>
 #include <cinttypes>
 
+#ifdef WIN32
+#    undef max
+#endif
+
 using namespace Aws::Crt;
 
 TransferState::TransferState() : m_partIndex(0), m_partNumber(0), m_sizeInBytes(0), m_transferSuccess(false) {}
