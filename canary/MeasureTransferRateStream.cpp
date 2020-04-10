@@ -71,8 +71,6 @@ bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
 
     m_written += writtenOut;
 
-    // A quick way for us to measure how much data we've actually written to S3 storage.  (This working is reliant
-    // on this function only being used when we are reading data from the stream while sending that data to S3.)
     m_transferState->AddDataUpMetric(writtenOut);
 
     return true;
