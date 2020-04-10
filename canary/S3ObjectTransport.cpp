@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2010-2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -52,11 +52,6 @@ S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::Strin
     m_contentTypeHeader.value = ByteCursorFromCString("text/plain");
 }
 
-size_t S3ObjectTransport::GetOpenConnectionCount()
-{
-    return m_activeRequestsCount;
-}
-
 void S3ObjectTransport::EmitS3AddressCountMetric(uint32_t addressCount)
 {
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Emitting S3 Address Count Metric: %d", addressCount);
@@ -67,6 +62,7 @@ void S3ObjectTransport::EmitS3AddressCountMetric(uint32_t addressCount)
 
 void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
 {
+    // Each transfer is in a group the size of TransfersPerAddress,
     uint32_t desiredNumberOfAddresses = numTransfers / TransfersPerAddress;
 
     if ((numTransfers % TransfersPerAddress) > 0)
@@ -80,26 +76,33 @@ void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
         desiredNumberOfAddresses,
         m_endpoint.c_str());
 
+    // Ask the host resolver to start resolving.
     m_canaryApp.GetDefaultHostResolver().ResolveHost(
         m_endpoint, [](Io::HostResolver &, const Vector<Io::HostAddress> &, int) {});
 
-    uint32_t numAddresses = (uint32_t)m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(
-        m_endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
-
-    EmitS3AddressCountMetric(numAddresses);
-
-    while (numAddresses < desiredNumberOfAddresses)
+    // Wait until the resolved address count is what we need it to be.
     {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-
-        numAddresses = (uint32_t)m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(
+        uint32_t numAddresses = (uint32_t)m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(
             m_endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
 
         EmitS3AddressCountMetric(numAddresses);
+
+        while (numAddresses < desiredNumberOfAddresses)
+        {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+
+            numAddresses = (uint32_t)m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(
+                m_endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
+
+            EmitS3AddressCountMetric(numAddresses);
+        }
     }
 
+    // Clear our local cache in preparation for getting address from the host resolver.
     m_addressCache.clear();
 
+    // Call ResolveHost enough times until the address cache is filled.  Each loop iteration
+    // blocks until this operation completes.
     while ((uint32_t)m_addressCache.size() < desiredNumberOfAddresses)
     {
         std::mutex adressRetrievedMutex;
@@ -266,9 +269,8 @@ void S3ObjectTransport::MakeSignedRequest_SendRequest(
 
     ++m_activeRequestsCount;
 
-    // NOTE: The captures of the connection and signed request is a work around to keep those shared
-    // pointers alive until the stream is finished.  Tasks can be scheduled that rely on these things
-    // being alive which can cause crashes when they aren't around.
+    // NOTE: The captures of the connection and signed request is a work around to keep these shared
+    // pointers alive until the stream is finished.
     requestOptionsToSend.onStreamComplete =
         [this, conn, signedRequest, requestOptions](Http::HttpStream &stream, int errorCode) {
             --m_activeRequestsCount;
@@ -502,8 +504,7 @@ void S3ObjectTransport::PutObjectMultipart(
         UploadPart(uploadState, transferState, partInputStream, partFinished);
     });
 
-    // Set the callback that will be called when something flags the upload state as finished.  Finished
-    // can happen due to success or failure.
+    // Set the callback that will be called when something flags the upload state as finished.
     uploadState->SetFinishedCallback([this, uploadState, key, numParts, finishedCallback](int32_t errorCode) {
         if (errorCode != AWS_ERROR_SUCCESS)
         {
@@ -567,7 +568,7 @@ void S3ObjectTransport::UploadPart(
 
     String keyPathStr = keyPathStream.str();
 
-    transferState->AddDataUpMetric(0LL);
+    transferState->InitDataUpMetric();
 
     PutObject(
         keyPathStr,
@@ -633,7 +634,7 @@ void S3ObjectTransport::GetPart(
     const ReceivePartCallback &receiveObjectPartData,
     const MultipartTransferState::PartFinishedCallback &partFinished)
 {
-    transferState->AddDataDownMetric(0LL);
+    transferState->InitDataDownMetric();
 
     GetObject(
         downloadState->GetKey(),

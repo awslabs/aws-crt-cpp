@@ -1,3 +1,18 @@
+/*
+ * Copyright 2010-2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *  http://aws.amazon.com/apache2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
 #include "MeasureTransferRate.h"
 #include "CanaryApp.h"
 #include "CanaryUtil.h"
@@ -33,7 +48,6 @@ void MeasureTransferRate::PerformMeasurement(
     const char *keyPrefix,
     uint32_t numTransfers,
     uint32_t numConcurrentTransfers,
-    uint64_t objectSize,
     uint32_t flags,
     const std::shared_ptr<S3ObjectTransport> &transport,
     TransferFunction &&transferFunction)
@@ -41,6 +55,7 @@ void MeasureTransferRate::PerformMeasurement(
     String addressKey = String() + keyPrefix + "address";
     String finishedKey = String() + keyPrefix + "finished";
 
+    // If this is true, then we are in forking mode, and are currently in the parent process.
     if (m_canaryApp.GetOptions().isParentProcess)
     {
         if ((flags & (uint32_t)MeasurementFlags::DontWarmDNSCache) == 0)
@@ -48,12 +63,16 @@ void MeasureTransferRate::PerformMeasurement(
             transport->WarmDNSCache(numConcurrentTransfers);
         }
 
+        // Each child process performs a transfer, so provide each with a resolve address
+        // to use during that transfer.
         for (uint32_t i = 0; i < numTransfers; ++i)
         {
             const String &address = transport->GetAddressForTransfer(i);
             m_canaryApp.WriteToChildProcess(i, addressKey.c_str(), address.c_str());
         }
 
+        // Read the "finished" key/value from each child process.  This will cause
+        // the parent process to block until all child process transfers have completed.
         for (uint32_t i = 0; i < numTransfers; ++i)
         {
             m_canaryApp.ReadFromChildProcess(i, finishedKey.c_str());
@@ -61,15 +80,19 @@ void MeasureTransferRate::PerformMeasurement(
 
         return;
     }
+    // If this is true, then we are in forking mode, and are currently in the child process.
     else if (m_canaryApp.GetOptions().isChildProcess)
     {
+        // Grab the address to use from the parent process.
         String address = m_canaryApp.ReadFromParentProcess(addressKey.c_str());
 
         AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Child got back address %s", address.c_str());
 
+        // Configure the transport to use the address that we received from the parent process.
         transport->SeedAddressCache(address);
         transport->SpawnConnectionManagers();
     }
+    // Otherwise, we are not in forking mode, and all transfers will be done from this process.
     else
     {
         if ((flags & (uint32_t)MeasurementFlags::DontWarmDNSCache) == 0)
@@ -135,18 +158,22 @@ void MeasureTransferRate::PerformMeasurement(
             numCompleted.load(),
             numTransfers);
 
-        transferFunction(i, std::move(key), objectSize, transport, std::move(notifyTransferFinished));
+        transferFunction(i, std::move(key), transport, std::move(notifyTransferFinished));
 
+        // Wait if number of inprogress transfers is not less than number of concurrent transfers.
         std::unique_lock<std::mutex> guard(transferCompletedMutex);
         transferCompletedSignal.wait(guard, [&numInProgress, numConcurrentTransfers]() {
             return numInProgress.load() < numConcurrentTransfers;
         });
     }
 
+    // Wait until all transfers have completed.
     std::unique_lock<std::mutex> guard(transferCompletedMutex);
     transferCompletedSignal.wait(
         guard, [&numCompleted, numTransfers]() { return numCompleted.load() >= numTransfers; });
 
+    // If this is true, then we are in fork mode, and are executing in a child process,
+    // so report finished to the parent process.
     if (m_canaryApp.GetOptions().isChildProcess)
     {
         m_canaryApp.WriteToParentProcess(finishedKey.c_str(), "done");
@@ -189,18 +216,17 @@ void MeasureTransferRate::MeasureHttpTransfer()
         "httpTransferDown-",
         m_canaryApp.GetOptions().numDownTransfers,
         m_canaryApp.GetOptions().numDownConcurrentTransfers,
-        SinglePartObjectSize,
         (uint32_t)MeasurementFlags::DontWarmDNSCache | (uint32_t)MeasurementFlags::NoFileSuffix,
         nullptr,
         [this, connManager, &hostHeader](
             uint32_t,
             String &&key,
-            uint64_t,
             const std::shared_ptr<S3ObjectTransport> &,
             NotifyTransferFinished &&notifyTransferFinished) {
             std::shared_ptr<TransferState> transferState =
                 MakeShared<TransferState>(g_allocator, m_canaryApp.GetMetricsPublisher(), 0, 1, SinglePartObjectSize);
-            transferState->AddDataDownMetric(0);
+
+            transferState->InitDataDownMetric();
 
             auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
             request->AddHeader(hostHeader);
@@ -304,18 +330,16 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
             "singlePartObjectUp-",
             m_canaryApp.GetOptions().numUpTransfers,
             m_canaryApp.GetOptions().numUpConcurrentTransfers,
-            SinglePartObjectSize,
             0,
             m_canaryApp.GetUploadTransport(),
             [this, &uploads](
                 uint32_t transferIndex,
                 String &&key,
-                uint64_t,
                 const std::shared_ptr<S3ObjectTransport> &transport,
                 NotifyTransferFinished &&notifyTransferFinished) {
                 std::shared_ptr<TransferState> transferState = uploads[transferIndex];
 
-                transferState->AddDataUpMetric(0);
+                transferState->InitDataUpMetric();
 
                 transport->PutObject(
                     key,
@@ -348,18 +372,16 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
         "singlePartObjectDown-",
         m_canaryApp.GetOptions().numDownTransfers,
         m_canaryApp.GetOptions().numDownConcurrentTransfers,
-        SinglePartObjectSize,
         (uint32_t)MeasurementFlags::NoFileSuffix,
         m_canaryApp.GetDownloadTransport(),
         [&downloads](
             uint32_t transferIndex,
             String &&key,
-            uint64_t,
             const std::shared_ptr<S3ObjectTransport> &transport,
             NotifyTransferFinished &&notifyTransferFinished) {
             std::shared_ptr<TransferState> transferState = downloads[transferIndex];
 
-            transferState->AddDataDownMetric(0);
+            transferState->InitDataDownMetric();
 
             transport->GetObject(
                 key,
@@ -393,20 +415,18 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
             "multiPartObjectUp-",
             m_canaryApp.GetOptions().numUpTransfers,
             m_canaryApp.GetOptions().numUpConcurrentTransfers,
-            MultiPartObjectSize,
             0,
             m_canaryApp.GetUploadTransport(),
             [this](
                 uint32_t,
                 String &&key,
-                uint64_t objectSize,
                 const std::shared_ptr<S3ObjectTransport> &transport,
                 NotifyTransferFinished &&notifyTransferFinished) {
                 AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting upload of object %s...", key.c_str());
 
                 transport->PutObjectMultipart(
                     key,
-                    objectSize,
+                    MultiPartObjectSize,
                     MultiPartObjectNumParts,
                     [this](const std::shared_ptr<TransferState> &transferState) {
                         return MakeShared<MeasureTransferRateStream>(
@@ -431,12 +451,10 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
         "multiPartObjectDown-",
         m_canaryApp.GetOptions().numDownTransfers,
         m_canaryApp.GetOptions().numDownConcurrentTransfers,
-        MultiPartObjectSize,
         0,
         m_canaryApp.GetDownloadTransport(),
         [](uint32_t,
            String &&key,
-           uint64_t,
            const std::shared_ptr<S3ObjectTransport> &transport,
            NotifyTransferFinished &&notifyTransferFinished) {
             AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting download of object %s...", key.c_str());

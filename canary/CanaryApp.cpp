@@ -1,3 +1,18 @@
+/*
+ * Copyright 2010-2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *  http://aws.amazon.com/apache2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
 #include "CanaryApp.h"
 #include "CanaryUtil.h"
 #include "MeasureTransferRate.h"
@@ -182,28 +197,28 @@ void CanaryApp::WriteKeyValueToPipe(const char *key, const char *value, uint32_t
 {
     const char nullTerm = '\0';
 
-    if(write(writePipe, key, strlen(key)) == -1)
+    if (write(writePipe, key, strlen(key)) == -1)
     {
         AWS_LOGF_FATAL(AWS_LS_CRT_CPP_CANARY, "Writing key to pipe failed.");
         exit(EXIT_FAILURE);
         return;
     }
 
-    if(write(writePipe, &nullTerm, 1) == -1)
+    if (write(writePipe, &nullTerm, 1) == -1)
     {
         AWS_LOGF_FATAL(AWS_LS_CRT_CPP_CANARY, "Writing key null terminator to pipe failed.");
         exit(EXIT_FAILURE);
         return;
     }
 
-    if(write(writePipe, value, strlen(value)) == -1)
+    if (write(writePipe, value, strlen(value)) == -1)
     {
         AWS_LOGF_FATAL(AWS_LS_CRT_CPP_CANARY, "Writing value to pipe failed.");
         exit(EXIT_FAILURE);
         return;
     }
 
-    if(write(writePipe, &nullTerm, 1) == -1)
+    if (write(writePipe, &nullTerm, 1) == -1)
     {
         AWS_LOGF_FATAL(AWS_LS_CRT_CPP_CANARY, "Writing value null terminator to pipe failed.");
         exit(EXIT_FAILURE);

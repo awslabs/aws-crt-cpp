@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2010-2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -47,23 +47,41 @@ using SendPartCallback =
 using ReceivePartCallback =
     std::function<void(const std::shared_ptr<TransferState> &transferState, const Aws::Crt::ByteCursor &data)>;
 
+/*
+ * Makes available a handful of S3 operations invoked by using the REST API to a specific bucket.  Also had
+ * functionality for resolving a number of DNS addresses that transfers can be distributed across.
+ */
 class S3ObjectTransport
 {
   public:
     S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::String &bucket);
 
+    /*
+     * Returns the endpoint of the bucket being used.
+     */
+    const Aws::Crt::String &GetEndpoint() const { return m_endpoint; }
+
+    /*
+     * Upload a single part object, or a part of an object.
+     */
     void PutObject(
         const Aws::Crt::String &key,
         const std::shared_ptr<Aws::Crt::Io::InputStream> &inputStream,
         std::uint32_t flags,
         const PutObjectFinished &finishedCallback);
 
+    /*
+     * Get a single part object, or a part of an object.
+     */
     void GetObject(
         const Aws::Crt::String &key,
         std::uint32_t partNumber,
         Aws::Crt::Http::OnIncomingBody onIncomingBody,
         const GetObjectFinished &getObjectFinished);
 
+    /*
+     * Upload a multipart object.
+     */
     void PutObjectMultipart(
         const Aws::Crt::String &key,
         std::uint64_t objectSize,
@@ -71,24 +89,41 @@ class S3ObjectTransport
         SendPartCallback sendPart,
         const PutObjectMultipartFinished &finishedCallback);
 
+    /*
+     * Download a multipart object.
+     */
     void GetObjectMultipart(
         const Aws::Crt::String &key,
         std::uint32_t numParts,
         const ReceivePartCallback &receivePart,
         const GetObjectMultipartFinished &finishedCallback);
 
-    size_t GetOpenConnectionCount();
-
-    const Aws::Crt::String &GetEndpoint() const { return m_endpoint; }
-
+    /*
+     * Given a number of transfers, resolve the appropriate amount of DNS addresses.
+     */
     void WarmDNSCache(uint32_t numTransfers);
 
+    /*
+     * Used to spawn the required connection managers for each resolve DNS address.
+     */
     void SpawnConnectionManagers();
 
+    /*
+     * Throw away all connection manager state.
+     */
     void PurgeConnectionManagers();
 
+    /*
+     * Query what address a transfer should use.  Exposed for use in fork mode, where
+     * addresses are distributed over child processes.
+     */
     const Aws::Crt::String &GetAddressForTransfer(uint32_t index);
 
+    /*
+     * Pass in address that be used in the address cache.  Currently only supports one
+     * address.  This is used by child processes in fork mode to enable them to use
+     * the resolved address passed by the parent process.
+     */
     void SeedAddressCache(const Aws::Crt::String &address);
 
   private:
