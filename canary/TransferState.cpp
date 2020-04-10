@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2010-2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ TransferState::TransferState(
 {
 }
 
-void TransferState::DistributeDataUsedOverTime(
+void TransferState::DistributeDataUsedOverSeconds(
     Vector<Metric> &metrics,
     MetricName metricName,
     uint64_t beginTime,
@@ -57,20 +57,64 @@ void TransferState::DistributeDataUsedOverTime(
     AWS_FATAL_ASSERT(endTimeSecond >= beginTimeSecond);
 
     uint64_t timeDelta = endTime - beginTime;
-    uint64_t timeSecondDelta = endTimeSecond - beginTimeSecond;
 
-    if (timeSecondDelta == 0)
+    /*
+     * This represents the number of second data points that this interval overlaps minus one, NOT
+     * the time delta in seconds.  There are basically three cases that we want to detect.
+     *      * If equal to 0, then endTime and beginTime are in the same second:
+     *
+     *          0                1                2                3
+     *          |----------------|----------------|----------------|
+     *             *----------*
+     *          beginTime    endTime
+     *
+     *
+     *      * If equal to 1, then endTime and beginTime are in different seconds,
+     *        but do not have any full seconds in between them:
+     *
+     *          0                1                2                3
+     *          |----------------|----------------|----------------|
+     *             *--------------------------*
+     *          beginTime                  endTime
+     *
+     *
+     *      * If greater than 1, then endTime and beginTime are in different seconds,
+     *        and have at least one full second inbetwen them.
+     *
+     *          0                1                2                3
+     *          |----------------|----------------|----------------|
+     *             *----------------------------------------*
+     *          beginTime                                endTime
+     *
+     */
+    uint64_t numSecondsTouched = endTimeSecond - beginTimeSecond;
+
+    if (numSecondsTouched == 0)
     {
-        PushMetricAndTryToMerge(metrics, metricName, endTime, dataUsed);
+        /*
+         * This value touches only a single second, so add all "dataUsed" as a metric for this second.
+         * Specifically pass endTime for this, so that any future deltas done against the last data
+         * point in the metric array, measure against the newest time.
+         */
+        PushDataUsedForSecondAndAggregate(metrics, metricName, endTime, dataUsed);
     }
     else
     {
+        /*
+         * This value overlaps more than a single second, so we first calculate the amount of data used
+         * in the starting second and the ending second.
+         */
         double beginDataUsedFraction = dataUsed * (double)(beginTimeOneMinusSecondFrac / (double)timeDelta);
         double endDataUsedFraction = dataUsed * (double)(endTimeSecondFrac / (double)timeDelta);
 
-        PushMetricAndTryToMerge(metrics, metricName, beginTime, beginDataUsedFraction);
+        // Push the data used for the beginning second.
+        PushDataUsedForSecondAndAggregate(metrics, metricName, beginTime, beginDataUsedFraction);
 
-        if (timeSecondDelta > 1)
+        /*
+         * In this case, we have "interior" seconds (full seconds that are overlapped), so distribute
+         * data used to each of those full seconds.
+         */
+        if (numSecondsTouched > 1)
         {
             uint64_t interiorBeginSecond = beginTimeSecond + 1;
             uint64_t interiorEndSecond = endTimeSecond;
@@ -83,16 +127,17 @@ void TransferState::DistributeDataUsedOverTime(
 
             for (uint64_t i = 0; i < numInteriorSeconds; ++i)
             {
-                PushMetricAndTryToMerge(
+                PushDataUsedForSecondAndAggregate(
                     metrics, metricName, (interiorBeginSecond * 1000ULL) + (i * 1000ULL), interiorSecondDataUsed);
             }
         }
 
-        PushMetricAndTryToMerge(metrics, metricName, endTime, endDataUsedFraction);
+        // Push the data used for the ending second.
+        PushDataUsedForSecondAndAggregate(metrics, metricName, endTime, endDataUsedFraction);
     }
 }
 
-void TransferState::PushMetricAndTryToMerge(
+void TransferState::PushDataUsedForSecondAndAggregate(
     Vector<Metric> &metrics,
     MetricName metricName,
     uint64_t timestamp,
@@ -101,11 +146,15 @@ void TransferState::PushMetricAndTryToMerge(
     bool pushNew = true;
     DateTime newDateTime(timestamp);
 
+    // If we already have a metric, try to aggregate the incoming
+    // data to it.
     if (metrics.size() > 0)
     {
         Metric &lastMetric = metrics.back();
         DateTime lastDateTime(lastMetric.Timestamp);
 
+        // TODO: this currently relies on DateTime only have a one second resolution,
+        // to detect if they fall in the same second, and we shouldn't rely on this.
         if (newDateTime == lastDateTime)
         {
             lastMetric.Value += dataUsed;
@@ -147,7 +196,7 @@ void TransferState::PushMetric(Vector<Metric> &metrics, MetricName metricName, d
     {
         Metric &lastMetric = metrics.back();
 
-        DistributeDataUsedOverTime(metrics, metricName, lastMetric.Timestamp, dataUsed);
+        DistributeDataUsedOverSeconds(metrics, metricName, lastMetric.Timestamp, dataUsed);
     }
 }
 
@@ -178,6 +227,16 @@ void TransferState::FlushMetricsVector(Vector<Metric> &metrics)
     }
 
     metrics.clear();
+}
+
+void TransferState::InitDataUpMetric()
+{
+    AddDataUpMetric(0);
+}
+
+void TransferState::InitDataDownMetric()
+{
+    AddDataDownMetric(0);
 }
 
 void TransferState::AddDataUpMetric(uint64_t dataUp)

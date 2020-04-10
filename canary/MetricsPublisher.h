@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2010-2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -118,7 +118,7 @@ struct Metric
 class CanaryApp;
 
 /**
- * Publishes an aggregated metrics collection to cloud watch at 'publishFrequency'
+ * Publishes an aggregated metrics collection to CloudWatch.
  */
 class MetricsPublisher
 {
@@ -131,32 +131,47 @@ class MetricsPublisher
     ~MetricsPublisher();
 
     /**
-     * Add a data point to the outgoing metrics collection.
+     * Add a list of data points to the outgoing metrics collection.
      */
     void AddDataPoints(const Aws::Crt::Vector<Metric> &metricData);
 
+    /**
+     * Add a data point to the outgoing metrics collection.
+     */
     void AddDataPoint(const Metric &metricData);
 
+    /**
+     * Add a transfer status data point (transfer success or failure) at a particular time.
+     */
     void AddTransferStatusDataPoint(uint64_t timestamp, bool transferSuccess);
 
+    /**
+     * Add a transfer status data point (transfer success or failure).
+     */
     void AddTransferStatusDataPoint(bool transferSuccess);
 
     /*
-     * Set the transfer size we are currently recording metrics for.  (Will
-     * be recorded with each metric.)
+     * Set the transfer type we are currently recording metrics for.  (Will
+     * be recorded with each metric as a dimension.)
      */
     void SetMetricTransferType(MetricTransferType transferType);
 
+    /*
+     * Sends all metrics that are currently being stored up to CloudWatch.
+     */
     void FlushMetrics();
 
+    /*
+     * Upload a backup of all currently stored metrics to S3.  Returns the path
+     * in S3 where the backup is stored.
+     */
     Aws::Crt::String UploadBackup(uint32_t options);
 
-    void RehydrateBackup(const char *s3Path);
-
-    /**
-     * namespace to use for the metrics
+    /*
+     * Given a path to a metrics backup in S3, this will republish those metrics
+     * to S3 with an id to keep it from conflicting with other metrics.
      */
-    Aws::Crt::Optional<Aws::Crt::String> Namespace;
+    void RehydrateBackup(const char *s3Path);
 
   private:
     static void s_OnPublishTask(aws_task *task, void *arg, aws_task_status status);
@@ -177,18 +192,25 @@ class MetricsPublisher
 
     void PreparePayload(Aws::Crt::StringStream &bodyStream, const Aws::Crt::Vector<Metric> &metrics);
 
-    MetricTransferType m_transferType;
     CanaryApp &m_canaryApp;
+
+    MetricTransferType m_transferType;
+    Aws::Crt::Optional<Aws::Crt::String> m_metricNamespace;
     std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> m_connManager;
+
     Aws::Crt::Vector<Metric> m_publishData;
     std::map<MetricKey, size_t> m_publishDataLU;
+
     Aws::Crt::Vector<Metric> m_publishDataTaskCopy;
     Aws::Crt::Vector<Metric> m_metricsBackup;
+
     Aws::Crt::Http::HttpHeader m_hostHeader;
     Aws::Crt::Http::HttpHeader m_contentTypeHeader;
     Aws::Crt::Http::HttpHeader m_apiVersionHeader;
+
     Aws::Crt::String m_endpoint;
     aws_event_loop *m_schedulingLoop;
+
     std::mutex m_publishDataLock;
     aws_task m_publishTask;
     uint64_t m_publishFrequencyNs;

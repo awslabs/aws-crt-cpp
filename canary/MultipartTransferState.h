@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2010-2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -34,6 +34,10 @@ enum class PartFinishResponse
     Retry
 };
 
+/*
+ * Represents a multipart object transfer state.  While it does not explicitly track an array of transfer states
+ * at the moment, it does represent the progress of a number of transfer states being processed.
+ */
 class MultipartTransferState
 {
   public:
@@ -46,18 +50,35 @@ class MultipartTransferState
 
     virtual ~MultipartTransferState();
 
-    void SetProcessPartCallback(const ProcessPartCallback &processPartCallback);
-    void SetFinishedCallback(const FinishedCallback &finishedCallback);
-
-    void SetFinished(int32_t errorCode = AWS_ERROR_SUCCESS);
-    bool IncNumPartsCompleted();
-
     bool IsFinished() const;
     const Aws::Crt::String &GetKey() const;
     uint32_t GetNumParts() const;
     uint32_t GetNumPartsCompleted() const;
     uint64_t GetObjectSize() const;
 
+    /*
+     * Callback that will be used to process a part, ie, upload or downlad it.
+     */
+    void SetProcessPartCallback(const ProcessPartCallback &processPartCallback);
+
+    /*
+     * Callback that will be triggered when all parts have finished processing.
+     */
+    void SetFinishedCallback(const FinishedCallback &finishedCallback);
+
+    /*
+     * Sets the finished status of the entire transfer, in failure or success.
+     */
+    void SetFinished(int32_t errorCode = AWS_ERROR_SUCCESS);
+
+    /*
+     * Increment thread safe counter that a part has completed.
+     */
+    bool IncNumPartsCompleted();
+
+    /*
+     * Used to invoke the internal process part callback.
+     */
     template <typename... TArgs> void ProcessPart(TArgs &&... Args) const
     {
         m_processPartCallback(std::forward<TArgs>(Args)...);
@@ -74,6 +95,9 @@ class MultipartTransferState
     FinishedCallback m_finishedCallback;
 };
 
+/*
+ * Represents a multipart upload transfer state.
+ */
 class MultipartUploadState : public MultipartTransferState
 {
   public:
@@ -91,6 +115,9 @@ class MultipartUploadState : public MultipartTransferState
     Aws::Crt::String m_uploadId;
 };
 
+/*
+ * Represents a multipart download transfer state.
+ */
 class MultipartDownloadState : public MultipartTransferState
 {
   public:

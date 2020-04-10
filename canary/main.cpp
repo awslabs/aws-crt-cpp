@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2010-2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -191,6 +191,7 @@ int main(int argc, char *argv[])
 #ifndef WIN32
     std::vector<CanaryAppChildProcess> children;
 
+    // For fork mode, create a child process per transfer, setting up pipes for communication along the way.
     if (canaryAppOptions.forkModeEnabled)
     {
         canaryAppOptions.isParentProcess = true;
@@ -260,7 +261,8 @@ int main(int argc, char *argv[])
     canaryApp.Run();
 
 #ifndef WIN32
-    if (canaryApp.GetOptions().forkModeEnabled && canaryApp.GetOptions().isParentProcess)
+    // If executing in a parent process, wait for all child processes to complete before exiting.
+    if (canaryApp.GetOptions().isParentProcess)
     {
         bool waitingForChildren = true;
 

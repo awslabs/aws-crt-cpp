@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2010-2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -36,6 +36,10 @@ namespace Aws
     } // namespace Crt
 } // namespace Aws
 
+/*
+ * Processes parts of each multipart transfer state passed in via PushQueue, allowing individual parts
+ * to be re-pushed if needed in the event of failure.
+ */
 class MultipartTransferProcessor
 {
   public:
@@ -44,8 +48,14 @@ class MultipartTransferProcessor
         Aws::Crt::Io::EventLoopGroup &elGroup,
         std::uint32_t streamsAvailable);
 
+    /*
+     * Push a multipart transfer state for processing.
+     */
     void PushQueue(const std::shared_ptr<MultipartTransferState> &uploadState);
 
+    /*
+     * Re-push an individual part of a multipart transfer state for processing.
+     */
     void RepushQueue(const std::shared_ptr<MultipartTransferState> &state, uint32_t partIndex);
 
   private:

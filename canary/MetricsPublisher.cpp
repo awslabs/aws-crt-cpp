@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2010-2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
+
 #include "MetricsPublisher.h"
 #include "CanaryApp.h"
 #include "MeasureTransferRate.h"
@@ -174,7 +175,7 @@ MetricsPublisher::MetricsPublisher(
     std::chrono::milliseconds publishFrequency)
     : m_canaryApp(canaryApp)
 {
-    Namespace = metricNamespace;
+    m_metricNamespace = metricNamespace;
 
     AWS_ZERO_STRUCT(m_publishTask);
     m_publishFrequencyNs =
@@ -273,9 +274,9 @@ void MetricsPublisher::PreparePayload(StringStream &bodyStream, const Vector<Met
 {
     bodyStream << "Action=PutMetricData&";
 
-    if (Namespace)
+    if (m_metricNamespace)
     {
-        bodyStream << "Namespace=" << *Namespace << "&";
+        bodyStream << "Namespace=" << *m_metricNamespace << "&";
     }
 
     String transferTypeString = MetricTransferTypeToString(GetTransferType());
