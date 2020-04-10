@@ -440,10 +440,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
         MakeShared<Io::StdIOStreamInputStream>(g_allocator, backupContents);
 
     transport->PutObject(
-        s3BackupPath,
-        inputStream,
-        0,
-        [&signalMutex, &signalVal, &signal](int32_t errorCode, std::shared_ptr<Aws::Crt::String>) {
+        s3BackupPath, inputStream, 0, [&signalMutex, &signalVal, &signal](int32_t, std::shared_ptr<Aws::Crt::String>) {
             {
                 std::lock_guard<std::mutex> locker(signalMutex);
                 signalVal = true;
@@ -500,9 +497,9 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
     JsonObject jsonObject(contentsStr);
     JsonView jsonView = jsonObject.View();
 
-    String TransferTypeStr = jsonView.GetString("TransferType");
+    String transferTypeStr = jsonView.GetString("TransferType");
 
-    m_transferTypeOverride = StringToMetricTransferType(TransferTypeStr.c_str());
+    m_transferTypeOverride = StringToMetricTransferType(transferTypeStr.c_str());
     m_platformNameOverride = jsonView.GetString("PlatformName");
     m_toolNameOverride = jsonView.GetString("ToolName");
     m_instanceTypeOverride = jsonView.GetString("InstanceType");
@@ -516,15 +513,15 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
 
     for (const JsonView &metricJson : metricsJson)
     {
-        String MetricNameStr = metricJson.GetString("Name");
-        String MetricUnitStr = metricJson.GetString("Unit");
+        String metricNameStr = metricJson.GetString("Name");
+        String metricUnitStr = metricJson.GetString("Unit");
 
         String metricTimestampStr = metricJson.GetString("Timestamp");
         uint64_t metricTimestamp = std::stoull(metricTimestampStr.c_str());
 
         Metric metric(
-            StringToMetricName(MetricNameStr.c_str()),
-            StringToMetricUnit(MetricUnitStr.c_str()),
+            StringToMetricName(metricNameStr.c_str()),
+            StringToMetricUnit(metricUnitStr.c_str()),
             metricTimestamp,
             metricJson.GetDouble("Value"));
 
@@ -544,7 +541,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
         << "~'Platform~'" << m_platformNameOverride.value().c_str() << "~'ToolName~'"
         << m_toolNameOverride.value().c_str() << "~'Encrypted~'" << m_sendEncryptedOverride.value() << "~'ReplayId~'"
         << m_replayId.value() << "~'InstanceType~'" << m_instanceTypeOverride.value().c_str() << "~'TransferType~'"
-        << TransferTypeStr.c_str()
+        << transferTypeStr.c_str()
         << "~(id~'m1~visible~false))~(~'.~'BytesUp~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~(id~'m2~visible~false))~(~'.~'"
            "NumConnections~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~(id~'m3~visible~false))~(~'.~'FailedTransfer~'.~'.~'.~'."
            "~'.~'.~'.~'.~'.~'.~'.~'.~(id~'m4~visible~false))~(~'.~'SuccessfulTransfer~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~"

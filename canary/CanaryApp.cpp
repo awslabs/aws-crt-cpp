@@ -39,18 +39,13 @@ CanaryAppOptions::CanaryAppOptions() noexcept
 }
 
 #ifndef WIN32
-CanaryAppChildProcess::CanaryAppChildProcess() noexcept
-    :
-      pid(0),readFromChildPipe(-1), writeToChildPipe(-1)
-{
-}
+CanaryAppChildProcess::CanaryAppChildProcess() noexcept : pid(0), readFromChildPipe(-1), writeToChildPipe(-1) {}
 
 CanaryAppChildProcess::CanaryAppChildProcess(pid_t inPid, int32_t inReadPipe, int32_t inWritePipe) noexcept
     : pid(inPid), readFromChildPipe(inReadPipe), writeToChildPipe(inWritePipe)
 {
 }
 #endif
-
 
 CanaryApp::CanaryApp(CanaryAppOptions &&inOptions) noexcept
     : m_options(inOptions), m_apiHandle(g_allocator),

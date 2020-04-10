@@ -92,7 +92,7 @@ void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
     {
         std::this_thread::sleep_for(std::chrono::seconds(1));
 
-        numAddresses = m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(
+        numAddresses = (uint32_t)m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(
             m_endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
 
         EmitS3AddressCountMetric(numAddresses);
@@ -339,7 +339,7 @@ void S3ObjectTransport::PutObject(
     }
 
     Http::HttpRequestOptions requestOptions;
-    AWS_ZERO_STRUCT(requestOptions);
+    requestOptions.request = nullptr;
     requestOptions.onIncomingHeaders = [etag](
                                            Http::HttpStream &stream,
                                            enum aws_http_header_block headerBlock,
@@ -429,7 +429,7 @@ void S3ObjectTransport::GetObject(
     request->SetPath(path);
 
     Http::HttpRequestOptions requestOptions;
-    AWS_ZERO_STRUCT(requestOptions);
+    requestOptions.request = nullptr;
     requestOptions.onIncomingBody = onIncomingBody;
     requestOptions.onStreamComplete = [keyPath, partNumber, getObjectFinished](Http::HttpStream &stream, int error) {
         int errorCode = error;
@@ -694,7 +694,7 @@ void S3ObjectTransport::CreateMultipartUpload(
     std::shared_ptr<String> uploadId = MakeShared<String>(g_allocator);
 
     Http::HttpRequestOptions requestOptions;
-    AWS_ZERO_STRUCT(requestOptions);
+    requestOptions.request = nullptr;
     requestOptions.onIncomingBody = [uploadId, keyPath](Http::HttpStream &stream, const ByteCursor &data) {
         (void)stream;
 
@@ -814,7 +814,7 @@ void S3ObjectTransport::CompleteMultipartUpload(
     request->SetPath(path);
 
     Http::HttpRequestOptions requestOptions;
-    AWS_ZERO_STRUCT(requestOptions);
+    requestOptions.request = nullptr;
     requestOptions.onStreamComplete = [keyPath, finishedCallback](Http::HttpStream &stream, int errorCode) {
         if (errorCode == AWS_ERROR_SUCCESS)
         {
@@ -871,7 +871,7 @@ void S3ObjectTransport::AbortMultipartUpload(
     request->SetPath(keyPathByteCursor);
 
     Http::HttpRequestOptions requestOptions;
-    AWS_ZERO_STRUCT(requestOptions);
+    requestOptions.request = nullptr;
     requestOptions.onStreamComplete = [uploadId, keyPath, finishedCallback](Http::HttpStream &stream, int errorCode) {
         if (errorCode == AWS_ERROR_SUCCESS)
         {
