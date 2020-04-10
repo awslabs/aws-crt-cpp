@@ -94,7 +94,7 @@ void TransferState::DistributeDataUsedOverSeconds(
         /*
          * This value touches only a single second, so add all "dataUsed" as a metric for this second.
          * Specifically pass endTime for this, so that any future deltas done against the last data
-         * point in the metric array, measure against the newest time.
+         * point in the metric array measures against the newest time.
          */
         PushDataUsedForSecondAndAggregate(metrics, metricName, endTime, dataUsed);
     }
