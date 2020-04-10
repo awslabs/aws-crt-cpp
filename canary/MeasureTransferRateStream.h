@@ -23,7 +23,7 @@
 #include <functional>
 
 /*
- * An input stream that measures up-transfer-rate by recording metrics when it is read.
+ * An input stream that measures up-transfer-rate by recording data-up metrics when it is read from.
  */
 class MeasureTransferRateStream : public Aws::Crt::Io::InputStream
 {
