@@ -54,6 +54,10 @@ using ReceivePartCallback =
 class S3ObjectTransport
 {
   public:
+
+    static const uint32_t MaxUploadMultipartStreams;
+    static const uint32_t MaxDownloadMultipartStreams;
+
     S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::String &bucket);
 
     /*

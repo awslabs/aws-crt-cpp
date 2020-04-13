@@ -79,6 +79,7 @@ class MeasureTransferRate
      * have this value in their key to differentiate them from other key-values used by other PerformMeasurement calls.
      *    numTransfes: Number of total times to perform the transferFunction.
      *    numConcurentTransfers: Maximum number of transfers that are active at any given time.
+     *    numTransfersToDNSResolve: Number of transfers to use when calculating how many DNS resolves to do.
      *    flags: Optional flags defined by MeasurementFlags enum that can alter the exeuction of the method.
      *    transport: S3ObjectTransport that will be used during the transfer.  This is passed in so that the relevant
      * DNS cache can be warmed in relation to the number of concurrent transfers happening. transferFunction: Defines
@@ -89,6 +90,7 @@ class MeasureTransferRate
         const char *keyPrefix,
         uint32_t numTransfers,
         uint32_t numConcurrentTransfers,
+        uint32_t numTransfersToDNSResolve,
         uint32_t flags,
         const std::shared_ptr<S3ObjectTransport> &transport,
         TransferFunction &&transferFunction);
