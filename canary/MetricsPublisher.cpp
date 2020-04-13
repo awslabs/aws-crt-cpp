@@ -511,6 +511,9 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
     m_replayId = currentTicks;
 
     Vector<JsonView> metricsJson = jsonView.GetArray("Metrics");
+    Vector<Metric> metrics;
+
+    uint64_t newestTimeStamp = 0;
 
     for (const JsonView &metricJson : metricsJson)
     {
@@ -520,15 +523,47 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
         String metricTimestampStr = metricJson.GetString("Timestamp");
         uint64_t metricTimestamp = std::stoull(metricTimestampStr.c_str());
 
-        Metric metric(
+        metrics.emplace_back(
             StringToMetricName(metricNameStr.c_str()),
             StringToMetricUnit(metricUnitStr.c_str()),
             metricTimestamp,
             metricJson.GetDouble("Value"));
 
-        AddDataPoint(metric);
+        newestTimeStamp = std::max(metricTimestamp, newestTimeStamp);
     }
 
+    /*
+     * Calculate new timestamps for the metrics so that they happen within the most recent
+     * three hour period, which will allow them to be graphed at a one second granularity
+     * in CloudWatch.
+     *
+     * Because metric timestamps are not exactly on a one second boundary, some care must be
+     * taken so that their given offset within a second is preserved.  Otherwise, a
+     * metric might be incorrectly distributed to a neighboring second.
+     */
+    {
+        /*
+         * Calculate the amount of time, in milliseconds, that the newestTimeStamp
+         * is from the next second.
+         */
+        uint64_t newestTimeStampSecondOffset = 1000ULL - (newestTimeStamp % 1000ULL);
+
+        DateTime dateTime = DateTime::Now();
+        uint64_t nowMillis = dateTime.Millis();
+
+        /*
+         * Given the time for "now" in milliseconds, back it up to the nearest second,
+         * and then back it up by the newestTimeStampSecondOffset.
+         */
+        uint64_t relocatedMetricsEnd = nowMillis - (nowMillis % 1000ULL) - newestTimeStampSecondOffset;
+
+        for (Metric &metric : metrics)
+        {
+            metric.Timestamp = metric.Timestamp - newestTimeStamp + relocatedMetricsEnd;
+        }
+    }
+
+    AddDataPoints(metrics);
     SchedulePublish();
     WaitForLastPublish();
 
@@ -547,7 +582,9 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
            "NumConnections~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~(id~'m3~visible~false))~(~'.~'FailedTransfer~'.~'.~'.~'."
            "~'.~'.~'.~'.~'.~'.~'.~'.~(id~'m4~visible~false))~(~'.~'SuccessfulTransfer~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~"
            "'.~(id~'m5~visible~false))~(~'.~'S3AddressCount~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~(id~'m6~stat~'Average~"
-           "visible~false)))~view~'timeSeries~stacked~false~region~'us-west-2~stat~'Sum~period~1~title~'Replay*20Graph)"
+           "visible~false)))~view~'timeSeries~stacked~false~region~'"
+        << m_canaryApp.GetOptions().region
+        << "~stat~'Sum~period~1~title~'Replay*20Graph)"
            ";query=~'*7bCRT-CPP-Canary-V2*2cEncrypted*2cInstanceType*2cPlatform*2cReplayId*2cToolName*2cTransferType*"
            "7d";
 

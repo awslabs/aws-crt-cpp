@@ -150,7 +150,7 @@ class S3ObjectTransport
 
     std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> GetNextConnManager();
 
-    void EmitS3AddressCountMetric(uint32_t addressCount);
+    void EmitS3AddressCountMetric(size_t addressCount);
 
     void MakeSignedRequest(
         const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,

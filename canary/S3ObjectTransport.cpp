@@ -52,9 +52,9 @@ S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::Strin
     m_contentTypeHeader.value = ByteCursorFromCString("text/plain");
 }
 
-void S3ObjectTransport::EmitS3AddressCountMetric(uint32_t addressCount)
+void S3ObjectTransport::EmitS3AddressCountMetric(size_t addressCount)
 {
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Emitting S3 Address Count Metric: %d", addressCount);
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Emitting S3 Address Count Metric: %" PRIu64, (uint64_t)addressCount);
 
     Metric s3AddressCountMetric(MetricName::S3AddressCount, MetricUnit::Count, (double)addressCount);
     m_canaryApp.GetMetricsPublisher()->AddDataPoint(s3AddressCountMetric);
@@ -63,7 +63,7 @@ void S3ObjectTransport::EmitS3AddressCountMetric(uint32_t addressCount)
 void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
 {
     // Each transfer is in a group the size of TransfersPerAddress,
-    uint32_t desiredNumberOfAddresses = numTransfers / TransfersPerAddress;
+    size_t desiredNumberOfAddresses = numTransfers / TransfersPerAddress;
 
     if ((numTransfers % TransfersPerAddress) > 0)
     {
@@ -72,8 +72,8 @@ void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
 
     AWS_LOGF_INFO(
         AWS_LS_CRT_CPP_CANARY,
-        "Warming DNS cache: getting %d addresses for endpoint %s",
-        desiredNumberOfAddresses,
+        "Warming DNS cache: getting %" PRIu64 " addresses for endpoint %s",
+        (uint64_t)desiredNumberOfAddresses,
         m_endpoint.c_str());
 
     // Ask the host resolver to start resolving.
@@ -82,7 +82,7 @@ void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
 
     // Wait until the resolved address count is what we need it to be.
     {
-        uint32_t numAddresses = (uint32_t)m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(
+        size_t numAddresses = m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(
             m_endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
 
         EmitS3AddressCountMetric(numAddresses);
@@ -91,7 +91,7 @@ void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
         {
             std::this_thread::sleep_for(std::chrono::seconds(1));
 
-            numAddresses = (uint32_t)m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(
+            numAddresses = m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(
                 m_endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
 
             EmitS3AddressCountMetric(numAddresses);

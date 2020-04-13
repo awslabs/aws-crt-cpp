@@ -153,9 +153,10 @@ void TransferState::PushDataUsedForSecondAndAggregate(
         Metric &lastMetric = metrics.back();
         DateTime lastDateTime(lastMetric.Timestamp);
 
-        // TODO: this currently relies on DateTime only have a one second resolution,
-        // to detect if they fall in the same second, and we shouldn't rely on this.
-        if (newDateTime == lastDateTime)
+        uint64_t newDateTimeSecondsSinceEpoch = newDateTime.Millis() / 1000ULL;
+        uint64_t lastDateTimeSecondsSinceEpoch = lastDateTime.Millis() / 1000ULL;
+
+        if (newDateTimeSecondsSinceEpoch == lastDateTimeSecondsSinceEpoch)
         {
             lastMetric.Value += dataUsed;
             lastMetric.Timestamp = std::max(lastMetric.Timestamp, timestamp);
