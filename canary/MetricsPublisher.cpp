@@ -29,6 +29,10 @@
 #include <iostream>
 #include <time.h>
 
+#ifdef WIN32
+    #undef max
+#endif
+
 using namespace Aws::Crt;
 
 namespace
