@@ -33,10 +33,7 @@
 #    include <unistd.h>
 #endif
 
-extern "C"
-{
 #include <aws/common/command_line_parser.h>
-}
 
 using namespace Aws::Crt;
 
@@ -106,7 +103,7 @@ int main(int argc, char *argv[])
                                       {"downloadBucketName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'b'},
                                       {"downloadObjectName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'o'}};
 
-    const char *optstring = "t:i:smh:dCem:fn:c:zr:b:o:";
+    const char *optstring = "t:i:smh:defn:c:zr:b:o:";
 
     CanaryAppOptions canaryAppOptions;
 
@@ -123,9 +120,15 @@ int main(int argc, char *argv[])
     }
 
     int cliOptionIndex = 0;
+    int cliGetOptResult = aws_cli_getopt_long(argc, argv, optstring, options, &cliOptionIndex);
 
-    while (aws_cli_getopt_long(argc, argv, optstring, options, &cliOptionIndex) != -1)
+    while (cliGetOptResult != -1)
     {
+        if(cliGetOptResult == '?')
+        {
+            continue;
+        }
+
         switch ((CLIOption)cliOptionIndex)
         {
             case CLIOption::ToolName:
@@ -183,6 +186,8 @@ int main(int argc, char *argv[])
                 AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Unknown CLI option used.");
                 break;
         }
+
+        cliGetOptResult = aws_cli_getopt_long(argc, argv, optstring, options, &cliOptionIndex);
     }
 
     ClampConcurrentTransfers(canaryAppOptions.numUpTransfers, canaryAppOptions.numUpConcurrentTransfers);
