@@ -30,7 +30,7 @@
 #include <time.h>
 
 #ifdef WIN32
-    #undef max
+#    undef max
 #endif
 
 using namespace Aws::Crt;

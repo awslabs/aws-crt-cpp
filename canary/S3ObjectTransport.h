@@ -54,7 +54,6 @@ using ReceivePartCallback =
 class S3ObjectTransport
 {
   public:
-
     static const uint32_t MaxUploadMultipartStreams;
     static const uint32_t MaxDownloadMultipartStreams;
 
