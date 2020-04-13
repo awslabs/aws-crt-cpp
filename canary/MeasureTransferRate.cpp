@@ -48,6 +48,7 @@ void MeasureTransferRate::PerformMeasurement(
     const char *keyPrefix,
     uint32_t numTransfers,
     uint32_t numConcurrentTransfers,
+    uint32_t numTransfersToDNSResolve,
     uint32_t flags,
     const std::shared_ptr<S3ObjectTransport> &transport,
     TransferFunction &&transferFunction)
@@ -60,7 +61,7 @@ void MeasureTransferRate::PerformMeasurement(
     {
         if ((flags & (uint32_t)MeasurementFlags::DontWarmDNSCache) == 0)
         {
-            m_canaryApp.transport->WarmDNSCache(numConcurrentTransfers);
+            transport->WarmDNSCache(numTransfersToDNSResolve);
         }
 
         // Each child process performs a transfer, so provide each with a resolve address
@@ -96,7 +97,7 @@ void MeasureTransferRate::PerformMeasurement(
     {
         if ((flags & (uint32_t)MeasurementFlags::DontWarmDNSCache) == 0)
         {
-            m_canaryApp.transport->WarmDNSCache(numConcurrentTransfers);
+            transport->WarmDNSCache(numTransfersToDNSResolve);
         }
 
         m_canaryApp.transport->SpawnConnectionManagers();
@@ -215,6 +216,7 @@ void MeasureTransferRate::MeasureHttpTransfer()
         "httpTransferDown-",
         m_canaryApp.GetOptions().numDownTransfers,
         m_canaryApp.GetOptions().numDownConcurrentTransfers,
+        0,
         (uint32_t)MeasurementFlags::DontWarmDNSCache | (uint32_t)MeasurementFlags::NoFileSuffix,
         nullptr,
         [this, connManager, &hostHeader](
@@ -330,6 +332,7 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
             "singlePartObjectUp-",
             m_canaryApp.GetOptions().numUpTransfers,
             m_canaryApp.GetOptions().numUpConcurrentTransfers,
+            m_canaryApp.GetOptions().numUpConcurrentTransfers,
             0,
             m_canaryApp.GetUploadTransport(),
             [this, &uploads](
@@ -371,6 +374,7 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
         m_canaryApp.GetOptions().downloadObjectName.c_str(),
         "singlePartObjectDown-",
         m_canaryApp.GetOptions().numDownTransfers,
+        m_canaryApp.GetOptions().numDownConcurrentTransfers,
         m_canaryApp.GetOptions().numDownConcurrentTransfers,
         (uint32_t)MeasurementFlags::NoFileSuffix,
         m_canaryApp.GetDownloadTransport(),
@@ -415,6 +419,7 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
             "multiPartObjectUp-",
             m_canaryApp.GetOptions().numUpTransfers,
             m_canaryApp.GetOptions().numUpConcurrentTransfers,
+            S3ObjectTransport::MaxUploadMultipartStreams,
             0,
             m_canaryApp.GetUploadTransport(),
             [this](
@@ -451,6 +456,7 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
         "multiPartObjectDown-",
         m_canaryApp.GetOptions().numDownTransfers,
         m_canaryApp.GetOptions().numDownConcurrentTransfers,
+        S3ObjectTransport::MaxDownloadMultipartStreams,
         0,
         m_canaryApp.GetDownloadTransport(),
         [](uint32_t,

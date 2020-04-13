@@ -31,17 +31,19 @@
 
 using namespace Aws::Crt;
 
+const uint32_t S3ObjectTransport::MaxUploadMultipartStreams = 800;
+const uint32_t S3ObjectTransport::MaxDownloadMultipartStreams = 800;
+
 namespace
 {
-    const uint32_t MaxStreams = 500;
     const uint32_t TransfersPerAddress = 10;
     const int32_t S3GetObjectResponseStatus_PartialContent = 206;
 } // namespace
 
 S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::String &bucket)
     : m_canaryApp(canaryApp), m_bucketName(bucket), m_connManagersUseCount(0), m_activeRequestsCount(0),
-      m_uploadProcessor(canaryApp, canaryApp.GetEventLoopGroup(), MaxStreams),
-      m_downloadProcessor(canaryApp, canaryApp.GetEventLoopGroup(), MaxStreams)
+      m_uploadProcessor(canaryApp, canaryApp.GetEventLoopGroup(), MaxUploadMultipartStreams),
+      m_downloadProcessor(canaryApp, canaryApp.GetEventLoopGroup(), MaxDownloadMultipartStreams)
 {
     m_endpoint = m_bucketName + ".s3." + m_canaryApp.GetOptions().region.c_str() + ".amazonaws.com";
 
