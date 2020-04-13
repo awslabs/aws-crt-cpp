@@ -19,8 +19,8 @@ using namespace Aws::Crt;
 
 namespace
 {
-    size_t BodyTemplateSize = 4ULL * 1024ULL;
-    thread_local char *BodyTemplate = nullptr;
+    const size_t BodyTemplateSize = 4ULL * 1024ULL;
+    thread_local char BodyTemplate[BodyTemplateSize] = "";
 } // namespace
 
 bool MeasureTransferRateStream::IsValid() const noexcept
@@ -30,15 +30,14 @@ bool MeasureTransferRateStream::IsValid() const noexcept
 
 bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
 {
-    if (BodyTemplate == nullptr)
+    if (BodyTemplate[0] == '\0')
     {
         char BodyTemplateData[] =
             "This is a test string for use with canary testing against Amazon Simple Storage Service";
 
-        BodyTemplate = new char[BodyTemplateSize];
         BodyTemplate[BodyTemplateSize - 1] = '\0';
 
-        size_t totalToWrite = BodyTemplateSize;
+        size_t totalToWrite = BodyTemplateSize - 1;
         char *BodyTemplatePos = BodyTemplate;
 
         while (totalToWrite)
