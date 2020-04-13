@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
 
     while (cliGetOptResult != -1)
     {
-        if(cliGetOptResult == '?')
+        if (cliGetOptResult == '?')
         {
             continue;
         }
