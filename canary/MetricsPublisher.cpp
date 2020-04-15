@@ -24,6 +24,7 @@
 
 #include <aws/common/clock.h>
 #include <aws/common/task_scheduler.h>
+#include <aws/common/uuid.h>
 #include <condition_variable>
 #include <inttypes.h>
 #include <iostream>
@@ -252,6 +253,18 @@ bool MetricsPublisher::IsSendingEncrypted() const
 {
     return m_sendEncryptedOverride.has_value() ? m_sendEncryptedOverride.value()
                                                : m_canaryApp.GetOptions().sendEncrypted;
+}
+
+String MetricsPublisher::CreateUUID() const
+{
+    char uuid_storage[AWS_UUID_STR_LEN] = {0};
+    struct aws_byte_buf uuid_buf = aws_byte_buf_from_empty_array(uuid_storage, sizeof(uuid_storage));
+
+    struct aws_uuid uuid;
+    AWS_FATAL_ASSERT(aws_uuid_init(&uuid) == AWS_OP_SUCCESS);
+    AWS_FATAL_ASSERT(aws_uuid_to_str(&uuid, &uuid_buf) == AWS_OP_SUCCESS);
+
+    return String(uuid_storage);
 }
 
 void MetricsPublisher::FlushMetrics()
@@ -510,9 +523,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
     m_instanceTypeOverride = jsonView.GetString("InstanceType");
     m_sendEncryptedOverride = jsonView.GetBool("Encrypted");
 
-    uint64_t currentTicks = 0;
-    aws_sys_clock_get_ticks(&currentTicks);
-    m_replayId = currentTicks;
+    m_replayId = CreateUUID();
 
     Vector<JsonView> metricsJson = jsonView.GetArray("Metrics");
     Vector<Metric> metrics;
@@ -599,7 +610,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
     m_toolNameOverride = Optional<String>();
     m_instanceTypeOverride = Optional<String>();
     m_sendEncryptedOverride = Optional<bool>();
-    m_replayId = Optional<uint64_t>();
+    m_replayId = Optional<String>();
 }
 
 void MetricsPublisher::AddDataPoint(const Metric &newMetric)
