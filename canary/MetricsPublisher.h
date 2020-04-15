@@ -181,6 +181,7 @@ class MetricsPublisher
     Aws::Crt::String GetToolName() const;
     Aws::Crt::String GetInstanceType() const;
     bool IsSendingEncrypted() const;
+    Aws::Crt::String CreateUUID() const;
 
     void SchedulePublish();
 
@@ -221,5 +222,5 @@ class MetricsPublisher
     Aws::Crt::Optional<Aws::Crt::String> m_toolNameOverride;
     Aws::Crt::Optional<Aws::Crt::String> m_instanceTypeOverride;
     Aws::Crt::Optional<bool> m_sendEncryptedOverride;
-    Aws::Crt::Optional<uint64_t> m_replayId;
+    Aws::Crt::Optional<Aws::Crt::String> m_replayId;
 };
