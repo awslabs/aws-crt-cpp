@@ -32,6 +32,7 @@
 #include <time.h>
 
 #ifdef WIN32
+#    undef min
 #    undef max
 #endif
 
@@ -330,8 +331,8 @@ void MetricsPublisher::AggregateDataPoints(
         {
             size_t index = it->second;
 
-            Metric &metric = agreggatedDataPoints[index];
-            metric.Value += metric.Value;
+            Metric &existingMetric = agreggatedDataPoints[index];
+            existingMetric.Value += metric.Value;
         }
         else
         {
@@ -483,7 +484,7 @@ void MetricsPublisher::GeneratePerStreamCSVRow(
 
         double streamGigabits = streamBytes * 8.0 / 1000.0 / 1000.0 / 1000.0;
 
-        uint64_t relativeTimestamp = timestampSeconds - timestampStart;
+        double relativeTimestamp = (double)(timestampSeconds - timestampStart);
         uint64_t csvThroughputIndex = (size_t)PerStreamCSVColumn::ThroughputStart + relativeTimestamp;
 
         if (streamSuccess > 0.0)
