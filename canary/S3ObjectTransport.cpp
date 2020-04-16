@@ -58,7 +58,7 @@ void S3ObjectTransport::EmitS3AddressCountMetric(size_t addressCount)
 {
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Emitting S3 Address Count Metric: %" PRIu64, (uint64_t)addressCount);
 
-    Metric s3AddressCountMetric(MetricName::S3AddressCount, MetricUnit::Count, (double)addressCount);
+    Metric s3AddressCountMetric(MetricName::S3AddressCount, MetricUnit::Count, 0ULL, (double)addressCount);
     m_canaryApp.GetMetricsPublisher()->AddDataPoint(s3AddressCountMetric);
 }
 
@@ -599,8 +599,6 @@ void S3ObjectTransport::UploadPart(
 
                 partFinished(PartFinishResponse::Done);
 
-                m_canaryApp.GetMetricsPublisher()->AddTransferStatusDataPoint(true);
-
                 transferState->FlushDataUpMetrics();
 
                 AWS_LOGF_INFO(
@@ -620,8 +618,6 @@ void S3ObjectTransport::UploadPart(
                     transferState->GetPartNumber(),
                     errorCode,
                     aws_error_debug_str(errorCode));
-
-                m_canaryApp.GetMetricsPublisher()->AddTransferStatusDataPoint(false);
 
                 transferState->FlushDataUpMetrics();
 
