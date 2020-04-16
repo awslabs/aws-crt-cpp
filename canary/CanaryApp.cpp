@@ -70,10 +70,10 @@ CanaryApp::CanaryApp(CanaryAppOptions &&inOptions) noexcept
 {
 #ifndef WIN32
     // Default FDS limit on Linux can be quite low at at 1024, so
-    // increase it for added headroom.
+    // increase it for added head room.
     rlimit fdsLimit;
     getrlimit(RLIMIT_NOFILE, &fdsLimit);
-    fdsLimit.rlim_cur = 8192;
+    fdsLimit.rlim_cur = fdsLimit.rlim_max;
     setrlimit(RLIMIT_NOFILE, &fdsLimit);
 #endif
 
