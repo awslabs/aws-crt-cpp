@@ -477,7 +477,7 @@ void MetricsPublisher::GeneratePerStreamCSVRow(
         double streamGigabits = streamBytes * 8.0 / 1000.0 / 1000.0 / 1000.0;
 
         double relativeTimestamp = (double)(timestampSeconds - timestampStart);
-        uint64_t csvThroughputIndex = (size_t)PerStreamCSVColumn::ThroughputStart + relativeTimestamp;
+        size_t csvThroughputIndex = (size_t)PerStreamCSVColumn::ThroughputStart + (size_t)relativeTimestamp;
 
         if (streamSuccess > 0.0)
         {
