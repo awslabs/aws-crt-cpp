@@ -58,19 +58,11 @@ enum class MetricName
     BytesUp,
     BytesDown,
     NumConnections,
-    BytesAllocated,
     S3AddressCount,
     SuccessfulTransfer,
     FailedTransfer,
-    AvgEventLoopGroupTickElapsed,
-    AvgEventLoopTaskRunElapsed,
-    MinEventLoopGroupTickElapsed,
-    MinEventLoopTaskRunElapsed,
-    MaxEventLoopGroupTickElapsed,
-    MaxEventLoopTaskRunElapsed,
-    NumIOSubs,
 
-    Invalid
+    MAX
 };
 
 enum class MetricTransferType
@@ -85,32 +77,17 @@ enum class UploadBackupOptions
     PrintPath = 0x00000001
 };
 
-struct MetricKey
-{
-    MetricName Name;
-    uint64_t TimestampSeconds;
-
-    bool operator<(const MetricKey &otherKey) const
-    {
-        if (TimestampSeconds == otherKey.TimestampSeconds)
-        {
-            return (uint32_t)Name < (uint32_t)otherKey.Name;
-        }
-
-        return TimestampSeconds < otherKey.TimestampSeconds;
-    }
-};
-
 struct Metric
 {
     MetricUnit Unit;
     MetricName Name;
     uint64_t Timestamp;
+    uint64_t TransferId;
     double Value;
 
     Metric();
-    Metric(MetricName Name, MetricUnit unit, double value);
-    Metric(MetricName Name, MetricUnit unit, uint64_t timestamp, double value);
+    Metric(MetricName Name, MetricUnit unit, uint64_t transferId, double value);
+    Metric(MetricName Name, MetricUnit unit, uint64_t timestamp, uint64_t transferId, double value);
 
     void SetTimestampNow();
 };
@@ -130,6 +107,8 @@ class MetricsPublisher
 
     ~MetricsPublisher();
 
+    uint64_t GetMetricGroupId();
+
     /**
      * Add a list of data points to the outgoing metrics collection.
      */
@@ -139,16 +118,6 @@ class MetricsPublisher
      * Add a data point to the outgoing metrics collection.
      */
     void AddDataPoint(const Metric &metricData);
-
-    /**
-     * Add a transfer status data point (transfer success or failure) at a particular time.
-     */
-    void AddTransferStatusDataPoint(uint64_t timestamp, bool transferSuccess);
-
-    /**
-     * Add a transfer status data point (transfer success or failure).
-     */
-    void AddTransferStatusDataPoint(bool transferSuccess);
 
     /*
      * Set the transfer type we are currently recording metrics for.  (Will
@@ -174,6 +143,42 @@ class MetricsPublisher
     void RehydrateBackup(const char *s3Path);
 
   private:
+    struct AggregateMetricKey
+    {
+        MetricName Name;
+        uint64_t GroupId;
+        uint64_t TimestampSeconds;
+
+        AggregateMetricKey() : Name(MetricName::MAX), GroupId(0ULL), TimestampSeconds(0ULL) {}
+
+        AggregateMetricKey(MetricName name, uint64_t groupId, uint64_t timestampSeconds)
+            : Name(name), GroupId(groupId), TimestampSeconds(timestampSeconds)
+        {
+        }
+
+        AggregateMetricKey(MetricName name, uint64_t timestampSeconds)
+            : Name(name), GroupId(0), TimestampSeconds(timestampSeconds)
+        {
+        }
+
+        bool operator<(const AggregateMetricKey &otherKey) const
+        {
+            if (TimestampSeconds == otherKey.TimestampSeconds)
+            {
+                if (GroupId == otherKey.GroupId)
+                {
+                    return (uint32_t)Name < (uint32_t)otherKey.Name;
+                }
+                else
+                {
+                    return GroupId < otherKey.GroupId;
+                }
+            }
+
+            return TimestampSeconds < otherKey.TimestampSeconds;
+        }
+    };
+
     static void s_OnPublishTask(aws_task *task, void *arg, aws_task_status status);
 
     MetricTransferType GetTransferType() const;
@@ -183,27 +188,66 @@ class MetricsPublisher
     bool IsSendingEncrypted() const;
     Aws::Crt::String CreateUUID() const;
 
+    void AggregateDataPoints(
+        const Aws::Crt::Vector<Metric> &dataPoints,
+        Aws::Crt::Map<AggregateMetricKey, size_t> &aggregateLU,
+        Aws::Crt::Vector<Metric> &aggregateDataPoints,
+        bool useTransferId);
+
+    double GetAggregateDataPoint(
+        const AggregateMetricKey &key,
+        const Aws::Crt::Map<AggregateMetricKey, size_t> &aggregateLU,
+        const Aws::Crt::Vector<Metric> &aggregateDataPoints);
+
+    std::shared_ptr<Aws::Crt::StringStream> GenerateMetricsBackupJson();
+
     void SchedulePublish();
 
     void WaitForLastPublish();
-
-    void WriteToBackup(const Aws::Crt::Vector<Metric> &metrics);
 
     void AddDataPointInternal(const Metric &newMetric);
 
     void PreparePayload(Aws::Crt::StringStream &bodyStream, const Aws::Crt::Vector<Metric> &metrics);
 
+    Aws::Crt::String GetTimeString(uint64_t timestampSeconds) const;
+
+    std::shared_ptr<Aws::Crt::StringStream> GeneratePerStreamCSV(
+        MetricName transferMetricName,
+        const Aws::Crt::Map<AggregateMetricKey, size_t> &aggregateDataPointsByGroupLU,
+        const Aws::Crt::Vector<Metric> &aggregateDataPointsByGroup);
+
+    void GeneratePerStreamCSVRow(
+        uint64_t groupId,
+        uint64_t timestampStart,
+        uint64_t timestampEnd,
+        MetricName dataTransferMetric,
+        const Aws::Crt::Map<AggregateMetricKey, size_t> &aggregateDataPointsLU,
+        const Aws::Crt::Vector<Metric> &aggregateDataPoints,
+        Aws::Crt::Vector<double> &streamTotals,
+        Aws::Crt::Vector<double> &overallTotals);
+
+    void WritePerStreamCSVRowHeader(
+        const std::shared_ptr<Aws::Crt::StringStream> &csvContents,
+        uint64_t timestampStartSeconds,
+        uint64_t timestampEndSeconds);
+
+    void WritePerStreamCSVRow(
+        const std::shared_ptr<Aws::Crt::StringStream> &csvContents,
+        const Aws::Crt::Vector<double> &totals);
+
     CanaryApp &m_canaryApp;
 
     MetricTransferType m_transferType;
+    size_t m_metricGroupId;
     Aws::Crt::Optional<Aws::Crt::String> m_metricNamespace;
     std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> m_connManager;
 
-    Aws::Crt::Vector<Metric> m_publishData;
-    std::map<MetricKey, size_t> m_publishDataLU;
+    std::mutex m_dataPointsLock;
+    Aws::Crt::Vector<Metric> m_dataPointsPending;
+    Aws::Crt::Vector<Aws::Crt::Vector<Metric>> m_dataPointsPublished;
 
+    Aws::Crt::Vector<Metric> m_publishData;
     Aws::Crt::Vector<Metric> m_publishDataTaskCopy;
-    Aws::Crt::Vector<Metric> m_metricsBackup;
 
     Aws::Crt::Http::HttpHeader m_hostHeader;
     Aws::Crt::Http::HttpHeader m_contentTypeHeader;

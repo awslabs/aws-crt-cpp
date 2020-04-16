@@ -78,14 +78,19 @@ class TransferState
     void FlushDataDownMetrics();
 
   private:
+    static uint64_t s_nextTransferId;
+
     uint32_t m_partIndex;
     uint32_t m_partNumber;
     uint64_t m_sizeInBytes;
+    uint64_t m_transferId;
     uint32_t m_transferSuccess : 1;
 
     Aws::Crt::Vector<Metric> m_uploadMetrics;
     Aws::Crt::Vector<Metric> m_downloadMetrics;
     std::weak_ptr<MetricsPublisher> m_publisher;
+
+    static uint64_t GetNextTransferId();
 
     void DistributeDataUsedOverSeconds(
         Aws::Crt::Vector<Metric> &metrics,
@@ -99,7 +104,7 @@ class TransferState
         uint64_t timestamp,
         double dataUsed);
 
-    void PushMetric(Aws::Crt::Vector<Metric> &metrics, MetricName metricName, double dataUsed);
+    void PushDataMetric(Aws::Crt::Vector<Metric> &metrics, MetricName metricName, double dataUsed);
 
     void FlushMetricsVector(Aws::Crt::Vector<Metric> &metrics);
 };

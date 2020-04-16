@@ -26,14 +26,25 @@
 
 using namespace Aws::Crt;
 
-TransferState::TransferState() : m_partIndex(0), m_partNumber(0), m_sizeInBytes(0), m_transferSuccess(false) {}
+uint64_t TransferState::s_nextTransferId = 1ULL;
+
+uint64_t TransferState::GetNextTransferId()
+{
+    return s_nextTransferId++;
+}
+
+TransferState::TransferState()
+    : m_partIndex(0), m_partNumber(0), m_sizeInBytes(0), m_transferId(TransferState::GetNextTransferId()),
+      m_transferSuccess(false)
+{
+}
 TransferState::TransferState(
     std::shared_ptr<MetricsPublisher> inPublisher,
     uint32_t inPartIndex,
     uint32_t inPartNumber,
     uint64_t inSizeInBytes)
-    : m_partIndex(inPartIndex), m_partNumber(inPartNumber), m_sizeInBytes(inSizeInBytes), m_transferSuccess(false),
-      m_publisher(inPublisher)
+    : m_partIndex(inPartIndex), m_partNumber(inPartNumber), m_sizeInBytes(inSizeInBytes),
+      m_transferId(TransferState::GetNextTransferId()), m_transferSuccess(false), m_publisher(inPublisher)
 {
 }
 
@@ -146,8 +157,7 @@ void TransferState::PushDataUsedForSecondAndAggregate(
     bool pushNew = true;
     DateTime newDateTime(timestamp);
 
-    // If we already have a metric, try to aggregate the incoming
-    // data to it.
+    // If we already have a metric, try to aggregate the incoming data to it
     if (metrics.size() > 0)
     {
         Metric &lastMetric = metrics.back();
@@ -167,17 +177,11 @@ void TransferState::PushDataUsedForSecondAndAggregate(
 
     if (pushNew)
     {
-        Metric metric;
-        metric.Name = metricName;
-        metric.Timestamp = timestamp;
-        metric.Value = dataUsed;
-        metric.Unit = MetricUnit::Bytes;
-
-        metrics.push_back(std::move(metric));
+        metrics.emplace_back(metricName, MetricUnit::Bytes, timestamp, m_transferId, dataUsed);
     }
 }
 
-void TransferState::PushMetric(Vector<Metric> &metrics, MetricName metricName, double dataUsed)
+void TransferState::PushDataMetric(Vector<Metric> &metrics, MetricName metricName, double dataUsed)
 {
     uint64_t current_time = 0;
     aws_sys_clock_get_ticks(&current_time);
@@ -185,12 +189,7 @@ void TransferState::PushMetric(Vector<Metric> &metrics, MetricName metricName, d
 
     if (metrics.size() == 0)
     {
-        Metric metric;
-        metric.Name = metricName;
-        metric.Timestamp = now;
-        metric.Value = dataUsed;
-        metric.Unit = MetricUnit::Bytes;
-
+        Metric metric(metricName, MetricUnit::Bytes, now, m_transferId, dataUsed);
         metrics.push_back(metric);
     }
     else
@@ -207,25 +206,31 @@ void TransferState::FlushMetricsVector(Vector<Metric> &metrics)
 
     std::shared_ptr<MetricsPublisher> publisher = m_publisher.lock();
 
-    if (publisher != nullptr)
+    AWS_FATAL_ASSERT(publisher != nullptr);
+
+    if (metrics.size() > 0)
     {
-        if (metrics.size() > 0)
-        {
-            Metric &metric = metrics.back();
-            publisher->AddTransferStatusDataPoint(metric.Timestamp, m_transferSuccess);
-        }
+        Metric &lastMetric = metrics.back();
 
-        publisher->AddDataPoints(metrics);
+        Metric transferStatusMetric(
+            m_transferSuccess ? MetricName::SuccessfulTransfer : MetricName::FailedTransfer,
+            MetricUnit::Count,
+            lastMetric.Timestamp,
+            m_transferId,
+            1.0);
 
-        Vector<Metric> connMetrics;
-
-        for (Metric &metric : metrics)
-        {
-            connMetrics.emplace_back(MetricName::NumConnections, MetricUnit::Count, metric.Timestamp, 1.0);
-        }
-
-        publisher->AddDataPoints(connMetrics);
+        publisher->AddDataPoint(transferStatusMetric);
     }
+
+    Vector<Metric> connMetrics;
+
+    for (Metric &metric : metrics)
+    {
+        connMetrics.emplace_back(MetricName::NumConnections, MetricUnit::Count, metric.Timestamp, m_transferId, 1.0);
+    }
+
+    publisher->AddDataPoints(connMetrics);
+    publisher->AddDataPoints(metrics);
 
     metrics.clear();
 }
@@ -242,12 +247,12 @@ void TransferState::InitDataDownMetric()
 
 void TransferState::AddDataUpMetric(uint64_t dataUp)
 {
-    PushMetric(m_uploadMetrics, MetricName::BytesUp, (double)dataUp);
+    PushDataMetric(m_uploadMetrics, MetricName::BytesUp, (double)dataUp);
 }
 
 void TransferState::AddDataDownMetric(uint64_t dataDown)
 {
-    PushMetric(m_downloadMetrics, MetricName::BytesDown, (double)dataDown);
+    PushDataMetric(m_downloadMetrics, MetricName::BytesDown, (double)dataDown);
 }
 
 void TransferState::FlushDataUpMetrics()
