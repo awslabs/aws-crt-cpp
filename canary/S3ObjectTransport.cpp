@@ -583,6 +583,8 @@ void S3ObjectTransport::UploadPart(
                 errorCode = AWS_ERROR_UNKNOWN;
             }
 
+            transferState->SetTransferSuccess(errorCode == AWS_ERROR_SUCCESS);
+
             if (errorCode == AWS_ERROR_SUCCESS)
             {
                 state->SetETag(transferState->GetPartIndex(), *etag);
@@ -646,6 +648,8 @@ void S3ObjectTransport::GetPart(
         },
         [downloadState, transferState, partFinished](int32_t errorCode) {
             const String &key = downloadState->GetKey();
+
+            transferState->SetTransferSuccess(errorCode == AWS_ERROR_SUCCESS);
 
             if (errorCode != AWS_ERROR_SUCCESS)
             {
