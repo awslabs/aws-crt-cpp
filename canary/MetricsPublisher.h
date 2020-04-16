@@ -61,8 +61,7 @@ enum class MetricName
     S3AddressCount,
     SuccessfulTransfer,
     FailedTransfer,
-
-    MAX
+    Invalid
 };
 
 enum class MetricTransferType
@@ -149,7 +148,7 @@ class MetricsPublisher
         uint64_t GroupId;
         uint64_t TimestampSeconds;
 
-        AggregateMetricKey() : Name(MetricName::MAX), GroupId(0ULL), TimestampSeconds(0ULL) {}
+        AggregateMetricKey() : Name(MetricName::Invalid), GroupId(0ULL), TimestampSeconds(0ULL) {}
 
         AggregateMetricKey(MetricName name, uint64_t groupId, uint64_t timestampSeconds)
             : Name(name), GroupId(groupId), TimestampSeconds(timestampSeconds)

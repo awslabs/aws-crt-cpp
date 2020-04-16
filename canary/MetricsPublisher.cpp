@@ -82,17 +82,9 @@ namespace
     const char *MetricNameStr[] = {"BytesUp",
                                    "BytesDown",
                                    "NumConnections",
-                                   "BytesAllocated",
                                    "S3AddressCount",
                                    "SuccessfulTransfer",
                                    "FailedTransfer",
-                                   "AvgEventLoopGroupTickElapsed",
-                                   "AvgEventLoopTaskRunElapsed",
-                                   "MinEventLoopGroupTickElapsed",
-                                   "MinEventLoopTaskRunElapsed",
-                                   "MaxEventLoopGroupTickElapsed",
-                                   "MaxEventLoopTaskRunElapsed",
-                                   "NumIOSubs",
                                    "Invalid"};
 
     const char *TransferTypeStr[] = {"None", "SinglePart", "MultiPart"};
@@ -140,7 +132,7 @@ namespace
             }
         }
 
-        return MetricName::MAX;
+        return MetricName::Invalid;
     }
 
     const char *MetricTransferTypeToString(MetricTransferType transferType)
