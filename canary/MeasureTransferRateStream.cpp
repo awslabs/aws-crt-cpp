@@ -14,14 +14,29 @@
  */
 
 #include "MeasureTransferRateStream.h"
+#include <algorithm>
+
+#ifdef WIN32
+#    undef min
+#    undef max
+#endif
 
 using namespace Aws::Crt;
 
 namespace
 {
-    const size_t BodyTemplateSize = 4ULL * 1024ULL;
+    const uint64_t BodyTemplateSize = 4ULL * 1024ULL;
     thread_local char BodyTemplate[BodyTemplateSize] = "";
 } // namespace
+
+MeasureTransferRateStream::MeasureTransferRateStream(
+    CanaryApp &canaryApp,
+    const std::shared_ptr<TransferState> &transferState,
+    uint64_t length)
+    : InputStream(g_allocator), m_canaryApp(canaryApp), m_transferState(transferState), m_length(length), m_written(0)
+{
+    (void)m_canaryApp;
+}
 
 bool MeasureTransferRateStream::IsValid() const noexcept
 {
@@ -52,20 +67,23 @@ bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
         }
     }
 
-    size_t totalBufferSpace = dest.capacity - dest.len;
-    size_t unwritten = m_transferState->GetSizeInBytes() - m_written;
-    size_t totalToWrite = totalBufferSpace > unwritten ? unwritten : totalBufferSpace;
-    size_t writtenOut = 0;
+    AWS_FATAL_ASSERT(m_written <= m_length);
 
-    while (totalToWrite)
+    uint64_t totalBufferSpace = dest.capacity - dest.len;
+    uint64_t unwritten = m_length - m_written;
+
+    uint64_t amountToWrite = std::min(totalBufferSpace, unwritten);
+    uint64_t writtenOut = 0;
+
+    while (amountToWrite > 0)
     {
-        size_t toWrite = BodyTemplateSize - 1 > totalToWrite ? totalToWrite : BodyTemplateSize - 1;
+        uint64_t toWrite = std::min((BodyTemplateSize - 1), amountToWrite);
         ByteCursor outCur = ByteCursorFromArray((const uint8_t *)BodyTemplate, toWrite);
 
         aws_byte_buf_append(&dest, &outCur);
 
         writtenOut += toWrite;
-        totalToWrite = totalToWrite - toWrite;
+        amountToWrite = amountToWrite - toWrite;
     }
 
     m_written += writtenOut;
@@ -78,7 +96,7 @@ bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
 Io::StreamStatus MeasureTransferRateStream::GetStatusImpl() const noexcept
 {
     Io::StreamStatus status;
-    status.is_end_of_stream = m_written == m_transferState->GetSizeInBytes();
+    status.is_end_of_stream = m_written == m_length;
     status.is_valid = !status.is_end_of_stream;
 
     return status;
@@ -92,14 +110,5 @@ bool MeasureTransferRateStream::SeekImpl(Io::OffsetType, Io::StreamSeekBasis) no
 
 int64_t MeasureTransferRateStream::GetLengthImpl() const noexcept
 {
-    return m_transferState->GetSizeInBytes();
-}
-
-MeasureTransferRateStream::MeasureTransferRateStream(
-    CanaryApp &canaryApp,
-    const std::shared_ptr<TransferState> &transferState,
-    Allocator *allocator)
-    : InputStream(allocator), m_canaryApp(canaryApp), m_transferState(transferState), m_written(0)
-{
-    (void)m_canaryApp;
+    return m_length;
 }

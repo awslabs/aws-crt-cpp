@@ -92,6 +92,7 @@ struct Metric
 };
 
 class CanaryApp;
+class TransferState;
 
 /**
  * Publishes an aggregated metrics collection to CloudWatch.
@@ -105,8 +106,6 @@ class MetricsPublisher
         std::chrono::milliseconds publishFrequency = std::chrono::milliseconds(1000));
 
     ~MetricsPublisher();
-
-    uint64_t GetMetricGroupId();
 
     /**
      * Add a list of data points to the outgoing metrics collection.
@@ -140,6 +139,8 @@ class MetricsPublisher
      * to S3 with an id to keep it from conflicting with other metrics.
      */
     void RehydrateBackup(const char *s3Path);
+
+    void SetTransferState(uint64_t transferId, const std::shared_ptr<TransferState> &transferState);
 
   private:
     struct AggregateMetricKey
@@ -235,9 +236,7 @@ class MetricsPublisher
         const Aws::Crt::Vector<double> &totals);
 
     CanaryApp &m_canaryApp;
-
     MetricTransferType m_transferType;
-    size_t m_metricGroupId;
     Aws::Crt::Optional<Aws::Crt::String> m_metricNamespace;
     std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> m_connManager;
 
@@ -245,8 +244,8 @@ class MetricsPublisher
     Aws::Crt::Vector<Metric> m_dataPointsPending;
     Aws::Crt::Vector<Aws::Crt::Vector<Metric>> m_dataPointsPublished;
 
-    Aws::Crt::Vector<Metric> m_publishData;
-    Aws::Crt::Vector<Metric> m_publishDataTaskCopy;
+    std::mutex m_transferIdToStateLock;
+    Aws::Crt::Map<uint64_t, std::shared_ptr<TransferState>> m_transferIdToState;
 
     Aws::Crt::Http::HttpHeader m_hostHeader;
     Aws::Crt::Http::HttpHeader m_contentTypeHeader;
@@ -256,6 +255,8 @@ class MetricsPublisher
     aws_event_loop *m_schedulingLoop;
 
     std::mutex m_publishDataLock;
+    Aws::Crt::Vector<Metric> m_publishData;
+    Aws::Crt::Vector<Metric> m_publishDataTaskCopy;
     aws_task m_publishTask;
     uint64_t m_publishFrequencyNs;
     std::condition_variable m_waitForLastPublishCV;
