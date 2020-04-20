@@ -160,7 +160,7 @@ void MeasureTransferRate::PerformMeasurement(
 
         transferFunction(i, std::move(key), transport, std::move(notifyTransferFinished));
 
-        // Wait if number of inprogress transfers is not less than number of concurrent transfers.
+        // Wait if number of in progress transfers is not less than number of concurrent transfers.
         std::unique_lock<std::mutex> guard(transferCompletedMutex);
         transferCompletedSignal.wait(guard, [&numInProgress, numConcurrentTransfers]() {
             return numInProgress.load() < numConcurrentTransfers;
@@ -414,6 +414,8 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
 
     if (!m_canaryApp.GetOptions().downloadOnly)
     {
+        Vector<std::shared_ptr<MultipartUploadState>> uploadStates;
+
         PerformMeasurement(
             filenamePrefix,
             "multiPartObjectUp-",
@@ -422,14 +424,14 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
             S3ObjectTransport::MaxUploadMultipartStreams,
             0,
             m_canaryApp.GetUploadTransport(),
-            [this](
+            [this, &uploadStates](
                 uint32_t,
                 String &&key,
                 const std::shared_ptr<S3ObjectTransport> &transport,
                 NotifyTransferFinished &&notifyTransferFinished) {
                 AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting upload of object %s...", key.c_str());
 
-                transport->PutObjectMultipart(
+                std::shared_ptr<MultipartUploadState> uploadState = transport->PutObjectMultipart(
                     key,
                     MultiPartObjectSize,
                     MultiPartObjectNumParts,
@@ -446,10 +448,22 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
 
                         notifyTransferFinished(errorCode);
                     });
+
+                uploadStates.push_back(uploadState);
             });
+
+        for(const std::shared_ptr<MultipartUploadState> & uploadState : uploadStates)
+        {
+            for(const std::shared_ptr<TransferState> & part : uploadState->GetParts())
+            {
+                part->FlushDataUpMetrics();
+            }
+        }
 
         m_canaryApp.GetMetricsPublisher()->FlushMetrics();
     }
+
+    Vector<std::shared_ptr<MultipartDownloadState>> downloadStates;
 
     PerformMeasurement(
         filenamePrefix,
@@ -459,13 +473,13 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
         S3ObjectTransport::MaxDownloadMultipartStreams,
         0,
         m_canaryApp.GetDownloadTransport(),
-        [](uint32_t,
+        [&downloadStates](uint32_t,
            String &&key,
            const std::shared_ptr<S3ObjectTransport> &transport,
            NotifyTransferFinished &&notifyTransferFinished) {
             AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting download of object %s...", key.c_str());
 
-            transport->GetObjectMultipart(
+            std::shared_ptr<MultipartDownloadState> downloadState = transport->GetObjectMultipart(
                 key,
                 MultiPartObjectNumParts,
                 [](const std::shared_ptr<TransferState> &, const ByteCursor &) {},
@@ -477,7 +491,18 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
                         errorCode);
                     notifyTransferFinished(errorCode);
                 });
+
+            downloadStates.push_back(downloadState);
         });
+
+
+    for(const std::shared_ptr<MultipartDownloadState> & downloadState : downloadStates)
+    {
+        for(const std::shared_ptr<TransferState> & part : downloadState->GetParts())
+        {
+            part->FlushDataDownMetrics();
+        }
+    }
 
     m_canaryApp.GetMetricsPublisher()->FlushMetrics();
     m_canaryApp.GetMetricsPublisher()->UploadBackup((uint32_t)UploadBackupOptions::PrintPath);

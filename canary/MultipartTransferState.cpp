@@ -29,7 +29,7 @@
 
 using namespace Aws::Crt;
 
-MultipartTransferState::MultipartTransferState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts)
+MultipartTransferState::MultipartTransferState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts, const std::shared_ptr<MetricsPublisher> & publisher)
 {
     m_isFinished = false;
     m_errorCode = AWS_ERROR_SUCCESS;
@@ -37,6 +37,22 @@ MultipartTransferState::MultipartTransferState(const Aws::Crt::String &key, uint
     m_numPartsCompleted = 0;
     m_objectSize = objectSize;
     m_key = key;
+
+    uint64_t partByteInterval = m_objectSize / static_cast<uint64_t>(m_numParts);
+
+    for(uint32_t i = 0; i < numParts; ++i)
+    {
+        uint64_t partByteSize = partByteInterval;
+
+        if (i == numParts-1)
+        {
+            partByteSize += m_objectSize % static_cast<uint64_t>(m_numParts);
+        }
+
+        std::shared_ptr<TransferState> transferState = MakeShared<TransferState>(g_allocator, publisher, i, i+1, partByteSize);
+
+        m_transferStates.push_back(transferState);
+    }
 }
 
 MultipartTransferState::~MultipartTransferState() {}
@@ -100,8 +116,8 @@ uint64_t MultipartTransferState::GetObjectSize() const
     return m_objectSize;
 }
 
-MultipartUploadState::MultipartUploadState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts)
-    : MultipartTransferState(key, objectSize, numParts)
+MultipartUploadState::MultipartUploadState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts, const std::shared_ptr<MetricsPublisher> & publisher)
+    : MultipartTransferState(key, objectSize, numParts, publisher)
 {
     m_etags.reserve(numParts);
 
@@ -136,7 +152,7 @@ void MultipartUploadState::GetETags(Aws::Crt::Vector<Aws::Crt::String> &outETags
     outETags = m_etags;
 }
 
-MultipartDownloadState::MultipartDownloadState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts)
-    : MultipartTransferState(key, objectSize, numParts)
+MultipartDownloadState::MultipartDownloadState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts, const std::shared_ptr<MetricsPublisher> & publisher)
+    : MultipartTransferState(key, objectSize, numParts, publisher)
 {
 }

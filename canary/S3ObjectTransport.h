@@ -85,7 +85,7 @@ class S3ObjectTransport
     /*
      * Upload a multipart object.
      */
-    void PutObjectMultipart(
+    std::shared_ptr<MultipartUploadState> PutObjectMultipart(
         const Aws::Crt::String &key,
         std::uint64_t objectSize,
         std::uint32_t numParts,
@@ -95,7 +95,7 @@ class S3ObjectTransport
     /*
      * Download a multipart object.
      */
-    void GetObjectMultipart(
+    std::shared_ptr<MultipartDownloadState> GetObjectMultipart(
         const Aws::Crt::String &key,
         std::uint32_t numParts,
         const ReceivePartCallback &receivePart,
