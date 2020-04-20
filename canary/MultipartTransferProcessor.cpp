@@ -53,6 +53,8 @@ MultipartTransferProcessor::MultipartTransferProcessor(
     std::uint32_t streamsAvailable)
     : m_canaryApp(canaryApp)
 {
+    (void)m_canaryApp;
+    
     m_streamsAvailable = streamsAvailable;
     m_schedulingLoop = aws_event_loop_group_get_next_loop(elGroup.GetUnderlyingHandle());
 }
@@ -150,19 +152,7 @@ void MultipartTransferProcessor::ProcessPartRange(
             continue;
         }
 
-        uint32_t partIndex = parts[i].partIndex;
-        uint32_t partNumber = partIndex + 1;
-
-        uint64_t partByteInterval = state->GetObjectSize() / static_cast<uint64_t>(state->GetNumParts());
-        uint64_t partByteSize = partByteInterval;
-
-        if (partNumber == state->GetNumParts())
-        {
-            partByteSize += state->GetObjectSize() % static_cast<uint64_t>(state->GetNumParts());
-        }
-
-        std::shared_ptr<TransferState> transferState = MakeShared<TransferState>(
-            g_allocator, m_canaryApp.GetMetricsPublisher(), partIndex, partNumber, partByteSize);
+        std::shared_ptr<TransferState> transferState = parts[i].part;
 
         state->ProcessPart(transferState, [this, state, transferState](PartFinishResponse response) {
             if (response == PartFinishResponse::Done)
@@ -191,9 +181,9 @@ void MultipartTransferProcessor::PushQueue(const std::shared_ptr<MultipartTransf
     {
         std::lock_guard<std::mutex> lock(m_partQueueMutex);
 
-        for (uint32_t i = 0; i < state->GetNumParts(); ++i)
+        for(const std::shared_ptr<TransferState> & part : state->GetParts())
         {
-            QueuedPart queuedPart = {state, i};
+            QueuedPart queuedPart = {state, part};
             m_partQueue.push(queuedPart);
         }
     }
@@ -206,7 +196,7 @@ void MultipartTransferProcessor::RepushQueue(const std::shared_ptr<MultipartTran
     {
         std::lock_guard<std::mutex> lock(m_partQueueMutex);
 
-        QueuedPart queuedPart = {state, partIndex};
+        QueuedPart queuedPart = {state, state->GetParts()[partIndex]};
         m_partQueue.push(queuedPart);
     }
 

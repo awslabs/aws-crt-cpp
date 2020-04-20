@@ -479,7 +479,7 @@ void S3ObjectTransport::GetObject(
         });
 }
 
-void S3ObjectTransport::PutObjectMultipart(
+std::shared_ptr<MultipartUploadState> S3ObjectTransport::PutObjectMultipart(
     const Aws::Crt::String &key,
     std::uint64_t objectSize,
     std::uint32_t numParts,
@@ -487,7 +487,7 @@ void S3ObjectTransport::PutObjectMultipart(
     const PutObjectMultipartFinished &finishedCallback)
 {
     std::shared_ptr<MultipartUploadState> uploadState =
-        MakeShared<MultipartUploadState>(g_allocator, key, objectSize, numParts);
+        MakeShared<MultipartUploadState>(g_allocator, key, objectSize, numParts, m_canaryApp.GetMetricsPublisher());
 
     AWS_LOGF_INFO(
         AWS_LS_CRT_CPP_CANARY,
@@ -532,16 +532,18 @@ void S3ObjectTransport::PutObjectMultipart(
         uploadState->SetUploadId(uploadId);
         m_uploadProcessor.PushQueue(uploadState);
     });
+
+    return uploadState;
 }
 
-void S3ObjectTransport::GetObjectMultipart(
+std::shared_ptr<MultipartDownloadState> S3ObjectTransport::GetObjectMultipart(
     const Aws::Crt::String &key,
     std::uint32_t numParts,
     const ReceivePartCallback &receivePart,
     const GetObjectMultipartFinished &finishedCallback)
 {
     std::shared_ptr<MultipartDownloadState> downloadState =
-        MakeShared<MultipartDownloadState>(g_allocator, key, 0L, numParts);
+        MakeShared<MultipartDownloadState>(g_allocator, key, 0L, numParts, m_canaryApp.GetMetricsPublisher());
 
     // Set the callback that the MultipartTransferProcessor will use to process the part.
     // In this case, try to download it.
@@ -556,6 +558,8 @@ void S3ObjectTransport::GetObjectMultipart(
     downloadState->SetFinishedCallback([finishedCallback](int32_t errorCode) { finishedCallback(errorCode); });
 
     m_downloadProcessor.PushQueue(downloadState);
+
+    return downloadState;
 }
 
 void S3ObjectTransport::UploadPart(
@@ -601,8 +605,6 @@ void S3ObjectTransport::UploadPart(
 
                 partFinished(PartFinishResponse::Done);
 
-                transferState->FlushDataUpMetrics();
-
                 AWS_LOGF_INFO(
                     AWS_LS_CRT_CPP_CANARY,
                     "UploadPart for path %s and part #%d (%d/%d) just returned code %d",
@@ -620,8 +622,6 @@ void S3ObjectTransport::UploadPart(
                     transferState->GetPartNumber(),
                     errorCode,
                     aws_error_debug_str(errorCode));
-
-                transferState->FlushDataUpMetrics();
 
                 partFinished(PartFinishResponse::Retry);
             }
@@ -659,8 +659,6 @@ void S3ObjectTransport::GetPart(
                     transferState->GetPartNumber(),
                     key.c_str());
 
-                transferState->FlushDataDownMetrics();
-
                 partFinished(PartFinishResponse::Retry);
             }
             else
@@ -675,8 +673,6 @@ void S3ObjectTransport::GetPart(
                 }
 
                 partFinished(PartFinishResponse::Done);
-
-                transferState->FlushDataDownMetrics();
             }
         });
 }
