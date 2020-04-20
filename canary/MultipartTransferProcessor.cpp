@@ -54,7 +54,7 @@ MultipartTransferProcessor::MultipartTransferProcessor(
     : m_canaryApp(canaryApp)
 {
     (void)m_canaryApp;
-    
+
     m_streamsAvailable = streamsAvailable;
     m_schedulingLoop = aws_event_loop_group_get_next_loop(elGroup.GetUnderlyingHandle());
 }
@@ -181,7 +181,7 @@ void MultipartTransferProcessor::PushQueue(const std::shared_ptr<MultipartTransf
     {
         std::lock_guard<std::mutex> lock(m_partQueueMutex);
 
-        for(const std::shared_ptr<TransferState> & part : state->GetParts())
+        for (const std::shared_ptr<TransferState> &part : state->GetParts())
         {
             QueuedPart queuedPart = {state, part};
             m_partQueue.push(queuedPart);

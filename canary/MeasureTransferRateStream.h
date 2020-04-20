@@ -31,13 +31,14 @@ class MeasureTransferRateStream : public Aws::Crt::Io::InputStream
     MeasureTransferRateStream(
         CanaryApp &canaryApp,
         const std::shared_ptr<TransferState> &transferState,
-        Aws::Crt::Allocator *allocator);
+        uint64_t length);
 
     virtual bool IsValid() const noexcept override;
 
   private:
     CanaryApp &m_canaryApp;
     std::shared_ptr<TransferState> m_transferState;
+    uint64_t m_length;
     uint64_t m_written;
 
     const TransferState &GetTransferState() const;

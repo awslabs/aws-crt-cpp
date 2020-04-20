@@ -25,19 +25,15 @@
  * while many other transfers may be happening in parallel, this particular transfer is not being broken up into
  * parallel operations.
  */
-class TransferState
+class TransferState : public std::enable_shared_from_this<TransferState>
 {
   public:
     TransferState();
-    TransferState(
-        std::shared_ptr<MetricsPublisher> publisher,
-        uint32_t partIndex,
-        uint32_t partNumber,
-        uint64_t sizeInBytes);
+    TransferState(const std::shared_ptr<MetricsPublisher> &publisher);
+    TransferState(const std::shared_ptr<MetricsPublisher> &publisher, uint32_t partIndex);
 
     uint32_t GetPartIndex() const { return m_partIndex; }
-    uint32_t GetPartNumber() const { return m_partNumber; }
-    uint64_t GetSizeInBytes() const { return m_sizeInBytes; }
+    uint32_t GetPartNumber() const { return m_partIndex + 1; }
 
     /*
      * Flags this is a success or failure, which will be reported as a metric on a flush
@@ -77,15 +73,21 @@ class TransferState
      */
     void FlushDataDownMetrics();
 
+    const Aws::Crt::String & GetAmzRequestId() const { return m_amzRequestId; }
+    const Aws::Crt::String & GetAmazId2() const { return m_amzId2; }
+
+    void ProcessHeaders(const Aws::Crt::Http::HttpHeader *headersArray, size_t headersCount);
+
   private:
+
     static uint64_t s_nextTransferId;
 
     uint32_t m_partIndex;
-    uint32_t m_partNumber;
-    uint64_t m_sizeInBytes;
     uint64_t m_transferId;
     uint32_t m_transferSuccess : 1;
 
+    Aws::Crt::String m_amzRequestId;
+    Aws::Crt::String m_amzId2;
     Aws::Crt::Vector<Metric> m_uploadMetrics;
     Aws::Crt::Vector<Metric> m_downloadMetrics;
     std::weak_ptr<MetricsPublisher> m_publisher;

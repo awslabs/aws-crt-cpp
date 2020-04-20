@@ -310,6 +310,7 @@ void S3ObjectTransport::AddContentLengthHeader(
 }
 
 void S3ObjectTransport::PutObject(
+    const std::shared_ptr<TransferState> &transferState,
     const Aws::Crt::String &key,
     const std::shared_ptr<Io::InputStream> &body,
     uint32_t flags,
@@ -368,34 +369,45 @@ void S3ObjectTransport::PutObject(
             }
         }
     };
-    requestOptions.onStreamComplete = [keyPath, etag, finishedCallback](Http::HttpStream &stream, int errorCode) {
-        if (errorCode == AWS_ERROR_SUCCESS)
-        {
-            if (stream.GetResponseStatusCode() != 200)
+    requestOptions.onStreamComplete =
+        [transferState, keyPath, etag, finishedCallback](Http::HttpStream &stream, int errorCode) {
+            if (errorCode == AWS_ERROR_SUCCESS)
             {
-                errorCode = AWS_ERROR_UNKNOWN;
+                if (stream.GetResponseStatusCode() != 200)
+                {
+                    errorCode = AWS_ERROR_UNKNOWN;
+                }
+
+                aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_INFO;
+
+                AWS_LOGF(
+                    logLevel,
+                    AWS_LS_CRT_CPP_CANARY,
+                    "PutObject finished for path %s with response status %d",
+                    keyPath.c_str(),
+                    stream.GetResponseStatusCode());
+            }
+            else
+            {
+                AWS_LOGF_DEBUG(
+                    AWS_LS_CRT_CPP_CANARY,
+                    "PutObject finished for path %s with error '%s'",
+                    keyPath.c_str(),
+                    aws_error_debug_str(errorCode));
             }
 
-            aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_INFO;
+            if (transferState != nullptr)
+            {
+                transferState->SetTransferSuccess(errorCode == AWS_ERROR_SUCCESS);
+            }
 
-            AWS_LOGF(
-                logLevel,
-                AWS_LS_CRT_CPP_CANARY,
-                "PutObject finished for path %s with response status %d",
-                keyPath.c_str(),
-                stream.GetResponseStatusCode());
-        }
-        else
-        {
-            AWS_LOGF_DEBUG(
-                AWS_LS_CRT_CPP_CANARY,
-                "PutObject finished for path %s with error '%s'",
-                keyPath.c_str(),
-                aws_error_debug_str(errorCode));
-        }
+            finishedCallback(errorCode, etag);
+        };
 
-        finishedCallback(errorCode, etag);
-    };
+    if (transferState != nullptr)
+    {
+        transferState->InitDataUpMetric();
+    }
 
     MakeSignedRequest(
         request,
@@ -410,6 +422,7 @@ void S3ObjectTransport::PutObject(
 }
 
 void S3ObjectTransport::GetObject(
+    const std::shared_ptr<TransferState> &transferState,
     const Aws::Crt::String &key,
     uint32_t partNumber,
     Aws::Crt::Http::OnIncomingBody onIncomingBody,
@@ -434,39 +447,67 @@ void S3ObjectTransport::GetObject(
 
     Http::HttpRequestOptions requestOptions;
     requestOptions.request = nullptr;
-    requestOptions.onIncomingBody = onIncomingBody;
-    requestOptions.onStreamComplete = [keyPath, partNumber, getObjectFinished](Http::HttpStream &stream, int error) {
-        int errorCode = error;
-
-        if (errorCode == AWS_ERROR_SUCCESS)
+    requestOptions.onIncomingBody = [transferState, onIncomingBody](Http::HttpStream &stream, const ByteCursor &cur) {
+        if (transferState != nullptr)
         {
-            int32_t successStatus = partNumber > 0 ? S3GetObjectResponseStatus_PartialContent : 200;
+            transferState->AddDataDownMetric(cur.len);
+        }
 
-            if (stream.GetResponseStatusCode() != successStatus)
+        if (onIncomingBody != nullptr)
+        {
+            onIncomingBody(stream, cur);
+        }
+    };
+
+    requestOptions.onIncomingHeaders = [transferState](Http::HttpStream &stream,
+                                          enum aws_http_header_block headerBlock,
+                                          const Http::HttpHeader *headersArray,
+                                          std::size_t headersCount) {
+        transferState->ProcessHeaders(headersArray, headersCount);
+    };
+    requestOptions.onStreamComplete =
+        [keyPath, partNumber, transferState, getObjectFinished](Http::HttpStream &stream, int error) {
+            int errorCode = error;
+
+            if (errorCode == AWS_ERROR_SUCCESS)
             {
-                errorCode = AWS_ERROR_UNKNOWN;
+                int32_t successStatus = partNumber > 0 ? S3GetObjectResponseStatus_PartialContent : 200;
+
+                if (stream.GetResponseStatusCode() != successStatus)
+                {
+                    errorCode = AWS_ERROR_UNKNOWN;
+                }
+
+                if (transferState != nullptr)
+                {
+                    transferState->SetTransferSuccess(errorCode == AWS_ERROR_SUCCESS);
+                }
+
+                aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_DEBUG;
+
+                AWS_LOGF(
+                    logLevel,
+                    AWS_LS_CRT_CPP_CANARY,
+                    "GetObject finished for path %s with response status %d",
+                    keyPath.c_str(),
+                    stream.GetResponseStatusCode());
+            }
+            else
+            {
+                AWS_LOGF_ERROR(
+                    AWS_LS_CRT_CPP_CANARY,
+                    "GetObject finished for path %s with error '%s'",
+                    keyPath.c_str(),
+                    aws_error_debug_str(errorCode));
             }
 
-            aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_DEBUG;
+            getObjectFinished(errorCode);
+        };
 
-            AWS_LOGF(
-                logLevel,
-                AWS_LS_CRT_CPP_CANARY,
-                "GetObject finished for path %s with response status %d",
-                keyPath.c_str(),
-                stream.GetResponseStatusCode());
-        }
-        else
-        {
-            AWS_LOGF_ERROR(
-                AWS_LS_CRT_CPP_CANARY,
-                "GetObject finished for path %s with error '%s'",
-                keyPath.c_str(),
-                aws_error_debug_str(errorCode));
-        }
-
-        getObjectFinished(errorCode);
-    };
+    if (transferState != nullptr)
+    {
+        transferState->InitDataDownMetric();
+    }
 
     MakeSignedRequest(
         request,
@@ -574,9 +615,8 @@ void S3ObjectTransport::UploadPart(
 
     String keyPathStr = keyPathStream.str();
 
-    transferState->InitDataUpMetric();
-
     PutObject(
+        transferState,
         keyPathStr,
         partInputStream,
         (uint32_t)EPutObjectFlags::RetrieveETag,
@@ -586,8 +626,6 @@ void S3ObjectTransport::UploadPart(
             {
                 errorCode = AWS_ERROR_UNKNOWN;
             }
-
-            transferState->SetTransferSuccess(errorCode == AWS_ERROR_SUCCESS);
 
             if (errorCode == AWS_ERROR_SUCCESS)
             {
@@ -634,22 +672,16 @@ void S3ObjectTransport::GetPart(
     const ReceivePartCallback &receiveObjectPartData,
     const MultipartTransferState::PartFinishedCallback &partFinished)
 {
-    transferState->InitDataDownMetric();
-
     GetObject(
+        transferState,
         downloadState->GetKey(),
         transferState->GetPartNumber(),
         [downloadState, transferState, receiveObjectPartData](Http::HttpStream &stream, const ByteCursor &data) {
             (void)stream;
-
-            transferState->AddDataDownMetric(data.len);
-
             receiveObjectPartData(transferState, data);
         },
         [downloadState, transferState, partFinished](int32_t errorCode) {
             const String &key = downloadState->GetKey();
-
-            transferState->SetTransferSuccess(errorCode == AWS_ERROR_SUCCESS);
 
             if (errorCode != AWS_ERROR_SUCCESS)
             {

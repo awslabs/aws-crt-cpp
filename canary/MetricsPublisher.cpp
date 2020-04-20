@@ -79,13 +79,8 @@ namespace
                                    "Counts%2FSecond",
                                    "None"};
 
-    const char *MetricNameStr[] = {"BytesUp",
-                                   "BytesDown",
-                                   "NumConnections",
-                                   "S3AddressCount",
-                                   "SuccessfulTransfer",
-                                   "FailedTransfer",
-                                   "Invalid"};
+    const char *MetricNameStr[] =
+        {"BytesUp", "BytesDown", "NumConnections", "S3AddressCount", "SuccessfulTransfer", "FailedTransfer", "Invalid"};
 
     const char *TransferTypeStr[] = {"None", "SinglePart", "MultiPart"};
 
@@ -710,6 +705,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
             MakeShared<Io::StdIOStreamInputStream>(g_allocator, metricsBackupContents);
 
         transport->PutObject(
+            nullptr,
             backupPath,
             metricsBackupContentsStream,
             0,
@@ -741,6 +737,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
             MakeShared<Io::StdIOStreamInputStream>(g_allocator, uploadCSVContents);
 
         transport->PutObject(
+            nullptr,
             s3Path + "uploadStreams.csv",
             uploadCSVContentsStream,
             0,
@@ -760,6 +757,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
             MakeShared<Io::StdIOStreamInputStream>(g_allocator, downloadCSVContents);
 
         transport->PutObject(
+            nullptr,
             s3Path + "downloadStreams.csv",
             downloadCSVContentsStream,
             0,
@@ -792,6 +790,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
     bool signalVal = false;
 
     transport->GetObject(
+        nullptr,
         s3Path,
         0,
         [transport, &contents](const Http::HttpStream &, const ByteCursor &cur) { contents << cur.ptr; },
@@ -913,6 +912,18 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
     m_instanceTypeOverride = Optional<String>();
     m_sendEncryptedOverride = Optional<bool>();
     m_replayId = Optional<String>();
+}
+
+void MetricsPublisher::SetTransferState(uint64_t transferId, const std::shared_ptr<TransferState> &transferState)
+{
+    std::lock_guard<std::mutex> lock(m_transferIdToStateLock);
+
+    auto it = m_transferIdToState.find(transferId);
+
+    if (it == m_transferIdToState.end())
+    {
+        m_transferIdToState.insert(std::pair<uint64_t, std::shared_ptr<TransferState>>(transferId, transferState));
+    }
 }
 
 void MetricsPublisher::AddDataPoint(const Metric &newMetric)

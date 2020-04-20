@@ -33,18 +33,13 @@ uint64_t TransferState::GetNextTransferId()
     return s_nextTransferId++;
 }
 
-TransferState::TransferState()
-    : m_partIndex(0), m_partNumber(0), m_sizeInBytes(0), m_transferId(TransferState::GetNextTransferId()),
-      m_transferSuccess(false)
-{
-}
-TransferState::TransferState(
-    std::shared_ptr<MetricsPublisher> inPublisher,
-    uint32_t inPartIndex,
-    uint32_t inPartNumber,
-    uint64_t inSizeInBytes)
-    : m_partIndex(inPartIndex), m_partNumber(inPartNumber), m_sizeInBytes(inSizeInBytes),
-      m_transferId(TransferState::GetNextTransferId()), m_transferSuccess(false), m_publisher(inPublisher)
+TransferState::TransferState() : TransferState(nullptr) {}
+
+TransferState::TransferState(const std::shared_ptr<MetricsPublisher> &publisher) : TransferState(publisher, 0) {}
+
+TransferState::TransferState(const std::shared_ptr<MetricsPublisher> &publisher, uint32_t partIndex)
+    : m_partIndex(partIndex), m_transferId(TransferState::GetNextTransferId()), m_transferSuccess(false),
+      m_publisher(publisher)
 {
 }
 
@@ -229,10 +224,31 @@ void TransferState::FlushMetricsVector(Vector<Metric> &metrics)
         connMetrics.emplace_back(MetricName::NumConnections, MetricUnit::Count, metric.Timestamp, m_transferId, 1.0);
     }
 
+    publisher->SetTransferState(m_transferId, shared_from_this());
     publisher->AddDataPoints(connMetrics);
     publisher->AddDataPoints(metrics);
 
     metrics.clear();
+}
+
+void TransferState::ProcessHeaders(const Http::HttpHeader *headersArray, size_t headersCount)
+{
+    for(size_t i = 0; i < headersCount; ++i)
+    {
+        const Http::HttpHeader* header = &headersArray[i];
+
+        const char* headerName = (const char*)header->name.ptr;
+        const char* headerValue = (const char*)header->value.ptr;
+
+        if(!strcmp(headerName, "x-amz-request-id"))
+        {
+            m_amzRequestId = headerValue;
+        }
+        else if(!strcmp(headerName, "x-amz-id-2"))
+        {
+            m_amzId2 = headerValue;
+        }
+    }
 }
 
 void TransferState::InitDataUpMetric()

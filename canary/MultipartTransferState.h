@@ -46,7 +46,11 @@ class MultipartTransferState
         std::function<void(const std::shared_ptr<TransferState> &transferState, PartFinishedCallback callback)>;
     using FinishedCallback = std::function<void(int32_t errorCode)>;
 
-    MultipartTransferState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts, const std::shared_ptr<MetricsPublisher> & publisher);
+    MultipartTransferState(
+        const Aws::Crt::String &key,
+        uint64_t objectSize,
+        uint32_t numParts,
+        const std::shared_ptr<MetricsPublisher> &publisher);
 
     virtual ~MultipartTransferState();
 
@@ -56,10 +60,7 @@ class MultipartTransferState
     uint32_t GetNumPartsCompleted() const;
     uint64_t GetObjectSize() const;
 
-    const Aws::Crt::Vector<std::shared_ptr<TransferState>> & GetParts() const
-    {
-      return m_transferStates;
-    }
+    const Aws::Crt::Vector<std::shared_ptr<TransferState>> &GetParts() const { return m_transferStates; }
 
     /*
      * Callback that will be used to process a part, ie, upload or downlad it.
@@ -96,7 +97,7 @@ class MultipartTransferState
     std::atomic<uint32_t> m_numPartsCompleted;
     uint64_t m_objectSize;
     Aws::Crt::String m_key;
-    Aws::Crt::Vector< std::shared_ptr<TransferState> > m_transferStates;
+    Aws::Crt::Vector<std::shared_ptr<TransferState>> m_transferStates;
     ProcessPartCallback m_processPartCallback;
     FinishedCallback m_finishedCallback;
 };
@@ -107,7 +108,11 @@ class MultipartTransferState
 class MultipartUploadState : public MultipartTransferState
 {
   public:
-    MultipartUploadState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts, const std::shared_ptr<MetricsPublisher> & publisher);
+    MultipartUploadState(
+        const Aws::Crt::String &key,
+        uint64_t objectSize,
+        uint32_t numParts,
+        const std::shared_ptr<MetricsPublisher> &publisher);
 
     void SetUploadId(const Aws::Crt::String &uploadId);
     void SetETag(uint32_t partIndex, const Aws::Crt::String &etag);
@@ -127,5 +132,9 @@ class MultipartUploadState : public MultipartTransferState
 class MultipartDownloadState : public MultipartTransferState
 {
   public:
-    MultipartDownloadState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts, const std::shared_ptr<MetricsPublisher> & publisher);
+    MultipartDownloadState(
+        const Aws::Crt::String &key,
+        uint64_t objectSize,
+        uint32_t numParts,
+        const std::shared_ptr<MetricsPublisher> &publisher);
 };
