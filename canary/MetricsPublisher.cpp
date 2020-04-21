@@ -40,17 +40,26 @@ using namespace Aws::Crt;
 
 namespace
 {
-    enum class PerStreamCSVColumn
+    enum class CSVColumnNumeric
     {
-        RowId,
+        TransferId,
         Success,
         Failed,
-        SuccessTime,
-        FailedTime,
+        AvgThroughput,
+
         ThroughputStart
     };
 
-    const char *S3BackupBucket = "aws-crt-canary-bucket";
+    enum class CSVColumnString
+    {
+        RequestId,
+        AmzId2,
+        StartTime,
+        EndTime,
+        TotalTime,
+
+        MAX
+    };
 
     const char *MetricUnitStr[] = {"Seconds",
                                    "Microseconds",
@@ -154,7 +163,7 @@ namespace
     }
 } // namespace
 
-Metric::Metric() {}
+Metric::Metric():Unit(MetricUnit::Count), Name(MetricName::Invalid), Timestamp(0ULL), TransferId(0ULL), Value(0.0) {}
 
 Metric::Metric(MetricName name, MetricUnit unit, uint64_t transferId, double value)
     : Unit(unit), Name(name), TransferId(transferId), Value(value)
@@ -335,13 +344,24 @@ void MetricsPublisher::AggregateDataPoints(
 double MetricsPublisher::GetAggregateDataPoint(
     const AggregateMetricKey &key,
     const Map<AggregateMetricKey, size_t> &aggregateLU,
-    const Vector<Metric> &aggregateDataPoints)
+    const Vector<Metric> &aggregateDataPoints,
+    bool *outKeyExists)
 {
     auto it = aggregateLU.find(key);
 
     if (it == aggregateLU.end())
     {
+        if (outKeyExists)
+        {
+            *outKeyExists = false;
+        }
+
         return 0.0;
+    }
+
+    if (outKeyExists)
+    {
+        *outKeyExists = true;
     }
 
     return aggregateDataPoints[it->second].Value;
@@ -428,12 +448,105 @@ String MetricsPublisher::GetTimeString(uint64_t timestampSeconds) const
     return dateTimeString.str();
 }
 
+void MetricsPublisher::GeneratePerStreamCSVRow(
+    uint64_t transferId,
+    uint64_t timestampStart,
+    uint64_t timestampEnd,
+    MetricName dataTransferMetric,
+    const Map<AggregateMetricKey, size_t> &aggregateDataPointsLU,
+    const Vector<Metric> &aggregateDataPoints,
+    Aws::Crt::Vector<Aws::Crt::String> &streamStringValues,
+    Aws::Crt::Vector<double> &streamNumericValues,
+    Aws::Crt::Vector<Aws::Crt::String> &overallStringValues,
+    Aws::Crt::Vector<double> &overallNumericValues)
+{
+    streamNumericValues[(size_t)CSVColumnNumeric::TransferId] = (double)transferId;
+
+    {
+        std::lock_guard<std::mutex> lock(m_transferIdToStateLock);
+
+        std::shared_ptr<TransferState> transferState;
+        auto it = m_transferIdToState.find(transferId);
+
+        if (it != m_transferIdToState.end())
+        {
+            transferState = it->second;
+        }
+
+        if (transferState != nullptr)
+        {
+            streamStringValues[(size_t)CSVColumnString::RequestId] = transferState->GetAmzRequestId();
+            streamStringValues[(size_t)CSVColumnString::AmzId2] = transferState->GetAmzId2();
+        }
+    }
+
+    bool transferStartTimeFound = false;
+    uint64_t transferStart = 0ULL;
+    uint64_t transferEnd = 0ULL;
+    double bytesTotal = 0ULL;
+
+    for (uint64_t timestampSeconds = timestampStart; timestampSeconds <= timestampEnd; ++timestampSeconds)
+    {
+        AggregateMetricKey streamBytesKey(dataTransferMetric, transferId, timestampSeconds);
+        AggregateMetricKey streamSuccessKey(MetricName::SuccessfulTransfer, transferId, timestampSeconds);
+        AggregateMetricKey streamFailedKey(MetricName::FailedTransfer, transferId, timestampSeconds);
+
+        bool streamBytesMetricExists = false;
+
+        double streamBytes =
+            GetAggregateDataPoint(streamBytesKey, aggregateDataPointsLU, aggregateDataPoints, &streamBytesMetricExists);
+        double streamSuccess = GetAggregateDataPoint(streamSuccessKey, aggregateDataPointsLU, aggregateDataPoints);
+        double streamFailed = GetAggregateDataPoint(streamFailedKey, aggregateDataPointsLU, aggregateDataPoints);
+
+        double streamGigabits = streamBytes * 8.0 / 1000.0 / 1000.0 / 1000.0;
+
+        double relativeTimestamp = (double)(timestampSeconds - timestampStart);
+        size_t csvThroughputIndex = (size_t)CSVColumnNumeric::ThroughputStart + (size_t)relativeTimestamp;
+
+        if (streamBytesMetricExists && !transferStartTimeFound)
+        {
+            transferStart = timestampSeconds;
+            transferStartTimeFound = true;
+        }
+
+        if (streamSuccess > 0.0)
+        {
+            transferEnd = timestampSeconds;
+
+            streamNumericValues[(size_t)CSVColumnNumeric::Success] = streamSuccess;
+            overallNumericValues[(size_t)CSVColumnNumeric::Success] += streamSuccess;
+        }
+
+        if (streamFailed > 0.0)
+        {
+            transferEnd = timestampSeconds;
+
+            streamNumericValues[(size_t)CSVColumnNumeric::Failed] = streamFailed;
+            overallNumericValues[(size_t)CSVColumnNumeric::Failed] += streamFailed;
+        }
+
+        bytesTotal += streamBytes;
+        streamNumericValues[csvThroughputIndex] = streamGigabits;
+        overallNumericValues[csvThroughputIndex] += streamGigabits;
+    }
+
+    streamStringValues[(size_t)CSVColumnString::StartTime] = GetTimeString(transferStart - timestampStart);
+    streamStringValues[(size_t)CSVColumnString::EndTime] = GetTimeString(transferEnd - timestampStart);
+    streamStringValues[(size_t)CSVColumnString::TotalTime] = GetTimeString(transferEnd - transferStart);
+
+    double gigabitsTotal = bytesTotal * 8.0 / 1000.0 / 1000.0 / 1000.0;
+
+    streamNumericValues[(size_t)CSVColumnNumeric::AvgThroughput] =
+        gigabitsTotal / (double)(transferEnd - transferStart);
+}
+
 void MetricsPublisher::WritePerStreamCSVRowHeader(
     const std::shared_ptr<StringStream> &csvContents,
     uint64_t timestampStartSeconds,
     uint64_t timestampEndSeconds)
 {
-    *csvContents << "Stream Id,Success,Failed,Success Time,Failed Time";
+    *csvContents << "Transfer Id,x-amz-request-id,x-amz-id-2,Success,Failed,Start Time,End Time,Total Time,Average "
+                    "from Start Time to End Time";
 
     uint64_t numSeconds = timestampEndSeconds - timestampStartSeconds;
 
@@ -447,77 +560,43 @@ void MetricsPublisher::WritePerStreamCSVRowHeader(
     *csvContents << "\n";
 }
 
-void MetricsPublisher::GeneratePerStreamCSVRow(
-    uint64_t groupId,
-    uint64_t timestampStart,
-    uint64_t timestampEnd,
-    MetricName dataTransferMetric,
-    const Map<AggregateMetricKey, size_t> &aggregateDataPointsLU,
-    const Vector<Metric> &aggregateDataPoints,
-    Vector<double> &streamRow,
-    Vector<double> &overallRow)
+void MetricsPublisher::WritePerStreamCSVRow(
+    const std::shared_ptr<StringStream> &csvContents,
+    const Vector<String> &stringValues,
+    const Vector<double> &numericValues)
 {
-    streamRow[(size_t)PerStreamCSVColumn::RowId] = (double)groupId;
+    uint64_t transferId = (uint64_t)numericValues[(size_t)CSVColumnNumeric::TransferId];
+    bool isTotalsRow = transferId == 0;
 
-    for (uint64_t timestampSeconds = timestampStart; timestampSeconds <= timestampEnd; ++timestampSeconds)
-    {
-        AggregateMetricKey streamBytesKey(dataTransferMetric, groupId, timestampSeconds);
-        AggregateMetricKey streamSuccessKey(MetricName::SuccessfulTransfer, groupId, timestampSeconds);
-        AggregateMetricKey streamFailedKey(MetricName::FailedTransfer, groupId, timestampSeconds);
-
-        double streamBytes = GetAggregateDataPoint(streamBytesKey, aggregateDataPointsLU, aggregateDataPoints);
-        double streamSuccess = GetAggregateDataPoint(streamSuccessKey, aggregateDataPointsLU, aggregateDataPoints);
-        double streamFailed = GetAggregateDataPoint(streamFailedKey, aggregateDataPointsLU, aggregateDataPoints);
-
-        double streamGigabits = streamBytes * 8.0 / 1000.0 / 1000.0 / 1000.0;
-
-        double relativeTimestamp = (double)(timestampSeconds - timestampStart);
-        size_t csvThroughputIndex = (size_t)PerStreamCSVColumn::ThroughputStart + (size_t)relativeTimestamp;
-
-        if (streamSuccess > 0.0)
-        {
-            streamRow[(size_t)PerStreamCSVColumn::Success] = streamSuccess;
-            streamRow[(size_t)PerStreamCSVColumn::SuccessTime] = relativeTimestamp;
-
-            overallRow[(size_t)PerStreamCSVColumn::Success] += streamSuccess;
-            overallRow[(size_t)PerStreamCSVColumn::SuccessTime] = relativeTimestamp;
-        }
-
-        if (streamFailed > 0.0)
-        {
-            streamRow[(size_t)PerStreamCSVColumn::Failed] = streamFailed;
-            streamRow[(size_t)PerStreamCSVColumn::FailedTime] = relativeTimestamp;
-
-            overallRow[(size_t)PerStreamCSVColumn::Failed] += streamFailed;
-            overallRow[(size_t)PerStreamCSVColumn::FailedTime] = relativeTimestamp;
-        }
-
-        streamRow[csvThroughputIndex] = streamGigabits;
-        overallRow[csvThroughputIndex] += streamGigabits;
-    }
-}
-
-void MetricsPublisher::WritePerStreamCSVRow(const std::shared_ptr<StringStream> &csvContents, const Vector<double> &row)
-{
-    uint64_t rowId = (uint64_t)row[(size_t)PerStreamCSVColumn::RowId];
-
-    if (rowId == 0)
+    if (isTotalsRow)
     {
         *csvContents << "Totals,";
     }
     else
     {
-        *csvContents << rowId << ",";
+        *csvContents << transferId << ",";
     }
 
-    *csvContents << (uint64_t)row[(size_t)PerStreamCSVColumn::Success] << ","
-                 << (uint64_t)row[(size_t)PerStreamCSVColumn::Failed] << ","
-                 << GetTimeString((uint64_t)row[(size_t)PerStreamCSVColumn::SuccessTime]) << ","
-                 << GetTimeString((uint64_t)row[(size_t)PerStreamCSVColumn::FailedTime]);
+    *csvContents << stringValues[(size_t)CSVColumnString::RequestId] << ","
+                 << stringValues[(size_t)CSVColumnString::AmzId2] << ","
+                 << (uint64_t)numericValues[(size_t)CSVColumnNumeric::Success] << ","
+                 << (uint64_t)numericValues[(size_t)CSVColumnNumeric::Failed] << ","
+                 << stringValues[(size_t)CSVColumnString::StartTime] << ","
+                 << stringValues[(size_t)CSVColumnString::EndTime] << ","
+                 << stringValues[(size_t)CSVColumnString::TotalTime];
 
-    for (size_t i = (size_t)PerStreamCSVColumn::ThroughputStart; i < row.size(); ++i)
+    if (isTotalsRow)
     {
-        *csvContents << "," << row[i];
+        *csvContents << ",";
+    }
+    else
+    {
+        *csvContents << "," << numericValues[(size_t)CSVColumnNumeric::AvgThroughput];
+    }
+
+    for (size_t i = (size_t)CSVColumnNumeric::ThroughputStart; i < numericValues.size(); ++i)
+    {
+        *csvContents << "," << numericValues[i];
     }
 
     *csvContents << "\n";
@@ -550,20 +629,29 @@ std::shared_ptr<StringStream> MetricsPublisher::GeneratePerStreamCSV(
 
     WritePerStreamCSVRowHeader(csvContents, oldestTimestampSeconds, newestTimestampSeconds);
 
-    Vector<double> streamRow;
-    Vector<double> overallRow;
+    Vector<double> streamNumericValues;
+    Vector<String> streamStringValues;
 
-    for (uint32_t i = 0; i < (uint32_t)PerStreamCSVColumn::ThroughputStart; ++i)
+    Vector<double> overallNumericValues;
+    Vector<String> overallStringValues;
+
+    for (uint32_t i = 0; i < (uint32_t)CSVColumnNumeric::ThroughputStart; ++i)
     {
-        streamRow.push_back(0.0);
-        overallRow.push_back(0.0);
+        streamNumericValues.push_back(0.0);
+        overallNumericValues.push_back(0.0);
     }
 
     for (uint64_t timestampSeconds = oldestTimestampSeconds; timestampSeconds <= newestTimestampSeconds;
          ++timestampSeconds)
     {
-        streamRow.push_back(0.0);
-        overallRow.push_back(0.0);
+        streamNumericValues.push_back(0.0);
+        overallNumericValues.push_back(0.0);
+    }
+
+    for (uint32_t i = 0; i < (uint32_t)CSVColumnString::MAX; ++i)
+    {
+        streamStringValues.push_back("");
+        overallStringValues.push_back("");
     }
 
     for (uint64_t groupId : groupIds)
@@ -575,13 +663,15 @@ std::shared_ptr<StringStream> MetricsPublisher::GeneratePerStreamCSV(
             transferMetricName,
             aggregateDataPointsLU,
             aggregateDataPoints,
-            streamRow,
-            overallRow);
+            streamStringValues,
+            streamNumericValues,
+            overallStringValues,
+            overallNumericValues);
 
-        WritePerStreamCSVRow(csvContents, streamRow);
+        WritePerStreamCSVRow(csvContents, streamStringValues, streamNumericValues);
     }
 
-    WritePerStreamCSVRow(csvContents, overallRow);
+    WritePerStreamCSVRow(csvContents, overallStringValues, overallNumericValues);
 
     return csvContents;
 }
@@ -612,6 +702,13 @@ std::shared_ptr<StringStream> MetricsPublisher::GenerateMetricsBackupJson()
 
     tabs.push_back('\t');
 
+    size_t numDataPointsLeftToProcess = 0;
+
+    for (const Aws::Crt::Vector<Metric> &dataPoints : m_dataPointsPublished)
+    {
+        numDataPointsLeftToProcess += dataPoints.size();
+    }
+
     for (const Aws::Crt::Vector<Metric> &dataPoints : m_dataPointsPublished)
     {
         for (size_t i = 0; i < dataPoints.size(); ++i)
@@ -631,7 +728,9 @@ std::shared_ptr<StringStream> MetricsPublisher::GenerateMetricsBackupJson()
 
             *backupContents << tabs << "}";
 
-            if (i < dataPoints.size() - 1)
+            --numDataPointsLeftToProcess;
+
+            if (numDataPointsLeftToProcess > 0)
             {
                 *backupContents << ",";
             }
@@ -663,28 +762,17 @@ String MetricsPublisher::UploadBackup(uint32_t options)
 
     {
         StringStream s3PathStream;
+        DateTime dateTimewNow = DateTime::Now();
 
-        uint64_t currentTicks = 0;
-        aws_sys_clock_get_ticks(&currentTicks);
-        uint64_t timestampNow = aws_timestamp_convert(currentTicks, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, NULL);
+        s3PathStream << "Metrics"
+                     << "/" << MetricTransferTypeToString(m_transferType) << "/" << GetToolName() << "/"
+                     << GetPlatformName() << "/" << GetInstanceType() << "/" << std::setfill('0') << std::setw(2)
+                     << ((uint32_t)dateTimewNow.GetMonth() + 1) << "-" << std::setw(2)
+                     << (uint32_t)dateTimewNow.GetDay() << "-" << (uint32_t)dateTimewNow.GetYear() << "/"
+                     << std::setw(2) << (uint32_t)dateTimewNow.GetHour() << "-" << std::setw(2)
+                     << (uint32_t)dateTimewNow.GetMinute() << "-" << std::setw(2) << (uint32_t)dateTimewNow.GetSecond()
+                     << "/" << CreateUUID() << "/";
 
-        uint8_t dateBuffer[AWS_DATE_TIME_STR_MAX_LEN];
-        AWS_ZERO_ARRAY(dateBuffer);
-        auto dateBuf = ByteBufFromEmptyArray(dateBuffer, AWS_ARRAY_SIZE(dateBuffer));
-        DateTime metricDateTime(timestampNow);
-        metricDateTime.ToGmtString(DateFormat::ISO_8601, dateBuf);
-        String dateStr((char *)dateBuf.buffer, dateBuf.len);
-
-        for (size_t i = 0; i < dateStr.length(); ++i)
-        {
-            if (dateStr[i] == ':')
-            {
-                dateStr[i] = '-';
-            }
-        }
-
-        s3PathStream << GetToolName() << "/" << GetPlatformName() << "/" << GetInstanceType() << "/" << dateStr << "/"
-                     << CreateUUID() << "/";
         s3Path = s3PathStream.str();
     }
 
@@ -693,7 +781,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
     std::atomic<uint32_t> numFilesUploaded(0);
 
     std::shared_ptr<S3ObjectTransport> transport =
-        MakeShared<S3ObjectTransport>(g_allocator, m_canaryApp, S3BackupBucket);
+        MakeShared<S3ObjectTransport>(g_allocator, m_canaryApp, m_canaryApp.GetOptions().bucketName.c_str());
 
     String backupPath = s3Path + "metricsBackup.json";
 
@@ -783,7 +871,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
 void MetricsPublisher::RehydrateBackup(const char *s3Path)
 {
     std::shared_ptr<S3ObjectTransport> transport =
-        MakeShared<S3ObjectTransport>(g_allocator, m_canaryApp, S3BackupBucket);
+        MakeShared<S3ObjectTransport>(g_allocator, m_canaryApp, m_canaryApp.GetOptions().bucketName.c_str());
     StringStream contents;
     std::mutex signalMutex;
     std::condition_variable signal;
@@ -814,6 +902,13 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
 
     String contentsStr = contents.str();
     JsonObject jsonObject(contentsStr);
+
+    if(!jsonObject.GetErrorMessage().empty())
+    {
+        AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "%s", jsonObject.GetErrorMessage().c_str());
+        return;
+    }
+
     JsonView jsonView = jsonObject.View();
 
     String transferTypeStr = jsonView.GetString("TransferType");
@@ -843,6 +938,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
             StringToMetricName(metricNameStr.c_str()),
             StringToMetricUnit(metricUnitStr.c_str()),
             metricTimestamp,
+            0ULL,
             metricJson.GetDouble("Value"));
 
         newestTimeStamp = std::max(metricTimestamp, newestTimeStamp);
@@ -880,8 +976,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
     }
 
     AddDataPoints(metrics);
-    SchedulePublish();
-    WaitForLastPublish();
+    FlushMetrics();
 
     std::stringstream cloudWatchMetricsLink;
 
@@ -923,6 +1018,10 @@ void MetricsPublisher::SetTransferState(uint64_t transferId, const std::shared_p
     if (it == m_transferIdToState.end())
     {
         m_transferIdToState.insert(std::pair<uint64_t, std::shared_ptr<TransferState>>(transferId, transferState));
+    }
+    else
+    {
+        it->second = transferState;
     }
 }
 

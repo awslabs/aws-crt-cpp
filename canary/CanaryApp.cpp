@@ -40,16 +40,15 @@ using namespace Aws::Crt;
 namespace
 {
     const char *MetricNamespace = "CRT-CPP-Canary-V2";
-    const char *DefaultBucket = "aws-crt-canary-bucket";
 } // namespace
 
 CanaryAppOptions::CanaryAppOptions() noexcept
     : platformName(CanaryUtil::GetPlatformName()), toolName("NA"), instanceType("unknown"), region("us-west-2"),
-      readFromParentPipe(-1), writeToParentPipe(-1), numUpTransfers(1), numUpConcurrentTransfers(0),
-      numDownTransfers(1), numDownConcurrentTransfers(0), childProcessIndex(0), measureSinglePartTransfer(false),
-      measureMultiPartTransfer(false), measureHttpTransfer(false), usingNumaControl(false), downloadOnly(false),
-      sendEncrypted(false), loggingEnabled(false), rehydrateBackup(false), forkModeEnabled(false),
-      isParentProcess(false), isChildProcess(false)
+      bucketName("aws-crt-canary-bucket"), readFromParentPipe(-1), writeToParentPipe(-1), numUpTransfers(1),
+      numUpConcurrentTransfers(0), numDownTransfers(1), numDownConcurrentTransfers(0), childProcessIndex(0),
+      measureSinglePartTransfer(false), measureMultiPartTransfer(false), measureHttpTransfer(false),
+      usingNumaControl(false), downloadOnly(false), sendEncrypted(false), loggingEnabled(false), rehydrateBackup(false),
+      forkModeEnabled(false), isParentProcess(false), isChildProcess(false)
 {
 }
 
@@ -97,12 +96,9 @@ CanaryApp::CanaryApp(CanaryAppOptions &&inOptions) noexcept
     Io::TlsContextOptions tlsContextOptions = Io::TlsContextOptions::InitDefaultClient(g_allocator);
     m_tlsContext = Io::TlsContext(tlsContextOptions, Io::TlsMode::CLIENT, g_allocator);
 
-    const char *downloadBucket =
-        m_options.downloadBucketName.length() > 0 ? m_options.downloadBucketName.c_str() : DefaultBucket;
-
     m_publisher = MakeShared<MetricsPublisher>(g_allocator, *this, MetricNamespace);
-    m_uploadTransport = MakeShared<S3ObjectTransport>(g_allocator, *this, DefaultBucket);
-    m_downloadTransport = MakeShared<S3ObjectTransport>(g_allocator, *this, downloadBucket);
+    m_uploadTransport = MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.bucketName.c_str());
+    m_downloadTransport = MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.bucketName.c_str());
     m_measureTransferRate = MakeShared<MeasureTransferRate>(g_allocator, *this);
 }
 

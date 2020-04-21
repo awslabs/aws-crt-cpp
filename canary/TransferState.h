@@ -73,13 +73,12 @@ class TransferState : public std::enable_shared_from_this<TransferState>
      */
     void FlushDataDownMetrics();
 
-    const Aws::Crt::String & GetAmzRequestId() const { return m_amzRequestId; }
-    const Aws::Crt::String & GetAmazId2() const { return m_amzId2; }
+    const Aws::Crt::String &GetAmzRequestId() const { return m_amzRequestId; }
+    const Aws::Crt::String &GetAmzId2() const { return m_amzId2; }
 
     void ProcessHeaders(const Aws::Crt::Http::HttpHeader *headersArray, size_t headersCount);
 
   private:
-
     static uint64_t s_nextTransferId;
 
     uint32_t m_partIndex;

@@ -465,12 +465,12 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
     Vector<std::shared_ptr<MultipartDownloadState>> downloadStates;
 
     PerformMeasurement(
-        filenamePrefix,
+        m_canaryApp.GetOptions().downloadObjectName.c_str(),
         "multiPartObjectDown-",
         m_canaryApp.GetOptions().numDownTransfers,
         m_canaryApp.GetOptions().numDownConcurrentTransfers,
         S3ObjectTransport::MaxDownloadMultipartStreams,
-        0,
+        (uint32_t)MeasurementFlags::NoFileSuffix,
         m_canaryApp.GetDownloadTransport(),
         [&downloadStates](
             uint32_t,

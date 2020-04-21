@@ -47,7 +47,7 @@ struct CanaryAppOptions
     std::string region;
     std::string httpTestEndpoint;
     std::string rehydrateBackupObjectName;
-    std::string downloadBucketName;
+    std::string bucketName;
     std::string downloadObjectName;
 
     int32_t readFromParentPipe;
