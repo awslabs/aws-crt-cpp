@@ -197,9 +197,8 @@ class MetricsPublisher
     double GetAggregateDataPoint(
         const AggregateMetricKey &key,
         const Aws::Crt::Map<AggregateMetricKey, size_t> &aggregateLU,
-        const Aws::Crt::Vector<Metric> &aggregateDataPoints);
-
-    std::shared_ptr<Aws::Crt::StringStream> GenerateMetricsBackupJson();
+        const Aws::Crt::Vector<Metric> &aggregateDataPoints,
+        bool *outKeyExists = nullptr);
 
     void SchedulePublish();
 
@@ -208,6 +207,8 @@ class MetricsPublisher
     void AddDataPointInternal(const Metric &newMetric);
 
     void PreparePayload(Aws::Crt::StringStream &bodyStream, const Aws::Crt::Vector<Metric> &metrics);
+
+    std::shared_ptr<Aws::Crt::StringStream> GenerateMetricsBackupJson();
 
     Aws::Crt::String GetTimeString(uint64_t timestampSeconds) const;
 
@@ -223,8 +224,10 @@ class MetricsPublisher
         MetricName dataTransferMetric,
         const Aws::Crt::Map<AggregateMetricKey, size_t> &aggregateDataPointsLU,
         const Aws::Crt::Vector<Metric> &aggregateDataPoints,
-        Aws::Crt::Vector<double> &streamTotals,
-        Aws::Crt::Vector<double> &overallTotals);
+        Aws::Crt::Vector<Aws::Crt::String> &streamStringValues,
+        Aws::Crt::Vector<double> &streamNumericValues,
+        Aws::Crt::Vector<Aws::Crt::String> &overallStringValues,
+        Aws::Crt::Vector<double> &overallNumericValues);
 
     void WritePerStreamCSVRowHeader(
         const std::shared_ptr<Aws::Crt::StringStream> &csvContents,
@@ -233,7 +236,8 @@ class MetricsPublisher
 
     void WritePerStreamCSVRow(
         const std::shared_ptr<Aws::Crt::StringStream> &csvContents,
-        const Aws::Crt::Vector<double> &totals);
+        const Aws::Crt::Vector<Aws::Crt::String> &stringValues,
+        const Aws::Crt::Vector<double> &numericValues);
 
     CanaryApp &m_canaryApp;
     MetricTransferType m_transferType;

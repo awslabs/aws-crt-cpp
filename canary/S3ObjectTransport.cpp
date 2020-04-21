@@ -345,13 +345,18 @@ void S3ObjectTransport::PutObject(
 
     Http::HttpRequestOptions requestOptions;
     requestOptions.request = nullptr;
-    requestOptions.onIncomingHeaders = [etag](
+    requestOptions.onIncomingHeaders = [etag, transferState](
                                            Http::HttpStream &stream,
                                            enum aws_http_header_block headerBlock,
                                            const Http::HttpHeader *headersArray,
                                            std::size_t headersCount) {
         (void)stream;
         (void)headerBlock;
+
+        if (transferState != nullptr)
+        {
+            transferState->ProcessHeaders(headersArray, headersCount);
+        }
 
         if (etag == nullptr)
         {
@@ -459,11 +464,15 @@ void S3ObjectTransport::GetObject(
         }
     };
 
-    requestOptions.onIncomingHeaders = [transferState](Http::HttpStream &stream,
-                                          enum aws_http_header_block headerBlock,
-                                          const Http::HttpHeader *headersArray,
-                                          std::size_t headersCount) {
-        transferState->ProcessHeaders(headersArray, headersCount);
+    requestOptions.onIncomingHeaders = [transferState](
+                                           Http::HttpStream &stream,
+                                           enum aws_http_header_block headerBlock,
+                                           const Http::HttpHeader *headersArray,
+                                           std::size_t headersCount) {
+        if (transferState != nullptr)
+        {
+            transferState->ProcessHeaders(headersArray, headersCount);
+        }
     };
     requestOptions.onStreamComplete =
         [keyPath, partNumber, transferState, getObjectFinished](Http::HttpStream &stream, int error) {

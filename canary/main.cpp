@@ -82,8 +82,9 @@ int main(int argc, char *argv[])
         NumConcurrentTransfers,
         DownloadOnly,
         RehydrateBackup,
-        DownloadBucketName,
+        BucketName,
         DownloadObjectName,
+        Region,
 
         MAX
     };
@@ -93,17 +94,18 @@ int main(int argc, char *argv[])
                                       {"measureSinglePartTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 's'},
                                       {"measureMultiPartTransfer", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'm'},
                                       {"measureHttpTransfer", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'h'},
-                                      {"logging", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'd'},
+                                      {"logging", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'l'},
                                       {"sendEncrypted", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'e'},
                                       {"fork", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'f'},
                                       {"numTransfers", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'n'},
                                       {"numConcurrentTransfers", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'c'},
-                                      {"downloadOnly", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'z'},
-                                      {"rehydrateBackup", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'r'},
-                                      {"downloadBucketName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'b'},
-                                      {"downloadObjectName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'o'}};
+                                      {"downloadOnly", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'd'},
+                                      {"rehydrateBackup", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'u'},
+                                      {"bucketName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'b'},
+                                      {"downloadObjectName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'o'},
+                                      {"region", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'r'}};
 
-    const char *optstring = "t:i:smh:defn:c:zr:b:o:";
+    const char *optstring = "t:i:smh:lefn:c:du:b:o:r:";
 
     CanaryAppOptions canaryAppOptions;
 
@@ -176,11 +178,14 @@ int main(int argc, char *argv[])
                 canaryAppOptions.rehydrateBackupObjectName = aws_cli_optarg;
                 canaryAppOptions.rehydrateBackup = true;
                 break;
-            case CLIOption::DownloadBucketName:
-                canaryAppOptions.downloadBucketName = aws_cli_optarg;
+            case CLIOption::BucketName:
+                canaryAppOptions.bucketName = aws_cli_optarg;
                 break;
             case CLIOption::DownloadObjectName:
                 canaryAppOptions.downloadObjectName = aws_cli_optarg;
+                break;
+            case CLIOption::Region:
+                canaryAppOptions.region = aws_cli_optarg;
                 break;
             default:
                 AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Unknown CLI option used.");

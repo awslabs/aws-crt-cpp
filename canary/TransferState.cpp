@@ -233,20 +233,20 @@ void TransferState::FlushMetricsVector(Vector<Metric> &metrics)
 
 void TransferState::ProcessHeaders(const Http::HttpHeader *headersArray, size_t headersCount)
 {
-    for(size_t i = 0; i < headersCount; ++i)
+    for (size_t i = 0; i < headersCount; ++i)
     {
-        const Http::HttpHeader* header = &headersArray[i];
+        const Http::HttpHeader *header = &headersArray[i];
+        const aws_byte_cursor &headerName = header->name;
 
-        const char* headerName = (const char*)header->name.ptr;
-        const char* headerValue = (const char*)header->value.ptr;
-
-        if(!strcmp(headerName, "x-amz-request-id"))
+        if (aws_byte_cursor_eq_c_str(&headerName, "x-amz-request-id"))
         {
-            m_amzRequestId = headerValue;
+            const aws_byte_cursor &value = header->value;
+            m_amzRequestId = String((const char *)value.ptr, value.len);
         }
-        else if(!strcmp(headerName, "x-amz-id-2"))
+        else if (aws_byte_cursor_eq_c_str(&headerName, "x-amz-id-2"))
         {
-            m_amzId2 = headerValue;
+            const aws_byte_cursor &value = header->value;
+            m_amzId2 = String((const char *)value.ptr, value.len);
         }
     }
 }
