@@ -46,6 +46,8 @@ CanaryAppOptions::CanaryAppOptions() noexcept
     : platformName(CanaryUtil::GetPlatformName()), toolName("NA"), instanceType("unknown"), region("us-west-2"),
       bucketName("aws-crt-canary-bucket"), readFromParentPipe(-1), writeToParentPipe(-1), numUpTransfers(1),
       numUpConcurrentTransfers(0), numDownTransfers(1), numDownConcurrentTransfers(0), childProcessIndex(0),
+      numTransfersPerAddress(10), singlePartObjectSize(5ULL * 1024ULL * 1024ULL * 1024ULL),
+      multiPartObjectPartSize(1ULL * 1024ULL * 1024ULL * 1024ULL), multiPartObjectNumParts(5),
       measureSinglePartTransfer(false), measureMultiPartTransfer(false), measureHttpTransfer(false),
       usingNumaControl(false), downloadOnly(false), sendEncrypted(false), loggingEnabled(false), rehydrateBackup(false),
       forkModeEnabled(false), isParentProcess(false), isChildProcess(false)

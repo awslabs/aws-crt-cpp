@@ -26,18 +26,18 @@
 
 using namespace Aws::Crt;
 
-uint64_t TransferState::s_nextTransferId = 1ULL;
+std::atomic<uint64_t> TransferState::s_nextTransferId(1ULL);
 
 uint64_t TransferState::GetNextTransferId()
 {
-    return s_nextTransferId++;
+    return s_nextTransferId.fetch_add(1) + 1;
 }
 
 TransferState::TransferState() : TransferState(nullptr) {}
 
-TransferState::TransferState(const std::shared_ptr<MetricsPublisher> &publisher) : TransferState(publisher, 0) {}
+TransferState::TransferState(const std::shared_ptr<MetricsPublisher> &publisher) : TransferState(publisher, -1) {}
 
-TransferState::TransferState(const std::shared_ptr<MetricsPublisher> &publisher, uint32_t partIndex)
+TransferState::TransferState(const std::shared_ptr<MetricsPublisher> &publisher, int32_t partIndex)
     : m_partIndex(partIndex), m_transferId(TransferState::GetNextTransferId()), m_transferSuccess(false),
       m_publisher(publisher)
 {

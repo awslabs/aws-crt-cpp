@@ -31,19 +31,23 @@
 
 using namespace Aws::Crt;
 
-const uint32_t S3ObjectTransport::MaxUploadMultipartStreams = 800;
-const uint32_t S3ObjectTransport::MaxDownloadMultipartStreams = 800;
-
 namespace
 {
-    const uint32_t TransfersPerAddress = 10;
     const int32_t S3GetObjectResponseStatus_PartialContent = 206;
 } // namespace
 
 S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::String &bucket)
-    : m_canaryApp(canaryApp), m_bucketName(bucket), m_connManagersUseCount(0), m_activeRequestsCount(0),
-      m_uploadProcessor(canaryApp, canaryApp.GetEventLoopGroup(), MaxUploadMultipartStreams),
-      m_downloadProcessor(canaryApp, canaryApp.GetEventLoopGroup(), MaxDownloadMultipartStreams)
+    : m_canaryApp(canaryApp), m_bucketName(bucket), m_transfersPerAddress(10), m_connManagersUseCount(0),
+      m_activeRequestsCount(0),
+
+      m_uploadProcessor(
+          canaryApp,
+          canaryApp.GetEventLoopGroup(),
+          canaryApp.GetOptions().GetNumUpConcurrentPartTransfers()),
+      m_downloadProcessor(
+          canaryApp,
+          canaryApp.GetEventLoopGroup(),
+          canaryApp.GetOptions().GetNumDownConcurrentPartTransfers())
 {
     m_endpoint = m_bucketName + ".s3." + m_canaryApp.GetOptions().region.c_str() + ".amazonaws.com";
 
@@ -62,12 +66,14 @@ void S3ObjectTransport::EmitS3AddressCountMetric(size_t addressCount)
     m_canaryApp.GetMetricsPublisher()->AddDataPoint(s3AddressCountMetric);
 }
 
-void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
+void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers, uint32_t transfersPerAddress)
 {
-    // Each transfer is in a group the size of TransfersPerAddress,
-    size_t desiredNumberOfAddresses = numTransfers / TransfersPerAddress;
+    m_transfersPerAddress = transfersPerAddress;
 
-    if ((numTransfers % TransfersPerAddress) > 0)
+    // Each transfer is in a group the size of TransfersPerAddress,
+    size_t desiredNumberOfAddresses = numTransfers / m_transfersPerAddress;
+
+    if ((numTransfers % m_transfersPerAddress) > 0)
     {
         ++desiredNumberOfAddresses;
     }
@@ -142,7 +148,7 @@ void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
 
 const String &S3ObjectTransport::GetAddressForTransfer(uint32_t index)
 {
-    index = (index / TransfersPerAddress) % (uint32_t)m_addressCache.size();
+    index = (index / m_transfersPerAddress) % (uint32_t)m_addressCache.size();
     return m_addressCache[index];
 }
 
@@ -153,11 +159,11 @@ std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> S3ObjectTransport::
         AWS_LOGF_WARN(
             AWS_LS_CRT_CPP_CANARY,
             "No connection managers currently available.  Warming DNS cache and spawning connection managers");
-        WarmDNSCache(1);
+        WarmDNSCache(1, 1);
         SpawnConnectionManagers();
     }
 
-    uint32_t index = ((m_connManagersUseCount.fetch_add(1) + 1) / TransfersPerAddress) % m_connManagers.size();
+    uint32_t index = ((m_connManagersUseCount.fetch_add(1) + 1) / m_transfersPerAddress) % m_connManagers.size();
     return m_connManagers[index];
 }
 

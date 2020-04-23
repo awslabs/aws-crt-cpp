@@ -54,9 +54,6 @@ using ReceivePartCallback =
 class S3ObjectTransport
 {
   public:
-    static const uint32_t MaxUploadMultipartStreams;
-    static const uint32_t MaxDownloadMultipartStreams;
-
     S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::String &bucket);
 
     /*
@@ -106,7 +103,7 @@ class S3ObjectTransport
     /*
      * Given a number of transfers, resolve the appropriate amount of DNS addresses.
      */
-    void WarmDNSCache(uint32_t numTransfers);
+    void WarmDNSCache(uint32_t numTransfers, uint32_t transfersPerAddress);
 
     /*
      * Used to spawn the required connection managers for each resolve DNS address.
@@ -143,6 +140,8 @@ class S3ObjectTransport
     Aws::Crt::Http::HttpHeader m_hostHeader;
     Aws::Crt::Http::HttpHeader m_contentTypeHeader;
     Aws::Crt::String m_endpoint;
+
+    uint32_t m_transfersPerAddress;
 
     std::vector<std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager>> m_connManagers;
     std::vector<Aws::Crt::String> m_addressCache;

@@ -41,13 +41,7 @@ MultipartTransferState::MultipartTransferState(
     m_numPartsCompleted = 0;
     m_objectSize = objectSize;
     m_key = key;
-
-    for (uint32_t i = 0; i < numParts; ++i)
-    {
-        std::shared_ptr<TransferState> transferState = MakeShared<TransferState>(g_allocator, publisher, i);
-
-        m_transferStates.push_back(transferState);
-    }
+    m_publisher = publisher;
 }
 
 MultipartTransferState::~MultipartTransferState() {}
@@ -109,6 +103,19 @@ uint32_t MultipartTransferState::GetNumPartsCompleted() const
 uint64_t MultipartTransferState::GetObjectSize() const
 {
     return m_objectSize;
+}
+
+std::shared_ptr<TransferState> MultipartTransferState::PushTransferState(uint32_t partIndex)
+{
+    std::shared_ptr<TransferState> transferState =
+        MakeShared<TransferState>(g_allocator, m_publisher.lock(), partIndex);
+
+    {
+        std::lock_guard<std::mutex> lock(m_transferStatesMutex);
+        m_transferStates.push_back(transferState);
+    }
+
+    return transferState;
 }
 
 MultipartUploadState::MultipartUploadState(
