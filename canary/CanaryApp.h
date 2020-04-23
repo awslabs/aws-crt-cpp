@@ -57,6 +57,11 @@ struct CanaryAppOptions
     uint32_t numDownTransfers;
     uint32_t numDownConcurrentTransfers;
     uint32_t childProcessIndex;
+    uint32_t numTransfersPerAddress;
+
+    uint64_t singlePartObjectSize;
+    uint64_t multiPartObjectPartSize;
+    uint32_t multiPartObjectNumParts;
 
     uint32_t measureSinglePartTransfer : 1;
     uint32_t measureMultiPartTransfer : 1;
@@ -69,6 +74,14 @@ struct CanaryAppOptions
     uint32_t forkModeEnabled : 1;
     uint32_t isParentProcess : 1;
     uint32_t isChildProcess : 1;
+
+    uint64_t GetMultiPartObjectSize() const { return multiPartObjectPartSize * (uint64_t)multiPartObjectNumParts; }
+
+    uint32_t GetNumUpConcurrentPartTransfers() const { return numUpConcurrentTransfers * multiPartObjectNumParts; }
+
+    uint32_t GetNumDownConcurrentPartTransfers() const { return numDownConcurrentTransfers * multiPartObjectNumParts; }
+
+    uint32_t GetMultiPartNumTransfersPerAddress() const { return numTransfersPerAddress * multiPartObjectNumParts; }
 };
 
 #ifndef WIN32

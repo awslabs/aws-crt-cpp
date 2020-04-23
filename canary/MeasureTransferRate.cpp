@@ -28,14 +28,6 @@
 
 using namespace Aws::Crt;
 
-namespace
-{
-    const uint64_t SinglePartObjectSize = 5ULL * 1024ULL * 1024ULL * 1024ULL;
-
-    const uint32_t MultiPartObjectNumParts = 8192;
-    const uint64_t MultiPartObjectSize = (uint64_t)MultiPartObjectNumParts * (16ULL * 1024ULL * 1024ULL);
-} // namespace
-
 MeasureTransferRate::MeasureTransferRate(CanaryApp &canaryApp) : m_canaryApp(canaryApp)
 {
     m_schedulingLoop = aws_event_loop_group_get_next_loop(canaryApp.GetEventLoopGroup().GetUnderlyingHandle());
@@ -49,6 +41,7 @@ void MeasureTransferRate::PerformMeasurement(
     uint32_t numTransfers,
     uint32_t numConcurrentTransfers,
     uint32_t numTransfersToDNSResolve,
+    uint32_t numTransfersPerAddress,
     uint32_t flags,
     const std::shared_ptr<S3ObjectTransport> &transport,
     TransferFunction &&transferFunction)
@@ -61,7 +54,7 @@ void MeasureTransferRate::PerformMeasurement(
     {
         if ((flags & (uint32_t)MeasurementFlags::DontWarmDNSCache) == 0)
         {
-            transport->WarmDNSCache(numTransfersToDNSResolve);
+            transport->WarmDNSCache(numTransfersToDNSResolve, numTransfersPerAddress);
         }
 
         // Each child process performs a transfer, so provide each with a resolve address
@@ -97,7 +90,7 @@ void MeasureTransferRate::PerformMeasurement(
     {
         if ((flags & (uint32_t)MeasurementFlags::DontWarmDNSCache) == 0)
         {
-            transport->WarmDNSCache(numTransfersToDNSResolve);
+            transport->WarmDNSCache(numTransfersToDNSResolve, numTransfersPerAddress);
         }
 
         m_canaryApp.transport->SpawnConnectionManagers();
@@ -217,6 +210,7 @@ void MeasureTransferRate::MeasureHttpTransfer()
         m_canaryApp.GetOptions().numDownTransfers,
         m_canaryApp.GetOptions().numDownConcurrentTransfers,
         0,
+        0,
         (uint32_t)MeasurementFlags::DontWarmDNSCache | (uint32_t)MeasurementFlags::NoFileSuffix,
         nullptr,
         [this, connManager, &hostHeader](
@@ -306,14 +300,15 @@ void MeasureTransferRate::MeasureHttpTransfer()
 
 void MeasureTransferRate::MeasureSinglePartObjectTransfer()
 {
-    const char *filenamePrefix = "crt-canary-obj-small-";
+    const CanaryAppOptions &options = m_canaryApp.GetOptions();
+
     AWS_LOGF_INFO(
         AWS_LS_CRT_CPP_CANARY,
         "Measurements: %d,%d %d,%d",
-        m_canaryApp.GetOptions().numUpTransfers,
-        m_canaryApp.GetOptions().numUpConcurrentTransfers,
-        m_canaryApp.GetOptions().numDownTransfers,
-        m_canaryApp.GetOptions().numDownConcurrentTransfers);
+        options.numUpTransfers,
+        options.numUpConcurrentTransfers,
+        options.numDownTransfers,
+        options.numDownConcurrentTransfers);
 
     Vector<std::shared_ptr<TransferState>> uploads;
     Vector<std::shared_ptr<TransferState>> downloads;
@@ -331,12 +326,13 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
         PerformMeasurement(
             "crt-canary-obj-single-part-",
             "singlePartObjectUp-",
-            m_canaryApp.GetOptions().numUpTransfers,
-            m_canaryApp.GetOptions().numUpConcurrentTransfers,
-            m_canaryApp.GetOptions().numUpConcurrentTransfers,
+            options.numUpTransfers,
+            options.numUpConcurrentTransfers,
+            options.numUpConcurrentTransfers,
+            options.numTransfersPerAddress,
             0,
             m_canaryApp.GetUploadTransport(),
-            [this, &uploads](
+            [this, &uploads, options](
                 uint32_t transferIndex,
                 String &&key,
                 const std::shared_ptr<S3ObjectTransport> &transport,
@@ -347,14 +343,14 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
                     transferState,
                     key,
                     MakeShared<MeasureTransferRateStream>(
-                        g_allocator, m_canaryApp, transferState, SinglePartObjectSize),
+                        g_allocator, m_canaryApp, transferState, options.singlePartObjectSize),
                     0,
                     [transferState, notifyTransferFinished](int32_t errorCode, std::shared_ptr<Aws::Crt::String>) {
                         notifyTransferFinished(errorCode);
                     });
             });
 
-        for (uint32_t i = 0; i < m_canaryApp.GetOptions().numUpTransfers; ++i)
+        for (uint32_t i = 0; i < options.numUpTransfers; ++i)
         {
             uploads[i]->FlushDataUpMetrics();
         }
@@ -376,6 +372,7 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
         m_canaryApp.GetOptions().numDownTransfers,
         m_canaryApp.GetOptions().numDownConcurrentTransfers,
         m_canaryApp.GetOptions().numDownConcurrentTransfers,
+        m_canaryApp.GetOptions().numTransfersPerAddress,
         (uint32_t)MeasurementFlags::NoFileSuffix,
         m_canaryApp.GetDownloadTransport(),
         [&downloads](
@@ -404,19 +401,22 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
 {
     const char *filenamePrefix = "crt-canary-obj-multipart-";
 
-    if (!m_canaryApp.GetOptions().downloadOnly)
+    const CanaryAppOptions &options = m_canaryApp.GetOptions();
+
+    if (!options.downloadOnly)
     {
         Vector<std::shared_ptr<MultipartUploadState>> uploadStates;
 
         PerformMeasurement(
             filenamePrefix,
             "multiPartObjectUp-",
-            m_canaryApp.GetOptions().numUpTransfers,
-            m_canaryApp.GetOptions().numUpConcurrentTransfers,
-            S3ObjectTransport::MaxUploadMultipartStreams,
+            options.numUpTransfers,
+            options.numUpConcurrentTransfers,
+            options.GetNumUpConcurrentPartTransfers(),
+            options.GetMultiPartNumTransfersPerAddress(),
             0,
             m_canaryApp.GetUploadTransport(),
-            [this, &uploadStates](
+            [this, &uploadStates, options](
                 uint32_t,
                 String &&key,
                 const std::shared_ptr<S3ObjectTransport> &transport,
@@ -425,14 +425,14 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
 
                 std::shared_ptr<MultipartUploadState> uploadState = transport->PutObjectMultipart(
                     key,
-                    MultiPartObjectSize,
-                    MultiPartObjectNumParts,
-                    [this](const std::shared_ptr<TransferState> &transferState) {
-                        uint64_t partByteSize = MultiPartObjectSize / MultiPartObjectNumParts;
+                    options.GetMultiPartObjectSize(),
+                    options.multiPartObjectNumParts,
+                    [this, options](const std::shared_ptr<TransferState> &transferState) {
+                        uint64_t partByteSize = options.multiPartObjectPartSize;
 
-                        if (transferState->GetPartIndex() == MultiPartObjectNumParts - 1)
+                        if (transferState->GetPartIndex() == (int32_t)options.multiPartObjectNumParts - 1)
                         {
-                            partByteSize += MultiPartObjectSize % MultiPartObjectNumParts;
+                            partByteSize += options.GetMultiPartObjectSize() % options.multiPartObjectNumParts;
                         }
 
                         return MakeShared<MeasureTransferRateStream>(
@@ -465,14 +465,15 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
     Vector<std::shared_ptr<MultipartDownloadState>> downloadStates;
 
     PerformMeasurement(
-        m_canaryApp.GetOptions().downloadObjectName.c_str(),
+        options.downloadObjectName.c_str(),
         "multiPartObjectDown-",
-        m_canaryApp.GetOptions().numDownTransfers,
-        m_canaryApp.GetOptions().numDownConcurrentTransfers,
-        S3ObjectTransport::MaxDownloadMultipartStreams,
+        options.numDownTransfers,
+        options.numDownConcurrentTransfers,
+        options.GetNumDownConcurrentPartTransfers(),
+        options.GetMultiPartNumTransfersPerAddress(),
         (uint32_t)MeasurementFlags::NoFileSuffix,
         m_canaryApp.GetDownloadTransport(),
-        [&downloadStates](
+        [&downloadStates, options](
             uint32_t,
             String &&key,
             const std::shared_ptr<S3ObjectTransport> &transport,
@@ -481,7 +482,7 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
 
             std::shared_ptr<MultipartDownloadState> downloadState = transport->GetObjectMultipart(
                 key,
-                MultiPartObjectNumParts,
+                options.multiPartObjectNumParts,
                 [](const std::shared_ptr<TransferState> &, const ByteCursor &) {},
                 [notifyTransferFinished, key](int32_t errorCode) {
                     AWS_LOGF_INFO(

@@ -60,6 +60,8 @@ class MultipartTransferState
     uint32_t GetNumPartsCompleted() const;
     uint64_t GetObjectSize() const;
 
+    std::shared_ptr<TransferState> PushTransferState(uint32_t partIndex);
+
     const Aws::Crt::Vector<std::shared_ptr<TransferState>> &GetParts() const { return m_transferStates; }
 
     /*
@@ -97,9 +99,11 @@ class MultipartTransferState
     std::atomic<uint32_t> m_numPartsCompleted;
     uint64_t m_objectSize;
     Aws::Crt::String m_key;
+    std::mutex m_transferStatesMutex;
     Aws::Crt::Vector<std::shared_ptr<TransferState>> m_transferStates;
     ProcessPartCallback m_processPartCallback;
     FinishedCallback m_finishedCallback;
+    std::weak_ptr<MetricsPublisher> m_publisher;
 };
 
 /*

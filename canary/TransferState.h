@@ -30,10 +30,10 @@ class TransferState : public std::enable_shared_from_this<TransferState>
   public:
     TransferState();
     TransferState(const std::shared_ptr<MetricsPublisher> &publisher);
-    TransferState(const std::shared_ptr<MetricsPublisher> &publisher, uint32_t partIndex);
+    TransferState(const std::shared_ptr<MetricsPublisher> &publisher, int32_t partIndex);
 
-    uint32_t GetPartIndex() const { return m_partIndex; }
-    uint32_t GetPartNumber() const { return m_partIndex + 1; }
+    int32_t GetPartIndex() const { return m_partIndex; }
+    int32_t GetPartNumber() const { return m_partIndex + 1; }
 
     /*
      * Flags this is a success or failure, which will be reported as a metric on a flush
@@ -79,9 +79,9 @@ class TransferState : public std::enable_shared_from_this<TransferState>
     void ProcessHeaders(const Aws::Crt::Http::HttpHeader *headersArray, size_t headersCount);
 
   private:
-    static uint64_t s_nextTransferId;
+    static std::atomic<uint64_t> s_nextTransferId;
 
-    uint32_t m_partIndex;
+    int32_t m_partIndex;
     uint64_t m_transferId;
     uint32_t m_transferSuccess : 1;
 

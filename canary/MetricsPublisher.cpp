@@ -163,7 +163,7 @@ namespace
     }
 } // namespace
 
-Metric::Metric():Unit(MetricUnit::Count), Name(MetricName::Invalid), Timestamp(0ULL), TransferId(0ULL), Value(0.0) {}
+Metric::Metric() : Unit(MetricUnit::Count), Name(MetricName::Invalid), Timestamp(0ULL), TransferId(0ULL), Value(0.0) {}
 
 Metric::Metric(MetricName name, MetricUnit unit, uint64_t transferId, double value)
     : Unit(unit), Name(name), TransferId(transferId), Value(value)
@@ -537,7 +537,7 @@ void MetricsPublisher::GeneratePerStreamCSVRow(
     double gigabitsTotal = bytesTotal * 8.0 / 1000.0 / 1000.0 / 1000.0;
 
     streamNumericValues[(size_t)CSVColumnNumeric::AvgThroughput] =
-        gigabitsTotal / (double)(transferEnd - transferStart);
+        gigabitsTotal / (double)(transferEnd - transferStart + 1);
 }
 
 void MetricsPublisher::WritePerStreamCSVRowHeader(
@@ -903,7 +903,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
     String contentsStr = contents.str();
     JsonObject jsonObject(contentsStr);
 
-    if(!jsonObject.GetErrorMessage().empty())
+    if (!jsonObject.GetErrorMessage().empty())
     {
         AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "%s", jsonObject.GetErrorMessage().c_str());
         return;
