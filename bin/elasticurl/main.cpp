@@ -308,46 +308,48 @@ int main(int argc, char **argv)
 
     auto hostName = app_ctx.uri.host_name;
 
-    // if (use_tls)
-    // {
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions;
-    if (app_ctx.cert && app_ctx.key)
+    Aws::Crt::Io::TlsContext tlsContext;
+    Aws::Crt::Io::TlsConnectionOptions tlsConnectionOptions;
+    if (use_tls)
     {
-        tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(app_ctx.cert, app_ctx.key);
+        if (app_ctx.cert && app_ctx.key)
+        {
+            tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(app_ctx.cert, app_ctx.key);
+        }
+        else
+        {
+            tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
+        }
+        if (app_ctx.capath || app_ctx.cacert)
+        {
+            tlsCtxOptions.OverrideDefaultTrustStore(app_ctx.capath, app_ctx.cacert);
+        }
+        if (app_ctx.insecure)
+        {
+            tlsCtxOptions.SetVerifyPeer(false);
+        }
+
+        tlsContext = Aws::Crt::Io::TlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+
+        tlsConnectionOptions = tlsContext.NewConnectionOptions();
+
+        tlsConnectionOptions.SetServerName(hostName);
+        tlsConnectionOptions.SetAlpnList(app_ctx.alpn);
     }
     else
     {
-        tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
+        if (app_ctx.required_http_version == AWS_HTTP_VERSION_2)
+        {
+            fprintf(stderr, "Error, we don't support h2c, please use TLS for HTTP2 connection");
+            exit(1);
+        }
+        port = 80;
+        if (app_ctx.uri.port)
+        {
+            port = app_ctx.uri.port;
+        }
     }
-    if (app_ctx.capath || app_ctx.cacert)
-    {
-        tlsCtxOptions.OverrideDefaultTrustStore(app_ctx.capath, app_ctx.cacert);
-    }
-    if (app_ctx.insecure)
-    {
-        tlsCtxOptions.SetVerifyPeer(false);
-    }
-
-    Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
-
-    Aws::Crt::Io::TlsConnectionOptions tlsConnectionOptions = tlsContext.NewConnectionOptions();
-
-    tlsConnectionOptions.SetServerName(hostName);
-    tlsConnectionOptions.SetAlpnList(app_ctx.alpn);
-    // }
-    // else
-    // {
-    //     if (app_ctx.required_http_version == AWS_HTTP_VERSION_2)
-    //     {
-    //         fprintf(stderr, "Error, we don't support h2c, please use TLS for HTTP2 connection");
-    //         exit(1);
-    //     }
-    //     port = 80;
-    //     if (app_ctx.uri.port)
-    //     {
-    //         port = app_ctx.uri.port;
-    //     }
-    // }
 
     Aws::Crt::Io::SocketOptions socketOptions;
     socketOptions.SetConnectTimeoutMs(1000);
