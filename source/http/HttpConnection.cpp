@@ -205,6 +205,8 @@ namespace Aws
 
             void HttpClientConnection::Close() noexcept { aws_http_connection_close(m_connection); }
 
+            enum aws_http_version HttpClientConnection::GetVersion() noexcept { return aws_http_connection_get_version(m_connection); }
+
             int HttpStream::s_onIncomingHeaders(
                 struct aws_http_stream *,
                 enum aws_http_header_block headerBlock,

@@ -72,9 +72,8 @@ static int s_VerifyFilesAreTheSame(Allocator *allocator, const char *fileName1, 
     return AWS_OP_SUCCESS;
 }
 
-static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, void *ctx)
+static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, ByteCursor url_cursor, bool h2_required)
 {
-    (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
@@ -82,11 +81,14 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
 
     Aws::Crt::Io::TlsConnectionOptions tlsConnectionOptions = tlsContext.NewConnectionOptions();
 
-    ByteCursor cursor = ByteCursorFromCString("https://aws-crt-test-stuff.s3.amazonaws.com/http_test_doc.txt");
-    Io::Uri uri(cursor, allocator);
+    Io::Uri uri(url_cursor, allocator);
 
     auto hostName = uri.GetHostName();
     tlsConnectionOptions.SetServerName(hostName);
+    if (h2_required)
+    {
+        tlsConnectionOptions.SetAlpnList("h2");
+    }
 
     Aws::Crt::Io::SocketOptions socketOptions;
     socketOptions.SetConnectTimeoutMs(1000);
@@ -151,9 +153,17 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     ASSERT_FALSE(errorOccured);
     ASSERT_FALSE(connectionShutdown);
     ASSERT_TRUE(connection);
+    std::string file_name;
+    if (h2_required) {
+        file_name = "http_download_test_file_h2.txt";
+        ASSERT_INT_EQUALS(connection->GetVersion(), AWS_HTTP_VERSION_2);
+    } else {
+        file_name = "http_download_test_file_h1_1.txt";
+        ASSERT_INT_EQUALS(connection->GetVersion(), AWS_HTTP_VERSION_1_1);
+    }
 
     int responseCode = 0;
-    std::ofstream downloadedFile("http_download_test_file.txt", std::ios_base::binary);
+    std::ofstream downloadedFile(file_name.c_str(), std::ios_base::binary);
     ASSERT_TRUE(downloadedFile);
 
     Http::HttpRequest request;
@@ -200,10 +210,26 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
 
     downloadedFile.flush();
     downloadedFile.close();
-    return s_VerifyFilesAreTheSame(allocator, "http_download_test_file.txt", "http_test_doc.txt");
+    return s_VerifyFilesAreTheSame(allocator, file_name.c_str(), "http_test_doc.txt");
 }
 
-AWS_TEST_CASE(HttpDownloadNoBackPressure, s_TestHttpDownloadNoBackPressure)
+static int s_TestHttpDownloadNoBackPressureHTTP1_1(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    ByteCursor cursor = ByteCursorFromCString("https://aws-crt-test-stuff.s3.amazonaws.com/http_test_doc.txt");
+    return s_TestHttpDownloadNoBackPressure(allocator, cursor, false /*h2_required*/);
+}
+
+AWS_TEST_CASE(HttpDownloadNoBackPressureHTTP1_1, s_TestHttpDownloadNoBackPressureHTTP1_1)
+
+static int s_TestHttpDownloadNoBackPressureHTTP2(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    ByteCursor cursor = ByteCursorFromCString("https://d1cz66xoahf9cl.cloudfront.net/http_test_doc.txt");
+    return s_TestHttpDownloadNoBackPressure(allocator, cursor, true /*h2_required*/);
+}
+
+AWS_TEST_CASE(HttpDownloadNoBackPressureHTTP2, s_TestHttpDownloadNoBackPressureHTTP2)
 
 static int s_TestHttpStreamUnActivated(struct aws_allocator *allocator, void *ctx)
 {

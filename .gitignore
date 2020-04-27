@@ -1,4 +1,11 @@
 .idea
 .DS_Store
 
+#cmake artifacts
+dependencies
+_build
+build
+_build_*
+cmake-build*
+
 include/aws/crt/Config.h

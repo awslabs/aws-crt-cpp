@@ -399,6 +399,11 @@ namespace Aws
                  */
                 void Close() noexcept;
 
+                /*
+                  Return protocol version the connection used
+                */
+                enum aws_http_version GetVersion() noexcept;
+
                 int LastError() const noexcept { return m_lastError; }
 
                 /**
