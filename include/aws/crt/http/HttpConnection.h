@@ -358,7 +358,13 @@ namespace Aws
                  */
                 bool ManualWindowManagement;
             };
-
+            enum class HttpVersion
+            {
+                Unknown = AWS_HTTP_VERSION_UNKNOWN,
+                Http1_0 = AWS_HTTP_VERSION_1_0,
+                Http1_1 = AWS_HTTP_VERSION_1_1,
+                Http2 = AWS_HTTP_VERSION_2,
+            };
             /**
              * Represents a connection from a Http Client to a Server.
              */
@@ -402,7 +408,7 @@ namespace Aws
                 /*
                   Return protocol version the connection used
                 */
-                enum aws_http_version GetVersion() noexcept;
+                HttpVersion GetVersion() noexcept;
 
                 int LastError() const noexcept { return m_lastError; }
 

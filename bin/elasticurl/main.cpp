@@ -29,65 +29,63 @@ using namespace Aws::Crt;
 
 #define ELASTICURL_VERSION "0.0.1"
 
-std::shared_ptr<Aws::Crt::Io::IStream> input_body = nullptr;
-std::ifstream inputfile;
-
-struct elasticurl_ctx
+struct ElasticurlCtx
 {
-    struct aws_allocator *allocator;
-    const char *verb;
-    Aws::Crt::Io::Uri uri;
-    bool response_code_written;
-    const char *cacert;
-    const char *capath;
-    const char *cert;
-    const char *key;
-    int connect_timeout;
-    const char *header_lines[10];
-    size_t header_line_count;
-    const char *alpn;
-    bool include_headers;
-    bool insecure;
-    FILE *output;
-    const char *trace_file;
-    Aws::Crt::LogLevel log_level;
-    enum aws_http_version required_http_version;
-    bool exchange_completed;
-    bool bootstrap_shutdown_completed;
+    Allocator *allocator = nullptr;
+    const char *verb = "GET";
+    Io::Uri uri;
+    bool ResponseCodeWritten = false;
+    const char *CaCert = nullptr;
+    const char *CaPath = nullptr;
+    const char *cert = nullptr;
+    const char *key = nullptr;
+    int ConnectTimeout = 3000;
+    Vector<const char *> HeaderLines;
+    const char *alpn = "h2;http/1.1";
+    bool IncludeHeaders = false;
+    bool insecure = false;
+
+    const char *TraceFile;
+    Aws::Crt::LogLevel LogLevel;
+    Http::HttpVersion RequiredHttpVersion = Http::HttpVersion::Unknown;
+
+    std::shared_ptr<Io::IStream> InputBody = nullptr;
+    std::ifstream InputFile;
+    std::ofstream OutPut;
 };
 
-static void s_usage(int exit_code)
+static void s_Usage(int exit_code)
 {
 
-    fprintf(stderr, "usage: elasticurl [options] url\n");
-    fprintf(stderr, " url: url to make a request to. The default is a GET request.\n");
-    fprintf(stderr, "\n Options:\n\n");
-    fprintf(stderr, "      --cacert FILE: path to a CA certficate file.\n");
-    fprintf(stderr, "      --capath PATH: path to a directory containing CA files.\n");
-    fprintf(stderr, "      --cert FILE: path to a PEM encoded certificate to use with mTLS\n");
-    fprintf(stderr, "      --key FILE: Path to a PEM encoded private key that matches cert.\n");
-    fprintf(stderr, "      --connect-timeout INT: time in milliseconds to wait for a connection.\n");
-    fprintf(stderr, "  -H, --header LINE: line to send as a header in format [header-key]: [header-value]\n");
-    fprintf(stderr, "  -d, --data STRING: Data to POST or PUT\n");
-    fprintf(stderr, "      --data-file FILE: File to read from file and POST or PUT\n");
-    fprintf(stderr, "  -M, --method STRING: Http Method verb to use for the request\n");
-    fprintf(stderr, "  -G, --get: uses GET for the verb.\n");
-    fprintf(stderr, "  -P, --post: uses POST for the verb.\n");
-    fprintf(stderr, "  -I, --head: uses HEAD for the verb.\n");
-    fprintf(stderr, "  -i, --include: includes headers in output.\n");
-    fprintf(stderr, "  -k, --insecure: turns off SSL/TLS validation.\n");
-    fprintf(stderr, "  -o, --output FILE: dumps content-body to FILE instead of stdout.\n");
-    fprintf(stderr, "  -t, --trace FILE: dumps logs to FILE instead of stderr.\n");
-    fprintf(stderr, "  -v, --verbose: ERROR|INFO|DEBUG|TRACE: log level to configure. Default is none.\n");
-    fprintf(stderr, "      --version: print the version of elasticurl.\n");
-    fprintf(stderr, "      --http2: HTTP/2 connection required");
-    fprintf(stderr, "      --http1_1: HTTP/1.1 connection required");
-    fprintf(stderr, "  -h, --help\n");
-    fprintf(stderr, "            Display this message and quit.\n");
+    std::cerr << "usage: elasticurl [options] url\n";
+    std::cerr << " url: url to make a request to. The default is a GET request.\n";
+    std::cerr << "\n Options:\n\n";
+    std::cerr << "      --cacert FILE: path to a CA certficate file.\n";
+    std::cerr << "      --capath PATH: path to a directory containing CA files.\n";
+    std::cerr << "      --cert FILE: path to a PEM encoded certificate to use with mTLS\n";
+    std::cerr << "      --key FILE: Path to a PEM encoded private key that matches cert.\n";
+    std::cerr << "      --connect-timeout INT: time in milliseconds to wait for a connection.\n";
+    std::cerr << "  -H, --header LINE: line to send as a header in format [header-key]: [header-value]\n";
+    std::cerr << "  -d, --data STRING: Data to POST or PUT\n";
+    std::cerr << "      --data-file FILE: File to read from file and POST or PUT\n";
+    std::cerr << "  -M, --method STRING: Http Method verb to use for the request\n";
+    std::cerr << "  -G, --get: uses GET for the verb.\n";
+    std::cerr << "  -P, --post: uses POST for the verb.\n";
+    std::cerr << "  -I, --head: uses HEAD for the verb.\n";
+    std::cerr << "  -i, --include: includes headers in output.\n";
+    std::cerr << "  -k, --insecure: turns off SSL/TLS validation.\n";
+    std::cerr << "  -o, --output FILE: dumps content-body to FILE instead of stdout.\n";
+    std::cerr << "  -t, --trace FILE: dumps logs to FILE instead of stderr.\n";
+    std::cerr << "  -v, --verbose: ERROR|INFO|DEBUG|TRACE: log level to configure. Default is none.\n";
+    std::cerr << "      --version: print the version of elasticurl.\n";
+    std::cerr << "      --http2: HTTP/2 connection required";
+    std::cerr << "      --http1_1: HTTP/1.1 connection required";
+    std::cerr << "  -h, --help\n";
+    std::cerr << "            Display this message and quit.\n";
     exit(exit_code);
 }
 
-static struct aws_cli_option s_long_options[] = {
+static struct aws_cli_option s_LongOptions[] = {
     {"cacert", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'a'},
     {"capath", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'b'},
     {"cert", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'c'},
@@ -113,12 +111,12 @@ static struct aws_cli_option s_long_options[] = {
     {NULL, AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 0},
 };
 
-static void s_parse_options(int argc, char **argv, struct elasticurl_ctx *ctx)
+static void s_ParseOptions(int argc, char **argv, ElasticurlCtx &ctx)
 {
     while (true)
     {
         int option_index = 0;
-        int c = aws_cli_getopt_long(argc, argv, "a:b:c:e:f:H:d:g:M:GPHiko:t:v:VwWh", s_long_options, &option_index);
+        int c = aws_cli_getopt_long(argc, argv, "a:b:c:e:f:H:d:g:M:GPHiko:t:v:VwWh", s_LongOptions, &option_index);
         if (c == -1)
         {
             break;
@@ -130,141 +128,127 @@ static void s_parse_options(int argc, char **argv, struct elasticurl_ctx *ctx)
                 /* getopt_long() returns 0 if an option.flag is non-null */
                 break;
             case 'a':
-                ctx->cacert = aws_cli_optarg;
+                ctx.CaCert = aws_cli_optarg;
                 break;
             case 'b':
-                ctx->capath = aws_cli_optarg;
+                ctx.CaPath = aws_cli_optarg;
                 break;
             case 'c':
-                ctx->cert = aws_cli_optarg;
+                ctx.cert = aws_cli_optarg;
                 break;
             case 'e':
-                ctx->key = aws_cli_optarg;
+                ctx.key = aws_cli_optarg;
                 break;
             case 'f':
-                ctx->connect_timeout = atoi(aws_cli_optarg);
+                ctx.ConnectTimeout = atoi(aws_cli_optarg);
                 break;
             case 'H':
-                if (ctx->header_line_count >= sizeof(ctx->header_lines) / sizeof(const char *))
-                {
-                    fprintf(stderr, "currently only 10 header lines are supported.\n");
-                    s_usage(1);
-                }
-                ctx->header_lines[ctx->header_line_count++] = aws_cli_optarg;
+                ctx.HeaderLines.push_back(aws_cli_optarg);
                 break;
             case 'd':
             {
-                input_body = std::make_shared<std::stringstream>(aws_cli_optarg);
+                ctx.InputBody = std::make_shared<std::stringstream>(aws_cli_optarg);
                 break;
             }
             case 'g':
             {
-                // inputfile.open(aws_cli_optarg, std::ios::in);
-                // if (!inputfile.is_open())
+                // InputFile.open(aws_cli_optarg, std::ios::in);
+                // if (!InputFile.is_open())
                 // {
-                //     fprintf(stderr, "unable to open file %s.\n", aws_cli_optarg);
-                //     s_usage(1);
+                //     std::cerr<<"unable to open file %s.\n", aws_cli_optarg);
+                //     s_Usage(1);
                 // }
-                // input_body = std::make_shared<std::ifstream>(inputfile);
+                // InputBody = std::make_shared<std::ifstream>(InputFile);
                 // break;
             }
             case 'M':
-                ctx->verb = aws_cli_optarg;
+                ctx.verb = aws_cli_optarg;
                 break;
             case 'G':
-                ctx->verb = "GET";
+                ctx.verb = "GET";
                 break;
             case 'P':
-                ctx->verb = "POST";
+                ctx.verb = "POST";
                 break;
             case 'I':
-                ctx->verb = "HEAD";
+                ctx.verb = "HEAD";
                 break;
             case 'i':
-                ctx->include_headers = true;
+                ctx.IncludeHeaders = true;
                 break;
             case 'k':
-                ctx->insecure = true;
+                ctx.insecure = true;
                 break;
             case 'o':
-                ctx->output = fopen(aws_cli_optarg, "wb");
-
-                if (!ctx->output)
-                {
-                    fprintf(stderr, "unable to open file %s.\n", aws_cli_optarg);
-                    s_usage(1);
-                }
+                ctx.OutPut.open(aws_cli_optarg, std::ios::out);
                 break;
             case 't':
-                ctx->trace_file = aws_cli_optarg;
+                ctx.TraceFile = aws_cli_optarg;
                 break;
             case 'v':
                 if (!strcmp(aws_cli_optarg, "TRACE"))
                 {
-                    ctx->log_level = Aws::Crt::LogLevel::Trace;
+                    ctx.LogLevel = Aws::Crt::LogLevel::Trace;
                 }
                 else if (!strcmp(aws_cli_optarg, "INFO"))
                 {
-                    ctx->log_level = Aws::Crt::LogLevel::Info;
+                    ctx.LogLevel = Aws::Crt::LogLevel::Info;
                 }
                 else if (!strcmp(aws_cli_optarg, "DEBUG"))
                 {
-                    ctx->log_level = Aws::Crt::LogLevel::Debug;
+                    ctx.LogLevel = Aws::Crt::LogLevel::Debug;
                 }
                 else if (!strcmp(aws_cli_optarg, "ERROR"))
                 {
-                    ctx->log_level = Aws::Crt::LogLevel::Error;
+                    ctx.LogLevel = Aws::Crt::LogLevel::Error;
                 }
                 else
                 {
-                    fprintf(stderr, "unsupported log level %s.\n", aws_cli_optarg);
-                    s_usage(1);
+                    std::cerr << "unsupported log level " << aws_cli_optarg << std::endl;
+                    s_Usage(1);
                 }
                 break;
             case 'V':
-                fprintf(stderr, "elasticurl %s\n", ELASTICURL_VERSION);
+                std::cerr << "elasticurl " << ELASTICURL_VERSION << std::endl;
                 exit(0);
             case 'w':
-                ctx->alpn = "h2";
-                ctx->required_http_version = AWS_HTTP_VERSION_2;
+                ctx.alpn = "h2";
+                ctx.RequiredHttpVersion = Http::HttpVersion::Http2;
                 break;
             case 'W':
-                ctx->alpn = "http/1.1";
-                ctx->required_http_version = AWS_HTTP_VERSION_1_1;
+                ctx.alpn = "http/1.1";
+                ctx.RequiredHttpVersion = Http::HttpVersion::Http1_1;
                 break;
             case 'h':
-                s_usage(0);
+                s_Usage(0);
                 break;
             default:
-                fprintf(stderr, "Unknown option\n");
-                s_usage(1);
+                std::cerr << "Unknown option\n";
+                s_Usage(1);
         }
     }
 
-    if (input_body == nullptr)
+    if (ctx.InputBody == nullptr)
     {
-        input_body = std::make_shared<std::stringstream>("");
+        ctx.InputBody = std::make_shared<std::stringstream>("");
     }
 
     if (aws_cli_optind < argc)
     {
         struct aws_byte_cursor uri_cursor = aws_byte_cursor_from_c_str(argv[aws_cli_optind++]);
 
-        ctx->uri = Aws::Crt::Io::Uri(uri_cursor, ctx->allocator);
-        if(ctx->uri.LastError())
+        ctx.uri = Io::Uri(uri_cursor, ctx.allocator);
+        if (ctx.uri.LastError())
         {
-            fprintf(
-                stderr,
-                "Failed to parse uri %s with error %s\n",
-                (char *)uri_cursor.ptr,
-                aws_error_debug_str(ctx->uri.LastError()));
-            s_usage(1);
+            std::cerr << "Failed to parse uri" << (char *)uri_cursor.ptr << "with error "
+                      << aws_error_debug_str(ctx.uri.LastError()) << std::endl;
+            s_Usage(1);
         };
     }
     else
     {
-        fprintf(stderr, "A URI for the request must be supplied.\n");
-        s_usage(1);
+        std::cerr << "A URI for the request must be supplied.\n";
+        s_Usage(1);
     }
 }
 
@@ -275,93 +259,88 @@ int main(int argc, char **argv)
     (void)argc;
     (void)argv;
 
-    struct elasticurl_ctx app_ctx;
-    AWS_ZERO_STRUCT(app_ctx);
-    app_ctx.allocator = allocator;
-    app_ctx.connect_timeout = 3000;
-    app_ctx.output = stdout;
-    app_ctx.verb = "GET";
-    app_ctx.alpn = "h2;http/1.1";
+    struct ElasticurlCtx AppCtx;
+    AppCtx.allocator = allocator;
 
-    s_parse_options(argc, argv, &app_ctx);
+    s_ParseOptions(argc, argv, AppCtx);
 
     Aws::Crt::ApiHandle apiHandle(allocator);
-    if (app_ctx.trace_file)
+    if (AppCtx.TraceFile)
     {
-        apiHandle.InitializeLogging(app_ctx.log_level, app_ctx.trace_file);
+        apiHandle.InitializeLogging(AppCtx.LogLevel, AppCtx.TraceFile);
     }
     else
     {
-        apiHandle.InitializeLogging(app_ctx.log_level, stdout);
+        apiHandle.InitializeLogging(AppCtx.LogLevel, stdout);
     }
     bool use_tls = true;
     uint16_t port = 443;
-    if (!app_ctx.uri.GetScheme().len && (app_ctx.uri.GetPort() == 80 || app_ctx.uri.GetPort() == 8080))
+    if (!AppCtx.uri.GetScheme().len && (AppCtx.uri.GetPort() == 80 || AppCtx.uri.GetPort() == 8080))
     {
         use_tls = false;
     }
     else
     {
-        ByteCursor scheme = app_ctx.uri.GetScheme();
+        ByteCursor scheme = AppCtx.uri.GetScheme();
         if (aws_byte_cursor_eq_c_str_ignore_case(&scheme, "http"))
         {
             use_tls = false;
         }
     }
 
-    auto hostName = app_ctx.uri.GetHostName();
+    auto hostName = AppCtx.uri.GetHostName();
 
-    Aws::Crt::Io::TlsContextOptions tlsCtxOptions;
-    Aws::Crt::Io::TlsContext tlsContext;
-    Aws::Crt::Io::TlsConnectionOptions tlsConnectionOptions;
+    Io::TlsContextOptions tlsCtxOptions;
+    Io::TlsContext tlsContext;
+    Io::TlsConnectionOptions tlsConnectionOptions;
     if (use_tls)
     {
-        if (app_ctx.cert && app_ctx.key)
+        if (AppCtx.cert && AppCtx.key)
         {
-            tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(app_ctx.cert, app_ctx.key);
+            tlsCtxOptions = Io::TlsContextOptions::InitClientWithMtls(AppCtx.cert, AppCtx.key);
         }
         else
         {
-            tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
+            tlsCtxOptions = Io::TlsContextOptions::InitDefaultClient();
         }
-        if (app_ctx.capath || app_ctx.cacert)
+        if (AppCtx.CaPath || AppCtx.CaCert)
         {
-            tlsCtxOptions.OverrideDefaultTrustStore(app_ctx.capath, app_ctx.cacert);
+            tlsCtxOptions.OverrideDefaultTrustStore(AppCtx.CaPath, AppCtx.CaCert);
         }
-        if (app_ctx.insecure)
+        if (AppCtx.insecure)
         {
             tlsCtxOptions.SetVerifyPeer(false);
         }
 
-        tlsContext = Aws::Crt::Io::TlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+        tlsContext = Io::TlsContext(tlsCtxOptions, Io::TlsMode::CLIENT, allocator);
 
         tlsConnectionOptions = tlsContext.NewConnectionOptions();
 
         tlsConnectionOptions.SetServerName(hostName);
-        tlsConnectionOptions.SetAlpnList(app_ctx.alpn);
+        tlsConnectionOptions.SetAlpnList(AppCtx.alpn);
     }
     else
     {
-        if (app_ctx.required_http_version == AWS_HTTP_VERSION_2)
+        if (AppCtx.RequiredHttpVersion == Http::HttpVersion::Http2)
         {
-            fprintf(stderr, "Error, we don't support h2c, please use TLS for HTTP2 connection");
+            std::cerr << "Error, we don't support h2c, please use TLS for HTTP/2 connection" << std::endl;
             exit(1);
         }
         port = 80;
-        if (app_ctx.uri.GetPort())
+        if (AppCtx.uri.GetPort())
         {
-            port = app_ctx.uri.GetPort();
+            port = AppCtx.uri.GetPort();
         }
     }
 
-    Aws::Crt::Io::SocketOptions socketOptions;
-    socketOptions.SetConnectTimeoutMs(app_ctx.connect_timeout);
+    Io::SocketOptions socketOptions;
+    socketOptions.SetConnectTimeoutMs(AppCtx.ConnectTimeout);
 
-    Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+    Io::EventLoopGroup eventLoopGroup(0, allocator);
 
-    Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+    Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
 
-    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+    Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
 
     std::shared_ptr<Http::HttpClientConnection> connection(nullptr);
     bool errorOccured = true;
@@ -375,6 +354,15 @@ int main(int argc, char **argv)
 
         if (!errorCode)
         {
+            if (AppCtx.RequiredHttpVersion != Http::HttpVersion::Unknown)
+            {
+                if (newConnection->GetVersion() != AppCtx.RequiredHttpVersion)
+                {
+                    std::cerr << "Error. The requested HTTP version, " << AppCtx.alpn
+                              << ", is not supported by the peer." << std::endl;
+                    exit(1);
+                }
+            }
             connection = newConnection;
             errorOccured = false;
         }
@@ -445,73 +433,82 @@ int main(int argc, char **argv)
             return;
         }
 
-        if (app_ctx.include_headers)
+        if (AppCtx.IncludeHeaders)
         {
-            if (!app_ctx.response_code_written)
+            if (!AppCtx.ResponseCodeWritten)
             {
                 responseCode = stream.GetResponseStatusCode();
-                fprintf(stdout, "Response Status: %d\n", responseCode);
-                app_ctx.response_code_written = true;
+                std::cout << "Response Status: " << responseCode << std::endl;
+                AppCtx.ResponseCodeWritten = true;
             }
 
             for (size_t i = 0; i < len; ++i)
             {
-                fwrite(header[i].name.ptr, 1, header[i].name.len, stdout);
-                fprintf(stdout, ": ");
-                fwrite(header[i].value.ptr, 1, header[i].value.len, stdout);
-                fprintf(stdout, "\n");
+                std::cout.write((char *)header[i].name.ptr, header[i].name.len);
+                std::cout << ": ";
+                std::cout.write((char *)header[i].value.ptr, header[i].value.len);
+                std::cout << std::endl;
             }
         }
     };
     requestOptions.onIncomingBody = [&](Http::HttpStream &, const ByteCursor &data) {
-        fwrite(data.ptr, 1, data.len, app_ctx.output);
+        if (AppCtx.OutPut.is_open())
+        {
+            AppCtx.OutPut.write((char *)data.ptr, data.len);
+        }
+        else
+        {
+            std::cout.write((char *)data.ptr, data.len);
+        }
     };
 
-    request.SetMethod(ByteCursorFromCString(app_ctx.verb));
-    request.SetPath(app_ctx.uri.GetPathAndQuery());
+    request.SetMethod(ByteCursorFromCString(AppCtx.verb));
+    request.SetPath(AppCtx.uri.GetPathAndQuery());
 
-    Http::HttpHeader host_header;
-    host_header.name = ByteCursorFromCString("host");
-    host_header.value = app_ctx.uri.GetHostName();
-    request.AddHeader(host_header);
+    Http::HttpHeader HostHeader;
+    HostHeader.name = ByteCursorFromCString("host");
+    HostHeader.value = AppCtx.uri.GetHostName();
+    request.AddHeader(HostHeader);
 
-    Http::HttpHeader user_agent_header;
-    user_agent_header.name = ByteCursorFromCString("user-agent");
-    user_agent_header.value = ByteCursorFromCString("elasticurl_cpp 1.0, Powered by the AWS Common Runtime.");
-    request.AddHeader(user_agent_header);
+    Http::HttpHeader UserAgentHeader;
+    UserAgentHeader.name = ByteCursorFromCString("user-agent");
+    UserAgentHeader.value = ByteCursorFromCString("elasticurl_cpp 1.0, Powered by the AWS Common Runtime.");
+    request.AddHeader(UserAgentHeader);
 
-    std::shared_ptr<Aws::Crt::Io::StdIOStreamInputStream> bodyStream =
-        MakeShared<Io::StdIOStreamInputStream>(allocator, input_body, allocator);
-    int64_t data_len = 0;
-    if (aws_input_stream_get_length(bodyStream->GetUnderlyingStream(), &data_len))
+    std::shared_ptr<Io::StdIOStreamInputStream> bodyStream =
+        MakeShared<Io::StdIOStreamInputStream>(allocator, AppCtx.InputBody, allocator);
+    int64_t DataLen = 0;
+    if (aws_input_stream_get_length(bodyStream->GetUnderlyingStream(), &DataLen))
     {
-        fprintf(stderr, "failed to get length of input stream.\n");
+        std::cerr << "failed to get length of input stream.\n";
         exit(1);
     }
-    if (data_len > 0)
+    if (DataLen > 0)
     {
-        std::string content_length = std::to_string(data_len);
-        Http::HttpHeader content_length_header;
-        content_length_header.name = ByteCursorFromCString("content-length");
-        content_length_header.value = ByteCursorFromCString(content_length.c_str());
-        request.AddHeader(content_length_header);
+        char ContentLength[64];
+        AWS_ZERO_ARRAY(ContentLength);
+        sprintf(ContentLength, "%li", DataLen);
+        Http::HttpHeader ContentLengthHeader;
+        ContentLengthHeader.name = ByteCursorFromCString("content-length");
+        ContentLengthHeader.value = ByteCursorFromCString(ContentLength);
+        request.AddHeader(ContentLengthHeader);
         request.SetBody(bodyStream);
     }
 
-    for (size_t i = 0; i < app_ctx.header_line_count; ++i)
+    for (auto HeaderLine : AppCtx.HeaderLines)
     {
-        char *delimiter = (char *)memchr(app_ctx.header_lines[i], ':', strlen(app_ctx.header_lines[i]));
+        char *delimiter = (char *)memchr(HeaderLine, ':', strlen(HeaderLine));
 
         if (!delimiter)
         {
-            fprintf(stderr, "invalid header line %s configured.", app_ctx.header_lines[i]);
+            std::cerr << "invalid header line " << HeaderLine << " configured." << std::endl;
             exit(1);
         }
 
-        Http::HttpHeader user_header;
-        user_header.name = ByteCursorFromArray((uint8_t *)app_ctx.header_lines[i], delimiter - app_ctx.header_lines[i]);
-        user_header.value = ByteCursorFromCString(delimiter + 1);
-        request.AddHeader(user_header);
+        Http::HttpHeader UserHeader;
+        UserHeader.name = ByteCursorFromArray((uint8_t *)HeaderLine, delimiter - HeaderLine);
+        UserHeader.value = ByteCursorFromCString(delimiter + 1);
+        request.AddHeader(UserHeader);
     }
 
     auto stream = connection->NewClientStream(requestOptions);
@@ -525,14 +522,14 @@ int main(int argc, char **argv)
     /* TODO: Wait until the bootstrap finishing shutting down, we may need to break the API for create the Bootstrap, a
      * Bootstrap option for the callback? */
 
-    if (app_ctx.output != stdout)
+    if (AppCtx.OutPut.is_open())
     {
-        fclose(app_ctx.output);
+        AppCtx.OutPut.close();
     }
 
-    if (inputfile.is_open())
+    if (AppCtx.InputFile.is_open())
     {
-        inputfile.close();
+        AppCtx.InputFile.close();
     }
 
     return 0;
