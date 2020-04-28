@@ -152,8 +152,9 @@ static void s_ParseOptions(int argc, char **argv, ElasticurlCtx &ctx)
             case 'g':
             {
                 ctx.InputBody = std::make_shared<std::ifstream>(aws_cli_optarg, std::ios::in);
-                if(!ctx.InputBody->good()) {
-                    std::cerr<<"unable to open file "<<aws_cli_optarg<<std::endl;
+                if (!ctx.InputBody->good())
+                {
+                    std::cerr << "unable to open file " << aws_cli_optarg << std::endl;
                     s_Usage(1);
                 }
                 break;
