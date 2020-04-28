@@ -45,12 +45,11 @@ struct ElasticurlCtx
     bool IncludeHeaders = false;
     bool insecure = false;
 
-    const char *TraceFile;
-    Aws::Crt::LogLevel LogLevel;
+    const char *TraceFile = nullptr;
+    LogLevel LogLevel = LogLevel::None;
     Http::HttpVersion RequiredHttpVersion = Http::HttpVersion::Unknown;
 
     std::shared_ptr<Io::IStream> InputBody = nullptr;
-    std::ifstream InputFile;
     std::ofstream OutPut;
 };
 
@@ -152,14 +151,12 @@ static void s_ParseOptions(int argc, char **argv, ElasticurlCtx &ctx)
             }
             case 'g':
             {
-                // InputFile.open(aws_cli_optarg, std::ios::in);
-                // if (!InputFile.is_open())
-                // {
-                //     std::cerr<<"unable to open file %s.\n", aws_cli_optarg);
-                //     s_Usage(1);
-                // }
-                // InputBody = std::make_shared<std::ifstream>(InputFile);
-                // break;
+                ctx.InputBody = std::make_shared<std::ifstream>(aws_cli_optarg, std::ios::in);
+                if(!ctx.InputBody->good()) {
+                    std::cerr<<"unable to open file "<<aws_cli_optarg<<std::endl;
+                    s_Usage(1);
+                }
+                break;
             }
             case 'M':
                 ctx.verb = aws_cli_optarg;
@@ -263,8 +260,7 @@ int main(int argc, char **argv)
     appCtx.allocator = allocator;
 
     s_ParseOptions(argc, argv, appCtx);
-
-    Aws::Crt::ApiHandle apiHandle(allocator);
+    ApiHandle apiHandle(allocator);
     if (appCtx.TraceFile)
     {
         apiHandle.InitializeLogging(appCtx.LogLevel, appCtx.TraceFile);
@@ -526,11 +522,8 @@ int main(int argc, char **argv)
     {
         appCtx.OutPut.close();
     }
-
-    if (appCtx.InputFile.is_open())
-    {
-        appCtx.InputFile.close();
-    }
+    
+    appCtx.InputBody->clear();
 
     return 0;
 }
