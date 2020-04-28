@@ -19,7 +19,6 @@
 #include <aws/crt/io/Uri.h>
 
 #include <aws/common/command_line_parser.h>
-#include <aws/io/uri.h>
 
 #include <condition_variable>
 #include <fstream>
@@ -37,7 +36,7 @@ struct elasticurl_ctx
 {
     struct aws_allocator *allocator;
     const char *verb;
-    struct aws_uri uri;
+    Aws::Crt::Io::Uri uri;
     bool response_code_written;
     const char *cacert;
     const char *capath;
@@ -160,14 +159,14 @@ static void s_parse_options(int argc, char **argv, struct elasticurl_ctx *ctx)
             }
             case 'g':
             {
-                inputfile.open(aws_cli_optarg, std::ios::in);
-                if (!inputfile.is_open())
-                {
-                    fprintf(stderr, "unable to open file %s.\n", aws_cli_optarg);
-                    s_usage(1);
-                }
-                input_body = std::make_shared<std::ifstream>(inputfile);
-                break;
+                // inputfile.open(aws_cli_optarg, std::ios::in);
+                // if (!inputfile.is_open())
+                // {
+                //     fprintf(stderr, "unable to open file %s.\n", aws_cli_optarg);
+                //     s_usage(1);
+                // }
+                // input_body = std::make_shared<std::ifstream>(inputfile);
+                // break;
             }
             case 'M':
                 ctx->verb = aws_cli_optarg;
@@ -251,13 +250,14 @@ static void s_parse_options(int argc, char **argv, struct elasticurl_ctx *ctx)
     {
         struct aws_byte_cursor uri_cursor = aws_byte_cursor_from_c_str(argv[aws_cli_optind++]);
 
-        if (aws_uri_init_parse(&ctx->uri, ctx->allocator, &uri_cursor))
+        ctx->uri = Aws::Crt::Io::Uri(uri_cursor, ctx->allocator);
+        if(ctx->uri.LastError())
         {
             fprintf(
                 stderr,
                 "Failed to parse uri %s with error %s\n",
                 (char *)uri_cursor.ptr,
-                aws_error_debug_str(aws_last_error()));
+                aws_error_debug_str(ctx->uri.LastError()));
             s_usage(1);
         };
     }
@@ -296,19 +296,20 @@ int main(int argc, char **argv)
     }
     bool use_tls = true;
     uint16_t port = 443;
-    if (!app_ctx.uri.scheme.len && (app_ctx.uri.port == 80 || app_ctx.uri.port == 8080))
+    if (!app_ctx.uri.GetScheme().len && (app_ctx.uri.GetPort() == 80 || app_ctx.uri.GetPort() == 8080))
     {
         use_tls = false;
     }
     else
     {
-        if (aws_byte_cursor_eq_c_str_ignore_case(&app_ctx.uri.scheme, "http"))
+        ByteCursor scheme = app_ctx.uri.GetScheme();
+        if (aws_byte_cursor_eq_c_str_ignore_case(&scheme, "http"))
         {
             use_tls = false;
         }
     }
 
-    auto hostName = app_ctx.uri.host_name;
+    auto hostName = app_ctx.uri.GetHostName();
 
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions;
     Aws::Crt::Io::TlsContext tlsContext;
@@ -347,9 +348,9 @@ int main(int argc, char **argv)
             exit(1);
         }
         port = 80;
-        if (app_ctx.uri.port)
+        if (app_ctx.uri.GetPort())
         {
-            port = app_ctx.uri.port;
+            port = app_ctx.uri.GetPort();
         }
     }
 
@@ -467,11 +468,11 @@ int main(int argc, char **argv)
     };
 
     request.SetMethod(ByteCursorFromCString(app_ctx.verb));
-    request.SetPath(app_ctx.uri.path_and_query);
+    request.SetPath(app_ctx.uri.GetPathAndQuery());
 
     Http::HttpHeader host_header;
     host_header.name = ByteCursorFromCString("host");
-    host_header.value = app_ctx.uri.host_name;
+    host_header.value = app_ctx.uri.GetHostName();
     request.AddHeader(host_header);
 
     Http::HttpHeader user_agent_header;
@@ -533,8 +534,6 @@ int main(int argc, char **argv)
     {
         inputfile.close();
     }
-
-    aws_uri_clean_up(&app_ctx.uri);
 
     return 0;
 }

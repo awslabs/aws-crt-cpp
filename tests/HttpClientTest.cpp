@@ -18,8 +18,6 @@
 #include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Uri.h>
 
-#include <aws/io/uri.h>
-
 #include <aws/testing/aws_test_harness.h>
 
 #include <condition_variable>
