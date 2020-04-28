@@ -522,8 +522,6 @@ int main(int argc, char **argv)
     {
         appCtx.OutPut.close();
     }
-    
-    appCtx.InputBody->clear();
 
     return 0;
 }
