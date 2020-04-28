@@ -259,55 +259,55 @@ int main(int argc, char **argv)
     (void)argc;
     (void)argv;
 
-    struct ElasticurlCtx AppCtx;
-    AppCtx.allocator = allocator;
+    struct ElasticurlCtx appCtx;
+    appCtx.allocator = allocator;
 
-    s_ParseOptions(argc, argv, AppCtx);
+    s_ParseOptions(argc, argv, appCtx);
 
     Aws::Crt::ApiHandle apiHandle(allocator);
-    if (AppCtx.TraceFile)
+    if (appCtx.TraceFile)
     {
-        apiHandle.InitializeLogging(AppCtx.LogLevel, AppCtx.TraceFile);
+        apiHandle.InitializeLogging(appCtx.LogLevel, appCtx.TraceFile);
     }
     else
     {
-        apiHandle.InitializeLogging(AppCtx.LogLevel, stdout);
+        apiHandle.InitializeLogging(appCtx.LogLevel, stdout);
     }
     bool use_tls = true;
     uint16_t port = 443;
-    if (!AppCtx.uri.GetScheme().len && (AppCtx.uri.GetPort() == 80 || AppCtx.uri.GetPort() == 8080))
+    if (!appCtx.uri.GetScheme().len && (appCtx.uri.GetPort() == 80 || appCtx.uri.GetPort() == 8080))
     {
         use_tls = false;
     }
     else
     {
-        ByteCursor scheme = AppCtx.uri.GetScheme();
+        ByteCursor scheme = appCtx.uri.GetScheme();
         if (aws_byte_cursor_eq_c_str_ignore_case(&scheme, "http"))
         {
             use_tls = false;
         }
     }
 
-    auto hostName = AppCtx.uri.GetHostName();
+    auto hostName = appCtx.uri.GetHostName();
 
     Io::TlsContextOptions tlsCtxOptions;
     Io::TlsContext tlsContext;
     Io::TlsConnectionOptions tlsConnectionOptions;
     if (use_tls)
     {
-        if (AppCtx.cert && AppCtx.key)
+        if (appCtx.cert && appCtx.key)
         {
-            tlsCtxOptions = Io::TlsContextOptions::InitClientWithMtls(AppCtx.cert, AppCtx.key);
+            tlsCtxOptions = Io::TlsContextOptions::InitClientWithMtls(appCtx.cert, appCtx.key);
         }
         else
         {
             tlsCtxOptions = Io::TlsContextOptions::InitDefaultClient();
         }
-        if (AppCtx.CaPath || AppCtx.CaCert)
+        if (appCtx.CaPath || appCtx.CaCert)
         {
-            tlsCtxOptions.OverrideDefaultTrustStore(AppCtx.CaPath, AppCtx.CaCert);
+            tlsCtxOptions.OverrideDefaultTrustStore(appCtx.CaPath, appCtx.CaCert);
         }
-        if (AppCtx.insecure)
+        if (appCtx.insecure)
         {
             tlsCtxOptions.SetVerifyPeer(false);
         }
@@ -317,24 +317,24 @@ int main(int argc, char **argv)
         tlsConnectionOptions = tlsContext.NewConnectionOptions();
 
         tlsConnectionOptions.SetServerName(hostName);
-        tlsConnectionOptions.SetAlpnList(AppCtx.alpn);
+        tlsConnectionOptions.SetAlpnList(appCtx.alpn);
     }
     else
     {
-        if (AppCtx.RequiredHttpVersion == Http::HttpVersion::Http2)
+        if (appCtx.RequiredHttpVersion == Http::HttpVersion::Http2)
         {
             std::cerr << "Error, we don't support h2c, please use TLS for HTTP/2 connection" << std::endl;
             exit(1);
         }
         port = 80;
-        if (AppCtx.uri.GetPort())
+        if (appCtx.uri.GetPort())
         {
-            port = AppCtx.uri.GetPort();
+            port = appCtx.uri.GetPort();
         }
     }
 
     Io::SocketOptions socketOptions;
-    socketOptions.SetConnectTimeoutMs(AppCtx.ConnectTimeout);
+    socketOptions.SetConnectTimeoutMs(appCtx.ConnectTimeout);
 
     Io::EventLoopGroup eventLoopGroup(0, allocator);
 
@@ -354,11 +354,11 @@ int main(int argc, char **argv)
 
         if (!errorCode)
         {
-            if (AppCtx.RequiredHttpVersion != Http::HttpVersion::Unknown)
+            if (appCtx.RequiredHttpVersion != Http::HttpVersion::Unknown)
             {
-                if (newConnection->GetVersion() != AppCtx.RequiredHttpVersion)
+                if (newConnection->GetVersion() != appCtx.RequiredHttpVersion)
                 {
-                    std::cerr << "Error. The requested HTTP version, " << AppCtx.alpn
+                    std::cerr << "Error. The requested HTTP version, " << appCtx.alpn
                               << ", is not supported by the peer." << std::endl;
                     exit(1);
                 }
@@ -433,13 +433,13 @@ int main(int argc, char **argv)
             return;
         }
 
-        if (AppCtx.IncludeHeaders)
+        if (appCtx.IncludeHeaders)
         {
-            if (!AppCtx.ResponseCodeWritten)
+            if (!appCtx.ResponseCodeWritten)
             {
                 responseCode = stream.GetResponseStatusCode();
                 std::cout << "Response Status: " << responseCode << std::endl;
-                AppCtx.ResponseCodeWritten = true;
+                appCtx.ResponseCodeWritten = true;
             }
 
             for (size_t i = 0; i < len; ++i)
@@ -452,9 +452,9 @@ int main(int argc, char **argv)
         }
     };
     requestOptions.onIncomingBody = [&](Http::HttpStream &, const ByteCursor &data) {
-        if (AppCtx.OutPut.is_open())
+        if (appCtx.OutPut.is_open())
         {
-            AppCtx.OutPut.write((char *)data.ptr, data.len);
+            appCtx.OutPut.write((char *)data.ptr, data.len);
         }
         else
         {
@@ -462,53 +462,53 @@ int main(int argc, char **argv)
         }
     };
 
-    request.SetMethod(ByteCursorFromCString(AppCtx.verb));
-    request.SetPath(AppCtx.uri.GetPathAndQuery());
+    request.SetMethod(ByteCursorFromCString(appCtx.verb));
+    request.SetPath(appCtx.uri.GetPathAndQuery());
 
-    Http::HttpHeader HostHeader;
-    HostHeader.name = ByteCursorFromCString("host");
-    HostHeader.value = AppCtx.uri.GetHostName();
-    request.AddHeader(HostHeader);
+    Http::HttpHeader hostHeader;
+    hostHeader.name = ByteCursorFromCString("host");
+    hostHeader.value = appCtx.uri.GetHostName();
+    request.AddHeader(hostHeader);
 
-    Http::HttpHeader UserAgentHeader;
-    UserAgentHeader.name = ByteCursorFromCString("user-agent");
-    UserAgentHeader.value = ByteCursorFromCString("elasticurl_cpp 1.0, Powered by the AWS Common Runtime.");
-    request.AddHeader(UserAgentHeader);
+    Http::HttpHeader userAgentHeader;
+    userAgentHeader.name = ByteCursorFromCString("user-agent");
+    userAgentHeader.value = ByteCursorFromCString("elasticurl_cpp 1.0, Powered by the AWS Common Runtime.");
+    request.AddHeader(userAgentHeader);
 
     std::shared_ptr<Io::StdIOStreamInputStream> bodyStream =
-        MakeShared<Io::StdIOStreamInputStream>(allocator, AppCtx.InputBody, allocator);
-    int64_t DataLen = 0;
-    if (aws_input_stream_get_length(bodyStream->GetUnderlyingStream(), &DataLen))
+        MakeShared<Io::StdIOStreamInputStream>(allocator, appCtx.InputBody, allocator);
+    int64_t dataLen = 0;
+    if (aws_input_stream_get_length(bodyStream->GetUnderlyingStream(), &dataLen))
     {
         std::cerr << "failed to get length of input stream.\n";
         exit(1);
     }
-    if (DataLen > 0)
+    if (dataLen > 0)
     {
-        char ContentLength[64];
-        AWS_ZERO_ARRAY(ContentLength);
-        sprintf(ContentLength, "%li", DataLen);
-        Http::HttpHeader ContentLengthHeader;
-        ContentLengthHeader.name = ByteCursorFromCString("content-length");
-        ContentLengthHeader.value = ByteCursorFromCString(ContentLength);
-        request.AddHeader(ContentLengthHeader);
+        char contentLength[64];
+        AWS_ZERO_ARRAY(contentLength);
+        sprintf(contentLength, "%li", dataLen);
+        Http::HttpHeader contentLengthHeader;
+        contentLengthHeader.name = ByteCursorFromCString("content-length");
+        contentLengthHeader.value = ByteCursorFromCString(contentLength);
+        request.AddHeader(contentLengthHeader);
         request.SetBody(bodyStream);
     }
 
-    for (auto HeaderLine : AppCtx.HeaderLines)
+    for (auto headerLine : appCtx.HeaderLines)
     {
-        char *delimiter = (char *)memchr(HeaderLine, ':', strlen(HeaderLine));
+        char *delimiter = (char *)memchr(headerLine, ':', strlen(headerLine));
 
         if (!delimiter)
         {
-            std::cerr << "invalid header line " << HeaderLine << " configured." << std::endl;
+            std::cerr << "invalid header line " << headerLine << " configured." << std::endl;
             exit(1);
         }
 
-        Http::HttpHeader UserHeader;
-        UserHeader.name = ByteCursorFromArray((uint8_t *)HeaderLine, delimiter - HeaderLine);
-        UserHeader.value = ByteCursorFromCString(delimiter + 1);
-        request.AddHeader(UserHeader);
+        Http::HttpHeader userHeader;
+        userHeader.name = ByteCursorFromArray((uint8_t *)headerLine, delimiter - headerLine);
+        userHeader.value = ByteCursorFromCString(delimiter + 1);
+        request.AddHeader(userHeader);
     }
 
     auto stream = connection->NewClientStream(requestOptions);
@@ -522,14 +522,14 @@ int main(int argc, char **argv)
     /* TODO: Wait until the bootstrap finishing shutting down, we may need to break the API for create the Bootstrap, a
      * Bootstrap option for the callback? */
 
-    if (AppCtx.OutPut.is_open())
+    if (appCtx.OutPut.is_open())
     {
-        AppCtx.OutPut.close();
+        appCtx.OutPut.close();
     }
 
-    if (AppCtx.InputFile.is_open())
+    if (appCtx.InputFile.is_open())
     {
-        AppCtx.InputFile.close();
+        appCtx.InputFile.close();
     }
 
     return 0;
