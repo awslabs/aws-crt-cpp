@@ -517,11 +517,5 @@ int main(int argc, char **argv)
 
     /* TODO: Wait until the bootstrap finishing shutting down, we may need to break the API for create the Bootstrap, a
      * Bootstrap option for the callback? */
-
-    if (appCtx.OutPut.is_open())
-    {
-        appCtx.OutPut.close();
-    }
-
     return 0;
 }
