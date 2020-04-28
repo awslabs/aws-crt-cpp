@@ -30,13 +30,14 @@ using namespace Aws::Crt;
 
 #define ELASTICURL_VERSION "0.0.1"
 
+std::shared_ptr<Aws::Crt::Io::IStream> input_body = nullptr;
+std::ifstream inputfile;
+
 struct elasticurl_ctx
 {
     struct aws_allocator *allocator;
     const char *verb;
     struct aws_uri uri;
-    std::mutex mutex;
-    std::condition_variable c_var;
     bool response_code_written;
     const char *cacert;
     const char *capath;
@@ -45,10 +46,6 @@ struct elasticurl_ctx
     int connect_timeout;
     const char *header_lines[10];
     size_t header_line_count;
-    FILE *input_file;
-    struct aws_input_stream *input_body;
-    struct aws_http_message *request;
-    struct aws_http_connection *connection;
     const char *alpn;
     bool include_headers;
     bool insecure;
@@ -158,19 +155,20 @@ static void s_parse_options(int argc, char **argv, struct elasticurl_ctx *ctx)
                 break;
             case 'd':
             {
-                struct aws_byte_cursor data_cursor = aws_byte_cursor_from_c_str(aws_cli_optarg);
-                ctx->input_body = aws_input_stream_new_from_cursor(ctx->allocator, &data_cursor);
+                input_body = std::make_shared<std::stringstream>(aws_cli_optarg);
                 break;
             }
             case 'g':
-                ctx->input_file = fopen(aws_cli_optarg, "rb");
-                ctx->input_body = aws_input_stream_new_from_open_file(ctx->allocator, ctx->input_file);
-                if (!ctx->input_file)
+            {
+                inputfile.open(aws_cli_optarg, std::ios::in);
+                if (!inputfile.is_open())
                 {
                     fprintf(stderr, "unable to open file %s.\n", aws_cli_optarg);
                     s_usage(1);
                 }
+                input_body = std::make_shared<std::ifstream>(inputfile);
                 break;
+            }
             case 'M':
                 ctx->verb = aws_cli_optarg;
                 break;
@@ -244,11 +242,9 @@ static void s_parse_options(int argc, char **argv, struct elasticurl_ctx *ctx)
         }
     }
 
-    if (ctx->input_body == NULL)
+    if (input_body == nullptr)
     {
-        struct aws_byte_cursor empty_cursor;
-        AWS_ZERO_STRUCT(empty_cursor);
-        ctx->input_body = aws_input_stream_new_from_cursor(ctx->allocator, &empty_cursor);
+        input_body = std::make_shared<std::stringstream>("");
     }
 
     if (aws_cli_optind < argc)
@@ -290,8 +286,14 @@ int main(int argc, char **argv)
     s_parse_options(argc, argv, &app_ctx);
 
     Aws::Crt::ApiHandle apiHandle(allocator);
-    apiHandle.InitializeLogging(app_ctx.log_level, stdout);
-
+    if (app_ctx.trace_file)
+    {
+        apiHandle.InitializeLogging(app_ctx.log_level, app_ctx.trace_file);
+    }
+    else
+    {
+        apiHandle.InitializeLogging(app_ctx.log_level, stdout);
+    }
     bool use_tls = true;
     uint16_t port = 443;
     if (!app_ctx.uri.scheme.len && (app_ctx.uri.port == 80 || app_ctx.uri.port == 8080))
@@ -352,7 +354,7 @@ int main(int argc, char **argv)
     }
 
     Aws::Crt::Io::SocketOptions socketOptions;
-    socketOptions.SetConnectTimeoutMs(1000);
+    socketOptions.SetConnectTimeoutMs(app_ctx.connect_timeout);
 
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
 
@@ -464,7 +466,7 @@ int main(int argc, char **argv)
         fwrite(data.ptr, 1, data.len, app_ctx.output);
     };
 
-    request.SetMethod(ByteCursorFromCString("GET"));
+    request.SetMethod(ByteCursorFromCString(app_ctx.verb));
     request.SetPath(app_ctx.uri.path_and_query);
 
     Http::HttpHeader host_header;
@@ -477,7 +479,23 @@ int main(int argc, char **argv)
     user_agent_header.value = ByteCursorFromCString("elasticurl_cpp 1.0, Powered by the AWS Common Runtime.");
     request.AddHeader(user_agent_header);
 
-    /* TODO::Get content-length from body_stream */
+    std::shared_ptr<Aws::Crt::Io::StdIOStreamInputStream> bodyStream =
+        MakeShared<Io::StdIOStreamInputStream>(allocator, input_body, allocator);
+    int64_t data_len = 0;
+    if (aws_input_stream_get_length(bodyStream->GetUnderlyingStream(), &data_len))
+    {
+        fprintf(stderr, "failed to get length of input stream.\n");
+        exit(1);
+    }
+    if (data_len > 0)
+    {
+        std::string content_length = std::to_string(data_len);
+        Http::HttpHeader content_length_header;
+        content_length_header.name = ByteCursorFromCString("content-length");
+        content_length_header.value = ByteCursorFromCString(content_length.c_str());
+        request.AddHeader(content_length_header);
+        request.SetBody(bodyStream);
+    }
 
     for (size_t i = 0; i < app_ctx.header_line_count; ++i)
     {
@@ -495,9 +513,6 @@ int main(int argc, char **argv)
         request.AddHeader(user_header);
     }
 
-    /* Set Body */
-    // request.SetBody()
-
     auto stream = connection->NewClientStream(requestOptions);
     stream->Activate();
 
@@ -506,8 +521,17 @@ int main(int argc, char **argv)
     connection->Close();
     semaphore.wait(semaphoreULock, [&]() { return connectionShutdown; });
 
-    if (app_ctx.output != stdout) {
+    /* TODO: Wait until the bootstrap finishing shutting down, we may need to break the API for create the Bootstrap, a
+     * Bootstrap option for the callback? */
+
+    if (app_ctx.output != stdout)
+    {
         fclose(app_ctx.output);
+    }
+
+    if (inputfile.is_open())
+    {
+        inputfile.close();
     }
 
     aws_uri_clean_up(&app_ctx.uri);
