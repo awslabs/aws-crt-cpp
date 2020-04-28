@@ -268,7 +268,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        apiHandle.InitializeLogging(appCtx.LogLevel, stdout);
+        apiHandle.InitializeLogging(appCtx.LogLevel, stderr);
     }
     bool use_tls = true;
     uint16_t port = 443;
@@ -365,6 +365,7 @@ int main(int argc, char **argv)
         }
         else
         {
+            std::cerr << "Connection failed with error " << aws_error_debug_str(errorCode) << std::endl;
             connectionShutdown = true;
         }
 
