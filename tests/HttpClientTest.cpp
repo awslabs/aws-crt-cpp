@@ -99,6 +99,7 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
 
     Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
     ASSERT_TRUE(clientBootstrap);
+    clientBootstrap.EnableBlockingShutdown();
 
     std::shared_ptr<Http::HttpClientConnection> connection(nullptr);
     bool errorOccured = true;
@@ -232,6 +233,7 @@ static int s_TestHttpStreamUnActivated(struct aws_allocator *allocator, void *ct
 
     Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
     ASSERT_TRUE(clientBootstrap);
+    clientBootstrap.EnableBlockingShutdown();
 
     std::shared_ptr<Http::HttpClientConnection> connection(nullptr);
     bool errorOccured = true;

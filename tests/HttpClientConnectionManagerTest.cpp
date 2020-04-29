@@ -56,6 +56,7 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
 
     Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
     ASSERT_TRUE(clientBootstrap);
+    clientBootstrap.EnableBlockingShutdown();
 
     std::condition_variable semaphore;
     std::mutex semaphoreLock;
@@ -158,9 +159,9 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
     ASSERT_TRUE(defaultHostResolver);
 
-    std::unique_ptr<Io::ClientBootstrap> clientBootstrap(
-        new Io::ClientBootstrap(eventLoopGroup, defaultHostResolver, allocator));
-    ASSERT_TRUE(clientBootstrap && *clientBootstrap);
+    Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+    ASSERT_TRUE(clientBootstrap);
+    clientBootstrap.EnableBlockingShutdown();
 
     std::condition_variable semaphore;
     std::mutex semaphoreLock;
@@ -168,7 +169,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     size_t totalExpectedConnections = 30;
 
     Http::HttpClientConnectionOptions connectionOptions;
-    connectionOptions.Bootstrap = clientBootstrap.get();
+    connectionOptions.Bootstrap = &clientBootstrap;
     connectionOptions.SocketOptions = socketOptions;
     connectionOptions.TlsOptions = tlsConnectionOptions;
     connectionOptions.HostName = String((const char *)hostName.ptr, hostName.len);
@@ -236,10 +237,6 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     }
     connectionManager->InitiateShutdown().get();
 
-    auto bootstrapShutdownFuture = clientBootstrap->GetShutdownFuture();
-    clientBootstrap = nullptr;
-    bootstrapShutdownFuture.get();
-
     /* now let everything tear down and make sure we don't leak or deadlock.*/
     return AWS_OP_SUCCESS;
 }
@@ -275,6 +272,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
 
     Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
     ASSERT_TRUE(clientBootstrap);
+    clientBootstrap.EnableBlockingShutdown();
 
     std::condition_variable semaphore;
     std::mutex semaphoreLock;

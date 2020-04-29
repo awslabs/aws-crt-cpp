@@ -25,14 +25,17 @@ namespace Aws
             // Lives until the bootstrap's shutdown-complete callback fires.
             struct ClientBootstrapCallbackData
             {
-                Allocator *allocator;
-                std::promise<void> shutdownPromise;
+                std::promise<void> ShutdownPromise;
+                OnClientBootstrapShutdownComplete ShutdownCallback;
 
-                static void onShutdownComplete(void *userData)
+                static void OnShutdownComplete(void *userData)
                 {
                     auto callbackData = static_cast<ClientBootstrapCallbackData *>(userData);
-                    callbackData->shutdownPromise.set_value();
-                    Delete(callbackData, callbackData->allocator);
+
+                    callbackData->ShutdownPromise.set_value();
+                    callbackData->ShutdownCallback();
+
+                    delete callbackData;
                 }
             };
 
@@ -40,22 +43,17 @@ namespace Aws
                 EventLoopGroup &elGroup,
                 HostResolver &resolver,
                 Allocator *allocator) noexcept
-                : m_bootstrap(nullptr), m_callbackData(nullptr), m_lastError(AWS_ERROR_SUCCESS)
+                : m_bootstrap(nullptr), m_lastError(AWS_ERROR_SUCCESS),
+                  m_callbackData(new ClientBootstrapCallbackData()), m_enableBlockingShutdown(false)
             {
-                m_callbackData = New<ClientBootstrapCallbackData>(allocator);
-                if (!m_callbackData)
-                {
-                    m_lastError = aws_last_error();
-                    return;
-                }
-                m_callbackData->allocator = allocator;
+                m_shutdownFuture = m_callbackData->ShutdownPromise.get_future();
 
                 aws_client_bootstrap_options options;
                 options.event_loop_group = elGroup.GetUnderlyingHandle();
                 options.host_resolution_config = resolver.GetConfig();
                 options.host_resolver = resolver.GetUnderlyingHandle();
-                options.on_shutdown_complete = ClientBootstrapCallbackData::onShutdownComplete;
-                options.user_data = m_callbackData;
+                options.on_shutdown_complete = ClientBootstrapCallbackData::OnShutdownComplete;
+                options.user_data = m_callbackData.get();
                 m_bootstrap = aws_client_bootstrap_new(allocator, &options);
                 if (!m_bootstrap)
                 {
@@ -67,15 +65,15 @@ namespace Aws
             {
                 if (m_bootstrap)
                 {
+                    // Release m_callbackData, it destroys itself when shutdown completes.
+                    m_callbackData.release();
+
                     aws_client_bootstrap_release(m_bootstrap);
-                    m_bootstrap = nullptr;
-                    m_lastError = AWS_ERROR_UNKNOWN;
-                }
-                else if (m_callbackData)
-                {
-                    // Normally, m_callbackData waits until the shutdown-complete callback to destroy itself.
-                    // But if m_bootstrap failed creation, shutdown will never fire, so manually destroy m_callbackData.
-                    Delete(m_callbackData, m_callbackData->allocator);
+                    if (m_enableBlockingShutdown)
+                    {
+                        // If your program is stuck here, stop using EnableBlockingShutdown()
+                        m_shutdownFuture.wait();
+                    }
                 }
             }
 
@@ -83,10 +81,12 @@ namespace Aws
 
             int ClientBootstrap::LastError() const noexcept { return m_lastError; }
 
-            std::future<void> ClientBootstrap::GetShutdownFuture()
+            void ClientBootstrap::SetShutdownCompleteCallback(OnClientBootstrapShutdownComplete callback)
             {
-                return m_callbackData->shutdownPromise.get_future();
+                m_callbackData->ShutdownCallback = std::move(callback);
             }
+
+            void ClientBootstrap::EnableBlockingShutdown() noexcept { m_enableBlockingShutdown = true; }
 
             aws_client_bootstrap *ClientBootstrap::GetUnderlyingHandle() const noexcept
             {
