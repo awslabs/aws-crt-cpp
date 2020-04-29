@@ -20,19 +20,47 @@ namespace Aws
     {
         namespace Io
         {
+
+            // Holds the bootstrap's shutdown promise.
+            // Lives until the bootstrap's shutdown-complete callback fires.
+            struct ClientBootstrapCallbackData
+            {
+                Allocator *allocator;
+                std::promise<void> shutdownPromise;
+
+                static void onShutdownComplete(void *userData)
+                {
+                    auto callbackData = static_cast<ClientBootstrapCallbackData *>(userData);
+                    callbackData->shutdownPromise.set_value();
+                    Delete(callbackData, callbackData->allocator);
+                }
+            };
+
             ClientBootstrap::ClientBootstrap(
                 EventLoopGroup &elGroup,
                 HostResolver &resolver,
                 Allocator *allocator) noexcept
-                : m_lastError(AWS_ERROR_SUCCESS)
+                : m_bootstrap(nullptr), m_callbackData(nullptr), m_lastError(AWS_ERROR_SUCCESS)
             {
+                m_callbackData = New<ClientBootstrapCallbackData>(allocator);
+                if (!m_callbackData)
+                {
+                    m_lastError = aws_last_error();
+                    return;
+                }
+                m_callbackData->allocator = allocator;
+
                 aws_client_bootstrap_options options;
                 options.event_loop_group = elGroup.GetUnderlyingHandle();
                 options.host_resolution_config = resolver.GetConfig();
                 options.host_resolver = resolver.GetUnderlyingHandle();
-                options.on_shutdown_complete = NULL;
-                options.user_data = NULL;
+                options.on_shutdown_complete = ClientBootstrapCallbackData::onShutdownComplete;
+                options.user_data = m_callbackData;
                 m_bootstrap = aws_client_bootstrap_new(allocator, &options);
+                if (!m_bootstrap)
+                {
+                    m_lastError = aws_last_error();
+                }
             }
 
             ClientBootstrap::~ClientBootstrap()
@@ -43,11 +71,22 @@ namespace Aws
                     m_bootstrap = nullptr;
                     m_lastError = AWS_ERROR_UNKNOWN;
                 }
+                else if (m_callbackData)
+                {
+                    // Normally, m_callbackData waits until the shutdown-complete callback to destroy itself.
+                    // But if m_bootstrap failed creation, shutdown will never fire, so manually destroy m_callbackData.
+                    Delete(m_callbackData, m_callbackData->allocator);
+                }
             }
 
             ClientBootstrap::operator bool() const noexcept { return m_lastError == AWS_ERROR_SUCCESS; }
 
             int ClientBootstrap::LastError() const noexcept { return m_lastError; }
+
+            std::future<void> ClientBootstrap::GetShutdownFuture()
+            {
+                return m_callbackData->shutdownPromise.get_future();
+            }
 
             aws_client_bootstrap *ClientBootstrap::GetUnderlyingHandle() const noexcept
             {

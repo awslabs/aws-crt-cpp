@@ -22,6 +22,8 @@
 #include <aws/io/channel_bootstrap.h>
 #include <aws/io/host_resolver.h>
 
+#include <future>
+
 namespace Aws
 {
     namespace Crt
@@ -44,10 +46,17 @@ namespace Aws
                 operator bool() const noexcept;
                 int LastError() const noexcept;
 
+                /**
+                 * Returns a future that will be set after ClientBootstrap is destroyed,
+                 * and all of its behind-the-scenes resources finish shutting down.
+                 */
+                std::future<void> GetShutdownFuture();
+
                 aws_client_bootstrap *GetUnderlyingHandle() const noexcept;
 
               private:
                 aws_client_bootstrap *m_bootstrap;
+                struct ClientBootstrapCallbackData *m_callbackData;
                 int m_lastError;
             };
         } // namespace Io

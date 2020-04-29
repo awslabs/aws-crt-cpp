@@ -29,9 +29,16 @@ static int s_TestClientBootstrapResourceSafety(struct aws_allocator *allocator, 
     ASSERT_TRUE(defaultHostResolver);
     ASSERT_NOT_NULL(defaultHostResolver.GetUnderlyingHandle());
 
-    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
-    ASSERT_TRUE(clientBootstrap);
-    ASSERT_NOT_NULL(clientBootstrap.GetUnderlyingHandle());
+    std::future<void> shutdownFuture;
+    {
+        Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+        ASSERT_TRUE(clientBootstrap);
+        ASSERT_NOT_NULL(clientBootstrap.GetUnderlyingHandle());
+        shutdownFuture = clientBootstrap.GetShutdownFuture();
+    }
+
+    // wait until shutdown completes
+    ASSERT_TRUE(std::future_status::ready == shutdownFuture.wait_for(std::chrono::seconds(10)));
 
     return AWS_ERROR_SUCCESS;
 }
