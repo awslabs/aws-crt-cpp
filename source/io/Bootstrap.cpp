@@ -33,7 +33,9 @@ namespace Aws
                     auto callbackData = static_cast<ClientBootstrapCallbackData *>(userData);
 
                     callbackData->ShutdownPromise.set_value();
-                    callbackData->ShutdownCallback();
+                    if (callbackData->ShutdownCallback) {
+                        callbackData->ShutdownCallback();
+                    }
 
                     delete callbackData;
                 }
