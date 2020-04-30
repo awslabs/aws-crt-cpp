@@ -46,7 +46,7 @@ struct ElasticurlCtx
     bool insecure = false;
 
     const char *TraceFile = nullptr;
-    LogLevel LogLevel = LogLevel::None;
+    Aws::Crt::LogLevel LogLevel = Aws::Crt::LogLevel::None;
     Http::HttpVersion RequiredHttpVersion = Http::HttpVersion::Unknown;
 
     std::shared_ptr<Io::IStream> InputBody = nullptr;
