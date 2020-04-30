@@ -22,8 +22,8 @@
 
 #include <condition_variable>
 #include <fstream>
-#include <iostream>
 #include <future>
+#include <iostream>
 
 using namespace Aws::Crt;
 
@@ -372,8 +372,8 @@ int main(int argc, char **argv)
     Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
     if (!defaultHostResolver)
     {
-        std::cerr << "Failed to create host resolver with error " << aws_error_debug_str(defaultHostResolver.LastError())
-                  << std::endl;
+        std::cerr << "Failed to create host resolver with error "
+                  << aws_error_debug_str(defaultHostResolver.LastError()) << std::endl;
         exit(1);
     }
 
@@ -384,12 +384,12 @@ int main(int argc, char **argv)
                   << std::endl;
         exit(1);
     }
+    clientBootstrap.EnableBlockingShutdown();
 
-    std::promise<std::shared_ptr<Http::HttpClientConnection> > connectionPromise;
+    std::promise<std::shared_ptr<Http::HttpClientConnection>> connectionPromise;
     std::promise<void> shutdownPromise;
 
     auto onConnectionSetup = [&](const std::shared_ptr<Http::HttpClientConnection> &newConnection, int errorCode) {
-
         if (!errorCode)
         {
             if (appCtx.RequiredHttpVersion != Http::HttpVersion::Unknown)
@@ -445,7 +445,7 @@ int main(int argc, char **argv)
     std::promise<void> streamCompletePromise;
 
     requestOptions.onStreamComplete = [&](Http::HttpStream &stream, int errorCode) {
-        (void)stream;        
+        (void)stream;
         if (errorCode)
         {
             std::cerr << "Stream completed with error " << aws_error_debug_str(errorCode) << std::endl;
@@ -548,8 +548,5 @@ int main(int argc, char **argv)
     connection->Close();
     shutdownPromise.get_future().wait(); // wait for connection shutdown to complete
 
-
-    /* TODO: Wait until the bootstrap finishing shutting down, we may need to break the API for create the Bootstrap, a
-     * Bootstrap option for the callback? */
     return 0;
 }
