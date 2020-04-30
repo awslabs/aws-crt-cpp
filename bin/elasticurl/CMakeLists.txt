@@ -1,4 +1,4 @@
-project(elasticurl_cpp CXX C)
+project(elasticurl_cpp CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_PREFIX_PATH}/${CMAKE_INSTALL_LIBDIR}/cmake")
 
@@ -8,8 +8,7 @@ file(GLOB ELASTICURL_SRC
 
 set(ELASTICURL_CPP_PROJECT_NAME elasticurl_cpp)
 add_executable(${ELASTICURL_CPP_PROJECT_NAME} ${ELASTICURL_SRC})
-aws_set_common_properties(${ELASTICURL_CPP_PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
-aws_set_common_properties(${ELASTICURL_CPP_PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
+aws_set_common_properties(${ELASTICURL_CPP_PROJECT_NAME})
 
 
 target_include_directories(${ELASTICURL_CPP_PROJECT_NAME} PUBLIC
