@@ -15,6 +15,7 @@
 #include <aws/crt/Api.h>
 #include <aws/testing/aws_test_harness.h>
 
+#include <future>
 #include <utility>
 
 static int s_TestClientBootstrapResourceSafety(struct aws_allocator *allocator, void *)
@@ -29,9 +30,17 @@ static int s_TestClientBootstrapResourceSafety(struct aws_allocator *allocator, 
     ASSERT_TRUE(defaultHostResolver);
     ASSERT_NOT_NULL(defaultHostResolver.GetUnderlyingHandle());
 
-    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
-    ASSERT_TRUE(clientBootstrap);
-    ASSERT_NOT_NULL(clientBootstrap.GetUnderlyingHandle());
+    std::promise<void> bootstrapShutdownPromise;
+    std::future<void> bootstrapShutdownFuture = bootstrapShutdownPromise.get_future();
+    {
+        Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+        ASSERT_TRUE(clientBootstrap);
+        ASSERT_NOT_NULL(clientBootstrap.GetUnderlyingHandle());
+        clientBootstrap.EnableBlockingShutdown();
+        clientBootstrap.SetShutdownCompleteCallback([&]() { bootstrapShutdownPromise.set_value(); });
+    }
+
+    ASSERT_TRUE(std::future_status::ready == bootstrapShutdownFuture.wait_for(std::chrono::seconds(10)));
 
     return AWS_ERROR_SUCCESS;
 }
