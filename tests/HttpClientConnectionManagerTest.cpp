@@ -56,6 +56,7 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
 
     Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
     ASSERT_TRUE(clientBootstrap);
+    clientBootstrap.EnableBlockingShutdown();
 
     std::condition_variable semaphore;
     std::mutex semaphoreLock;
@@ -158,8 +159,9 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
     ASSERT_TRUE(defaultHostResolver);
 
-    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+    Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
     ASSERT_TRUE(clientBootstrap);
+    clientBootstrap.EnableBlockingShutdown();
 
     std::condition_variable semaphore;
     std::mutex semaphoreLock;
@@ -270,6 +272,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
 
     Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
     ASSERT_TRUE(clientBootstrap);
+    clientBootstrap.EnableBlockingShutdown();
 
     std::condition_variable semaphore;
     std::mutex semaphoreLock;

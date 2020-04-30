@@ -149,6 +149,7 @@ static int s_TestProviderImdsGet(struct aws_allocator *allocator, void *ctx)
 
         Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
         ASSERT_TRUE(clientBootstrap);
+        clientBootstrap.EnableBlockingShutdown();
 
         CredentialsProviderImdsConfig config;
         config.Bootstrap = &clientBootstrap;
@@ -178,6 +179,7 @@ static int s_TestProviderDefaultChainGet(struct aws_allocator *allocator, void *
 
         Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
         ASSERT_TRUE(clientBootstrap);
+        clientBootstrap.EnableBlockingShutdown();
 
         CredentialsProviderChainDefaultConfig config;
         config.Bootstrap = &clientBootstrap;

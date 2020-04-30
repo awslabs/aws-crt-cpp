@@ -67,6 +67,7 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
 
     Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
     ASSERT_TRUE(allocator);
+    clientBootstrap.EnableBlockingShutdown();
 
     Aws::Crt::Mqtt::MqttClient mqttClient(clientBootstrap, allocator);
     ASSERT_TRUE(mqttClient);
