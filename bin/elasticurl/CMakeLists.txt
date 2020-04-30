@@ -10,6 +10,22 @@ set(ELASTICURL_CPP_PROJECT_NAME elasticurl_cpp)
 add_executable(${ELASTICURL_CPP_PROJECT_NAME} ${ELASTICURL_CPP_SRC})
 aws_set_common_properties(${ELASTICURL_CPP_PROJECT_NAME})
 
+set_target_properties(${ELASTICURL_CPP_PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(${ELASTICURL_CPP_PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
+
+set(CMAKE_C_FLAGS_DEBUGOPT "")
+
+#set warnings
+if (MSVC)
+    target_compile_options(${ELASTICURL_CPP_PROJECT_NAME} PRIVATE /W4 /WX)
+else ()
+    target_compile_options(${ELASTICURL_CPP_PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
+endif ()
+
+
+if (CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE MATCHES Debug)
+    target_compile_definitions(${ELASTICURL_CPP_PROJECT_NAME} PRIVATE "-DDEBUG_BUILD")
+endif ()
 
 target_include_directories(${ELASTICURL_CPP_PROJECT_NAME} PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
