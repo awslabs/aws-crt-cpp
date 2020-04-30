@@ -23,7 +23,7 @@
 #include <condition_variable>
 #include <fstream>
 #include <iostream>
-#include <mutex>
+#include <future>
 
 using namespace Aws::Crt;
 
@@ -50,7 +50,7 @@ struct ElasticurlCtx
     Http::HttpVersion RequiredHttpVersion = Http::HttpVersion::Unknown;
 
     std::shared_ptr<Io::IStream> InputBody = nullptr;
-    std::ofstream OutPut;
+    std::ofstream Output;
 };
 
 static void s_Usage(int exit_code)
@@ -77,8 +77,8 @@ static void s_Usage(int exit_code)
     std::cerr << "  -t, --trace FILE: dumps logs to FILE instead of stderr.\n";
     std::cerr << "  -v, --verbose: ERROR|INFO|DEBUG|TRACE: log level to configure. Default is none.\n";
     std::cerr << "      --version: print the version of elasticurl.\n";
-    std::cerr << "      --http2: HTTP/2 connection required";
-    std::cerr << "      --http1_1: HTTP/1.1 connection required";
+    std::cerr << "      --http2: HTTP/2 connection required\n";
+    std::cerr << "      --http1_1: HTTP/1.1 connection required\n";
     std::cerr << "  -h, --help\n";
     std::cerr << "            Display this message and quit.\n";
     exit(exit_code);
@@ -178,7 +178,7 @@ static void s_ParseOptions(int argc, char **argv, ElasticurlCtx &ctx)
                 ctx.insecure = true;
                 break;
             case 'o':
-                ctx.OutPut.open(aws_cli_optarg, std::ios::out);
+                ctx.Output.open(aws_cli_optarg, std::ios::out);
                 break;
             case 't':
                 ctx.TraceFile = aws_cli_optarg;
@@ -236,7 +236,7 @@ static void s_ParseOptions(int argc, char **argv, ElasticurlCtx &ctx)
         struct aws_byte_cursor uri_cursor = aws_byte_cursor_from_c_str(argv[aws_cli_optind++]);
 
         ctx.uri = Io::Uri(uri_cursor, ctx.allocator);
-        if (ctx.uri.LastError())
+        if (!ctx.uri)
         {
             std::cerr << "Failed to parse uri" << (char *)uri_cursor.ptr << "with error "
                       << aws_error_debug_str(ctx.uri.LastError()) << std::endl;
@@ -270,18 +270,18 @@ int main(int argc, char **argv)
     {
         apiHandle.InitializeLogging(appCtx.LogLevel, stderr);
     }
-    bool use_tls = true;
+    bool useTls = true;
     uint16_t port = 443;
     if (!appCtx.uri.GetScheme().len && (appCtx.uri.GetPort() == 80 || appCtx.uri.GetPort() == 8080))
     {
-        use_tls = false;
+        useTls = false;
     }
     else
     {
         ByteCursor scheme = appCtx.uri.GetScheme();
         if (aws_byte_cursor_eq_c_str_ignore_case(&scheme, "http"))
         {
-            use_tls = false;
+            useTls = false;
         }
     }
 
@@ -290,19 +290,37 @@ int main(int argc, char **argv)
     Io::TlsContextOptions tlsCtxOptions;
     Io::TlsContext tlsContext;
     Io::TlsConnectionOptions tlsConnectionOptions;
-    if (use_tls)
+    if (useTls)
     {
         if (appCtx.cert && appCtx.key)
         {
             tlsCtxOptions = Io::TlsContextOptions::InitClientWithMtls(appCtx.cert, appCtx.key);
+            if (!tlsCtxOptions)
+            {
+                std::cerr << "Failed to load " << appCtx.cert << " and " << appCtx.key << " with error "
+                          << aws_error_debug_str(tlsCtxOptions.LastError()) << std::endl;
+                exit(1);
+            }
         }
         else
         {
             tlsCtxOptions = Io::TlsContextOptions::InitDefaultClient();
+            if (!tlsCtxOptions)
+            {
+                std::cerr << "Failed to create a default tlsCtxOptions with error "
+                          << aws_error_debug_str(tlsCtxOptions.LastError()) << std::endl;
+                exit(1);
+            }
         }
+
         if (appCtx.CaPath || appCtx.CaCert)
         {
-            tlsCtxOptions.OverrideDefaultTrustStore(appCtx.CaPath, appCtx.CaCert);
+            if (!tlsCtxOptions.OverrideDefaultTrustStore(appCtx.CaPath, appCtx.CaCert))
+            {
+                std::cerr << "Failed to load " << appCtx.CaPath << " and " << appCtx.CaCert << " with error "
+                          << aws_error_debug_str(tlsCtxOptions.LastError()) << std::endl;
+                exit(1);
+            }
         }
         if (appCtx.insecure)
         {
@@ -313,8 +331,18 @@ int main(int argc, char **argv)
 
         tlsConnectionOptions = tlsContext.NewConnectionOptions();
 
-        tlsConnectionOptions.SetServerName(hostName);
-        tlsConnectionOptions.SetAlpnList(appCtx.alpn);
+        if (!tlsConnectionOptions.SetServerName(hostName))
+        {
+            std::cerr << "Failed to set servername with error " << aws_error_debug_str(tlsConnectionOptions.LastError())
+                      << std::endl;
+            exit(1);
+        }
+        if (!tlsConnectionOptions.SetAlpnList(appCtx.alpn))
+        {
+            std::cerr << "Failed to load alpn list with error " << aws_error_debug_str(tlsConnectionOptions.LastError())
+                      << std::endl;
+            exit(1);
+        }
     }
     else
     {
@@ -334,20 +362,33 @@ int main(int argc, char **argv)
     socketOptions.SetConnectTimeoutMs(appCtx.ConnectTimeout);
 
     Io::EventLoopGroup eventLoopGroup(0, allocator);
+    if (!eventLoopGroup)
+    {
+        std::cerr << "Failed to create evenloop group with error " << aws_error_debug_str(eventLoopGroup.LastError())
+                  << std::endl;
+        exit(1);
+    }
 
     Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+    if (!defaultHostResolver)
+    {
+        std::cerr << "Failed to create host resolver with error " << aws_error_debug_str(defaultHostResolver.LastError())
+                  << std::endl;
+        exit(1);
+    }
 
     Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+    if (!clientBootstrap)
+    {
+        std::cerr << "Failed to create client bootstrap with error " << aws_error_debug_str(clientBootstrap.LastError())
+                  << std::endl;
+        exit(1);
+    }
 
-    std::shared_ptr<Http::HttpClientConnection> connection(nullptr);
-    bool errorOccured = true;
-    bool connectionShutdown = false;
-
-    std::condition_variable semaphore;
-    std::mutex semaphoreLock;
+    std::promise<std::shared_ptr<Http::HttpClientConnection> > connectionPromise;
+    std::promise<void> shutdownPromise;
 
     auto onConnectionSetup = [&](const std::shared_ptr<Http::HttpClientConnection> &newConnection, int errorCode) {
-        std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
         if (!errorCode)
         {
@@ -360,28 +401,24 @@ int main(int argc, char **argv)
                     exit(1);
                 }
             }
-            connection = newConnection;
-            errorOccured = false;
         }
         else
         {
             std::cerr << "Connection failed with error " << aws_error_debug_str(errorCode) << std::endl;
-            connectionShutdown = true;
+            exit(1);
         }
-
-        semaphore.notify_one();
+        connectionPromise.set_value(newConnection);
     };
 
     auto onConnectionShutdown = [&](Http::HttpClientConnection &newConnection, int errorCode) {
-        std::lock_guard<std::mutex> lockGuard(semaphoreLock);
         (void)newConnection;
-        connectionShutdown = true;
         if (errorCode)
         {
-            errorOccured = true;
+            std::cerr << "Connection shutdown with error " << aws_error_debug_str(errorCode) << std::endl;
+            exit(1);
         }
 
-        semaphore.notify_one();
+        shutdownPromise.set_value();
     };
 
     Http::HttpClientConnectionOptions httpClientConnectionOptions;
@@ -389,36 +426,32 @@ int main(int argc, char **argv)
     httpClientConnectionOptions.OnConnectionSetupCallback = onConnectionSetup;
     httpClientConnectionOptions.OnConnectionShutdownCallback = onConnectionShutdown;
     httpClientConnectionOptions.SocketOptions = socketOptions;
-    if (use_tls)
+    if (useTls)
     {
         httpClientConnectionOptions.TlsOptions = tlsConnectionOptions;
     }
     httpClientConnectionOptions.HostName = String((const char *)hostName.ptr, hostName.len);
     httpClientConnectionOptions.Port = port;
 
-    std::unique_lock<std::mutex> semaphoreULock(semaphoreLock);
     Http::HttpClientConnection::CreateConnection(httpClientConnectionOptions, allocator);
-    semaphore.wait(semaphoreULock, [&]() { return connection || connectionShutdown; });
 
+    std::shared_ptr<Http::HttpClientConnection> connection = connectionPromise.get_future().get();
     /* Send request */
     int responseCode = 0;
 
     Http::HttpRequest request;
     Http::HttpRequestOptions requestOptions;
     requestOptions.request = &request;
+    std::promise<void> streamCompletePromise;
 
-    bool streamCompleted = false;
     requestOptions.onStreamComplete = [&](Http::HttpStream &stream, int errorCode) {
-        (void)stream;
-        std::lock_guard<std::mutex> lockGuard(semaphoreLock);
-
-        streamCompleted = true;
+        (void)stream;        
         if (errorCode)
         {
-            errorOccured = true;
+            std::cerr << "Stream completed with error " << aws_error_debug_str(errorCode) << std::endl;
+            exit(1);
         }
-
-        semaphore.notify_one();
+        streamCompletePromise.set_value();
     };
     requestOptions.onIncomingHeadersBlockDone = nullptr;
     requestOptions.onIncomingHeaders = [&](Http::HttpStream &stream,
@@ -450,9 +483,9 @@ int main(int argc, char **argv)
         }
     };
     requestOptions.onIncomingBody = [&](Http::HttpStream &, const ByteCursor &data) {
-        if (appCtx.OutPut.is_open())
+        if (appCtx.Output.is_open())
         {
-            appCtx.OutPut.write((char *)data.ptr, data.len);
+            appCtx.Output.write((char *)data.ptr, data.len);
         }
         else
         {
@@ -475,20 +508,18 @@ int main(int argc, char **argv)
 
     std::shared_ptr<Io::StdIOStreamInputStream> bodyStream =
         MakeShared<Io::StdIOStreamInputStream>(allocator, appCtx.InputBody, allocator);
-    int64_t dataLen = 0;
-    if (aws_input_stream_get_length(bodyStream->GetUnderlyingStream(), &dataLen))
+    int64_t dataLen;
+    if (!bodyStream->GetLength(dataLen))
     {
         std::cerr << "failed to get length of input stream.\n";
         exit(1);
     }
     if (dataLen > 0)
     {
-        char contentLength[64];
-        AWS_ZERO_ARRAY(contentLength);
-        sprintf(contentLength, "%li", dataLen);
+        std::string contentLength = std::to_string(dataLen);
         Http::HttpHeader contentLengthHeader;
         contentLengthHeader.name = ByteCursorFromCString("content-length");
-        contentLengthHeader.value = ByteCursorFromCString(contentLength);
+        contentLengthHeader.value = ByteCursorFromCString(contentLength.c_str());
         request.AddHeader(contentLengthHeader);
         request.SetBody(bodyStream);
     }
@@ -512,10 +543,11 @@ int main(int argc, char **argv)
     auto stream = connection->NewClientStream(requestOptions);
     stream->Activate();
 
-    semaphore.wait(semaphoreULock, [&]() { return streamCompleted; });
+    streamCompletePromise.get_future().wait(); // wait for connection shutdown to complete
 
     connection->Close();
-    semaphore.wait(semaphoreULock, [&]() { return connectionShutdown; });
+    shutdownPromise.get_future().wait(); // wait for connection shutdown to complete
+
 
     /* TODO: Wait until the bootstrap finishing shutting down, we may need to break the API for create the Bootstrap, a
      * Bootstrap option for the callback? */

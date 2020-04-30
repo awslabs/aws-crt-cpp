@@ -53,6 +53,20 @@ namespace Aws
 
                 aws_input_stream *GetUnderlyingStream() noexcept { return &m_underlying_stream; }
 
+                bool Read(ByteBuf &dest) { return aws_input_stream_read(&m_underlying_stream, &dest) == 0; }
+                bool Seek(OffsetType offset, StreamSeekBasis seekBasis)
+                {
+                    return aws_input_stream_seek(&m_underlying_stream, offset, (aws_stream_seek_basis)seekBasis) == 0;
+                }
+                bool GetStatus(StreamStatus &status)
+                {
+                    return aws_input_stream_get_status(&m_underlying_stream, &status) == 0;
+                }
+                bool GetLength(int64_t &length)
+                {
+                    return aws_input_stream_get_length(&m_underlying_stream, &length) == 0;
+                }
+
               protected:
                 Allocator *m_allocator;
                 aws_input_stream m_underlying_stream;
