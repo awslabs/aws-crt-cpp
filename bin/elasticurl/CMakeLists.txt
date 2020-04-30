@@ -1,4 +1,4 @@
-project(elasticurl CXX C)
+project(elasticurl_cpp CXX C)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_PREFIX_PATH}/${CMAKE_INSTALL_LIBDIR}/cmake")
 
