@@ -151,17 +151,9 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, Byt
     ASSERT_FALSE(errorOccured);
     ASSERT_FALSE(connectionShutdown);
     ASSERT_TRUE(connection);
-    String fileName;
-    if (h2Required)
-    {
-        fileName = "http_download_test_file_h2.txt";
-        ASSERT_TRUE(connection->GetVersion() == Http::HttpVersion::Http2);
-    }
-    else
-    {
-        fileName = "http_download_test_file_h1_1.txt";
-        ASSERT_TRUE(connection->GetVersion() == Http::HttpVersion::Http1_1);
-    }
+    String fileName = h2Required ? "http_download_test_file_h2.txt" : "http_download_test_file_h1_1.txt";
+    Http::HttpVersion excepted = h2Required ? Http::HttpVersion::Http2 : Http::HttpVersion::Http1_1;
+    ASSERT_TRUE(connection->GetVersion() == excepted);
 
     int responseCode = 0;
     std::ofstream downloadedFile(fileName.c_str(), std::ios_base::binary);
