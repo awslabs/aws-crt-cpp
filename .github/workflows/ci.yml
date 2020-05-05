@@ -99,7 +99,7 @@ jobs:
       run: |
         python3 -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder')"
         chmod a+x builder
-        ./builder build -p aws-crt-cpp --spec=downstream --target=${{matrix.arch}} --run_test=0
+        ./builder build -p aws-crt-cpp --spec=downstream --target=${{matrix.arch}} --run_test=false
 
 
         
