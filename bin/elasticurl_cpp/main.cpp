@@ -37,13 +37,13 @@ struct ElasticurlCtx
     bool ResponseCodeWritten = false;
     const char *CaCert = nullptr;
     const char *CaPath = nullptr;
-    const char *cert = nullptr;
-    const char *key = nullptr;
+    const char *Cert = nullptr;
+    const char *Key = nullptr;
     int ConnectTimeout = 3000;
     Vector<const char *> HeaderLines;
-    const char *alpn = "h2;http/1.1";
+    const char *Alpn = "h2;http/1.1";
     bool IncludeHeaders = false;
-    bool insecure = false;
+    bool Insecure = false;
 
     const char *TraceFile = nullptr;
     Aws::Crt::LogLevel LogLevel = Aws::Crt::LogLevel::None;
@@ -118,6 +118,7 @@ static void s_ParseOptions(int argc, char **argv, ElasticurlCtx &ctx)
         int c = aws_cli_getopt_long(argc, argv, "a:b:c:e:f:H:d:g:M:GPHiko:t:v:VwWh", s_LongOptions, &option_index);
         if (c == -1)
         {
+            /* finished parsing */
             break;
         }
 
@@ -133,10 +134,10 @@ static void s_ParseOptions(int argc, char **argv, ElasticurlCtx &ctx)
                 ctx.CaPath = aws_cli_optarg;
                 break;
             case 'c':
-                ctx.cert = aws_cli_optarg;
+                ctx.Cert = aws_cli_optarg;
                 break;
             case 'e':
-                ctx.key = aws_cli_optarg;
+                ctx.Key = aws_cli_optarg;
                 break;
             case 'f':
                 ctx.ConnectTimeout = atoi(aws_cli_optarg);
@@ -175,7 +176,7 @@ static void s_ParseOptions(int argc, char **argv, ElasticurlCtx &ctx)
                 ctx.IncludeHeaders = true;
                 break;
             case 'k':
-                ctx.insecure = true;
+                ctx.Insecure = true;
                 break;
             case 'o':
                 ctx.Output.open(aws_cli_optarg, std::ios::out | std::ios::binary);
@@ -210,11 +211,11 @@ static void s_ParseOptions(int argc, char **argv, ElasticurlCtx &ctx)
                 std::cerr << "elasticurl " << ELASTICURL_VERSION << std::endl;
                 exit(0);
             case 'w':
-                ctx.alpn = "h2";
+                ctx.Alpn = "h2";
                 ctx.RequiredHttpVersion = Http::HttpVersion::Http2;
                 break;
             case 'W':
-                ctx.alpn = "http/1.1";
+                ctx.Alpn = "http/1.1";
                 ctx.RequiredHttpVersion = Http::HttpVersion::Http1_1;
                 break;
             case 'h':
@@ -253,9 +254,6 @@ static void s_ParseOptions(int argc, char **argv, ElasticurlCtx &ctx)
 int main(int argc, char **argv)
 {
     struct aws_allocator *allocator = aws_default_allocator();
-    (void)allocator;
-    (void)argc;
-    (void)argv;
 
     struct ElasticurlCtx appCtx;
     appCtx.allocator = allocator;
@@ -292,12 +290,12 @@ int main(int argc, char **argv)
     Io::TlsConnectionOptions tlsConnectionOptions;
     if (useTls)
     {
-        if (appCtx.cert && appCtx.key)
+        if (appCtx.Cert && appCtx.Key)
         {
-            tlsCtxOptions = Io::TlsContextOptions::InitClientWithMtls(appCtx.cert, appCtx.key);
+            tlsCtxOptions = Io::TlsContextOptions::InitClientWithMtls(appCtx.Cert, appCtx.Key);
             if (!tlsCtxOptions)
             {
-                std::cerr << "Failed to load " << appCtx.cert << " and " << appCtx.key << " with error "
+                std::cerr << "Failed to load " << appCtx.Cert << " and " << appCtx.Key << " with error "
                           << aws_error_debug_str(tlsCtxOptions.LastError()) << std::endl;
                 exit(1);
             }
@@ -322,7 +320,7 @@ int main(int argc, char **argv)
                 exit(1);
             }
         }
-        if (appCtx.insecure)
+        if (appCtx.Insecure)
         {
             tlsCtxOptions.SetVerifyPeer(false);
         }
@@ -337,7 +335,7 @@ int main(int argc, char **argv)
                       << std::endl;
             exit(1);
         }
-        if (!tlsConnectionOptions.SetAlpnList(appCtx.alpn))
+        if (!tlsConnectionOptions.SetAlpnList(appCtx.Alpn))
         {
             std::cerr << "Failed to load alpn list with error " << aws_error_debug_str(tlsConnectionOptions.LastError())
                       << std::endl;
@@ -396,7 +394,7 @@ int main(int argc, char **argv)
             {
                 if (newConnection->GetVersion() != appCtx.RequiredHttpVersion)
                 {
-                    std::cerr << "Error. The requested HTTP version, " << appCtx.alpn
+                    std::cerr << "Error. The requested HTTP version, " << appCtx.Alpn
                               << ", is not supported by the peer." << std::endl;
                     exit(1);
                 }
@@ -503,7 +501,7 @@ int main(int argc, char **argv)
 
     Http::HttpHeader userAgentHeader;
     userAgentHeader.name = ByteCursorFromCString("user-agent");
-    userAgentHeader.value = ByteCursorFromCString("elasticurl_cpp 1.0, Powered by the AWS Common Runtime.");
+    userAgentHeader.value = ByteCursorFromCString("elasticurl_cpp, Powered by the AWS Common Runtime.");
     request.AddHeader(userAgentHeader);
 
     std::shared_ptr<Io::StdIOStreamInputStream> bodyStream =
