@@ -178,7 +178,7 @@ static void s_ParseOptions(int argc, char **argv, ElasticurlCtx &ctx)
                 ctx.insecure = true;
                 break;
             case 'o':
-                ctx.Output.open(aws_cli_optarg, std::ios::out);
+                ctx.Output.open(aws_cli_optarg, std::ios::out | std::ios::binary);
                 break;
             case 't':
                 ctx.TraceFile = aws_cli_optarg;
