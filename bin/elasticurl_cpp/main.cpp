@@ -387,7 +387,7 @@ int main(int argc, char **argv)
     std::promise<std::shared_ptr<Http::HttpClientConnection>> connectionPromise;
     std::promise<void> shutdownPromise;
 
-    auto onConnectionSetup = [&](const std::shared_ptr<Http::HttpClientConnection> &newConnection, int errorCode) {
+    auto onConnectionSetup = [&appCtx, &connectionPromise](const std::shared_ptr<Http::HttpClientConnection> &newConnection, int errorCode) {
         if (!errorCode)
         {
             if (appCtx.RequiredHttpVersion != Http::HttpVersion::Unknown)
@@ -408,7 +408,7 @@ int main(int argc, char **argv)
         connectionPromise.set_value(newConnection);
     };
 
-    auto onConnectionShutdown = [&](Http::HttpClientConnection &newConnection, int errorCode) {
+    auto onConnectionShutdown = [&shutdownPromise](Http::HttpClientConnection &newConnection, int errorCode) {
         (void)newConnection;
         if (errorCode)
         {
@@ -442,7 +442,7 @@ int main(int argc, char **argv)
     requestOptions.request = &request;
     std::promise<void> streamCompletePromise;
 
-    requestOptions.onStreamComplete = [&](Http::HttpStream &stream, int errorCode) {
+    requestOptions.onStreamComplete = [&streamCompletePromise](Http::HttpStream &stream, int errorCode) {
         (void)stream;
         if (errorCode)
         {
@@ -480,7 +480,7 @@ int main(int argc, char **argv)
             }
         }
     };
-    requestOptions.onIncomingBody = [&](Http::HttpStream &, const ByteCursor &data) {
+    requestOptions.onIncomingBody = [&appCtx](Http::HttpStream &, const ByteCursor &data) {
         if (appCtx.Output.is_open())
         {
             appCtx.Output.write((char *)data.ptr, data.len);
@@ -501,7 +501,7 @@ int main(int argc, char **argv)
 
     Http::HttpHeader userAgentHeader;
     userAgentHeader.name = ByteCursorFromCString("user-agent");
-    userAgentHeader.value = ByteCursorFromCString("elasticurl_cpp, Powered by the AWS Common Runtime.");
+    userAgentHeader.value = ByteCursorFromCString("elasticurl_cpp 1.0, Powered by the AWS Common Runtime.");
     request.AddHeader(userAgentHeader);
 
     std::shared_ptr<Io::StdIOStreamInputStream> bodyStream =
