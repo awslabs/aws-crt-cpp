@@ -257,6 +257,7 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
 if (NOT CMAKE_CROSSCOMPILING)
     if (BUILD_TESTING)
         add_subdirectory(tests)
+        add_subdirectory(bin/elasticurl_cpp)
     endif()
 endif()
 

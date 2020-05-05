@@ -45,6 +45,7 @@ namespace Aws
                 TlsContextOptions &operator=(TlsContextOptions &&) noexcept;
 
                 explicit operator bool() const noexcept { return m_isInit; }
+                int LastError() const noexcept { return aws_last_error(); }
 
                 /**
                  * Initializes TlsContextOptions with secure by default options, with

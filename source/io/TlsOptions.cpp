@@ -226,7 +226,7 @@ namespace Aws
                         AWS_ZERO_STRUCT(options.m_tls_connection_options);
                         options.m_isInit = false;
                         m_isInit = true;
-                        options.m_allocator = options.m_allocator;
+                        m_allocator = options.m_allocator;
                     }
                 }
 

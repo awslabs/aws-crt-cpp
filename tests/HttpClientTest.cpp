@@ -18,8 +18,6 @@
 #include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Uri.h>
 
-#include <aws/io/uri.h>
-
 #include <aws/testing/aws_test_harness.h>
 
 #include <condition_variable>
@@ -72,9 +70,8 @@ static int s_VerifyFilesAreTheSame(Allocator *allocator, const char *fileName1, 
     return AWS_OP_SUCCESS;
 }
 
-static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, void *ctx)
+static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, ByteCursor urlCursor, bool h2Required)
 {
-    (void)ctx;
     Aws::Crt::ApiHandle apiHandle(allocator);
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
@@ -82,11 +79,14 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
 
     Aws::Crt::Io::TlsConnectionOptions tlsConnectionOptions = tlsContext.NewConnectionOptions();
 
-    ByteCursor cursor = ByteCursorFromCString("https://aws-crt-test-stuff.s3.amazonaws.com/http_test_doc.txt");
-    Io::Uri uri(cursor, allocator);
+    Io::Uri uri(urlCursor, allocator);
 
     auto hostName = uri.GetHostName();
     tlsConnectionOptions.SetServerName(hostName);
+    if (h2Required)
+    {
+        tlsConnectionOptions.SetAlpnList("h2");
+    }
 
     Aws::Crt::Io::SocketOptions socketOptions;
     socketOptions.SetConnectTimeoutMs(1000);
@@ -152,9 +152,12 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     ASSERT_FALSE(errorOccured);
     ASSERT_FALSE(connectionShutdown);
     ASSERT_TRUE(connection);
+    String fileName = h2Required ? "http_download_test_file_h2.txt" : "http_download_test_file_h1_1.txt";
+    Http::HttpVersion excepted = h2Required ? Http::HttpVersion::Http2 : Http::HttpVersion::Http1_1;
+    ASSERT_TRUE(connection->GetVersion() == excepted);
 
     int responseCode = 0;
-    std::ofstream downloadedFile("http_download_test_file.txt", std::ios_base::binary);
+    std::ofstream downloadedFile(fileName.c_str(), std::ios_base::binary);
     ASSERT_TRUE(downloadedFile);
 
     Http::HttpRequest request;
@@ -185,10 +188,10 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
     request.SetMethod(ByteCursorFromCString("GET"));
     request.SetPath(uri.GetPathAndQuery());
 
-    Http::HttpHeader host_header;
-    host_header.name = ByteCursorFromCString("host");
-    host_header.value = uri.GetHostName();
-    request.AddHeader(host_header);
+    Http::HttpHeader hostHeader;
+    hostHeader.name = ByteCursorFromCString("host");
+    hostHeader.value = uri.GetHostName();
+    request.AddHeader(hostHeader);
 
     auto stream = connection->NewClientStream(requestOptions);
     ASSERT_TRUE(stream->Activate());
@@ -201,10 +204,26 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, voi
 
     downloadedFile.flush();
     downloadedFile.close();
-    return s_VerifyFilesAreTheSame(allocator, "http_download_test_file.txt", "http_test_doc.txt");
+    return s_VerifyFilesAreTheSame(allocator, fileName.c_str(), "http_test_doc.txt");
 }
 
-AWS_TEST_CASE(HttpDownloadNoBackPressure, s_TestHttpDownloadNoBackPressure)
+static int s_TestHttpDownloadNoBackPressureHTTP1_1(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    ByteCursor cursor = ByteCursorFromCString("https://aws-crt-test-stuff.s3.amazonaws.com/http_test_doc.txt");
+    return s_TestHttpDownloadNoBackPressure(allocator, cursor, false /*h2Required*/);
+}
+
+AWS_TEST_CASE(HttpDownloadNoBackPressureHTTP1_1, s_TestHttpDownloadNoBackPressureHTTP1_1)
+
+static int s_TestHttpDownloadNoBackPressureHTTP2(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    ByteCursor cursor = ByteCursorFromCString("https://d1cz66xoahf9cl.cloudfront.net/http_test_doc.txt");
+    return s_TestHttpDownloadNoBackPressure(allocator, cursor, true /*h2Required*/);
+}
+
+AWS_TEST_CASE(HttpDownloadNoBackPressureHTTP2, s_TestHttpDownloadNoBackPressureHTTP2)
 
 static int s_TestHttpStreamUnActivated(struct aws_allocator *allocator, void *ctx)
 {
@@ -306,10 +325,10 @@ static int s_TestHttpStreamUnActivated(struct aws_allocator *allocator, void *ct
     request.SetMethod(ByteCursorFromCString("GET"));
     request.SetPath(uri.GetPathAndQuery());
 
-    Http::HttpHeader host_header;
-    host_header.name = ByteCursorFromCString("host");
-    host_header.value = uri.GetHostName();
-    request.AddHeader(host_header);
+    Http::HttpHeader hostHeader;
+    hostHeader.name = ByteCursorFromCString("host");
+    hostHeader.value = uri.GetHostName();
+    request.AddHeader(hostHeader);
 
     // don't activate it and let it go out of scope.
     auto stream = connection->NewClientStream(requestOptions);

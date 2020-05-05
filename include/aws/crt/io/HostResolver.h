@@ -66,6 +66,7 @@ namespace Aws
                 DefaultHostResolver &operator=(DefaultHostResolver &&) = delete;
 
                 operator bool() const noexcept { return m_initialized; }
+                int LastError() const noexcept { return aws_last_error(); }
 
                 /**
                  * Kicks off an asynchronous resolution of host. onResolved will be invoked upon completion of the
