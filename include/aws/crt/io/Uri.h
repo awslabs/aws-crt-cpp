@@ -45,8 +45,13 @@ namespace Aws
                 Uri &operator=(const Uri &);
                 Uri(Uri &&uri) noexcept;
                 Uri &operator=(Uri &&) noexcept;
-
+                /**
+                 * Returns true if the instance is in a valid state, false otherwise.
+                 */
                 operator bool() const noexcept { return m_isInit; }
+                /**
+                 * Returns the value of the last aws error encountered by operations on this instance.
+                 */
                 int LastError() const noexcept { return m_lastError; }
 
                 /**

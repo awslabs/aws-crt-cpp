@@ -409,7 +409,9 @@ namespace Aws
                   Return protocol version the connection used
                 */
                 HttpVersion GetVersion() noexcept;
-
+                /**
+                 * Returns the value of the last aws error encountered by operations on this instance.
+                 */
                 int LastError() const noexcept { return m_lastError; }
 
                 /**

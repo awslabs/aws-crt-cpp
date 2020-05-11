@@ -59,7 +59,14 @@ namespace Aws
         };
 
         AWS_CRT_CPP_API const char *ErrorDebugString(int error) noexcept;
+        /**
+         * Returns the value of the last aws error on the current thread. Return 0 if no aws-error raised before.
+         */
         AWS_CRT_CPP_API int LastError() noexcept;
+        /**
+         * Returns the value of the last aws error on the current thread. If no aws-error raised before, return
+         * AWS_ERROR_UNKNOWN
+         */
         AWS_CRT_CPP_API int LastErrorOrUnknown() noexcept;
     } // namespace Crt
 } // namespace Aws

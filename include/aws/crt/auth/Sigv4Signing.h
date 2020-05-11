@@ -162,6 +162,7 @@ namespace Aws
                  */
                 void SetCredentialsProvider(const std::shared_ptr<ICredentialsProvider> &credsProvider) noexcept;
 
+                /// @private
                 const struct aws_signing_config_aws *GetUnderlyingHandle() const noexcept;
 
               private:

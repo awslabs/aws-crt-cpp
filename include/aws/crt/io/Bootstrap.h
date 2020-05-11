@@ -44,6 +44,11 @@ namespace Aws
             class AWS_CRT_CPP_API ClientBootstrap final
             {
               public:
+                /**
+                 * elGroup: EventLoopGroup to use.
+                 * 
+                 * resolver: DNS host resolver to use.
+                 */
                 ClientBootstrap(
                     EventLoopGroup &elGroup,
                     HostResolver &resolver,
@@ -54,7 +59,14 @@ namespace Aws
                 ClientBootstrap(ClientBootstrap &&) = delete;
                 ClientBootstrap &operator=(ClientBootstrap &&) = delete;
 
+                /**
+                 * Returns true if the instance is in a valid state, false otherwise.
+                 */
                 operator bool() const noexcept;
+
+                /**
+                 * Returns the value of the last aws error encountered by operations on this instance.
+                 */
                 int LastError() const noexcept;
 
                 /**
@@ -78,7 +90,7 @@ namespace Aws
                  * know when shutdown is complete.
                  */
                 void EnableBlockingShutdown() noexcept;
-
+                /// @private
                 aws_client_bootstrap *GetUnderlyingHandle() const noexcept;
 
               private:

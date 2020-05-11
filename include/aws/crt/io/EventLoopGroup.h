@@ -24,8 +24,12 @@ namespace Aws
         namespace Io
         {
             /**
-             * A collection of event loops, this is used by all APIs that need to
-             * do any IO. The number of threads used depends on your use-case. IF you
+             * A collection of event loops.
+             *
+             * An event-loop is a thread for doing async work, such as I/O. Classes that need to do async work will ask
+             * the EventLoopGroup for an event-loop to use.
+             *
+             * The number of threads used depends on your use-case. IF you
              * have a maximum of less than a few hundred connections 1 thread is the ideal
              * threadCount.
              *
@@ -38,17 +42,21 @@ namespace Aws
             class AWS_CRT_CPP_API EventLoopGroup final
             {
               public:
-                EventLoopGroup(Allocator *allocator = g_allocator) noexcept;
-                EventLoopGroup(uint16_t threadCount, Allocator *allocator = g_allocator) noexcept;
+                EventLoopGroup(uint16_t threadCount = 0, Allocator *allocator = g_allocator) noexcept;
                 ~EventLoopGroup();
                 EventLoopGroup(const EventLoopGroup &) = delete;
                 EventLoopGroup(EventLoopGroup &&) noexcept;
                 EventLoopGroup &operator=(const EventLoopGroup &) = delete;
                 EventLoopGroup &operator=(EventLoopGroup &&) noexcept;
-
+                /**
+                 * Returns true if the instance is in a valid state, false otherwise.
+                 */
                 operator bool() const;
+                /**
+                 * Returns the value of the last aws error encountered by operations on this instance.
+                 */
                 int LastError() const;
-
+                /// @private
                 aws_event_loop_group *GetUnderlyingHandle() noexcept;
 
               private:

@@ -20,8 +20,6 @@ namespace Aws
     {
         namespace Io
         {
-            EventLoopGroup::EventLoopGroup(Allocator *allocator) noexcept : EventLoopGroup(0, allocator) {}
-
             EventLoopGroup::EventLoopGroup(uint16_t threadCount, Allocator *allocator) noexcept
                 : m_lastError(AWS_ERROR_SUCCESS)
             {

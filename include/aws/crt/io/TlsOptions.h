@@ -43,8 +43,13 @@ namespace Aws
                 TlsContextOptions &operator=(const TlsContextOptions &) noexcept = delete;
                 TlsContextOptions(TlsContextOptions &&) noexcept;
                 TlsContextOptions &operator=(TlsContextOptions &&) noexcept;
-
+                /**
+                 * Returns true if the instance is in a valid state, false otherwise.
+                 */
                 explicit operator bool() const noexcept { return m_isInit; }
+                /**
+                 * Returns the value of the last aws error encountered by operations on this instance.
+                 */
                 int LastError() const noexcept { return aws_last_error(); }
 
                 /**
@@ -150,10 +155,15 @@ namespace Aws
                  * returns true if the copy succeeded, or false otherwise.
                  */
                 bool SetAlpnList(const char *alpnList) noexcept;
-
+                /**
+                 * Returns true if the instance is in a valid state, false otherwise.
+                 */
                 explicit operator bool() const noexcept { return m_isInit; }
+                /**
+                 * Returns the value of the last aws error encountered by operations on this instance.
+                 */
                 int LastError() const noexcept { return m_lastError; }
-
+                /// @private
                 const aws_tls_connection_options *GetUnderlyingHandle() const noexcept
                 {
                     return &m_tls_connection_options;
