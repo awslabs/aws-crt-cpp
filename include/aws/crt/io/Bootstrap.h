@@ -46,7 +46,7 @@ namespace Aws
               public:
                 /**
                  * elGroup: EventLoopGroup to use.
-                 * 
+                 *
                  * resolver: DNS host resolver to use.
                  */
                 ClientBootstrap(
