@@ -60,11 +60,11 @@ namespace Aws
                 const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions);
 
             /**
-             * Returns true if the instance is in a valid state, false otherwise.
+             * @return true if the instance is in a valid state, false otherwise.
              */
             explicit operator bool() const noexcept { return m_context ? true : false; }
             /**
-             * Returns the value of the last aws error encountered by operations on this instance.
+             * @return the value of the last aws error encountered by operations on this instance.
              */
             int LastError() const noexcept { return m_lastError; }
 
@@ -219,11 +219,11 @@ namespace Aws
              */
             MqttClientConnectionConfig Build() noexcept;
             /**
-             * Returns true if the instance is in a valid state, false otherwise.
+             * @return true if the instance is in a valid state, false otherwise.
              */
             explicit operator bool() const noexcept { return m_isGood; }
             /**
-             * Returns the value of the last aws error encountered by operations on this instance.
+             * @return the value of the last aws error encountered by operations on this instance.
              */
             int LastError() const noexcept { return aws_last_error(); }
 
@@ -249,11 +249,11 @@ namespace Aws
 
             std::shared_ptr<Crt::Mqtt::MqttConnection> NewConnection(const MqttClientConnectionConfig &config) noexcept;
             /**
-             * Returns the value of the last aws error encountered by operations on this instance.
+             * @return the value of the last aws error encountered by operations on this instance.
              */
             int LastError() const noexcept { return m_client.LastError(); }
             /**
-             * Returns true if the instance is in a valid state, false otherwise.
+             * @return true if the instance is in a valid state, false otherwise.
              */
             explicit operator bool() const noexcept { return m_client ? true : false; }
 

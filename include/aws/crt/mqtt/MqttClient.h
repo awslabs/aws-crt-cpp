@@ -125,11 +125,11 @@ namespace Aws
                 MqttConnection &operator=(const MqttConnection &) = delete;
                 MqttConnection &operator=(MqttConnection &&) = delete;
                 /**
-                 * Returns true if the instance is in a valid state, false otherwise.
+                 * @return true if the instance is in a valid state, false otherwise.
                  */
                 operator bool() const noexcept;
                 /**
-                 * Returns the value of the last aws error encountered by operations on this instance.
+                 * @return the value of the last aws error encountered by operations on this instance.
                  */
                 int LastError() const noexcept;
 
@@ -313,11 +313,11 @@ namespace Aws
                 MqttClient &operator=(const MqttClient &) = delete;
                 MqttClient &operator=(MqttClient &&) noexcept;
                 /**
-                 * Returns true if the instance is in a valid state, false otherwise.
+                 * @return true if the instance is in a valid state, false otherwise.
                  */
                 operator bool() const noexcept;
                 /**
-                 * Returns the value of the last aws error encountered by operations on this instance.
+                 * @return the value of the last aws error encountered by operations on this instance.
                  */
                 int LastError() const noexcept;
 

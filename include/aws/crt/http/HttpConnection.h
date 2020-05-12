@@ -392,7 +392,7 @@ namespace Aws
                 std::shared_ptr<HttpClientStream> NewClientStream(const HttpRequestOptions &requestOptions) noexcept;
 
                 /**
-                 * Returns true unless the connection is closed or closing.
+                 * @return true unless the connection is closed or closing.
                  */
                 bool IsOpen() const noexcept;
 
@@ -405,12 +405,12 @@ namespace Aws
                  */
                 void Close() noexcept;
 
-                /*
-                  Return protocol version the connection used
-                */
+                /**
+                 * @return protocol version the connection used
+                 */
                 HttpVersion GetVersion() noexcept;
                 /**
-                 * Returns the value of the last aws error encountered by operations on this instance.
+                 * @return the value of the last aws error encountered by operations on this instance.
                  */
                 int LastError() const noexcept { return m_lastError; }
 
