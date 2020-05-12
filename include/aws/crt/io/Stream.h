@@ -84,13 +84,13 @@ namespace Aws
                 virtual bool ReadImpl(ByteBuf &buffer) noexcept = 0;
 
                 /**
-                 * Returns the current status of the stream.
+                 * @return the current status of the stream.
                  */
                 virtual StreamStatus GetStatusImpl() const noexcept = 0;
 
                 /**
-                 * Returns the total length of the available data for the stream.
-                 * Returns -1 if not available.
+                 * @return the total length of the available data for the stream.
+                 * @return -1 if not available.
                  */
                 virtual int64_t GetLengthImpl() const noexcept = 0;
 

@@ -45,9 +45,8 @@ namespace Aws
             {
               public:
                 /**
-                 * elGroup: EventLoopGroup to use.
-                 *
-                 * resolver: DNS host resolver to use.
+                 * @param elGroup: EventLoopGroup to use.
+                 * @param resolver: DNS host resolver to use.
                  */
                 ClientBootstrap(
                     EventLoopGroup &elGroup,
@@ -60,12 +59,12 @@ namespace Aws
                 ClientBootstrap &operator=(ClientBootstrap &&) = delete;
 
                 /**
-                 * Returns true if the instance is in a valid state, false otherwise.
+                 * @return true if the instance is in a valid state, false otherwise.
                  */
                 operator bool() const noexcept;
 
                 /**
-                 * Returns the value of the last aws error encountered by operations on this instance.
+                 * @return the value of the last aws error encountered by operations on this instance.
                  */
                 int LastError() const noexcept;
 

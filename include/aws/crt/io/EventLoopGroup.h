@@ -42,6 +42,10 @@ namespace Aws
             class AWS_CRT_CPP_API EventLoopGroup final
             {
               public:
+                /**
+                 * @param threadCount: The number of event-loops to create, default will be 0, which will create one for
+                 * each processor on the machine.
+                 */
                 EventLoopGroup(uint16_t threadCount = 0, Allocator *allocator = g_allocator) noexcept;
                 ~EventLoopGroup();
                 EventLoopGroup(const EventLoopGroup &) = delete;
@@ -49,11 +53,11 @@ namespace Aws
                 EventLoopGroup &operator=(const EventLoopGroup &) = delete;
                 EventLoopGroup &operator=(EventLoopGroup &&) noexcept;
                 /**
-                 * Returns true if the instance is in a valid state, false otherwise.
+                 * @return true if the instance is in a valid state, false otherwise.
                  */
                 operator bool() const;
                 /**
-                 * Returns the value of the last aws error encountered by operations on this instance.
+                 * @return the value of the last aws error encountered by operations on this instance.
                  */
                 int LastError() const;
                 /// @private
