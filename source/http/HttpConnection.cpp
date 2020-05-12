@@ -5,6 +5,7 @@
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Bootstrap.h>
+#include <aws/common/string.h>
 
 namespace Aws
 {
@@ -134,6 +135,13 @@ namespace Aws
             HttpClientConnection::HttpClientConnection(aws_http_connection *connection, Allocator *allocator) noexcept
                 : m_connection(connection), m_allocator(allocator), m_lastError(AWS_ERROR_SUCCESS)
             {
+            }
+
+            Aws::Crt::String HttpClientConnection::GetHostAddress()
+            {
+                aws_host_address* hostAddress = aws_http_connection_get_host_address(m_connection);
+
+                return Aws::Crt::String( aws_string_c_str(hostAddress->address) );
             }
 
             std::shared_ptr<HttpClientStream> HttpClientConnection::NewClientStream(

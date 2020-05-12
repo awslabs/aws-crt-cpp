@@ -152,7 +152,7 @@ void MultipartTransferProcessor::ProcessPartRange(
             continue;
         }
 
-        std::shared_ptr<TransferState> transferState = state->PushTransferState(parts[i].partIndex);
+        std::shared_ptr<TransferState> transferState = parts[i].part;
 
         state->ProcessPart(transferState, [this, state, transferState](PartFinishResponse response) {
             if (response == PartFinishResponse::Done)
@@ -181,9 +181,9 @@ void MultipartTransferProcessor::PushQueue(const std::shared_ptr<MultipartTransf
     {
         std::lock_guard<std::mutex> lock(m_partQueueMutex);
 
-        for (uint32_t i = 0; i < state->GetNumParts(); ++i)
+        for (const std::shared_ptr<TransferState> &part : state->GetParts())
         {
-            QueuedPart queuedPart = {state, i};
+            QueuedPart queuedPart = {state, part};
             m_partQueue.push(queuedPart);
         }
     }
@@ -196,7 +196,7 @@ void MultipartTransferProcessor::RepushQueue(const std::shared_ptr<MultipartTran
     {
         std::lock_guard<std::mutex> lock(m_partQueueMutex);
 
-        QueuedPart queuedPart = {state, partIndex};
+        QueuedPart queuedPart = {state, state->GetParts()[partIndex]};
         m_partQueue.push(queuedPart);
     }
 

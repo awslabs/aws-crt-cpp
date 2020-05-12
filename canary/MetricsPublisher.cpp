@@ -54,6 +54,7 @@ namespace
     {
         RequestId,
         AmzId2,
+        HostAddress,
         StartTime,
         EndTime,
         TotalTime,
@@ -477,6 +478,7 @@ void MetricsPublisher::GeneratePerStreamCSVRow(
         {
             streamStringValues[(size_t)CSVColumnString::RequestId] = transferState->GetAmzRequestId();
             streamStringValues[(size_t)CSVColumnString::AmzId2] = transferState->GetAmzId2();
+            streamStringValues[(size_t)CSVColumnString::HostAddress] = transferState->GetHostAddress();
         }
     }
 
@@ -545,7 +547,7 @@ void MetricsPublisher::WritePerStreamCSVRowHeader(
     uint64_t timestampStartSeconds,
     uint64_t timestampEndSeconds)
 {
-    *csvContents << "Transfer Id,x-amz-request-id,x-amz-id-2,Success,Failed,Start Time,End Time,Total Time,Average "
+    *csvContents << "Transfer Id,x-amz-request-id,x-amz-id-2,Host Address,Success,Failed,Start Time,End Time,Total Time,Average "
                     "from Start Time to End Time";
 
     uint64_t numSeconds = timestampEndSeconds - timestampStartSeconds;
@@ -579,6 +581,7 @@ void MetricsPublisher::WritePerStreamCSVRow(
 
     *csvContents << stringValues[(size_t)CSVColumnString::RequestId] << ","
                  << stringValues[(size_t)CSVColumnString::AmzId2] << ","
+                 << stringValues[(size_t)CSVColumnString::HostAddress] << ","
                  << (uint64_t)numericValues[(size_t)CSVColumnNumeric::Success] << ","
                  << (uint64_t)numericValues[(size_t)CSVColumnNumeric::Failed] << ","
                  << stringValues[(size_t)CSVColumnString::StartTime] << ","

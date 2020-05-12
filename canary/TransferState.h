@@ -29,11 +29,13 @@ class TransferState : public std::enable_shared_from_this<TransferState>
 {
   public:
     TransferState();
-    TransferState(const std::shared_ptr<MetricsPublisher> &publisher);
-    TransferState(const std::shared_ptr<MetricsPublisher> &publisher, int32_t partIndex);
+    TransferState(int32_t partIndex);
 
     int32_t GetPartIndex() const { return m_partIndex; }
     int32_t GetPartNumber() const { return m_partIndex + 1; }
+
+    void SetHostAddress(const Aws::Crt::String &hostAddress) { m_hostAddress = hostAddress; }
+    const Aws::Crt::String &GetHostAddress() { return m_hostAddress; }
 
     /*
      * Flags this is a success or failure, which will be reported as a metric on a flush
@@ -65,13 +67,13 @@ class TransferState : public std::enable_shared_from_this<TransferState>
      * Send upload metrics to the metrics publisher and clear our local copy.
      * Also reports success or failure metric during this time.
      */
-    void FlushDataUpMetrics();
+    void FlushDataUpMetrics(const std::shared_ptr<MetricsPublisher> &publisher);
 
     /*
      * Send download metrics to the metrics publisher and clear are local copy.
      * Also reports success or failure metric during this time.
      */
-    void FlushDataDownMetrics();
+    void FlushDataDownMetrics(const std::shared_ptr<MetricsPublisher> &publisher);
 
     const Aws::Crt::String &GetAmzRequestId() const { return m_amzRequestId; }
     const Aws::Crt::String &GetAmzId2() const { return m_amzId2; }
@@ -87,6 +89,7 @@ class TransferState : public std::enable_shared_from_this<TransferState>
 
     Aws::Crt::String m_amzRequestId;
     Aws::Crt::String m_amzId2;
+    Aws::Crt::String m_hostAddress;
     Aws::Crt::Vector<Metric> m_uploadMetrics;
     Aws::Crt::Vector<Metric> m_downloadMetrics;
     std::weak_ptr<MetricsPublisher> m_publisher;
@@ -107,5 +110,5 @@ class TransferState : public std::enable_shared_from_this<TransferState>
 
     void PushDataMetric(Aws::Crt::Vector<Metric> &metrics, MetricName metricName, double dataUsed);
 
-    void FlushMetricsVector(Aws::Crt::Vector<Metric> &metrics);
+    void FlushMetricsVector(const std::shared_ptr<MetricsPublisher> &publisher, Aws::Crt::Vector<Metric> &metrics);
 };

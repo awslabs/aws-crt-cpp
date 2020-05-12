@@ -61,8 +61,8 @@ void MeasureTransferRate::PerformMeasurement(
         // to use during that transfer.
         for (uint32_t i = 0; i < numTransfers; ++i)
         {
-            const String &address = m_canaryApp.transport->GetAddressForTransfer(i);
-            m_canaryApp.WriteToChildProcess(i, addressKey.c_str(), address.c_str());
+            // const String &address = transport->GetAddressForTransfer(i);
+            // m_canaryApp.WriteToChildProcess(i, addressKey.c_str(), address.c_str());
         }
 
         // Read the "finished" key/value from each child process.  This will cause
@@ -104,7 +104,7 @@ void MeasureTransferRate::PerformMeasurement(
     std::atomic<uint32_t> numCompleted(0);
     std::atomic<uint32_t> numInProgress(0);
 
-    uint64_t counter = INT64_MAX - (int64_t)m_canaryApp.GetOptions().childProcessIndex;
+    uint64_t counter = INT64_MAX - 1 - (int64_t)m_canaryApp.GetOptions().childProcessIndex;
 
     for (uint32_t i = 0; i < numTransfers; ++i)
     {
@@ -218,8 +218,7 @@ void MeasureTransferRate::MeasureHttpTransfer()
             String &&key,
             const std::shared_ptr<S3ObjectTransport> &,
             NotifyTransferFinished &&notifyTransferFinished) {
-            std::shared_ptr<TransferState> transferState =
-                MakeShared<TransferState>(g_allocator, m_canaryApp.GetMetricsPublisher());
+            std::shared_ptr<TransferState> transferState = MakeShared<TransferState>(g_allocator);
 
             transferState->InitDataDownMetric();
 
@@ -240,7 +239,7 @@ void MeasureTransferRate::MeasureHttpTransfer()
             };
 
             requestOptions.onStreamComplete =
-                [keyPath, transferState, notifyTransferFinished](Http::HttpStream &stream, int error) {
+                [this, keyPath, transferState, notifyTransferFinished](Http::HttpStream &stream, int error) {
                     int errorCode = error;
 
                     if (errorCode == AWS_ERROR_SUCCESS)
@@ -271,7 +270,7 @@ void MeasureTransferRate::MeasureHttpTransfer()
                     notifyTransferFinished(errorCode);
 
                     transferState->SetTransferSuccess(errorCode == AWS_ERROR_SUCCESS);
-                    transferState->FlushDataDownMetrics();
+                    transferState->FlushDataDownMetrics(m_canaryApp.GetMetricsPublisher());
                 };
 
             connManager->AcquireConnection([requestOptions, notifyTransferFinished, request](
@@ -317,8 +316,7 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
     {
         for (uint32_t i = 0; i < m_canaryApp.GetOptions().numUpTransfers; ++i)
         {
-            std::shared_ptr<TransferState> transferState =
-                MakeShared<TransferState>(g_allocator, m_canaryApp.GetMetricsPublisher());
+            std::shared_ptr<TransferState> transferState = MakeShared<TransferState>(g_allocator);
 
             uploads.push_back(transferState);
         }
@@ -352,7 +350,7 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
 
         for (uint32_t i = 0; i < options.numUpTransfers; ++i)
         {
-            uploads[i]->FlushDataUpMetrics();
+            uploads[i]->FlushDataUpMetrics(m_canaryApp.GetMetricsPublisher());
         }
 
         m_canaryApp.GetMetricsPublisher()->FlushMetrics();
@@ -360,8 +358,7 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
 
     for (uint32_t i = 0; i < m_canaryApp.GetOptions().numDownTransfers; ++i)
     {
-        std::shared_ptr<TransferState> transferState =
-            MakeShared<TransferState>(g_allocator, m_canaryApp.GetMetricsPublisher());
+        std::shared_ptr<TransferState> transferState = MakeShared<TransferState>(g_allocator);
 
         downloads.emplace_back(transferState);
     }
@@ -390,7 +387,7 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
 
     for (uint32_t i = 0; i < m_canaryApp.GetOptions().numDownTransfers; ++i)
     {
-        downloads[i]->FlushDataDownMetrics();
+        downloads[i]->FlushDataDownMetrics(m_canaryApp.GetMetricsPublisher());
     }
 
     m_canaryApp.GetMetricsPublisher()->FlushMetrics();
@@ -412,7 +409,7 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
             "multiPartObjectUp-",
             options.numUpTransfers,
             options.numUpConcurrentTransfers,
-            options.GetNumUpConcurrentPartTransfers(),
+            options.numUpConcurrentTransfers,
             options.GetMultiPartNumTransfersPerAddress(),
             0,
             m_canaryApp.GetUploadTransport(),
@@ -455,7 +452,7 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
         {
             for (const std::shared_ptr<TransferState> &part : uploadState->GetParts())
             {
-                part->FlushDataUpMetrics();
+                part->FlushDataUpMetrics(m_canaryApp.GetMetricsPublisher());
             }
         }
 
@@ -469,7 +466,7 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
         "multiPartObjectDown-",
         options.numDownTransfers,
         options.numDownConcurrentTransfers,
-        options.GetNumDownConcurrentPartTransfers(),
+        options.numDownConcurrentTransfers,
         options.GetMultiPartNumTransfersPerAddress(),
         (uint32_t)MeasurementFlags::NoFileSuffix,
         m_canaryApp.GetDownloadTransport(),
@@ -500,7 +497,7 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
     {
         for (const std::shared_ptr<TransferState> &part : downloadState->GetParts())
         {
-            part->FlushDataDownMetrics();
+            part->FlushDataDownMetrics(m_canaryApp.GetMetricsPublisher());
         }
     }
 

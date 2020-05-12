@@ -47,10 +47,10 @@ CanaryAppOptions::CanaryAppOptions() noexcept
       bucketName("aws-crt-canary-bucket"), readFromParentPipe(-1), writeToParentPipe(-1), numUpTransfers(1),
       numUpConcurrentTransfers(0), numDownTransfers(1), numDownConcurrentTransfers(0), childProcessIndex(0),
       numTransfersPerAddress(10), singlePartObjectSize(5ULL * 1024ULL * 1024ULL * 1024ULL),
-      multiPartObjectPartSize(1ULL * 1024ULL * 1024ULL * 1024ULL), multiPartObjectNumParts(5),
-      measureSinglePartTransfer(false), measureMultiPartTransfer(false), measureHttpTransfer(false),
-      usingNumaControl(false), downloadOnly(false), sendEncrypted(false), loggingEnabled(false), rehydrateBackup(false),
-      forkModeEnabled(false), isParentProcess(false), isChildProcess(false)
+      multiPartObjectPartSize(25LL * 1024ULL * 1024ULL), multiPartObjectNumParts(205), targetThroughputGbps(90.0), measureSinglePartTransfer(false),
+      measureMultiPartTransfer(false), measureHttpTransfer(false), usingNumaControl(false), downloadOnly(false),
+      sendEncrypted(false), loggingEnabled(false), rehydrateBackup(false), forkModeEnabled(false),
+      isParentProcess(false), isChildProcess(false)
 {
 }
 
@@ -98,9 +98,16 @@ CanaryApp::CanaryApp(CanaryAppOptions &&inOptions) noexcept
     Io::TlsContextOptions tlsContextOptions = Io::TlsContextOptions::InitDefaultClient(g_allocator);
     m_tlsContext = Io::TlsContext(tlsContextOptions, Io::TlsMode::CLIENT, g_allocator);
 
+    /*
+    double targetThroughputBytesPerSecond = m_options.targetThroughputGbps * 1000.0 * 1000.0 * 1000.0 / 8.0;
+    double idealPartTransferTime = ((double)m_options.multiPartObjectPartSize / targetThroughputBytesPerSecond);
+    double partsPerSecond = 1.0 / idealPartTransferTime;
+    */
+    uint64_t perConnThroughput = m_options.multiPartObjectPartSize; //(uint64_t)(partsPerSecond * m_options.multiPartObjectPartSize);
+
     m_publisher = MakeShared<MetricsPublisher>(g_allocator, *this, MetricNamespace);
-    m_uploadTransport = MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.bucketName.c_str());
-    m_downloadTransport = MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.bucketName.c_str());
+    m_uploadTransport = MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.bucketName.c_str(), perConnThroughput); //m_options.targetThroughputGbps / (double)m_options.numUpConcurrentTransfers);
+    m_downloadTransport = MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.bucketName.c_str(), perConnThroughput); //m_options.targetThroughputGbps / (double)m_options.numDownConcurrentTransfers);
     m_measureTransferRate = MakeShared<MeasureTransferRate>(g_allocator, *this);
 }
 

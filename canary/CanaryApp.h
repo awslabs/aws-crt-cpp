@@ -63,6 +63,8 @@ struct CanaryAppOptions
     uint64_t multiPartObjectPartSize;
     uint32_t multiPartObjectNumParts;
 
+    double targetThroughputGbps;
+
     uint32_t measureSinglePartTransfer : 1;
     uint32_t measureMultiPartTransfer : 1;
     uint32_t measureHttpTransfer : 1;
@@ -81,7 +83,7 @@ struct CanaryAppOptions
 
     uint32_t GetNumDownConcurrentPartTransfers() const { return numDownConcurrentTransfers * multiPartObjectNumParts; }
 
-    uint32_t GetMultiPartNumTransfersPerAddress() const { return numTransfersPerAddress * multiPartObjectNumParts; }
+    uint32_t GetMultiPartNumTransfersPerAddress() const { return numTransfersPerAddress; /* multiPartObjectNumParts;*/ }
 };
 
 #ifndef WIN32

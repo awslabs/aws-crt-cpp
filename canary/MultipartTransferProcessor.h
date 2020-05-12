@@ -62,7 +62,7 @@ class MultipartTransferProcessor
     struct QueuedPart
     {
         std::shared_ptr<MultipartTransferState> state;
-        uint32_t partIndex;
+        std::shared_ptr<TransferState> part;
     };
 
     struct ProcessPartRangeTaskArgs

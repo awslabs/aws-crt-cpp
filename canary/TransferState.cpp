@@ -33,13 +33,10 @@ uint64_t TransferState::GetNextTransferId()
     return s_nextTransferId.fetch_add(1) + 1;
 }
 
-TransferState::TransferState() : TransferState(nullptr) {}
+TransferState::TransferState() : TransferState(-1) {}
 
-TransferState::TransferState(const std::shared_ptr<MetricsPublisher> &publisher) : TransferState(publisher, -1) {}
-
-TransferState::TransferState(const std::shared_ptr<MetricsPublisher> &publisher, int32_t partIndex)
-    : m_partIndex(partIndex), m_transferId(TransferState::GetNextTransferId()), m_transferSuccess(false),
-      m_publisher(publisher)
+TransferState::TransferState(int32_t partIndex)
+    : m_partIndex(partIndex), m_transferId(TransferState::GetNextTransferId()), m_transferSuccess(false)
 {
 }
 
@@ -195,11 +192,9 @@ void TransferState::PushDataMetric(Vector<Metric> &metrics, MetricName metricNam
     }
 }
 
-void TransferState::FlushMetricsVector(Vector<Metric> &metrics)
+void TransferState::FlushMetricsVector(const std::shared_ptr<MetricsPublisher> &publisher, Vector<Metric> &metrics)
 {
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Adding %d data points", (uint32_t)metrics.size());
-
-    std::shared_ptr<MetricsPublisher> publisher = m_publisher.lock();
 
     AWS_FATAL_ASSERT(publisher != nullptr);
 
@@ -271,12 +266,12 @@ void TransferState::AddDataDownMetric(uint64_t dataDown)
     PushDataMetric(m_downloadMetrics, MetricName::BytesDown, (double)dataDown);
 }
 
-void TransferState::FlushDataUpMetrics()
+void TransferState::FlushDataUpMetrics(const std::shared_ptr<MetricsPublisher> &publisher)
 {
-    FlushMetricsVector(m_uploadMetrics);
+    FlushMetricsVector(publisher, m_uploadMetrics);
 }
 
-void TransferState::FlushDataDownMetrics()
+void TransferState::FlushDataDownMetrics(const std::shared_ptr<MetricsPublisher> &publisher)
 {
-    FlushMetricsVector(m_downloadMetrics);
+    FlushMetricsVector(publisher, m_downloadMetrics);
 }
