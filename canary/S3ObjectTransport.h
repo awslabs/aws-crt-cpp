@@ -105,23 +105,6 @@ class S3ObjectTransport
      */
     void WarmDNSCache(uint32_t numTransfers, uint32_t transfersPerAddress);
 
-    /*
-     * Used to spawn the required connection managers for each resolve DNS address.
-     */
-    void SpawnConnectionManagers();
-
-    /*
-     * Throw away all connection manager state.
-     */
-    void PurgeConnectionManagers();
-
-    /*
-     * Pass in address that be used in the address cache.  Currently only supports one
-     * address.  This is used by child processes in fork mode to enable them to use
-     * the resolved address passed by the parent process.
-     */
-    void SeedAddressCache(const Aws::Crt::String &address);
-
   private:
     using SignedRequestCallback = std::function<void(
         const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &conn,
@@ -148,10 +131,6 @@ class S3ObjectTransport
     uint64_t m_minThroughputBytes;
 
     void EmitS3AddressCountMetric(size_t addressCount);
-
-    void RecordConnectionFailure(const Aws::Crt::String &connAddrString);
-
-    void AcquireConnManager(const AcquireConnManagerCallback &callback);
 
     void MakeSignedRequest(
         const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,

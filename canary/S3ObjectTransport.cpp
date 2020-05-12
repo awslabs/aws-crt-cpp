@@ -137,44 +137,6 @@ void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers, uint32_t transfersPe
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "DNS cache warmed.");
 }
 
-void S3ObjectTransport::RecordConnectionFailure(const Aws::Crt::String &connAddrString)
-{
-    if(!ThroughputMonitoringEnabled)
-    {
-        return;
-    }
-
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Recording connection failure for address %s", connAddrString.c_str());
-
-    std::cout << "Connection failure for address " << connAddrString << std::endl;
-
-    if (connAddrString.empty())
-    {
-        return;
-    }
-
-    aws_host_address hostAddress;
-    AWS_ZERO_STRUCT(hostAddress);
-    hostAddress.allocator = g_allocator;
-    hostAddress.record_type = AWS_ADDRESS_RECORD_TYPE_A;
-    hostAddress.host = aws_string_new_from_array(g_allocator, (uint8_t *)m_endpoint.c_str(), m_endpoint.length());
-    hostAddress.address =
-        aws_string_new_from_array(g_allocator, (uint8_t *)connAddrString.c_str(), connAddrString.length());
-
-    aws_host_resolver *hostResolverHandle = m_canaryApp.GetDefaultHostResolver().GetUnderlyingHandle();
-    aws_host_resolver_record_connection_failure(hostResolverHandle, &hostAddress);
-
-    aws_host_address_clean_up(&hostAddress);
-}
-
-void S3ObjectTransport::SeedAddressCache(const String &address) {}
-
-void S3ObjectTransport::PurgeConnectionManagers()
-{
-}
-
-void S3ObjectTransport::SpawnConnectionManagers() {}
-
 void S3ObjectTransport::MakeSignedRequest(
     const std::shared_ptr<Http::HttpRequest> &request,
     const Http::HttpRequestOptions &requestOptions,
@@ -341,7 +303,7 @@ void S3ObjectTransport::PutObject(
         }
     };
     requestOptions.onStreamComplete =
-        [this, transferState, keyPath, etag, finishedCallback](Http::HttpStream &stream, int errorCode) {
+        [transferState, keyPath, etag, finishedCallback](Http::HttpStream &stream, int errorCode) {
             if (errorCode == AWS_ERROR_SUCCESS)
             {
                 if (stream.GetResponseStatusCode() != 200)
@@ -365,11 +327,6 @@ void S3ObjectTransport::PutObject(
                     "PutObject finished for path %s with error '%s'",
                     keyPath.c_str(),
                     aws_error_debug_str(errorCode));
-
-                if(transferState != nullptr)
-                {
-                    RecordConnectionFailure(transferState->GetHostAddress());
-                }
             }
 
             if (transferState != nullptr)
@@ -456,7 +413,7 @@ void S3ObjectTransport::GetObject(
         }
     };
     requestOptions.onStreamComplete =
-        [this, keyPath, partNumber, transferState, getObjectFinished](Http::HttpStream &stream, int error) {
+        [keyPath, partNumber, transferState, getObjectFinished](Http::HttpStream &stream, int error) {
             int errorCode = error;
 
             if (errorCode == AWS_ERROR_SUCCESS)
@@ -489,11 +446,6 @@ void S3ObjectTransport::GetObject(
                     "GetObject finished for path %s with error '%s'",
                     keyPath.c_str(),
                     aws_error_debug_str(errorCode));
-
-                if(transferState != nullptr)
-                {
-                    RecordConnectionFailure(transferState->GetHostAddress());
-                }
             }
 
             getObjectFinished(errorCode);

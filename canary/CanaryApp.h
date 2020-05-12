@@ -36,11 +36,8 @@ struct CanaryAppOptions
 {
     CanaryAppOptions() noexcept;
 
-    // These are currently std::strings due to fork mode needing
-    // to fork before the apiHandle is ready, otherwise systems may not
-    // be set up correctly in that subprocess.  Trying to use Aws::Crt::Strings
-    // before the ApiHandle is ready has awkward side effects with g_allocator
-    // and can cause fatal asserts.
+    // TODO: with fork mode gone, these should be convertable
+    // to Aws::Crt::Strings, possibly with a small refactor.
     std::string platformName;
     std::string toolName;
     std::string instanceType;
@@ -50,13 +47,10 @@ struct CanaryAppOptions
     std::string bucketName;
     std::string downloadObjectName;
 
-    int32_t readFromParentPipe;
-    int32_t writeToParentPipe;
     uint32_t numUpTransfers;
     uint32_t numUpConcurrentTransfers;
     uint32_t numDownTransfers;
     uint32_t numDownConcurrentTransfers;
-    uint32_t childProcessIndex;
     uint32_t numTransfersPerAddress;
 
     uint64_t singlePartObjectSize;
@@ -73,35 +67,11 @@ struct CanaryAppOptions
     uint32_t sendEncrypted : 1;
     uint32_t loggingEnabled : 1;
     uint32_t rehydrateBackup : 1;
-    uint32_t forkModeEnabled : 1;
-    uint32_t isParentProcess : 1;
-    uint32_t isChildProcess : 1;
 
     uint64_t GetMultiPartObjectSize() const { return multiPartObjectPartSize * (uint64_t)multiPartObjectNumParts; }
 
-    uint32_t GetNumUpConcurrentPartTransfers() const { return numUpConcurrentTransfers * multiPartObjectNumParts; }
-
-    uint32_t GetNumDownConcurrentPartTransfers() const { return numDownConcurrentTransfers * multiPartObjectNumParts; }
-
-    uint32_t GetMultiPartNumTransfersPerAddress() const { return numTransfersPerAddress; /* multiPartObjectNumParts;*/ }
+    uint32_t GetMultiPartNumTransfersPerAddress() const { return numTransfersPerAddress; }
 };
-
-#ifndef WIN32
-/*
- * Represents a child process in fork mode.
- */
-struct CanaryAppChildProcess
-{
-    CanaryAppChildProcess() noexcept;
-    CanaryAppChildProcess(pid_t pid, int32_t readPipe, int32_t writePipe) noexcept;
-    pid_t pid;
-
-    int32_t readFromChildPipe;
-    int32_t writeToChildPipe;
-
-    std::map<Aws::Crt::String, Aws::Crt::String> valuesFromChild;
-};
-#endif
 
 /*
  * Represents the running instance of the canary, and holds onto a lot of state
@@ -111,9 +81,6 @@ class CanaryApp
 {
   public:
     CanaryApp(CanaryAppOptions &&options) noexcept;
-#ifndef WIN32
-    CanaryApp(CanaryAppOptions &&options, std::vector<CanaryAppChildProcess> &&children) noexcept;
-#endif
 
     void Run();
 
@@ -130,26 +97,6 @@ class CanaryApp
     const std::shared_ptr<S3ObjectTransport> &GetDownloadTransport() const { return m_downloadTransport; }
     const std::shared_ptr<MeasureTransferRate> &GetMeasureTransferRate() const { return m_measureTransferRate; }
 
-    /*
-     * Write a key-value pair to a child process.
-     */
-
-    /*
-     * Write a key-value pair to the parent process.
-     */
-    void WriteToChildProcess(uint32_t index, const char *key, const char *value);
-    void WriteToParentProcess(const char *key, const char *value);
-
-    /*
-     * Read a key-value pair from a child process.
-     */
-    Aws::Crt::String ReadFromChildProcess(uint32_t i, const char *key);
-
-    /*
-     * Read a key-value pair from the parent process.
-     */
-    Aws::Crt::String ReadFromParentProcess(const char *key);
-
   private:
     CanaryAppOptions m_options;
 
@@ -165,17 +112,4 @@ class CanaryApp
     std::shared_ptr<S3ObjectTransport> m_uploadTransport;
     std::shared_ptr<S3ObjectTransport> m_downloadTransport;
     std::shared_ptr<MeasureTransferRate> m_measureTransferRate;
-
-#ifndef WIN32
-    std::vector<CanaryAppChildProcess> children;
-    std::map<Aws::Crt::String, Aws::Crt::String> valuesFromParent;
-
-    void WriteKeyValueToPipe(const char *key, const char *value, uint32_t writePipe);
-
-    Aws::Crt::String ReadValueFromPipe(
-        const char *key,
-        int32_t readPipe,
-        std::map<Aws::Crt::String, Aws::Crt::String> &keyValuePairs);
-    std::pair<Aws::Crt::String, Aws::Crt::String> ReadNextKeyValuePairFromPipe(int32_t readPipe);
-#endif
 };

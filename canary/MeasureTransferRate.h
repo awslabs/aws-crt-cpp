@@ -74,12 +74,9 @@ class MeasureTransferRate
      * Performs a caller defined transfer.
      *
      *    filenamePrefix: Filename to be used during the transfer operation.  Will have an id appended to it unless
-     * NoFileSuffix is a specified flag. keyPrefix: Used only for fork mode, must be unique from other values passed
-     * into PerformMeasurment in the same execution.  Key-value pairs passed between child and parent processes will
-     * have this value in their key to differentiate them from other key-values used by other PerformMeasurement calls.
-     *    numTransfes: Number of total times to perform the transferFunction.
+     * NoFileSuffix is a specified flag.
+     *    numTransfers: Number of total times to perform the transferFunction.
      *    numConcurentTransfers: Maximum number of transfers that are active at any given time.
-     *    numTransfersToDNSResolve: Number of transfers to use when calculating how many DNS resolves to do.
      *    flags: Optional flags defined by MeasurementFlags enum that can alter the exeuction of the method.
      *    transport: S3ObjectTransport that will be used during the transfer.  This is passed in so that the relevant
      * DNS cache can be warmed in relation to the number of concurrent transfers happening. transferFunction: Defines
@@ -87,10 +84,8 @@ class MeasureTransferRate
      */
     void PerformMeasurement(
         const char *filenamePrefix,
-        const char *keyPrefix,
         uint32_t numTransfers,
         uint32_t numConcurrentTransfers,
-        uint32_t numTransfersToDNSResolve,
         uint32_t numTransfersPerAddress,
         uint32_t flags,
         const std::shared_ptr<S3ObjectTransport> &transport,

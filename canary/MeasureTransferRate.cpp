@@ -37,63 +37,16 @@ MeasureTransferRate::~MeasureTransferRate() {}
 
 void MeasureTransferRate::PerformMeasurement(
     const char *filenamePrefix,
-    const char *keyPrefix,
     uint32_t numTransfers,
     uint32_t numConcurrentTransfers,
-    uint32_t numTransfersToDNSResolve,
     uint32_t numTransfersPerAddress,
     uint32_t flags,
     const std::shared_ptr<S3ObjectTransport> &transport,
     TransferFunction &&transferFunction)
 {
-    String addressKey = String() + keyPrefix + "address";
-    String finishedKey = String() + keyPrefix + "finished";
-
-    // If this is true, then we are in forking mode, and are currently in the parent process.
-    if (m_canaryApp.GetOptions().isParentProcess)
+    if ((flags & (uint32_t)MeasurementFlags::DontWarmDNSCache) == 0)
     {
-        if ((flags & (uint32_t)MeasurementFlags::DontWarmDNSCache) == 0)
-        {
-            transport->WarmDNSCache(numTransfersToDNSResolve, numTransfersPerAddress);
-        }
-
-        // Each child process performs a transfer, so provide each with a resolve address
-        // to use during that transfer.
-        for (uint32_t i = 0; i < numTransfers; ++i)
-        {
-            // const String &address = transport->GetAddressForTransfer(i);
-            // m_canaryApp.WriteToChildProcess(i, addressKey.c_str(), address.c_str());
-        }
-
-        // Read the "finished" key/value from each child process.  This will cause
-        // the parent process to block until all child process transfers have completed.
-        for (uint32_t i = 0; i < numTransfers; ++i)
-        {
-            m_canaryApp.ReadFromChildProcess(i, finishedKey.c_str());
-        }
-
-        return;
-    }
-    // If this is true, then we are in forking mode, and are currently in the child process.
-    else if (m_canaryApp.GetOptions().isChildProcess)
-    {
-        // Grab the address to use from the parent process.
-        String address = m_canaryApp.ReadFromParentProcess(addressKey.c_str());
-
-        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Child got back address %s", address.c_str());
-
-        m_canaryApp.transport->SeedAddressCache(address);
-        m_canaryApp.transport->SpawnConnectionManagers();
-    }
-    // Otherwise, we are not in forking mode, and all transfers will be done from this process.
-    else
-    {
-        if ((flags & (uint32_t)MeasurementFlags::DontWarmDNSCache) == 0)
-        {
-            transport->WarmDNSCache(numTransfersToDNSResolve, numTransfersPerAddress);
-        }
-
-        m_canaryApp.transport->SpawnConnectionManagers();
+        transport->WarmDNSCache(numConcurrentTransfers, numTransfersPerAddress);
     }
 
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting performance measurement.");
@@ -104,7 +57,7 @@ void MeasureTransferRate::PerformMeasurement(
     std::atomic<uint32_t> numCompleted(0);
     std::atomic<uint32_t> numInProgress(0);
 
-    uint64_t counter = INT64_MAX - 1 - (int64_t)m_canaryApp.GetOptions().childProcessIndex;
+    uint64_t counter = INT64_MAX - 1;
 
     for (uint32_t i = 0; i < numTransfers; ++i)
     {
@@ -164,15 +117,6 @@ void MeasureTransferRate::PerformMeasurement(
     std::unique_lock<std::mutex> guard(transferCompletedMutex);
     transferCompletedSignal.wait(
         guard, [&numCompleted, numTransfers]() { return numCompleted.load() >= numTransfers; });
-
-    // If this is true, then we are in fork mode, and are executing in a child process,
-    // so report finished to the parent process.
-    if (m_canaryApp.GetOptions().isChildProcess)
-    {
-        m_canaryApp.WriteToParentProcess(finishedKey.c_str(), "done");
-    }
-
-    transport->PurgeConnectionManagers();
 }
 
 void MeasureTransferRate::MeasureHttpTransfer()
@@ -206,10 +150,8 @@ void MeasureTransferRate::MeasureHttpTransfer()
 
     PerformMeasurement(
         m_canaryApp.GetOptions().downloadObjectName.c_str(),
-        "httpTransferDown-",
         m_canaryApp.GetOptions().numDownTransfers,
         m_canaryApp.GetOptions().numDownConcurrentTransfers,
-        0,
         0,
         (uint32_t)MeasurementFlags::DontWarmDNSCache | (uint32_t)MeasurementFlags::NoFileSuffix,
         nullptr,
@@ -323,9 +265,7 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
 
         PerformMeasurement(
             "crt-canary-obj-single-part-",
-            "singlePartObjectUp-",
             options.numUpTransfers,
-            options.numUpConcurrentTransfers,
             options.numUpConcurrentTransfers,
             options.numTransfersPerAddress,
             0,
@@ -365,9 +305,7 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
 
     PerformMeasurement(
         m_canaryApp.GetOptions().downloadObjectName.c_str(),
-        "singlePartObjectDown-",
         m_canaryApp.GetOptions().numDownTransfers,
-        m_canaryApp.GetOptions().numDownConcurrentTransfers,
         m_canaryApp.GetOptions().numDownConcurrentTransfers,
         m_canaryApp.GetOptions().numTransfersPerAddress,
         (uint32_t)MeasurementFlags::NoFileSuffix,
@@ -406,9 +344,7 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
 
         PerformMeasurement(
             filenamePrefix,
-            "multiPartObjectUp-",
             options.numUpTransfers,
-            options.numUpConcurrentTransfers,
             options.numUpConcurrentTransfers,
             options.GetMultiPartNumTransfersPerAddress(),
             0,
@@ -463,9 +399,7 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
 
     PerformMeasurement(
         options.downloadObjectName.c_str(),
-        "multiPartObjectDown-",
         options.numDownTransfers,
-        options.numDownConcurrentTransfers,
         options.numDownConcurrentTransfers,
         options.GetMultiPartNumTransfersPerAddress(),
         (uint32_t)MeasurementFlags::NoFileSuffix,

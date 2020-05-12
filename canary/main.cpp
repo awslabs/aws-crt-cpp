@@ -77,7 +77,6 @@ int main(int argc, char *argv[])
         MeasureHttpTransfer,
         Logging,
         SendEncrypted,
-        Fork,
         NumTransfers,
         NumConcurrentTransfers,
         DownloadOnly,
@@ -96,7 +95,6 @@ int main(int argc, char *argv[])
                                       {"measureHttpTransfer", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'h'},
                                       {"logging", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'l'},
                                       {"sendEncrypted", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'e'},
-                                      {"fork", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'f'},
                                       {"numTransfers", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'n'},
                                       {"numConcurrentTransfers", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'c'},
                                       {"downloadOnly", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'd'},
@@ -105,7 +103,7 @@ int main(int argc, char *argv[])
                                       {"downloadObjectName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'o'},
                                       {"region", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'r'}};
 
-    const char *optstring = "t:i:smh:lefn:c:du:b:o:r:";
+    const char *optstring = "t:i:smh:len:c:du:b:o:r:";
 
     CanaryAppOptions canaryAppOptions;
 
@@ -155,13 +153,6 @@ int main(int argc, char *argv[])
             case CLIOption::SendEncrypted:
                 canaryAppOptions.sendEncrypted = true;
                 break;
-            case CLIOption::Fork:
-#ifndef WIN32
-                canaryAppOptions.forkModeEnabled = true;
-#else
-                AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Fork mode not supported on Windows.");
-#endif
-                break;
             case CLIOption::NumTransfers:
                 ParseTransferPair(aws_cli_optarg, canaryAppOptions.numUpTransfers, canaryAppOptions.numDownTransfers);
                 break;
@@ -198,97 +189,8 @@ int main(int argc, char *argv[])
     ClampConcurrentTransfers(canaryAppOptions.numUpTransfers, canaryAppOptions.numUpConcurrentTransfers);
     ClampConcurrentTransfers(canaryAppOptions.numDownTransfers, canaryAppOptions.numDownConcurrentTransfers);
 
-#ifndef WIN32
-    std::vector<CanaryAppChildProcess> children;
-
-    // For fork mode, create a child process per transfer, setting up pipes for communication along the way.
-    if (canaryAppOptions.forkModeEnabled)
-    {
-        canaryAppOptions.isParentProcess = true;
-
-        uint32_t maxNumTransfers = std::max(canaryAppOptions.numUpTransfers, canaryAppOptions.numDownTransfers);
-
-        for (uint32_t i = 0; i < maxNumTransfers; ++i)
-        {
-            int32_t pipeParentToChild[2];
-            int32_t pipeChildToParent[2];
-
-            if (pipe(pipeParentToChild) == -1)
-            {
-                AWS_LOGF_FATAL(AWS_LS_CRT_CPP_CANARY, "Could not create pipe from parent process to child process.");
-                exit(EXIT_FAILURE);
-            }
-
-            if (pipe(pipeChildToParent) == -1)
-            {
-                AWS_LOGF_FATAL(AWS_LS_CRT_CPP_CANARY, "Could not create pipe from child process to parent process.");
-                exit(EXIT_FAILURE);
-            }
-
-            pid_t childPid = fork();
-
-            if (childPid == 0)
-            {
-                canaryAppOptions.isParentProcess = false;
-                canaryAppOptions.isChildProcess = true;
-                canaryAppOptions.readFromParentPipe = pipeParentToChild[0];
-                canaryAppOptions.writeToParentPipe = pipeChildToParent[1];
-                canaryAppOptions.childProcessIndex = i;
-                canaryAppOptions.numUpTransfers = 1;
-                canaryAppOptions.numUpConcurrentTransfers = 1;
-                canaryAppOptions.numDownTransfers = 1;
-                canaryAppOptions.numDownConcurrentTransfers = 1;
-                break;
-            }
-            else
-            {
-                if (childPid == -1)
-                {
-                    AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Error creating child process.");
-
-                    close(pipeChildToParent[0]);
-                    close(pipeChildToParent[1]);
-                    close(pipeParentToChild[0]);
-                    close(pipeParentToChild[1]);
-                }
-                else
-                {
-                    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Created child process for transfer %d", i);
-
-                    children.emplace_back(childPid, pipeChildToParent[0], pipeParentToChild[1]);
-                }
-            }
-        }
-    }
-#endif
-
-#ifdef WIN32
     CanaryApp canaryApp(std::move(canaryAppOptions));
-#else
-    CanaryApp canaryApp(std::move(canaryAppOptions), std::move(children));
-#endif
-
     canaryApp.Run();
-
-#ifndef WIN32
-    // If executing in a parent process, wait for all child processes to complete before exiting.
-    if (canaryApp.GetOptions().isParentProcess)
-    {
-        bool waitingForChildren = true;
-
-        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Waiting for child processes to complete...");
-
-        while (waitingForChildren)
-        {
-            int status = 0;
-            wait(&status);
-
-            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "One or more child processes completed.");
-
-            waitingForChildren = errno != ECHILD;
-        }
-    }
-#endif
 
     return 0;
 }

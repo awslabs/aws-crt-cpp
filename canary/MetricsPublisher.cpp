@@ -755,12 +755,6 @@ std::shared_ptr<StringStream> MetricsPublisher::GenerateMetricsBackupJson()
 
 String MetricsPublisher::UploadBackup(uint32_t options)
 {
-    if (m_canaryApp.GetOptions().forkModeEnabled)
-    {
-        AWS_LOGF_WARN(AWS_LS_CRT_CPP_CANARY, "Metric backups not supported in fork mode.");
-        return String();
-    }
-
     String s3Path;
 
     {
