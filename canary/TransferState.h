@@ -29,17 +29,22 @@ class TransferState : public std::enable_shared_from_this<TransferState>
 {
   public:
     TransferState();
-    TransferState(const std::shared_ptr<MetricsPublisher> &publisher);
-    TransferState(const std::shared_ptr<MetricsPublisher> &publisher, int32_t partIndex);
+    TransferState(int32_t partIndex);
 
     int32_t GetPartIndex() const { return m_partIndex; }
     int32_t GetPartNumber() const { return m_partIndex + 1; }
+
+    void SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &connection);
+
+    std::shared_ptr<Aws::Crt::Http::HttpClientConnection> GetConnection() const { return m_connection.lock(); }
+
+    const Aws::Crt::String &GetHostAddress() { return m_hostAddress; }
 
     /*
      * Flags this is a success or failure, which will be reported as a metric on a flush
      * of one of up or down metrics.
      */
-    void SetTransferSuccess(bool success) { m_transferSuccess = success; }
+    void SetTransferSuccess(bool success);
 
     /*
      * Initializes data up metric, setting a start time for when the upload started.
@@ -65,13 +70,13 @@ class TransferState : public std::enable_shared_from_this<TransferState>
      * Send upload metrics to the metrics publisher and clear our local copy.
      * Also reports success or failure metric during this time.
      */
-    void FlushDataUpMetrics();
+    void FlushDataUpMetrics(const std::shared_ptr<MetricsPublisher> &publisher);
 
     /*
-     * Send download metrics to the metrics publisher and clear are local copy.
+     * Send download metrics to the metrics publisher and clear the local copy.
      * Also reports success or failure metric during this time.
      */
-    void FlushDataDownMetrics();
+    void FlushDataDownMetrics(const std::shared_ptr<MetricsPublisher> &publisher);
 
     const Aws::Crt::String &GetAmzRequestId() const { return m_amzRequestId; }
     const Aws::Crt::String &GetAmzId2() const { return m_amzId2; }
@@ -81,14 +86,20 @@ class TransferState : public std::enable_shared_from_this<TransferState>
   private:
     static std::atomic<uint64_t> s_nextTransferId;
 
+    uint64_t m_dataUsedRateSum;
+    uint64_t m_dataUsedRateTimestamp;
+
     int32_t m_partIndex;
     uint64_t m_transferId;
     uint32_t m_transferSuccess : 1;
 
     Aws::Crt::String m_amzRequestId;
     Aws::Crt::String m_amzId2;
+    Aws::Crt::String m_hostAddress;
     Aws::Crt::Vector<Metric> m_uploadMetrics;
     Aws::Crt::Vector<Metric> m_downloadMetrics;
+
+    std::weak_ptr<Aws::Crt::Http::HttpClientConnection> m_connection;
     std::weak_ptr<MetricsPublisher> m_publisher;
 
     static uint64_t GetNextTransferId();
@@ -107,5 +118,9 @@ class TransferState : public std::enable_shared_from_this<TransferState>
 
     void PushDataMetric(Aws::Crt::Vector<Metric> &metrics, MetricName metricName, double dataUsed);
 
-    void FlushMetricsVector(Aws::Crt::Vector<Metric> &metrics);
+    void FlushMetricsVector(const std::shared_ptr<MetricsPublisher> &publisher, Aws::Crt::Vector<Metric> &metrics);
+
+    void ResetRateTracking();
+
+    void UpdateRateTracking(uint64_t dataUsed, bool forceFlush);
 };

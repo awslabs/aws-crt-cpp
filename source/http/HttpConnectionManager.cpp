@@ -7,6 +7,9 @@
 #include <algorithm>
 #include <aws/http/connection_manager.h>
 
+#include <aws/crt/Api.h>
+#include <cinttypes>
+
 namespace Aws
 {
     namespace Crt
@@ -64,6 +67,20 @@ namespace Aws
                 managerOptions.max_connections = m_options.MaxConnections;
                 managerOptions.socket_options = &connectionOptions.SocketOptions.GetImpl();
                 managerOptions.initial_window_size = connectionOptions.InitialWindowSize;
+
+                managerOptions.on_connection_created_callback = s_onConnectionCreated;
+                managerOptions.on_connection_created_user_data = this;
+                m_onConnectionCreated = options.OnConnectionCreated;
+
+                aws_http_connection_monitoring_options monitoringOptions;
+
+                if(options.ConnectionOptions.MonitoringOptions.has_value())
+                {
+                    monitoringOptions = options.ConnectionOptions.MonitoringOptions.value();
+                    managerOptions.monitoring_options = &monitoringOptions;
+
+                    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Setting monitoring options: %" PRIu64 " %d", managerOptions.monitoring_options->minimum_throughput_bytes_per_second, managerOptions.monitoring_options->allowable_throughput_failure_interval_seconds);
+                }
 
                 if (options.EnableBlockingShutdown)
                 {
@@ -199,6 +216,18 @@ namespace Aws
                     [allocator](ManagedConnection *managedConnection) { Delete(managedConnection, allocator); });
 
                 callback(connectionObj, AWS_OP_SUCCESS);
+            }
+
+            void HttpClientConnectionManager::s_onConnectionCreated(
+                aws_http_connection *connection,
+                void *userData) noexcept
+            {
+                HttpClientConnectionManager* manager = (HttpClientConnectionManager*)userData;
+
+                if(manager->m_onConnectionCreated)
+                {
+                    manager->m_onConnectionCreated(connection);
+                }
             }
 
         } // namespace Http
