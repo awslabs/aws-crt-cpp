@@ -100,7 +100,8 @@ namespace Aws
                 uint16_t GetKeepAliveTimeoutSec() const { return options.keep_alive_timeout_sec; }
                 /**
                  * Set keep alive max failed probes.
-                 * @param maxProbes: The number of keepalive probes allowed to fail before a connection is considered lost.
+                 * @param maxProbes: The number of keepalive probes allowed to fail before a connection is considered
+                 * lost.
                  */
                 void SetKeepAliveMaxFailedProbes(uint16_t maxProbes)
                 {

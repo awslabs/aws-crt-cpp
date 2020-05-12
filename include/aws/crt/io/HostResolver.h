@@ -81,7 +81,7 @@ namespace Aws
 
                 /**
                  * Kicks off an asynchronous resolution of host. onResolved will be invoked upon completion of the
-                 * resolution. 
+                 * resolution.
                  * @return False, the resolution was not attempted. True, onResolved will be
                  * called with the result.
                  */
