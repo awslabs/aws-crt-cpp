@@ -48,8 +48,19 @@ namespace Aws
             ApiHandle(ApiHandle &&) = delete;
             ApiHandle &operator=(const ApiHandle &) = delete;
             ApiHandle &operator=(ApiHandle &&) = delete;
-
+            /**
+             * Initialize logging in awscrt.
+             * @param level(LogLevel): Display messages of this importance and higher. LogLevel.NoLogs will disable
+             * logging.
+             * @param filename: Logging destination, a file path from the disk.
+             */
             void InitializeLogging(LogLevel level, const char *filename);
+            /**
+             * Initialize logging in awscrt.
+             * @param level(LogLevel): Display messages of this importance and higher. LogLevel.NoLogs will disable
+             * logging.
+             * @param fp(FILE): The FILE object for logging destination.
+             */
             void InitializeLogging(LogLevel level, FILE *fp);
 
           private:
@@ -60,12 +71,12 @@ namespace Aws
 
         AWS_CRT_CPP_API const char *ErrorDebugString(int error) noexcept;
         /**
-         * Returns the value of the last aws error on the current thread. Return 0 if no aws-error raised before.
+         * @return the value of the last aws error on the current thread. Return 0 if no aws-error raised before.
          */
         AWS_CRT_CPP_API int LastError() noexcept;
         /**
-         * Returns the value of the last aws error on the current thread. If no aws-error raised before, return
-         * AWS_ERROR_UNKNOWN
+         * @return the value of the last aws error on the current thread.
+         * @return AWS_ERROR_UNKNOWN, if no aws-error raised before.
          */
         AWS_CRT_CPP_API int LastErrorOrUnknown() noexcept;
     } // namespace Crt
