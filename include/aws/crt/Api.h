@@ -50,16 +50,16 @@ namespace Aws
             ApiHandle &operator=(ApiHandle &&) = delete;
             /**
              * Initialize logging in awscrt.
-             * @param level(LogLevel): Display messages of this importance and higher. LogLevel.NoLogs will disable
+             * @param level: Display messages of this importance and higher. LogLevel.NoLogs will disable
              * logging.
              * @param filename: Logging destination, a file path from the disk.
              */
             void InitializeLogging(LogLevel level, const char *filename);
             /**
              * Initialize logging in awscrt.
-             * @param level(LogLevel): Display messages of this importance and higher. LogLevel.NoLogs will disable
+             * @param level: Display messages of this importance and higher. LogLevel.NoLogs will disable
              * logging.
-             * @param fp(FILE): The FILE object for logging destination.
+             * @param fp: The FILE object for logging destination.
              */
             void InitializeLogging(LogLevel level, FILE *fp);
 

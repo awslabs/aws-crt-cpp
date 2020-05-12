@@ -122,10 +122,10 @@ namespace Aws
 
                 /**
                  * Overrides the default system trust store.
-                 * @param caPath(Optional): Path to directory containing trusted certificates, which will overrides the
+                 * @param caPath: Path to directory containing trusted certificates, which will overrides the
                  * default trust store. Only useful on Unix style systems where all anchors are stored in a directory
                  * (like /etc/ssl/certs). This string must remain in memory for the lifetime of this object.
-                 * @param caFile(Optional): Path to file containing PEM armored chain of trusted CA certificates. This
+                 * @param caFile: Path to file containing PEM armored chain of trusted CA certificates. This
                  * string must remain in memory for the lifetime of this object.
                  */
                 bool OverrideDefaultTrustStore(const char *caPath, const char *caFile) noexcept;

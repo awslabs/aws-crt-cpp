@@ -62,19 +62,19 @@ namespace Aws
                 SocketOptions &operator=(SocketOptions &&rhs) = default;
                 /**
                  * Set socket type
-                 * @param type(SocketType)
+                 * @param type: SocketType object.
                  */
                 void SetSocketType(SocketType type) { options.type = (enum aws_socket_type)type; }
                 SocketType GetSocketType() const { return (SocketType)options.type; }
                 /**
                  * Set socket domain
-                 * @param domain(SocketDomain)
+                 * @param domain: SocketDomain object.
                  */
                 void SetSocketDomain(SocketDomain domain) { options.domain = (enum aws_socket_domain)domain; }
                 SocketDomain GetSocketDomain() const { return (SocketDomain)options.domain; }
                 /**
                  * Set connection timeout
-                 * @param timeout: milliseconds.
+                 * @param timeout: connection timeout in milliseconds.
                  */
                 void SetConnectTimeoutMs(uint32_t timeout) { options.connect_timeout_ms = timeout; }
                 uint32_t GetConnectTimeoutMs() const { return options.connect_timeout_ms; }
