@@ -6,6 +6,9 @@
 
 struct aws_task;
 struct aws_event_loop;
+struct aws_http_connection;
+struct aws_host_address;
+struct aws_host_resolver;
 
 namespace Aws
 {
@@ -23,7 +26,7 @@ namespace Aws
                 uint64_t m_expectedPerSampleThroughput;
                 uint64_t m_allowedFailureInterval;
                 aws_event_loop* m_schedulingLoop;
-                DefaultHostResolver* m_hostResolver;
+                aws_host_resolver* m_hostResolver;
                 Aws::Crt::String m_endPoint;
             };
             
@@ -46,10 +49,15 @@ namespace Aws
 
                 void AddSample(uint64_t bytesPerSecond);
 
+                void SetIsInFailTable(bool status);
+
+                bool IsInFailTable() const;
+
             private:
                 Aws::Crt::String m_address;
                 EndPointMonitorOptions m_options;
                 aws_task* m_processSamplesTask;
+                std::atomic<bool> m_isInFailTable;
                 std::atomic<uint64_t> m_sampleSum;
                 uint64_t m_timeLastProcessed;
                 uint64_t m_failureTime;
@@ -65,18 +73,20 @@ namespace Aws
             {
             public:
                 
-                EndPointMonitorManager(const EndPointMonitorOptions & options)
-                    : m_options(options)
-                {
-                    
-                }
+                EndPointMonitorManager(const EndPointMonitorOptions & options);
+                ~EndPointMonitorManager();
 
-                EndPointMonitor* CreateMonitor(const Aws::Crt::String & address);
-            
+                void AttachMonitor(aws_http_connection* connection); 
+
             private:
+
                 EndPointMonitorOptions m_options;
                 std::mutex m_endPointMonitorsMutex;
                 Aws::Crt::Map<Aws::Crt::String, std::unique_ptr<EndPointMonitor>> m_endPointMonitors;
+
+                static void OnPutFailTable(aws_host_address* host_address, void *user_data);
+
+                static void OnRemoveFailTable(aws_host_address* host_address, void *user_data);
             };
         }
     }

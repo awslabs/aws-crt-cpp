@@ -21,6 +21,7 @@
 #include <aws/crt/http/HttpConnectionManager.h>
 #include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Stream.h>
+#include <aws/crt/io/EndPointMonitor.h>
 #include <aws/io/stream.h>
 #include <inttypes.h>
 #include <iostream>
@@ -51,6 +52,14 @@ S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::Strin
 
     m_minThroughputBytes = minThroughputBytesPerSecond;
 
+    Io::EndPointMonitorOptions options;
+    options.m_expectedPerSampleThroughput = minThroughputBytesPerSecond;
+    options.m_allowedFailureInterval = 2ULL;
+    options.m_schedulingLoop = aws_event_loop_group_get_next_loop(canaryApp.GetEventLoopGroup().GetUnderlyingHandle());;
+    options.m_hostResolver = canaryApp.GetDefaultHostResolver().GetUnderlyingHandle();
+    options.m_endPoint = m_endpoint;
+
+    m_endPointMonitorManager = std::unique_ptr<Io::EndPointMonitorManager>(new Io::EndPointMonitorManager(options)); // TODO use aws allocator with custom deleter
 
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
 
@@ -59,6 +68,13 @@ S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::Strin
     connectionManagerOptions.ConnectionOptions.SocketOptions.SetConnectTimeoutMs(3000);
     connectionManagerOptions.ConnectionOptions.SocketOptions.SetSocketType(AWS_SOCKET_STREAM);
     connectionManagerOptions.ConnectionOptions.InitialWindowSize = SIZE_MAX;
+    connectionManagerOptions.OnConnectionCreated = [this](struct aws_http_connection* connection)
+    {
+        if(m_endPointMonitorManager != nullptr)
+        {
+            m_endPointMonitorManager->AttachMonitor(connection);
+        }
+    };
 
     if (m_canaryApp.GetOptions().sendEncrypted)
     {
@@ -358,7 +374,7 @@ void S3ObjectTransport::PutObject(
 
                 if (transferState != nullptr)
                 {
-                    transferState->SetHostAddress(conn->GetHostAddress());
+                    transferState->SetConnection(conn);
                 }
             }
         });
@@ -471,7 +487,7 @@ void S3ObjectTransport::GetObject(
 
                 if(transferState != nullptr)
                 {
-                    transferState->SetHostAddress(conn->GetHostAddress());
+                    transferState->SetConnection(conn);
                 }
             }
         });

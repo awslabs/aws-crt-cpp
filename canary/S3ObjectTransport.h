@@ -47,6 +47,17 @@ using GetPartStream =
 using ReceivePartCallback =
     std::function<void(const std::shared_ptr<TransferState> &transferState, const Aws::Crt::ByteCursor &data)>;
 
+namespace Aws
+{
+    namespace Crt
+    {
+        namespace Io
+        {
+            class EndPointMonitorManager;
+        }
+    }
+}
+
 /*
  * Makes available a handful of S3 operations invoked by using the REST API to a specific bucket.  Also had
  * functionality for resolving a number of DNS addresses that transfers can be distributed across.
@@ -125,6 +136,7 @@ class S3ObjectTransport
     uint32_t m_transfersPerAddress;
 
     std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> m_connManager;
+    std::shared_ptr<Aws::Crt::Io::EndPointMonitorManager> m_endPointMonitorManager;
 
     std::atomic<uint32_t> m_activeRequestsCount;
 

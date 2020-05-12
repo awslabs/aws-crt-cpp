@@ -2,6 +2,7 @@
 #include <aws/common/clock.h>
 #include <aws/common/task_scheduler.h>
 #include <aws/io/event_loop.h>
+#include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/Api.h>
 #include <aws/crt/Types.h>
 
@@ -45,6 +46,7 @@ EndPointMonitor::EndPointMonitor(const String & address, const EndPointMonitorOp
     : m_address(address)
     , m_options(options)
     , m_processSamplesTask(nullptr)
+    , m_isInFailTable(false)
     , m_sampleSum(0ULL)
     , m_timeLastProcessed(0ULL)
     , m_failureTime(0ULL)
@@ -74,6 +76,16 @@ void EndPointMonitor::AddSample(uint64_t bytesPerSecond)
     m_sampleSum.fetch_add(sampleSum.asUint64());
 
     // TODO assert on overflow
+}
+
+void EndPointMonitor::SetIsInFailTable(bool status)
+{
+    m_isInFailTable.exchange(status);
+}
+
+bool EndPointMonitor::IsInFailTable() const
+{
+    return m_isInFailTable.load();
 }
 
 void EndPointMonitor::ScheduleNextProcessSamplesTask()
@@ -131,7 +143,7 @@ void EndPointMonitor::ProcessSamples()
         hostAddress.address =
             aws_string_new_from_array(g_allocator, (uint8_t *)m_address.c_str(), m_address.length());
 
-        aws_host_resolver_record_connection_failure(m_options.m_hostResolver->GetUnderlyingHandle(), &hostAddress);
+        aws_host_resolver_record_connection_failure(m_options.m_hostResolver, &hostAddress);
 
         aws_host_address_clean_up(&hostAddress);
     }
@@ -139,21 +151,86 @@ void EndPointMonitor::ProcessSamples()
     ScheduleNextProcessSamplesTask();
 }
 
-EndPointMonitor* EndPointMonitorManager::CreateMonitor(const String & address)
+EndPointMonitorManager::EndPointMonitorManager(const EndPointMonitorOptions & options)
+    : m_options(options)
+{
+    AWS_FATAL_ASSERT(options.m_schedulingLoop != nullptr);
+    AWS_FATAL_ASSERT(options.m_hostResolver != nullptr);
+
+    aws_host_resolver_set_put_failure_table_callback(m_options.m_hostResolver, &EndPointMonitorManager::OnPutFailTable, this);
+    aws_host_resolver_set_remove_failure_table_callback(m_options.m_hostResolver, &EndPointMonitorManager::OnRemoveFailTable, this);
+}
+
+EndPointMonitorManager::~EndPointMonitorManager()
+{
+    AWS_FATAL_ASSERT(m_options.m_hostResolver != nullptr);
+
+    aws_host_resolver_set_put_failure_table_callback(m_options.m_hostResolver, nullptr, nullptr);
+    aws_host_resolver_set_remove_failure_table_callback(m_options.m_hostResolver, nullptr, nullptr);
+}
+
+void EndPointMonitorManager::AttachMonitor(aws_http_connection* connection)
 {
     std::lock_guard<std::mutex> lock(m_endPointMonitorsMutex);
 
+    aws_host_address* hostAddress = aws_http_connection_get_host_address(connection);
+
+    if(hostAddress == nullptr)
+    {
+        return;
+    }
+
+    EndPointMonitor* monitor = nullptr;
+
+    Aws::Crt::String address(aws_string_c_str(hostAddress->address));
     auto endPointMonitorIt = m_endPointMonitors.find(address);
 
     if(endPointMonitorIt != m_endPointMonitors.end())
     {
-        return endPointMonitorIt->second.get();
+        monitor = endPointMonitorIt->second.get();
+        AWS_FATAL_ASSERT(monitor != nullptr);
+    }
+    else
+    {
+        monitor = new EndPointMonitor(address, m_options); // TODO use aws allocator with custom deleter
+        m_endPointMonitors.emplace(address, std::unique_ptr<EndPointMonitor>(monitor)); 
     }
 
-    EndPointMonitor* monitor = New<EndPointMonitor>(g_allocator, address, m_options);
-    std::unique_ptr<EndPointMonitor> monitorUnique(monitor); // TODO needs custom deleter
+    aws_http_connection_set_endpoint_monitor(connection, (void*)monitor);
+}
 
-    m_endPointMonitors.emplace(address, std::move(monitorUnique));
+void EndPointMonitorManager::OnPutFailTable(aws_host_address* host_address, void *user_data)
+{
+    EndPointMonitorManager* endPointMonitorManager = (EndPointMonitorManager*)user_data;
+    std::lock_guard<std::mutex> lock(endPointMonitorManager->m_endPointMonitorsMutex);
 
-    return monitor;
+    String address(aws_string_c_str(host_address->address));
+    auto endPointMonitorIt = endPointMonitorManager->m_endPointMonitors.find(address);
+
+    if(endPointMonitorIt != endPointMonitorManager->m_endPointMonitors.end())
+    {
+        return;
+    }
+
+    EndPointMonitor* monitor = endPointMonitorIt->second.get();
+
+    monitor->SetIsInFailTable(true);
+}
+
+void EndPointMonitorManager::OnRemoveFailTable(aws_host_address* host_address, void *user_data)
+{
+    EndPointMonitorManager* endPointMonitorManager = (EndPointMonitorManager*)user_data;
+    std::lock_guard<std::mutex> lock(endPointMonitorManager->m_endPointMonitorsMutex);
+
+    String address(aws_string_c_str(host_address->address));
+    auto endPointMonitorIt = endPointMonitorManager->m_endPointMonitors.find(address);
+
+    if(endPointMonitorIt != endPointMonitorManager->m_endPointMonitors.end())
+    {
+        return;
+    }
+
+    EndPointMonitor* monitor = endPointMonitorIt->second.get();
+
+    monitor->SetIsInFailTable(false);
 }

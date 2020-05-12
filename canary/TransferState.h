@@ -34,7 +34,13 @@ class TransferState : public std::enable_shared_from_this<TransferState>
     int32_t GetPartIndex() const { return m_partIndex; }
     int32_t GetPartNumber() const { return m_partIndex + 1; }
 
-    void SetHostAddress(const Aws::Crt::String &hostAddress) { m_hostAddress = hostAddress; }
+    void SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> & connection);
+
+    std::shared_ptr<Aws::Crt::Http::HttpClientConnection> GetConnection() const
+    {
+      return m_connection.lock();
+    }
+
     const Aws::Crt::String &GetHostAddress() { return m_hostAddress; }
 
     /*
@@ -92,6 +98,8 @@ class TransferState : public std::enable_shared_from_this<TransferState>
     Aws::Crt::String m_hostAddress;
     Aws::Crt::Vector<Metric> m_uploadMetrics;
     Aws::Crt::Vector<Metric> m_downloadMetrics;
+
+    std::weak_ptr<Aws::Crt::Http::HttpClientConnection> m_connection;
     std::weak_ptr<MetricsPublisher> m_publisher;
 
     static uint64_t GetNextTransferId();

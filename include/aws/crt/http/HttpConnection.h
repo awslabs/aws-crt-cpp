@@ -413,6 +413,11 @@ namespace Aws
 
                 Aws::Crt::String GetHostAddress();
 
+                aws_http_connection *GetUnderlyingHandle() const
+                {
+                  return m_connection;
+                }
+
                 /**
                  * Create a new Https Connection to hostName:port, using `socketOptions` for tcp options and
                  * `tlsConnOptions` for TLS/SSL options. If `tlsConnOptions` is null http (plain-text) will be used.

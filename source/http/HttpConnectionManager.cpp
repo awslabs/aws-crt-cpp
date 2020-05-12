@@ -68,6 +68,10 @@ namespace Aws
                 managerOptions.socket_options = &connectionOptions.SocketOptions.GetImpl();
                 managerOptions.initial_window_size = connectionOptions.InitialWindowSize;
 
+                managerOptions.on_connection_created_callback = s_onConnectionCreated;
+                managerOptions.on_connection_created_user_data = this;
+                m_onConnectionCreated = options.OnConnectionCreated;
+
                 aws_http_connection_monitoring_options monitoringOptions;
 
                 if(options.ConnectionOptions.MonitoringOptions.has_value())
@@ -212,6 +216,18 @@ namespace Aws
                     [allocator](ManagedConnection *managedConnection) { Delete(managedConnection, allocator); });
 
                 callback(connectionObj, AWS_OP_SUCCESS);
+            }
+
+            void HttpClientConnectionManager::s_onConnectionCreated(
+                aws_http_connection *connection,
+                void *userData) noexcept
+            {
+                HttpClientConnectionManager* manager = (HttpClientConnectionManager*)userData;
+
+                if(manager->m_onConnectionCreated)
+                {
+                    manager->m_onConnectionCreated(connection);
+                }
             }
 
         } // namespace Http

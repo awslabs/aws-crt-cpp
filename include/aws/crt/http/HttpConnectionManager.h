@@ -26,6 +26,9 @@ namespace Aws
             using OnClientConnectionAvailable =
                 std::function<void(std::shared_ptr<HttpClientConnection>, int errorCode)>;
 
+            using HttpOnConnectionCreated =
+                std::function<void(struct aws_http_connection* connection)>;
+
             /**
              * Configuration struct containing all options related to connection manager behavior
              */
@@ -57,6 +60,8 @@ namespace Aws
                  * reference to the connection manager.
                  */
                 bool EnableBlockingShutdown;
+
+                HttpOnConnectionCreated OnConnectionCreated;
             };
 
             /**
@@ -104,9 +109,15 @@ namespace Aws
                 std::promise<void> m_shutdownPromise;
                 std::atomic<bool> m_releaseInvoked;
 
+                HttpOnConnectionCreated m_onConnectionCreated;
+
                 static void s_onConnectionSetup(
                     aws_http_connection *connection,
                     int errorCode,
+                    void *userData) noexcept;
+
+                static void s_onConnectionCreated(
+                    aws_http_connection *connection,
                     void *userData) noexcept;
 
                 static void s_shutdownCompleted(void *userData) noexcept;

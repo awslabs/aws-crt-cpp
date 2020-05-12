@@ -17,7 +17,9 @@
 
 #include <aws/common/clock.h>
 #include <aws/common/date_time.h>
+#include <aws/http/connection.h>
 #include <aws/crt/Api.h>
+#include <aws/crt/io/EndPointMonitor.h>
 #include <cinttypes>
 
 #ifdef WIN32
@@ -179,6 +181,19 @@ void TransferState::PushDataMetric(Vector<Metric> &metrics, MetricName metricNam
     aws_sys_clock_get_ticks(&current_time);
     uint64_t now = aws_timestamp_convert(current_time, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, NULL);
 
+    std::shared_ptr<Http::HttpClientConnection> conn = GetConnection();
+
+    if(conn != nullptr)
+    {
+        //aws_http_connection* connHandle = conn->GetUnderlyingHandle();
+        Io::EndPointMonitor* monitor = nullptr; //connHandle->user_data_2;
+
+        if(monitor != nullptr)
+        {
+            monitor->AddSample(dataUsed);
+        }
+    }
+
     if (metrics.size() == 0)
     {
         Metric metric(metricName, MetricUnit::Bytes, now, m_transferId, dataUsed);
@@ -243,6 +258,16 @@ void TransferState::ProcessHeaders(const Http::HttpHeader *headersArray, size_t 
             const aws_byte_cursor &value = header->value;
             m_amzId2 = String((const char *)value.ptr, value.len);
         }
+    }
+}
+
+void TransferState::SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> & connection)
+{
+    m_connection = connection;
+
+    if(connection != nullptr)
+    {
+        m_hostAddress = connection->GetHostAddress();
     }
 }
 
