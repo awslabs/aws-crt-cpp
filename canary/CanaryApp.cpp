@@ -44,28 +44,17 @@ namespace
 
 CanaryAppOptions::CanaryAppOptions() noexcept
     : platformName(CanaryUtil::GetPlatformName()), toolName("NA"), instanceType("unknown"), region("us-west-2"),
-      bucketName("aws-crt-canary-bucket"), readFromParentPipe(-1), writeToParentPipe(-1), numUpTransfers(1),
-      numUpConcurrentTransfers(0), numDownTransfers(1), numDownConcurrentTransfers(0), childProcessIndex(0),
-      numTransfersPerAddress(10), singlePartObjectSize(5ULL * 1024ULL * 1024ULL * 1024ULL),
-      multiPartObjectPartSize(1ULL * 1024ULL * 1024ULL * 1024ULL), multiPartObjectNumParts(5),
-      measureSinglePartTransfer(false), measureMultiPartTransfer(false), measureHttpTransfer(false),
-      usingNumaControl(false), downloadOnly(false), sendEncrypted(false), loggingEnabled(false), rehydrateBackup(false),
-      forkModeEnabled(false), isParentProcess(false), isChildProcess(false)
+      bucketName("aws-crt-canary-bucket"), numUpTransfers(0), numUpConcurrentTransfers(0), numDownTransfers(0),
+      numDownConcurrentTransfers(0), numTransfersPerAddress(10),
+      singlePartObjectSize(5ULL * 1024ULL * 1024ULL * 1024ULL), multiPartObjectPartSize(25LL * 1024ULL * 1024ULL),
+      multiPartObjectNumParts(205), targetThroughputGbps(80.0), measureSinglePartTransfer(false),
+      measureMultiPartTransfer(false), measureHttpTransfer(false), sendEncrypted(false), loggingEnabled(false),
+      rehydrateBackup(false)
 {
 }
-
-#ifndef WIN32
-CanaryAppChildProcess::CanaryAppChildProcess() noexcept : pid(0), readFromChildPipe(-1), writeToChildPipe(-1) {}
-
-CanaryAppChildProcess::CanaryAppChildProcess(pid_t inPid, int32_t inReadPipe, int32_t inWritePipe) noexcept
-    : pid(inPid), readFromChildPipe(inReadPipe), writeToChildPipe(inWritePipe)
-{
-}
-#endif
 
 CanaryApp::CanaryApp(CanaryAppOptions &&inOptions) noexcept
-    : m_options(inOptions), m_apiHandle(g_allocator),
-      m_eventLoopGroup((!inOptions.isChildProcess && !inOptions.isParentProcess) ? 72 : 2, g_allocator),
+    : m_options(inOptions), m_apiHandle(g_allocator), m_eventLoopGroup(72, g_allocator),
       m_defaultHostResolver(m_eventLoopGroup, 60, 3600, g_allocator),
       m_bootstrap(m_eventLoopGroup, m_defaultHostResolver, g_allocator)
 {
@@ -98,198 +87,31 @@ CanaryApp::CanaryApp(CanaryAppOptions &&inOptions) noexcept
     Io::TlsContextOptions tlsContextOptions = Io::TlsContextOptions::InitDefaultClient(g_allocator);
     m_tlsContext = Io::TlsContext(tlsContextOptions, Io::TlsMode::CLIENT, g_allocator);
 
+    uint64_t perConnThroughputUp = 0ULL;
+    uint64_t perConnThroughputDown = 0ULL;
+
+    double targetThroughputBytesPerSecond = m_options.targetThroughputGbps * 1000.0 * 1000.0 * 1000.0 / 8.0;
+
+    if (m_options.measureMultiPartTransfer)
+    {
+        if (m_options.numUpConcurrentTransfers > 0)
+        {
+            perConnThroughputUp = targetThroughputBytesPerSecond / m_options.numUpConcurrentTransfers;
+        }
+
+        if (m_options.numDownConcurrentTransfers > 0)
+        {
+            perConnThroughputDown = targetThroughputBytesPerSecond / m_options.numDownConcurrentTransfers;
+        }
+    }
+
     m_publisher = MakeShared<MetricsPublisher>(g_allocator, *this, MetricNamespace);
-    m_uploadTransport = MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.bucketName.c_str());
-    m_downloadTransport = MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.bucketName.c_str());
+    m_uploadTransport = MakeShared<S3ObjectTransport>(
+        g_allocator, *this, m_options.bucketName.c_str(), m_options.numUpConcurrentTransfers, perConnThroughputUp);
+    m_downloadTransport = MakeShared<S3ObjectTransport>(
+        g_allocator, *this, m_options.bucketName.c_str(), m_options.numDownConcurrentTransfers, perConnThroughputDown);
     m_measureTransferRate = MakeShared<MeasureTransferRate>(g_allocator, *this);
 }
-
-#ifndef WIN32
-CanaryApp::CanaryApp(CanaryAppOptions &&inOptions, std::vector<CanaryAppChildProcess> &&inChildren) noexcept
-    : CanaryApp(std::move(inOptions))
-{
-    children = inChildren;
-}
-#endif
-
-void CanaryApp::WriteToChildProcess(uint32_t index, const char *key, const char *value)
-{
-#ifndef WIN32
-    const CanaryAppChildProcess &child = children[index];
-
-    AWS_LOGF_INFO(
-        AWS_LS_CRT_CPP_CANARY, "Writing %s:%s to child %d through pipe %d", key, value, index, child.writeToChildPipe);
-
-    WriteKeyValueToPipe(key, value, child.writeToChildPipe);
-#else
-    (void)index;
-    (void)key;
-    (void)value;
-
-    AWS_FATAL_ASSERT(false);
-#endif
-}
-
-void CanaryApp::WriteToParentProcess(const char *key, const char *value)
-{
-#ifndef WIN32
-    AWS_LOGF_INFO(
-        AWS_LS_CRT_CPP_CANARY, "Writing %s:%s to parent through pipe %d", key, value, m_options.writeToParentPipe);
-
-    WriteKeyValueToPipe(key, value, m_options.writeToParentPipe);
-#else
-    (void)key;
-    (void)value;
-
-    AWS_FATAL_ASSERT(false);
-#endif
-}
-
-String CanaryApp::ReadFromChildProcess(uint32_t index, const char *key)
-{
-#ifndef WIN32
-    CanaryAppChildProcess &child = children[index];
-
-    AWS_LOGF_INFO(
-        AWS_LS_CRT_CPP_CANARY,
-        "Reading value of %s from child %d through pipe %d...",
-        key,
-        index,
-        child.readFromChildPipe);
-
-    String value = ReadValueFromPipe(key, child.readFromChildPipe, child.valuesFromChild);
-
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Got value %s from child %d", value.c_str(), index);
-
-    return value;
-#else
-    (void)index;
-    (void)key;
-
-    AWS_FATAL_ASSERT(false);
-    return "";
-#endif
-}
-
-String CanaryApp::ReadFromParentProcess(const char *key)
-{
-#ifndef WIN32
-    AWS_LOGF_INFO(
-        AWS_LS_CRT_CPP_CANARY, "Reading value of %s from parent through pipe %d...", key, m_options.readFromParentPipe);
-
-    String value = ReadValueFromPipe(key, m_options.readFromParentPipe, valuesFromParent);
-
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Got value %s from parent", value.c_str());
-
-    return value;
-#else
-    (void)key;
-    AWS_FATAL_ASSERT(false);
-    return "";
-#endif
-}
-
-#ifndef WIN32
-
-void CanaryApp::WriteKeyValueToPipe(const char *key, const char *value, uint32_t writePipe)
-{
-    const char nullTerm = '\0';
-
-    if (write(writePipe, key, strlen(key)) == -1)
-    {
-        AWS_LOGF_FATAL(AWS_LS_CRT_CPP_CANARY, "Writing key to pipe failed.");
-        exit(EXIT_FAILURE);
-        return;
-    }
-
-    if (write(writePipe, &nullTerm, 1) == -1)
-    {
-        AWS_LOGF_FATAL(AWS_LS_CRT_CPP_CANARY, "Writing key null terminator to pipe failed.");
-        exit(EXIT_FAILURE);
-        return;
-    }
-
-    if (write(writePipe, value, strlen(value)) == -1)
-    {
-        AWS_LOGF_FATAL(AWS_LS_CRT_CPP_CANARY, "Writing value to pipe failed.");
-        exit(EXIT_FAILURE);
-        return;
-    }
-
-    if (write(writePipe, &nullTerm, 1) == -1)
-    {
-        AWS_LOGF_FATAL(AWS_LS_CRT_CPP_CANARY, "Writing value null terminator to pipe failed.");
-        exit(EXIT_FAILURE);
-        return;
-    }
-}
-
-String CanaryApp::ReadValueFromPipe(const char *key, int32_t readPipe, std::map<String, String> &keyValuePairs)
-{
-    auto it = keyValuePairs.find(key);
-
-    if (it != keyValuePairs.end())
-    {
-        return it->second;
-    }
-
-    std::pair<String, String> keyValuePair;
-
-    do
-    {
-        keyValuePair = ReadNextKeyValuePairFromPipe(readPipe);
-        keyValuePairs.insert(keyValuePair);
-
-    } while (keyValuePair.first != key);
-
-    return keyValuePair.second;
-}
-
-std::pair<String, String> CanaryApp::ReadNextKeyValuePairFromPipe(int32_t readPipe)
-{
-    char c;
-    String currentBuffer;
-    std::pair<String, String> keyValuePair;
-    uint32_t index = 0;
-
-    while (index < 2)
-    {
-        int32_t readResult = read(readPipe, &c, 1);
-
-        if (readResult == -1)
-        {
-            AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Read returned error %d", readResult);
-            break;
-        }
-
-        if (readResult == 0)
-        {
-            continue;
-        }
-
-        if (c == '\0')
-        {
-            if (index == 0)
-            {
-                keyValuePair.first = std::move(currentBuffer);
-            }
-            else
-            {
-                keyValuePair.second = std::move(currentBuffer);
-            }
-
-            ++index;
-        }
-        else
-        {
-            currentBuffer += c;
-        }
-    }
-
-    return keyValuePair;
-}
-
-#endif
 
 void CanaryApp::Run()
 {
@@ -315,35 +137,4 @@ void CanaryApp::Run()
         m_publisher->SetMetricTransferType(MetricTransferType::SinglePart);
         m_measureTransferRate->MeasureHttpTransfer();
     }
-
-#ifndef WIN32
-    for (CanaryAppChildProcess &childProcess : children)
-    {
-        if (childProcess.readFromChildPipe != -1)
-        {
-            close(childProcess.readFromChildPipe);
-            childProcess.readFromChildPipe = -1;
-        }
-
-        if (childProcess.writeToChildPipe != -1)
-        {
-            close(childProcess.writeToChildPipe);
-            childProcess.writeToChildPipe = -1;
-        }
-    }
-
-    if (m_options.readFromParentPipe != -1)
-    {
-        close(m_options.readFromParentPipe);
-        m_options.readFromParentPipe = -1;
-    }
-
-    if (m_options.writeToParentPipe != -1)
-    {
-        close(m_options.writeToParentPipe);
-        m_options.writeToParentPipe = -1;
-    }
-
-    children.clear();
-#endif
 }

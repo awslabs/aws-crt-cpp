@@ -29,11 +29,7 @@
 
 using namespace Aws::Crt;
 
-MultipartTransferState::MultipartTransferState(
-    const Aws::Crt::String &key,
-    uint64_t objectSize,
-    uint32_t numParts,
-    const std::shared_ptr<MetricsPublisher> &publisher)
+MultipartTransferState::MultipartTransferState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts)
 {
     m_isFinished = false;
     m_errorCode = AWS_ERROR_SUCCESS;
@@ -41,7 +37,11 @@ MultipartTransferState::MultipartTransferState(
     m_numPartsCompleted = 0;
     m_objectSize = objectSize;
     m_key = key;
-    m_publisher = publisher;
+
+    for (uint32_t i = 0; i < numParts; ++i)
+    {
+        m_partIndexQueue.push(i);
+    }
 }
 
 MultipartTransferState::~MultipartTransferState() {}
@@ -70,7 +70,11 @@ void MultipartTransferState::SetFinished(int32_t errorCode)
     else
     {
         m_errorCode = errorCode;
-        m_finishedCallback(m_errorCode);
+
+        if (m_finishedCallback != nullptr)
+        {
+            m_finishedCallback(m_errorCode);
+        }
     }
 }
 
@@ -83,6 +87,33 @@ bool MultipartTransferState::IncNumPartsCompleted()
 {
     uint32_t originalValue = m_numPartsCompleted.fetch_add(1);
     return (originalValue + 1) == GetNumParts();
+}
+
+std::shared_ptr<TransferState> MultipartTransferState::PopNextPart()
+{
+    std::shared_ptr<TransferState> transferState;
+
+    {
+        std::lock_guard<std::mutex> lock(m_partIndexQueueMutex);
+        uint32_t nextPartIndex = m_partIndexQueue.front();
+        m_partIndexQueue.pop();
+        transferState = MakeShared<TransferState>(g_allocator, nextPartIndex);
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(m_transferStatesMutex);
+        m_transferStates.push_back(transferState);
+    }
+
+    return transferState;
+}
+
+void MultipartTransferState::RequeuePart(const std::shared_ptr<TransferState> &partTransferState)
+{
+    {
+        std::lock_guard<std::mutex> lock(m_partIndexQueueMutex);
+        m_partIndexQueue.push(partTransferState->GetPartIndex());
+    }
 }
 
 const Aws::Crt::String &MultipartTransferState::GetKey() const
@@ -107,8 +138,7 @@ uint64_t MultipartTransferState::GetObjectSize() const
 
 std::shared_ptr<TransferState> MultipartTransferState::PushTransferState(uint32_t partIndex)
 {
-    std::shared_ptr<TransferState> transferState =
-        MakeShared<TransferState>(g_allocator, m_publisher.lock(), partIndex);
+    std::shared_ptr<TransferState> transferState = MakeShared<TransferState>(g_allocator, partIndex);
 
     {
         std::lock_guard<std::mutex> lock(m_transferStatesMutex);
@@ -118,12 +148,8 @@ std::shared_ptr<TransferState> MultipartTransferState::PushTransferState(uint32_
     return transferState;
 }
 
-MultipartUploadState::MultipartUploadState(
-    const Aws::Crt::String &key,
-    uint64_t objectSize,
-    uint32_t numParts,
-    const std::shared_ptr<MetricsPublisher> &publisher)
-    : MultipartTransferState(key, objectSize, numParts, publisher)
+MultipartUploadState::MultipartUploadState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts)
+    : MultipartTransferState(key, objectSize, numParts)
 {
     m_etags.reserve(numParts);
 
@@ -158,11 +184,7 @@ void MultipartUploadState::GetETags(Aws::Crt::Vector<Aws::Crt::String> &outETags
     outETags = m_etags;
 }
 
-MultipartDownloadState::MultipartDownloadState(
-    const Aws::Crt::String &key,
-    uint64_t objectSize,
-    uint32_t numParts,
-    const std::shared_ptr<MetricsPublisher> &publisher)
-    : MultipartTransferState(key, objectSize, numParts, publisher)
+MultipartDownloadState::MultipartDownloadState(const Aws::Crt::String &key, uint64_t objectSize, uint32_t numParts)
+    : MultipartTransferState(key, objectSize, numParts)
 {
 }

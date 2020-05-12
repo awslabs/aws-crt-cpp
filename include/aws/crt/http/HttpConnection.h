@@ -30,6 +30,7 @@ namespace Aws
             class HttpClientStream;
             class HttpRequest;
             using HttpHeader = aws_http_header;
+            using HttpConnectionMonitoringOptions = aws_http_connection_monitoring_options;
 
             /**
              * Invoked upon connection setup, whether it was successful or not. If the connection was
@@ -340,6 +341,12 @@ namespace Aws
                 Optional<HttpClientConnectionProxyOptions> ProxyOptions;
 
                 /**
+                 * The monitoring options for the http connection.
+                 * Optional.
+                 */
+                Optional<HttpConnectionMonitoringOptions> MonitoringOptions;
+
+                /**
                  * If set to true, then the TCP read back pressure mechanism will be enabled. You should
                  * only use this if you're allowing http response body data to escape the callbacks. E.g. you're
                  * putting the data into a queue for another thread to process and need to make sure the memory
@@ -403,6 +410,13 @@ namespace Aws
                  * @return the value of the last aws error encountered by operations on this instance.
                  */
                 int LastError() const noexcept { return m_lastError; }
+
+                Aws::Crt::String GetHostAddress();
+
+                aws_http_connection *GetUnderlyingHandle() const
+                {
+                  return m_connection;
+                }
 
                 /**
                  * Create a new Https Connection to hostName:port, using `socketOptions` for tcp options and

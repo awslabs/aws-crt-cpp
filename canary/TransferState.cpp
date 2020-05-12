@@ -18,6 +18,8 @@
 #include <aws/common/clock.h>
 #include <aws/common/date_time.h>
 #include <aws/crt/Api.h>
+#include <aws/crt/io/EndPointMonitor.h>
+#include <aws/http/connection.h>
 #include <cinttypes>
 
 #ifdef WIN32
@@ -33,13 +35,10 @@ uint64_t TransferState::GetNextTransferId()
     return s_nextTransferId.fetch_add(1) + 1;
 }
 
-TransferState::TransferState() : TransferState(nullptr) {}
+TransferState::TransferState() : TransferState(-1) {}
 
-TransferState::TransferState(const std::shared_ptr<MetricsPublisher> &publisher) : TransferState(publisher, -1) {}
-
-TransferState::TransferState(const std::shared_ptr<MetricsPublisher> &publisher, int32_t partIndex)
-    : m_partIndex(partIndex), m_transferId(TransferState::GetNextTransferId()), m_transferSuccess(false),
-      m_publisher(publisher)
+TransferState::TransferState(int32_t partIndex)
+    : m_partIndex(partIndex), m_transferId(TransferState::GetNextTransferId()), m_transferSuccess(false)
 {
 }
 
@@ -49,97 +48,34 @@ void TransferState::DistributeDataUsedOverSeconds(
     uint64_t beginTime,
     double dataUsed)
 {
-    uint64_t beginTimeSecond = beginTime / 1000ULL;
-    uint64_t beginTimeSecondFrac = beginTime % 1000ULL;
-    uint64_t beginTimeOneMinusSecondFrac = 1000ULL - beginTimeSecondFrac;
-
     uint64_t currentTicks = 0;
     aws_sys_clock_get_ticks(&currentTicks);
     uint64_t endTime = aws_timestamp_convert(currentTicks, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, NULL);
-    uint64_t endTimeSecond = endTime / 1000ULL;
-    uint64_t endTimeSecondFrac = endTime % 1000ULL;
 
     AWS_FATAL_ASSERT(endTime >= beginTime);
-    AWS_FATAL_ASSERT(endTimeSecond >= beginTimeSecond);
 
-    uint64_t timeDelta = endTime - beginTime;
+    uint64_t totalTimeDelta = endTime - beginTime;
+    uint64_t currentTime = beginTime;
 
-    /*
-     * This represents the number of second data points that this interval overlaps minus one, NOT
-     * the time delta in seconds.  There are three cases that we want to detect.
-     *      * If equal to 0, then endTime and beginTime are in the same second:
-     *
-     *          0                1                2                3
-     *          |----------------|----------------|----------------|
-     *             *----------*
-     *          beginTime    endTime
-     *
-     *
-     *      * If equal to 1, then endTime and beginTime are in different seconds,
-     *        but do not have any full seconds in between them:
-     *
-     *          0                1                2                3
-     *          |----------------|----------------|----------------|
-     *             *--------------------------*
-     *          beginTime                  endTime
-     *
-     *
-     *      * If greater than 1, then endTime and beginTime are in different seconds,
-     *        and have at least one full second inbetween them:
-     *
-     *          0                1                2                3
-     *          |----------------|----------------|----------------|
-     *             *----------------------------------------*
-     *          beginTime                                endTime
-     *
-     */
-    uint64_t numSecondsTouched = endTimeSecond - beginTimeSecond;
-
-    if (numSecondsTouched == 0)
+    if (totalTimeDelta == 0ULL)
     {
-        /*
-         * This value touches only a single second, so add all "dataUsed" as a metric for this second.
-         * Specifically pass endTime for this, so that any future deltas done against the last data
-         * point in the metric array measures against the newest time.
-         */
         PushDataUsedForSecondAndAggregate(metrics, metricName, endTime, dataUsed);
     }
     else
     {
-        /*
-         * This value overlaps more than a single second, so we first calculate the amount of data used
-         * in the starting second and the ending second.
-         */
-        double beginDataUsedFraction = dataUsed * (double)(beginTimeOneMinusSecondFrac / (double)timeDelta);
-        double endDataUsedFraction = dataUsed * (double)(endTimeSecondFrac / (double)timeDelta);
-
-        // Push the data used for the beginning second.
-        PushDataUsedForSecondAndAggregate(metrics, metricName, beginTime, beginDataUsedFraction);
-
-        /*
-         * In this case, we have "interior" seconds (full seconds that are overlapped), so distribute
-         * data used to each of those full seconds.
-         */
-        if (numSecondsTouched > 1)
+        while (currentTime != endTime)
         {
-            uint64_t interiorBeginSecond = beginTimeSecond + 1;
-            uint64_t interiorEndSecond = endTimeSecond;
-            uint64_t numInteriorSeconds = interiorEndSecond - interiorBeginSecond;
+            uint64_t timeFraction = currentTime % 1000ULL;
+            uint64_t nextTime = currentTime + (1000ULL - timeFraction);
+            nextTime = std::min(nextTime, endTime);
 
-            AWS_FATAL_ASSERT(interiorEndSecond >= interiorBeginSecond);
+            uint64_t timeInterval = nextTime - currentTime;
+            double dataUsedFrac = dataUsed * ((double)timeInterval / (double)totalTimeDelta);
 
-            double dataUsedRemaining = dataUsed - (beginDataUsedFraction + endDataUsedFraction);
-            double interiorSecondDataUsed = dataUsedRemaining / (double)numInteriorSeconds;
+            PushDataUsedForSecondAndAggregate(metrics, metricName, nextTime, dataUsedFrac);
 
-            for (uint64_t i = 0; i < numInteriorSeconds; ++i)
-            {
-                PushDataUsedForSecondAndAggregate(
-                    metrics, metricName, (interiorBeginSecond * 1000ULL) + (i * 1000ULL), interiorSecondDataUsed);
-            }
+            currentTime = nextTime;
         }
-
-        // Push the data used for the ending second.
-        PushDataUsedForSecondAndAggregate(metrics, metricName, endTime, endDataUsedFraction);
     }
 }
 
@@ -150,18 +86,16 @@ void TransferState::PushDataUsedForSecondAndAggregate(
     double dataUsed)
 {
     bool pushNew = true;
-    DateTime newDateTime(timestamp);
 
     // If we already have a metric, try to aggregate the incoming data to it
     if (metrics.size() > 0)
     {
         Metric &lastMetric = metrics.back();
-        DateTime lastDateTime(lastMetric.Timestamp);
 
-        uint64_t newDateTimeSecondsSinceEpoch = newDateTime.Millis() / 1000ULL;
-        uint64_t lastDateTimeSecondsSinceEpoch = lastDateTime.Millis() / 1000ULL;
+        uint64_t newTimestampSeconds = timestamp / 1000ULL;
+        uint64_t lastMetricTimestampSeconds = lastMetric.Timestamp / 1000ULL;
 
-        if (newDateTimeSecondsSinceEpoch == lastDateTimeSecondsSinceEpoch)
+        if (newTimestampSeconds == lastMetricTimestampSeconds)
         {
             lastMetric.Value += dataUsed;
             lastMetric.Timestamp = std::max(lastMetric.Timestamp, timestamp);
@@ -195,11 +129,9 @@ void TransferState::PushDataMetric(Vector<Metric> &metrics, MetricName metricNam
     }
 }
 
-void TransferState::FlushMetricsVector(Vector<Metric> &metrics)
+void TransferState::FlushMetricsVector(const std::shared_ptr<MetricsPublisher> &publisher, Vector<Metric> &metrics)
 {
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Adding %d data points", (uint32_t)metrics.size());
-
-    std::shared_ptr<MetricsPublisher> publisher = m_publisher.lock();
 
     AWS_FATAL_ASSERT(publisher != nullptr);
 
@@ -228,7 +160,88 @@ void TransferState::FlushMetricsVector(Vector<Metric> &metrics)
     publisher->AddDataPoints(connMetrics);
     publisher->AddDataPoints(metrics);
 
+    if (!m_transferSuccess)
+    {
+        size_t i = 0;
+
+        while (i < metrics.size())
+        {
+            Metric &metric = metrics[i];
+
+            if (metric.Name == MetricName::BytesUp)
+            {
+                metric.Name = MetricName::BytesUpFailed;
+                ++i;
+            }
+            else if (metric.Name == MetricName::BytesDown)
+            {
+                metric.Name = MetricName::BytesDownFailed;
+                ++i;
+            }
+            else
+            {
+                metrics[i] = metrics.back();
+                metrics.pop_back();
+            }
+        }
+
+        publisher->AddDataPoints(metrics);
+    }
+
     metrics.clear();
+}
+
+void TransferState::ResetRateTracking()
+{
+    uint64_t current_time = 0;
+    aws_sys_clock_get_ticks(&current_time);
+    uint64_t now = aws_timestamp_convert(current_time, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, NULL);
+
+    m_dataUsedRateTimestamp = now;
+    m_dataUsedRateSum = 0;
+}
+
+void TransferState::UpdateRateTracking(uint64_t dataUsed, bool forceFlush)
+{
+    uint64_t current_time = 0;
+    aws_sys_clock_get_ticks(&current_time);
+    uint64_t now = aws_timestamp_convert(current_time, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, NULL);
+
+    m_dataUsedRateSum += dataUsed;
+
+    uint64_t dataUsedRateTimeInterval = now - m_dataUsedRateTimestamp;
+
+    if ((forceFlush && m_dataUsedRateSum > 0ULL) || dataUsedRateTimeInterval > 1000ULL)
+    {
+        double dataUsedRateTimeIntervalSeconds = (double)dataUsedRateTimeInterval / 1000.0;
+
+        uint64_t perSecondRate = (uint64_t)((double)m_dataUsedRateSum / dataUsedRateTimeIntervalSeconds);
+
+        std::shared_ptr<Http::HttpClientConnection> connection = m_connection.lock();
+
+        if (connection == nullptr)
+        {
+            AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "TransferState::UpdateRateTracking - Attached connection is null.");
+        }
+        else
+        {
+            Io::EndPointMonitor *monitor =
+                (Io::EndPointMonitor *)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle());
+
+            if (monitor != nullptr)
+            {
+                monitor->AddSample(perSecondRate);
+            }
+            else
+            {
+                //    AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "TransferState::UpdateRateTracking - Attached monitor is
+                //    null.");
+            }
+        }
+
+        m_dataUsedRateTimestamp = now;
+        m_dataUsedRateSum = 0;
+    }
 }
 
 void TransferState::ProcessHeaders(const Http::HttpHeader *headersArray, size_t headersCount)
@@ -251,32 +264,102 @@ void TransferState::ProcessHeaders(const Http::HttpHeader *headersArray, size_t 
     }
 }
 
+void TransferState::SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &connection)
+{
+    m_connection = connection;
+
+    if (connection == nullptr)
+    {
+        return;
+    }
+
+    m_hostAddress = connection->GetHostAddress();
+
+    Io::EndPointMonitor *endPointMonitor =
+        (Io::EndPointMonitor *)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle());
+
+    if (endPointMonitor != nullptr && endPointMonitor->IsInFailTable())
+    {
+        AWS_LOGF_INFO(
+            AWS_LS_CRT_CPP_CANARY,
+            "TransferState::SetConnection - Connection being set on transfer state that has a fail-listed endpoint.");
+    }
+}
+
+void TransferState::SetTransferSuccess(bool success)
+{
+    m_transferSuccess = success;
+
+    UpdateRateTracking(0ULL, true);
+
+    std::shared_ptr<Http::HttpClientConnection> connection = GetConnection();
+
+    if (connection == nullptr)
+    {
+        AWS_LOGF_ERROR(
+            AWS_LS_CRT_CPP_CANARY,
+            "TransferState::SetTransferSuccess - No connection currently exists for TransferState");
+        return;
+    }
+
+    Io::EndPointMonitor *endPointMonitor =
+        connection != nullptr
+            ? (Io::EndPointMonitor *)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle())
+            : nullptr;
+
+    if (endPointMonitor == nullptr)
+    {
+        AWS_LOGF_INFO(
+            AWS_LS_CRT_CPP_CANARY,
+            "TransferState::SetTransferSuccess - No Endpoint Monitor currently exists for TransferState");
+        return;
+    }
+
+    if (endPointMonitor->IsInFailTable())
+    {
+        AWS_LOGF_INFO(
+            AWS_LS_CRT_CPP_CANARY,
+            "TransferState::SetTransferSuccess - Cnnection's endpoint is in the fail table, force closing connection.");
+
+        // Force connection to close so that it doesn't go back into the pool.
+        connection->Close();
+    }
+}
+
 void TransferState::InitDataUpMetric()
 {
+    ResetRateTracking();
+
     AddDataUpMetric(0);
 }
 
 void TransferState::InitDataDownMetric()
 {
+    ResetRateTracking();
+
     AddDataDownMetric(0);
 }
 
 void TransferState::AddDataUpMetric(uint64_t dataUp)
 {
+    UpdateRateTracking(dataUp, false);
+
     PushDataMetric(m_uploadMetrics, MetricName::BytesUp, (double)dataUp);
 }
 
 void TransferState::AddDataDownMetric(uint64_t dataDown)
 {
+    UpdateRateTracking(dataDown, false);
+
     PushDataMetric(m_downloadMetrics, MetricName::BytesDown, (double)dataDown);
 }
 
-void TransferState::FlushDataUpMetrics()
+void TransferState::FlushDataUpMetrics(const std::shared_ptr<MetricsPublisher> &publisher)
 {
-    FlushMetricsVector(m_uploadMetrics);
+    FlushMetricsVector(publisher, m_uploadMetrics);
 }
 
-void TransferState::FlushDataDownMetrics()
+void TransferState::FlushDataDownMetrics(const std::shared_ptr<MetricsPublisher> &publisher)
 {
-    FlushMetricsVector(m_downloadMetrics);
+    FlushMetricsVector(publisher, m_downloadMetrics);
 }
