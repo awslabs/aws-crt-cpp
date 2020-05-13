@@ -37,7 +37,7 @@ namespace Aws
                  */
                 Uri(const ByteCursor &cursor, Allocator *allocator = g_allocator) noexcept;
                 /**
-                 * builds a URI from `builderOptions`. Upon failure the bool() operator will return false and
+                 * Builds a URI from `builderOptions`. Upon failure the bool() operator will return false and
                  * LastError() will contain the errorCode.
                  */
                 Uri(aws_uri_builder_options &builderOptions, Allocator *allocator = g_allocator) noexcept;
@@ -45,50 +45,55 @@ namespace Aws
                 Uri &operator=(const Uri &);
                 Uri(Uri &&uri) noexcept;
                 Uri &operator=(Uri &&) noexcept;
-
+                /**
+                 * @return true if the instance is in a valid state, false otherwise.
+                 */
                 operator bool() const noexcept { return m_isInit; }
+                /**
+                 * @return the value of the last aws error encountered by operations on this instance.
+                 */
                 int LastError() const noexcept { return m_lastError; }
 
                 /**
-                 * Returns the scheme portion of the URI if present (e.g. https, http, ftp etc....)
+                 * @return the scheme portion of the URI if present (e.g. https, http, ftp etc....)
                  */
                 ByteCursor GetScheme() const noexcept;
 
                 /**
-                 * Returns the authority portion of the URI if present. This will contain host name and port if
+                 * @return the authority portion of the URI if present. This will contain host name and port if
                  * specified.
                  * */
                 ByteCursor GetAuthority() const noexcept;
 
                 /**
-                 * Returns the path portion of the URI. If no path was present, this will be set to '/'.
+                 * @return the path portion of the URI. If no path was present, this will be set to '/'.
                  */
                 ByteCursor GetPath() const noexcept;
 
                 /**
-                 * Returns the query string portion of the URI if present.
+                 * @return the query string portion of the URI if present.
                  */
                 ByteCursor GetQueryString() const noexcept;
 
                 /**
-                 * Returns the host name portion of the authority. (port will not be in this value).
+                 * @return the host name portion of the authority. (port will not be in this value).
                  */
                 ByteCursor GetHostName() const noexcept;
 
                 /**
-                 * Returns the port portion of the authority if a port was specified. If it was not, this will
+                 * @return the port portion of the authority if a port was specified. If it was not, this will
                  * be set to 0. In that case, it is your responsibility to determine the correct port
                  * based on the protocol you're using.
                  */
                 uint16_t GetPort() const noexcept;
 
-                /** Returns the Path and Query portion of the URI. In the case of Http, this likely the value for the
+                /** @return the Path and Query portion of the URI. In the case of Http, this likely the value for the
                  * URI parameter.
                  */
                 ByteCursor GetPathAndQuery() const noexcept;
 
                 /**
-                 * The full URI as it was passed to or parsed from the constructors.
+                 * @return The full URI as it was passed to or parsed from the constructors.
                  */
                 ByteCursor GetFullUri() const noexcept;
 

@@ -59,7 +59,13 @@ namespace Aws
                 Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
                 const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions);
 
+            /**
+             * @return true if the instance is in a valid state, false otherwise.
+             */
             explicit operator bool() const noexcept { return m_context ? true : false; }
+            /**
+             * @return the value of the last aws error encountered by operations on this instance.
+             */
             int LastError() const noexcept { return m_lastError; }
 
           private:
@@ -212,8 +218,13 @@ namespace Aws
              * Builds a client configuration object from the set options.
              */
             MqttClientConnectionConfig Build() noexcept;
-
+            /**
+             * @return true if the instance is in a valid state, false otherwise.
+             */
             explicit operator bool() const noexcept { return m_isGood; }
+            /**
+             * @return the value of the last aws error encountered by operations on this instance.
+             */
             int LastError() const noexcept { return aws_last_error(); }
 
           private:
@@ -237,8 +248,13 @@ namespace Aws
             MqttClient(Crt::Io::ClientBootstrap &bootstrap, Crt::Allocator *allocator = Crt::g_allocator) noexcept;
 
             std::shared_ptr<Crt::Mqtt::MqttConnection> NewConnection(const MqttClientConnectionConfig &config) noexcept;
-
+            /**
+             * @return the value of the last aws error encountered by operations on this instance.
+             */
             int LastError() const noexcept { return m_client.LastError(); }
+            /**
+             * @return true if the instance is in a valid state, false otherwise.
+             */
             explicit operator bool() const noexcept { return m_client ? true : false; }
 
           private:

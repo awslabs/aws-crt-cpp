@@ -43,8 +43,13 @@ namespace Aws
                 TlsContextOptions &operator=(const TlsContextOptions &) noexcept = delete;
                 TlsContextOptions(TlsContextOptions &&) noexcept;
                 TlsContextOptions &operator=(TlsContextOptions &&) noexcept;
-
+                /**
+                 * @return true if the instance is in a valid state, false otherwise.
+                 */
                 explicit operator bool() const noexcept { return m_isInit; }
+                /**
+                 * @return the value of the last aws error encountered by operations on this instance.
+                 */
                 int LastError() const noexcept { return aws_last_error(); }
 
                 /**
@@ -56,6 +61,8 @@ namespace Aws
                  * Initializes TlsContextOptions with secure by default options, with
                  * client certificate and private key. These are paths to a file on disk. These files
                  * must be in the PEM format.
+                 * @param cert_path: Path to certificate file.
+                 * @param pkey_path: Path to private key file.
                  */
                 static TlsContextOptions InitClientWithMtls(
                     const char *cert_path,
@@ -66,6 +73,8 @@ namespace Aws
                  * Initializes TlsContextOptions with secure by default options, with
                  * client certificate and private key. These are in memory buffers. These buffers
                  * must be in the PEM format.
+                 * @param cert: Certificate contents in memory.
+                 * @param pkey: Private key contents in memory.
                  */
                 static TlsContextOptions InitClientWithMtls(
                     const ByteCursor &cert,
@@ -76,8 +85,11 @@ namespace Aws
                 /**
                  * Initializes TlsContextOptions with secure by default options, with
                  * client certificateand private key in the PKCS#12 format.
-                 * This is a path to a file on disk. These
-                 * strings must remain in memory for the lifetime of the returned object.
+                 * NOTE: This configuration only works on Apple devices.
+                 * @param pkcs12_path: Path to PKCS #12 file. The file is loaded from disk and stored internally. It
+                 * must remain in memory for the lifetime of the returned object.
+                 * @param pkcs12_pwd: Password to PKCS #12 file. It must remain in memory for the lifetime of the
+                 * returned object.
                  */
                 static TlsContextOptions InitClientWithMtlsPkcs12(
                     const char *pkcs12_path,
@@ -86,14 +98,15 @@ namespace Aws
 #endif
 
                 /**
-                 * Returns true if alpn is supported by the underlying security provider, false
+                 * @return true if alpn is supported by the underlying security provider, false
                  * otherwise.
                  */
                 static bool IsAlpnSupported() noexcept;
 
                 /**
-                 * Sets the list of alpn protocols, delimited by ';'. This string must remain in memory
-                 * for the lifetime of this object.
+                 * Sets the list of alpn protocols.
+                 * @param alpnList: List of protocol names, delimited by ';'. This string must remain in memory for the
+                 * lifetime of this object.
                  */
                 bool SetAlpnList(const char *alpnList) noexcept;
 
@@ -108,14 +121,18 @@ namespace Aws
                 void SetVerifyPeer(bool verifyPeer) noexcept;
 
                 /**
-                 * Overrides the default system trust store. caPath is only useful on Unix style systems where
-                 * all anchors are stored in a directory (like /etc/ssl/certs). caFile is for a single file containing
-                 * all trusted CAs. caFile must be in the PEM format.
-                 *
-                 * These strings must remain in memory for the lifetime of this object.
+                 * Overrides the default system trust store.
+                 * @param caPath: Path to directory containing trusted certificates, which will overrides the
+                 * default trust store. Only useful on Unix style systems where all anchors are stored in a directory
+                 * (like /etc/ssl/certs). This string must remain in memory for the lifetime of this object.
+                 * @param caFile: Path to file containing PEM armored chain of trusted CA certificates. This
+                 * string must remain in memory for the lifetime of this object.
                  */
                 bool OverrideDefaultTrustStore(const char *caPath, const char *caFile) noexcept;
-
+                /**
+                 * Overrides the default system trust store.
+                 * @param ca: PEM armored chain of trusted CA certificates.
+                 */
                 bool OverrideDefaultTrustStore(const ByteCursor &ca) noexcept;
 
               private:
@@ -139,7 +156,7 @@ namespace Aws
                 /**
                  * Sets SNI extension, and also the name used for X.509 validation. serverName is copied.
                  *
-                 * returns true if the copy succeeded, or false otherwise.
+                 * @return true if the copy succeeded, or false otherwise.
                  */
                 bool SetServerName(ByteCursor &serverName) noexcept;
 
@@ -147,13 +164,18 @@ namespace Aws
                  * Sets list of protocols (semi-colon delimited in priority order) used for ALPN extension.
                  * alpnList is copied.
                  *
-                 * returns true if the copy succeeded, or false otherwise.
+                 * @return true if the copy succeeded, or false otherwise.
                  */
                 bool SetAlpnList(const char *alpnList) noexcept;
-
+                /**
+                 * @return true if the instance is in a valid state, false otherwise.
+                 */
                 explicit operator bool() const noexcept { return m_isInit; }
+                /**
+                 * @return the value of the last aws error encountered by operations on this instance.
+                 */
                 int LastError() const noexcept { return m_lastError; }
-
+                /// @private
                 const aws_tls_connection_options *GetUnderlyingHandle() const noexcept
                 {
                     return &m_tls_connection_options;
@@ -181,9 +203,13 @@ namespace Aws
                 TlsContext &operator=(TlsContext &&) noexcept = default;
 
                 TlsConnectionOptions NewConnectionOptions() const noexcept;
-
+                /**
+                 * @return true if the instance is in a valid state, false otherwise.
+                 */
                 explicit operator bool() const noexcept { return m_ctx && m_initializationError == AWS_ERROR_SUCCESS; }
-
+                /**
+                 * @return the value of the last aws error encountered by operations on this instance.
+                 */
                 int GetInitializationError() const noexcept { return m_initializationError; }
 
               private:

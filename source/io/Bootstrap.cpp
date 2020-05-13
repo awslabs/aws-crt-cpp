@@ -21,19 +21,32 @@ namespace Aws
         namespace Io
         {
 
-            // Holds the bootstrap's shutdown promise.
-            // Lives until the bootstrap's shutdown-complete callback fires.
+            /**
+             * Holds the bootstrap's shutdown promise.
+             * Lives until the bootstrap's shutdown-complete callback fires.
+             */
+            /// @private
             struct ClientBootstrapCallbackData
             {
+                /**
+                 * Promise for bootstrap's shutdown.
+                 */
                 std::promise<void> ShutdownPromise;
+                /**
+                 * User callback of bootstrap's shutdown-complete.
+                 */
                 OnClientBootstrapShutdownComplete ShutdownCallback;
 
+                /**
+                 * Internal callback of bootstrap's shutdown-complete
+                 */
                 static void OnShutdownComplete(void *userData)
                 {
                     auto callbackData = static_cast<ClientBootstrapCallbackData *>(userData);
 
                     callbackData->ShutdownPromise.set_value();
-                    if (callbackData->ShutdownCallback) {
+                    if (callbackData->ShutdownCallback)
+                    {
                         callbackData->ShutdownCallback();
                     }
 
