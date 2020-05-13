@@ -87,8 +87,7 @@ S3ObjectTransport::S3ObjectTransport(
             options.m_hostResolver = canaryApp.GetDefaultHostResolver().GetUnderlyingHandle();
             options.m_endPoint = m_endpoint;
 
-            m_endPointMonitorManager = std::unique_ptr<Io::EndPointMonitorManager>(
-                new Io::EndPointMonitorManager(options)); // TODO use aws allocator with custom deleter
+            m_endPointMonitorManager = MakeShared<Io::EndPointMonitorManager>(g_allocator, options); // TODO use unique pointer
 
             connectionManagerOptions.OnConnectionCreated = [this](struct aws_http_connection *connection) {
                 if (m_endPointMonitorManager != nullptr)
