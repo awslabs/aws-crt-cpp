@@ -35,8 +35,9 @@ using namespace Aws::Crt;
 namespace
 {
     const int32_t S3GetObjectResponseStatus_PartialContent = 206;
-    const uint32_t AllowableThroughputFailureIntervalSeconds = 1;
-    const bool ThroughputMonitoringEnabled = false;
+    const uint32_t ConnectionMonitoringFailureIntervalSeconds = 1;
+    const bool ConnectionMonitoringEnabled = false;
+    const bool EndPointMonitoringEnabled = true;
 } // namespace
 
 S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::String &bucket, uint64_t minThroughputBytesPerSecond)
@@ -52,15 +53,6 @@ S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::Strin
 
     m_minThroughputBytes = minThroughputBytesPerSecond;
 
-    Io::EndPointMonitorOptions options;
-    options.m_expectedPerSampleThroughput = minThroughputBytesPerSecond;
-    options.m_allowedFailureInterval = 2ULL;
-    options.m_schedulingLoop = aws_event_loop_group_get_next_loop(canaryApp.GetEventLoopGroup().GetUnderlyingHandle());;
-    options.m_hostResolver = canaryApp.GetDefaultHostResolver().GetUnderlyingHandle();
-    options.m_endPoint = m_endpoint;
-
-    m_endPointMonitorManager = std::unique_ptr<Io::EndPointMonitorManager>(new Io::EndPointMonitorManager(options)); // TODO use aws allocator with custom deleter
-
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
 
     connectionManagerOptions.ConnectionOptions.HostName = m_endpoint;
@@ -68,13 +60,6 @@ S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::Strin
     connectionManagerOptions.ConnectionOptions.SocketOptions.SetConnectTimeoutMs(3000);
     connectionManagerOptions.ConnectionOptions.SocketOptions.SetSocketType(AWS_SOCKET_STREAM);
     connectionManagerOptions.ConnectionOptions.InitialWindowSize = SIZE_MAX;
-    connectionManagerOptions.OnConnectionCreated = [this](struct aws_http_connection* connection)
-    {
-        if(m_endPointMonitorManager != nullptr)
-        {
-            m_endPointMonitorManager->AttachMonitor(connection);
-        }
-    };
 
     if (m_canaryApp.GetOptions().sendEncrypted)
     {
@@ -84,13 +69,40 @@ S3ObjectTransport::S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::Strin
         connectionManagerOptions.ConnectionOptions.TlsOptions = connOptions;
     }
 
-    if(ThroughputMonitoringEnabled && m_minThroughputBytes > 0)
+    if(m_minThroughputBytes > 0)
     {
-        Http::HttpConnectionMonitoringOptions monitoringOptions;
-        monitoringOptions.allowable_throughput_failure_interval_seconds = AllowableThroughputFailureIntervalSeconds;
-        monitoringOptions.minimum_throughput_bytes_per_second = m_minThroughputBytes;
+        if(EndPointMonitoringEnabled)
+        {
+            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Endpoint monitoring enabled.");
 
-        connectionManagerOptions.ConnectionOptions.MonitoringOptions = monitoringOptions;
+            Io::EndPointMonitorOptions options;
+            options.m_expectedPerSampleThroughput = m_minThroughputBytes;
+            options.m_allowedFailureInterval = 2ULL;
+            options.m_schedulingLoop = aws_event_loop_group_get_next_loop(canaryApp.GetEventLoopGroup().GetUnderlyingHandle());;
+            options.m_hostResolver = canaryApp.GetDefaultHostResolver().GetUnderlyingHandle();
+            options.m_endPoint = m_endpoint;
+
+            m_endPointMonitorManager = std::unique_ptr<Io::EndPointMonitorManager>(new Io::EndPointMonitorManager(options)); // TODO use aws allocator with custom deleter
+
+            connectionManagerOptions.OnConnectionCreated = [this](struct aws_http_connection* connection)
+            {
+                if(m_endPointMonitorManager != nullptr)
+                {
+                    m_endPointMonitorManager->AttachMonitor(connection);
+                }
+            };
+        }
+
+        if(ConnectionMonitoringEnabled)
+        {
+            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Connection monitoring enabled.");
+
+            Http::HttpConnectionMonitoringOptions monitoringOptions;
+            monitoringOptions.allowable_throughput_failure_interval_seconds = ConnectionMonitoringFailureIntervalSeconds;
+            monitoringOptions.minimum_throughput_bytes_per_second = m_minThroughputBytes;
+
+            connectionManagerOptions.ConnectionOptions.MonitoringOptions = monitoringOptions;
+        }
     }
 
     connectionManagerOptions.ConnectionOptions.Bootstrap = &m_canaryApp.GetBootstrap();

@@ -125,6 +125,8 @@ void EndPointMonitor::ProcessSamples()
     if(sampleSum.m_sampleSum < expectedThroughputSum)
     {
         m_failureTime += timeElapsed;
+
+        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Endpoint Monitoring: Low througput deteced for endpoint %s (%" PRIu64 " < %" PRIu64 ")", m_address.c_str(), (uint64_t)sampleSum.m_sampleSum, expectedThroughputSum);
     }
     else
     {
@@ -135,6 +137,8 @@ void EndPointMonitor::ProcessSamples()
 
     if(m_failureTime > allowedFailureIntervalNS)
     {
+        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Endpoint Monitoring: Recording failure for %s (%" PRIu64 " > %" PRIu64 ")", m_address.c_str(), m_failureTime, allowedFailureIntervalNS);
+
         aws_host_address hostAddress;
         AWS_ZERO_STRUCT(hostAddress);
         hostAddress.allocator = g_allocator;
