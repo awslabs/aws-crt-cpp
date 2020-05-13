@@ -269,6 +269,10 @@ void TransferState::UpdateRateTracking(uint64_t dataUsed, bool forceFlush)
             {
                 monitor->AddSample(perSecondRate);
             }
+            else
+            {
+                AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "TransferState::UpdateRateTracking - Attached monitor is null.");
+            }
         }
     }
 
@@ -323,6 +327,8 @@ void TransferState::SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClie
 void TransferState::SetTransferSuccess(bool success)
 {
     m_transferSuccess = success;
+
+    UpdateRateTracking(0ULL, true);
 
     std::shared_ptr<Http::HttpClientConnection> connection = GetConnection();
 
@@ -388,16 +394,10 @@ void TransferState::AddDataDownMetric(uint64_t dataDown)
 
 void TransferState::FlushDataUpMetrics(const std::shared_ptr<MetricsPublisher> &publisher)
 {
-    // ResetRateTracking();
-    UpdateRateTracking(0ULL, true);
-
     FlushMetricsVector(publisher, m_uploadMetrics);
 }
 
 void TransferState::FlushDataDownMetrics(const std::shared_ptr<MetricsPublisher> &publisher)
 {
-    // ResetRateTracking();
-    UpdateRateTracking(0ULL, true);
-
     FlushMetricsVector(publisher, m_downloadMetrics);
 }

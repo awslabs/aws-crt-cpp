@@ -86,7 +86,8 @@ S3ObjectTransport::S3ObjectTransport(
             options.m_hostResolver = canaryApp.GetDefaultHostResolver().GetUnderlyingHandle();
             options.m_endPoint = m_endpoint;
 
-            m_endPointMonitorManager = MakeShared<Io::EndPointMonitorManager>(g_allocator, options); // TODO use unique pointer
+            m_endPointMonitorManager =
+                MakeShared<Io::EndPointMonitorManager>(g_allocator, options); // TODO use unique pointer
 
             connectionManagerOptions.OnConnectionCreated = [this](struct aws_http_connection *connection) {
                 if (m_endPointMonitorManager != nullptr)
