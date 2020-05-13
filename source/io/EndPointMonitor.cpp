@@ -142,7 +142,7 @@ void EndPointMonitor::ProcessSamples()
 
     if (m_failureTime > allowedFailureIntervalNS)
     {
-        if(!m_isInFailTable.load())
+        if (!m_isInFailTable.load())
         {
             AWS_LOGF_ERROR(
                 AWS_LS_CRT_CPP_CANARY,
@@ -157,7 +157,8 @@ void EndPointMonitor::ProcessSamples()
             hostAddress.record_type = AWS_ADDRESS_RECORD_TYPE_A;
             hostAddress.host = aws_string_new_from_array(
                 g_allocator, (uint8_t *)m_options.m_endPoint.c_str(), m_options.m_endPoint.length());
-            hostAddress.address = aws_string_new_from_array(g_allocator, (uint8_t *)m_address.c_str(), m_address.length());
+            hostAddress.address =
+                aws_string_new_from_array(g_allocator, (uint8_t *)m_address.c_str(), m_address.length());
 
             aws_host_resolver_record_connection_failure(m_options.m_hostResolver, &hostAddress);
 
@@ -243,6 +244,11 @@ void EndPointMonitorManager::OnPutFailTable(aws_host_address *host_address, void
     String address(aws_string_c_str(host_address->address));
     auto endPointMonitorIt = endPointMonitorManager->m_endPointMonitors.find(address);
 
+    AWS_LOGF_ERROR(
+        AWS_LS_CRT_CPP_CANARY,
+        "EndPointMonitorManager::OnPutFailTable - Address %s placed in fail table",
+        address.c_str());
+
     if (endPointMonitorIt == endPointMonitorManager->m_endPointMonitors.end())
     {
         AWS_LOGF_ERROR(
@@ -268,6 +274,11 @@ void EndPointMonitorManager::OnRemoveFailTable(aws_host_address *host_address, v
 
     String address(aws_string_c_str(host_address->address));
     auto endPointMonitorIt = endPointMonitorManager->m_endPointMonitors.find(address);
+
+    AWS_LOGF_ERROR(
+        AWS_LS_CRT_CPP_CANARY,
+        "EndPointMonitorManager::OnRemoveFailTable - Address %s removed from fail table",
+        address.c_str());
 
     if (endPointMonitorIt == endPointMonitorManager->m_endPointMonitors.end())
     {
