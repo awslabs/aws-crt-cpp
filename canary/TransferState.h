@@ -47,7 +47,7 @@ class TransferState : public std::enable_shared_from_this<TransferState>
      * Flags this is a success or failure, which will be reported as a metric on a flush
      * of one of up or down metrics.
      */
-    void SetTransferSuccess(bool success) { m_transferSuccess = success; }
+    void SetTransferSuccess(bool success);
 
     /*
      * Initializes data up metric, setting a start time for when the upload started.
@@ -76,7 +76,7 @@ class TransferState : public std::enable_shared_from_this<TransferState>
     void FlushDataUpMetrics(const std::shared_ptr<MetricsPublisher> &publisher);
 
     /*
-     * Send download metrics to the metrics publisher and clear are local copy.
+     * Send download metrics to the metrics publisher and clear the local copy.
      * Also reports success or failure metric during this time.
      */
     void FlushDataDownMetrics(const std::shared_ptr<MetricsPublisher> &publisher);
@@ -88,6 +88,9 @@ class TransferState : public std::enable_shared_from_this<TransferState>
 
   private:
     static std::atomic<uint64_t> s_nextTransferId;
+
+    uint64_t m_dataUsedRateSum;
+    uint64_t m_dataUsedRateTimestamp;
 
     int32_t m_partIndex;
     uint64_t m_transferId;
@@ -119,4 +122,8 @@ class TransferState : public std::enable_shared_from_this<TransferState>
     void PushDataMetric(Aws::Crt::Vector<Metric> &metrics, MetricName metricName, double dataUsed);
 
     void FlushMetricsVector(const std::shared_ptr<MetricsPublisher> &publisher, Aws::Crt::Vector<Metric> &metrics);
+
+    void ResetRateTracking();
+
+    void UpdateRateTracking(uint64_t dataUsed, bool forceFlush);
 };

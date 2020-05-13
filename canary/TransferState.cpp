@@ -181,19 +181,6 @@ void TransferState::PushDataMetric(Vector<Metric> &metrics, MetricName metricNam
     aws_sys_clock_get_ticks(&current_time);
     uint64_t now = aws_timestamp_convert(current_time, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, NULL);
 
-    std::shared_ptr<Http::HttpClientConnection> conn = GetConnection();
-
-    if(conn != nullptr)
-    {
-        //aws_http_connection* connHandle = conn->GetUnderlyingHandle();
-        Io::EndPointMonitor* monitor = nullptr; //connHandle->user_data_2;
-
-        if(monitor != nullptr)
-        {
-            monitor->AddSample(dataUsed);
-        }
-    }
-
     if (metrics.size() == 0)
     {
         Metric metric(metricName, MetricUnit::Bytes, now, m_transferId, dataUsed);
@@ -241,6 +228,43 @@ void TransferState::FlushMetricsVector(const std::shared_ptr<MetricsPublisher> &
     metrics.clear();
 }
 
+void TransferState::ResetRateTracking()
+{
+    uint64_t current_time = 0;
+    aws_sys_clock_get_ticks(&current_time);
+    uint64_t now = aws_timestamp_convert(current_time, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, NULL);
+
+    m_dataUsedRateTimestamp = now;
+    m_dataUsedRateSum = 0;
+}
+
+void TransferState::UpdateRateTracking(uint64_t dataUsed, bool forceFlush)
+{
+    uint64_t current_time = 0;
+    aws_sys_clock_get_ticks(&current_time);
+    uint64_t now = aws_timestamp_convert(current_time, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, NULL);
+
+    m_dataUsedRateSum += dataUsed;
+
+    uint64_t dataUsedRateTimeInterval = now - m_dataUsedRateTimestamp;
+
+    if((forceFlush && m_dataUsedRateSum > 0ULL) || dataUsedRateTimeInterval > 1000ULL)
+    {
+        double dataUsedRateTimeIntervalSeconds = (double)dataUsedRateTimeInterval / 1000.0;
+
+        uint64_t perSecondRate = (uint64_t)((double)m_dataUsedRateSum / dataUsedRateTimeIntervalSeconds);
+
+        std::shared_ptr<Http::HttpClientConnection> connection = m_connection.lock();
+        Io::EndPointMonitor* monitor = (Io::EndPointMonitor*)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle());
+        monitor->AddSample(perSecondRate);
+    } 
+
+    if(forceFlush)
+    {
+        ResetRateTracking();
+    }
+}
+
 void TransferState::ProcessHeaders(const Http::HttpHeader *headersArray, size_t headersCount)
 {
     for (size_t i = 0; i < headersCount; ++i)
@@ -271,32 +295,73 @@ void TransferState::SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClie
     }
 }
 
+void TransferState::SetTransferSuccess(bool success)
+{
+    m_transferSuccess = success;
+
+    std::shared_ptr<Http::HttpClientConnection> connection = GetConnection();
+    
+    if(connection == nullptr)
+    {
+        AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "TransferState::SetTransferSuccess - No connection currently exists for TransferState");
+        return;
+    }
+
+    Io::EndPointMonitor* endPointMonitor = connection != nullptr ? (Io::EndPointMonitor*)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle()) : nullptr;
+
+    if(endPointMonitor == nullptr)
+    {
+        AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "TransferState::SetTransferSuccess - No End Point Monitor currently exists for TransferState");
+        return;
+    }
+
+    if(endPointMonitor->IsInFailTable())
+    {
+        // Force connection to close so that it doesn't go back into the pool.
+        connection->Close();
+    }
+}
+
 void TransferState::InitDataUpMetric()
 {
+    ResetRateTracking();
+
     AddDataUpMetric(0);
 }
 
 void TransferState::InitDataDownMetric()
 {
+    ResetRateTracking();
+
     AddDataDownMetric(0);
 }
 
 void TransferState::AddDataUpMetric(uint64_t dataUp)
 {
+    UpdateRateTracking(dataUp, true);
+
     PushDataMetric(m_uploadMetrics, MetricName::BytesUp, (double)dataUp);
 }
 
 void TransferState::AddDataDownMetric(uint64_t dataDown)
 {
+    UpdateRateTracking(dataDown, true);
+
     PushDataMetric(m_downloadMetrics, MetricName::BytesDown, (double)dataDown);
 }
 
 void TransferState::FlushDataUpMetrics(const std::shared_ptr<MetricsPublisher> &publisher)
 {
+    //ResetRateTracking();
+    UpdateRateTracking(0ULL, true);
+
     FlushMetricsVector(publisher, m_uploadMetrics);
 }
 
 void TransferState::FlushDataDownMetrics(const std::shared_ptr<MetricsPublisher> &publisher)
 {
+    //ResetRateTracking();
+    UpdateRateTracking(0ULL, true);
+
     FlushMetricsVector(publisher, m_downloadMetrics);
 }
