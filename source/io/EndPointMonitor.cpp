@@ -39,9 +39,7 @@ EndPointMonitor::EndPointMonitor(const String &address, const EndPointMonitorOpt
     m_processSamplesTask = New<aws_task>(g_allocator);
     aws_task_init(m_processSamplesTask, EndPointMonitor::s_ProcessSamplesTask, this, "ProcessSamplesTask");
 
-    uint64_t now = 0ULL;
-    aws_sys_clock_get_ticks(&now); // TODO should be using event_loop_current_clock_time?
-    m_timeLastProcessed = now;
+    aws_event_loop_current_clock_time(m_options.m_schedulingLoop, &m_timeLastProcessed);
 
     ScheduleNextProcessSamplesTask();
 }
@@ -103,7 +101,6 @@ void EndPointMonitor::ProcessSamples()
     aws_event_loop_current_clock_time(m_options.m_schedulingLoop, &nowNS);
 
     uint64_t timeElapsed = nowNS - m_timeLastProcessed;
-    m_timeLastProcessed = nowNS;
 
     AWS_LOGF_ERROR(
         AWS_LS_CRT_CPP_CANARY,
@@ -111,6 +108,8 @@ void EndPointMonitor::ProcessSamples()
         m_address.c_str(),
         nowNS,
         m_timeLastProcessed);
+
+    m_timeLastProcessed = nowNS;
 
     uint64_t expectedThroughputSum = sampleSum.m_numSamples * m_options.m_expectedPerSampleThroughput;
 
