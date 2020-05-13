@@ -83,7 +83,6 @@ S3ObjectTransport::S3ObjectTransport(
             options.m_allowedFailureInterval = 2ULL;
             options.m_schedulingLoop =
                 aws_event_loop_group_get_next_loop(canaryApp.GetEventLoopGroup().GetUnderlyingHandle());
-            ;
             options.m_hostResolver = canaryApp.GetDefaultHostResolver().GetUnderlyingHandle();
             options.m_endPoint = m_endpoint;
 
@@ -111,7 +110,7 @@ S3ObjectTransport::S3ObjectTransport(
     }
 
     connectionManagerOptions.ConnectionOptions.Bootstrap = &m_canaryApp.GetBootstrap();
-    connectionManagerOptions.MaxConnections = 5000;
+    connectionManagerOptions.MaxConnections = 500;
 
     m_connManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, g_allocator);
