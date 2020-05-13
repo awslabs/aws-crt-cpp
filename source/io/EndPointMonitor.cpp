@@ -134,7 +134,7 @@ void EndPointMonitor::ProcessSamples()
     }
     else
     {
-        m_failureTime = 0;
+        m_failureTime = 0ULL;
     }
 
     uint64_t allowedFailureIntervalNS =
@@ -142,24 +142,29 @@ void EndPointMonitor::ProcessSamples()
 
     if (m_failureTime > allowedFailureIntervalNS)
     {
-        AWS_LOGF_ERROR(
-            AWS_LS_CRT_CPP_CANARY,
-            "Endpoint Monitoring: Recording failure for %s (%" PRIu64 " > %" PRIu64 ")",
-            m_address.c_str(),
-            m_failureTime,
-            allowedFailureIntervalNS);
+        if(!m_isInFailTable.load())
+        {
+            AWS_LOGF_ERROR(
+                AWS_LS_CRT_CPP_CANARY,
+                "Endpoint Monitoring: Recording failure for %s (%" PRIu64 " > %" PRIu64 ")",
+                m_address.c_str(),
+                m_failureTime,
+                allowedFailureIntervalNS);
 
-        aws_host_address hostAddress;
-        AWS_ZERO_STRUCT(hostAddress);
-        hostAddress.allocator = g_allocator;
-        hostAddress.record_type = AWS_ADDRESS_RECORD_TYPE_A;
-        hostAddress.host = aws_string_new_from_array(
-            g_allocator, (uint8_t *)m_options.m_endPoint.c_str(), m_options.m_endPoint.length());
-        hostAddress.address = aws_string_new_from_array(g_allocator, (uint8_t *)m_address.c_str(), m_address.length());
+            aws_host_address hostAddress;
+            AWS_ZERO_STRUCT(hostAddress);
+            hostAddress.allocator = g_allocator;
+            hostAddress.record_type = AWS_ADDRESS_RECORD_TYPE_A;
+            hostAddress.host = aws_string_new_from_array(
+                g_allocator, (uint8_t *)m_options.m_endPoint.c_str(), m_options.m_endPoint.length());
+            hostAddress.address = aws_string_new_from_array(g_allocator, (uint8_t *)m_address.c_str(), m_address.length());
 
-        aws_host_resolver_record_connection_failure(m_options.m_hostResolver, &hostAddress);
+            aws_host_resolver_record_connection_failure(m_options.m_hostResolver, &hostAddress);
 
-        aws_host_address_clean_up(&hostAddress);
+            aws_host_address_clean_up(&hostAddress);
+        }
+
+        m_failureTime = 0ULL;
     }
 
     ScheduleNextProcessSamplesTask();
