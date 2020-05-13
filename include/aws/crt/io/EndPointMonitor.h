@@ -45,6 +45,25 @@ namespace Aws
                     uint64_t asUint64() const;
                 };
 
+                struct HistoryEntry
+                {
+                    uint64_t m_timeStamp;
+                    uint64_t m_bytesPerSecond;
+                    uint32_t m_putInFailTable : 1;
+
+                    HistoryEntry(uint64_t timeStamp, uint64_t bytesPerSecond, bool putInFailTable)
+                        : m_timeStamp(timeStamp), m_bytesPerSecond(bytesPerSecond), m_putInFailTable(putInFailTable)
+                    {
+                    }
+
+                    HistoryEntry() : HistoryEntry(0ULL, 0ULL, false) {}
+                };
+
+                struct History
+                {
+                    Vector<HistoryEntry> m_entries;
+                };
+
                 EndPointMonitor(const Aws::Crt::String &address, const EndPointMonitorOptions &options);
                 ~EndPointMonitor();
 
@@ -54,8 +73,14 @@ namespace Aws
 
                 bool IsInFailTable() const;
 
+                const Aws::Crt::String &GetAddress() const { return m_address; }
+
+                // TODO should maybe have some additional thread safety added to it
+                const History &GetHistory() const { return m_history; }
+
               private:
                 Aws::Crt::String m_address;
+                History m_history;
                 EndPointMonitorOptions m_options;
                 aws_task *m_processSamplesTask;
                 std::atomic<bool> m_isInFailTable;
@@ -79,6 +104,8 @@ namespace Aws
                 void SetupCallbacks();
 
                 void AttachMonitor(aws_http_connection *connection);
+
+                std::shared_ptr<StringStream> GenerateEndPointCSV();
 
               private:
                 EndPointMonitorOptions m_options;

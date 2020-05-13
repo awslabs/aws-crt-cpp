@@ -119,6 +119,8 @@ class S3ObjectTransport
      */
     void WarmDNSCache(uint32_t numTransfers, uint32_t transfersPerAddress);
 
+    Aws::Crt::Io::EndPointMonitorManager *GetEndPointMonitorManager() { return m_endPointMonitorManager.get(); }
+
   private:
     using SignedRequestCallback =
         std::function<void(const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &conn, int32_t errorCode)>;

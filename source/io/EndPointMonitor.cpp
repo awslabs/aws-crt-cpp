@@ -1,10 +1,13 @@
 #include "aws/crt/io/EndPointMonitor.h"
+#include "aws/crt/Api.h"
+#include "aws/crt/DateTime.h"
+#include "aws/crt/Types.h"
+#include "aws/crt/http/HttpConnection.h"
 #include <aws/common/clock.h>
 #include <aws/common/task_scheduler.h>
-#include <aws/crt/Api.h>
-#include <aws/crt/Types.h>
-#include <aws/crt/http/HttpConnection.h>
 #include <aws/io/event_loop.h>
+#include <iomanip>
+#include <iostream>
 
 using namespace Aws::Crt::Io;
 
@@ -140,6 +143,8 @@ void EndPointMonitor::ProcessSamples()
     uint64_t allowedFailureIntervalNS =
         aws_timestamp_convert(m_options.m_allowedFailureInterval, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_NANOS, NULL);
 
+    bool reportedConnectionFailure = false;
+
     if (m_failureTime > allowedFailureIntervalNS)
     {
         if (!m_isInFailTable.load())
@@ -163,10 +168,14 @@ void EndPointMonitor::ProcessSamples()
             aws_host_resolver_record_connection_failure(m_options.m_hostResolver, &hostAddress);
 
             aws_host_address_clean_up(&hostAddress);
+
+            reportedConnectionFailure = true;
         }
 
         m_failureTime = 0ULL;
     }
+
+    m_history.m_entries.emplace_back(nowNS, (uint64_t)sampleSum.m_sampleSum, reportedConnectionFailure);
 
     ScheduleNextProcessSamplesTask();
 }
@@ -295,4 +304,96 @@ void EndPointMonitorManager::OnRemoveFailTable(aws_host_address *host_address, v
     EndPointMonitor *monitor = endPointMonitorIt->second.get();
 
     monitor->SetIsInFailTable(false);
+}
+
+std::shared_ptr<Aws::Crt::StringStream> EndPointMonitorManager::GenerateEndPointCSV()
+{
+    std::lock_guard<std::mutex> lock(m_endPointMonitorsMutex);
+
+    uint64_t minTime = ~0ULL;
+    uint64_t maxTime = 0ULL;
+
+    std::shared_ptr<StringStream> endPointCSVContents = MakeShared<StringStream>(g_allocator);
+
+    for (auto it = m_endPointMonitors.begin(); it != m_endPointMonitors.end(); ++it)
+    {
+        EndPointMonitor *monitor = it->second.get();
+        const EndPointMonitor::History &history = monitor->GetHistory();
+
+        for (const EndPointMonitor::HistoryEntry &historyEntry : history.m_entries)
+        {
+            minTime = std::min(minTime, historyEntry.m_timeStamp);
+            maxTime = std::max(maxTime, historyEntry.m_timeStamp);
+        }
+    }
+
+    if (maxTime > minTime)
+    {
+        return endPointCSVContents;
+    }
+
+    uint64_t minTimeSec = aws_timestamp_convert(minTime, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_SECS, NULL);
+    uint64_t maxTimeSec = aws_timestamp_convert(maxTime, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_SECS, NULL);
+    uint64_t timeInterval = maxTimeSec - minTimeSec;
+
+    Vector<uint64_t> totalRates;
+    Vector<uint64_t> rowRates;
+
+    *endPointCSVContents << "Endpoint";
+
+    for (uint64_t i = 0; i <= timeInterval; ++i)
+    {
+        rowRates.push_back(0ULL);
+        totalRates.push_back(0ULL);
+
+        DateTime dateTime((i + minTimeSec) * 1000ULL);
+
+        StringStream dateTimeString;
+        dateTimeString << std::setfill('0') << std::setw(2) << (uint32_t)dateTime.GetHour() << ":" << std::setw(2)
+                       << (uint32_t)dateTime.GetMinute() << ":" << std::setw(2) << (uint32_t)dateTime.GetSecond();
+
+        *endPointCSVContents << "," << dateTimeString.str().c_str();
+    }
+
+    *endPointCSVContents << std::endl;
+
+    for (auto it = m_endPointMonitors.begin(); it != m_endPointMonitors.end(); ++it)
+    {
+        EndPointMonitor *monitor = it->second.get();
+        const EndPointMonitor::History &history = monitor->GetHistory();
+
+        for (const Io::EndPointMonitor::HistoryEntry &historyEntry : history.m_entries)
+        {
+            uint64_t timeStampSec =
+                aws_timestamp_convert(historyEntry.m_timeStamp, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_SECS, NULL);
+            uint64_t relativeSec = timeStampSec - minTimeSec;
+            uint64_t bytesPerSecond = historyEntry.m_bytesPerSecond;
+
+            rowRates[relativeSec] = bytesPerSecond;
+            totalRates[relativeSec] += bytesPerSecond;
+        }
+
+        *endPointCSVContents << monitor->GetAddress().c_str();
+
+        for (auto rowRateIt = rowRates.begin(); rowRateIt != rowRates.end(); ++rowRateIt)
+        {
+            double GbPerSecond = (double)*rowRateIt * 8.0 / 1000.0 / 1000.0 / 1000.0;
+            *endPointCSVContents << "," << GbPerSecond;
+            *rowRateIt = 0ULL;
+        }
+
+        *endPointCSVContents << std::endl;
+    }
+
+    *endPointCSVContents << "Total";
+
+    for (auto totalRateIt = totalRates.begin(); totalRateIt != totalRates.end(); ++totalRateIt)
+    {
+        double GbPerSecond = (double)*totalRateIt * 8.0 / 1000.0 / 1000.0 / 1000.0;
+        *endPointCSVContents << "," << GbPerSecond;
+    }
+
+    *endPointCSVContents << std::endl;
+
+    return endPointCSVContents;
 }

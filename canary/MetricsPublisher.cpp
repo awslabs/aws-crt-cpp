@@ -21,6 +21,7 @@
 #include <aws/crt/JsonObject.h>
 #include <aws/crt/http/HttpConnectionManager.h>
 #include <aws/crt/http/HttpRequestResponse.h>
+#include <aws/crt/io/EndPointMonitor.h>
 
 #include <aws/common/clock.h>
 #include <aws/common/task_scheduler.h>
@@ -813,6 +814,8 @@ String MetricsPublisher::UploadBackup(uint32_t options)
         }
     }
 
+    uint32_t numFilesBeingUploaded = 0;
+
     {
         AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading per stream upload metrics.");
 
@@ -831,6 +834,8 @@ String MetricsPublisher::UploadBackup(uint32_t options)
                 ++numFilesUploaded;
                 signal.notify_one();
             });
+
+        ++numFilesBeingUploaded;
     }
 
     {
@@ -851,10 +856,58 @@ String MetricsPublisher::UploadBackup(uint32_t options)
                 ++numFilesUploaded;
                 signal.notify_one();
             });
+
+        ++numFilesBeingUploaded;
+    }
+
+    {
+        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading endpoint upload rate dump.");
+
+        std::shared_ptr<StringStream> uploadCSVContents =
+            m_canaryApp.GetUploadTransport()->GetEndPointMonitorManager()->GenerateEndPointCSV();
+
+        std::shared_ptr<Io::StdIOStreamInputStream> uploadCSVContentsStream =
+            MakeShared<Io::StdIOStreamInputStream>(g_allocator, uploadCSVContents);
+
+        transport->PutObject(
+            nullptr,
+            s3Path + "uploadEndpoints.csv",
+            uploadCSVContentsStream,
+            0,
+            [&signal, &numFilesUploaded](int32_t, std::shared_ptr<Aws::Crt::String>) {
+                ++numFilesUploaded;
+                signal.notify_one();
+            });
+
+        ++numFilesBeingUploaded;
+    }
+
+    {
+        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading endpoint download rate dump.");
+
+        std::shared_ptr<StringStream> downloadCSVContents =
+            m_canaryApp.GetDownloadTransport()->GetEndPointMonitorManager()->GenerateEndPointCSV();
+
+        std::shared_ptr<Io::StdIOStreamInputStream> downloadCSVContentsStream =
+            MakeShared<Io::StdIOStreamInputStream>(g_allocator, downloadCSVContents);
+
+        transport->PutObject(
+            nullptr,
+            s3Path + "downloadEndpoints.csv",
+            downloadCSVContentsStream,
+            0,
+            [&signal, &numFilesUploaded](int32_t, std::shared_ptr<Aws::Crt::String>) {
+                ++numFilesUploaded;
+                signal.notify_one();
+            });
+
+        ++numFilesBeingUploaded;
     }
 
     std::unique_lock<std::mutex> signalLock(signalMutex);
-    signal.wait(signalLock, [&numFilesUploaded]() { return numFilesUploaded.load() >= 3; });
+    signal.wait(signalLock, [&numFilesUploaded, numFilesBeingUploaded]() {
+        return numFilesUploaded.load() >= numFilesBeingUploaded;
+    });
 
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading backup finished.");
 
