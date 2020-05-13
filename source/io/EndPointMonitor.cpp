@@ -113,7 +113,7 @@ void EndPointMonitor::ProcessSamples()
 
         AWS_LOGF_INFO(
             AWS_LS_CRT_CPP_CANARY,
-            "Endpoint Monitoring: Low througput deteced for endpoint %s (%" PRIu64 " < %" PRIu64 ")",
+            "Endpoint Monitoring: Low througput detected for endpoint %s (%" PRIu64 " < %" PRIu64 ")",
             m_address.c_str(),
             (uint64_t)sampleSum.m_sampleSum,
             expectedThroughputSum);
@@ -193,6 +193,7 @@ void EndPointMonitorManager::AttachMonitor(aws_http_connection *connection)
     }
     else
     {
+        AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "EndPointMonitorManager::AttachMonitor - Attaching monitor for address %s", address.c_str());
         monitor = new EndPointMonitor(address, m_options); // TODO use aws allocator with custom deleter
         m_endPointMonitors.emplace(address, std::unique_ptr<EndPointMonitor>(monitor));
     }
@@ -208,8 +209,9 @@ void EndPointMonitorManager::OnPutFailTable(aws_host_address *host_address, void
     String address(aws_string_c_str(host_address->address));
     auto endPointMonitorIt = endPointMonitorManager->m_endPointMonitors.find(address);
 
-    if (endPointMonitorIt != endPointMonitorManager->m_endPointMonitors.end())
+    if (endPointMonitorIt == endPointMonitorManager->m_endPointMonitors.end())
     {
+        AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "EndPointMonitorManager::OnPutFailTable - Could not find monitor for address %s", address.c_str());
         return;
     }
 
@@ -226,8 +228,9 @@ void EndPointMonitorManager::OnRemoveFailTable(aws_host_address *host_address, v
     String address(aws_string_c_str(host_address->address));
     auto endPointMonitorIt = endPointMonitorManager->m_endPointMonitors.find(address);
 
-    if (endPointMonitorIt != endPointMonitorManager->m_endPointMonitors.end())
+    if (endPointMonitorIt == endPointMonitorManager->m_endPointMonitors.end())
     {
+        AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "EndPointMonitorManager::OnRemoveFailTable - Could not find monitor for address %s", address.c_str());
         return;
     }
 
