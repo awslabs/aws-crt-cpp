@@ -105,6 +105,13 @@ void EndPointMonitor::ProcessSamples()
     uint64_t timeElapsed = nowNS - m_timeLastProcessed;
     m_timeLastProcessed = nowNS;
 
+    AWS_LOGF_ERROR(
+        AWS_LS_CRT_CPP_CANARY,
+        "EndPointMonitor::ProcessSamples - %s - Now: %" PRIu64 " - Last Processed: %" PRIu64,
+        m_address.c_str(),
+        nowNS,
+        m_timeLastProcessed);
+
     uint64_t expectedThroughputSum = sampleSum.m_numSamples * m_options.m_expectedPerSampleThroughput;
 
     AWS_LOGF_ERROR(
@@ -214,7 +221,11 @@ void EndPointMonitorManager::AttachMonitor(aws_http_connection *connection)
         monitor = new EndPointMonitor(address, m_options); // TODO use aws allocator with custom deleter
         m_endPointMonitors.emplace(address, std::unique_ptr<EndPointMonitor>(monitor));
 
-        AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "[%" PRIx64 "] EndPointMonitorManager::AttachMonitor Number of monitors is now %d", (uint64_t)this, (uint32_t)m_endPointMonitors.size());
+        AWS_LOGF_ERROR(
+            AWS_LS_CRT_CPP_CANARY,
+            "[%" PRIx64 "] EndPointMonitorManager::AttachMonitor Number of monitors is now %d",
+            (uint64_t)this,
+            (uint32_t)m_endPointMonitors.size());
     }
 
     aws_http_connection_set_endpoint_monitor(connection, (void *)monitor);
@@ -232,7 +243,8 @@ void EndPointMonitorManager::OnPutFailTable(aws_host_address *host_address, void
     {
         AWS_LOGF_ERROR(
             AWS_LS_CRT_CPP_CANARY,
-            "[%" PRIx64"] EndPointMonitorManager::OnPutFailTable - Could not find monitor for address %s, with %d monitors.",
+            "[%" PRIx64
+            "] EndPointMonitorManager::OnPutFailTable - Could not find monitor for address %s, with %d monitors.",
             (uint64_t)endPointMonitorManager,
             address.c_str(),
             (uint32_t)endPointMonitorManager->m_endPointMonitors.size());
