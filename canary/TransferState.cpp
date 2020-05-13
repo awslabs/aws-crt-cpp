@@ -256,7 +256,11 @@ void TransferState::UpdateRateTracking(uint64_t dataUsed, bool forceFlush)
 
         std::shared_ptr<Http::HttpClientConnection> connection = m_connection.lock();
         Io::EndPointMonitor* monitor = (Io::EndPointMonitor*)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle());
-        monitor->AddSample(perSecondRate);
+
+        if(monitor != nullptr)
+        {
+            monitor->AddSample(perSecondRate);
+        }
     } 
 
     if(forceFlush)
@@ -311,7 +315,7 @@ void TransferState::SetTransferSuccess(bool success)
 
     if(endPointMonitor == nullptr)
     {
-        AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "TransferState::SetTransferSuccess - No End Point Monitor currently exists for TransferState");
+        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "TransferState::SetTransferSuccess - No Endpoint Monitor currently exists for TransferState");
         return;
     }
 

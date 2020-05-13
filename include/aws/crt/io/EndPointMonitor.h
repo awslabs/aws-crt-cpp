@@ -2,6 +2,7 @@
 
 #include <cinttypes>
 #include <mutex>
+#include <atomic>
 #include <aws/crt/Types.h>
 
 struct aws_task;
