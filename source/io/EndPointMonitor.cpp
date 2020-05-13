@@ -193,7 +193,10 @@ void EndPointMonitorManager::AttachMonitor(aws_http_connection *connection)
     }
     else
     {
-        AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "EndPointMonitorManager::AttachMonitor - Attaching monitor for address %s", address.c_str());
+        AWS_LOGF_ERROR(
+            AWS_LS_CRT_CPP_CANARY,
+            "EndPointMonitorManager::AttachMonitor - Attaching monitor for address %s",
+            address.c_str());
         monitor = new EndPointMonitor(address, m_options); // TODO use aws allocator with custom deleter
         m_endPointMonitors.emplace(address, std::unique_ptr<EndPointMonitor>(monitor));
     }
@@ -211,7 +214,20 @@ void EndPointMonitorManager::OnPutFailTable(aws_host_address *host_address, void
 
     if (endPointMonitorIt == endPointMonitorManager->m_endPointMonitors.end())
     {
-        AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "EndPointMonitorManager::OnPutFailTable - Could not find monitor for address %s", address.c_str());
+        AWS_LOGF_ERROR(
+            AWS_LS_CRT_CPP_CANARY,
+            "EndPointMonitorManager::OnPutFailTable - Could not find monitor for address %s, with %d monitors. Current "
+            "endpoint monitors are:",
+            address.c_str(),
+            (uint32_t)endPointMonitorManager->m_endPointMonitors.size());
+
+        for (auto it = endPointMonitorManager->m_endPointMonitors.begin();
+             it != endPointMonitorManager->m_endPointMonitors.end();
+             ++it)
+        {
+            AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "    * %s", it->first.c_str());
+        }
+
         return;
     }
 
@@ -230,7 +246,11 @@ void EndPointMonitorManager::OnRemoveFailTable(aws_host_address *host_address, v
 
     if (endPointMonitorIt == endPointMonitorManager->m_endPointMonitors.end())
     {
-        AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "EndPointMonitorManager::OnRemoveFailTable - Could not find monitor for address %s", address.c_str());
+        AWS_LOGF_ERROR(
+            AWS_LS_CRT_CPP_CANARY,
+            "EndPointMonitorManager::OnRemoveFailTable - Could not find monitor for address %s, with %d monitors.",
+            address.c_str(),
+            (uint32_t)endPointMonitorManager->m_endPointMonitors.size());
         return;
     }
 
