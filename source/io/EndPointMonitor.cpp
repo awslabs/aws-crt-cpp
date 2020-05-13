@@ -219,14 +219,16 @@ void EndPointMonitorManager::AttachMonitor(aws_http_connection *connection)
 
         AWS_LOGF_ERROR(
             AWS_LS_CRT_CPP_CANARY,
-            "EndPointMonitorManager::AttachMonitor - Attaching existing monitor for address %s",
+            "[%" PRIx64 "] EndPointMonitorManager::AttachMonitor - Attaching existing monitor for address %s",
+            (uint64_t)this,
             address.c_str());
     }
     else
     {
         AWS_LOGF_ERROR(
             AWS_LS_CRT_CPP_CANARY,
-            "EndPointMonitorManager::AttachMonitor - Attaching new monitor for address %s",
+            "[%" PRIx64 "] EndPointMonitorManager::AttachMonitor - Attaching new monitor for address %s",
+            (uint64_t)this,
             address.c_str());
 
         monitor = new EndPointMonitor(address, m_options); // TODO use aws allocator with custom deleter
