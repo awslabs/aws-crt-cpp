@@ -175,19 +175,25 @@ EndPointMonitorManager::EndPointMonitorManager(const EndPointMonitorOptions &opt
 {
     AWS_FATAL_ASSERT(options.m_schedulingLoop != nullptr);
     AWS_FATAL_ASSERT(options.m_hostResolver != nullptr);
-
-    aws_host_resolver_set_put_failure_table_callback(
-        m_options.m_hostResolver, &EndPointMonitorManager::OnPutFailTable, this);
-    aws_host_resolver_set_remove_failure_table_callback(
-        m_options.m_hostResolver, &EndPointMonitorManager::OnRemoveFailTable, this);
 }
 
 EndPointMonitorManager::~EndPointMonitorManager()
 {
     AWS_FATAL_ASSERT(m_options.m_hostResolver != nullptr);
 
+    // TODO should check to make sure the callback is still owned by this object
     aws_host_resolver_set_put_failure_table_callback(m_options.m_hostResolver, nullptr, nullptr);
     aws_host_resolver_set_remove_failure_table_callback(m_options.m_hostResolver, nullptr, nullptr);
+}
+
+void EndPointMonitorManager::SetupCallbacks()
+{
+    AWS_FATAL_ASSERT(m_options.m_hostResolver != nullptr);
+
+    aws_host_resolver_set_put_failure_table_callback(
+        m_options.m_hostResolver, &EndPointMonitorManager::OnPutFailTable, this);
+    aws_host_resolver_set_remove_failure_table_callback(
+        m_options.m_hostResolver, &EndPointMonitorManager::OnRemoveFailTable, this);
 }
 
 void EndPointMonitorManager::AttachMonitor(aws_http_connection *connection)

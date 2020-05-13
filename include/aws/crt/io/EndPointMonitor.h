@@ -76,6 +76,8 @@ namespace Aws
                 EndPointMonitorManager(const EndPointMonitorOptions &options);
                 ~EndPointMonitorManager();
 
+                void SetupCallbacks();
+
                 void AttachMonitor(aws_http_connection *connection);
 
               private:
