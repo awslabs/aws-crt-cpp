@@ -547,8 +547,9 @@ void MetricsPublisher::WritePerStreamCSVRowHeader(
     uint64_t timestampStartSeconds,
     uint64_t timestampEndSeconds)
 {
-    *csvContents << "Transfer Id,x-amz-request-id,x-amz-id-2,Host Address,Success,Failed,Start Time,End Time,Total Time,Average "
-                    "from Start Time to End Time";
+    *csvContents
+        << "Transfer Id,x-amz-request-id,x-amz-id-2,Host Address,Success,Failed,Start Time,End Time,Total Time,Average "
+           "from Start Time to End Time";
 
     uint64_t numSeconds = timestampEndSeconds - timestampStartSeconds;
 

@@ -363,8 +363,7 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
                         partByteSize += options.GetMultiPartObjectSize() % options.multiPartObjectNumParts;
                     }
 
-                    return MakeShared<MeasureTransferRateStream>(
-                        g_allocator, m_canaryApp, transferState, partByteSize);
+                    return MakeShared<MeasureTransferRateStream>(g_allocator, m_canaryApp, transferState, partByteSize);
                 },
                 [key, notifyTransferFinished](int32_t errorCode, uint32_t) {
                     AWS_LOGF_INFO(

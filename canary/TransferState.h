@@ -34,12 +34,9 @@ class TransferState : public std::enable_shared_from_this<TransferState>
     int32_t GetPartIndex() const { return m_partIndex; }
     int32_t GetPartNumber() const { return m_partIndex + 1; }
 
-    void SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> & connection);
+    void SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &connection);
 
-    std::shared_ptr<Aws::Crt::Http::HttpClientConnection> GetConnection() const
-    {
-      return m_connection.lock();
-    }
+    std::shared_ptr<Aws::Crt::Http::HttpClientConnection> GetConnection() const { return m_connection.lock(); }
 
     const Aws::Crt::String &GetHostAddress() { return m_hostAddress; }
 

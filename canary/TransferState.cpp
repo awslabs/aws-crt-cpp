@@ -17,9 +17,9 @@
 
 #include <aws/common/clock.h>
 #include <aws/common/date_time.h>
-#include <aws/http/connection.h>
 #include <aws/crt/Api.h>
 #include <aws/crt/io/EndPointMonitor.h>
+#include <aws/http/connection.h>
 #include <cinttypes>
 
 #ifdef WIN32
@@ -248,7 +248,7 @@ void TransferState::UpdateRateTracking(uint64_t dataUsed, bool forceFlush)
 
     uint64_t dataUsedRateTimeInterval = now - m_dataUsedRateTimestamp;
 
-    if((forceFlush && m_dataUsedRateSum > 0ULL) || dataUsedRateTimeInterval > 1000ULL)
+    if ((forceFlush && m_dataUsedRateSum > 0ULL) || dataUsedRateTimeInterval > 1000ULL)
     {
         double dataUsedRateTimeIntervalSeconds = (double)dataUsedRateTimeInterval / 1000.0;
 
@@ -256,22 +256,23 @@ void TransferState::UpdateRateTracking(uint64_t dataUsed, bool forceFlush)
 
         std::shared_ptr<Http::HttpClientConnection> connection = m_connection.lock();
 
-        if(connection == nullptr)
+        if (connection == nullptr)
         {
             AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "TransferState::UpdateRateTracking - Attached connection is null.");
         }
         else
         {
-            Io::EndPointMonitor* monitor = (Io::EndPointMonitor*)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle());
+            Io::EndPointMonitor *monitor =
+                (Io::EndPointMonitor *)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle());
 
-            if(monitor != nullptr)
+            if (monitor != nullptr)
             {
                 monitor->AddSample(perSecondRate);
             }
         }
-    } 
+    }
 
-    if(forceFlush)
+    if (forceFlush)
     {
         ResetRateTracking();
     }
@@ -297,22 +298,25 @@ void TransferState::ProcessHeaders(const Http::HttpHeader *headersArray, size_t 
     }
 }
 
-void TransferState::SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> & connection)
+void TransferState::SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &connection)
 {
     m_connection = connection;
 
-    if(connection == nullptr)
+    if (connection == nullptr)
     {
         return;
     }
-    
+
     m_hostAddress = connection->GetHostAddress();
 
-    Io::EndPointMonitor* endPointMonitor = (Io::EndPointMonitor*)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle());
+    Io::EndPointMonitor *endPointMonitor =
+        (Io::EndPointMonitor *)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle());
 
-    if(endPointMonitor != nullptr && endPointMonitor->IsInFailTable())
+    if (endPointMonitor != nullptr && endPointMonitor->IsInFailTable())
     {
-        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "TransferState::SetConnection - Connection being set on transfer state that has a fail-listed endpoint.");
+        AWS_LOGF_INFO(
+            AWS_LS_CRT_CPP_CANARY,
+            "TransferState::SetConnection - Connection being set on transfer state that has a fail-listed endpoint.");
     }
 }
 
@@ -321,24 +325,33 @@ void TransferState::SetTransferSuccess(bool success)
     m_transferSuccess = success;
 
     std::shared_ptr<Http::HttpClientConnection> connection = GetConnection();
-    
-    if(connection == nullptr)
+
+    if (connection == nullptr)
     {
-        AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "TransferState::SetTransferSuccess - No connection currently exists for TransferState");
+        AWS_LOGF_ERROR(
+            AWS_LS_CRT_CPP_CANARY,
+            "TransferState::SetTransferSuccess - No connection currently exists for TransferState");
         return;
     }
 
-    Io::EndPointMonitor* endPointMonitor = connection != nullptr ? (Io::EndPointMonitor*)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle()) : nullptr;
+    Io::EndPointMonitor *endPointMonitor =
+        connection != nullptr
+            ? (Io::EndPointMonitor *)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle())
+            : nullptr;
 
-    if(endPointMonitor == nullptr)
+    if (endPointMonitor == nullptr)
     {
-        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "TransferState::SetTransferSuccess - No Endpoint Monitor currently exists for TransferState");
+        AWS_LOGF_INFO(
+            AWS_LS_CRT_CPP_CANARY,
+            "TransferState::SetTransferSuccess - No Endpoint Monitor currently exists for TransferState");
         return;
     }
 
-    if(endPointMonitor->IsInFailTable())
+    if (endPointMonitor->IsInFailTable())
     {
-        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "TransferState::SetTransferSuccess - Cnnection's endpoint is in the fail table, force closing connection.");
+        AWS_LOGF_INFO(
+            AWS_LS_CRT_CPP_CANARY,
+            "TransferState::SetTransferSuccess - Cnnection's endpoint is in the fail table, force closing connection.");
 
         // Force connection to close so that it doesn't go back into the pool.
         connection->Close();
@@ -375,7 +388,7 @@ void TransferState::AddDataDownMetric(uint64_t dataDown)
 
 void TransferState::FlushDataUpMetrics(const std::shared_ptr<MetricsPublisher> &publisher)
 {
-    //ResetRateTracking();
+    // ResetRateTracking();
     UpdateRateTracking(0ULL, true);
 
     FlushMetricsVector(publisher, m_uploadMetrics);
@@ -383,7 +396,7 @@ void TransferState::FlushDataUpMetrics(const std::shared_ptr<MetricsPublisher> &
 
 void TransferState::FlushDataDownMetrics(const std::shared_ptr<MetricsPublisher> &publisher)
 {
-    //ResetRateTracking();
+    // ResetRateTracking();
     UpdateRateTracking(0ULL, true);
 
     FlushMetricsVector(publisher, m_downloadMetrics);

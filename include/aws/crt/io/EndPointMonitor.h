@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cinttypes>
-#include <mutex>
 #include <atomic>
 #include <aws/crt/Types.h>
+#include <cinttypes>
+#include <mutex>
 
 struct aws_task;
 struct aws_event_loop;
@@ -26,14 +26,14 @@ namespace Aws
 
                 uint64_t m_expectedPerSampleThroughput;
                 uint64_t m_allowedFailureInterval;
-                aws_event_loop* m_schedulingLoop;
-                aws_host_resolver* m_hostResolver;
+                aws_event_loop *m_schedulingLoop;
+                aws_host_resolver *m_hostResolver;
                 Aws::Crt::String m_endPoint;
             };
-            
+
             class EndPointMonitor
             {
-            public:
+              public:
                 struct SampleSum
                 {
                     uint64_t m_sampleSum : 48;
@@ -45,7 +45,7 @@ namespace Aws
                     uint64_t asUint64() const;
                 };
 
-                EndPointMonitor(const Aws::Crt::String & address, const EndPointMonitorOptions & options);
+                EndPointMonitor(const Aws::Crt::String &address, const EndPointMonitorOptions &options);
                 ~EndPointMonitor();
 
                 void AddSample(uint64_t bytesPerSecond);
@@ -54,10 +54,10 @@ namespace Aws
 
                 bool IsInFailTable() const;
 
-            private:
+              private:
                 Aws::Crt::String m_address;
                 EndPointMonitorOptions m_options;
-                aws_task* m_processSamplesTask;
+                aws_task *m_processSamplesTask;
                 std::atomic<bool> m_isInFailTable;
                 std::atomic<uint64_t> m_sampleSum;
                 uint64_t m_timeLastProcessed;
@@ -72,23 +72,21 @@ namespace Aws
 
             class EndPointMonitorManager
             {
-            public:
-                
-                EndPointMonitorManager(const EndPointMonitorOptions & options);
+              public:
+                EndPointMonitorManager(const EndPointMonitorOptions &options);
                 ~EndPointMonitorManager();
 
-                void AttachMonitor(aws_http_connection* connection); 
+                void AttachMonitor(aws_http_connection *connection);
 
-            private:
-
+              private:
                 EndPointMonitorOptions m_options;
                 std::mutex m_endPointMonitorsMutex;
                 Aws::Crt::Map<Aws::Crt::String, std::unique_ptr<EndPointMonitor>> m_endPointMonitors;
 
-                static void OnPutFailTable(aws_host_address* host_address, void *user_data);
+                static void OnPutFailTable(aws_host_address *host_address, void *user_data);
 
-                static void OnRemoveFailTable(aws_host_address* host_address, void *user_data);
+                static void OnRemoveFailTable(aws_host_address *host_address, void *user_data);
             };
-        }
-    }
-}
+        } // namespace Io
+    }     // namespace Crt
+} // namespace Aws

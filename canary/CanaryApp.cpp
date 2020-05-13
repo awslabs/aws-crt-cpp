@@ -44,18 +44,17 @@ namespace
 
 CanaryAppOptions::CanaryAppOptions() noexcept
     : platformName(CanaryUtil::GetPlatformName()), toolName("NA"), instanceType("unknown"), region("us-west-2"),
-      bucketName("aws-crt-canary-bucket"), numUpTransfers(1),
-      numUpConcurrentTransfers(0), numDownTransfers(1), numDownConcurrentTransfers(0),
-      numTransfersPerAddress(10), singlePartObjectSize(5ULL * 1024ULL * 1024ULL * 1024ULL),
-      multiPartObjectPartSize(25LL * 1024ULL * 1024ULL), multiPartObjectNumParts(205), targetThroughputGbps(90.0), measureSinglePartTransfer(false),
-      measureMultiPartTransfer(false), measureHttpTransfer(false), usingNumaControl(false),
-      sendEncrypted(false), loggingEnabled(false), rehydrateBackup(false)
+      bucketName("aws-crt-canary-bucket"), numUpTransfers(1), numUpConcurrentTransfers(0), numDownTransfers(1),
+      numDownConcurrentTransfers(0), numTransfersPerAddress(10),
+      singlePartObjectSize(5ULL * 1024ULL * 1024ULL * 1024ULL), multiPartObjectPartSize(25LL * 1024ULL * 1024ULL),
+      multiPartObjectNumParts(205), targetThroughputGbps(90.0), measureSinglePartTransfer(false),
+      measureMultiPartTransfer(false), measureHttpTransfer(false), usingNumaControl(false), sendEncrypted(false),
+      loggingEnabled(false), rehydrateBackup(false)
 {
 }
 
 CanaryApp::CanaryApp(CanaryAppOptions &&inOptions) noexcept
-    : m_options(inOptions), m_apiHandle(g_allocator),
-      m_eventLoopGroup(72, g_allocator),
+    : m_options(inOptions), m_apiHandle(g_allocator), m_eventLoopGroup(72, g_allocator),
       m_defaultHostResolver(m_eventLoopGroup, 60, 3600, g_allocator),
       m_bootstrap(m_eventLoopGroup, m_defaultHostResolver, g_allocator)
 {
@@ -93,15 +92,17 @@ CanaryApp::CanaryApp(CanaryAppOptions &&inOptions) noexcept
 
     double targetThroughputBytesPerSecond = m_options.targetThroughputGbps * 1000.0 * 1000.0 * 1000.0 / 8.0;
 
-    if(m_options.measureMultiPartTransfer)
+    if (m_options.measureMultiPartTransfer)
     {
         perConnThroughputUp = targetThroughputBytesPerSecond / m_options.numUpConcurrentTransfers;
         perConnThroughputDown = targetThroughputBytesPerSecond / m_options.numDownConcurrentTransfers;
     }
 
     m_publisher = MakeShared<MetricsPublisher>(g_allocator, *this, MetricNamespace);
-    m_uploadTransport = MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.bucketName.c_str(), perConnThroughputUp);
-    m_downloadTransport = MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.bucketName.c_str(), perConnThroughputDown);
+    m_uploadTransport =
+        MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.bucketName.c_str(), perConnThroughputUp);
+    m_downloadTransport =
+        MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.bucketName.c_str(), perConnThroughputDown);
     m_measureTransferRate = MakeShared<MeasureTransferRate>(g_allocator, *this);
 }
 

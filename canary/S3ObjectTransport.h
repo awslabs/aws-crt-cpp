@@ -24,8 +24,8 @@
 #include <queue>
 #include <set>
 
-#include "TransferState.h"
 #include "MultipartTransferState.h"
+#include "TransferState.h"
 
 class CanaryApp;
 struct aws_allocator;
@@ -55,8 +55,8 @@ namespace Aws
         {
             class EndPointMonitorManager;
         }
-    }
-}
+    } // namespace Crt
+} // namespace Aws
 
 /*
  * Makes available a handful of S3 operations invoked by using the REST API to a specific bucket.  Also had
@@ -65,7 +65,10 @@ namespace Aws
 class S3ObjectTransport
 {
   public:
-    S3ObjectTransport(CanaryApp &canaryApp, const Aws::Crt::String &bucket, uint64_t minThroughputBytesPerSecond = 0ULL);
+    S3ObjectTransport(
+        CanaryApp &canaryApp,
+        const Aws::Crt::String &bucket,
+        uint64_t minThroughputBytesPerSecond = 0ULL);
 
     /*
      * Returns the endpoint of the bucket being used.
@@ -117,9 +120,8 @@ class S3ObjectTransport
     void WarmDNSCache(uint32_t numTransfers, uint32_t transfersPerAddress);
 
   private:
-    using SignedRequestCallback = std::function<void(
-        const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &conn,
-        int32_t errorCode)>;
+    using SignedRequestCallback =
+        std::function<void(const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &conn, int32_t errorCode)>;
     using CreateMultipartUploadFinished = std::function<void(int32_t error, const Aws::Crt::String &uploadId)>;
     using CompleteMultipartUploadFinished = std::function<void(int32_t error)>;
     using AbortMultipartUploadFinished = std::function<void(int32_t error)>;
