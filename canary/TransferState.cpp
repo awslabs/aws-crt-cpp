@@ -301,9 +301,18 @@ void TransferState::SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClie
 {
     m_connection = connection;
 
-    if(connection != nullptr)
+    if(connection == nullptr)
     {
-        m_hostAddress = connection->GetHostAddress();
+        return;
+    }
+    
+    m_hostAddress = connection->GetHostAddress();
+
+    Io::EndPointMonitor* endPointMonitor = (Io::EndPointMonitor*)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle());
+
+    if(endPointMonitor != nullptr && endPointMonitor->IsInFailTable())
+    {
+        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "TransferState::SetConnection - Connection being set on transfer state that has a fail-listed endpoint.");
     }
 }
 
@@ -329,6 +338,8 @@ void TransferState::SetTransferSuccess(bool success)
 
     if(endPointMonitor->IsInFailTable())
     {
+        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "TransferState::SetTransferSuccess - Cnnection's endpoint is in the fail table, force closing connection.");
+
         // Force connection to close so that it doesn't go back into the pool.
         connection->Close();
     }
