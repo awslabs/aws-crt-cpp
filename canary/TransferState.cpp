@@ -255,11 +255,19 @@ void TransferState::UpdateRateTracking(uint64_t dataUsed, bool forceFlush)
         uint64_t perSecondRate = (uint64_t)((double)m_dataUsedRateSum / dataUsedRateTimeIntervalSeconds);
 
         std::shared_ptr<Http::HttpClientConnection> connection = m_connection.lock();
-        Io::EndPointMonitor* monitor = (Io::EndPointMonitor*)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle());
 
-        if(monitor != nullptr)
+        if(connection == nullptr)
         {
-            monitor->AddSample(perSecondRate);
+            AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "TransferState::UpdateRateTracking - Attached connection is null.");
+        }
+        else
+        {
+            Io::EndPointMonitor* monitor = (Io::EndPointMonitor*)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle());
+
+            if(monitor != nullptr)
+            {
+                monitor->AddSample(perSecondRate);
+            }
         }
     } 
 
@@ -342,14 +350,14 @@ void TransferState::InitDataDownMetric()
 
 void TransferState::AddDataUpMetric(uint64_t dataUp)
 {
-    UpdateRateTracking(dataUp, true);
+    UpdateRateTracking(dataUp, false);
 
     PushDataMetric(m_uploadMetrics, MetricName::BytesUp, (double)dataUp);
 }
 
 void TransferState::AddDataDownMetric(uint64_t dataDown)
 {
-    UpdateRateTracking(dataDown, true);
+    UpdateRateTracking(dataDown, false);
 
     PushDataMetric(m_downloadMetrics, MetricName::BytesDown, (double)dataDown);
 }
