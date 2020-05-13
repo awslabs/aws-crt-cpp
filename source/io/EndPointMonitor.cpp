@@ -102,7 +102,7 @@ void EndPointMonitor::ProcessSamples()
 
     uint64_t timeElapsed = nowNS - m_timeLastProcessed;
 
-    AWS_LOGF_ERROR(
+    AWS_LOGF_TRACE(
         AWS_LS_CRT_CPP_CANARY,
         "EndPointMonitor::ProcessSamples - %s - Now: %" PRIu64 " - Last Processed: %" PRIu64,
         m_address.c_str(),
@@ -113,7 +113,7 @@ void EndPointMonitor::ProcessSamples()
 
     uint64_t expectedThroughputSum = sampleSum.m_numSamples * m_options.m_expectedPerSampleThroughput;
 
-    AWS_LOGF_ERROR(
+    AWS_LOGF_TRACE(
         AWS_LS_CRT_CPP_CANARY,
         "EndPointMonitor::ProcessSamples - %s - Num Samples: %d - Sample Sum: %" PRIu64 " - Expected: %" PRIu64,
         m_address.c_str(),
@@ -125,7 +125,7 @@ void EndPointMonitor::ProcessSamples()
     {
         m_failureTime += timeElapsed;
 
-        AWS_LOGF_ERROR(
+        AWS_LOGF_INFO(
             AWS_LS_CRT_CPP_CANARY,
             "Endpoint Monitoring: Low throughput detected for endpoint %s (%" PRIu64 " < %" PRIu64 ")",
             m_address.c_str(),
@@ -144,7 +144,7 @@ void EndPointMonitor::ProcessSamples()
     {
         if (!m_isInFailTable.load())
         {
-            AWS_LOGF_ERROR(
+            AWS_LOGF_INFO(
                 AWS_LS_CRT_CPP_CANARY,
                 "Endpoint Monitoring: Recording failure for %s (%" PRIu64 " > %" PRIu64 ")",
                 m_address.c_str(),
@@ -217,7 +217,7 @@ void EndPointMonitorManager::AttachMonitor(aws_http_connection *connection)
         monitor = endPointMonitorIt->second.get();
         AWS_FATAL_ASSERT(monitor != nullptr);
 
-        AWS_LOGF_ERROR(
+        AWS_LOGF_TRACE(
             AWS_LS_CRT_CPP_CANARY,
             "[%" PRIx64 "] EndPointMonitorManager::AttachMonitor - Attaching existing monitor for address %s",
             (uint64_t)this,
@@ -225,7 +225,7 @@ void EndPointMonitorManager::AttachMonitor(aws_http_connection *connection)
     }
     else
     {
-        AWS_LOGF_ERROR(
+        AWS_LOGF_TRACE(
             AWS_LS_CRT_CPP_CANARY,
             "[%" PRIx64 "] EndPointMonitorManager::AttachMonitor - Attaching new monitor for address %s",
             (uint64_t)this,
@@ -233,12 +233,6 @@ void EndPointMonitorManager::AttachMonitor(aws_http_connection *connection)
 
         monitor = new EndPointMonitor(address, m_options); // TODO use aws allocator with custom deleter
         m_endPointMonitors.emplace(address, std::unique_ptr<EndPointMonitor>(monitor));
-
-        AWS_LOGF_ERROR(
-            AWS_LS_CRT_CPP_CANARY,
-            "[%" PRIx64 "] EndPointMonitorManager::AttachMonitor Number of monitors is now %d",
-            (uint64_t)this,
-            (uint32_t)m_endPointMonitors.size());
     }
 
     aws_http_connection_set_endpoint_monitor(connection, (void *)monitor);
@@ -252,7 +246,7 @@ void EndPointMonitorManager::OnPutFailTable(aws_host_address *host_address, void
     String address(aws_string_c_str(host_address->address));
     auto endPointMonitorIt = endPointMonitorManager->m_endPointMonitors.find(address);
 
-    AWS_LOGF_ERROR(
+    AWS_LOGF_INFO(
         AWS_LS_CRT_CPP_CANARY,
         "EndPointMonitorManager::OnPutFailTable - Address %s placed in fail table",
         address.c_str());
@@ -283,7 +277,7 @@ void EndPointMonitorManager::OnRemoveFailTable(aws_host_address *host_address, v
     String address(aws_string_c_str(host_address->address));
     auto endPointMonitorIt = endPointMonitorManager->m_endPointMonitors.find(address);
 
-    AWS_LOGF_ERROR(
+    AWS_LOGF_INFO(
         AWS_LS_CRT_CPP_CANARY,
         "EndPointMonitorManager::OnRemoveFailTable - Address %s removed from fail table",
         address.c_str());
