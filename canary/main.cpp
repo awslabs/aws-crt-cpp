@@ -79,7 +79,6 @@ int main(int argc, char *argv[])
         SendEncrypted,
         NumTransfers,
         NumConcurrentTransfers,
-        DownloadOnly,
         RehydrateBackup,
         BucketName,
         DownloadObjectName,
@@ -97,13 +96,12 @@ int main(int argc, char *argv[])
                                       {"sendEncrypted", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'e'},
                                       {"numTransfers", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'n'},
                                       {"numConcurrentTransfers", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'c'},
-                                      {"downloadOnly", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'd'},
                                       {"rehydrateBackup", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'u'},
                                       {"bucketName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'b'},
                                       {"downloadObjectName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'o'},
                                       {"region", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'r'}};
 
-    const char *optstring = "t:i:smh:len:c:du:b:o:r:";
+    const char *optstring = "t:i:smh:len:c:u:b:o:r:";
 
     CanaryAppOptions canaryAppOptions;
 
@@ -161,9 +159,6 @@ int main(int argc, char *argv[])
                     aws_cli_optarg,
                     canaryAppOptions.numUpConcurrentTransfers,
                     canaryAppOptions.numDownConcurrentTransfers);
-                break;
-            case CLIOption::DownloadOnly:
-                canaryAppOptions.downloadOnly = true;
                 break;
             case CLIOption::RehydrateBackup:
                 canaryAppOptions.rehydrateBackupObjectName = aws_cli_optarg;

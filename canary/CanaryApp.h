@@ -63,7 +63,6 @@ struct CanaryAppOptions
     uint32_t measureMultiPartTransfer : 1;
     uint32_t measureHttpTransfer : 1;
     uint32_t usingNumaControl : 1;
-    uint32_t downloadOnly : 1;
     uint32_t sendEncrypted : 1;
     uint32_t loggingEnabled : 1;
     uint32_t rehydrateBackup : 1;
