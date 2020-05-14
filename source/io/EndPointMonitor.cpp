@@ -400,7 +400,7 @@ std::shared_ptr<Aws::Crt::StringStream> EndPointMonitorManager::GenerateEndPoint
 
         if (totalSampleCount[i] > 0ULL)
         {
-            GbPerSecondAvg = (double)totalSample[i] / (double)totalSampleCount[i];
+            GbPerSecondAvg = ((double)totalSample[i] / (double)totalSampleCount[i]) * 8.0 / 1000.0 / 1000.0 / 1000.0;
         }
 
         *endPointCSVContents << "," << GbPerSecondAvg;
