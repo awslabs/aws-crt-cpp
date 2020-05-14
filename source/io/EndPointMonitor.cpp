@@ -387,8 +387,14 @@ std::shared_ptr<Aws::Crt::StringStream> EndPointMonitorManager::GenerateEndPoint
 
         for (auto rowHistoryIt = rowHistory.begin(); rowHistoryIt != rowHistory.end(); ++rowHistoryIt)
         {
-            double GbPerSecondAvg = ((double)rowHistoryIt->m_bytesPerSecond / (double)rowHistoryIt->m_numSamples) *
-                                    8.0 / 1000.0 / 1000.0 / 1000.0;
+            double GbPerSecondAvg = 0.0;
+
+            if (rowHistoryIt->m_numSamples > 0)
+            {
+                GbPerSecondAvg = ((double)rowHistoryIt->m_bytesPerSecond / (double)rowHistoryIt->m_numSamples) * 8.0 /
+                                 1000.0 / 1000.0 / 1000.0;
+            }
+
             *endPointCSVContents << "," << GbPerSecondAvg;
 
             if (rowHistoryIt->m_putInFailTable)
