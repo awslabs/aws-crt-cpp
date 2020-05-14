@@ -105,27 +105,11 @@ void EndPointMonitor::ProcessSamples()
 
     uint64_t timeElapsed = nowNS - m_timeLastProcessed;
 
-    AWS_LOGF_TRACE(
-        AWS_LS_CRT_CPP_CANARY,
-        "EndPointMonitor::ProcessSamples - %s - Now: %" PRIu64 " - Last Processed: %" PRIu64,
-        m_address.c_str(),
-        nowNS,
-        m_timeLastProcessed);
-
     uint64_t prevTimeLastProcessed = m_timeLastProcessed;
     m_timeLastProcessed = nowNS;
 
-    uint64_t expectedThroughputSum = sampleSum.m_numSamples * m_options.m_expectedPerSampleThroughput;
-
-    AWS_LOGF_TRACE(
-        AWS_LS_CRT_CPP_CANARY,
-        "EndPointMonitor::ProcessSamples - %s - Num Samples: %d - Sample Sum: %" PRIu64 " - Expected: %" PRIu64,
-        m_address.c_str(),
-        (uint32_t)sampleSum.m_numSamples,
-        (uint64_t)sampleSum.m_sampleSum,
-        expectedThroughputSum);
-
-    if (sampleSum.m_sampleSum < expectedThroughputSum)
+    if (sampleSum.m_numSamples > 0 &&
+        (sampleSum.m_sampleSum / sampleSum.m_numSamples) < m_options.m_expectedPerSampleThroughput)
     {
         m_failureTime += timeElapsed;
 
@@ -414,6 +398,24 @@ std::shared_ptr<Aws::Crt::StringStream> EndPointMonitorManager::GenerateEndPoint
     {
         double GbPerSecond = (double)*totalRateIt * 8.0 / 1000.0 / 1000.0 / 1000.0;
         *endPointCSVContents << "," << GbPerSecond;
+    }
+
+    *endPointCSVContents << std::endl;
+
+    size_t numCols = totalRates.size() + 1;
+
+    for (size_t i = 0; i < numCols - 1; ++i)
+    {
+        *endPointCSVContents << ",";
+    }
+
+    *endPointCSVContents << std::endl;
+
+    *endPointCSVContents << "Expected Avg Per Sample," << m_options.m_expectedPerSampleThroughput;
+
+    for (size_t i = 2; i < numCols - 1; ++i)
+    {
+        *endPointCSVContents << ",";
     }
 
     *endPointCSVContents << std::endl;
