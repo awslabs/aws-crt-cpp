@@ -29,23 +29,32 @@ namespace Aws
         namespace Auth
         {
             Credentials::Credentials(aws_credentials *credentials, Allocator *allocator) noexcept
-                : m_credentials(aws_credentials_new_copy(allocator, credentials))
+                : m_credentials(credentials)
             {
+                if (credentials != nullptr)
+                {
+                    aws_credentials_acquire(credentials);
+                }
             }
 
             Credentials::Credentials(
                 ByteCursor access_key_id,
                 ByteCursor secret_access_key,
                 ByteCursor session_token,
+                uint64_t expiration_timepoint_in_seconds,
                 Allocator *allocator) noexcept
-                : m_credentials(
-                      aws_credentials_new_from_cursors(allocator, &access_key_id, &secret_access_key, &session_token))
+                : m_credentials(aws_credentials_new(
+                      allocator,
+                      access_key_id,
+                      secret_access_key,
+                      session_token,
+                      expiration_timepoint_in_seconds))
             {
             }
 
             Credentials::~Credentials()
             {
-                aws_credentials_destroy(m_credentials);
+                aws_credentials_release(m_credentials);
                 m_credentials = nullptr;
             }
 
@@ -53,7 +62,7 @@ namespace Aws
             {
                 if (m_credentials)
                 {
-                    return aws_byte_cursor_from_string(m_credentials->access_key_id);
+                    return aws_credentials_get_access_key_id(m_credentials);
                 }
                 else
                 {
@@ -65,7 +74,7 @@ namespace Aws
             {
                 if (m_credentials)
                 {
-                    return aws_byte_cursor_from_string(m_credentials->secret_access_key);
+                    return aws_credentials_get_secret_access_key(m_credentials);
                 }
                 else
                 {
@@ -77,11 +86,23 @@ namespace Aws
             {
                 if (m_credentials)
                 {
-                    return aws_byte_cursor_from_string(m_credentials->session_token);
+                    return aws_credentials_get_session_token(m_credentials);
                 }
                 else
                 {
                     return ByteCursor{0, nullptr};
+                }
+            }
+
+            uint64_t Credentials::GetExpirationTimepointInSeconds() const noexcept
+            {
+                if (m_credentials)
+                {
+                    return aws_credentials_get_expiration_timepoint_seconds(m_credentials);
+                }
+                else
+                {
+                    return 0;
                 }
             }
 
@@ -109,14 +130,17 @@ namespace Aws
                 std::shared_ptr<const CredentialsProvider> m_provider;
             };
 
-            void CredentialsProvider::s_onCredentialsResolved(aws_credentials *credentials, void *user_data)
+            void CredentialsProvider::s_onCredentialsResolved(
+                aws_credentials *credentials,
+                int error_code,
+                void *user_data)
             {
                 CredentialsProviderCallbackArgs *callbackArgs =
                     static_cast<CredentialsProviderCallbackArgs *>(user_data);
 
                 auto credentialsPtr = std::make_shared<Credentials>(credentials, callbackArgs->m_provider->m_allocator);
 
-                callbackArgs->m_onCredentialsResolved(credentialsPtr);
+                callbackArgs->m_onCredentialsResolved(credentialsPtr, error_code);
 
                 Aws::Crt::Delete(callbackArgs, callbackArgs->m_provider->m_allocator);
             }

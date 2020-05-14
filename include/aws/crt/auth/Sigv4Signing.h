@@ -34,17 +34,20 @@ namespace Aws
 
             enum class SigningAlgorithm
             {
-                SigV4Header = AWS_SIGNING_ALGORITHM_SIG_V4_HEADER,
-                SigV4QueryParam = AWS_SIGNING_ALGORITHM_SIG_V4_QUERY_PARAM,
+                SigV4 = AWS_SIGNING_ALGORITHM_V4,
+            };
 
-                Count = AWS_SIGNING_ALGORITHM_COUNT
+            enum class SigningTransform
+            {
+                Header = AWS_SRT_HEADER,
+                QueryParam = AWS_SRT_QUERY_PARAM,
             };
 
             enum class BodySigningType
             {
                 NoSigning = AWS_BODY_SIGNING_OFF,
                 SignBody = AWS_BODY_SIGNING_ON,
-                UnsignedPayload = AWS_BODY_SIGNING_UNSIGNED_PAYLOAD
+                UnsignedPayload = AWS_BODY_SIGNING_UNSIGNED_PAYLOAD,
             };
 
             using ShouldSignParameterCb = bool (*)(const Crt::ByteCursor *, void *);
@@ -70,6 +73,16 @@ namespace Aws
                  * Sets the signing process we want to invoke
                  */
                 void SetSigningAlgorithm(SigningAlgorithm algorithm) noexcept;
+
+                /**
+                 * Gets the request signing transform we want to make
+                 */
+                SigningTransform GetSigningTransform() const noexcept;
+
+                /**
+                 * Sets the signing process we want to invoke
+                 */
+                void SetSigningTransform(SigningTransform transform) noexcept;
 
                 /**
                  * Gets the AWS region to sign against
@@ -153,20 +166,46 @@ namespace Aws
                 void SetBodySigningType(BodySigningType bodysigningType) noexcept;
 
                 /**
+                 * (Query param signing only) Gets the amount of time, in seconds, the (pre)signed URI will be good for
+                 */
+                uint64_t GetExpirationInSeconds() const noexcept;
+
+                /**
+                 * (Query param signing only) Sets the amount of time, in seconds, the (pre)signed URI will be good for
+                 */
+                void SetExpirationInSeconds(uint64_t expirationInSeconds) noexcept;
+
+                /*
+                 * For Sigv4 signing, either the credentials provider or the credentials must be set.
+                 * Credentials, if set, takes precedence over the provider.
+                 */
+
+                /**
                  *  Get the credentials provider to use for signing.
                  */
                 const std::shared_ptr<ICredentialsProvider> &GetCredentialsProvider() const noexcept;
 
                 /**
-                 *  Set the credentials provider to use for signing, this is mandatory for sigv4.
+                 *  Set the credentials provider to use for signing.
                  */
                 void SetCredentialsProvider(const std::shared_ptr<ICredentialsProvider> &credsProvider) noexcept;
+
+                /**
+                 *  Get the credentials to use for signing.
+                 */
+                const std::shared_ptr<Credentials> &GetCredentials() const noexcept;
+
+                /**
+                 *  Set the credentials to use for signing.
+                 */
+                void SetCredentials(const std::shared_ptr<Credentials> &credentials) noexcept;
 
                 const struct aws_signing_config_aws *GetUnderlyingHandle() const noexcept;
 
               private:
                 Allocator *m_allocator;
-                std::shared_ptr<ICredentialsProvider> m_credentials;
+                std::shared_ptr<ICredentialsProvider> m_credentialsProvider;
+                std::shared_ptr<Credentials> m_credentials;
                 struct aws_signing_config_aws m_config;
                 Crt::String m_signingRegion;
                 Crt::String m_serviceName;
