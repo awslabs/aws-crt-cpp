@@ -118,7 +118,7 @@ void EndPointMonitor::ProcessSamples()
             "Endpoint Monitoring: Low throughput detected for endpoint %s (%" PRIu64 " < %" PRIu64 ")",
             m_address.c_str(),
             (uint64_t)sampleSum.m_sampleSum,
-            expectedThroughputSum);
+            m_options.m_expectedPerSampleThroughput);
     }
     else
     {
