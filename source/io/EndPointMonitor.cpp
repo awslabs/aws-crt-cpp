@@ -176,9 +176,13 @@ void EndPointMonitor::ProcessSamples()
         m_failureTime = 0ULL;
     }
 
-    if(sampleSum.m_numSamples > 0ULL)
+    if (sampleSum.m_numSamples > 0ULL)
     {
-        m_history.m_entries.emplace_back(prevTimeLastProcessed, (uint64_t)sampleSum.m_sampleSum, reportedConnectionFailure);
+        m_history.m_entries.emplace_back(
+            prevTimeLastProcessed,
+            (uint64_t)sampleSum.m_sampleSum,
+            (uint32_t)sampleSum.m_numSamples,
+            reportedConnectionFailure);
     }
 
     ScheduleNextProcessSamplesTask();
@@ -340,7 +344,7 @@ std::shared_ptr<Aws::Crt::StringStream> EndPointMonitorManager::GenerateEndPoint
     uint64_t maxTimeSec = aws_timestamp_convert(maxTime, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_SECS, NULL);
     uint64_t timeInterval = maxTimeSec - minTimeSec;
 
-    Vector<uint64_t> totalRates;
+    Vector<double> totalRates;
     Vector<EndPointMonitor::HistoryEntry> rowHistory;
 
     *endPointCSVContents << "Endpoint";
@@ -373,18 +377,21 @@ std::shared_ptr<Aws::Crt::StringStream> EndPointMonitorManager::GenerateEndPoint
             uint64_t relativeSec = timeStampSec - minTimeSec;
             uint64_t bytesPerSecond = historyEntry.m_bytesPerSecond;
 
+            uint64_t bytesPerSecondAvg = (double)bytesPerSecond / (double)historyEntry.m_numSamples;
+
             rowHistory[relativeSec] = historyEntry;
-            totalRates[relativeSec] += bytesPerSecond;
+            totalRates[relativeSec] += bytesPerSecondAvg;
         }
 
         *endPointCSVContents << monitor->GetAddress().c_str();
 
         for (auto rowHistoryIt = rowHistory.begin(); rowHistoryIt != rowHistory.end(); ++rowHistoryIt)
         {
-            double GbPerSecond = (double)rowHistoryIt->m_bytesPerSecond * 8.0 / 1000.0 / 1000.0 / 1000.0;
-            *endPointCSVContents << "," << GbPerSecond;
+            double GbPerSecondAvg = ((double)rowHistoryIt->m_bytesPerSecond / (double)rowHistoryIt->m_numSamples) *
+                                    8.0 / 1000.0 / 1000.0 / 1000.0;
+            *endPointCSVContents << "," << GbPerSecondAvg;
 
-            if(rowHistoryIt->m_putInFailTable)
+            if (rowHistoryIt->m_putInFailTable)
             {
                 *endPointCSVContents << "*";
             }

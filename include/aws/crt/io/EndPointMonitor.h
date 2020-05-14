@@ -49,14 +49,16 @@ namespace Aws
                 {
                     uint64_t m_timeStamp;
                     uint64_t m_bytesPerSecond;
+                    uint32_t m_numSamples;
                     uint32_t m_putInFailTable : 1;
 
-                    HistoryEntry(uint64_t timeStamp, uint64_t bytesPerSecond, bool putInFailTable)
-                        : m_timeStamp(timeStamp), m_bytesPerSecond(bytesPerSecond), m_putInFailTable(putInFailTable)
+                    HistoryEntry(uint64_t timeStamp, uint64_t bytesPerSecond, uint32_t numSamples, bool putInFailTable)
+                        : m_timeStamp(timeStamp), m_bytesPerSecond(bytesPerSecond), m_numSamples(numSamples),
+                          m_putInFailTable(putInFailTable)
                     {
                     }
 
-                    HistoryEntry() : HistoryEntry(0ULL, 0ULL, false) {}
+                    HistoryEntry() : HistoryEntry(0ULL, 0ULL, 0, false) {}
                 };
 
                 struct History
