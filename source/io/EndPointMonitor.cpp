@@ -112,6 +112,7 @@ void EndPointMonitor::ProcessSamples()
         nowNS,
         m_timeLastProcessed);
 
+    uint64_t prevTimeLastProcessed = m_timeLastProcessed;
     m_timeLastProcessed = nowNS;
 
     uint64_t expectedThroughputSum = sampleSum.m_numSamples * m_options.m_expectedPerSampleThroughput;
@@ -175,7 +176,10 @@ void EndPointMonitor::ProcessSamples()
         m_failureTime = 0ULL;
     }
 
-    m_history.m_entries.emplace_back(nowNS, (uint64_t)sampleSum.m_sampleSum, reportedConnectionFailure);
+    if(sampleSum.m_numSamples > 0ULL)
+    {
+        m_history.m_entries.emplace_back(prevTimeLastProcessed, (uint64_t)sampleSum.m_sampleSum, reportedConnectionFailure);
+    }
 
     ScheduleNextProcessSamplesTask();
 }
@@ -327,7 +331,7 @@ std::shared_ptr<Aws::Crt::StringStream> EndPointMonitorManager::GenerateEndPoint
         }
     }
 
-    if (maxTime > minTime)
+    if (maxTime < minTime)
     {
         return endPointCSVContents;
     }
@@ -346,7 +350,7 @@ std::shared_ptr<Aws::Crt::StringStream> EndPointMonitorManager::GenerateEndPoint
         rowRates.push_back(0ULL);
         totalRates.push_back(0ULL);
 
-        DateTime dateTime((i + minTimeSec) * 1000ULL);
+        DateTime dateTime((uint64_t)(i * 1000ULL));
 
         StringStream dateTimeString;
         dateTimeString << std::setfill('0') << std::setw(2) << (uint32_t)dateTime.GetHour() << ":" << std::setw(2)
