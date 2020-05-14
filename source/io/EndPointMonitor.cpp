@@ -341,13 +341,13 @@ std::shared_ptr<Aws::Crt::StringStream> EndPointMonitorManager::GenerateEndPoint
     uint64_t timeInterval = maxTimeSec - minTimeSec;
 
     Vector<uint64_t> totalRates;
-    Vector<uint64_t> rowRates;
+    Vector<EndPointMonitor::HistoryEntry> rowHistory;
 
     *endPointCSVContents << "Endpoint";
 
     for (uint64_t i = 0; i <= timeInterval; ++i)
     {
-        rowRates.push_back(0ULL);
+        rowHistory.emplace_back();
         totalRates.push_back(0ULL);
 
         DateTime dateTime((uint64_t)(i * 1000ULL));
@@ -373,17 +373,23 @@ std::shared_ptr<Aws::Crt::StringStream> EndPointMonitorManager::GenerateEndPoint
             uint64_t relativeSec = timeStampSec - minTimeSec;
             uint64_t bytesPerSecond = historyEntry.m_bytesPerSecond;
 
-            rowRates[relativeSec] = bytesPerSecond;
+            rowHistory[relativeSec] = historyEntry;
             totalRates[relativeSec] += bytesPerSecond;
         }
 
         *endPointCSVContents << monitor->GetAddress().c_str();
 
-        for (auto rowRateIt = rowRates.begin(); rowRateIt != rowRates.end(); ++rowRateIt)
+        for (auto rowHistoryIt = rowHistory.begin(); rowHistoryIt != rowHistory.end(); ++rowHistoryIt)
         {
-            double GbPerSecond = (double)*rowRateIt * 8.0 / 1000.0 / 1000.0 / 1000.0;
+            double GbPerSecond = (double)rowHistoryIt->m_bytesPerSecond * 8.0 / 1000.0 / 1000.0 / 1000.0;
             *endPointCSVContents << "," << GbPerSecond;
-            *rowRateIt = 0ULL;
+
+            if(rowHistoryIt->m_putInFailTable)
+            {
+                *endPointCSVContents << "*";
+            }
+
+            *rowHistoryIt = EndPointMonitor::HistoryEntry();
         }
 
         *endPointCSVContents << std::endl;
