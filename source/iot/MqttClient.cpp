@@ -54,7 +54,8 @@ namespace Aws
                 auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
                 signerConfig->SetRegion(signingRegionCopy);
                 signerConfig->SetService(serviceNameCopy);
-                signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4QueryParam);
+                signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4);
+                signerConfig->SetSigningTransform(Crt::Auth::SigningTransform ::QueryParam);
                 signerConfig->SetBodySigningType(Crt::Auth::BodySigningType::NoSigning);
                 signerConfig->SetShouldSignHeadersCallback(s_blackListHeadersFromSigning);
                 signerConfig->SetCredentialsProvider(credsProviderRef);
@@ -78,7 +79,8 @@ namespace Aws
                 auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
                 signerConfig->SetRegion(signingRegionCopy);
                 signerConfig->SetService(serviceNameCopy);
-                signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4QueryParam);
+                signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4);
+                signerConfig->SetSigningTransform(Crt::Auth::SigningTransform ::QueryParam);
                 signerConfig->SetBodySigningType(Crt::Auth::BodySigningType::NoSigning);
                 signerConfig->SetShouldSignHeadersCallback(s_blackListHeadersFromSigning);
                 signerConfig->SetCredentialsProvider(credsProviderRef);

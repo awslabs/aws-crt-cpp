@@ -28,14 +28,16 @@ namespace Aws
         namespace Auth
         {
             AwsSigningConfig::AwsSigningConfig(Allocator *allocator)
-                : ISigningConfig(), m_allocator(allocator), m_credentials(nullptr)
+                : ISigningConfig(), m_allocator(allocator), m_credentialsProvider(nullptr), m_credentials(nullptr)
             {
                 AWS_ZERO_STRUCT(m_config);
 
-                SetSigningAlgorithm(SigningAlgorithm::SigV4Header);
+                SetSigningAlgorithm(SigningAlgorithm::SigV4);
+                SetSigningTransform(SigningTransform::Header);
                 SetShouldNormalizeUriPath(true);
                 SetBodySigningType(BodySigningType::SignBody);
                 SetSigningTimepoint(DateTime::Now());
+                SetExpirationInSeconds(0);
                 m_config.config_type = AWS_SIGNING_CONFIG_AWS;
             }
 
@@ -49,6 +51,16 @@ namespace Aws
             void AwsSigningConfig::SetSigningAlgorithm(SigningAlgorithm algorithm) noexcept
             {
                 m_config.algorithm = static_cast<aws_signing_algorithm>(algorithm);
+            }
+
+            SigningTransform AwsSigningConfig::GetSigningTransform() const noexcept
+            {
+                return static_cast<SigningTransform>(m_config.transform);
+            }
+
+            void AwsSigningConfig::SetSigningTransform(SigningTransform transform) noexcept
+            {
+                m_config.transform = static_cast<aws_signing_request_transform>(transform);
             }
 
             const Crt::String &AwsSigningConfig::GetRegion() const noexcept { return m_signingRegion; }
@@ -114,16 +126,37 @@ namespace Aws
                 m_config.body_signing_type = static_cast<enum aws_body_signing_config_type>(bodysigningType);
             }
 
+            uint64_t AwsSigningConfig::GetExpirationInSeconds() const noexcept
+            {
+                return m_config.expiration_in_seconds;
+            }
+
+            void AwsSigningConfig::SetExpirationInSeconds(uint64_t expirationInSeconds) noexcept
+            {
+                m_config.expiration_in_seconds = expirationInSeconds;
+            }
+
             const std::shared_ptr<ICredentialsProvider> &AwsSigningConfig::GetCredentialsProvider() const noexcept
             {
-                return m_credentials;
+                return m_credentialsProvider;
             }
 
             void AwsSigningConfig::SetCredentialsProvider(
                 const std::shared_ptr<ICredentialsProvider> &credsProvider) noexcept
             {
-                m_credentials = credsProvider;
-                m_config.credentials_provider = m_credentials->GetUnderlyingHandle();
+                m_credentialsProvider = credsProvider;
+                m_config.credentials_provider = m_credentialsProvider->GetUnderlyingHandle();
+            }
+
+            const std::shared_ptr<Credentials> &AwsSigningConfig::GetCredentials() const noexcept
+            {
+                return m_credentials;
+            }
+
+            void AwsSigningConfig::SetCredentials(const std::shared_ptr<Credentials> &credentials) noexcept
+            {
+                m_credentials = credentials;
+                m_config.credentials = m_credentials->GetUnderlyingHandle();
             }
 
             const struct aws_signing_config_aws *AwsSigningConfig::GetUnderlyingHandle() const noexcept
@@ -174,7 +207,7 @@ namespace Aws
 
                 auto awsSigningConfig = static_cast<const AwsSigningConfig *>(&config);
 
-                if (!awsSigningConfig->GetCredentialsProvider())
+                if (!awsSigningConfig->GetCredentialsProvider() && !awsSigningConfig->GetCredentials())
                 {
                     aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
                     return false;
