@@ -328,7 +328,8 @@ std::shared_ptr<Aws::Crt::StringStream> EndPointMonitorManager::GenerateEndPoint
     uint64_t maxTimeSec = aws_timestamp_convert(maxTime, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_SECS, NULL);
     uint64_t timeInterval = maxTimeSec - minTimeSec;
 
-    Vector<double> totalRates;
+    Vector<uint64_t> totalSampleCount;
+    Vector<uint64_t> totalSample;
     Vector<EndPointMonitor::HistoryEntry> rowHistory;
 
     *endPointCSVContents << "Endpoint";
@@ -336,7 +337,8 @@ std::shared_ptr<Aws::Crt::StringStream> EndPointMonitorManager::GenerateEndPoint
     for (uint64_t i = 0; i <= timeInterval; ++i)
     {
         rowHistory.emplace_back();
-        totalRates.push_back(0ULL);
+        totalSampleCount.push_back(0ULL);
+        totalSample.push_back(0ULL);
 
         DateTime dateTime((uint64_t)(i * 1000ULL));
 
@@ -359,12 +361,10 @@ std::shared_ptr<Aws::Crt::StringStream> EndPointMonitorManager::GenerateEndPoint
             uint64_t timeStampSec =
                 aws_timestamp_convert(historyEntry.m_timeStamp, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_SECS, NULL);
             uint64_t relativeSec = timeStampSec - minTimeSec;
-            uint64_t bytesPerSecond = historyEntry.m_bytesPerSecond;
-
-            uint64_t bytesPerSecondAvg = (double)bytesPerSecond / (double)historyEntry.m_numSamples;
 
             rowHistory[relativeSec] = historyEntry;
-            totalRates[relativeSec] += bytesPerSecondAvg;
+            totalSampleCount[relativeSec] += historyEntry.m_numSamples;
+            totalSample[relativeSec] += historyEntry.m_bytesPerSecond;
         }
 
         *endPointCSVContents << monitor->GetAddress().c_str();
@@ -392,17 +392,23 @@ std::shared_ptr<Aws::Crt::StringStream> EndPointMonitorManager::GenerateEndPoint
         *endPointCSVContents << std::endl;
     }
 
-    *endPointCSVContents << "Total";
+    *endPointCSVContents << "Overall Average";
 
-    for (auto totalRateIt = totalRates.begin(); totalRateIt != totalRates.end(); ++totalRateIt)
+    for (size_t i = 0; i < totalSample.size(); ++i)
     {
-        double GbPerSecond = (double)*totalRateIt * 8.0 / 1000.0 / 1000.0 / 1000.0;
-        *endPointCSVContents << "," << GbPerSecond;
+        double GbPerSecondAvg = 0.0;
+
+        if (totalSampleCount[i] > 0ULL)
+        {
+            GbPerSecondAvg = (double)totalSample[i] / (double)totalSampleCount[i];
+        }
+
+        *endPointCSVContents << "," << GbPerSecondAvg;
     }
 
     *endPointCSVContents << std::endl;
 
-    size_t numCols = totalRates.size() + 1;
+    size_t numCols = totalSample.size() + 1;
 
     for (size_t i = 0; i < numCols - 1; ++i)
     {
@@ -411,7 +417,8 @@ std::shared_ptr<Aws::Crt::StringStream> EndPointMonitorManager::GenerateEndPoint
 
     *endPointCSVContents << std::endl;
 
-    *endPointCSVContents << "Expected Avg Per Sample," << m_options.m_expectedPerSampleThroughput;
+    *endPointCSVContents << "Expected Avg Per Sample,"
+                         << (m_options.m_expectedPerSampleThroughput * 8.0 / 1000.0 / 1000.0 / 1000.0);
 
     for (size_t i = 2; i < numCols - 1; ++i)
     {
