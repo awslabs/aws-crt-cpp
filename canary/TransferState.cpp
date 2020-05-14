@@ -274,11 +274,9 @@ void TransferState::UpdateRateTracking(uint64_t dataUsed, bool forceFlush)
                 AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "TransferState::UpdateRateTracking - Attached monitor is null.");
             }
         }
-    }
 
-    if (forceFlush)
-    {
-        ResetRateTracking();
+        m_dataUsedRateTimestamp = now;
+        m_dataUsedRateSum = 0;
     }
 }
 
