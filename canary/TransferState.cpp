@@ -79,7 +79,6 @@ void TransferState::PushDataUsedForSecondAndAggregate(
     double dataUsed)
 {
     bool pushNew = true;
-    DateTime newDateTime(timestamp);
 
     // If we already have a metric, try to aggregate the incoming data to it
     if (metrics.size() > 0)

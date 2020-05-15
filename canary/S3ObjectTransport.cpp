@@ -127,7 +127,10 @@ void S3ObjectTransport::EmitS3AddressCountMetric(size_t addressCount)
 
 void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers, uint32_t transfersPerAddress)
 {
-    m_endPointMonitorManager->SetupCallbacks();
+    if(m_endPointMonitorManager != nullptr)
+    {
+        m_endPointMonitorManager->SetupCallbacks();
+    }
 
     m_transfersPerAddress = transfersPerAddress;
 

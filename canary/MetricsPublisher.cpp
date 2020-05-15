@@ -860,6 +860,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
         ++numFilesBeingUploaded;
     }
 
+    if(m_canaryApp.GetUploadTransport()->GetEndPointMonitorManager() != nullptr)
     {
         AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading endpoint upload rate dump.");
 
@@ -881,7 +882,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
 
         ++numFilesBeingUploaded;
     }
-
+    if(m_canaryApp.GetDownloadTransport()->GetEndPointMonitorManager() != nullptr)
     {
         AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading endpoint download rate dump.");
 
