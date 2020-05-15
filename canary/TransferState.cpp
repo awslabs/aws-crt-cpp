@@ -48,97 +48,27 @@ void TransferState::DistributeDataUsedOverSeconds(
     uint64_t beginTime,
     double dataUsed)
 {
-    uint64_t beginTimeSecond = beginTime / 1000ULL;
-    uint64_t beginTimeSecondFrac = beginTime % 1000ULL;
-    uint64_t beginTimeOneMinusSecondFrac = 1000ULL - beginTimeSecondFrac;
-
     uint64_t currentTicks = 0;
     aws_sys_clock_get_ticks(&currentTicks);
     uint64_t endTime = aws_timestamp_convert(currentTicks, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, NULL);
-    uint64_t endTimeSecond = endTime / 1000ULL;
-    uint64_t endTimeSecondFrac = endTime % 1000ULL;
 
     AWS_FATAL_ASSERT(endTime >= beginTime);
-    AWS_FATAL_ASSERT(endTimeSecond >= beginTimeSecond);
 
     uint64_t timeDelta = endTime - beginTime;
+    uint64_t currentTime = beginTime;
 
-    /*
-     * This represents the number of second data points that this interval overlaps minus one, NOT
-     * the time delta in seconds.  There are three cases that we want to detect.
-     *      * If equal to 0, then endTime and beginTime are in the same second:
-     *
-     *          0                1                2                3
-     *          |----------------|----------------|----------------|
-     *             *----------*
-     *          beginTime    endTime
-     *
-     *
-     *      * If equal to 1, then endTime and beginTime are in different seconds,
-     *        but do not have any full seconds in between them:
-     *
-     *          0                1                2                3
-     *          |----------------|----------------|----------------|
-     *             *--------------------------*
-     *          beginTime                  endTime
-     *
-     *
-     *      * If greater than 1, then endTime and beginTime are in different seconds,
-     *        and have at least one full second inbetween them:
-     *
-     *          0                1                2                3
-     *          |----------------|----------------|----------------|
-     *             *----------------------------------------*
-     *          beginTime                                endTime
-     *
-     */
-    uint64_t numSecondsTouched = endTimeSecond - beginTimeSecond;
-
-    if (numSecondsTouched == 0)
+    while (currentTime != endTime)
     {
-        /*
-         * This value touches only a single second, so add all "dataUsed" as a metric for this second.
-         * Specifically pass endTime for this, so that any future deltas done against the last data
-         * point in the metric array measures against the newest time.
-         */
-        PushDataUsedForSecondAndAggregate(metrics, metricName, endTime, dataUsed);
-    }
-    else
-    {
-        /*
-         * This value overlaps more than a single second, so we first calculate the amount of data used
-         * in the starting second and the ending second.
-         */
-        double beginDataUsedFraction = dataUsed * (double)(beginTimeOneMinusSecondFrac / (double)timeDelta);
-        double endDataUsedFraction = dataUsed * (double)(endTimeSecondFrac / (double)timeDelta);
+        uint64_t timeFraction = currentTime % 1000ULL;
+        uint64_t nextTime = currentTime + (1000ULL - timeFraction);
+        nextTime = std::min(nextTime, endTime);
 
-        // Push the data used for the beginning second.
-        PushDataUsedForSecondAndAggregate(metrics, metricName, beginTime, beginDataUsedFraction);
+        uint64_t timeInterval = nextTime - currentTime;
+        double dataUsedFrac = dataUsed * ((double)timeInterval / (double)timeDelta);
 
-        /*
-         * In this case, we have "interior" seconds (full seconds that are overlapped), so distribute
-         * data used to each of those full seconds.
-         */
-        if (numSecondsTouched > 1)
-        {
-            uint64_t interiorBeginSecond = beginTimeSecond + 1;
-            uint64_t interiorEndSecond = endTimeSecond;
-            uint64_t numInteriorSeconds = interiorEndSecond - interiorBeginSecond;
+        PushDataUsedForSecondAndAggregate(metrics, metricName, nextTime, dataUsedFrac);
 
-            AWS_FATAL_ASSERT(interiorEndSecond >= interiorBeginSecond);
-
-            double dataUsedRemaining = dataUsed - (beginDataUsedFraction + endDataUsedFraction);
-            double interiorSecondDataUsed = dataUsedRemaining / (double)numInteriorSeconds;
-
-            for (uint64_t i = 0; i < numInteriorSeconds; ++i)
-            {
-                PushDataUsedForSecondAndAggregate(
-                    metrics, metricName, (interiorBeginSecond * 1000ULL) + (i * 1000ULL), interiorSecondDataUsed);
-            }
-        }
-
-        // Push the data used for the ending second.
-        PushDataUsedForSecondAndAggregate(metrics, metricName, endTime, endDataUsedFraction);
+        currentTime = nextTime;
     }
 }
 
@@ -155,12 +85,11 @@ void TransferState::PushDataUsedForSecondAndAggregate(
     if (metrics.size() > 0)
     {
         Metric &lastMetric = metrics.back();
-        DateTime lastDateTime(lastMetric.Timestamp);
 
-        uint64_t newDateTimeSecondsSinceEpoch = newDateTime.Millis() / 1000ULL;
-        uint64_t lastDateTimeSecondsSinceEpoch = lastDateTime.Millis() / 1000ULL;
+        uint64_t newTimestampSeconds = timestamp / 1000ULL;
+        uint64_t lastMetricTimestampSeconds = lastMetric.Timestamp / 1000ULL;
 
-        if (newDateTimeSecondsSinceEpoch == lastDateTimeSecondsSinceEpoch)
+        if (newTimestampSeconds == lastMetricTimestampSeconds)
         {
             lastMetric.Value += dataUsed;
             lastMetric.Timestamp = std::max(lastMetric.Timestamp, timestamp);
