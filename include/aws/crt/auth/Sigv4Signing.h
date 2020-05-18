@@ -199,7 +199,7 @@ namespace Aws
                  *  Set the credentials to use for signing.
                  */
                 void SetCredentials(const std::shared_ptr<Credentials> &credentials) noexcept;
-                
+
                 /// @private
                 const struct aws_signing_config_aws *GetUnderlyingHandle() const noexcept;
 
