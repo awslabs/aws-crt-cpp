@@ -40,7 +40,7 @@ namespace Aws
             class AWS_CRT_CPP_API Credentials
             {
               public:
-                Credentials(aws_credentials *credentials, Allocator *allocator = g_allocator) noexcept;
+                Credentials(aws_credentials *credentials) noexcept;
                 Credentials(
                     ByteCursor access_key_id,
                     ByteCursor secret_access_key,

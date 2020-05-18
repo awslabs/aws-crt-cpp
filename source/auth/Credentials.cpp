@@ -28,8 +28,7 @@ namespace Aws
     {
         namespace Auth
         {
-            Credentials::Credentials(aws_credentials *credentials, Allocator *allocator) noexcept
-                : m_credentials(credentials)
+            Credentials::Credentials(aws_credentials *credentials) noexcept : m_credentials(credentials)
             {
                 if (credentials != nullptr)
                 {
@@ -138,7 +137,8 @@ namespace Aws
                 CredentialsProviderCallbackArgs *callbackArgs =
                     static_cast<CredentialsProviderCallbackArgs *>(user_data);
 
-                auto credentialsPtr = std::make_shared<Credentials>(credentials, callbackArgs->m_provider->m_allocator);
+                auto credentialsPtr =
+                    Aws::Crt::MakeShared<Credentials>(callbackArgs->m_provider->m_allocator, credentials);
 
                 callbackArgs->m_onCredentialsResolved(credentialsPtr, error_code);
 
