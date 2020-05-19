@@ -216,16 +216,11 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
         }
 
         /* make sure the test was actually meaningful. */
-        ASSERT_FALSE(connections.empty());
-
-        Vector<std::shared_ptr<Http::HttpClientConnection>> connectionsCpy = connections;
-        connections.clear();
-
-        connectionsCpy.clear();
+        Vector<std::shared_ptr<Http::HttpClientConnection>> connectionsCpy;
         {
             std::lock_guard<std::mutex> lockGuard(semaphoreLock);
-            /* release should have given us more connections. */
             ASSERT_FALSE(connections.empty());
+
             connectionsCpy = connections;
             connections.clear();
         }
@@ -238,9 +233,10 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
             {
                 std::lock_guard<std::mutex> lockGuard(semaphoreLock);
                 done = connectionsAcquired + connectionsFailed == totalExpectedConnections;
+
+                connectionsCpy = connections;
+                connections.clear();
             }
-            connectionsCpy = connections;
-            connections.clear();
             connectionsCpy.clear();
         }
     }
