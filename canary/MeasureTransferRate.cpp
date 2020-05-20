@@ -129,7 +129,7 @@ void MeasureTransferRate::MeasureHttpTransfer()
 
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
     connectionManagerOptions.ConnectionOptions.HostName = endpoint;
-    connectionManagerOptions.ConnectionOptions.Port = m_canaryApp.GetOptions().sendEncrypted ? 443 : 5001;
+    connectionManagerOptions.ConnectionOptions.Port = m_canaryApp.GetOptions().sendEncrypted ? 443 : 80;
     connectionManagerOptions.ConnectionOptions.SocketOptions.SetConnectTimeoutMs(3000);
     connectionManagerOptions.ConnectionOptions.SocketOptions.SetSocketType(AWS_SOCKET_STREAM);
     connectionManagerOptions.ConnectionOptions.InitialWindowSize = SIZE_MAX;
