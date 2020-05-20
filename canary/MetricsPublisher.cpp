@@ -778,6 +778,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
     std::mutex signalMutex;
     std::condition_variable signal;
     std::atomic<uint32_t> numFilesUploaded(0);
+    uint32_t numFilesBeingUploaded = 0;
 
     std::shared_ptr<S3ObjectTransport> transport =
         MakeShared<S3ObjectTransport>(g_allocator, m_canaryApp, m_canaryApp.GetOptions().bucketName.c_str(), 4);
@@ -790,6 +791,8 @@ String MetricsPublisher::UploadBackup(uint32_t options)
         std::shared_ptr<StringStream> metricsBackupContents = GenerateMetricsBackupJson();
         std::shared_ptr<Io::StdIOStreamInputStream> metricsBackupContentsStream =
             MakeShared<Io::StdIOStreamInputStream>(g_allocator, metricsBackupContents);
+
+        ++numFilesBeingUploaded;
 
         transport->PutObject(
             nullptr,
@@ -814,8 +817,6 @@ String MetricsPublisher::UploadBackup(uint32_t options)
         }
     }
 
-    uint32_t numFilesBeingUploaded = 0;
-
     {
         AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading per stream upload metrics.");
 
@@ -824,6 +825,8 @@ String MetricsPublisher::UploadBackup(uint32_t options)
 
         std::shared_ptr<Io::StdIOStreamInputStream> uploadCSVContentsStream =
             MakeShared<Io::StdIOStreamInputStream>(g_allocator, uploadCSVContents);
+
+        ++numFilesBeingUploaded;
 
         transport->PutObject(
             nullptr,
@@ -834,8 +837,6 @@ String MetricsPublisher::UploadBackup(uint32_t options)
                 ++numFilesUploaded;
                 signal.notify_one();
             });
-
-        ++numFilesBeingUploaded;
     }
 
     {
@@ -847,6 +848,8 @@ String MetricsPublisher::UploadBackup(uint32_t options)
         std::shared_ptr<Io::StdIOStreamInputStream> downloadCSVContentsStream =
             MakeShared<Io::StdIOStreamInputStream>(g_allocator, downloadCSVContents);
 
+        ++numFilesBeingUploaded;
+
         transport->PutObject(
             nullptr,
             s3Path + "downloadStreams.csv",
@@ -856,11 +859,9 @@ String MetricsPublisher::UploadBackup(uint32_t options)
                 ++numFilesUploaded;
                 signal.notify_one();
             });
-
-        ++numFilesBeingUploaded;
     }
 
-    if(m_canaryApp.GetUploadTransport()->GetEndPointMonitorManager() != nullptr)
+    if (m_canaryApp.GetUploadTransport()->GetEndPointMonitorManager() != nullptr)
     {
         AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading endpoint upload rate dump.");
 
@@ -869,6 +870,8 @@ String MetricsPublisher::UploadBackup(uint32_t options)
 
         std::shared_ptr<Io::StdIOStreamInputStream> uploadCSVContentsStream =
             MakeShared<Io::StdIOStreamInputStream>(g_allocator, uploadCSVContents);
+
+        ++numFilesBeingUploaded;
 
         transport->PutObject(
             nullptr,
@@ -879,10 +882,8 @@ String MetricsPublisher::UploadBackup(uint32_t options)
                 ++numFilesUploaded;
                 signal.notify_one();
             });
-
-        ++numFilesBeingUploaded;
     }
-    if(m_canaryApp.GetDownloadTransport()->GetEndPointMonitorManager() != nullptr)
+    if (m_canaryApp.GetDownloadTransport()->GetEndPointMonitorManager() != nullptr)
     {
         AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading endpoint download rate dump.");
 
@@ -891,6 +892,8 @@ String MetricsPublisher::UploadBackup(uint32_t options)
 
         std::shared_ptr<Io::StdIOStreamInputStream> downloadCSVContentsStream =
             MakeShared<Io::StdIOStreamInputStream>(g_allocator, downloadCSVContents);
+
+        ++numFilesBeingUploaded;
 
         transport->PutObject(
             nullptr,
@@ -901,8 +904,6 @@ String MetricsPublisher::UploadBackup(uint32_t options)
                 ++numFilesUploaded;
                 signal.notify_one();
             });
-
-        ++numFilesBeingUploaded;
     }
 
     std::unique_lock<std::mutex> signalLock(signalMutex);
@@ -978,7 +979,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
 
     uint64_t newestTimeStamp = 0;
 
-    //double total = 0.0;
+    // double total = 0.0;
 
     for (const JsonView &metricJson : metricsJson)
     {
@@ -995,7 +996,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
             0ULL,
             metricJson.GetDouble("Value"));
 
-        //if(metricNameStr == "BytesUp")
+        // if(metricNameStr == "BytesUp")
         //{
         //    total += metricJson.GetDouble("Value");
         //}
@@ -1003,7 +1004,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
         newestTimeStamp = std::max(metricTimestamp, newestTimeStamp);
     }
 
-    //std::cout << "The total bytes up value is: " << total*8.0/1000.0/1000.0/1000.0 << std::endl;
+    // std::cout << "The total bytes up value is: " << total*8.0/1000.0/1000.0/1000.0 << std::endl;
 
     /*
      * Calculate new timestamps for the metrics so that they happen within the most recent

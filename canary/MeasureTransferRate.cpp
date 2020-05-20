@@ -162,8 +162,6 @@ void MeasureTransferRate::MeasureHttpTransfer()
             NotifyTransferFinished &&notifyTransferFinished) {
             std::shared_ptr<TransferState> transferState = MakeShared<TransferState>(g_allocator);
 
-            transferState->InitDataDownMetric();
-
             auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
             request->AddHeader(hostHeader);
             request->SetMethod(aws_http_method_get);
@@ -215,7 +213,7 @@ void MeasureTransferRate::MeasureHttpTransfer()
                     transferState->FlushDataDownMetrics(m_canaryApp.GetMetricsPublisher());
                 };
 
-            connManager->AcquireConnection([requestOptions, notifyTransferFinished, request](
+            connManager->AcquireConnection([transferState, requestOptions, notifyTransferFinished, request](
                                                std::shared_ptr<Http::HttpClientConnection> conn, int connErrorCode) {
                 (void)request;
 
@@ -226,7 +224,9 @@ void MeasureTransferRate::MeasureHttpTransfer()
 
                 if (connErrorCode == AWS_ERROR_SUCCESS)
                 {
-                    conn->NewClientStream(requestOptions);
+                    transferState->InitDataDownMetric();
+                    transferState->SetConnection(conn);
+                    conn->NewClientStream(requestOptions)->Activate();
                 }
                 else
                 {

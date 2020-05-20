@@ -47,7 +47,7 @@ CanaryAppOptions::CanaryAppOptions() noexcept
       bucketName("aws-crt-canary-bucket"), numUpTransfers(1), numUpConcurrentTransfers(0), numDownTransfers(1),
       numDownConcurrentTransfers(0), numTransfersPerAddress(10),
       singlePartObjectSize(5ULL * 1024ULL * 1024ULL * 1024ULL), multiPartObjectPartSize(25LL * 1024ULL * 1024ULL),
-      multiPartObjectNumParts(205), targetThroughputGbps(90.0), measureSinglePartTransfer(false),
+      multiPartObjectNumParts(205), targetThroughputGbps(80.0), measureSinglePartTransfer(false),
       measureMultiPartTransfer(false), measureHttpTransfer(false), usingNumaControl(false), sendEncrypted(false),
       loggingEnabled(false), rehydrateBackup(false)
 {
@@ -99,10 +99,10 @@ CanaryApp::CanaryApp(CanaryAppOptions &&inOptions) noexcept
     }
 
     m_publisher = MakeShared<MetricsPublisher>(g_allocator, *this, MetricNamespace);
-    m_uploadTransport =
-        MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.bucketName.c_str(), m_options.numUpConcurrentTransfers, perConnThroughputUp);
-    m_downloadTransport =
-        MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.bucketName.c_str(), m_options.numDownConcurrentTransfers, perConnThroughputDown);
+    m_uploadTransport = MakeShared<S3ObjectTransport>(
+        g_allocator, *this, m_options.bucketName.c_str(), m_options.numUpConcurrentTransfers, perConnThroughputUp);
+    m_downloadTransport = MakeShared<S3ObjectTransport>(
+        g_allocator, *this, m_options.bucketName.c_str(), m_options.numDownConcurrentTransfers, perConnThroughputDown);
     m_measureTransferRate = MakeShared<MeasureTransferRate>(g_allocator, *this);
 }
 
