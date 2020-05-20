@@ -43,6 +43,7 @@ namespace
 S3ObjectTransport::S3ObjectTransport(
     CanaryApp &canaryApp,
     const Aws::Crt::String &bucket,
+    uint32_t maxConnections,
     uint64_t minThroughputBytesPerSecond)
     : m_canaryApp(canaryApp), m_bucketName(bucket), m_transfersPerAddress(10), m_activeRequestsCount(0)
 {
@@ -111,7 +112,7 @@ S3ObjectTransport::S3ObjectTransport(
     }
 
     connectionManagerOptions.ConnectionOptions.Bootstrap = &m_canaryApp.GetBootstrap();
-    connectionManagerOptions.MaxConnections = 500;
+    connectionManagerOptions.MaxConnections = maxConnections;
 
     m_connManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, g_allocator);
@@ -374,11 +375,6 @@ void S3ObjectTransport::PutObject(
             finishedCallback(errorCode, etag);
         };
 
-    if (transferState != nullptr)
-    {
-        transferState->InitDataUpMetric();
-    }
-
     MakeSignedRequest(
         request,
         requestOptions,
@@ -392,6 +388,11 @@ void S3ObjectTransport::PutObject(
             else
             {
                 // AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Setting transfer state address to %s", connAddr.c_str());
+
+                if (transferState != nullptr)
+                {
+                    transferState->InitDataUpMetric();
+                }
 
                 if (transferState != nullptr)
                 {
@@ -488,11 +489,6 @@ void S3ObjectTransport::GetObject(
             getObjectFinished(errorCode);
         };
 
-    if (transferState != nullptr)
-    {
-        transferState->InitDataDownMetric();
-    }
-
     MakeSignedRequest(
         request,
         requestOptions,
@@ -504,6 +500,10 @@ void S3ObjectTransport::GetObject(
             else
             {
                 // AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Setting transfer state address to %s", connAddr.c_str());
+                if (transferState != nullptr)
+                {
+                    transferState->InitDataDownMetric();
+                }
 
                 if (transferState != nullptr)
                 {

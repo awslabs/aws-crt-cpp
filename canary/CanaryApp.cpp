@@ -100,9 +100,9 @@ CanaryApp::CanaryApp(CanaryAppOptions &&inOptions) noexcept
 
     m_publisher = MakeShared<MetricsPublisher>(g_allocator, *this, MetricNamespace);
     m_uploadTransport =
-        MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.bucketName.c_str(), perConnThroughputUp);
+        MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.bucketName.c_str(), m_options.numUpConcurrentTransfers, perConnThroughputUp);
     m_downloadTransport =
-        MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.bucketName.c_str(), perConnThroughputDown);
+        MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.bucketName.c_str(), m_options.numDownConcurrentTransfers, perConnThroughputDown);
     m_measureTransferRate = MakeShared<MeasureTransferRate>(g_allocator, *this);
 }
 

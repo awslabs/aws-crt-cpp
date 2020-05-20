@@ -780,7 +780,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
     std::atomic<uint32_t> numFilesUploaded(0);
 
     std::shared_ptr<S3ObjectTransport> transport =
-        MakeShared<S3ObjectTransport>(g_allocator, m_canaryApp, m_canaryApp.GetOptions().bucketName.c_str());
+        MakeShared<S3ObjectTransport>(g_allocator, m_canaryApp, m_canaryApp.GetOptions().bucketName.c_str(), 4);
 
     String backupPath = s3Path + "metricsBackup.json";
 
@@ -923,7 +923,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
 void MetricsPublisher::RehydrateBackup(const char *s3Path)
 {
     std::shared_ptr<S3ObjectTransport> transport =
-        MakeShared<S3ObjectTransport>(g_allocator, m_canaryApp, m_canaryApp.GetOptions().bucketName.c_str());
+        MakeShared<S3ObjectTransport>(g_allocator, m_canaryApp, m_canaryApp.GetOptions().bucketName.c_str(), 4);
     StringStream contents;
     std::mutex signalMutex;
     std::condition_variable signal;
@@ -978,6 +978,8 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
 
     uint64_t newestTimeStamp = 0;
 
+    //double total = 0.0;
+
     for (const JsonView &metricJson : metricsJson)
     {
         String metricNameStr = metricJson.GetString("Name");
@@ -993,8 +995,15 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
             0ULL,
             metricJson.GetDouble("Value"));
 
+        //if(metricNameStr == "BytesUp")
+        //{
+        //    total += metricJson.GetDouble("Value");
+        //}
+
         newestTimeStamp = std::max(metricTimestamp, newestTimeStamp);
     }
+
+    //std::cout << "The total bytes up value is: " << total*8.0/1000.0/1000.0/1000.0 << std::endl;
 
     /*
      * Calculate new timestamps for the metrics so that they happen within the most recent

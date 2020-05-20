@@ -68,6 +68,7 @@ class S3ObjectTransport
     S3ObjectTransport(
         CanaryApp &canaryApp,
         const Aws::Crt::String &bucket,
+        uint32_t maxConnections,
         uint64_t minThroughputBytesPerSecond = 0ULL);
 
     /*
