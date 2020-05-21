@@ -451,11 +451,6 @@ void S3ObjectTransport::GetObject(
                     errorCode = AWS_ERROR_UNKNOWN;
                 }
 
-                if (transferState != nullptr)
-                {
-                    transferState->SetTransferSuccess(errorCode == AWS_ERROR_SUCCESS);
-                }
-
                 aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_DEBUG;
 
                 AWS_LOGF(
@@ -472,6 +467,11 @@ void S3ObjectTransport::GetObject(
                     "GetObject finished for path %s with error '%s'",
                     keyPath.c_str(),
                     aws_error_debug_str(errorCode));
+            }
+
+            if (transferState != nullptr)
+            {
+                transferState->SetTransferSuccess(errorCode == AWS_ERROR_SUCCESS);
             }
 
             getObjectFinished(errorCode);
