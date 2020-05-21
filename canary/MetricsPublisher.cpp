@@ -1235,8 +1235,8 @@ void MetricsPublisher::s_OnPollingTask(aws_task *task, void *arg, aws_task_statu
     std::shared_ptr<S3ObjectTransport> uploadTransport = publisher->m_canaryApp.GetUploadTransport();
     std::shared_ptr<S3ObjectTransport> downloadTransport = publisher->m_canaryApp.GetDownloadTransport();
 
-    publisher->PollMetricsForS3ObjectTransport(uploadTransport, (uint32_t)MetricName::UploadTransportMetricEnd);
-    publisher->PollMetricsForS3ObjectTransport(downloadTransport, (uint32_t)MetricName::DownloadTransportMetricEnd);
+    publisher->PollMetricsForS3ObjectTransport(uploadTransport, (uint32_t)MetricName::UploadTransportMetricStart);
+    publisher->PollMetricsForS3ObjectTransport(downloadTransport, (uint32_t)MetricName::DownloadTransportMetricStart);
 
     publisher->SchedulePolling();
 }
