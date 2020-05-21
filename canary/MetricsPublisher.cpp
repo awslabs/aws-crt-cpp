@@ -1150,6 +1150,11 @@ void MetricsPublisher::PollMetricsForS3ObjectTransport(
     const std::shared_ptr<S3ObjectTransport> &transport,
     uint32_t metricNameOffset)
 {
+    if(transport == nullptr)
+    {
+        return;
+    }
+
     uint64_t nowTimestamp = 0ULL;
     aws_sys_clock_get_ticks(&nowTimestamp);
     nowTimestamp = aws_timestamp_convert(nowTimestamp, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, nullptr);
