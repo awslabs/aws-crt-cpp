@@ -1159,7 +1159,7 @@ void MetricsPublisher::PollMetricsForS3ObjectTransport(
     aws_sys_clock_get_ticks(&nowTimestamp);
     nowTimestamp = aws_timestamp_convert(nowTimestamp, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, nullptr);
 
-    const std::shared_ptr<Http::HttpClientConnectionManager> &connManager = transport->GetConnectionManager();
+    std::shared_ptr<Http::HttpClientConnectionManager> connManager = transport->GetConnectionManager();
 
     if(connManager != nullptr)
     {
@@ -1230,13 +1230,12 @@ void MetricsPublisher::s_OnPollingTask(aws_task *task, void *arg, aws_task_statu
         return;
     }
 
-    MetricsPublisher *publisher = (MetricsPublisher *)task;
+    MetricsPublisher *publisher = (MetricsPublisher *)arg;
 
-    const std::shared_ptr<S3ObjectTransport> &uploadTransport = publisher->m_canaryApp.GetUploadTransport();
-    const std::shared_ptr<S3ObjectTransport> &downloadTransport = publisher->m_canaryApp.GetDownloadTransport();
+    std::shared_ptr<S3ObjectTransport> uploadTransport = publisher->m_canaryApp.GetUploadTransport();
+    std::shared_ptr<S3ObjectTransport> downloadTransport = publisher->m_canaryApp.GetDownloadTransport();
 
     publisher->PollMetricsForS3ObjectTransport(uploadTransport, (uint32_t)MetricName::UploadTransportMetricEnd);
-
     publisher->PollMetricsForS3ObjectTransport(downloadTransport, (uint32_t)MetricName::DownloadTransportMetricEnd);
 
     publisher->SchedulePolling();
