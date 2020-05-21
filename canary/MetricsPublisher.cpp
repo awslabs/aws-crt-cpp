@@ -26,6 +26,9 @@
 #include <aws/common/clock.h>
 #include <aws/common/task_scheduler.h>
 #include <aws/common/uuid.h>
+
+#include <aws/http/connection_manager.h>
+
 #include <condition_variable>
 #include <inttypes.h>
 #include <iomanip>
@@ -90,8 +93,25 @@ namespace
                                    "Counts%2FSecond",
                                    "None"};
 
-    const char *MetricNameStr[] =
-        {"BytesUp", "BytesDown", "NumConnections", "S3AddressCount", "SuccessfulTransfer", "FailedTransfer", "Invalid"};
+    const char *MetricNameStr[] = {"BytesUp",
+                                   "BytesDown",
+                                   "NumConnections",
+                                   "S3AddressCount",
+                                   "SuccessfulTransfer",
+                                   "FailedTransfer",
+                                   "UploadHeldConnectionCount",
+                                   "UploadPendingAcquisitionCount",
+                                   "UploadPendingConnectsCount",
+                                   "UploadVendedConnectionCount",
+                                   "UploadOpenConnectionCount",
+                                   "UploadFailTableCount",
+                                   "DownloadHeldConnectionCount",
+                                   "DownloadPendingAcquisitionCount",
+                                   "DownloadPendingConnectsCount",
+                                   "DownloadVendedConnectionCount",
+                                   "DownloadOpenConnectionCount",
+                                   "DownloadFailTableCount",
+                                   "Invalid"};
 
     const char *TransferTypeStr[] = {"None", "SinglePart", "MultiPart"};
 
@@ -199,6 +219,11 @@ MetricsPublisher::MetricsPublisher(
     m_publishTask.fn = MetricsPublisher::s_OnPublishTask;
     m_publishTask.arg = this;
 
+    AWS_ZERO_STRUCT(m_pollingTask);
+    m_pollingFrequencyNs = aws_timestamp_convert(1, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_NANOS, NULL);
+    m_pollingTask.fn = MetricsPublisher::s_OnPollingTask;
+    m_pollingTask.arg = this;
+
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
     m_endpoint = String() + "monitoring." + canaryApp.GetOptions().region.c_str() + ".amazonaws.com";
 
@@ -220,7 +245,6 @@ MetricsPublisher::MetricsPublisher(
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, g_allocator);
 
     m_schedulingLoop = aws_event_loop_group_get_next_loop(canaryApp.GetEventLoopGroup().GetUnderlyingHandle());
-    // SchedulePublish();
 
     m_hostHeader.name = ByteCursorFromCString("host");
     m_hostHeader.value = ByteCursorFromCString(m_endpoint.c_str());
@@ -230,11 +254,15 @@ MetricsPublisher::MetricsPublisher(
 
     m_apiVersionHeader.name = ByteCursorFromCString("x-amz-api-version");
     m_apiVersionHeader.value = ByteCursorFromCString("2011-06-15");
+
+    // SchedulePublish();
+    SchedulePolling();
 }
 
 MetricsPublisher::~MetricsPublisher()
 {
     aws_event_loop_cancel_task(m_schedulingLoop, &m_publishTask);
+    aws_event_loop_cancel_task(m_schedulingLoop, &m_pollingTask);
 }
 
 MetricTransferType MetricsPublisher::GetTransferType() const
@@ -367,6 +395,13 @@ double MetricsPublisher::GetAggregateDataPoint(
     }
 
     return aggregateDataPoints[it->second].Value;
+}
+
+void MetricsPublisher::SchedulePolling()
+{
+    uint64_t now = 0;
+    aws_event_loop_current_clock_time(m_schedulingLoop, &now);
+    aws_event_loop_schedule_task_future(m_schedulingLoop, &m_pollingTask, now + m_pollingFrequencyNs);
 }
 
 void MetricsPublisher::SchedulePublish()
@@ -1109,6 +1144,89 @@ void MetricsPublisher::WaitForLastPublish()
     std::unique_lock<std::mutex> locker(m_publishDataLock);
 
     m_waitForLastPublishCV.wait(locker, [this]() { return m_publishData.size() == 0; });
+}
+
+void MetricsPublisher::PollMetricsForS3ObjectTransport(
+    const std::shared_ptr<S3ObjectTransport> &transport,
+    uint32_t metricNameOffset)
+{
+    uint64_t nowTimestamp = 0ULL;
+    aws_sys_clock_get_ticks(&nowTimestamp);
+    nowTimestamp = aws_timestamp_convert(nowTimestamp, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, nullptr);
+
+    const std::shared_ptr<Http::HttpClientConnectionManager> &connManager = transport->GetConnectionManager();
+    aws_http_connection_manager *connManagerHandle = connManager->GetUnderlyingHandle();
+    aws_http_connection_manager_snapshot snapshot;
+    AWS_ZERO_STRUCT(snapshot);
+
+    aws_http_connection_manager_get_snapshot(connManagerHandle, &snapshot);
+
+    AddDataPoint(Metric(
+        (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::HeldConnectionCount),
+        MetricUnit::Count,
+        nowTimestamp,
+        0ULL,
+        snapshot.held_connection_count));
+
+    AddDataPoint(Metric(
+        (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::PendingAcquisitionCount),
+        MetricUnit::Count,
+        nowTimestamp,
+        0ULL,
+        snapshot.pending_acquisition_count));
+
+    AddDataPoint(Metric(
+        (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::PendingConnectsCount),
+        MetricUnit::Count,
+        nowTimestamp,
+        0ULL,
+        snapshot.pending_connects_count));
+
+    AddDataPoint(Metric(
+        (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::VendedConnectionCount),
+        MetricUnit::Count,
+        nowTimestamp,
+        0ULL,
+        snapshot.vended_connection_count));
+
+    AddDataPoint(Metric(
+        (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::OpenConnectionCount),
+        MetricUnit::Count,
+        nowTimestamp,
+        0ULL,
+        snapshot.open_connection_count));
+
+    std::shared_ptr<Aws::Crt::Io::EndPointMonitorManager> manager = transport->GetEndPointMonitorManager();
+
+    uint32_t count = manager->GetFailTableCount();
+
+    AddDataPoint(Metric(
+        (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::FailTableCount),
+        MetricUnit::Count,
+        nowTimestamp,
+        0ULL,
+        count));
+}
+
+void MetricsPublisher::s_OnPollingTask(aws_task *task, void *arg, aws_task_status status)
+{
+    (void)task;
+
+    if (status != AWS_TASK_STATUS_RUN_READY)
+    {
+        return;
+    }
+
+    MetricsPublisher *publisher = (MetricsPublisher *)task;
+
+    const std::shared_ptr<S3ObjectTransport> &uploadTransport = publisher->m_canaryApp.GetUploadTransport();
+    const std::shared_ptr<S3ObjectTransport> &downloadTransport = publisher->m_canaryApp.GetDownloadTransport();
+
+    publisher->PollMetricsForS3ObjectTransport(uploadTransport, (uint32_t)MetricName::UploadTransportMetricEnd);
+
+    publisher->PollMetricsForS3ObjectTransport(downloadTransport, (uint32_t)MetricName::DownloadTransportMetricEnd);
+
+    publisher->SchedulePolling();
 }
 
 void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_status status)

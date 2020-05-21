@@ -53,6 +53,18 @@ enum class MetricUnit
     None,
 };
 
+enum class TransportMetricName
+{
+    HeldConnectionCount,
+    PendingAcquisitionCount,
+    PendingConnectsCount,
+    VendedConnectionCount,
+    OpenConnectionCount,
+    FailTableCount,
+
+    LastEnum = FailTableCount
+};
+
 enum class MetricName
 {
     BytesUp,
@@ -61,6 +73,13 @@ enum class MetricName
     S3AddressCount,
     SuccessfulTransfer,
     FailedTransfer,
+
+    UploadTransportMetricStart,
+    UploadTransportMetricEnd = UploadTransportMetricStart + (int)TransportMetricName::LastEnum,
+
+    DownloadTransportMetricStart,
+    DownloadTransportMetricEnd = DownloadTransportMetricStart + (int)TransportMetricName::LastEnum,
+
     Invalid
 };
 
@@ -93,6 +112,7 @@ struct Metric
 
 class CanaryApp;
 class TransferState;
+class S3ObjectTransport;
 
 /**
  * Publishes an aggregated metrics collection to CloudWatch.
@@ -179,7 +199,12 @@ class MetricsPublisher
         }
     };
 
+    static void s_OnPollingTask(aws_task *task, void *arg, aws_task_status status);
     static void s_OnPublishTask(aws_task *task, void *arg, aws_task_status status);
+
+    void PollMetricsForS3ObjectTransport(
+        const std::shared_ptr<S3ObjectTransport> &transport,
+        uint32_t metricNameOffset);
 
     MetricTransferType GetTransferType() const;
     Aws::Crt::String GetPlatformName() const;
@@ -199,6 +224,8 @@ class MetricsPublisher
         const Aws::Crt::Map<AggregateMetricKey, size_t> &aggregateLU,
         const Aws::Crt::Vector<Metric> &aggregateDataPoints,
         bool *outKeyExists = nullptr);
+
+    void SchedulePolling();
 
     void SchedulePublish();
 
@@ -257,6 +284,9 @@ class MetricsPublisher
 
     Aws::Crt::String m_endpoint;
     aws_event_loop *m_schedulingLoop;
+
+    aws_task m_pollingTask;
+    uint64_t m_pollingFrequencyNs;
 
     std::mutex m_publishDataLock;
     Aws::Crt::Vector<Metric> m_publishData;

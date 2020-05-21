@@ -172,7 +172,7 @@ void EndPointMonitor::ProcessSamples()
     ScheduleNextProcessSamplesTask();
 }
 
-EndPointMonitorManager::EndPointMonitorManager(const EndPointMonitorOptions &options) : m_options(options)
+EndPointMonitorManager::EndPointMonitorManager(const EndPointMonitorOptions &options) : m_options(options), m_failTableCount(0)
 {
     AWS_FATAL_ASSERT(options.m_schedulingLoop != nullptr);
     AWS_FATAL_ASSERT(options.m_hostResolver != nullptr);
@@ -268,6 +268,7 @@ void EndPointMonitorManager::OnPutFailTable(aws_host_address *host_address, void
     EndPointMonitor *monitor = endPointMonitorIt->second.get();
 
     monitor->SetIsInFailTable(true);
+    endPointMonitorManager->m_failTableCount.fetch_add(1);
 }
 
 void EndPointMonitorManager::OnRemoveFailTable(aws_host_address *host_address, void *user_data)
@@ -296,6 +297,7 @@ void EndPointMonitorManager::OnRemoveFailTable(aws_host_address *host_address, v
     EndPointMonitor *monitor = endPointMonitorIt->second.get();
 
     monitor->SetIsInFailTable(false);
+    endPointMonitorManager->m_failTableCount.fetch_sub(1);
 }
 
 std::shared_ptr<Aws::Crt::StringStream> EndPointMonitorManager::GenerateEndPointCSV()

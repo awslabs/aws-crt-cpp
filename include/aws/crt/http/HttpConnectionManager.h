@@ -88,6 +88,8 @@ namespace Aws
                  */
                 std::future<void> InitiateShutdown() noexcept;
 
+                aws_http_connection_manager *GetUnderlyingHandle() noexcept { return m_connectionManager; }
+
                 /**
                  * Factory function for connection managers
                  */

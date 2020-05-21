@@ -109,10 +109,13 @@ namespace Aws
 
                 std::shared_ptr<StringStream> GenerateEndPointCSV();
 
+                uint32_t GetFailTableCount() { return m_failTableCount.load(); }
+
               private:
                 EndPointMonitorOptions m_options;
                 std::mutex m_endPointMonitorsMutex;
                 Aws::Crt::Map<Aws::Crt::String, std::unique_ptr<EndPointMonitor>> m_endPointMonitors;
+                std::atomic<uint32_t> m_failTableCount;
 
                 static void OnPutFailTable(aws_host_address *host_address, void *user_data);
 
