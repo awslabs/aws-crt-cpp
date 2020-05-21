@@ -1155,57 +1155,65 @@ void MetricsPublisher::PollMetricsForS3ObjectTransport(
     nowTimestamp = aws_timestamp_convert(nowTimestamp, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, nullptr);
 
     const std::shared_ptr<Http::HttpClientConnectionManager> &connManager = transport->GetConnectionManager();
-    aws_http_connection_manager *connManagerHandle = connManager->GetUnderlyingHandle();
-    aws_http_connection_manager_snapshot snapshot;
-    AWS_ZERO_STRUCT(snapshot);
 
-    aws_http_connection_manager_get_snapshot(connManagerHandle, &snapshot);
+    if(connManager != nullptr)
+    {
+        aws_http_connection_manager *connManagerHandle = connManager->GetUnderlyingHandle();
+        aws_http_connection_manager_snapshot snapshot;
+        AWS_ZERO_STRUCT(snapshot);
 
-    AddDataPoint(Metric(
-        (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::HeldConnectionCount),
-        MetricUnit::Count,
-        nowTimestamp,
-        0ULL,
-        snapshot.held_connection_count));
+        aws_http_connection_manager_get_snapshot(connManagerHandle, &snapshot);
 
-    AddDataPoint(Metric(
-        (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::PendingAcquisitionCount),
-        MetricUnit::Count,
-        nowTimestamp,
-        0ULL,
-        snapshot.pending_acquisition_count));
+        AddDataPoint(Metric(
+            (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::HeldConnectionCount),
+            MetricUnit::Count,
+            nowTimestamp,
+            0ULL,
+            snapshot.held_connection_count));
 
-    AddDataPoint(Metric(
-        (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::PendingConnectsCount),
-        MetricUnit::Count,
-        nowTimestamp,
-        0ULL,
-        snapshot.pending_connects_count));
+        AddDataPoint(Metric(
+            (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::PendingAcquisitionCount),
+            MetricUnit::Count,
+            nowTimestamp,
+            0ULL,
+            snapshot.pending_acquisition_count));
 
-    AddDataPoint(Metric(
-        (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::VendedConnectionCount),
-        MetricUnit::Count,
-        nowTimestamp,
-        0ULL,
-        snapshot.vended_connection_count));
+        AddDataPoint(Metric(
+            (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::PendingConnectsCount),
+            MetricUnit::Count,
+            nowTimestamp,
+            0ULL,
+            snapshot.pending_connects_count));
 
-    AddDataPoint(Metric(
-        (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::OpenConnectionCount),
-        MetricUnit::Count,
-        nowTimestamp,
-        0ULL,
-        snapshot.open_connection_count));
+        AddDataPoint(Metric(
+            (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::VendedConnectionCount),
+            MetricUnit::Count,
+            nowTimestamp,
+            0ULL,
+            snapshot.vended_connection_count));
 
-    std::shared_ptr<Aws::Crt::Io::EndPointMonitorManager> manager = transport->GetEndPointMonitorManager();
+        AddDataPoint(Metric(
+            (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::OpenConnectionCount),
+            MetricUnit::Count,
+            nowTimestamp,
+            0ULL,
+            snapshot.open_connection_count));
+    }
 
-    uint32_t count = manager->GetFailTableCount();
 
-    AddDataPoint(Metric(
-        (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::FailTableCount),
-        MetricUnit::Count,
-        nowTimestamp,
-        0ULL,
-        count));
+    std::shared_ptr<Aws::Crt::Io::EndPointMonitorManager> endPointMonitorManager = transport->GetEndPointMonitorManager();
+
+    if(endPointMonitorManager != nullptr)
+    {
+        uint32_t count = endPointMonitorManager->GetFailTableCount();
+
+        AddDataPoint(Metric(
+            (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::FailTableCount),
+            MetricUnit::Count,
+            nowTimestamp,
+            0ULL,
+            count));
+    }
 }
 
 void MetricsPublisher::s_OnPollingTask(aws_task *task, void *arg, aws_task_status status)
