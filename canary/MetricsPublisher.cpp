@@ -1238,6 +1238,15 @@ void MetricsPublisher::s_OnPollingTask(aws_task *task, void *arg, aws_task_statu
     publisher->PollMetricsForS3ObjectTransport(uploadTransport, (uint32_t)MetricName::UploadTransportMetricStart);
     publisher->PollMetricsForS3ObjectTransport(downloadTransport, (uint32_t)MetricName::DownloadTransportMetricStart);
 
+    if(uploadTransport != nullptr)
+    {
+        size_t addressCount = publisher->m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(
+                uploadTransport->GetEndpoint(), AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
+
+        Metric s3AddressCountMetric(MetricName::S3AddressCount, MetricUnit::Count, 0ULL, (double)addressCount);
+        publisher->AddDataPoint(s3AddressCountMetric);
+    }
+
     publisher->SchedulePolling();
 }
 

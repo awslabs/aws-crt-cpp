@@ -152,8 +152,6 @@ class S3ObjectTransport
 
     uint64_t m_minThroughputBytes;
 
-    void EmitS3AddressCountMetric(size_t addressCount);
-
     void MakeSignedRequest(
         const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
         const Aws::Crt::Http::HttpRequestOptions &requestOptions,

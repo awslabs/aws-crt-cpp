@@ -118,14 +118,6 @@ S3ObjectTransport::S3ObjectTransport(
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, g_allocator);
 }
 
-void S3ObjectTransport::EmitS3AddressCountMetric(size_t addressCount)
-{
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Emitting S3 Address Count Metric: %" PRIu64, (uint64_t)addressCount);
-
-    Metric s3AddressCountMetric(MetricName::S3AddressCount, MetricUnit::Count, 0ULL, (double)addressCount);
-    m_canaryApp.GetMetricsPublisher()->AddDataPoint(s3AddressCountMetric);
-}
-
 void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers, uint32_t transfersPerAddress)
 {
     if (m_endPointMonitorManager != nullptr)
@@ -160,16 +152,12 @@ void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers, uint32_t transfersPe
         size_t numAddresses = m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(
             m_endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
 
-        EmitS3AddressCountMetric(numAddresses);
-
         while (numAddresses < desiredNumberOfAddresses)
         {
             std::this_thread::sleep_for(std::chrono::seconds(1));
 
             numAddresses = m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(
                 m_endpoint, AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
-
-            EmitS3AddressCountMetric(numAddresses);
         }
     }
 
