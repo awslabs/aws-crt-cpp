@@ -207,10 +207,9 @@ void MeasureTransferRate::MeasureHttpTransfer()
                             aws_error_debug_str(errorCode));
                     }
 
-                    notifyTransferFinished(errorCode);
-
                     transferState->SetTransferSuccess(errorCode == AWS_ERROR_SUCCESS);
                     transferState->FlushDataDownMetrics(m_canaryApp.GetMetricsPublisher());
+                    notifyTransferFinished(errorCode);
                 };
 
             connManager->AcquireConnection([transferState, requestOptions, notifyTransferFinished, request](

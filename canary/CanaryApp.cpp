@@ -44,7 +44,7 @@ namespace
 
 CanaryAppOptions::CanaryAppOptions() noexcept
     : platformName(CanaryUtil::GetPlatformName()), toolName("NA"), instanceType("unknown"), region("us-west-2"),
-      bucketName("aws-crt-canary-bucket"), numUpTransfers(1), numUpConcurrentTransfers(0), numDownTransfers(1),
+      bucketName("aws-crt-canary-bucket"), numUpTransfers(0), numUpConcurrentTransfers(0), numDownTransfers(0),
       numDownConcurrentTransfers(0), numTransfersPerAddress(10),
       singlePartObjectSize(5ULL * 1024ULL * 1024ULL * 1024ULL), multiPartObjectPartSize(25LL * 1024ULL * 1024ULL),
       multiPartObjectNumParts(205), targetThroughputGbps(80.0), measureSinglePartTransfer(false),
@@ -94,8 +94,15 @@ CanaryApp::CanaryApp(CanaryAppOptions &&inOptions) noexcept
 
     if (m_options.measureMultiPartTransfer)
     {
-        perConnThroughputUp = targetThroughputBytesPerSecond / m_options.numUpConcurrentTransfers;
-        perConnThroughputDown = targetThroughputBytesPerSecond / m_options.numDownConcurrentTransfers;
+        if (m_options.numUpConcurrentTransfers > 0)
+        {
+            perConnThroughputUp = targetThroughputBytesPerSecond / m_options.numUpConcurrentTransfers;
+        }
+
+        if (m_options.numDownConcurrentTransfers > 0)
+        {
+            perConnThroughputDown = targetThroughputBytesPerSecond / m_options.numDownConcurrentTransfers;
+        }
     }
 
     m_publisher = MakeShared<MetricsPublisher>(g_allocator, *this, MetricNamespace);

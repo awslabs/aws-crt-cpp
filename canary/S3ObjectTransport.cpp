@@ -112,7 +112,7 @@ S3ObjectTransport::S3ObjectTransport(
     }
 
     connectionManagerOptions.ConnectionOptions.Bootstrap = &m_canaryApp.GetBootstrap();
-    connectionManagerOptions.MaxConnections = maxConnections;
+    connectionManagerOptions.MaxConnections = std::max(1U, maxConnections);
 
     m_connManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, g_allocator);

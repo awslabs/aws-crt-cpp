@@ -648,6 +648,12 @@ std::shared_ptr<StringStream> MetricsPublisher::GeneratePerStreamCSV(
     const Vector<Metric> &aggregateDataPoints)
 {
     std::shared_ptr<StringStream> csvContents = MakeShared<StringStream>(g_allocator);
+
+    if (aggregateDataPoints.size() == 0)
+    {
+        return csvContents;
+    }
+
     std::set<uint64_t> groupIds;
 
     DateTime now = DateTime::Now();
@@ -665,6 +671,13 @@ std::shared_ptr<StringStream> MetricsPublisher::GeneratePerStreamCSV(
         oldestTimestampSeconds = std::min(oldestTimestampSeconds, timestampSeconds);
         newestTimestampSeconds = std::max(newestTimestampSeconds, timestampSeconds);
         groupIds.insert(metric.TransferId);
+    }
+
+    if (newestTimestampSeconds < oldestTimestampSeconds)
+    {
+        AWS_LOGF_ERROR(
+            AWS_LS_CRT_CPP_CANARY, "MetricsPublisher::GeneratePerStreamCSV - Invalid timestamp interval found.");
+        return csvContents;
     }
 
     WritePerStreamCSVRowHeader(csvContents, oldestTimestampSeconds, newestTimestampSeconds);
@@ -1150,7 +1163,7 @@ void MetricsPublisher::PollMetricsForS3ObjectTransport(
     const std::shared_ptr<S3ObjectTransport> &transport,
     uint32_t metricNameOffset)
 {
-    if(transport == nullptr)
+    if (transport == nullptr)
     {
         return;
     }
@@ -1161,7 +1174,7 @@ void MetricsPublisher::PollMetricsForS3ObjectTransport(
 
     std::shared_ptr<Http::HttpClientConnectionManager> connManager = transport->GetConnectionManager();
 
-    if(connManager != nullptr)
+    if (connManager != nullptr)
     {
         aws_http_connection_manager *connManagerHandle = connManager->GetUnderlyingHandle();
         aws_http_connection_manager_snapshot snapshot;
@@ -1205,10 +1218,10 @@ void MetricsPublisher::PollMetricsForS3ObjectTransport(
             snapshot.open_connection_count));
     }
 
+    std::shared_ptr<Aws::Crt::Io::EndPointMonitorManager> endPointMonitorManager =
+        transport->GetEndPointMonitorManager();
 
-    std::shared_ptr<Aws::Crt::Io::EndPointMonitorManager> endPointMonitorManager = transport->GetEndPointMonitorManager();
-
-    if(endPointMonitorManager != nullptr)
+    if (endPointMonitorManager != nullptr)
     {
         uint32_t count = endPointMonitorManager->GetFailTableCount();
 
@@ -1238,10 +1251,10 @@ void MetricsPublisher::s_OnPollingTask(aws_task *task, void *arg, aws_task_statu
     publisher->PollMetricsForS3ObjectTransport(uploadTransport, (uint32_t)MetricName::UploadTransportMetricStart);
     publisher->PollMetricsForS3ObjectTransport(downloadTransport, (uint32_t)MetricName::DownloadTransportMetricStart);
 
-    if(uploadTransport != nullptr)
+    if (uploadTransport != nullptr)
     {
         size_t addressCount = publisher->m_canaryApp.GetDefaultHostResolver().GetHostAddressCount(
-                uploadTransport->GetEndpoint(), AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
+            uploadTransport->GetEndpoint(), AWS_GET_HOST_ADDRESS_COUNT_RECORD_TYPE_A);
 
         Metric s3AddressCountMetric(MetricName::S3AddressCount, MetricUnit::Count, 0ULL, (double)addressCount);
         publisher->AddDataPoint(s3AddressCountMetric);
