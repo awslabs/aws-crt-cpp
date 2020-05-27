@@ -37,17 +37,27 @@ namespace Aws
                 SigV4 = AWS_SIGNING_ALGORITHM_V4,
             };
 
-            enum class SigningTransform
+            enum class SignatureType
             {
-                Header = AWS_SRT_HEADER,
-                QueryParam = AWS_SRT_QUERY_PARAM,
+                HttpRequestViaHeaders = AWS_ST_HTTP_REQUEST_HEADERS,
+                HttpRequestViaQueryParams = AWS_ST_HTTP_REQUEST_QUERY_PARAMS,
+                HttpRequestChunk = AWS_ST_HTTP_REQUEST_CHUNK,
+                HttpRequestEvent = AWS_ST_HTTP_REQUEST_EVENT,
             };
 
-            enum class BodySigningType
+            enum class SignedBodyValueType
             {
-                NoSigning = AWS_BODY_SIGNING_OFF,
-                SignBody = AWS_BODY_SIGNING_ON,
-                UnsignedPayload = AWS_BODY_SIGNING_UNSIGNED_PAYLOAD,
+                Empty = AWS_SBVT_EMPTY,
+                Payload = AWS_SBVT_PAYLOAD,
+                UnsignedPayload = AWS_SBVT_UNSIGNED_PAYLOAD,
+                StreamingAws4HmacSha256Payload = AWS_SBVT_STREAMING_AWS4_HMAC_SHA256_PAYLOAD,
+                StreamingAws4HmacSha256Events = AWS_SBVT_STREAMING_AWS4_HMAC_SHA256_EVENTS,
+            };
+
+            enum class SignedBodyHeaderType
+            {
+                None = AWS_SBHT_NONE,
+                XAmzContentSha256 = AWS_SBHT_X_AMZ_CONTENT_SHA256,
             };
 
             using ShouldSignParameterCb = bool (*)(const Crt::ByteCursor *, void *);
@@ -75,14 +85,14 @@ namespace Aws
                 void SetSigningAlgorithm(SigningAlgorithm algorithm) noexcept;
 
                 /**
-                 * Gets the request signing transform we want to make
+                 * Gets the type of signature we want to calculate
                  */
-                SigningTransform GetSigningTransform() const noexcept;
+                SignatureType GetSignatureType() const noexcept;
 
                 /**
-                 * Sets the signing process we want to invoke
+                 * Sets the type of signature we want to calculate
                  */
-                void SetSigningTransform(SigningTransform transform) noexcept;
+                void SetSignatureType(SignatureType signatureType) noexcept;
 
                 /**
                  * Gets the AWS region to sign against
@@ -154,16 +164,24 @@ namespace Aws
                 void SetShouldSignHeadersCallback(ShouldSignParameterCb shouldSignParameterCb) noexcept;
 
                 /**
-                 * Gets whether or not the signer should add the x-amz-content-sha256 header (with appropriate value) to
-                 * the canonical request.
+                 * Gets the value to use for the canonical request's payload
                  */
-                BodySigningType GetBodySigningType() const noexcept;
+                SignedBodyValueType GetSignedBodyValue() const noexcept;
 
                 /**
-                 * Sets whether or not the signer should add the x-amz-content-sha256 header (with appropriate value) to
-                 * the canonical request.
+                 * Sets the value to use for the canonical request's payload
                  */
-                void SetBodySigningType(BodySigningType bodysigningType) noexcept;
+                void SetSignedBodyValue(SignedBodyValueType signedBodyValue) noexcept;
+
+                /**
+                 * Gets the name of the header to add that stores the signed body value
+                 */
+                SignedBodyHeaderType GetSignedBodyHeader() const noexcept;
+
+                /**
+                 * Sets the name of the header to add that stores the signed body value
+                 */
+                void SetSignedBodyHeader(SignedBodyHeaderType signedBodyHeader) noexcept;
 
                 /**
                  * (Query param signing only) Gets the amount of time, in seconds, the (pre)signed URI will be good for

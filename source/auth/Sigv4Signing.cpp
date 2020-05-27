@@ -20,6 +20,7 @@
 
 #include <aws/auth/signable.h>
 #include <aws/auth/signing.h>
+#include <aws/auth/signing_result.h>
 
 namespace Aws
 {
@@ -33,9 +34,10 @@ namespace Aws
                 AWS_ZERO_STRUCT(m_config);
 
                 SetSigningAlgorithm(SigningAlgorithm::SigV4);
-                SetSigningTransform(SigningTransform::Header);
+                SetSignatureType(SignatureType::HttpRequestViaHeaders);
                 SetShouldNormalizeUriPath(true);
-                SetBodySigningType(BodySigningType::SignBody);
+                SetSignedBodyValue(SignedBodyValueType ::Empty);
+                SetSignedBodyHeader(SignedBodyHeaderType::None);
                 SetSigningTimepoint(DateTime::Now());
                 SetExpirationInSeconds(0);
                 m_config.config_type = AWS_SIGNING_CONFIG_AWS;
@@ -53,14 +55,14 @@ namespace Aws
                 m_config.algorithm = static_cast<aws_signing_algorithm>(algorithm);
             }
 
-            SigningTransform AwsSigningConfig::GetSigningTransform() const noexcept
+            SignatureType AwsSigningConfig::GetSignatureType() const noexcept
             {
-                return static_cast<SigningTransform>(m_config.transform);
+                return static_cast<SignatureType>(m_config.signature_type);
             }
 
-            void AwsSigningConfig::SetSigningTransform(SigningTransform transform) noexcept
+            void AwsSigningConfig::SetSignatureType(SignatureType signatureType) noexcept
             {
-                m_config.transform = static_cast<aws_signing_request_transform>(transform);
+                m_config.signature_type = static_cast<aws_signature_type>(signatureType);
             }
 
             const Crt::String &AwsSigningConfig::GetRegion() const noexcept { return m_signingRegion; }
@@ -116,14 +118,24 @@ namespace Aws
                 m_config.should_sign_param = shouldSignParameterCb;
             }
 
-            BodySigningType AwsSigningConfig::GetBodySigningType() const noexcept
+            SignedBodyValueType AwsSigningConfig::GetSignedBodyValue() const noexcept
             {
-                return static_cast<BodySigningType>(m_config.body_signing_type);
+                return static_cast<SignedBodyValueType>(m_config.signed_body_value);
             }
 
-            void AwsSigningConfig::SetBodySigningType(BodySigningType bodysigningType) noexcept
+            void AwsSigningConfig::SetSignedBodyValue(SignedBodyValueType signedBodyValue) noexcept
             {
-                m_config.body_signing_type = static_cast<enum aws_body_signing_config_type>(bodysigningType);
+                m_config.signed_body_value = static_cast<enum aws_signed_body_value_type>(signedBodyValue);
+            }
+
+            SignedBodyHeaderType AwsSigningConfig::GetSignedBodyHeader() const noexcept
+            {
+                return static_cast<SignedBodyHeaderType>(m_config.signed_body_header);
+            }
+
+            void AwsSigningConfig::SetSignedBodyHeader(SignedBodyHeaderType signedBodyHeader) noexcept
+            {
+                m_config.signed_body_header = static_cast<enum aws_signed_body_header_type>(signedBodyHeader);
             }
 
             uint64_t AwsSigningConfig::GetExpirationInSeconds() const noexcept
