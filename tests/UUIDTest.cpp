@@ -26,7 +26,6 @@ static int s_UUIDToString(Aws::Crt::Allocator *allocator, void *ctx)
     Aws::Crt::ApiHandle apiHandle(allocator);
     Aws::Crt::UUID Uuid;
     Aws::Crt::String uuidStr = Uuid.ToString();
-    ASSERT_INT_EQUALS(AWS_UUID_STR_LEN, uuidStr.capacity());
     ASSERT_TRUE(uuidStr.length() != 0);
     ASSERT_TRUE(Uuid == Aws::Crt::UUID(uuidStr));
 
