@@ -51,6 +51,7 @@ namespace Aws
             uuidStr.reserve(AWS_UUID_STR_LEN);
             auto outBuf = ByteBufFromEmptyArray(reinterpret_cast<const uint8_t *>(uuidStr.data()), uuidStr.capacity());
             aws_uuid_to_str(&m_uuid, &outBuf);
+            outBuf.buffer[outBuf.len] = '\0';
             uuidStr += (char *)outBuf.buffer;
             return uuidStr;
         }
