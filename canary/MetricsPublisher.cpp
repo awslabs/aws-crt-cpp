@@ -1133,7 +1133,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
 
         for (auto it = metricTotals.begin(); it != metricTotals.end(); ++it)
         {
-            if (it->second.numConnections >= m_canaryApp.GetOptions().numDownConcurrentTransfers)
+            if (it->second.bytesDown > 0.0 && it->second.numConnections >= m_canaryApp.GetOptions().numDownConcurrentTransfers)
             {
                 bytesDownTotal += it->second.bytesDown;
                 bytesDownNum += 1.0;
@@ -1142,7 +1142,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
                 bytesDownTimeEnd = std::max(bytesDownTimeEnd, it->first);
             }
 
-            if (it->second.numConnections >= m_canaryApp.GetOptions().numUpConcurrentTransfers)
+            if (it->second.bytesUp > 0.0 && it->second.numConnections >= m_canaryApp.GetOptions().numUpConcurrentTransfers)
             {
                 bytesUpTotal += it->second.bytesUp;
                 bytesUpNum += 1.0;
