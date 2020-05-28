@@ -45,6 +45,7 @@ add_test_case(HttpRequestTestCreateDestroy)
 add_test_case(Sigv4SigningTestCreateDestroy)
 add_test_case(Sigv4SigningTestSimple)
 add_test_case(Sigv4SigningTestCredentials)
+add_test_case(UUIDToString)
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 
