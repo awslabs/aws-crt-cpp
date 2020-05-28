@@ -971,6 +971,15 @@ String MetricsPublisher::UploadBackup(uint32_t options)
     return backupPath;
 }
 
+String GetDateTimeGMTString(const DateTime & dateTime)
+{
+    uint8_t dateBuffer[AWS_DATE_TIME_STR_MAX_LEN];
+    AWS_ZERO_ARRAY(dateBuffer);
+    auto dateBuf = ByteBufFromEmptyArray(dateBuffer, AWS_ARRAY_SIZE(dateBuffer));
+    dateTime.ToGmtString(DateFormat::ISO_8601, dateBuf);
+    return String((const char*)dateBuf.buffer, dateBuf.len);
+}
+
 void MetricsPublisher::RehydrateBackup(const char *s3Path)
 {
     std::shared_ptr<S3ObjectTransport> transport =
@@ -1147,32 +1156,20 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
             DateTime bytesUpTimeStartDateTime(bytesUpTimeStart);
             DateTime bytesUpTimeEndDateTime(bytesUpTimeEnd);
 
-            ByteBuf bytesUpTimeStartBuf;
-            ByteBuf bytesUpTimeEndBuf;
-
-            bytesUpTimeStartDateTime.ToGmtString(DateFormat::ISO_8601, bytesUpTimeStartBuf);
-            bytesUpTimeEndDateTime.ToGmtString(DateFormat::ISO_8601, bytesUpTimeEndBuf);
-
             std::cout << "Average Bytes Up: " << (bytesUpTotal / bytesUpNum) * 8.0 / 1000.0 / 1000.0 / 1000.0
                       << " Gbps from total " << bytesUpTotal << " with " << bytesUpNum
-                      << " samples, between time interval " << bytesUpTimeStartBuf.buffer << ","
-                      << bytesUpTimeEndBuf.buffer << std::endl;
+                      << " samples, between time interval " << GetDateTimeGMTString(bytesUpTimeStartDateTime).c_str() << ","
+                      << GetDateTimeGMTString(bytesUpTimeEndDateTime).c_str() << std::endl;
         }
 
         {
             DateTime bytesDownTimeStartDateTime(bytesDownTimeStart);
             DateTime bytesDownTimeEndDateTime(bytesDownTimeEnd);
 
-            ByteBuf bytesDownTimeStartBuf;
-            ByteBuf bytesDownTimeEndBuf;
-
-            bytesDownTimeStartDateTime.ToGmtString(DateFormat::ISO_8601, bytesDownTimeStartBuf);
-            bytesDownTimeEndDateTime.ToGmtString(DateFormat::ISO_8601, bytesDownTimeEndBuf);
-
             std::cout << "Average Bytes Down: " << (bytesDownTotal / bytesDownNum) * 8.0 / 1000.0 / 1000.0 / 1000.0
                       << " Gbps from total " << bytesDownTotal << " with " << bytesDownNum
-                      << " samples, between time interval " << bytesDownTimeStartBuf.buffer << ","
-                      << bytesDownTimeEndBuf.buffer << std::endl;
+                      << " samples, between time interval " << GetDateTimeGMTString(bytesDownTimeStartDateTime).c_str() << ","
+                      << GetDateTimeGMTString(bytesDownTimeEndDateTime).c_str() << std::endl;
         }
     }
 
