@@ -1096,7 +1096,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
         {
             metric.Timestamp = metric.Timestamp - newestTimeStamp + relocatedMetricsEnd;
 
-            uint64_t timeStampSeconds = metric.Timestamp / 1000ULL;
+            uint64_t timeStampSeconds = metric.Timestamp / UINT64_C(1000);
 
             auto it = metricTotals.find(timeStampSeconds);
 
@@ -1156,9 +1156,10 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
             }
         }
 
+        if (bytesUpNum > 0.0)
         {
-            DateTime bytesUpTimeStartDateTime(bytesUpTimeStart * 1000ULL);
-            DateTime bytesUpTimeEndDateTime(bytesUpTimeEnd * 1000ULL);
+            DateTime bytesUpTimeStartDateTime(bytesUpTimeStart * UINT64_C(1000));
+            DateTime bytesUpTimeEndDateTime(bytesUpTimeEnd * UINT64_C(1000));
 
             std::cout << "Average Bytes Up: " << (bytesUpTotal / bytesUpNum) * 8.0 / 1000.0 / 1000.0 / 1000.0
                       << " Gbps from total " << bytesUpTotal << " with " << bytesUpNum
@@ -1166,9 +1167,10 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
                       << "," << GetDateTimeGMTString(bytesUpTimeEndDateTime).c_str() << std::endl;
         }
 
+        if (bytesDownNum > 0.0)
         {
-            DateTime bytesDownTimeStartDateTime(bytesDownTimeStart * 1000ULL);
-            DateTime bytesDownTimeEndDateTime(bytesDownTimeEnd * 1000ULL);
+            DateTime bytesDownTimeStartDateTime(bytesDownTimeStart * UINT64_C(1000));
+            DateTime bytesDownTimeEndDateTime(bytesDownTimeEnd * UINT64_C(1000));
 
             std::cout << "Average Bytes Down: " << (bytesDownTotal / bytesDownNum) * 8.0 / 1000.0 / 1000.0 / 1000.0
                       << " Gbps from total " << bytesDownTotal << " with " << bytesDownNum
