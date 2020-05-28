@@ -36,7 +36,7 @@ namespace Aws
                 SetSigningAlgorithm(SigningAlgorithm::SigV4);
                 SetSignatureType(SignatureType::HttpRequestViaHeaders);
                 SetShouldNormalizeUriPath(true);
-                SetSignedBodyValue(SignedBodyValueType ::Empty);
+                SetSignedBodyValue(SignedBodyValueType::Payload);
                 SetSignedBodyHeader(SignedBodyHeaderType::None);
                 SetSigningTimepoint(DateTime::Now());
                 SetExpirationInSeconds(0);
