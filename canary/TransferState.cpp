@@ -57,9 +57,6 @@ void TransferState::DistributeDataUsedOverSeconds(
     uint64_t totalTimeDelta = endTime - beginTime;
     uint64_t currentTime = beginTime;
 
-    // AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Data being added: %f over time frame %" PRIu64 " milliseconds with end time
-    // %" PRIu64, dataUsed, totalTimeDelta, endTime); double dataTestTotal = 0.0;
-
     if (totalTimeDelta == 0ULL)
     {
         PushDataUsedForSecondAndAggregate(metrics, metricName, endTime, dataUsed);
@@ -75,18 +72,11 @@ void TransferState::DistributeDataUsedOverSeconds(
             uint64_t timeInterval = nextTime - currentTime;
             double dataUsedFrac = dataUsed * ((double)timeInterval / (double)totalTimeDelta);
 
-            // dataTestTotal += dataUsedFrac;
-            // AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Submitting metric %g over time frame %" PRIu64, dataUsedFrac,
-            // timeInterval);
-
             PushDataUsedForSecondAndAggregate(metrics, metricName, nextTime, dataUsedFrac);
 
             currentTime = nextTime;
         }
     }
-
-    // AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Total submitted: %g  -  %" PRIu64 " - %" PRIu64, dataTestTotal,
-    // currentTime, endTime);
 }
 
 void TransferState::PushDataUsedForSecondAndAggregate(
@@ -170,6 +160,34 @@ void TransferState::FlushMetricsVector(const std::shared_ptr<MetricsPublisher> &
     publisher->AddDataPoints(connMetrics);
     publisher->AddDataPoints(metrics);
 
+    if (!m_transferSuccess)
+    {
+        size_t i = 0;
+
+        while (i < metrics.size())
+        {
+            Metric &metric = metrics[i];
+
+            if (metric.Name == MetricName::BytesUp)
+            {
+                metric.Name = MetricName::BytesUpFailed;
+                ++i;
+            }
+            else if (metric.Name == MetricName::BytesDown)
+            {
+                metric.Name = MetricName::BytesDownFailed;
+                ++i;
+            }
+            else
+            {
+                metrics[i] = metrics.back();
+                metrics.pop_back();
+            }
+        }
+
+        publisher->AddDataPoints(metrics);
+    }
+
     metrics.clear();
 }
 
@@ -216,7 +234,8 @@ void TransferState::UpdateRateTracking(uint64_t dataUsed, bool forceFlush)
             }
             else
             {
-                AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "TransferState::UpdateRateTracking - Attached monitor is null.");
+                //    AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "TransferState::UpdateRateTracking - Attached monitor is
+                //    null.");
             }
         }
 

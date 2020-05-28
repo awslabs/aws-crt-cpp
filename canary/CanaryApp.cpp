@@ -48,8 +48,8 @@ CanaryAppOptions::CanaryAppOptions() noexcept
       numDownConcurrentTransfers(0), numTransfersPerAddress(10),
       singlePartObjectSize(5ULL * 1024ULL * 1024ULL * 1024ULL), multiPartObjectPartSize(25LL * 1024ULL * 1024ULL),
       multiPartObjectNumParts(205), targetThroughputGbps(80.0), measureSinglePartTransfer(false),
-      measureMultiPartTransfer(false), measureHttpTransfer(false), usingNumaControl(false), sendEncrypted(false),
-      loggingEnabled(false), rehydrateBackup(false)
+      measureMultiPartTransfer(false), measureHttpTransfer(false), sendEncrypted(false), loggingEnabled(false),
+      rehydrateBackup(false)
 {
 }
 

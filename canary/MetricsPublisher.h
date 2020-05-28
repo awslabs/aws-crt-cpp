@@ -68,7 +68,9 @@ enum class TransportMetricName
 enum class MetricName
 {
     BytesUp,
+    BytesUpFailed,
     BytesDown,
+    BytesDownFailed,
     NumConnections,
     S3AddressCount,
     SuccessfulTransfer,

@@ -94,7 +94,9 @@ namespace
                                    "None"};
 
     const char *MetricNameStr[] = {"BytesUp",
+                                   "BytesUpFailed",
                                    "BytesDown",
+                                   "BytesDownFailed",
                                    "NumConnections",
                                    "S3AddressCount",
                                    "SuccessfulTransfer",
@@ -1027,8 +1029,6 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
 
     uint64_t newestTimeStamp = 0;
 
-    // double total = 0.0;
-
     for (const JsonView &metricJson : metricsJson)
     {
         String metricNameStr = metricJson.GetString("Name");
@@ -1044,15 +1044,19 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
             0ULL,
             metricJson.GetDouble("Value"));
 
-        // if(metricNameStr == "BytesUp")
-        //{
-        //    total += metricJson.GetDouble("Value");
-        //}
-
         newestTimeStamp = std::max(metricTimestamp, newestTimeStamp);
     }
 
-    // std::cout << "The total bytes up value is: " << total*8.0/1000.0/1000.0/1000.0 << std::endl;
+    struct MetricTotal
+    {
+        double bytesDown;
+        double bytesUp;
+        double numConnections;
+
+        MetricTotal() : bytesDown(0.0), bytesUp(0.0), numConnections(0.0) {}
+    };
+
+    Map<uint64_t, MetricTotal> metricTotals;
 
     /*
      * Calculate new timestamps for the metrics so that they happen within the most recent
@@ -1082,6 +1086,93 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
         for (Metric &metric : metrics)
         {
             metric.Timestamp = metric.Timestamp - newestTimeStamp + relocatedMetricsEnd;
+
+            auto it = metricTotals.find(metric.Timestamp);
+
+            if (it == metricTotals.end())
+            {
+                auto insertResult = metricTotals.emplace(metric.Timestamp, MetricTotal());
+
+                AWS_FATAL_ASSERT(insertResult.second);
+
+                it = insertResult.first;
+            }
+
+            if (metric.Name == MetricName::BytesDown)
+            {
+                it->second.bytesDown += metric.Value;
+            }
+            else if (metric.Name == MetricName::BytesUp)
+            {
+                it->second.bytesUp += metric.Value;
+            }
+            else if (metric.Name == MetricName::NumConnections)
+            {
+                it->second.numConnections += metric.Value;
+            }
+        }
+
+        double bytesDownTotal = 0.0;
+        double bytesDownNum = 0.0;
+        uint64_t bytesDownTimeStart = ~0ULL;
+        uint64_t bytesDownTimeEnd = 0ULL;
+
+        double bytesUpTotal = 0.0;
+        double bytesUpNum = 0.0;
+        uint64_t bytesUpTimeStart = ~0ULL;
+        uint64_t bytesUpTimeEnd = 0ULL;
+
+        for (auto it = metricTotals.begin(); it != metricTotals.end(); ++it)
+        {
+            if (it->second.numConnections >= m_canaryApp.GetOptions().numDownConcurrentTransfers)
+            {
+                bytesDownTotal += it->second.bytesDown;
+                bytesDownNum += 1.0;
+
+                bytesDownTimeStart = std::min(bytesDownTimeStart, it->first);
+                bytesDownTimeEnd = std::max(bytesDownTimeEnd, it->first);
+            }
+
+            if (it->second.numConnections >= m_canaryApp.GetOptions().numUpConcurrentTransfers)
+            {
+                bytesUpTotal += it->second.bytesUp;
+                bytesUpNum += 1.0;
+
+                bytesUpTimeStart = std::min(bytesUpTimeStart, it->first);
+                bytesUpTimeEnd = std::max(bytesUpTimeEnd, it->first);
+            }
+        }
+
+        {
+            DateTime bytesUpTimeStartDateTime(bytesUpTimeStart);
+            DateTime bytesUpTimeEndDateTime(bytesUpTimeEnd);
+
+            ByteBuf bytesUpTimeStartBuf;
+            ByteBuf bytesUpTimeEndBuf;
+
+            bytesUpTimeStartDateTime.ToGmtString(DateFormat::ISO_8601, bytesUpTimeStartBuf);
+            bytesUpTimeEndDateTime.ToGmtString(DateFormat::ISO_8601, bytesUpTimeEndBuf);
+
+            std::cout << "Average Bytes Up: " << (bytesUpTotal / bytesUpNum) * 8.0 / 1000.0 / 1000.0 / 1000.0
+                      << " Gbps from total " << bytesUpTotal << " with " << bytesUpNum
+                      << " samples, between time interval " << bytesUpTimeStartBuf.buffer << ","
+                      << bytesUpTimeEndBuf.buffer << std::endl;
+        }
+
+        {
+            DateTime bytesDownTimeStartDateTime(bytesDownTimeStart);
+            DateTime bytesDownTimeEndDateTime(bytesDownTimeEnd);
+
+            ByteBuf bytesDownTimeStartBuf;
+            ByteBuf bytesDownTimeEndBuf;
+
+            bytesDownTimeStartDateTime.ToGmtString(DateFormat::ISO_8601, bytesDownTimeStartBuf);
+            bytesDownTimeEndDateTime.ToGmtString(DateFormat::ISO_8601, bytesDownTimeEndBuf);
+
+            std::cout << "Average Bytes Down: " << (bytesDownTotal / bytesDownNum) * 8.0 / 1000.0 / 1000.0 / 1000.0
+                      << " Gbps from total " << bytesDownTotal << " with " << bytesDownNum
+                      << " samples, between time interval " << bytesDownTimeStartBuf.buffer << ","
+                      << bytesDownTimeEndBuf.buffer << std::endl;
         }
     }
 

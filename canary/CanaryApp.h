@@ -29,8 +29,7 @@ class MeasureTransferRate;
 
 /*
  * Represents the options that define how the canary should run.  Most are values
- * defined by the command line, with some exceptions for values passed from
- * a parent process to a child process in fork mode.
+ * defined by the command line.
  */
 struct CanaryAppOptions
 {
@@ -62,7 +61,6 @@ struct CanaryAppOptions
     uint32_t measureSinglePartTransfer : 1;
     uint32_t measureMultiPartTransfer : 1;
     uint32_t measureHttpTransfer : 1;
-    uint32_t usingNumaControl : 1;
     uint32_t sendEncrypted : 1;
     uint32_t loggingEnabled : 1;
     uint32_t rehydrateBackup : 1;
