@@ -70,6 +70,8 @@ namespace Aws
                 : public std::enable_shared_from_this<HttpClientConnectionManager>
             {
               public:
+                static std::atomic<uint64_t> s_numConnections;
+
                 ~HttpClientConnectionManager();
 
                 /**

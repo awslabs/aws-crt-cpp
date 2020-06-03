@@ -28,6 +28,8 @@
 #include <aws/common/log_formatter.h>
 #include <aws/common/log_writer.h>
 
+#include <fstream>
+
 #ifndef WIN32
 #    include <sys/resource.h>
 #    include <sys/types.h>
@@ -42,19 +44,87 @@ namespace
     const char *MetricNamespace = "CRT-CPP-Canary-V2";
 } // namespace
 
-CanaryAppOptions::CanaryAppOptions() noexcept
-    : platformName(CanaryUtil::GetPlatformName()), toolName("NA"), instanceType("unknown"), region("us-west-2"),
-      bucketName("aws-crt-canary-bucket"), numUpTransfers(0), numUpConcurrentTransfers(0), numDownTransfers(0),
-      numDownConcurrentTransfers(0), numTransfersPerAddress(10),
-      singlePartObjectSize(5ULL * 1024ULL * 1024ULL * 1024ULL), multiPartObjectPartSize(25LL * 1024ULL * 1024ULL),
-      multiPartObjectNumParts(205), targetThroughputGbps(80.0), measureSinglePartTransfer(false),
-      measureMultiPartTransfer(false), measureHttpTransfer(false), sendEncrypted(false), loggingEnabled(false),
-      rehydrateBackup(false)
+CanaryAppOptions::CanaryAppOptions(const String &configFileName) noexcept
+    : platformName(CanaryUtil::GetPlatformName().c_str()), toolName("S3Canary"), instanceType("unknown"),
+      region("us-west-2"), bucketName("aws-crt-canary-bucket"), numUpTransfers(0), numUpConcurrentTransfers(0),
+      numDownTransfers(0), numDownConcurrentTransfers(0), numTransfersPerAddress(10), fileNameSuffixOffset(1),
+      singlePartObjectSize(5ULL * 1024ULL * 1024ULL * 1024ULL), multiPartObjectPartSize(52LL * 1024ULL * 1024ULL),
+      multiPartObjectNumParts(100), connectionMonitoringFailureIntervalSeconds(1), targetThroughputGbps(80.0),
+      measureSinglePartTransfer(false), measureMultiPartTransfer(false), measureHttpTransfer(false),
+      sendEncrypted(false), loggingEnabled(false), rehydrateBackup(false), connectionMonitoringEnabled(false),
+      endPointMonitoringEnabled(false), metricsPublishingEnabled(true)
 {
+    if (configFileName.empty())
+    {
+        return;
+    }
+
+    std::ifstream configFileStream(configFileName.c_str());
+
+    if (!configFileStream.is_open())
+    {
+        return;
+    }
+
+#define GET_CONFIG_VALUE(view, jsonType, key, var)                                                                     \
+    if ((view).KeyExists((key)))                                                                                       \
+    {                                                                                                                  \
+        var = (view).Get##jsonType((key));                                                                             \
+    }
+
+#define GET_CONFIG_VALUE_CAST(view, jsonType, castType, key, var)                                                      \
+    if ((view).KeyExists((key)))                                                                                       \
+    {                                                                                                                  \
+        var = (castType)(view).Get##jsonType((key));                                                                   \
+    }
+
+    String fileContents((std::istreambuf_iterator<char>(configFileStream)), std::istreambuf_iterator<char>());
+
+    JsonObject jsonContents(fileContents);
+    JsonView jsonView = jsonContents.View();
+
+    GET_CONFIG_VALUE(jsonView, String, "PlatformName", platformName);
+    GET_CONFIG_VALUE(jsonView, String, "ToolName", toolName);
+    GET_CONFIG_VALUE(jsonView, String, "InstanceType", instanceType);
+    GET_CONFIG_VALUE(jsonView, String, "Region", region);
+    GET_CONFIG_VALUE(jsonView, String, "HttpTestEndpoint", httpTestEndpoint);
+    GET_CONFIG_VALUE(jsonView, String, "BucketName", bucketName);
+    GET_CONFIG_VALUE(jsonView, String, "DownloadObjectName", downloadObjectName);
+
+    GET_CONFIG_VALUE_CAST(jsonView, Integer, uint32_t, "NumUpTransfers", numUpTransfers);
+    GET_CONFIG_VALUE_CAST(jsonView, Integer, uint32_t, "NumUpConcurrentTransfers", numUpConcurrentTransfers);
+    GET_CONFIG_VALUE_CAST(jsonView, Integer, uint32_t, "NumDownTransfers", numDownTransfers);
+    GET_CONFIG_VALUE_CAST(jsonView, Integer, uint32_t, "NumDownConcurrentTransfers", numDownConcurrentTransfers);
+    GET_CONFIG_VALUE_CAST(jsonView, Integer, uint32_t, "NumTransfersPerAddress", numTransfersPerAddress);
+
+    GET_CONFIG_VALUE_CAST(jsonView, Int64, uint64_t, "FileNameSuffixOffset", fileNameSuffixOffset);
+    GET_CONFIG_VALUE_CAST(jsonView, Int64, uint64_t, "SinglePartObjectSize", singlePartObjectSize);
+    GET_CONFIG_VALUE_CAST(jsonView, Int64, uint64_t, "MultiPartObjectPartSize", multiPartObjectPartSize);
+    GET_CONFIG_VALUE_CAST(jsonView, Integer, uint32_t, "MultipartObjectNumParts", multiPartObjectNumParts);
+    GET_CONFIG_VALUE_CAST(
+        jsonView,
+        Integer,
+        uint32_t,
+        "ConnectionMonitoringFailureIntervalSeconds",
+        connectionMonitoringFailureIntervalSeconds);
+
+    GET_CONFIG_VALUE(jsonView, Double, "TargetThroughputGbps", targetThroughputGbps);
+
+    GET_CONFIG_VALUE(jsonView, Bool, "MeasureSinglePartTransfer", measureSinglePartTransfer);
+    GET_CONFIG_VALUE(jsonView, Bool, "MeasureMultiPartTransfer", measureMultiPartTransfer);
+    GET_CONFIG_VALUE(jsonView, Bool, "MeasureHttpTransfer", measureHttpTransfer);
+    GET_CONFIG_VALUE(jsonView, Bool, "SendEncrypted", sendEncrypted);
+    GET_CONFIG_VALUE(jsonView, Bool, "LoggingEnabled", loggingEnabled);
+    GET_CONFIG_VALUE(jsonView, Bool, "ConnectionMonitoringEnabled", connectionMonitoringEnabled);
+    GET_CONFIG_VALUE(jsonView, Bool, "EndPointMonitoringEnabled", endPointMonitoringEnabled);
+    GET_CONFIG_VALUE(jsonView, Bool, "MetricsPublishingEnabled", metricsPublishingEnabled);
+
+#undef GET_CONFIG_VALUE_CAST
+#undef GET_CONFIG_VALUE
 }
 
-CanaryApp::CanaryApp(CanaryAppOptions &&inOptions) noexcept
-    : m_options(inOptions), m_apiHandle(g_allocator), m_eventLoopGroup(72, g_allocator),
+CanaryApp::CanaryApp(Aws::Crt::ApiHandle &apiHandle, CanaryAppOptions &&inOptions) noexcept
+    : m_apiHandle(apiHandle), m_options(inOptions), m_eventLoopGroup(0, g_allocator),
       m_defaultHostResolver(m_eventLoopGroup, 60, 3600, g_allocator),
       m_bootstrap(m_eventLoopGroup, m_defaultHostResolver, g_allocator)
 {

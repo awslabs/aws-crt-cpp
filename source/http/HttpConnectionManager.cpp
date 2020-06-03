@@ -16,6 +16,8 @@ namespace Aws
     {
         namespace Http
         {
+            std::atomic<uint64_t> HttpClientConnectionManager::s_numConnections(0);
+
             struct ConnectionManagerCallbackArgs
             {
                 ConnectionManagerCallbackArgs() = default;
@@ -163,12 +165,14 @@ namespace Aws
             class ManagedConnection final : public HttpClientConnection
             {
               public:
+
                 ManagedConnection(
                     aws_http_connection *connection,
                     std::shared_ptr<HttpClientConnectionManager> connectionManager)
                     : HttpClientConnection(connection, connectionManager->m_allocator),
                       m_connectionManager(std::move(connectionManager))
                 {
+
                 }
 
                 ~ManagedConnection() override
@@ -222,6 +226,8 @@ namespace Aws
                 aws_http_connection *connection,
                 void *userData) noexcept
             {
+                s_numConnections.fetch_add(1);
+
                 HttpClientConnectionManager* manager = (HttpClientConnectionManager*)userData;
 
                 if(manager->m_onConnectionCreated)

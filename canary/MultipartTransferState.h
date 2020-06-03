@@ -94,6 +94,13 @@ class MultipartTransferState
         m_processPartCallback(std::forward<TArgs>(Args)...);
     }
 
+    void SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &connection)
+    {
+        m_connection = connection;
+    }
+
+    const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &GetConnection() const { return m_connection; }
+
   private:
     int32_t m_errorCode;
     uint32_t m_numParts;
@@ -111,6 +118,8 @@ class MultipartTransferState
     ProcessPartCallback m_processPartCallback;
     FinishedCallback m_finishedCallback;
     std::weak_ptr<MetricsPublisher> m_publisher;
+
+    std::shared_ptr<Aws::Crt::Http::HttpClientConnection> m_connection;
 };
 
 /*
