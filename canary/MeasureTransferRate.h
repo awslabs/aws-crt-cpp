@@ -86,7 +86,6 @@ class MeasureTransferRate
         const char *filenamePrefix,
         uint32_t numTransfers,
         uint32_t numConcurrentTransfers,
-        uint32_t numTransfersPerAddress,
         uint32_t flags,
         const std::shared_ptr<S3ObjectTransport> &transport,
         TransferFunction &&transferFunction);

@@ -88,7 +88,13 @@ bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
 
     m_written += writtenOut;
 
-    m_transferState->AddDataUpMetric(writtenOut);
+    if (!m_transferState->HasDataUpMetrics())
+    {
+        m_transferState->InitDataUpMetric();
+    }
+
+    m_transferState->ConsumeQueuedDataUpMetric();
+    m_transferState->QueueDataUpMetric(writtenOut);
 
     return true;
 }

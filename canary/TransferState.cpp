@@ -38,7 +38,8 @@ uint64_t TransferState::GetNextTransferId()
 TransferState::TransferState() : TransferState(-1) {}
 
 TransferState::TransferState(int32_t partIndex)
-    : m_partIndex(partIndex), m_transferId(TransferState::GetNextTransferId()), m_transferSuccess(false)
+    : m_partIndex(partIndex), m_transferId(TransferState::GetNextTransferId()), m_queuedDataUp(0ULL),
+      m_transferSuccess(false)
 {
 }
 
@@ -151,9 +152,24 @@ void TransferState::FlushMetricsVector(const std::shared_ptr<MetricsPublisher> &
 
     Vector<Metric> connMetrics;
 
+    uint64_t minTimestamp = ~0ULL;
+    uint64_t maxTimestamp = 0ULL;
+
     for (Metric &metric : metrics)
     {
-        connMetrics.emplace_back(MetricName::NumConnections, MetricUnit::Count, metric.Timestamp, m_transferId, 1.0);
+        minTimestamp = std::min(metric.Timestamp, minTimestamp);
+        maxTimestamp = std::max(metric.Timestamp, maxTimestamp);
+    }
+
+    if (minTimestamp < maxTimestamp)
+    {
+        uint64_t startSec = minTimestamp / 1000ULL;
+        uint64_t endSec = maxTimestamp / 1000ULL;
+
+        for (uint64_t i = startSec; i <= endSec; ++i)
+        {
+            connMetrics.emplace_back(MetricName::NumConnections, MetricUnit::Count, i * 1000ULL, m_transferId, 1.0);
+        }
     }
 
     publisher->SetTransferState(m_transferId, shared_from_this());
@@ -288,6 +304,8 @@ void TransferState::SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClie
 
 void TransferState::SetTransferSuccess(bool success)
 {
+    ConsumeQueuedDataUpMetric();
+
     m_transferSuccess = success;
 
     UpdateRateTracking(0ULL, true);

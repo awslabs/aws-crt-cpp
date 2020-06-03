@@ -75,6 +75,7 @@ enum class MetricName
     S3AddressCount,
     SuccessfulTransfer,
     FailedTransfer,
+    NumConnectionsCreated,
 
     UploadTransportMetricStart,
     UploadTransportMetricEnd = UploadTransportMetricStart + (int)TransportMetricName::LastEnum,
@@ -82,7 +83,8 @@ enum class MetricName
     DownloadTransportMetricStart,
     DownloadTransportMetricEnd = DownloadTransportMetricStart + (int)TransportMetricName::LastEnum,
 
-    Invalid
+    Invalid,
+    MAX = Invalid
 };
 
 enum class MetricTransferType
@@ -125,7 +127,7 @@ class MetricsPublisher
     MetricsPublisher(
         CanaryApp &canaryApp,
         const char *metricNamespace,
-        std::chrono::milliseconds publishFrequency = std::chrono::milliseconds(1000));
+        std::chrono::milliseconds publishFrequency = std::chrono::milliseconds(50));
 
     ~MetricsPublisher();
 
@@ -241,6 +243,12 @@ class MetricsPublisher
 
     Aws::Crt::String GetTimeString(uint64_t timestampSeconds) const;
 
+    Aws::Crt::String GetTimeString(const Aws::Crt::DateTime &dateTime) const;
+
+    Aws::Crt::String GetDateTimeGMTString(const Aws::Crt::DateTime &dateTime) const;
+
+    Aws::Crt::String GetDateString(const Aws::Crt::DateTime &dateTime) const;
+
     std::shared_ptr<Aws::Crt::StringStream> GeneratePerStreamCSV(
         MetricName transferMetricName,
         const Aws::Crt::Map<AggregateMetricKey, size_t> &aggregateDataPointsByGroupLU,
@@ -268,6 +276,10 @@ class MetricsPublisher
         const Aws::Crt::Vector<Aws::Crt::String> &stringValues,
         const Aws::Crt::Vector<double> &numericValues);
 
+    void RelocateMetricsToCurrentTime(Aws::Crt::Vector<Metric> &metrics);
+
+    void AnalyzeMetrics(const Aws::Crt::String &s3BackupPath, const Aws::Crt::Vector<Metric> &metrics);
+
     CanaryApp &m_canaryApp;
     MetricTransferType m_transferType;
     Aws::Crt::Optional<Aws::Crt::String> m_metricNamespace;
@@ -289,6 +301,7 @@ class MetricsPublisher
 
     aws_task m_pollingTask;
     uint64_t m_pollingFrequencyNs;
+    std::atomic<uint32_t> m_pollingFinishState;
 
     std::mutex m_publishDataLock;
     Aws::Crt::Vector<Metric> m_publishData;

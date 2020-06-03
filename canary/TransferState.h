@@ -40,6 +40,21 @@ class TransferState : public std::enable_shared_from_this<TransferState>
 
     const Aws::Crt::String &GetHostAddress() { return m_hostAddress; }
 
+    bool HasDataUpMetrics() { return !m_uploadMetrics.empty(); }
+
+    void QueueDataUpMetric(uint64_t dataUsed) { m_queuedDataUp = dataUsed; }
+
+    void ConsumeQueuedDataUpMetric()
+    {
+        if (m_queuedDataUp == 0)
+        {
+            return;
+        }
+
+        AddDataUpMetric(m_queuedDataUp);
+        m_queuedDataUp = 0ULL;
+    }
+
     /*
      * Flags this is a success or failure, which will be reported as a metric on a flush
      * of one of up or down metrics.
@@ -91,6 +106,7 @@ class TransferState : public std::enable_shared_from_this<TransferState>
 
     int32_t m_partIndex;
     uint64_t m_transferId;
+    uint64_t m_queuedDataUp;
     uint32_t m_transferSuccess : 1;
 
     Aws::Crt::String m_amzRequestId;

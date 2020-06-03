@@ -68,6 +68,8 @@ void ClampConcurrentTransfers(uint32_t numTransfers, uint32_t &inOutNumConcurren
 
 int main(int argc, char *argv[])
 {
+    Aws::Crt::ApiHandle apiHandle(g_allocator);
+
     enum class CLIOption
     {
         ToolName,
@@ -83,6 +85,7 @@ int main(int argc, char *argv[])
         BucketName,
         DownloadObjectName,
         Region,
+        Config,
 
         MAX
     };
@@ -99,15 +102,39 @@ int main(int argc, char *argv[])
                                       {"rehydrateBackup", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'u'},
                                       {"bucketName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'b'},
                                       {"downloadObjectName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'o'},
-                                      {"region", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'r'}};
+                                      {"region", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'r'},
+                                      {"config", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'g'}};
 
-    const char *optstring = "t:i:smh:len:c:u:b:o:r:";
+    const char *optstring = "t:i:smh:len:c:u:b:o:r:g:";
 
-    CanaryAppOptions canaryAppOptions;
+    int cliOptionIndex = 0;
+    int cliGetOptResult = aws_cli_getopt_long(argc, argv, optstring, options, &cliOptionIndex);
+    String canaryAppOptionsConfig = "";
+
+    while (cliGetOptResult != -1)
+    {
+        if (cliGetOptResult == '?')
+        {
+            continue;
+        }
+
+        switch ((CLIOption)cliOptionIndex)
+        {
+            case CLIOption::Config:
+                canaryAppOptionsConfig = aws_cli_optarg;
+                break;
+            default:
+                break;
+        }
+
+        cliGetOptResult = aws_cli_getopt_long(argc, argv, optstring, options, &cliOptionIndex);
+    }
+
+    CanaryAppOptions canaryAppOptions(canaryAppOptionsConfig);
 
     if (argc >= 1)
     {
-        std::string &toolName = canaryAppOptions.toolName;
+        String &toolName = canaryAppOptions.toolName;
         toolName = argv[0];
         size_t dirStart = toolName.rfind('\\');
 
@@ -117,8 +144,8 @@ int main(int argc, char *argv[])
         }
     }
 
-    int cliOptionIndex = 0;
-    int cliGetOptResult = aws_cli_getopt_long(argc, argv, optstring, options, &cliOptionIndex);
+    aws_cli_optind = 1;
+    cliGetOptResult = aws_cli_getopt_long(argc, argv, optstring, options, &cliOptionIndex);
 
     while (cliGetOptResult != -1)
     {
@@ -173,6 +200,9 @@ int main(int argc, char *argv[])
             case CLIOption::Region:
                 canaryAppOptions.region = aws_cli_optarg;
                 break;
+            case CLIOption::Config:
+                canaryAppOptionsConfig = aws_cli_optarg;
+                break;
             default:
                 AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Unknown CLI option used.");
                 break;
@@ -184,7 +214,7 @@ int main(int argc, char *argv[])
     ClampConcurrentTransfers(canaryAppOptions.numUpTransfers, canaryAppOptions.numUpConcurrentTransfers);
     ClampConcurrentTransfers(canaryAppOptions.numDownTransfers, canaryAppOptions.numDownConcurrentTransfers);
 
-    CanaryApp canaryApp(std::move(canaryAppOptions));
+    CanaryApp canaryApp(apiHandle, std::move(canaryAppOptions));
     canaryApp.Run();
 
     return 0;
