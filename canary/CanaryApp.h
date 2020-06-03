@@ -33,18 +33,16 @@ class MeasureTransferRate;
  */
 struct CanaryAppOptions
 {
-    CanaryAppOptions() noexcept;
+    CanaryAppOptions(const Aws::Crt::String &configFileName) noexcept;
 
-    // TODO: with fork mode gone, these should be convertable
-    // to Aws::Crt::Strings, possibly with a small refactor.
-    std::string platformName;
-    std::string toolName;
-    std::string instanceType;
-    std::string region;
-    std::string httpTestEndpoint;
-    std::string rehydrateBackupObjectName;
-    std::string bucketName;
-    std::string downloadObjectName;
+    Aws::Crt::String platformName;
+    Aws::Crt::String toolName;
+    Aws::Crt::String instanceType;
+    Aws::Crt::String region;
+    Aws::Crt::String httpTestEndpoint;
+    Aws::Crt::String rehydrateBackupObjectName;
+    Aws::Crt::String bucketName;
+    Aws::Crt::String downloadObjectName;
 
     uint32_t numUpTransfers;
     uint32_t numUpConcurrentTransfers;
@@ -77,7 +75,7 @@ struct CanaryAppOptions
 class CanaryApp
 {
   public:
-    CanaryApp(CanaryAppOptions &&options) noexcept;
+    CanaryApp(Aws::Crt::ApiHandle &apiHandle, CanaryAppOptions &&options) noexcept;
 
     void Run();
 
@@ -95,9 +93,9 @@ class CanaryApp
     const std::shared_ptr<MeasureTransferRate> &GetMeasureTransferRate() const { return m_measureTransferRate; }
 
   private:
+    Aws::Crt::ApiHandle &m_apiHandle;
     CanaryAppOptions m_options;
 
-    Aws::Crt::ApiHandle m_apiHandle;
     Aws::Crt::Io::EventLoopGroup m_eventLoopGroup;
     Aws::Crt::Io::DefaultHostResolver m_defaultHostResolver;
     Aws::Crt::Io::ClientBootstrap m_bootstrap;

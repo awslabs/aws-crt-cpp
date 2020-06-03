@@ -37,7 +37,7 @@ namespace
     const int32_t S3GetObjectResponseStatus_PartialContent = 206;
     const uint32_t ConnectionMonitoringFailureIntervalSeconds = 1;
     const bool ConnectionMonitoringEnabled = false;
-    const bool EndPointMonitoringEnabled = true;
+    const bool EndPointMonitoringEnabled = false;
 } // namespace
 
 S3ObjectTransport::S3ObjectTransport(
