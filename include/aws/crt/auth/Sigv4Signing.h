@@ -20,7 +20,6 @@
 #include <aws/crt/Types.h>
 #include <aws/crt/auth/Signing.h>
 
-struct aws_signer;
 struct aws_signing_config_aws;
 
 namespace Aws
