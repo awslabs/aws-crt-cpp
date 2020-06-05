@@ -45,11 +45,11 @@ namespace
 } // namespace
 
 CanaryAppOptions::CanaryAppOptions(const String &configFileName) noexcept
-    : platformName(CanaryUtil::GetPlatformName()), toolName("NA"), instanceType("unknown"), region("us-west-2"),
+    : platformName(CanaryUtil::GetPlatformName().c_str()), toolName("NA"), instanceType("unknown"), region("us-west-2"),
       bucketName("aws-crt-canary-bucket"), numUpTransfers(0), numUpConcurrentTransfers(0), numDownTransfers(0),
       numDownConcurrentTransfers(0), numTransfersPerAddress(10),
       singlePartObjectSize(5ULL * 1024ULL * 1024ULL * 1024ULL), multiPartObjectPartSize(25LL * 1024ULL * 1024ULL),
-      multiPartObjectNumParts(10), targetThroughputGbps(80.0), measureSinglePartTransfer(false),
+      multiPartObjectNumParts(205), targetThroughputGbps(80.0), measureSinglePartTransfer(false),
       measureMultiPartTransfer(false), measureHttpTransfer(false), sendEncrypted(false), loggingEnabled(false),
       rehydrateBackup(false)
 {
