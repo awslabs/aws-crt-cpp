@@ -160,7 +160,7 @@ void TransferState::FlushMetricsVector(const std::shared_ptr<MetricsPublisher> &
         maxTimestamp = std::max(metric.Timestamp, maxTimestamp);
     }
 
-    if (minTimestamp > maxTimestamp)
+    if (minTimestamp < maxTimestamp)
     {
         uint64_t startSec = minTimestamp / 1000ULL;
         uint64_t endSec = maxTimestamp / 1000ULL;
