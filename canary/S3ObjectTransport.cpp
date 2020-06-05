@@ -194,14 +194,24 @@ void S3ObjectTransport::MakeSignedRequest(
                 return;
             }
 
-            if (connection != nullptr && connection->IsOpen())
+            if (connection != nullptr)
             {
-                if (callback != nullptr)
+                if (!connection->IsOpen())
                 {
-                    callback(connection, AWS_ERROR_SUCCESS);
+                    if (callback != nullptr)
+                    {
+                        callback(nullptr, AWS_ERROR_UNKNOWN);
+                    }
                 }
+                else
+                {
+                    if (callback != nullptr)
+                    {
+                        callback(connection, AWS_ERROR_SUCCESS);
+                    }
 
-                MakeSignedRequest_SendRequest(connection, requestOptions, signedRequest);
+                    MakeSignedRequest_SendRequest(connection, requestOptions, signedRequest);
+                }
             }
             else
             {
@@ -594,6 +604,13 @@ void S3ObjectTransport::UploadNextPart(
                 errorCode = AWS_ERROR_UNKNOWN;
             }
 
+            std::shared_ptr<Http::HttpClientConnection> conn = multipartState->GetConnection();
+
+            if (conn != nullptr && !conn->IsOpen())
+            {
+                multipartState->SetConnection(nullptr);
+            }
+
             if (errorCode == AWS_ERROR_SUCCESS)
             {
                 multipartState->SetETag(partTransferState->GetPartIndex(), *etag);
@@ -681,6 +698,13 @@ void S3ObjectTransport::GetNextPart(
         },
         [this, multipartState, partTransferState, receiveObjectPartData, finishedCallback](int32_t errorCode) {
             const String &key = multipartState->GetKey();
+
+            std::shared_ptr<Http::HttpClientConnection> conn = multipartState->GetConnection();
+
+            if (conn != nullptr && !conn->IsOpen())
+            {
+                multipartState->SetConnection(nullptr);
+            }
 
             if (errorCode != AWS_ERROR_SUCCESS)
             {
