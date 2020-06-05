@@ -211,7 +211,7 @@ MetricsPublisher::MetricsPublisher(
     CanaryApp &canaryApp,
     const char *metricNamespace,
     std::chrono::milliseconds publishFrequency)
-    : m_canaryApp(canaryApp)
+    : m_canaryApp(canaryApp), m_pollingFinishState(0)
 {
     m_metricNamespace = metricNamespace;
 
@@ -263,8 +263,15 @@ MetricsPublisher::MetricsPublisher(
 
 MetricsPublisher::~MetricsPublisher()
 {
-    aws_event_loop_cancel_task(m_schedulingLoop, &m_publishTask);
-    aws_event_loop_cancel_task(m_schedulingLoop, &m_pollingTask);
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Cancelling task.");
+
+    // TODO total hack to get around cancel assert for now.
+    m_pollingFinishState = 1;
+    while (m_pollingFinishState != 2)
+        ;
+
+    // aws_event_loop_cancel_task(m_schedulingLoop, &m_publishTask);
+    // aws_event_loop_cancel_task(m_schedulingLoop, &m_pollingTask);
 }
 
 MetricTransferType MetricsPublisher::GetTransferType() const
@@ -849,6 +856,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
             backupPath,
             metricsBackupContentsStream,
             0,
+            nullptr,
             [&signal, &numFilesUploaded](int32_t, std::shared_ptr<Aws::Crt::String>) {
                 ++numFilesUploaded;
                 signal.notify_one();
@@ -883,6 +891,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
             s3Path + "uploadStreams.csv",
             uploadCSVContentsStream,
             0,
+            nullptr,
             [&signal, &numFilesUploaded](int32_t, std::shared_ptr<Aws::Crt::String>) {
                 ++numFilesUploaded;
                 signal.notify_one();
@@ -905,6 +914,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
             s3Path + "downloadStreams.csv",
             downloadCSVContentsStream,
             0,
+            nullptr,
             [&signal, &numFilesUploaded](int32_t, std::shared_ptr<Aws::Crt::String>) {
                 ++numFilesUploaded;
                 signal.notify_one();
@@ -928,6 +938,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
             s3Path + "uploadEndpoints.csv",
             uploadCSVContentsStream,
             0,
+            nullptr,
             [&signal, &numFilesUploaded](int32_t, std::shared_ptr<Aws::Crt::String>) {
                 ++numFilesUploaded;
                 signal.notify_one();
@@ -950,6 +961,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
             s3Path + "downloadEndpoints.csv",
             downloadCSVContentsStream,
             0,
+            nullptr,
             [&signal, &numFilesUploaded](int32_t, std::shared_ptr<Aws::Crt::String>) {
                 ++numFilesUploaded;
                 signal.notify_one();
@@ -994,6 +1006,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
         s3Path,
         0,
         [transport, &contents](const Http::HttpStream &, const ByteCursor &cur) { contents << cur.ptr; },
+        nullptr,
         [transport, &signalMutex, &signal, &signalVal](int32_t errorCode) {
             if (errorCode != AWS_ERROR_SUCCESS)
             {
@@ -1338,6 +1351,12 @@ void MetricsPublisher::s_OnPollingTask(aws_task *task, void *arg, aws_task_statu
     }
 
     MetricsPublisher *publisher = (MetricsPublisher *)arg;
+
+    if (publisher->m_pollingFinishState == 1)
+    {
+        publisher->m_pollingFinishState = 2;
+        return;
+    }
 
     std::shared_ptr<S3ObjectTransport> uploadTransport = publisher->m_canaryApp.GetUploadTransport();
     std::shared_ptr<S3ObjectTransport> downloadTransport = publisher->m_canaryApp.GetDownloadTransport();

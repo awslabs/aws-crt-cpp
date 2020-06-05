@@ -280,6 +280,7 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
                 MakeShared<MeasureTransferRateStream>(
                     g_allocator, m_canaryApp, transferState, options.singlePartObjectSize),
                 0,
+                nullptr,
                 [transferState, notifyTransferFinished](int32_t errorCode, std::shared_ptr<Aws::Crt::String>) {
                     notifyTransferFinished(errorCode);
                 });
@@ -314,7 +315,7 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
             std::shared_ptr<TransferState> transferState = downloads[transferIndex];
 
             transport->GetObject(
-                transferState, key, 0, nullptr, [transferState, notifyTransferFinished](int32_t errorCode) {
+                transferState, key, 0, nullptr, nullptr, [transferState, notifyTransferFinished](int32_t errorCode) {
                     notifyTransferFinished(errorCode);
                 });
         });

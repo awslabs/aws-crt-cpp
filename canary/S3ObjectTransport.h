@@ -47,6 +47,9 @@ using GetPartStream =
 using ReceivePartCallback =
     std::function<void(const std::shared_ptr<TransferState> &transferState, const Aws::Crt::ByteCursor &data)>;
 
+using TransferConnectionAcquired =
+    std::function<void(std::shared_ptr<Aws::Crt::Http::HttpClientConnection> connection, int32_t errorCode)>;
+
 namespace Aws
 {
     namespace Crt
@@ -84,6 +87,7 @@ class S3ObjectTransport
         const Aws::Crt::String &key,
         const std::shared_ptr<Aws::Crt::Io::InputStream> &inputStream,
         std::uint32_t flags,
+        const TransferConnectionAcquired &connectionCallback,
         const PutObjectFinished &finishedCallback);
 
     /*
@@ -94,6 +98,7 @@ class S3ObjectTransport
         const Aws::Crt::String &key,
         std::uint32_t partNumber,
         Aws::Crt::Http::OnIncomingBody onIncomingBody,
+        const TransferConnectionAcquired &connectionCallback,
         const GetObjectFinished &getObjectFinished);
 
     /*
@@ -153,6 +158,7 @@ class S3ObjectTransport
     uint64_t m_minThroughputBytes;
 
     void MakeSignedRequest(
+        const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &connection,
         const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
         const Aws::Crt::Http::HttpRequestOptions &requestOptions,
         SignedRequestCallback callback);

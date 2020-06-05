@@ -49,7 +49,7 @@ CanaryAppOptions::CanaryAppOptions(const String &configFileName) noexcept
       bucketName("aws-crt-canary-bucket"), numUpTransfers(0), numUpConcurrentTransfers(0), numDownTransfers(0),
       numDownConcurrentTransfers(0), numTransfersPerAddress(10),
       singlePartObjectSize(5ULL * 1024ULL * 1024ULL * 1024ULL), multiPartObjectPartSize(25LL * 1024ULL * 1024ULL),
-      multiPartObjectNumParts(10), targetThroughputGbps(30.0), measureSinglePartTransfer(false),
+      multiPartObjectNumParts(10), targetThroughputGbps(80.0), measureSinglePartTransfer(false),
       measureMultiPartTransfer(false), measureHttpTransfer(false), sendEncrypted(false), loggingEnabled(false),
       rehydrateBackup(false)
 {

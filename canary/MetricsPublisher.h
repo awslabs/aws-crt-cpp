@@ -289,6 +289,7 @@ class MetricsPublisher
 
     aws_task m_pollingTask;
     uint64_t m_pollingFrequencyNs;
+    std::atomic<uint32_t> m_pollingFinishState;
 
     std::mutex m_publishDataLock;
     Aws::Crt::Vector<Metric> m_publishData;
