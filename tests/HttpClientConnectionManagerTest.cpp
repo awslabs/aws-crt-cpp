@@ -209,7 +209,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
             }
             std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
             semaphore.wait(uniqueLock, [&]() {
-                return connections.size() + connectionsFailed >= connectionManagerOptions.MaxConnections;
+                return connections.size() + connectionsFailed == connectionManagerOptions.MaxConnections;
             });
         }
 
@@ -218,8 +218,18 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
 
         Vector<std::shared_ptr<Http::HttpClientConnection>> connectionsCpy = connections;
         connections.clear();
+        connectionsFailed = 0;
 
         connectionsCpy.clear();
+
+        /* Wait for the connection manager to try initiating the rest of the connections. */
+        {
+            std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
+            semaphore.wait(uniqueLock, [&]() {
+                return connections.size() + connectionsFailed == connectionManagerOptions.MaxConnections;
+            });
+        }
+
         {
             std::lock_guard<std::mutex> lockGuard(semaphoreLock);
             /* release should have given us more connections. */
