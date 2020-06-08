@@ -128,6 +128,12 @@ namespace Aws
                 aws_tls_ctx_options_set_verify_peer(&m_options, verify_peer);
             }
 
+            void TlsContextOptions::SetMinimumTlsVersion(aws_tls_versions minimumTlsVersion)
+            {
+                AWS_ASSERT(m_isInit);
+                aws_tls_ctx_options_set_minimum_tls_version(&m_options, minimumTlsVersion);
+            }
+
             bool TlsContextOptions::OverrideDefaultTrustStore(const char *caPath, const char *caFile) noexcept
             {
                 AWS_ASSERT(m_isInit);
