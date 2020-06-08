@@ -121,6 +121,12 @@ namespace Aws
                 void SetVerifyPeer(bool verifyPeer) noexcept;
 
                 /**
+                 * Sets the minimum TLS version allowed.
+                 * @param minimumTlsVersion: The minimum TLS version.
+                 */
+                void SetMinimumTlsVersion(aws_tls_versions minimumTlsVersion);
+
+                /**
                  * Overrides the default system trust store.
                  * @param caPath: Path to directory containing trusted certificates, which will overrides the
                  * default trust store. Only useful on Unix style systems where all anchors are stored in a directory
