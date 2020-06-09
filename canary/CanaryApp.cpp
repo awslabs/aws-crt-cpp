@@ -45,7 +45,7 @@ namespace
 } // namespace
 
 CanaryAppOptions::CanaryAppOptions(const String &configFileName) noexcept
-    : platformName(CanaryUtil::GetPlatformName().c_str()), toolName("NA"), instanceType("unknown"), region("us-west-2"),
+    : platformName(CanaryUtil::GetPlatformName().c_str()), toolName("S3Canary"), instanceType("unknown"), region("us-west-2"),
       bucketName("aws-crt-canary-bucket"), numUpTransfers(0), numUpConcurrentTransfers(0), numDownTransfers(0),
       numDownConcurrentTransfers(0), numTransfersPerAddress(10), fileNameSuffixOffset(1),
       singlePartObjectSize(5ULL * 1024ULL * 1024ULL * 1024ULL), multiPartObjectPartSize(25LL * 1024ULL * 1024ULL),
@@ -86,6 +86,7 @@ CanaryAppOptions::CanaryAppOptions(const String &configFileName) noexcept
     GET_CONFIG_VALUE(jsonView, String, "ToolName", toolName);
     GET_CONFIG_VALUE(jsonView, String, "InstanceType", instanceType);
     GET_CONFIG_VALUE(jsonView, String, "Region", region);
+    GET_CONFIG_VALUE(jsonView, String, "HttpTestEndpoint", httpTestEndpoint);
     GET_CONFIG_VALUE(jsonView, String, "BucketName", bucketName);
     GET_CONFIG_VALUE(jsonView, String, "DownloadObjectName", downloadObjectName);
 
@@ -108,6 +109,9 @@ CanaryAppOptions::CanaryAppOptions(const String &configFileName) noexcept
 
     GET_CONFIG_VALUE(jsonView, Double, "TargetThroughputGbps", targetThroughputGbps);
 
+    GET_CONFIG_VALUE(jsonView, Bool, "MeasureSinglePartTransfer", measureSinglePartTransfer);
+    GET_CONFIG_VALUE(jsonView, Bool, "MeasureMultiPartTransfer", measureMultiPartTransfer);
+    GET_CONFIG_VALUE(jsonView, Bool, "MeasureHttpTransfer", measureHttpTransfer);
     GET_CONFIG_VALUE(jsonView, Bool, "SendEncrypted", sendEncrypted);
     GET_CONFIG_VALUE(jsonView, Bool, "LoggingEnabled", loggingEnabled);
     GET_CONFIG_VALUE(jsonView, Bool, "ConnectionMonitoringEnabled", connectionMonitoringEnabled);
