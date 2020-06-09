@@ -35,9 +35,6 @@ using namespace Aws::Crt;
 namespace
 {
     const int32_t S3GetObjectResponseStatus_PartialContent = 206;
-    const uint32_t ConnectionMonitoringFailureIntervalSeconds = 1;
-    const bool ConnectionMonitoringEnabled = false;
-    const bool EndPointMonitoringEnabled = false;
 } // namespace
 
 S3ObjectTransport::S3ObjectTransport(
@@ -45,7 +42,7 @@ S3ObjectTransport::S3ObjectTransport(
     const Aws::Crt::String &bucket,
     uint32_t maxConnections,
     uint64_t minThroughputBytesPerSecond)
-    : m_canaryApp(canaryApp), m_bucketName(bucket), m_transfersPerAddress(10), m_activeRequestsCount(0)
+    : m_canaryApp(canaryApp), m_bucketName(bucket)
 {
     m_endpoint = m_bucketName + ".s3." + m_canaryApp.GetOptions().region.c_str() + ".amazonaws.com";
 
@@ -57,15 +54,17 @@ S3ObjectTransport::S3ObjectTransport(
 
     m_minThroughputBytes = minThroughputBytesPerSecond;
 
+    const CanaryAppOptions &options = m_canaryApp.GetOptions();
+
     Http::HttpClientConnectionManagerOptions connectionManagerOptions;
 
     connectionManagerOptions.ConnectionOptions.HostName = m_endpoint;
-    connectionManagerOptions.ConnectionOptions.Port = m_canaryApp.GetOptions().sendEncrypted ? 443 : 80;
+    connectionManagerOptions.ConnectionOptions.Port = options.sendEncrypted ? 443 : 80;
     connectionManagerOptions.ConnectionOptions.SocketOptions.SetConnectTimeoutMs(3000);
     connectionManagerOptions.ConnectionOptions.SocketOptions.SetSocketType(AWS_SOCKET_STREAM);
     connectionManagerOptions.ConnectionOptions.InitialWindowSize = SIZE_MAX;
 
-    if (m_canaryApp.GetOptions().sendEncrypted)
+    if (options.sendEncrypted)
     {
         aws_byte_cursor serverName = ByteCursorFromCString(m_endpoint.c_str());
         auto connOptions = m_canaryApp.GetTlsContext().NewConnectionOptions();
@@ -75,7 +74,7 @@ S3ObjectTransport::S3ObjectTransport(
 
     if (m_minThroughputBytes > 0)
     {
-        if (EndPointMonitoringEnabled)
+        if (options.endPointMonitoringEnabled)
         {
             AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Endpoint monitoring enabled.");
 
@@ -98,13 +97,13 @@ S3ObjectTransport::S3ObjectTransport(
             };
         }
 
-        if (ConnectionMonitoringEnabled)
+        if (options.connectionMonitoringEnabled)
         {
             AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Connection monitoring enabled.");
 
             Http::HttpConnectionMonitoringOptions monitoringOptions;
             monitoringOptions.allowable_throughput_failure_interval_seconds =
-                ConnectionMonitoringFailureIntervalSeconds;
+                options.connectionMonitoringFailureIntervalSeconds;
             monitoringOptions.minimum_throughput_bytes_per_second = m_minThroughputBytes;
 
             connectionManagerOptions.ConnectionOptions.MonitoringOptions = monitoringOptions;
@@ -118,19 +117,19 @@ S3ObjectTransport::S3ObjectTransport(
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, g_allocator);
 }
 
-void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers, uint32_t transfersPerAddress)
+void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
 {
     if (m_endPointMonitorManager != nullptr)
     {
         m_endPointMonitorManager->SetupCallbacks();
     }
 
-    m_transfersPerAddress = transfersPerAddress;
+    uint32_t transfersPerAddress = m_canaryApp.GetOptions().numTransfersPerAddress;
 
     // Each transfer is in a group the size of TransfersPerAddress,
-    size_t desiredNumberOfAddresses = numTransfers / m_transfersPerAddress;
+    size_t desiredNumberOfAddresses = numTransfers / static_cast<size_t>(transfersPerAddress);
 
-    if ((numTransfers % m_transfersPerAddress) > 0)
+    if ((numTransfers % transfersPerAddress) > 0)
     {
         ++desiredNumberOfAddresses;
     }
@@ -247,14 +246,10 @@ void S3ObjectTransport::MakeSignedRequest_SendRequest(
     Http::HttpRequestOptions requestOptionsToSend = requestOptions;
     requestOptionsToSend.request = signedRequest.get();
 
-    ++m_activeRequestsCount;
-
     // NOTE: The captures of the connection and signed request is a work around to keep these shared
     // pointers alive until the stream is finished.
     requestOptionsToSend.onStreamComplete =
-        [this, conn, signedRequest, requestOptions](Http::HttpStream &stream, int errorCode) {
-            --m_activeRequestsCount;
-
+        [conn, signedRequest, requestOptions](Http::HttpStream &stream, int errorCode) {
             if (requestOptions.onStreamComplete != nullptr)
             {
                 requestOptions.onStreamComplete(stream, errorCode);

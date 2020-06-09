@@ -50,9 +50,11 @@ struct CanaryAppOptions
     uint32_t numDownConcurrentTransfers;
     uint32_t numTransfersPerAddress;
 
+    uint64_t fileNameSuffixOffset;
     uint64_t singlePartObjectSize;
     uint64_t multiPartObjectPartSize;
     uint32_t multiPartObjectNumParts;
+    uint32_t connectionMonitoringFailureIntervalSeconds;
 
     double targetThroughputGbps;
 
@@ -62,10 +64,10 @@ struct CanaryAppOptions
     uint32_t sendEncrypted : 1;
     uint32_t loggingEnabled : 1;
     uint32_t rehydrateBackup : 1;
+    uint32_t connectionMonitoringEnabled : 1;
+    uint32_t endPointMonitoringEnabled : 1;
 
     uint64_t GetMultiPartObjectSize() const { return multiPartObjectPartSize * (uint64_t)multiPartObjectNumParts; }
-
-    uint32_t GetMultiPartNumTransfersPerAddress() const { return numTransfersPerAddress; }
 };
 
 /*

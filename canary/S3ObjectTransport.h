@@ -123,7 +123,7 @@ class S3ObjectTransport
     /*
      * Given a number of transfers, resolve the appropriate amount of DNS addresses.
      */
-    void WarmDNSCache(uint32_t numTransfers, uint32_t transfersPerAddress);
+    void WarmDNSCache(uint32_t numTransfers);
 
     const std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> &GetConnectionManager() { return m_connManager; }
 
@@ -148,12 +148,8 @@ class S3ObjectTransport
     Aws::Crt::Http::HttpHeader m_contentTypeHeader;
     Aws::Crt::String m_endpoint;
 
-    uint32_t m_transfersPerAddress;
-
     std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> m_connManager;
     std::shared_ptr<Aws::Crt::Io::EndPointMonitorManager> m_endPointMonitorManager;
-
-    std::atomic<uint32_t> m_activeRequestsCount;
 
     uint64_t m_minThroughputBytes;
 

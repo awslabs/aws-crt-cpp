@@ -47,11 +47,11 @@ namespace
 CanaryAppOptions::CanaryAppOptions(const String &configFileName) noexcept
     : platformName(CanaryUtil::GetPlatformName().c_str()), toolName("NA"), instanceType("unknown"), region("us-west-2"),
       bucketName("aws-crt-canary-bucket"), numUpTransfers(0), numUpConcurrentTransfers(0), numDownTransfers(0),
-      numDownConcurrentTransfers(0), numTransfersPerAddress(10),
+      numDownConcurrentTransfers(0), numTransfersPerAddress(10), fileNameSuffixOffset(1),
       singlePartObjectSize(5ULL * 1024ULL * 1024ULL * 1024ULL), multiPartObjectPartSize(25LL * 1024ULL * 1024ULL),
-      multiPartObjectNumParts(205), targetThroughputGbps(80.0), measureSinglePartTransfer(false),
-      measureMultiPartTransfer(false), measureHttpTransfer(false), sendEncrypted(false), loggingEnabled(false),
-      rehydrateBackup(false)
+      multiPartObjectNumParts(205), connectionMonitoringFailureIntervalSeconds(1), targetThroughputGbps(80.0),
+      measureSinglePartTransfer(false), measureMultiPartTransfer(false), measureHttpTransfer(false),
+      sendEncrypted(false), loggingEnabled(false), rehydrateBackup(false)
 {
     if (configFileName.empty())
     {
@@ -95,15 +95,23 @@ CanaryAppOptions::CanaryAppOptions(const String &configFileName) noexcept
     GET_CONFIG_VALUE_CAST(jsonView, Integer, uint32_t, "NumDownConcurrentTransfers", numDownConcurrentTransfers);
     GET_CONFIG_VALUE_CAST(jsonView, Integer, uint32_t, "NumTransfersPerAddress", numTransfersPerAddress);
 
+    GET_CONFIG_VALUE_CAST(jsonView, Int64, uint64_t, "FileNameSuffixOffset", fileNameSuffixOffset);
     GET_CONFIG_VALUE_CAST(jsonView, Int64, uint64_t, "SinglePartObjectSize", singlePartObjectSize);
     GET_CONFIG_VALUE_CAST(jsonView, Int64, uint64_t, "MultiPartObjectPartSize", multiPartObjectPartSize);
     GET_CONFIG_VALUE_CAST(jsonView, Integer, uint32_t, "MultipartObjectNumParts", multiPartObjectNumParts);
+    GET_CONFIG_VALUE_CAST(
+        jsonView,
+        Integer,
+        uint32_t,
+        "ConnectionMonitoringFailureIntervalSeconds",
+        connectionMonitoringFailureIntervalSeconds);
 
     GET_CONFIG_VALUE(jsonView, Double, "TargetThroughputGbps", targetThroughputGbps);
 
     GET_CONFIG_VALUE(jsonView, Bool, "SendEncrypted", sendEncrypted);
     GET_CONFIG_VALUE(jsonView, Bool, "LoggingEnabled", loggingEnabled);
-    GET_CONFIG_VALUE(jsonView, Bool, "LoggingEnabled", loggingEnabled);
+    GET_CONFIG_VALUE(jsonView, Bool, "ConnectionMonitoringEnabled", connectionMonitoringEnabled);
+    GET_CONFIG_VALUE(jsonView, Bool, "EndPointMonitoringEnabled", endPointMonitoringEnabled);
 
 #undef GET_CONFIG_VALUE_CAST
 #undef GET_CONFIG_VALUE

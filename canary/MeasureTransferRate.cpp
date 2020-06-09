@@ -39,14 +39,13 @@ void MeasureTransferRate::PerformMeasurement(
     const char *filenamePrefix,
     uint32_t numTransfers,
     uint32_t numConcurrentTransfers,
-    uint32_t numTransfersPerAddress,
     uint32_t flags,
     const std::shared_ptr<S3ObjectTransport> &transport,
     TransferFunction &&transferFunction)
 {
     if ((flags & (uint32_t)MeasurementFlags::DontWarmDNSCache) == 0)
     {
-        transport->WarmDNSCache(numConcurrentTransfers, numTransfersPerAddress);
+        transport->WarmDNSCache(numConcurrentTransfers);
     }
 
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting performance measurement.");
@@ -57,7 +56,7 @@ void MeasureTransferRate::PerformMeasurement(
     std::atomic<uint32_t> numCompleted(0);
     std::atomic<uint32_t> numInProgress(0);
 
-    uint64_t counter = INT64_MAX - 1;
+    uint64_t counter = INT64_MAX - m_canaryApp.GetOptions().fileNameSuffixOffset;
 
     for (uint32_t i = 0; i < numTransfers; ++i)
     {
@@ -152,7 +151,6 @@ void MeasureTransferRate::MeasureHttpTransfer()
         m_canaryApp.GetOptions().downloadObjectName.c_str(),
         m_canaryApp.GetOptions().numDownTransfers,
         m_canaryApp.GetOptions().numDownConcurrentTransfers,
-        0,
         (uint32_t)MeasurementFlags::DontWarmDNSCache | (uint32_t)MeasurementFlags::NoFileSuffix,
         nullptr,
         [this, connManager, &hostHeader](
@@ -264,7 +262,6 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
         "crt-canary-obj-single-part-",
         options.numUpTransfers,
         options.numUpConcurrentTransfers,
-        options.numTransfersPerAddress,
         0,
         m_canaryApp.GetUploadTransport(),
         [this, &uploads, options](
@@ -304,7 +301,6 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
         m_canaryApp.GetOptions().downloadObjectName.c_str(),
         m_canaryApp.GetOptions().numDownTransfers,
         m_canaryApp.GetOptions().numDownConcurrentTransfers,
-        m_canaryApp.GetOptions().numTransfersPerAddress,
         (uint32_t)MeasurementFlags::NoFileSuffix,
         m_canaryApp.GetDownloadTransport(),
         [&downloads](
@@ -341,7 +337,6 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
         filenamePrefix,
         options.numUpTransfers,
         options.numUpConcurrentTransfers,
-        options.GetMultiPartNumTransfersPerAddress(),
         0,
         m_canaryApp.GetUploadTransport(),
         [this, &uploadStates, options](
@@ -394,7 +389,6 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
         options.downloadObjectName.c_str(),
         options.numDownTransfers,
         options.numDownConcurrentTransfers,
-        options.GetMultiPartNumTransfersPerAddress(),
         (uint32_t)MeasurementFlags::NoFileSuffix,
         m_canaryApp.GetDownloadTransport(),
         [&downloadStates, options](
