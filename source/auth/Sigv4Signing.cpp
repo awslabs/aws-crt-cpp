@@ -37,6 +37,7 @@ namespace Aws
                 SetSignatureType(SignatureType::HttpRequestViaHeaders);
                 SetShouldNormalizeUriPath(true);
                 SetUseDoubleUriEncode(true);
+                SetOmitSessionToken(false);
                 SetSignedBodyValue(SignedBodyValueType::Payload);
                 SetSignedBodyHeader(SignedBodyHeaderType::None);
                 SetSigningTimepoint(DateTime::Now());
@@ -92,31 +93,41 @@ namespace Aws
                 aws_date_time_init_epoch_millis(&m_config.date, date.Millis());
             }
 
-            bool AwsSigningConfig::GetUseDoubleUriEncode() const noexcept { return m_config.use_double_uri_encode; }
+            bool AwsSigningConfig::GetUseDoubleUriEncode() const noexcept
+            {
+                return m_config.flags.use_double_uri_encode;
+            }
 
             void AwsSigningConfig::SetUseDoubleUriEncode(bool useDoubleUriEncode) noexcept
             {
-                m_config.use_double_uri_encode = useDoubleUriEncode;
+                m_config.flags.use_double_uri_encode = useDoubleUriEncode;
             }
 
             bool AwsSigningConfig::GetShouldNormalizeUriPath() const noexcept
             {
-                return m_config.should_normalize_uri_path;
+                return m_config.flags.should_normalize_uri_path;
             }
 
             void AwsSigningConfig::SetShouldNormalizeUriPath(bool shouldNormalizeUriPath) noexcept
             {
-                m_config.should_normalize_uri_path = shouldNormalizeUriPath;
+                m_config.flags.should_normalize_uri_path = shouldNormalizeUriPath;
             }
 
-            ShouldSignParameterCb AwsSigningConfig::GetShouldSignParameterCallback() const noexcept
+            bool AwsSigningConfig::GetOmitSessionToken() const noexcept { return m_config.flags.omit_session_token; }
+
+            void AwsSigningConfig::SetOmitSessionToken(bool omitSessionToken) noexcept
             {
-                return m_config.should_sign_param;
+                m_config.flags.omit_session_token = omitSessionToken;
             }
 
-            void AwsSigningConfig::SetShouldSignHeadersCallback(ShouldSignParameterCb shouldSignParameterCb) noexcept
+            ShouldSignHeaderCb AwsSigningConfig::GetShouldSignHeaderCallback() const noexcept
             {
-                m_config.should_sign_param = shouldSignParameterCb;
+                return m_config.should_sign_header;
+            }
+
+            void AwsSigningConfig::SetShouldSignHeaderCallback(ShouldSignHeaderCb shouldSignHeaderCb) noexcept
+            {
+                m_config.should_sign_header = shouldSignHeaderCb;
             }
 
             SignedBodyValueType AwsSigningConfig::GetSignedBodyValue() const noexcept

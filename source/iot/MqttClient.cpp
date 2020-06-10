@@ -27,12 +27,6 @@ namespace Aws
 
     namespace Iot
     {
-        static bool s_blackListHeadersFromSigning(const Crt::ByteCursor *cur, void *)
-        {
-            return !aws_byte_cursor_eq_ignore_case(&s_securityTokenHeader, cur) &&
-                   !aws_byte_cursor_eq_ignore_case(&s_dateHeader, cur);
-        }
-
         WebsocketConfig::WebsocketConfig(
             const Crt::String &signingRegion,
             Crt::Io::ClientBootstrap *bootstrap,
@@ -57,7 +51,7 @@ namespace Aws
                 signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4);
                 signerConfig->SetSignatureType(Crt::Auth::SignatureType::HttpRequestViaQueryParams);
                 signerConfig->SetSignedBodyValue(Crt::Auth::SignedBodyValueType::Empty);
-                signerConfig->SetShouldSignHeadersCallback(s_blackListHeadersFromSigning);
+                signerConfig->SetOmitSessionToken(true);
                 signerConfig->SetCredentialsProvider(credsProviderRef);
 
                 return signerConfig;
@@ -82,7 +76,7 @@ namespace Aws
                 signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4);
                 signerConfig->SetSignatureType(Crt::Auth::SignatureType::HttpRequestViaQueryParams);
                 signerConfig->SetSignedBodyValue(Crt::Auth::SignedBodyValueType::Empty);
-                signerConfig->SetShouldSignHeadersCallback(s_blackListHeadersFromSigning);
+                signerConfig->SetOmitSessionToken(true);
                 signerConfig->SetCredentialsProvider(credsProviderRef);
 
                 return signerConfig;

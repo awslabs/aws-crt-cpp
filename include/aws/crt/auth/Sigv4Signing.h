@@ -59,7 +59,7 @@ namespace Aws
                 XAmzContentSha256 = AWS_SBHT_X_AMZ_CONTENT_SHA256,
             };
 
-            using ShouldSignParameterCb = bool (*)(const Crt::ByteCursor *, void *);
+            using ShouldSignHeaderCb = bool (*)(const Crt::ByteCursor *, void *);
 
             /**
              * Wrapper around the configuration structure specific to the AWS
@@ -152,15 +152,27 @@ namespace Aws
                 void SetShouldNormalizeUriPath(bool shouldNormalizeUriPath) noexcept;
 
                 /**
+                 * Gets whether or not to omit the session token during signing.  Only set to true when performing
+                 * a websocket handshake with IoT Core.
+                 */
+                bool GetOmitSessionToken() const noexcept;
+
+                /**
+                 * Sets whether or not to omit the session token during signing.  Only set to true when performing
+                 * a websocket handshake with IoT Core.
+                 */
+                void SetOmitSessionToken(bool omitSessionToken) noexcept;
+
+                /**
                  * Gets the ShouldSignHeadersCb from the underlying config.
                  */
-                ShouldSignParameterCb GetShouldSignParameterCallback() const noexcept;
+                ShouldSignHeaderCb GetShouldSignHeaderCallback() const noexcept;
 
                 /**
                  * Sets a callback invoked during the signing process for white-listing headers that can be signed.
                  * If you do not set this, all headers will be signed.
                  */
-                void SetShouldSignHeadersCallback(ShouldSignParameterCb shouldSignParameterCb) noexcept;
+                void SetShouldSignHeaderCallback(ShouldSignHeaderCb shouldSignHeaderCb) noexcept;
 
                 /**
                  * Gets the value to use for the canonical request's payload
