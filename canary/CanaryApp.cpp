@@ -45,13 +45,14 @@ namespace
 } // namespace
 
 CanaryAppOptions::CanaryAppOptions(const String &configFileName) noexcept
-    : platformName(CanaryUtil::GetPlatformName().c_str()), toolName("S3Canary"), instanceType("unknown"), region("us-west-2"),
-      bucketName("aws-crt-canary-bucket"), numUpTransfers(0), numUpConcurrentTransfers(0), numDownTransfers(0),
-      numDownConcurrentTransfers(0), numTransfersPerAddress(10), fileNameSuffixOffset(1),
+    : platformName(CanaryUtil::GetPlatformName().c_str()), toolName("S3Canary"), instanceType("unknown"),
+      region("us-west-2"), bucketName("aws-crt-canary-bucket"), numUpTransfers(0), numUpConcurrentTransfers(0),
+      numDownTransfers(0), numDownConcurrentTransfers(0), numTransfersPerAddress(10), fileNameSuffixOffset(1),
       singlePartObjectSize(5ULL * 1024ULL * 1024ULL * 1024ULL), multiPartObjectPartSize(25LL * 1024ULL * 1024ULL),
       multiPartObjectNumParts(205), connectionMonitoringFailureIntervalSeconds(1), targetThroughputGbps(80.0),
       measureSinglePartTransfer(false), measureMultiPartTransfer(false), measureHttpTransfer(false),
-      sendEncrypted(false), loggingEnabled(false), rehydrateBackup(false)
+      sendEncrypted(false), loggingEnabled(false), rehydrateBackup(false), connectionMonitoringEnabled(false),
+      endPointMonitoringEnabled(false)
 {
     if (configFileName.empty())
     {

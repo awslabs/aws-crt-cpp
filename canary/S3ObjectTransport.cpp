@@ -482,7 +482,7 @@ void S3ObjectTransport::GetObject(
                     errorCode = AWS_ERROR_UNKNOWN;
                 }
 
-                aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_DEBUG;
+                aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_INFO;
 
                 AWS_LOGF(
                     logLevel,
