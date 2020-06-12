@@ -1130,7 +1130,6 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
         objectSizeGB = options.singlePartObjectSize / 1024.0 / 1024.0 / 1024.0;
     }
 
-
     /*
      * Calculate new timestamps for the metrics so that they happen within the most recent
      * three hour period, which will allow them to be graphed at a one second granularity
@@ -1246,11 +1245,11 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
 
             if (metricName == MetricName::BytesUp)
             {
-                numConcurrentTransfers = m_canaryApp.GetOptions().numUpConcurrentTransfers;
+                numConcurrentTransfers = options.numUpConcurrentTransfers;
             }
             else if (metricName == MetricName::BytesDown)
             {
-                numConcurrentTransfers = m_canaryApp.GetOptions().numDownConcurrentTransfers;
+                numConcurrentTransfers = options.numDownConcurrentTransfers;
             }
 
             spreadSheetStream << GetDateString(timeStartDateTime) << "," << GetTimeString(timeStartDateTime) << ","
@@ -1258,10 +1257,10 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
                               << GetTimeString(fullConnectionsTimeEndDateTime) << "," << GetTimeString(timeEndDateTime)
                               << "," << GetTimeString(fullConnectionsTime) << "," << GetTimeString(totalTime) << ","
                               << MetricNameToStr(metricName) << "," << fullConnectionsAverageGbps << ","
-                              << options.instanceType << "," << objectSizeGB << "," << options.measureMultiPartTransfer
-                              << "," << options.multiPartObjectPartSize << "," << options.multiPartObjectNumParts << ","
+                              << GetInstanceType() << "," << objectSizeGB << "," << transferTypeStr << ","
+                              << options.multiPartObjectPartSize << "," << options.multiPartObjectNumParts << ","
                               << "," // Number of threads
-                              << numConcurrentTransfers << "," << bufferSizeKB << " KB," << options.sendEncrypted << ","
+                              << numConcurrentTransfers << "," << bufferSizeKB << " KB," << IsSendingEncrypted() << ","
                               << options.region << ","
                               << "," // Notes
                               << s3Path;
@@ -1276,8 +1275,8 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
     std::stringstream cloudWatchMetricsLink;
 
     cloudWatchMetricsLink
-        << "https://" << m_canaryApp.GetOptions().region << ".console.aws.amazon.com/cloudwatch/"
-        << "home?region=" << m_canaryApp.GetOptions().region
+        << "https://" << options.region << ".console.aws.amazon.com/cloudwatch/"
+        << "home?region=" << options.region
         << "#metricsV2:graph=~(metrics~(~(~(expression~'m1*2a8*2f1000*2f1000*2f1000~label~'BytesDownGb~id~'e1))~(~("
            "expression~'m2*2a8*2f1000*2f1000*2f1000~label~'BytesUpGb~id~'e2))~(~'CRT-CPP-Canary-V2~'BytesDown"
         << "~'Platform~'" << m_platformNameOverride.value().c_str() << "~'ToolName~'"
@@ -1289,7 +1288,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
            "~'.~'.~'.~'.~'.~'.~'.~'.~(id~'m4~visible~false))~(~'.~'SuccessfulTransfer~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~"
            "'.~(id~'m5~visible~false))~(~'.~'S3AddressCount~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~'.~(id~'m6~stat~'Average~"
            "visible~false)))~view~'timeSeries~stacked~false~region~'"
-        << m_canaryApp.GetOptions().region
+        << options.region
         << "~stat~'Sum~period~1~title~'Replay*20Graph)"
            ";query=~'*7bCRT-CPP-Canary-V2*2cEncrypted*2cInstanceType*2cPlatform*2cReplayId*2cToolName*2cTransferType*"
            "7d";
