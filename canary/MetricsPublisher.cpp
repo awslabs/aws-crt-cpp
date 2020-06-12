@@ -342,9 +342,16 @@ void MetricsPublisher::FlushMetrics()
         }
     }
 
-    SchedulePublish();
-    WaitForLastPublish();
-    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
+    if (m_canaryApp.GetOptions().metricsPublishingEnabled)
+    {
+        SchedulePublish();
+        WaitForLastPublish();
+        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics flushed.");
+    }
+    else
+    {
+        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Metrics publishing not enabled; not publishing metrics to CloudWatch.");
+    }
 }
 
 void MetricsPublisher::AggregateDataPoints(
@@ -487,11 +494,32 @@ String MetricsPublisher::GetTimeString(uint64_t timestampSeconds) const
     uint64_t timestampMillis = timestampSeconds * 1000ULL;
     DateTime dateTime(timestampMillis);
 
+    return GetTimeString(dateTime);
+}
+
+String MetricsPublisher::GetTimeString(const DateTime &dateTime) const
+{
     StringStream dateTimeString;
     dateTimeString << std::setfill('0') << std::setw(2) << (uint32_t)dateTime.GetHour() << ":" << std::setw(2)
                    << (uint32_t)dateTime.GetMinute() << ":" << std::setw(2) << (uint32_t)dateTime.GetSecond();
 
     return dateTimeString.str();
+}
+
+String GetDateTimeGMTString(const DateTime &dateTime)
+{
+    uint8_t dateBuffer[AWS_DATE_TIME_STR_MAX_LEN];
+    AWS_ZERO_ARRAY(dateBuffer);
+    auto dateBuf = ByteBufFromEmptyArray(dateBuffer, AWS_ARRAY_SIZE(dateBuffer));
+    dateTime.ToGmtString(DateFormat::ISO_8601, dateBuf);
+    return String((const char *)dateBuf.buffer, dateBuf.len);
+}
+
+String GetDateString(const DateTime &dateTime)
+{
+    StringStream str;
+    str << ((uint32_t)dateTime.GetMonth() + 1) << "/" << (uint32_t)dateTime.GetDay() << "/" << dateTime.GetYear();
+    return str.str();
 }
 
 void MetricsPublisher::GeneratePerStreamCSVRow(
@@ -983,14 +1011,26 @@ String MetricsPublisher::UploadBackup(uint32_t options)
     return backupPath;
 }
 
-String GetDateTimeGMTString(const DateTime &dateTime)
+struct AnalyzedMetric
 {
-    uint8_t dateBuffer[AWS_DATE_TIME_STR_MAX_LEN];
-    AWS_ZERO_ARRAY(dateBuffer);
-    auto dateBuf = ByteBufFromEmptyArray(dateBuffer, AWS_ARRAY_SIZE(dateBuffer));
-    dateTime.ToGmtString(DateFormat::ISO_8601, dateBuf);
-    return String((const char *)dateBuf.buffer, dateBuf.len);
-}
+    double valueTotal = 0.0;
+    double numValues = 0.0;
+
+    double fullConnectionsTotal = 0.0;
+    double fullConnectionsNumValues = 0.0;
+
+    uint64_t timeStart = ~0ULL;
+    uint64_t timeEnd = 0ULL;
+    uint64_t fullConnectionsStart = ~0ULL;
+    uint64_t fullConnectionsEnd = 0ULL;
+};
+
+struct MetricValueArray
+{
+    double values[(uint32_t)MetricName::MAX];
+
+    MetricValueArray() { memset(values, 0, sizeof(values)); }
+};
 
 void MetricsPublisher::RehydrateBackup(const char *s3Path)
 {
@@ -1051,6 +1091,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
 
     uint64_t newestTimeStamp = 0;
 
+    // Extract metrics from json data
     for (const JsonView &metricJson : metricsJson)
     {
         String metricNameStr = metricJson.GetString("Name");
@@ -1069,16 +1110,26 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
         newestTimeStamp = std::max(metricTimestamp, newestTimeStamp);
     }
 
-    struct MetricTotal
+    const MetricName metricsToAnalyze[] = {MetricName::BytesUp, MetricName::BytesDown};
+    const uint32_t numMetricsToAnalyze = sizeof(metricsToAnalyze) / sizeof(MetricName);
+
+    Map<uint64_t, MetricValueArray> perSecondTotals;
+    AnalyzedMetric analyzedMetrics[(uint32_t)MetricName::MAX];
+    StringStream spreadSheetStream;
+
+    const CanaryAppOptions &options = m_canaryApp.GetOptions();
+    double bufferSizeKB = (double)g_aws_channel_max_fragment_size / 1024.0;
+    double objectSizeGB = 0.0;
+
+    if (options.measureMultiPartTransfer)
     {
-        double bytesUp;
-        double bytesDown;
-        double numConnections;
+        objectSizeGB = (double)options.GetMultiPartObjectSize() / 1024.0 / 1024.0 / 1024.0;
+    }
+    else
+    {
+        objectSizeGB = options.singlePartObjectSize / 1024.0 / 1024.0 / 1024.0;
+    }
 
-        MetricTotal() : bytesUp(0.0), bytesDown(0.0), numConnections(0.0) {}
-    };
-
-    Map<uint64_t, MetricTotal> metricTotals;
 
     /*
      * Calculate new timestamps for the metrics so that they happen within the most recent
@@ -1107,90 +1158,117 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
 
         for (Metric &metric : metrics)
         {
+            // Calculate relocated timestamp
             metric.Timestamp = metric.Timestamp - newestTimeStamp + relocatedMetricsEnd;
 
-            uint64_t timeStampSeconds = metric.Timestamp / UINT64_C(1000);
-
-            auto it = metricTotals.find(timeStampSeconds);
-
-            if (it == metricTotals.end())
+            // Sum per second metrics
             {
-                auto insertResult = metricTotals.emplace(timeStampSeconds, MetricTotal());
+                uint64_t timeStampSeconds = metric.Timestamp / UINT64_C(1000);
+                auto it = perSecondTotals.find(timeStampSeconds);
 
-                AWS_FATAL_ASSERT(insertResult.second);
+                if (it == perSecondTotals.end())
+                {
+                    auto insertResult = perSecondTotals.emplace(timeStampSeconds, MetricValueArray());
+                    AWS_FATAL_ASSERT(insertResult.second);
+                    it = insertResult.first;
+                }
 
-                it = insertResult.first;
-            }
-
-            if (metric.Name == MetricName::BytesUp)
-            {
-                it->second.bytesUp += metric.Value;
-            }
-            else if (metric.Name == MetricName::BytesDown)
-            {
-                it->second.bytesDown += metric.Value;
-            }
-            else if (metric.Name == MetricName::NumConnections)
-            {
-                it->second.numConnections += metric.Value;
+                it->second.values[(uint32_t)metric.Name] += metric.Value;
             }
         }
 
-        double bytesUpTotal = 0.0;
-        double bytesUpNum = 0.0;
-        uint64_t bytesUpTimeStart = ~0ULL;
-        uint64_t bytesUpTimeEnd = 0ULL;
-
-        double bytesDownTotal = 0.0;
-        double bytesDownNum = 0.0;
-        uint64_t bytesDownTimeStart = ~0ULL;
-        uint64_t bytesDownTimeEnd = 0ULL;
-
-        for (auto it = metricTotals.begin(); it != metricTotals.end(); ++it)
+        for (auto it = perSecondTotals.begin(); it != perSecondTotals.end(); ++it)
         {
-            if (it->second.bytesUp > 0.0 &&
-                it->second.numConnections >= m_canaryApp.GetOptions().numUpConcurrentTransfers)
+            double numConnections = it->second.values[(uint32_t)MetricName::NumConnections];
+
+            for (uint32_t i = 0; i < numMetricsToAnalyze; ++i)
             {
-                bytesUpTotal += it->second.bytesUp;
-                bytesUpNum += 1.0;
+                MetricName metricName = metricsToAnalyze[i];
+                AnalyzedMetric &analyzedMetric = analyzedMetrics[(uint32_t)metricName];
 
-                bytesUpTimeStart = std::min(bytesUpTimeStart, it->first);
-                bytesUpTimeEnd = std::max(bytesUpTimeEnd, it->first);
-            }
+                analyzedMetric.timeStart = std::min(analyzedMetric.timeStart, it->first);
+                analyzedMetric.timeEnd = std::max(analyzedMetric.timeEnd, it->first);
 
-            if (it->second.bytesDown > 0.0 &&
-                it->second.numConnections >= m_canaryApp.GetOptions().numDownConcurrentTransfers)
-            {
-                bytesDownTotal += it->second.bytesDown;
-                bytesDownNum += 1.0;
+                analyzedMetric.numValues += 1.0;
+                analyzedMetric.valueTotal += it->second.values[(uint32_t)metricName];
 
-                bytesDownTimeStart = std::min(bytesDownTimeStart, it->first);
-                bytesDownTimeEnd = std::max(bytesDownTimeEnd, it->first);
+                double numConcurrentTransfers = 0.0;
+
+                if (metricName == MetricName::BytesUp)
+                {
+                    numConcurrentTransfers = options.numUpConcurrentTransfers;
+                }
+                else if (metricName == MetricName::BytesDown)
+                {
+                    numConcurrentTransfers = options.numDownConcurrentTransfers;
+                }
+
+                if (numConnections >= numConcurrentTransfers)
+                {
+                    analyzedMetric.fullConnectionsStart = std::min(analyzedMetric.fullConnectionsStart, it->first);
+                    analyzedMetric.fullConnectionsEnd = std::max(analyzedMetric.fullConnectionsEnd, it->first);
+
+                    analyzedMetric.fullConnectionsNumValues += 1.0;
+                    analyzedMetric.fullConnectionsTotal += it->second.values[(uint32_t)metricName];
+                }
             }
         }
 
-        if (bytesUpNum > 0.0)
+        for (uint32_t i = 0; i < numMetricsToAnalyze; ++i)
         {
-            DateTime bytesUpTimeStartDateTime(bytesUpTimeStart * UINT64_C(1000));
-            DateTime bytesUpTimeEndDateTime(bytesUpTimeEnd * UINT64_C(1000));
+            MetricName metricName = metricsToAnalyze[i];
+            AnalyzedMetric &analyzedMetric = analyzedMetrics[(uint32_t)metricName];
 
-            std::cout << "Average Bytes Up: " << (bytesUpTotal / bytesUpNum) * 8.0 / 1000.0 / 1000.0 / 1000.0
-                      << " Gbps from total " << bytesUpTotal << " with " << bytesUpNum
-                      << " samples, between time interval " << GetDateTimeGMTString(bytesUpTimeStartDateTime).c_str()
-                      << "," << GetDateTimeGMTString(bytesUpTimeEndDateTime).c_str() << std::endl;
-        }
+            DateTime timeStartDateTime(analyzedMetric.timeStart * UINT64_C(1000));
+            DateTime timeEndDateTime(analyzedMetric.timeEnd * UINT64_C(1000));
+            DateTime totalTime(timeEndDateTime.Millis() - timeStartDateTime.Millis());
 
-        if (bytesDownNum > 0.0)
-        {
-            DateTime bytesDownTimeStartDateTime(bytesDownTimeStart * UINT64_C(1000));
-            DateTime bytesDownTimeEndDateTime(bytesDownTimeEnd * UINT64_C(1000));
+            DateTime fullConnectionsStartDateTime(analyzedMetric.fullConnectionsStart * UINT64_C(1000));
+            DateTime fullConnectionsTimeEndDateTime(analyzedMetric.fullConnectionsEnd * UINT64_C(1000));
+            DateTime fullConnectionsTime(
+                fullConnectionsTimeEndDateTime.Millis() - fullConnectionsStartDateTime.Millis());
 
-            std::cout << "Average Bytes Down: " << (bytesDownTotal / bytesDownNum) * 8.0 / 1000.0 / 1000.0 / 1000.0
-                      << " Gbps from total " << bytesDownTotal << " with " << bytesDownNum
-                      << " samples, between time interval " << GetDateTimeGMTString(bytesDownTimeStartDateTime).c_str()
-                      << "," << GetDateTimeGMTString(bytesDownTimeEndDateTime).c_str() << std::endl;
+            double fullConnectionsAverageGbps = 0.0;
+
+            if (analyzedMetric.fullConnectionsNumValues > 0.0)
+            {
+                fullConnectionsAverageGbps =
+                    analyzedMetric.fullConnectionsTotal / analyzedMetric.fullConnectionsNumValues;
+                fullConnectionsAverageGbps = fullConnectionsAverageGbps * 8.0 / 1000.0 / 1000.0 / 1000.0;
+            }
+
+            std::cout << "Average Bytes Up: " << fullConnectionsAverageGbps << " Gbps from total "
+                      << analyzedMetric.fullConnectionsTotal << " with " << analyzedMetric.fullConnectionsNumValues
+                      << " samples, between time interval " << GetDateTimeGMTString(timeStartDateTime).c_str() << ","
+                      << GetDateTimeGMTString(timeEndDateTime).c_str() << std::endl;
+
+            double numConcurrentTransfers = 0.0;
+
+            if (metricName == MetricName::BytesUp)
+            {
+                numConcurrentTransfers = m_canaryApp.GetOptions().numUpConcurrentTransfers;
+            }
+            else if (metricName == MetricName::BytesDown)
+            {
+                numConcurrentTransfers = m_canaryApp.GetOptions().numDownConcurrentTransfers;
+            }
+
+            spreadSheetStream << GetDateString(timeStartDateTime) << "," << GetTimeString(timeStartDateTime) << ","
+                              << GetTimeString(fullConnectionsStartDateTime) << ","
+                              << GetTimeString(fullConnectionsTimeEndDateTime) << "," << GetTimeString(timeEndDateTime)
+                              << "," << GetTimeString(fullConnectionsTime) << "," << GetTimeString(totalTime) << ","
+                              << MetricNameToStr(metricName) << "," << fullConnectionsAverageGbps << ","
+                              << options.instanceType << "," << objectSizeGB << "," << options.measureMultiPartTransfer
+                              << "," << options.multiPartObjectPartSize << "," << options.multiPartObjectNumParts << ","
+                              << "," // Number of threads
+                              << numConcurrentTransfers << "," << bufferSizeKB << " KB," << options.sendEncrypted << ","
+                              << options.region << ","
+                              << "," // Notes
+                              << s3Path;
         }
     }
+
+    std::cout << spreadSheetStream.str() << std::endl << std::endl;
 
     AddDataPoints(metrics);
     FlushMetrics();

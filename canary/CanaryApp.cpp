@@ -48,11 +48,11 @@ CanaryAppOptions::CanaryAppOptions(const String &configFileName) noexcept
     : platformName(CanaryUtil::GetPlatformName().c_str()), toolName("S3Canary"), instanceType("unknown"),
       region("us-west-2"), bucketName("aws-crt-canary-bucket"), numUpTransfers(0), numUpConcurrentTransfers(0),
       numDownTransfers(0), numDownConcurrentTransfers(0), numTransfersPerAddress(10), fileNameSuffixOffset(1),
-      singlePartObjectSize(5ULL * 1024ULL * 1024ULL * 1024ULL), multiPartObjectPartSize(25LL * 1024ULL * 1024ULL),
-      multiPartObjectNumParts(205), connectionMonitoringFailureIntervalSeconds(1), targetThroughputGbps(80.0),
+      singlePartObjectSize(5ULL * 1024ULL * 1024ULL * 1024ULL), multiPartObjectPartSize(52LL * 1024ULL * 1024ULL),
+      multiPartObjectNumParts(100), connectionMonitoringFailureIntervalSeconds(1), targetThroughputGbps(80.0),
       measureSinglePartTransfer(false), measureMultiPartTransfer(false), measureHttpTransfer(false),
       sendEncrypted(false), loggingEnabled(false), rehydrateBackup(false), connectionMonitoringEnabled(false),
-      endPointMonitoringEnabled(false)
+      endPointMonitoringEnabled(false), metricsPublishingEnabled(true)
 {
     if (configFileName.empty())
     {
@@ -117,6 +117,7 @@ CanaryAppOptions::CanaryAppOptions(const String &configFileName) noexcept
     GET_CONFIG_VALUE(jsonView, Bool, "LoggingEnabled", loggingEnabled);
     GET_CONFIG_VALUE(jsonView, Bool, "ConnectionMonitoringEnabled", connectionMonitoringEnabled);
     GET_CONFIG_VALUE(jsonView, Bool, "EndPointMonitoringEnabled", endPointMonitoringEnabled);
+    GET_CONFIG_VALUE(jsonView, Bool, "MetricsPublishingEnabled", metricsPublishingEnabled);
 
 #undef GET_CONFIG_VALUE_CAST
 #undef GET_CONFIG_VALUE

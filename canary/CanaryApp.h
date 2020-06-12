@@ -66,6 +66,7 @@ struct CanaryAppOptions
     uint32_t rehydrateBackup : 1;
     uint32_t connectionMonitoringEnabled : 1;
     uint32_t endPointMonitoringEnabled : 1;
+    uint32_t metricsPublishingEnabled : 1;
 
     uint64_t GetMultiPartObjectSize() const { return multiPartObjectPartSize * (uint64_t)multiPartObjectNumParts; }
 };

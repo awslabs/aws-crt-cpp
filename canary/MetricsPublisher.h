@@ -82,7 +82,8 @@ enum class MetricName
     DownloadTransportMetricStart,
     DownloadTransportMetricEnd = DownloadTransportMetricStart + (int)TransportMetricName::LastEnum,
 
-    Invalid
+    Invalid,
+    MAX = Invalid
 };
 
 enum class MetricTransferType
@@ -240,6 +241,8 @@ class MetricsPublisher
     std::shared_ptr<Aws::Crt::StringStream> GenerateMetricsBackupJson();
 
     Aws::Crt::String GetTimeString(uint64_t timestampSeconds) const;
+
+    Aws::Crt::String GetTimeString(const Aws::Crt::DateTime &dateTime) const;
 
     std::shared_ptr<Aws::Crt::StringStream> GeneratePerStreamCSV(
         MetricName transferMetricName,
