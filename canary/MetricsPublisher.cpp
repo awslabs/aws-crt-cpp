@@ -1282,7 +1282,8 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
                       << " Gbps from total " << analyzedMetric.fullConnectionsTotal << " with "
                       << analyzedMetric.fullConnectionsNumValues << " samples, between time interval "
                       << GetDateTimeGMTString(fullConnectionsStartDateTime).c_str() << ","
-                      << GetDateTimeGMTString(fullConnectionsTimeEndDateTime).c_str() << std::endl;
+                      << GetDateTimeGMTString(fullConnectionsTimeEndDateTime).c_str() << ", Overall total/failed:"
+                      << analyzedMetric.valueTotal << "/" << analyzedMetric.valueTotalFailed << std::endl;
 
             double numConcurrentTransfers = 0.0;
 
