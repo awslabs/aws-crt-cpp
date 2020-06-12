@@ -1178,8 +1178,6 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
 
         for (auto it = perSecondTotals.begin(); it != perSecondTotals.end(); ++it)
         {
-            double numConnections = it->second.values[(uint32_t)MetricName::NumConnections];
-
             for (uint32_t i = 0; i < numMetricsToAnalyze; ++i)
             {
                 MetricName metricName = metricsToAnalyze[i];
@@ -1191,14 +1189,21 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
                 analyzedMetric.numValues += 1.0;
                 analyzedMetric.valueTotal += it->second.values[(uint32_t)metricName];
 
+                double numConnections = 0.0;
                 double numConcurrentTransfers = 0.0;
 
                 if (metricName == MetricName::BytesUp)
                 {
+                    numConnections = it->second.values
+                                         [(uint32_t)MetricName::UploadTransportMetricStart +
+                                          (uint32_t)TransportMetricName::VendedConnectionCount];
                     numConcurrentTransfers = options.numUpConcurrentTransfers;
                 }
                 else if (metricName == MetricName::BytesDown)
                 {
+                    numConnections = it->second.values
+                                         [(uint32_t)MetricName::DownloadTransportMetricStart +
+                                          (uint32_t)TransportMetricName::VendedConnectionCount];
                     numConcurrentTransfers = options.numDownConcurrentTransfers;
                 }
 
@@ -1257,8 +1262,9 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
                               << GetTimeString(fullConnectionsTimeEndDateTime) << "," << GetTimeString(timeEndDateTime)
                               << "," << GetTimeString(fullConnectionsTime) << "," << GetTimeString(totalTime) << ","
                               << MetricNameToStr(metricName) << "," << fullConnectionsAverageGbps << ","
-                              << GetInstanceType() << "," << objectSizeGB << "," << transferTypeStr << ","
-                              << options.multiPartObjectPartSize << "," << options.multiPartObjectNumParts << ","
+                              << GetInstanceType() << "," << objectSizeGB << " GB," << transferTypeStr << ","
+                              << (options.multiPartObjectPartSize / 1024.0 / 1024.0) << " MB,"
+                              << options.multiPartObjectNumParts << ","
                               << "," // Number of threads
                               << numConcurrentTransfers << "," << bufferSizeKB << " KB," << IsSendingEncrypted() << ","
                               << options.region << ","
