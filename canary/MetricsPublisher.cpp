@@ -1014,9 +1014,11 @@ String MetricsPublisher::UploadBackup(uint32_t options)
 struct AnalyzedMetric
 {
     double valueTotal = 0.0;
+    double valueTotalFailed = 0.0;
     double numValues = 0.0;
 
     double fullConnectionsTotal = 0.0;
+    double fullConnectionsTotalFailed = 0.0;
     double fullConnectionsNumValues = 0.0;
 
     uint64_t timeStart = ~0ULL;
@@ -1110,7 +1112,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
         newestTimeStamp = std::max(metricTimestamp, newestTimeStamp);
     }
 
-    const MetricName metricsToAnalyze[] = {MetricName::BytesUp, MetricName::BytesDown};
+    const MetricName metricsToAnalyze[] = {MetricName::BytesUp, MetricName::BytesDown, MetricName::FailedTransfer};
     const uint32_t numMetricsToAnalyze = sizeof(metricsToAnalyze) / sizeof(MetricName);
 
     Map<uint64_t, MetricValueArray> perSecondTotals;
@@ -1181,6 +1183,17 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
             for (uint32_t i = 0; i < numMetricsToAnalyze; ++i)
             {
                 MetricName metricName = metricsToAnalyze[i];
+                MetricName metricNameFailed = MetricName::Invalid;
+
+                if (metricName == MetricName::BytesUp)
+                {
+                    metricNameFailed = MetricName::BytesUpFailed;
+                }
+                else if (metricName == MetricName::BytesDown)
+                {
+                    metricNameFailed = MetricName::BytesDownFailed;
+                }
+
                 AnalyzedMetric &analyzedMetric = analyzedMetrics[(uint32_t)metricName];
 
                 analyzedMetric.timeStart = std::min(analyzedMetric.timeStart, it->first);
@@ -1188,6 +1201,11 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
 
                 analyzedMetric.numValues += 1.0;
                 analyzedMetric.valueTotal += it->second.values[(uint32_t)metricName];
+
+                if (metricNameFailed != MetricName::Invalid)
+                {
+                    analyzedMetric.valueTotalFailed += it->second.values[(uint32_t)metricNameFailed];
+                }
 
                 double numConnections = 0.0;
                 double numConcurrentTransfers = 0.0;
@@ -1214,6 +1232,11 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
 
                     analyzedMetric.fullConnectionsNumValues += 1.0;
                     analyzedMetric.fullConnectionsTotal += it->second.values[(uint32_t)metricName];
+
+                    if (metricNameFailed != MetricName::Invalid)
+                    {
+                        analyzedMetric.fullConnectionsTotalFailed += it->second.values[(uint32_t)metricNameFailed];
+                    }
                 }
             }
         }
@@ -1222,6 +1245,12 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
         {
             MetricName metricName = metricsToAnalyze[i];
             AnalyzedMetric &analyzedMetric = analyzedMetrics[(uint32_t)metricName];
+
+            if(metricName == MetricName::FailedTransfer)
+            {
+                std::cout << "Numver of failed transfers: " << analyzedMetric.valueTotal << std::endl;
+                continue;
+            }
 
             DateTime timeStartDateTime(analyzedMetric.timeStart * UINT64_C(1000));
             DateTime timeEndDateTime(analyzedMetric.timeEnd * UINT64_C(1000));
@@ -1233,12 +1262,20 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
                 fullConnectionsTimeEndDateTime.Millis() - fullConnectionsStartDateTime.Millis());
 
             double fullConnectionsAverageGbps = 0.0;
+            double fullConnectionsAverageGbps_SuccessOnly = 0.0;
 
             if (analyzedMetric.fullConnectionsNumValues > 0.0)
             {
                 fullConnectionsAverageGbps =
                     analyzedMetric.fullConnectionsTotal / analyzedMetric.fullConnectionsNumValues;
+
+                fullConnectionsAverageGbps_SuccessOnly =
+                    (analyzedMetric.fullConnectionsTotal - analyzedMetric.fullConnectionsTotalFailed) /
+                    analyzedMetric.fullConnectionsNumValues;
+
                 fullConnectionsAverageGbps = fullConnectionsAverageGbps * 8.0 / 1000.0 / 1000.0 / 1000.0;
+                fullConnectionsAverageGbps_SuccessOnly =
+                    fullConnectionsAverageGbps_SuccessOnly * 8.0 / 1000.0 / 1000.0 / 1000.0;
             }
 
             std::cout << "Average " << MetricNameToStr(metricName) << ":" << fullConnectionsAverageGbps
@@ -1263,7 +1300,8 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
                               << GetTimeString(fullConnectionsTimeEndDateTime) << "," << GetTimeString(timeEndDateTime)
                               << "," << GetTimeString(fullConnectionsTime) << "," << GetTimeString(totalTime) << ","
                               << MetricNameToStr(metricName) << "," << fullConnectionsAverageGbps << ","
-                              << GetInstanceType() << "," << objectSizeGB << " GB," << transferTypeStr << ","
+                              << fullConnectionsAverageGbps_SuccessOnly << "," << GetInstanceType() << ","
+                              << objectSizeGB << " GB," << transferTypeStr << ","
                               << (options.multiPartObjectPartSize / 1024.0 / 1024.0) << " MB,"
                               << options.multiPartObjectNumParts << ","
                               << "," // Number of threads
