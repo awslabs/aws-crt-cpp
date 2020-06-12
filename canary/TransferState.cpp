@@ -38,7 +38,8 @@ uint64_t TransferState::GetNextTransferId()
 TransferState::TransferState() : TransferState(-1) {}
 
 TransferState::TransferState(int32_t partIndex)
-    : m_partIndex(partIndex), m_transferId(TransferState::GetNextTransferId()), m_transferSuccess(false)
+    : m_partIndex(partIndex), m_transferId(TransferState::GetNextTransferId()), m_queuedDataUp(0ULL),
+      m_transferSuccess(false)
 {
 }
 
@@ -303,6 +304,8 @@ void TransferState::SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClie
 
 void TransferState::SetTransferSuccess(bool success)
 {
+    ConsumeQueuedDataUpMetric();
+
     m_transferSuccess = success;
 
     UpdateRateTracking(0ULL, true);

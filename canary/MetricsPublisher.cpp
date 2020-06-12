@@ -1246,7 +1246,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
             MetricName metricName = metricsToAnalyze[i];
             AnalyzedMetric &analyzedMetric = analyzedMetrics[(uint32_t)metricName];
 
-            if(metricName == MetricName::FailedTransfer)
+            if (metricName == MetricName::FailedTransfer)
             {
                 std::cout << "Numver of failed transfers: " << analyzedMetric.valueTotal << std::endl;
                 continue;
@@ -1282,8 +1282,9 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
                       << " Gbps from total " << analyzedMetric.fullConnectionsTotal << " with "
                       << analyzedMetric.fullConnectionsNumValues << " samples, between time interval "
                       << GetDateTimeGMTString(fullConnectionsStartDateTime).c_str() << ","
-                      << GetDateTimeGMTString(fullConnectionsTimeEndDateTime).c_str() << ", Overall total/failed:"
-                      << analyzedMetric.valueTotal << "/" << analyzedMetric.valueTotalFailed << std::endl;
+                      << GetDateTimeGMTString(fullConnectionsTimeEndDateTime).c_str()
+                      << ", Overall total/failed:" << analyzedMetric.valueTotal << "/"
+                      << analyzedMetric.valueTotalFailed << std::endl;
 
             double numConcurrentTransfers = 0.0;
 
@@ -1297,19 +1298,27 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
             }
 
             spreadSheetStream /*<< GetDateString(timeStartDateTime)*/ << "," << GetTimeString(timeStartDateTime) << ","
-                              << GetTimeString(fullConnectionsStartDateTime) << ","
-                              << GetTimeString(fullConnectionsTimeEndDateTime) << "," << GetTimeString(timeEndDateTime)
-                              << "," << GetTimeString(fullConnectionsTime) << "," << GetTimeString(totalTime) << ","
-                              << MetricNameToStr(metricName) << "," << fullConnectionsAverageGbps << ","
-                              << fullConnectionsAverageGbps_SuccessOnly << "," << GetInstanceType() << ","
-                              << objectSizeGB << " GB," << transferTypeStr << ","
-                              << (options.multiPartObjectPartSize / 1024.0 / 1024.0) << " MB,"
-                              << options.multiPartObjectNumParts << ","
-                              << "," // Number of threads
-                              << numConcurrentTransfers << "," << bufferSizeKB << " KB," << IsSendingEncrypted() << ","
-                              << options.region << ","
-                              << "," // Notes
-                              << s3Path << std::endl;
+                                                                      << GetTimeString(fullConnectionsStartDateTime)
+                                                                      << ","
+                                                                      << GetTimeString(fullConnectionsTimeEndDateTime)
+                                                                      << "," << GetTimeString(timeEndDateTime) << ","
+                                                                      << GetTimeString(fullConnectionsTime) << ","
+                                                                      << GetTimeString(totalTime) << ","
+                                                                      << MetricNameToStr(metricName) << ","
+                                                                      << fullConnectionsAverageGbps << ","
+                                                                      << fullConnectionsAverageGbps_SuccessOnly << ","
+                                                                      << GetInstanceType() << "," << objectSizeGB
+                                                                      << " GB," << transferTypeStr << ","
+                                                                      << (options.multiPartObjectPartSize / 1024.0 /
+                                                                          1024.0)
+                                                                      << " MB," << options.multiPartObjectNumParts
+                                                                      << ","
+                                                                      << "," // Number of threads
+                                                                      << numConcurrentTransfers << "," << bufferSizeKB
+                                                                      << " KB," << IsSendingEncrypted() << ","
+                                                                      << options.region << ","
+                                                                      << "," // Notes
+                                                                      << s3Path << std::endl;
         }
     }
 

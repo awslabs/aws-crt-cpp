@@ -405,13 +405,6 @@ void S3ObjectTransport::PutObject(
             }
             else
             {
-                // AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Setting transfer state address to %s", connAddr.c_str());
-
-                if (transferState != nullptr)
-                {
-                    transferState->InitDataUpMetric();
-                }
-
                 if (transferState != nullptr)
                 {
                     transferState->SetConnection(conn);
