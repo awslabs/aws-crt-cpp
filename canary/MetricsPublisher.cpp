@@ -1241,10 +1241,11 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
                 fullConnectionsAverageGbps = fullConnectionsAverageGbps * 8.0 / 1000.0 / 1000.0 / 1000.0;
             }
 
-            std::cout << "Average Bytes Up: " << fullConnectionsAverageGbps << " Gbps from total "
-                      << analyzedMetric.fullConnectionsTotal << " with " << analyzedMetric.fullConnectionsNumValues
-                      << " samples, between time interval " << GetDateTimeGMTString(timeStartDateTime).c_str() << ","
-                      << GetDateTimeGMTString(timeEndDateTime).c_str() << std::endl;
+            std::cout << "Average " << MetricNameToStr(metricName) << ":" << fullConnectionsAverageGbps
+                      << " Gbps from total " << analyzedMetric.fullConnectionsTotal << " with "
+                      << analyzedMetric.fullConnectionsNumValues << " samples, between time interval "
+                      << GetDateTimeGMTString(fullConnectionsStartDateTime).c_str() << ","
+                      << GetDateTimeGMTString(fullConnectionsTimeEndDateTime).c_str() << std::endl;
 
             double numConcurrentTransfers = 0.0;
 
@@ -1269,7 +1270,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
                               << numConcurrentTransfers << "," << bufferSizeKB << " KB," << IsSendingEncrypted() << ","
                               << options.region << ","
                               << "," // Notes
-                              << s3Path;
+                              << s3Path << std::endl;
         }
     }
 
