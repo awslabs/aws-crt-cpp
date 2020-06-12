@@ -1295,7 +1295,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
                 numConcurrentTransfers = options.numDownConcurrentTransfers;
             }
 
-            spreadSheetStream << GetDateString(timeStartDateTime) << "," << GetTimeString(timeStartDateTime) << ","
+            spreadSheetStream /*<< GetDateString(timeStartDateTime)*/ << "," << GetTimeString(timeStartDateTime) << ","
                               << GetTimeString(fullConnectionsStartDateTime) << ","
                               << GetTimeString(fullConnectionsTimeEndDateTime) << "," << GetTimeString(timeEndDateTime)
                               << "," << GetTimeString(fullConnectionsTime) << "," << GetTimeString(totalTime) << ","
