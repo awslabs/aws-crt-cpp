@@ -211,7 +211,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
             }
             std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
             semaphore.wait(uniqueLock, [&]() {
-                return connections.size() + connectionsFailed >= connectionManagerOptions.MaxConnections;
+                return connections.size() + connectionsFailed == connectionManagerOptions.MaxConnections;
             });
         }
 

@@ -246,6 +246,12 @@ namespace Aws
             return *this;
         }
 
+        MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithMinimumTlsVersion(aws_tls_versions minimumTlsVersion) noexcept
+        {
+            m_contextOptions.SetMinimumTlsVersion(minimumTlsVersion);
+            return *this;
+        }
+
         MqttClientConnectionConfig MqttClientConnectionConfigBuilder::Build() noexcept
         {
             if (!m_isGood)

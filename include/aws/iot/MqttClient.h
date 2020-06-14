@@ -214,6 +214,8 @@ namespace Aws
              */
             MqttClientConnectionConfigBuilder &WithTcpKeepAliveMaxProbes(uint16_t maxProbes) noexcept;
 
+            MqttClientConnectionConfigBuilder &WithMinimumTlsVersion(aws_tls_versions minimumTlsVersion) noexcept;
+
             /**
              * Builds a client configuration object from the set options.
              */

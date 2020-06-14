@@ -12,8 +12,13 @@ add_executable(${ELASTICURL_CPP_PROJECT_NAME} ${ELASTICURL_CPP_SRC})
 set_target_properties(${ELASTICURL_CPP_PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(${ELASTICURL_CPP_PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
 
-#set warnings
+#set warnings and runtime library
 if (MSVC)
+    if(STATIC_CRT)
+        target_compile_options(${PROJECT_NAME} PRIVATE "/MT$<$<CONFIG:Debug>:d>")
+    else()
+        target_compile_options(${PROJECT_NAME} PRIVATE "/MD$<$<CONFIG:Debug>:d>")
+    endif()
     target_compile_options(${ELASTICURL_CPP_PROJECT_NAME} PRIVATE /W4 /WX)
 else ()
     target_compile_options(${ELASTICURL_CPP_PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
