@@ -20,6 +20,7 @@
 
 #include <aws/auth/signable.h>
 #include <aws/auth/signing.h>
+#include <aws/auth/signing_result.h>
 
 namespace Aws
 {
@@ -28,14 +29,19 @@ namespace Aws
         namespace Auth
         {
             AwsSigningConfig::AwsSigningConfig(Allocator *allocator)
-                : ISigningConfig(), m_allocator(allocator), m_credentials(nullptr)
+                : ISigningConfig(), m_allocator(allocator), m_credentialsProvider(nullptr), m_credentials(nullptr)
             {
                 AWS_ZERO_STRUCT(m_config);
 
-                SetSigningAlgorithm(SigningAlgorithm::SigV4Header);
+                SetSigningAlgorithm(SigningAlgorithm::SigV4);
+                SetSignatureType(SignatureType::HttpRequestViaHeaders);
                 SetShouldNormalizeUriPath(true);
-                SetBodySigningType(BodySigningType::SignBody);
+                SetUseDoubleUriEncode(true);
+                SetOmitSessionToken(false);
+                SetSignedBodyValue(SignedBodyValueType::Payload);
+                SetSignedBodyHeader(SignedBodyHeaderType::None);
                 SetSigningTimepoint(DateTime::Now());
+                SetExpirationInSeconds(0);
                 m_config.config_type = AWS_SIGNING_CONFIG_AWS;
             }
 
@@ -49,6 +55,16 @@ namespace Aws
             void AwsSigningConfig::SetSigningAlgorithm(SigningAlgorithm algorithm) noexcept
             {
                 m_config.algorithm = static_cast<aws_signing_algorithm>(algorithm);
+            }
+
+            SignatureType AwsSigningConfig::GetSignatureType() const noexcept
+            {
+                return static_cast<SignatureType>(m_config.signature_type);
+            }
+
+            void AwsSigningConfig::SetSignatureType(SignatureType signatureType) noexcept
+            {
+                m_config.signature_type = static_cast<aws_signature_type>(signatureType);
             }
 
             const Crt::String &AwsSigningConfig::GetRegion() const noexcept { return m_signingRegion; }
@@ -77,53 +93,94 @@ namespace Aws
                 aws_date_time_init_epoch_millis(&m_config.date, date.Millis());
             }
 
-            bool AwsSigningConfig::GetUseDoubleUriEncode() const noexcept { return m_config.use_double_uri_encode; }
+            bool AwsSigningConfig::GetUseDoubleUriEncode() const noexcept
+            {
+                return m_config.flags.use_double_uri_encode;
+            }
 
             void AwsSigningConfig::SetUseDoubleUriEncode(bool useDoubleUriEncode) noexcept
             {
-                m_config.use_double_uri_encode = useDoubleUriEncode;
+                m_config.flags.use_double_uri_encode = useDoubleUriEncode;
             }
 
             bool AwsSigningConfig::GetShouldNormalizeUriPath() const noexcept
             {
-                return m_config.should_normalize_uri_path;
+                return m_config.flags.should_normalize_uri_path;
             }
 
             void AwsSigningConfig::SetShouldNormalizeUriPath(bool shouldNormalizeUriPath) noexcept
             {
-                m_config.should_normalize_uri_path = shouldNormalizeUriPath;
+                m_config.flags.should_normalize_uri_path = shouldNormalizeUriPath;
             }
 
-            ShouldSignParameterCb AwsSigningConfig::GetShouldSignParameterCallback() const noexcept
+            bool AwsSigningConfig::GetOmitSessionToken() const noexcept { return m_config.flags.omit_session_token; }
+
+            void AwsSigningConfig::SetOmitSessionToken(bool omitSessionToken) noexcept
             {
-                return m_config.should_sign_param;
+                m_config.flags.omit_session_token = omitSessionToken;
             }
 
-            void AwsSigningConfig::SetShouldSignHeadersCallback(ShouldSignParameterCb shouldSignParameterCb) noexcept
+            ShouldSignHeaderCb AwsSigningConfig::GetShouldSignHeaderCallback() const noexcept
             {
-                m_config.should_sign_param = shouldSignParameterCb;
+                return m_config.should_sign_header;
             }
 
-            BodySigningType AwsSigningConfig::GetBodySigningType() const noexcept
+            void AwsSigningConfig::SetShouldSignHeaderCallback(ShouldSignHeaderCb shouldSignHeaderCb) noexcept
             {
-                return static_cast<BodySigningType>(m_config.body_signing_type);
+                m_config.should_sign_header = shouldSignHeaderCb;
             }
 
-            void AwsSigningConfig::SetBodySigningType(BodySigningType bodysigningType) noexcept
+            SignedBodyValueType AwsSigningConfig::GetSignedBodyValue() const noexcept
             {
-                m_config.body_signing_type = static_cast<enum aws_body_signing_config_type>(bodysigningType);
+                return static_cast<SignedBodyValueType>(m_config.signed_body_value);
+            }
+
+            void AwsSigningConfig::SetSignedBodyValue(SignedBodyValueType signedBodyValue) noexcept
+            {
+                m_config.signed_body_value = static_cast<enum aws_signed_body_value_type>(signedBodyValue);
+            }
+
+            SignedBodyHeaderType AwsSigningConfig::GetSignedBodyHeader() const noexcept
+            {
+                return static_cast<SignedBodyHeaderType>(m_config.signed_body_header);
+            }
+
+            void AwsSigningConfig::SetSignedBodyHeader(SignedBodyHeaderType signedBodyHeader) noexcept
+            {
+                m_config.signed_body_header = static_cast<enum aws_signed_body_header_type>(signedBodyHeader);
+            }
+
+            uint64_t AwsSigningConfig::GetExpirationInSeconds() const noexcept
+            {
+                return m_config.expiration_in_seconds;
+            }
+
+            void AwsSigningConfig::SetExpirationInSeconds(uint64_t expirationInSeconds) noexcept
+            {
+                m_config.expiration_in_seconds = expirationInSeconds;
             }
 
             const std::shared_ptr<ICredentialsProvider> &AwsSigningConfig::GetCredentialsProvider() const noexcept
             {
-                return m_credentials;
+                return m_credentialsProvider;
             }
 
             void AwsSigningConfig::SetCredentialsProvider(
                 const std::shared_ptr<ICredentialsProvider> &credsProvider) noexcept
             {
-                m_credentials = credsProvider;
-                m_config.credentials_provider = m_credentials->GetUnderlyingHandle();
+                m_credentialsProvider = credsProvider;
+                m_config.credentials_provider = m_credentialsProvider->GetUnderlyingHandle();
+            }
+
+            const std::shared_ptr<Credentials> &AwsSigningConfig::GetCredentials() const noexcept
+            {
+                return m_credentials;
+            }
+
+            void AwsSigningConfig::SetCredentials(const std::shared_ptr<Credentials> &credentials) noexcept
+            {
+                m_credentials = credentials;
+                m_config.credentials = m_credentials->GetUnderlyingHandle();
             }
 
             const struct aws_signing_config_aws *AwsSigningConfig::GetUnderlyingHandle() const noexcept
@@ -174,7 +231,7 @@ namespace Aws
 
                 auto awsSigningConfig = static_cast<const AwsSigningConfig *>(&config);
 
-                if (!awsSigningConfig->GetCredentialsProvider())
+                if (!awsSigningConfig->GetCredentialsProvider() && !awsSigningConfig->GetCredentials())
                 {
                     aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
                     return false;

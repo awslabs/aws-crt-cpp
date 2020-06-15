@@ -40,11 +40,12 @@ namespace Aws
             class AWS_CRT_CPP_API Credentials
             {
               public:
-                Credentials(aws_credentials *credentials, Allocator *allocator = g_allocator) noexcept;
+                Credentials(aws_credentials *credentials) noexcept;
                 Credentials(
                     ByteCursor access_key_id,
                     ByteCursor secret_access_key,
                     ByteCursor session_token,
+                    uint64_t expiration_timepoint_in_seconds,
                     Allocator *allocator = g_allocator) noexcept;
 
                 ~Credentials();
@@ -70,6 +71,11 @@ namespace Aws
                 ByteCursor GetSessionToken() const noexcept;
 
                 /**
+                 * Gets the expiration timestamp for the credentials, or UINT64_MAX if no expiration
+                 */
+                uint64_t GetExpirationTimepointInSeconds() const noexcept;
+
+                /**
                  * Validity check - returns true if the instance is valid, false otherwise
                  */
                 explicit operator bool() const noexcept;
@@ -87,7 +93,7 @@ namespace Aws
              * Callback invoked by credentials providers when resolution succeeds (credentials will be non-null)
              * or fails (credentials will be null)
              */
-            using OnCredentialsResolved = std::function<void(std::shared_ptr<Credentials>)>;
+            using OnCredentialsResolved = std::function<void(std::shared_ptr<Credentials>, int errorCode)>;
 
             /**
              * Base interface for all credentials providers.  Credentials providers are objects that
@@ -325,7 +331,7 @@ namespace Aws
                     Allocator *allocator = g_allocator);
 
               private:
-                static void s_onCredentialsResolved(aws_credentials *credentials, void *user_data);
+                static void s_onCredentialsResolved(aws_credentials *credentials, int error_code, void *user_data);
 
                 Allocator *m_allocator;
                 aws_credentials_provider *m_provider;

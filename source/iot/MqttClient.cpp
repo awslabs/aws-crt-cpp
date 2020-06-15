@@ -27,12 +27,6 @@ namespace Aws
 
     namespace Iot
     {
-        static bool s_blackListHeadersFromSigning(const Crt::ByteCursor *cur, void *)
-        {
-            return !aws_byte_cursor_eq_ignore_case(&s_securityTokenHeader, cur) &&
-                   !aws_byte_cursor_eq_ignore_case(&s_dateHeader, cur);
-        }
-
         WebsocketConfig::WebsocketConfig(
             const Crt::String &signingRegion,
             Crt::Io::ClientBootstrap *bootstrap,
@@ -54,9 +48,10 @@ namespace Aws
                 auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
                 signerConfig->SetRegion(signingRegionCopy);
                 signerConfig->SetService(serviceNameCopy);
-                signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4QueryParam);
-                signerConfig->SetBodySigningType(Crt::Auth::BodySigningType::NoSigning);
-                signerConfig->SetShouldSignHeadersCallback(s_blackListHeadersFromSigning);
+                signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4);
+                signerConfig->SetSignatureType(Crt::Auth::SignatureType::HttpRequestViaQueryParams);
+                signerConfig->SetSignedBodyValue(Crt::Auth::SignedBodyValueType::Empty);
+                signerConfig->SetOmitSessionToken(true);
                 signerConfig->SetCredentialsProvider(credsProviderRef);
 
                 return signerConfig;
@@ -78,9 +73,10 @@ namespace Aws
                 auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
                 signerConfig->SetRegion(signingRegionCopy);
                 signerConfig->SetService(serviceNameCopy);
-                signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4QueryParam);
-                signerConfig->SetBodySigningType(Crt::Auth::BodySigningType::NoSigning);
-                signerConfig->SetShouldSignHeadersCallback(s_blackListHeadersFromSigning);
+                signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4);
+                signerConfig->SetSignatureType(Crt::Auth::SignatureType::HttpRequestViaQueryParams);
+                signerConfig->SetSignedBodyValue(Crt::Auth::SignedBodyValueType::Empty);
+                signerConfig->SetOmitSessionToken(true);
                 signerConfig->SetCredentialsProvider(credsProviderRef);
 
                 return signerConfig;

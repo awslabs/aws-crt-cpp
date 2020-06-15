@@ -33,15 +33,17 @@ class GetCredentialsWaiter
 {
   public:
     GetCredentialsWaiter(std::shared_ptr<ICredentialsProvider> provider)
-        : m_lock(), m_signal(), m_done(false), m_credentials(nullptr), m_provider(provider)
+        : m_lock(), m_signal(), m_done(false), m_credentials(nullptr), m_provider(provider),
+          m_errorCode(AWS_ERROR_SUCCESS)
     {
     }
 
-    void OnCreds(std::shared_ptr<Credentials> credentials)
+    void OnCreds(std::shared_ptr<Credentials> credentials, int error_code)
     {
         std::unique_lock<std::mutex> lock(m_lock);
         m_done = true;
         m_credentials = credentials;
+        m_errorCode = error_code;
         m_signal.notify_one();
     }
 
@@ -53,7 +55,8 @@ class GetCredentialsWaiter
             m_credentials = nullptr;
         }
 
-        m_provider->GetCredentials([this](std::shared_ptr<Credentials> credentials) { OnCreds(credentials); });
+        m_provider->GetCredentials(
+            [this](std::shared_ptr<Credentials> credentials, int error_code) { OnCreds(credentials, error_code); });
 
         {
             std::unique_lock<std::mutex> lock(m_lock);
@@ -69,6 +72,7 @@ class GetCredentialsWaiter
     bool m_done;
     std::shared_ptr<Credentials> m_credentials;
     std::shared_ptr<ICredentialsProvider> m_provider;
+    int m_errorCode;
 };
 
 static int s_TestProviderStaticGet(struct aws_allocator *allocator, void *ctx)

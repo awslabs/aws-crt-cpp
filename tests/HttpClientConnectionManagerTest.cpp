@@ -166,6 +166,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
     std::condition_variable semaphore;
     std::mutex semaphoreLock;
     size_t connectionsFailed = 0;
+    size_t connectionsAcquired = 0;
     size_t totalExpectedConnections = 30;
 
     Http::HttpClientConnectionOptions connectionOptions;
@@ -193,6 +194,7 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
                 if (!errorCode)
                 {
                     connections.push_back(newConnection);
+                    connectionsAcquired++;
                 }
                 else
                 {
@@ -214,35 +216,28 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
         }
 
         /* make sure the test was actually meaningful. */
-        ASSERT_FALSE(connections.empty());
-
-        Vector<std::shared_ptr<Http::HttpClientConnection>> connectionsCpy = connections;
-        connections.clear();
-        connectionsFailed = 0;
-
-        connectionsCpy.clear();
-
-        /* Wait for the connection manager to try initiating the rest of the connections. */
-        {
-            std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
-            semaphore.wait(uniqueLock, [&]() {
-                return connections.size() + connectionsFailed == connectionManagerOptions.MaxConnections;
-            });
-        }
-
+        Vector<std::shared_ptr<Http::HttpClientConnection>> connectionsCpy;
         {
             std::lock_guard<std::mutex> lockGuard(semaphoreLock);
-            /* release should have given us more connections. */
             ASSERT_FALSE(connections.empty());
+
             connectionsCpy = connections;
             connections.clear();
         }
 
         connectionsCpy.clear();
 
+        bool done = false;
+        while (!done)
         {
-            std::lock_guard<std::mutex> lockGuard(semaphoreLock);
-            connections.clear();
+            {
+                std::lock_guard<std::mutex> lockGuard(semaphoreLock);
+                done = connectionsAcquired + connectionsFailed == totalExpectedConnections;
+
+                connectionsCpy = connections;
+                connections.clear();
+            }
+            connectionsCpy.clear();
         }
     }
     connectionManager->InitiateShutdown().get();
@@ -351,12 +346,27 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
             }
             connection.reset();
         }
-        std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
-        semaphore.wait(uniqueLock, [&]() { return (connectionCount + connectionsFailed == totalExpectedConnections); });
 
-        /* release should have given us more connections. */
-        ASSERT_FALSE(connections.empty());
-        connections.clear();
+        {
+            std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
+            semaphore.wait(
+                uniqueLock, [&]() { return (connectionCount + connectionsFailed == totalExpectedConnections); });
+
+            /* release should have given us more connections. */
+            ASSERT_FALSE(connections.empty());
+        }
+
+        bool done = false;
+        while (!done)
+        {
+            {
+                std::lock_guard<std::mutex> lockGuard(semaphoreLock);
+                done = connectionCount + connectionsFailed == totalExpectedConnections;
+            }
+            connectionsCpy = connections;
+            connections.clear();
+            connectionsCpy.clear();
+        }
     }
     connectionManager->InitiateShutdown().get();
 
