@@ -1017,6 +1017,8 @@ struct AnalyzedMetric
     double valueTotalFailed = 0.0;
     double numValues = 0.0;
 
+    double fullConnectionsTerminatingTotals[2] = {-1.0, -1.0};
+    double fullConnectionsTerminatingTotalsFailed[2] = {-1.0, -1.0};
     double fullConnectionsTotal = 0.0;
     double fullConnectionsTotalFailed = 0.0;
     double fullConnectionsNumValues = 0.0;
@@ -1227,16 +1229,28 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
 
                 if (numConnections >= numConcurrentTransfers)
                 {
+                    double metricSuccess = it->second.values[(uint32_t)metricName];
+                    double metricFailed =
+                        (metricNameFailed != MetricName::Invalid) ? it->second.values[(uint32_t)metricNameFailed] : 0.0;
+
+                    if (analyzedMetric.fullConnectionsTerminatingTotals[0] == -1.0)
+                    {
+                        analyzedMetric.fullConnectionsTerminatingTotals[0] = metricSuccess;
+                        analyzedMetric.fullConnectionsTerminatingTotalsFailed[0] = metricFailed;
+                    }
+                    else
+                    {
+                        analyzedMetric.fullConnectionsTerminatingTotals[1] = metricSuccess;
+                        analyzedMetric.fullConnectionsTerminatingTotalsFailed[1] = metricFailed;
+                    }
+
                     analyzedMetric.fullConnectionsStart = std::min(analyzedMetric.fullConnectionsStart, it->first);
                     analyzedMetric.fullConnectionsEnd = std::max(analyzedMetric.fullConnectionsEnd, it->first);
 
                     analyzedMetric.fullConnectionsNumValues += 1.0;
-                    analyzedMetric.fullConnectionsTotal += it->second.values[(uint32_t)metricName];
+                    analyzedMetric.fullConnectionsTotal += metricSuccess;
 
-                    if (metricNameFailed != MetricName::Invalid)
-                    {
-                        analyzedMetric.fullConnectionsTotalFailed += it->second.values[(uint32_t)metricNameFailed];
-                    }
+                    analyzedMetric.fullConnectionsTotalFailed += metricFailed;
                 }
             }
         }
@@ -1266,12 +1280,27 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
 
             if (analyzedMetric.fullConnectionsNumValues > 0.0)
             {
-                fullConnectionsAverageGbps =
-                    analyzedMetric.fullConnectionsTotal / analyzedMetric.fullConnectionsNumValues;
+                double numValues = analyzedMetric.fullConnectionsNumValues;
+                double total = analyzedMetric.fullConnectionsTotal;
+                double totalFailed = analyzedMetric.fullConnectionsTotalFailed;
 
-                fullConnectionsAverageGbps_SuccessOnly =
-                    (analyzedMetric.fullConnectionsTotal - analyzedMetric.fullConnectionsTotalFailed) /
-                    analyzedMetric.fullConnectionsNumValues;
+                if (analyzedMetric.fullConnectionsTerminatingTotals[0] != -1.0)
+                {
+                    numValues -= 1.0;
+                    total -= analyzedMetric.fullConnectionsTerminatingTotals[0];
+                    totalFailed -= analyzedMetric.fullConnectionsTerminatingTotalsFailed[0];
+                }
+
+                if (analyzedMetric.fullConnectionsTerminatingTotals[1] != -1.0)
+                {
+                    numValues -= 1.0;
+                    total -= analyzedMetric.fullConnectionsTerminatingTotals[1];
+                    totalFailed -= analyzedMetric.fullConnectionsTerminatingTotalsFailed[1];
+                }
+
+                fullConnectionsAverageGbps = total / numValues;
+
+                fullConnectionsAverageGbps_SuccessOnly = (total - totalFailed) / numValues;
 
                 fullConnectionsAverageGbps = fullConnectionsAverageGbps * 8.0 / 1000.0 / 1000.0 / 1000.0;
                 fullConnectionsAverageGbps_SuccessOnly =
