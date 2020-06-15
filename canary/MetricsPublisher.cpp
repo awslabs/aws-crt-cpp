@@ -1196,19 +1196,9 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
                     metricNameFailed = MetricName::BytesDownFailed;
                 }
 
-                AnalyzedMetric &analyzedMetric = analyzedMetrics[(uint32_t)metricName];
-
-                analyzedMetric.timeStart = std::min(analyzedMetric.timeStart, it->first);
-                analyzedMetric.timeEnd = std::max(analyzedMetric.timeEnd, it->first);
-
-                analyzedMetric.numValues += 1.0;
-                analyzedMetric.valueTotal += it->second.values[(uint32_t)metricName];
-
-                if (metricNameFailed != MetricName::Invalid)
-                {
-                    analyzedMetric.valueTotalFailed += it->second.values[(uint32_t)metricNameFailed];
-                }
-
+                double value = it->second.values[(uint32_t)metricName];
+                double valueFailed =
+                    (metricNameFailed != MetricName::Invalid) ? it->second.values[(uint32_t)metricNameFailed] : 0.0;
                 double numConnections = 0.0;
                 double numConcurrentTransfers = 0.0;
 
@@ -1226,6 +1216,20 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
                                           (uint32_t)TransportMetricName::VendedConnectionCount];
                     numConcurrentTransfers = options.numDownConcurrentTransfers;
                 }
+
+                if (value <= 0.0 && numConnections <= 0.0)
+                {
+                    continue;
+                }
+
+                AnalyzedMetric &analyzedMetric = analyzedMetrics[(uint32_t)metricName];
+
+                analyzedMetric.timeStart = std::min(analyzedMetric.timeStart, it->first);
+                analyzedMetric.timeEnd = std::max(analyzedMetric.timeEnd, it->first);
+
+                analyzedMetric.numValues += 1.0;
+                analyzedMetric.valueTotal += value;
+                analyzedMetric.valueTotalFailed += valueFailed;
 
                 if (numConnections >= numConcurrentTransfers)
                 {
