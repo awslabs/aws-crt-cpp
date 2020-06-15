@@ -1309,7 +1309,10 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
 
             std::cout << "Average " << MetricNameToStr(metricName) << ":" << fullConnectionsAverageGbps
                       << " Gbps from total " << analyzedMetric.fullConnectionsTotal << " with "
-                      << analyzedMetric.fullConnectionsNumValues << " samples, between time interval "
+                      << analyzedMetric.fullConnectionsNumValues << " samples, ("
+                      << analyzedMetric.fullConnectionsTerminatingTotals[0] << ", "
+                      << analyzedMetric.fullConnectionsTerminatingTotals[1]
+                      << ") terminating totals, and between time interval "
                       << GetDateTimeGMTString(fullConnectionsStartDateTime).c_str() << ","
                       << GetDateTimeGMTString(fullConnectionsTimeEndDateTime).c_str()
                       << ", Overall total/failed:" << analyzedMetric.valueTotal << "/"
