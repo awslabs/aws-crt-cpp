@@ -33,15 +33,17 @@ if (NOT CMAKE_BUILD_TYPE)
     endif()
 endif()
 
-set(AWS_CRT_CPP_VERSION "v1.0.0-dev")
-# Try to determine the current git tag and use that as the version
-execute_process(COMMAND git describe --tags
-    RESULT_VARIABLE GIT_EXIT_CODE
-    OUTPUT_VARIABLE GIT_TAG
-    ERROR_QUIET
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-if (NOT GIT_EXIT_CODE)
-    set(AWS_CRT_CPP_VERSION ${GIT_TAG})
+if (NOT DEFINED AWS_CRT_CPP_VERSION)
+    set(AWS_CRT_CPP_VERSION "v1.0.0-dev")
+    # Try to determine the current git tag and use that as the version
+    execute_process(COMMAND git describe --tags
+        RESULT_VARIABLE GIT_EXIT_CODE
+        OUTPUT_VARIABLE GIT_TAG
+        ERROR_QUIET
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if (NOT GIT_EXIT_CODE)
+        set(AWS_CRT_CPP_VERSION ${GIT_TAG})
+    endif()
 endif()
 
 message(STATUS "AWS CRT C++ ${AWS_CRT_CPP_VERSION}")
