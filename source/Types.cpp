@@ -65,7 +65,7 @@ namespace Aws
                 ByteBuf tempBuf = aws_byte_buf_from_array(output.data(), output.size());
                 tempBuf.len = 0;
 
-                if (!aws_base64_decode(&toDecode, &tempBuf))
+                if (aws_base64_decode(&toDecode, &tempBuf) == AWS_OP_SUCCESS)
                 {
                     return output;
                 }
@@ -86,7 +86,7 @@ namespace Aws
                 ByteBuf tempBuf = aws_byte_buf_from_array(output.data(), output.size());
                 tempBuf.len = 0;
 
-                if (!aws_base64_encode(&toEncode, &tempBuf))
+                if (aws_base64_encode(&toEncode, &tempBuf) == AWS_OP_SUCCESS)
                 {
                     return output;
                 }
