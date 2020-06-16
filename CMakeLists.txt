@@ -33,7 +33,20 @@ if (NOT CMAKE_BUILD_TYPE)
     endif()
 endif()
 
-set(AWS_CRT_CPP_VERSION "v0.8.2")
+if (NOT DEFINED AWS_CRT_CPP_VERSION)
+    set(AWS_CRT_CPP_VERSION "v1.0.0-dev")
+    # Try to determine the current git tag and use that as the version
+    execute_process(COMMAND git describe --tags
+        RESULT_VARIABLE GIT_EXIT_CODE
+        OUTPUT_VARIABLE GIT_TAG
+        ERROR_QUIET
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if (NOT GIT_EXIT_CODE)
+        set(AWS_CRT_CPP_VERSION ${GIT_TAG})
+    endif()
+endif()
+
+message(STATUS "AWS CRT C++ ${AWS_CRT_CPP_VERSION}")
 
 configure_file(include/aws/crt/Config.h.in ${CMAKE_CURRENT_LIST_DIR}/include/aws/crt/Config.h @ONLY)
 
@@ -265,4 +278,3 @@ if (NOT CMAKE_CROSSCOMPILING)
         add_subdirectory(bin/elasticurl_cpp)
     endif()
 endif()
-
