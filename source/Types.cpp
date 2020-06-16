@@ -65,7 +65,7 @@ namespace Aws
                 ByteBuf tempBuf = aws_byte_buf_from_array(output.data(), output.size());
                 tempBuf.len = 0;
 
-                if (aws_base64_decode(&toDecode, &tempBuf))
+                if (aws_base64_decode(&toDecode, &tempBuf) == AWS_OP_SUCCESS)
                 {
                     return output;
                 }
@@ -86,8 +86,14 @@ namespace Aws
                 ByteBuf tempBuf = aws_byte_buf_from_array(output.data(), output.size());
                 tempBuf.len = 0;
 
-                if (aws_base64_encode(&toEncode, &tempBuf))
+                if (aws_base64_encode(&toEncode, &tempBuf) == AWS_OP_SUCCESS)
                 {
+                    // encoding appends a null terminator, and accounts for it in the encoded length,
+                    // which makes the string 1 character too long
+                    if (output.back() == 0)
+                    {
+                        output.pop_back();
+                    }
                     return output;
                 }
             }
