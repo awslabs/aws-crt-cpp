@@ -88,6 +88,12 @@ namespace Aws
 
                 if (aws_base64_encode(&toEncode, &tempBuf) == AWS_OP_SUCCESS)
                 {
+                    // encoding appends a null terminator, and accounts for it in the encoded length,
+                    // which makes the string 1 character too long
+                    if (output.back() == 0)
+                    {
+                        output.pop_back();
+                    }
                     return output;
                 }
             }
