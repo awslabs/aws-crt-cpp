@@ -74,7 +74,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        std: [c++11, c++14, c++17, c++20]
+        std: [c++11, c++14, c++17, c++2a]
     steps:
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
     - name: Build ${{ env.PACKAGE_NAME }} with ${{ matrix.std }}
