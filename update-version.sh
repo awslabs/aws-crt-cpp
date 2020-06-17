@@ -11,8 +11,7 @@ version=$(git describe --tags --abbrev=0)
 sed --in-place -e "s/set(AWS_CRT_CPP_VERSION \"v1.0.0-dev\")/set(AWS_CRT_CPP_VERSION \"${version}\")/" CMakeLists.txt
 echo "Updating AWS_CRT_CPP_VERSION default to ${version}"
 
-git diff --exit-code CMakeLists.txt > /dev/null
-if [ $? -eq 1 ]; then
+if git diff --exit-code CMakeLists.txt > /dev/null; then
     git add CMakeLists.txt
     git commit -m "Updated version to ${version}"
     git tag -f ${version}
