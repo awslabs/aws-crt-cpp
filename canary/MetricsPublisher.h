@@ -75,6 +75,7 @@ enum class MetricName
     S3AddressCount,
     SuccessfulTransfer,
     FailedTransfer,
+    NumConnectionsCreated,
 
     UploadTransportMetricStart,
     UploadTransportMetricEnd = UploadTransportMetricStart + (int)TransportMetricName::LastEnum,
@@ -126,7 +127,7 @@ class MetricsPublisher
     MetricsPublisher(
         CanaryApp &canaryApp,
         const char *metricNamespace,
-        std::chrono::milliseconds publishFrequency = std::chrono::milliseconds(1000));
+        std::chrono::milliseconds publishFrequency = std::chrono::milliseconds(250));
 
     ~MetricsPublisher();
 

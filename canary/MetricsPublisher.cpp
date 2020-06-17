@@ -101,6 +101,7 @@ namespace
                                    "S3AddressCount",
                                    "SuccessfulTransfer",
                                    "FailedTransfer",
+                                   "NumConnectionsCreated",
                                    "UploadHeldConnectionCount",
                                    "UploadPendingAcquisitionCount",
                                    "UploadPendingConnectsCount",
@@ -1266,7 +1267,7 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
 
             if (metricName == MetricName::FailedTransfer)
             {
-                std::cout << "Numver of failed transfers: " << analyzedMetric.valueTotal << std::endl;
+                std::cout << "Number of failed transfers: " << analyzedMetric.valueTotal << std::endl;
                 continue;
             }
 
@@ -1539,6 +1540,19 @@ void MetricsPublisher::s_OnPollingTask(aws_task *task, void *arg, aws_task_statu
 
         Metric s3AddressCountMetric(MetricName::S3AddressCount, MetricUnit::Count, 0ULL, (double)addressCount);
         publisher->AddDataPoint(s3AddressCountMetric);
+    }
+
+    {
+        uint64_t nowTimestamp = 0ULL;
+        aws_sys_clock_get_ticks(&nowTimestamp);
+        nowTimestamp = aws_timestamp_convert(nowTimestamp, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, nullptr);
+
+        publisher->AddDataPoint(Metric(
+                MetricName::NumConnectionsCreated,
+                MetricUnit::Count,
+                nowTimestamp,
+                0ULL,
+                Http::HttpClientConnectionManager::s_numConnections.load()));
     }
 
     publisher->SchedulePolling();
