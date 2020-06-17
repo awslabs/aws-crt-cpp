@@ -19,7 +19,7 @@ else
     git add CMakeLists.txt
     git commit -m "Updated version to ${version}"
     git tag -f ${version}
-    git push --force-with-lease --tags --follow-tags
+    git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" --force-with-lease --tags --follow-tags
 fi
 
 popd > /dev/null
