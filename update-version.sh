@@ -14,10 +14,12 @@ echo "Updating AWS_CRT_CPP_VERSION default to ${version}"
 if git diff --exit-code CMakeLists.txt > /dev/null; then
     echo "No version change"
 else
+    git config --local user.email "aws-sdk-common-runtime@amazon.com"
+    git config --local user.name "GitHub Actions"
     git add CMakeLists.txt
     git commit -m "Updated version to ${version}"
     git tag -f ${version}
-    git push --follow-tags
+    git push --force-with-lease --tags --follow-tags
 fi
 
 popd > /dev/null
