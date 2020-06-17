@@ -5,6 +5,8 @@ set -ex
 # Redirect output to stderr.
 exec 1>&2
 
+GITHUB_TOKEN=$1
+
 pushd $(dirname $0) > /dev/null
 
 version=$(git describe --tags --abbrev=0)
