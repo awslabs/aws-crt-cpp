@@ -1,0 +1,16 @@
+name: Release
+
+on:
+  create
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, '/refs/tags')
+
+    steps:
+    - name: Checkout Sources
+      uses: actions/checkout@v1
+
+    - name: Update Version
+      run: ./update-version.sh
