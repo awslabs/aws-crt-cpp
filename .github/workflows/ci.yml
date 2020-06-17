@@ -74,6 +74,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        compiler: [gcc-8, clang-9]
         std: [c++11, c++14, c++17, c++2a]
     steps:
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
@@ -83,7 +84,7 @@ jobs:
         echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u awslabs --password-stdin
         export DOCKER_IMAGE=docker.pkg.github.com/awslabs/aws-crt-builder/aws-crt-${{ env.LINUX_BASE_IMAGE }}:${{ env.BUILDER_VERSION }}
         docker pull $DOCKER_IMAGE
-        docker run --env GITHUB_REF --env CXXFLAGS $DOCKER_IMAGE build -p ${{ env.PACKAGE_NAME }} --compiler=clang-9
+        docker run --env GITHUB_REF --env CXXFLAGS $DOCKER_IMAGE build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }}
 
   windows-vs16:
     runs-on: windows-latest
