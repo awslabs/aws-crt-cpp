@@ -1007,35 +1007,330 @@ String MetricsPublisher::UploadBackup(uint32_t options)
     if ((options & (uint32_t)UploadBackupOptions::PrintPath) != 0)
     {
         std::cout << "Path of back up is: " << backupPath << std::endl;
+
+        Vector<Metric> metrics;
+
+        {
+            std::lock_guard<std::mutex> lock(m_dataPointsLock);
+
+            for (const Vector<Metric> &dataPoints : m_dataPointsPublished)
+            {
+                for (const Metric &metric : dataPoints)
+                {
+                    metrics.push_back(metric);
+                }
+            }
+        }
+
+        AnalyzeMetrics(backupPath, metrics);
     }
 
     return backupPath;
 }
 
-struct AnalyzedMetric
+/*
+ * Calculate new timestamps for the metrics so that they happen within the most recent
+ * three hour period, which will allow them to be graphed at a one second granularity
+ * in CloudWatch.
+ *
+ * Because metric timestamps are not exactly on a one second boundary, some care must be
+ * taken so that their given offset within a second is preserved.  Otherwise, a
+ * metric might be incorrectly distributed to a neighboring second.
+ */
+void MetricsPublisher::RelocateMetricsToCurrentTime(Vector<Metric> &metrics)
 {
-    double valueTotal = 0.0;
-    double valueTotalFailed = 0.0;
-    double numValues = 0.0;
+    uint64_t newestTimeStamp = 0;
 
-    double fullConnectionsTerminatingTotals[2] = {-1.0, -1.0};
-    double fullConnectionsTerminatingTotalsFailed[2] = {-1.0, -1.0};
-    double fullConnectionsTotal = 0.0;
-    double fullConnectionsTotalFailed = 0.0;
-    double fullConnectionsNumValues = 0.0;
+    // Extract metrics from json data
+    for (Metric &metric : metrics)
+    {
+        newestTimeStamp = std::max(metric.Timestamp, newestTimeStamp);
+    }
 
-    uint64_t timeStart = ~0ULL;
-    uint64_t timeEnd = 0ULL;
-    uint64_t fullConnectionsStart = ~0ULL;
-    uint64_t fullConnectionsEnd = 0ULL;
-};
+    /*
+     * Calculate the amount of time, in milliseconds, that the newestTimeStamp
+     * is from the next second.
+     */
+    uint64_t newestTimeStampSecondOffset = 1000ULL - (newestTimeStamp % 1000ULL);
 
-struct MetricValueArray
+    DateTime dateTime = DateTime::Now();
+    uint64_t nowMillis = dateTime.Millis();
+
+    /*
+     * Given the time for "now" in milliseconds, back it up to the nearest second,
+     * and then back it up by the newestTimeStampSecondOffset.
+     */
+    uint64_t relocatedMetricsEnd = nowMillis - (nowMillis % 1000ULL) - newestTimeStampSecondOffset;
+
+    for (Metric &metric : metrics)
+    {
+        // Calculate relocated timestamp
+        metric.Timestamp = metric.Timestamp - newestTimeStamp + relocatedMetricsEnd;
+    }
+}
+
+void MetricsPublisher::AnalyzeMetrics(const String &s3BackupPath, const Vector<Metric> &metrics)
 {
-    double values[(uint32_t)MetricName::MAX];
+    struct AnalyzedMetric
+    {
+        double valueTotal = 0.0;
+        double valueTotalFailed = 0.0;
+        double numValues = 0.0;
 
-    MetricValueArray() { memset(values, 0, sizeof(values)); }
-};
+        double fullConnectionsTerminatingTotals[2] = {-1.0, -1.0};
+        double fullConnectionsTerminatingTotalsFailed[2] = {-1.0, -1.0};
+        double fullConnectionsTotal = 0.0;
+        double fullConnectionsTotalFailed = 0.0;
+        double fullConnectionsNumValues = 0.0;
+
+        uint64_t timeStart = ~0ULL;
+        uint64_t timeEnd = 0ULL;
+        uint64_t fullConnectionsStart = ~0ULL;
+        uint64_t fullConnectionsEnd = 0ULL;
+    };
+
+    struct MetricValueArray
+    {
+        double values[(uint32_t)MetricName::MAX];
+
+        MetricValueArray() { memset(values, 0, sizeof(values)); }
+    };
+
+    const MetricName metricsToAnalyze[] = {
+        MetricName::BytesUp, MetricName::BytesDown, MetricName::SuccessfulTransfer, MetricName::FailedTransfer};
+    const uint32_t numMetricsToAnalyze = sizeof(metricsToAnalyze) / sizeof(MetricName);
+
+    Map<uint64_t, MetricValueArray> perSecondTotals;
+    AnalyzedMetric analyzedMetrics[(uint32_t)MetricName::MAX];
+    StringStream spreadSheetStream;
+
+    const CanaryAppOptions &options = m_canaryApp.GetOptions();
+    double bufferSizeKB = (double)g_aws_channel_max_fragment_size / 1024.0;
+    double objectSizeGB = 0.0;
+    double totalBytesDown = 0.0;
+    double totalBytesUp = 0.0;
+
+    if (options.measureMultiPartTransfer)
+    {
+        objectSizeGB = (double)options.GetMultiPartObjectSize() / 1024.0 / 1024.0 / 1024.0;
+    }
+    else
+    {
+        objectSizeGB = options.singlePartObjectSize / 1024.0 / 1024.0 / 1024.0;
+    }
+
+    for (const Metric &metric : metrics)
+    {
+        // Sum per second metrics
+        {
+            uint64_t timeStampSeconds = metric.Timestamp / UINT64_C(1000);
+            auto it = perSecondTotals.find(timeStampSeconds);
+
+            if (it == perSecondTotals.end())
+            {
+                auto insertResult = perSecondTotals.emplace(timeStampSeconds, MetricValueArray());
+                AWS_FATAL_ASSERT(insertResult.second);
+                it = insertResult.first;
+            }
+
+            it->second.values[(uint32_t)metric.Name] += metric.Value;
+        }
+
+        if (metric.Name == MetricName::BytesDown)
+        {
+            totalBytesDown += metric.Value;
+        }
+        else if (metric.Name == MetricName::BytesUp)
+        {
+            totalBytesUp += metric.Value;
+        }
+    }
+
+    for (auto it = perSecondTotals.begin(); it != perSecondTotals.end(); ++it)
+    {
+        for (uint32_t i = 0; i < numMetricsToAnalyze; ++i)
+        {
+            MetricName metricName = metricsToAnalyze[i];
+            MetricName metricNameFailed = MetricName::Invalid;
+
+            if (metricName == MetricName::BytesUp)
+            {
+                metricNameFailed = MetricName::BytesUpFailed;
+            }
+            else if (metricName == MetricName::BytesDown)
+            {
+                metricNameFailed = MetricName::BytesDownFailed;
+            }
+
+            double value = it->second.values[(uint32_t)metricName];
+            double valueFailed =
+                (metricNameFailed != MetricName::Invalid) ? it->second.values[(uint32_t)metricNameFailed] : 0.0;
+            double numConnections = 0.0;
+            double numConcurrentTransfers = 0.0;
+
+            if (metricName == MetricName::BytesUp)
+            {
+                numConnections = it->second.values
+                                     [(uint32_t)MetricName::UploadTransportMetricStart +
+                                      (uint32_t)TransportMetricName::VendedConnectionCount];
+                numConcurrentTransfers = options.numUpConcurrentTransfers;
+            }
+            else if (metricName == MetricName::BytesDown)
+            {
+                numConnections = it->second.values
+                                     [(uint32_t)MetricName::DownloadTransportMetricStart +
+                                      (uint32_t)TransportMetricName::VendedConnectionCount];
+                numConcurrentTransfers = options.numDownConcurrentTransfers;
+            }
+
+            if (value <= 0.0 && numConnections <= 0.0)
+            {
+                continue;
+            }
+
+            AnalyzedMetric &analyzedMetric = analyzedMetrics[(uint32_t)metricName];
+
+            analyzedMetric.timeStart = std::min(analyzedMetric.timeStart, it->first);
+            analyzedMetric.timeEnd = std::max(analyzedMetric.timeEnd, it->first);
+
+            analyzedMetric.numValues += 1.0;
+            analyzedMetric.valueTotal += value;
+            analyzedMetric.valueTotalFailed += valueFailed;
+
+            if (numConnections >= numConcurrentTransfers)
+            {
+                double metricSuccess = it->second.values[(uint32_t)metricName];
+                double metricFailed =
+                    (metricNameFailed != MetricName::Invalid) ? it->second.values[(uint32_t)metricNameFailed] : 0.0;
+
+                if (analyzedMetric.fullConnectionsTerminatingTotals[0] == -1.0)
+                {
+                    analyzedMetric.fullConnectionsTerminatingTotals[0] = metricSuccess;
+                    analyzedMetric.fullConnectionsTerminatingTotalsFailed[0] = metricFailed;
+                }
+                else
+                {
+                    analyzedMetric.fullConnectionsTerminatingTotals[1] = metricSuccess;
+                    analyzedMetric.fullConnectionsTerminatingTotalsFailed[1] = metricFailed;
+                }
+
+                analyzedMetric.fullConnectionsStart = std::min(analyzedMetric.fullConnectionsStart, it->first);
+                analyzedMetric.fullConnectionsEnd = std::max(analyzedMetric.fullConnectionsEnd, it->first);
+
+                analyzedMetric.fullConnectionsNumValues += 1.0;
+                analyzedMetric.fullConnectionsTotal += metricSuccess;
+
+                analyzedMetric.fullConnectionsTotalFailed += metricFailed;
+            }
+        }
+    }
+
+    for (uint32_t i = 0; i < numMetricsToAnalyze; ++i)
+    {
+        MetricName metricName = metricsToAnalyze[i];
+        AnalyzedMetric &analyzedMetric = analyzedMetrics[(uint32_t)metricName];
+
+        if (metricName == MetricName::SuccessfulTransfer)
+        {
+            std::cout << "Number of successful transfers: " << analyzedMetric.valueTotal << std::endl;
+            continue;
+        }
+        else if (metricName == MetricName::FailedTransfer)
+        {
+            std::cout << "Number of failed transfers: " << analyzedMetric.valueTotal << std::endl;
+            continue;
+        }
+
+        DateTime timeStartDateTime(analyzedMetric.timeStart * UINT64_C(1000));
+        DateTime timeEndDateTime(analyzedMetric.timeEnd * UINT64_C(1000));
+        DateTime totalTime(timeEndDateTime.Millis() - timeStartDateTime.Millis());
+
+        DateTime fullConnectionsStartDateTime(analyzedMetric.fullConnectionsStart * UINT64_C(1000));
+        DateTime fullConnectionsTimeEndDateTime(analyzedMetric.fullConnectionsEnd * UINT64_C(1000));
+        DateTime fullConnectionsTime(fullConnectionsTimeEndDateTime.Millis() - fullConnectionsStartDateTime.Millis());
+
+        double fullConnectionsAverageGbps = 0.0;
+        double fullConnectionsAverageGbps_SuccessOnly = 0.0;
+
+        if (analyzedMetric.fullConnectionsNumValues > 0.0)
+        {
+            double numValues = analyzedMetric.fullConnectionsNumValues;
+            double total = analyzedMetric.fullConnectionsTotal;
+            double totalFailed = analyzedMetric.fullConnectionsTotalFailed;
+
+            if (analyzedMetric.fullConnectionsTerminatingTotals[0] != -1.0)
+            {
+                numValues -= 1.0;
+                total -= analyzedMetric.fullConnectionsTerminatingTotals[0];
+                totalFailed -= analyzedMetric.fullConnectionsTerminatingTotalsFailed[0];
+            }
+
+            if (analyzedMetric.fullConnectionsTerminatingTotals[1] != -1.0)
+            {
+                numValues -= 1.0;
+                total -= analyzedMetric.fullConnectionsTerminatingTotals[1];
+                totalFailed -= analyzedMetric.fullConnectionsTerminatingTotalsFailed[1];
+            }
+
+            fullConnectionsAverageGbps = total / numValues;
+
+            fullConnectionsAverageGbps_SuccessOnly = (total - totalFailed) / numValues;
+
+            fullConnectionsAverageGbps = fullConnectionsAverageGbps * 8.0 / 1000.0 / 1000.0 / 1000.0;
+            fullConnectionsAverageGbps_SuccessOnly =
+                fullConnectionsAverageGbps_SuccessOnly * 8.0 / 1000.0 / 1000.0 / 1000.0;
+        }
+        /*
+                std::cout << "Average " << MetricNameToStr(metricName) << ":" << fullConnectionsAverageGbps
+                            << " Gbps from total " << analyzedMetric.fullConnectionsTotal << " with "
+                            << analyzedMetric.fullConnectionsNumValues << " samples, ("
+                            << analyzedMetric.fullConnectionsTerminatingTotals[0] << ", "
+                            << analyzedMetric.fullConnectionsTerminatingTotals[1]
+                            << ") terminating totals, and between time interval "
+                            << GetDateTimeGMTString(fullConnectionsStartDateTime).c_str() << ","
+                            << GetDateTimeGMTString(fullConnectionsTimeEndDateTime).c_str()
+                            << ", Overall total/failed:" << analyzedMetric.valueTotal << "/"
+                            << analyzedMetric.valueTotalFailed << std::endl;
+        */
+        double numConcurrentTransfers = 0.0;
+
+        if (metricName == MetricName::BytesUp)
+        {
+            numConcurrentTransfers = options.numUpConcurrentTransfers;
+        }
+        else if (metricName == MetricName::BytesDown)
+        {
+            numConcurrentTransfers = options.numDownConcurrentTransfers;
+        }
+
+        spreadSheetStream /*<< GetDateString(timeStartDateTime)*/ << "," << GetTimeString(timeStartDateTime) << ","
+                                                                  << GetTimeString(fullConnectionsStartDateTime) << ","
+                                                                  << GetTimeString(fullConnectionsTimeEndDateTime)
+                                                                  << "," << GetTimeString(timeEndDateTime) << ","
+                                                                  << GetTimeString(fullConnectionsTime) << ","
+                                                                  << GetTimeString(totalTime) << ","
+                                                                  << MetricNameToStr(metricName) << ","
+                                                                  << fullConnectionsAverageGbps << ","
+                                                                  << fullConnectionsAverageGbps_SuccessOnly << ","
+                                                                  << GetInstanceType() << "," << objectSizeGB << " GB,"
+                                                                  << MetricTransferTypeToString(GetTransferType())
+                                                                  << ","
+                                                                  << (options.multiPartObjectPartSize / 1024.0 / 1024.0)
+                                                                  << " MB," << options.multiPartObjectNumParts << ","
+                                                                  << "," // Number of threads
+                                                                  << numConcurrentTransfers << "," << bufferSizeKB
+                                                                  << " KB," << IsSendingEncrypted() << ","
+                                                                  << options.region << ","
+                                                                  << "," // Notes
+                                                                  << s3BackupPath << std::endl;
+    }
+
+    std::cout << "Total Bytes Down: " << (totalBytesDown / 1024.0 / 1024.0 / 1024.0)
+              << "   Total Bytes Up: " << (totalBytesUp / 1024.0 / 1024.0 / 1024.0) << std::endl;
+
+    std::cout << "Spreadsheet entry:" << std::endl;
+    std::cout << spreadSheetStream.str() << std::endl << std::endl;
+}
 
 void MetricsPublisher::RehydrateBackup(const char *s3Path)
 {
@@ -1094,8 +1389,6 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
     Vector<JsonView> metricsJson = jsonView.GetArray("Metrics");
     Vector<Metric> metrics;
 
-    uint64_t newestTimeStamp = 0;
-
     // Extract metrics from json data
     for (const JsonView &metricJson : metricsJson)
     {
@@ -1111,259 +1404,14 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
             metricTimestamp,
             0ULL,
             metricJson.GetDouble("Value"));
-
-        newestTimeStamp = std::max(metricTimestamp, newestTimeStamp);
     }
 
-    const MetricName metricsToAnalyze[] = {MetricName::BytesUp, MetricName::BytesDown, MetricName::FailedTransfer};
-    const uint32_t numMetricsToAnalyze = sizeof(metricsToAnalyze) / sizeof(MetricName);
-
-    Map<uint64_t, MetricValueArray> perSecondTotals;
-    AnalyzedMetric analyzedMetrics[(uint32_t)MetricName::MAX];
-    StringStream spreadSheetStream;
-
-    const CanaryAppOptions &options = m_canaryApp.GetOptions();
-    double bufferSizeKB = (double)g_aws_channel_max_fragment_size / 1024.0;
-    double objectSizeGB = 0.0;
-
-    if (options.measureMultiPartTransfer)
-    {
-        objectSizeGB = (double)options.GetMultiPartObjectSize() / 1024.0 / 1024.0 / 1024.0;
-    }
-    else
-    {
-        objectSizeGB = options.singlePartObjectSize / 1024.0 / 1024.0 / 1024.0;
-    }
-
-    /*
-     * Calculate new timestamps for the metrics so that they happen within the most recent
-     * three hour period, which will allow them to be graphed at a one second granularity
-     * in CloudWatch.
-     *
-     * Because metric timestamps are not exactly on a one second boundary, some care must be
-     * taken so that their given offset within a second is preserved.  Otherwise, a
-     * metric might be incorrectly distributed to a neighboring second.
-     */
-    {
-        /*
-         * Calculate the amount of time, in milliseconds, that the newestTimeStamp
-         * is from the next second.
-         */
-        uint64_t newestTimeStampSecondOffset = 1000ULL - (newestTimeStamp % 1000ULL);
-
-        DateTime dateTime = DateTime::Now();
-        uint64_t nowMillis = dateTime.Millis();
-
-        /*
-         * Given the time for "now" in milliseconds, back it up to the nearest second,
-         * and then back it up by the newestTimeStampSecondOffset.
-         */
-        uint64_t relocatedMetricsEnd = nowMillis - (nowMillis % 1000ULL) - newestTimeStampSecondOffset;
-
-        for (Metric &metric : metrics)
-        {
-            // Calculate relocated timestamp
-            metric.Timestamp = metric.Timestamp - newestTimeStamp + relocatedMetricsEnd;
-
-            // Sum per second metrics
-            {
-                uint64_t timeStampSeconds = metric.Timestamp / UINT64_C(1000);
-                auto it = perSecondTotals.find(timeStampSeconds);
-
-                if (it == perSecondTotals.end())
-                {
-                    auto insertResult = perSecondTotals.emplace(timeStampSeconds, MetricValueArray());
-                    AWS_FATAL_ASSERT(insertResult.second);
-                    it = insertResult.first;
-                }
-
-                it->second.values[(uint32_t)metric.Name] += metric.Value;
-            }
-        }
-
-        for (auto it = perSecondTotals.begin(); it != perSecondTotals.end(); ++it)
-        {
-            for (uint32_t i = 0; i < numMetricsToAnalyze; ++i)
-            {
-                MetricName metricName = metricsToAnalyze[i];
-                MetricName metricNameFailed = MetricName::Invalid;
-
-                if (metricName == MetricName::BytesUp)
-                {
-                    metricNameFailed = MetricName::BytesUpFailed;
-                }
-                else if (metricName == MetricName::BytesDown)
-                {
-                    metricNameFailed = MetricName::BytesDownFailed;
-                }
-
-                double value = it->second.values[(uint32_t)metricName];
-                double valueFailed =
-                    (metricNameFailed != MetricName::Invalid) ? it->second.values[(uint32_t)metricNameFailed] : 0.0;
-                double numConnections = 0.0;
-                double numConcurrentTransfers = 0.0;
-
-                if (metricName == MetricName::BytesUp)
-                {
-                    numConnections = it->second.values
-                                         [(uint32_t)MetricName::UploadTransportMetricStart +
-                                          (uint32_t)TransportMetricName::VendedConnectionCount];
-                    numConcurrentTransfers = options.numUpConcurrentTransfers;
-                }
-                else if (metricName == MetricName::BytesDown)
-                {
-                    numConnections = it->second.values
-                                         [(uint32_t)MetricName::DownloadTransportMetricStart +
-                                          (uint32_t)TransportMetricName::VendedConnectionCount];
-                    numConcurrentTransfers = options.numDownConcurrentTransfers;
-                }
-
-                if (value <= 0.0 && numConnections <= 0.0)
-                {
-                    continue;
-                }
-
-                AnalyzedMetric &analyzedMetric = analyzedMetrics[(uint32_t)metricName];
-
-                analyzedMetric.timeStart = std::min(analyzedMetric.timeStart, it->first);
-                analyzedMetric.timeEnd = std::max(analyzedMetric.timeEnd, it->first);
-
-                analyzedMetric.numValues += 1.0;
-                analyzedMetric.valueTotal += value;
-                analyzedMetric.valueTotalFailed += valueFailed;
-
-                if (numConnections >= numConcurrentTransfers)
-                {
-                    double metricSuccess = it->second.values[(uint32_t)metricName];
-                    double metricFailed =
-                        (metricNameFailed != MetricName::Invalid) ? it->second.values[(uint32_t)metricNameFailed] : 0.0;
-
-                    if (analyzedMetric.fullConnectionsTerminatingTotals[0] == -1.0)
-                    {
-                        analyzedMetric.fullConnectionsTerminatingTotals[0] = metricSuccess;
-                        analyzedMetric.fullConnectionsTerminatingTotalsFailed[0] = metricFailed;
-                    }
-                    else
-                    {
-                        analyzedMetric.fullConnectionsTerminatingTotals[1] = metricSuccess;
-                        analyzedMetric.fullConnectionsTerminatingTotalsFailed[1] = metricFailed;
-                    }
-
-                    analyzedMetric.fullConnectionsStart = std::min(analyzedMetric.fullConnectionsStart, it->first);
-                    analyzedMetric.fullConnectionsEnd = std::max(analyzedMetric.fullConnectionsEnd, it->first);
-
-                    analyzedMetric.fullConnectionsNumValues += 1.0;
-                    analyzedMetric.fullConnectionsTotal += metricSuccess;
-
-                    analyzedMetric.fullConnectionsTotalFailed += metricFailed;
-                }
-            }
-        }
-
-        for (uint32_t i = 0; i < numMetricsToAnalyze; ++i)
-        {
-            MetricName metricName = metricsToAnalyze[i];
-            AnalyzedMetric &analyzedMetric = analyzedMetrics[(uint32_t)metricName];
-
-            if (metricName == MetricName::FailedTransfer)
-            {
-                std::cout << "Number of failed transfers: " << analyzedMetric.valueTotal << std::endl;
-                continue;
-            }
-
-            DateTime timeStartDateTime(analyzedMetric.timeStart * UINT64_C(1000));
-            DateTime timeEndDateTime(analyzedMetric.timeEnd * UINT64_C(1000));
-            DateTime totalTime(timeEndDateTime.Millis() - timeStartDateTime.Millis());
-
-            DateTime fullConnectionsStartDateTime(analyzedMetric.fullConnectionsStart * UINT64_C(1000));
-            DateTime fullConnectionsTimeEndDateTime(analyzedMetric.fullConnectionsEnd * UINT64_C(1000));
-            DateTime fullConnectionsTime(
-                fullConnectionsTimeEndDateTime.Millis() - fullConnectionsStartDateTime.Millis());
-
-            double fullConnectionsAverageGbps = 0.0;
-            double fullConnectionsAverageGbps_SuccessOnly = 0.0;
-
-            if (analyzedMetric.fullConnectionsNumValues > 0.0)
-            {
-                double numValues = analyzedMetric.fullConnectionsNumValues;
-                double total = analyzedMetric.fullConnectionsTotal;
-                double totalFailed = analyzedMetric.fullConnectionsTotalFailed;
-
-                if (analyzedMetric.fullConnectionsTerminatingTotals[0] != -1.0)
-                {
-                    numValues -= 1.0;
-                    total -= analyzedMetric.fullConnectionsTerminatingTotals[0];
-                    totalFailed -= analyzedMetric.fullConnectionsTerminatingTotalsFailed[0];
-                }
-
-                if (analyzedMetric.fullConnectionsTerminatingTotals[1] != -1.0)
-                {
-                    numValues -= 1.0;
-                    total -= analyzedMetric.fullConnectionsTerminatingTotals[1];
-                    totalFailed -= analyzedMetric.fullConnectionsTerminatingTotalsFailed[1];
-                }
-
-                fullConnectionsAverageGbps = total / numValues;
-
-                fullConnectionsAverageGbps_SuccessOnly = (total - totalFailed) / numValues;
-
-                fullConnectionsAverageGbps = fullConnectionsAverageGbps * 8.0 / 1000.0 / 1000.0 / 1000.0;
-                fullConnectionsAverageGbps_SuccessOnly =
-                    fullConnectionsAverageGbps_SuccessOnly * 8.0 / 1000.0 / 1000.0 / 1000.0;
-            }
-
-            std::cout << "Average " << MetricNameToStr(metricName) << ":" << fullConnectionsAverageGbps
-                      << " Gbps from total " << analyzedMetric.fullConnectionsTotal << " with "
-                      << analyzedMetric.fullConnectionsNumValues << " samples, ("
-                      << analyzedMetric.fullConnectionsTerminatingTotals[0] << ", "
-                      << analyzedMetric.fullConnectionsTerminatingTotals[1]
-                      << ") terminating totals, and between time interval "
-                      << GetDateTimeGMTString(fullConnectionsStartDateTime).c_str() << ","
-                      << GetDateTimeGMTString(fullConnectionsTimeEndDateTime).c_str()
-                      << ", Overall total/failed:" << analyzedMetric.valueTotal << "/"
-                      << analyzedMetric.valueTotalFailed << std::endl;
-
-            double numConcurrentTransfers = 0.0;
-
-            if (metricName == MetricName::BytesUp)
-            {
-                numConcurrentTransfers = options.numUpConcurrentTransfers;
-            }
-            else if (metricName == MetricName::BytesDown)
-            {
-                numConcurrentTransfers = options.numDownConcurrentTransfers;
-            }
-
-            spreadSheetStream /*<< GetDateString(timeStartDateTime)*/ << "," << GetTimeString(timeStartDateTime) << ","
-                                                                      << GetTimeString(fullConnectionsStartDateTime)
-                                                                      << ","
-                                                                      << GetTimeString(fullConnectionsTimeEndDateTime)
-                                                                      << "," << GetTimeString(timeEndDateTime) << ","
-                                                                      << GetTimeString(fullConnectionsTime) << ","
-                                                                      << GetTimeString(totalTime) << ","
-                                                                      << MetricNameToStr(metricName) << ","
-                                                                      << fullConnectionsAverageGbps << ","
-                                                                      << fullConnectionsAverageGbps_SuccessOnly << ","
-                                                                      << GetInstanceType() << "," << objectSizeGB
-                                                                      << " GB," << transferTypeStr << ","
-                                                                      << (options.multiPartObjectPartSize / 1024.0 /
-                                                                          1024.0)
-                                                                      << " MB," << options.multiPartObjectNumParts
-                                                                      << ","
-                                                                      << "," // Number of threads
-                                                                      << numConcurrentTransfers << "," << bufferSizeKB
-                                                                      << " KB," << IsSendingEncrypted() << ","
-                                                                      << options.region << ","
-                                                                      << "," // Notes
-                                                                      << s3Path << std::endl;
-        }
-    }
-
-    std::cout << spreadSheetStream.str() << std::endl << std::endl;
-
+    RelocateMetricsToCurrentTime(metrics);
+    AnalyzeMetrics(String(s3Path), metrics);
     AddDataPoints(metrics);
     FlushMetrics();
 
+    const CanaryAppOptions &options = m_canaryApp.GetOptions();
     std::stringstream cloudWatchMetricsLink;
 
     cloudWatchMetricsLink
@@ -1548,11 +1596,11 @@ void MetricsPublisher::s_OnPollingTask(aws_task *task, void *arg, aws_task_statu
         nowTimestamp = aws_timestamp_convert(nowTimestamp, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, nullptr);
 
         publisher->AddDataPoint(Metric(
-                MetricName::NumConnectionsCreated,
-                MetricUnit::Count,
-                nowTimestamp,
-                0ULL,
-                Http::HttpClientConnectionManager::s_numConnections.load()));
+            MetricName::NumConnectionsCreated,
+            MetricUnit::Count,
+            nowTimestamp,
+            0ULL,
+            Http::HttpClientConnectionManager::s_numConnections.load()));
     }
 
     publisher->SchedulePolling();

@@ -127,7 +127,7 @@ class MetricsPublisher
     MetricsPublisher(
         CanaryApp &canaryApp,
         const char *metricNamespace,
-        std::chrono::milliseconds publishFrequency = std::chrono::milliseconds(250));
+        std::chrono::milliseconds publishFrequency = std::chrono::milliseconds(50));
 
     ~MetricsPublisher();
 
@@ -271,6 +271,10 @@ class MetricsPublisher
         const std::shared_ptr<Aws::Crt::StringStream> &csvContents,
         const Aws::Crt::Vector<Aws::Crt::String> &stringValues,
         const Aws::Crt::Vector<double> &numericValues);
+
+    void RelocateMetricsToCurrentTime(Aws::Crt::Vector<Metric> &metrics);
+
+    void AnalyzeMetrics(const Aws::Crt::String &s3BackupPath, const Aws::Crt::Vector<Metric> &metrics);
 
     CanaryApp &m_canaryApp;
     MetricTransferType m_transferType;
