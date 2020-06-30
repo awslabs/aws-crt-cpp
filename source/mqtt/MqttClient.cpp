@@ -195,11 +195,11 @@ namespace Aws
                     QOS qos = AWS_MQTT_QOS_AT_MOST_ONCE;
                     for (size_t i = 0; i < length; ++i)
                     {
-                        aws_mqtt_topic_subscription *subscription = NULL;
-                        aws_array_list_get_at_ptr(topicSubacks, reinterpret_cast<void **>(&subscription), i);
-                        topics.push_back(
-                            String(reinterpret_cast<char *>(subscription->topic.ptr), subscription->topic.len));
-                        qos = subscription->qos;
+                        subscribe_task_topic *subscription = NULL;
+                        aws_array_list_get_at(topicSubacks, &subscription, i);
+                        ByteCursor cursor = aws_byte_cursor_from_string(subscription->filter);
+                        topics.push_back(String(reinterpret_cast<char *>(cursor.ptr), cursor.len));
+                        qos = subscription->request.qos;
                     }
 
                     callbackData->onSubAck(*callbackData->connection, packetId, topics, qos, errorCode);
