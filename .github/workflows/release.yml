@@ -1,0 +1,17 @@
+name: Release
+
+on:
+  create
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Sources
+      uses: actions/checkout@v1
+      with:
+        fetch-depth: 0
+
+    - name: Update Version
+      run: ./update-version.sh ${{ secrets.GITHUB_TOKEN }}
