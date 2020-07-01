@@ -507,7 +507,7 @@ String MetricsPublisher::GetTimeString(const DateTime &dateTime) const
     return dateTimeString.str();
 }
 
-String GetDateTimeGMTString(const DateTime &dateTime)
+String MetricsPublisher::GetDateTimeGMTString(const DateTime &dateTime) const
 {
     uint8_t dateBuffer[AWS_DATE_TIME_STR_MAX_LEN];
     AWS_ZERO_ARRAY(dateBuffer);
@@ -516,7 +516,7 @@ String GetDateTimeGMTString(const DateTime &dateTime)
     return String((const char *)dateBuf.buffer, dateBuf.len);
 }
 
-String GetDateString(const DateTime &dateTime)
+String MetricsPublisher::GetDateString(const DateTime &dateTime) const
 {
     StringStream str;
     str << ((uint32_t)dateTime.GetMonth() + 1) << "/" << (uint32_t)dateTime.GetDay() << "/" << dateTime.GetYear();
@@ -1197,30 +1197,59 @@ void MetricsPublisher::AnalyzeMetrics(const String &s3BackupPath, const Vector<M
             analyzedMetric.valueTotal += value;
             analyzedMetric.valueTotalFailed += valueFailed;
 
-            if (numConnections >= numConcurrentTransfers)
-            {
-                double metricSuccess = it->second.values[(uint32_t)metricName];
-                double metricFailed =
-                    (metricNameFailed != MetricName::Invalid) ? it->second.values[(uint32_t)metricNameFailed] : 0.0;
+            bool gapDetected = false;
 
+            /*
+                TODO this is a temporary fix for detecting an issue with the scheduled polling metrics
+                where they sometimes leave a one-second gap for their reported metrics, which causes the
+                number of vended connections metric to be at zero.  The impact here has been low--it doesn't
+                show up in every run, and in numbers collected so far, it meant that a single one-second data
+                point would not be accounted for in the average rate.
+
+                This temporary patch alerts the user to the detected gap, and makes sure that it's not missed
+                by the average.  Long-term, the issue with the scheduled polling metrics should be addressed.
+            */
+            if ((metricName == MetricName::BytesUp || metricName == MetricName::BytesDown) && value > 0.0 &&
+                numConnections <= 0.0 && it != perSecondTotals.begin())
+            {
+                auto prevIt = it;
+                --prevIt;
+
+                uint32_t vendedConnectionCountIndex = (metricName == MetricName::BytesUp)
+                                                          ? (uint32_t)MetricName::UploadTransportMetricStart
+                                                          : (uint32_t)MetricName::DownloadTransportMetricStart;
+                vendedConnectionCountIndex += (uint32_t)TransportMetricName::VendedConnectionCount;
+
+                double prevVendedConnectionCount = prevIt->second.values[vendedConnectionCountIndex];
+
+                if (prevVendedConnectionCount >= numConcurrentTransfers)
+                {
+                    std::cout << "Possible gap for " << MetricNameToStr(metricName) << " with value "
+                              << (value * 8.0 / 1000.0 / 1000.0 / 1000.0) << ".  Verify graph." << std::endl;
+                    gapDetected = true;
+                }
+            }
+
+            if (numConnections >= numConcurrentTransfers || gapDetected)
+            {
                 if (analyzedMetric.fullConnectionsTerminatingTotals[0] == -1.0)
                 {
-                    analyzedMetric.fullConnectionsTerminatingTotals[0] = metricSuccess;
-                    analyzedMetric.fullConnectionsTerminatingTotalsFailed[0] = metricFailed;
+                    analyzedMetric.fullConnectionsTerminatingTotals[0] = value;
+                    analyzedMetric.fullConnectionsTerminatingTotalsFailed[0] = valueFailed;
                 }
                 else
                 {
-                    analyzedMetric.fullConnectionsTerminatingTotals[1] = metricSuccess;
-                    analyzedMetric.fullConnectionsTerminatingTotalsFailed[1] = metricFailed;
+                    analyzedMetric.fullConnectionsTerminatingTotals[1] = value;
+                    analyzedMetric.fullConnectionsTerminatingTotalsFailed[1] = valueFailed;
                 }
 
                 analyzedMetric.fullConnectionsStart = std::min(analyzedMetric.fullConnectionsStart, it->first);
                 analyzedMetric.fullConnectionsEnd = std::max(analyzedMetric.fullConnectionsEnd, it->first);
 
                 analyzedMetric.fullConnectionsNumValues += 1.0;
-                analyzedMetric.fullConnectionsTotal += metricSuccess;
+                analyzedMetric.fullConnectionsTotal += value;
 
-                analyzedMetric.fullConnectionsTotalFailed += metricFailed;
+                analyzedMetric.fullConnectionsTotalFailed += valueFailed;
             }
         }
     }
@@ -1258,18 +1287,20 @@ void MetricsPublisher::AnalyzeMetrics(const String &s3BackupPath, const Vector<M
             double total = analyzedMetric.fullConnectionsTotal;
             double totalFailed = analyzedMetric.fullConnectionsTotalFailed;
 
-            if (analyzedMetric.fullConnectionsTerminatingTotals[0] != -1.0)
             {
-                numValues -= 1.0;
-                total -= analyzedMetric.fullConnectionsTerminatingTotals[0];
-                totalFailed -= analyzedMetric.fullConnectionsTerminatingTotalsFailed[0];
-            }
+                if (analyzedMetric.fullConnectionsTerminatingTotals[0] != -1.0)
+                {
+                    numValues -= 1.0;
+                    total -= analyzedMetric.fullConnectionsTerminatingTotals[0];
+                    totalFailed -= analyzedMetric.fullConnectionsTerminatingTotalsFailed[0];
+                }
 
-            if (analyzedMetric.fullConnectionsTerminatingTotals[1] != -1.0)
-            {
-                numValues -= 1.0;
-                total -= analyzedMetric.fullConnectionsTerminatingTotals[1];
-                totalFailed -= analyzedMetric.fullConnectionsTerminatingTotalsFailed[1];
+                if (analyzedMetric.fullConnectionsTerminatingTotals[1] != -1.0)
+                {
+                    numValues -= 1.0;
+                    total -= analyzedMetric.fullConnectionsTerminatingTotals[1];
+                    totalFailed -= analyzedMetric.fullConnectionsTerminatingTotalsFailed[1];
+                }
             }
 
             fullConnectionsAverageGbps = total / numValues;

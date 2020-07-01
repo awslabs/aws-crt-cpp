@@ -245,6 +245,10 @@ class MetricsPublisher
 
     Aws::Crt::String GetTimeString(const Aws::Crt::DateTime &dateTime) const;
 
+    Aws::Crt::String GetDateTimeGMTString(const Aws::Crt::DateTime &dateTime) const;
+
+    Aws::Crt::String GetDateString(const Aws::Crt::DateTime &dateTime) const;
+
     std::shared_ptr<Aws::Crt::StringStream> GeneratePerStreamCSV(
         MetricName transferMetricName,
         const Aws::Crt::Map<AggregateMetricKey, size_t> &aggregateDataPointsByGroupLU,
