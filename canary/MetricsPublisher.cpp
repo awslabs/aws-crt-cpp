@@ -1356,11 +1356,11 @@ void MetricsPublisher::AnalyzeMetrics(const String &s3BackupPath, const Vector<M
                                                                   << s3BackupPath << std::endl;
     }
 
-    std::cout << "Total Bytes Down: " << (totalBytesDown / 1024.0 / 1024.0 / 1024.0)
-              << "   Total Bytes Up: " << (totalBytesUp / 1024.0 / 1024.0 / 1024.0) << std::endl;
+    std::cout << "Total Gigabytes Down: " << (totalBytesDown / 1024.0 / 1024.0 / 1024.0)
+              << "   Total Gigabytes Up: " << (totalBytesUp / 1024.0 / 1024.0 / 1024.0) << std::endl;
 
     std::cout << "Spreadsheet entry:" << std::endl;
-    std::cout << spreadSheetStream.str() << std::endl << std::endl;
+    std::cout << spreadSheetStream.str();
 }
 
 void MetricsPublisher::RehydrateBackup(const char *s3Path)
