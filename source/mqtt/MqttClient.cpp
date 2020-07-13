@@ -181,12 +181,13 @@ namespace Aws
                 if (callbackData->onSubAck)
                 {
                     size_t length = aws_array_list_length(topicSubacks);
-                    Vector<String> topics(length);
+                    Vector<String> topics;
+                    topics.reserve(length);
                     QOS qos = AWS_MQTT_QOS_AT_MOST_ONCE;
                     for (size_t i = 0; i < length; ++i)
                     {
                         aws_mqtt_topic_subscription *subscription = NULL;
-                        aws_array_list_get_at_ptr(topicSubacks, reinterpret_cast<void **>(&subscription), i);
+                        aws_array_list_get_at(topicSubacks, &subscription, i);
                         topics.push_back(
                             String(reinterpret_cast<char *>(subscription->topic.ptr), subscription->topic.len));
                         qos = subscription->qos;
