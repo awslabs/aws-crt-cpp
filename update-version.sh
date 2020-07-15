@@ -6,6 +6,7 @@ set -ex
 exec 1>&2
 
 GITHUB_TOKEN=$1
+[ -n "$GITHUB_TOKEN" ]
 
 pushd $(dirname $0) > /dev/null
 
