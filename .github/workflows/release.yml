@@ -1,7 +1,8 @@
 name: Release
 
 on:
-  create
+  release:
+    types: [created]
 
 jobs:
   update-version:
