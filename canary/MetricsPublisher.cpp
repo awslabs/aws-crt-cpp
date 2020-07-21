@@ -233,7 +233,7 @@ MetricsPublisher::MetricsPublisher(
     connectionManagerOptions.ConnectionOptions.HostName = m_endpoint;
     connectionManagerOptions.ConnectionOptions.Port = 443;
     connectionManagerOptions.ConnectionOptions.SocketOptions.SetConnectTimeoutMs(3000);
-    connectionManagerOptions.ConnectionOptions.SocketOptions.SetSocketType(AWS_SOCKET_STREAM);
+    connectionManagerOptions.ConnectionOptions.SocketOptions.SetSocketType(Io::SocketType::Stream);
     connectionManagerOptions.ConnectionOptions.InitialWindowSize = SIZE_MAX;
 
     aws_byte_cursor serverName = ByteCursorFromCString(connectionManagerOptions.ConnectionOptions.HostName.c_str());
@@ -1538,13 +1538,6 @@ void MetricsPublisher::PollMetricsForS3ObjectTransport(
         aws_http_connection_manager_get_snapshot(connManagerHandle, &snapshot);
 
         AddDataPoint(Metric(
-            (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::HeldConnectionCount),
-            MetricUnit::Count,
-            nowTimestamp,
-            0ULL,
-            snapshot.held_connection_count));
-
-        AddDataPoint(Metric(
             (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::PendingAcquisitionCount),
             MetricUnit::Count,
             nowTimestamp,
@@ -1708,9 +1701,10 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
     signingConfig.SetRegion(publisher->m_canaryApp.GetOptions().region.c_str());
     signingConfig.SetCredentialsProvider(publisher->m_canaryApp.GetCredsProvider());
     signingConfig.SetService("monitoring");
-    signingConfig.SetBodySigningType(Auth::BodySigningType::SignBody);
+    signingConfig.SetSignedBodyHeader(Auth::SignedBodyHeaderType::XAmzContentSha256);
+    signingConfig.SetSignedBodyValue(Auth::SignedBodyValueType::Payload);
     signingConfig.SetSigningTimepoint(DateTime::Now());
-    signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
+    signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4);
 
     publisher->m_canaryApp.GetSigner()->SignRequest(
         request,

@@ -61,7 +61,7 @@ S3ObjectTransport::S3ObjectTransport(
     connectionManagerOptions.ConnectionOptions.HostName = m_endpoint;
     connectionManagerOptions.ConnectionOptions.Port = options.sendEncrypted ? 443 : 80;
     connectionManagerOptions.ConnectionOptions.SocketOptions.SetConnectTimeoutMs(3000);
-    connectionManagerOptions.ConnectionOptions.SocketOptions.SetSocketType(AWS_SOCKET_STREAM);
+    connectionManagerOptions.ConnectionOptions.SocketOptions.SetSocketType(Io::SocketType::Stream);
     connectionManagerOptions.ConnectionOptions.InitialWindowSize = SIZE_MAX;
 
     if (options.sendEncrypted)
@@ -175,9 +175,10 @@ void S3ObjectTransport::MakeSignedRequest(
     signingConfig.SetRegion(region);
     signingConfig.SetCredentialsProvider(m_canaryApp.GetCredsProvider());
     signingConfig.SetService("s3");
-    signingConfig.SetBodySigningType(Auth::BodySigningType::UnsignedPayload);
+    signingConfig.SetSignedBodyHeader(Auth::SignedBodyHeaderType::XAmzContentSha256);
+    signingConfig.SetSignedBodyValue(Auth::SignedBodyValueType::UnsignedPayload);
     signingConfig.SetSigningTimepoint(DateTime::Now());
-    signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4Header);
+    signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4);
 
     m_canaryApp.GetSigner()->SignRequest(
         request,
