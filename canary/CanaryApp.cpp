@@ -28,6 +28,8 @@
 #include <aws/common/log_formatter.h>
 #include <aws/common/log_writer.h>
 
+#include <aws/common/trace_event.h>
+
 #include <fstream>
 
 #ifndef WIN32
@@ -185,15 +187,19 @@ CanaryApp::CanaryApp(Aws::Crt::ApiHandle &apiHandle, CanaryAppOptions &&inOption
 
 void CanaryApp::Run()
 {
+    
     if (m_options.rehydrateBackup)
     {
         m_publisher->RehydrateBackup(m_options.rehydrateBackupObjectName.c_str());
     }
 
     if (m_options.measureSinglePartTransfer)
-    {
+    {   
+        AWS_TRACE_EVENT_NAME_THREAD("CanaryThread");
+        AWS_TRACE_EVENT_BEGIN("Canary", "Canary_Run()");
         m_publisher->SetMetricTransferType(MetricTransferType::SinglePart);
         m_measureTransferRate->MeasureSinglePartObjectTransfer();
+        AWS_TRACE_EVENT_END("Canary", "Canary_Run()");
     }
 
     if (m_options.measureMultiPartTransfer)
@@ -207,4 +213,4 @@ void CanaryApp::Run()
         m_publisher->SetMetricTransferType(MetricTransferType::SinglePart);
         m_measureTransferRate->MeasureHttpTransfer();
     }
-}
+}    

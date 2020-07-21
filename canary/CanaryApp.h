@@ -43,6 +43,8 @@ struct CanaryAppOptions
     Aws::Crt::String rehydrateBackupObjectName;
     Aws::Crt::String bucketName;
     Aws::Crt::String downloadObjectName;
+    /* trace event DEBUG */
+    Aws::Crt::String traceFilename;
 
     uint32_t numUpTransfers;
     uint32_t numUpConcurrentTransfers;

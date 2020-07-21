@@ -24,6 +24,9 @@
 #include <aws/io/stream.h>
 #include <time.h>
 
+/* DEBUG */
+#include <aws/common/trace_event.h>
+
 #ifdef WIN32
 #    undef min
 #else
@@ -68,8 +71,9 @@ void ClampConcurrentTransfers(uint32_t numTransfers, uint32_t &inOutNumConcurren
 
 int main(int argc, char *argv[])
 {
+   
     Aws::Crt::ApiHandle apiHandle(g_allocator);
-
+    
     enum class CLIOption
     {
         ToolName,
@@ -86,7 +90,7 @@ int main(int argc, char *argv[])
         DownloadObjectName,
         Region,
         Config,
-
+        traceFilename,
         MAX
     };
 
@@ -103,9 +107,10 @@ int main(int argc, char *argv[])
                                       {"bucketName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'b'},
                                       {"downloadObjectName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'o'},
                                       {"region", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'r'},
-                                      {"config", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'g'}};
+                                      {"config", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'g'}, 
+                                      {"traceFilename", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'f'}};
 
-    const char *optstring = "t:i:smh:len:c:u:b:o:r:g:";
+    const char *optstring = "t:i:smh:len:c:u:b:o:r:g:f:";
 
     int cliOptionIndex = 0;
     int cliGetOptResult = aws_cli_getopt_long(argc, argv, optstring, options, &cliOptionIndex);
@@ -203,6 +208,8 @@ int main(int argc, char *argv[])
             case CLIOption::Config:
                 canaryAppOptionsConfig = aws_cli_optarg;
                 break;
+            case CLIOption::traceFilename:
+                canaryAppOptions.traceFilename = aws_cli_optarg;
             default:
                 AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Unknown CLI option used.");
                 break;
@@ -211,11 +218,14 @@ int main(int argc, char *argv[])
         cliGetOptResult = aws_cli_getopt_long(argc, argv, optstring, options, &cliOptionIndex);
     }
 
+    aws_trace_system_init(aws_default_allocator(), canaryAppOptions.traceFilename.c_str());
+    
     ClampConcurrentTransfers(canaryAppOptions.numUpTransfers, canaryAppOptions.numUpConcurrentTransfers);
     ClampConcurrentTransfers(canaryAppOptions.numDownTransfers, canaryAppOptions.numDownConcurrentTransfers);
-
-    CanaryApp canaryApp(apiHandle, std::move(canaryAppOptions));
-    canaryApp.Run();
-
+    {
+        CanaryApp canaryApp(apiHandle, std::move(canaryAppOptions));
+        canaryApp.Run();
+    }
+    aws_trace_system_clean_up();
     return 0;
 }

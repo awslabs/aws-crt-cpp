@@ -26,6 +26,10 @@
 #include <condition_variable>
 #include <mutex>
 
+
+//? DEBUG?
+#include <aws/common/trace_event.h>
+//?
 using namespace Aws::Crt;
 
 MeasureTransferRate::MeasureTransferRate(CanaryApp &canaryApp) : m_canaryApp(canaryApp)
@@ -45,6 +49,7 @@ void MeasureTransferRate::PerformMeasurement(
 {
     if ((flags & (uint32_t)MeasurementFlags::DontWarmDNSCache) == 0)
     {
+        printf("dns\n");
         transport->WarmDNSCache(numConcurrentTransfers);
     }
 
@@ -57,6 +62,8 @@ void MeasureTransferRate::PerformMeasurement(
     std::atomic<uint32_t> numInProgress(0);
 
     uint64_t counter = INT64_MAX - m_canaryApp.GetOptions().fileNameSuffixOffset;
+
+    AWS_TRACE_EVENT_INSTANT1("MeasureTransferRate", "PerformMeasurement", counter);
 
     for (uint32_t i = 0; i < numTransfers; ++i)
     {

@@ -16,6 +16,11 @@
 #include "MeasureTransferRateStream.h"
 #include <algorithm>
 
+//? DEBUG
+#include <aws/common/trace_event.h>
+//? DEBUG
+
+
 #ifdef WIN32
 #    undef min
 #    undef max
@@ -69,8 +74,12 @@ bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
 
     AWS_FATAL_ASSERT(m_written <= m_length);
 
+
     uint64_t totalBufferSpace = dest.capacity - dest.len;
+
+
     uint64_t unwritten = m_length - m_written;
+
 
     uint64_t amountToWrite = std::min(totalBufferSpace, unwritten);
     uint64_t writtenOut = 0;
@@ -95,7 +104,6 @@ bool MeasureTransferRateStream::ReadImpl(ByteBuf &dest) noexcept
 
     m_transferState->ConsumeQueuedDataUpMetric();
     m_transferState->QueueDataUpMetric(writtenOut);
-
     return true;
 }
 

@@ -26,9 +26,13 @@
 #include <inttypes.h>
 #include <iostream>
 
+#include <aws/common/trace_event.h>
+
 #if defined(_WIN32)
 #    undef min
 #endif
+
+
 
 using namespace Aws::Crt;
 
@@ -44,6 +48,7 @@ S3ObjectTransport::S3ObjectTransport(
     uint64_t minThroughputBytesPerSecond)
     : m_canaryApp(canaryApp), m_bucketName(bucket)
 {
+    AWS_TRACE_EVENT_BEGIN("Canary", "S3ObjectTransport");
     m_endpoint = m_bucketName + ".s3." + m_canaryApp.GetOptions().region.c_str() + ".amazonaws.com";
 
     m_hostHeader.name = ByteCursorFromCString("host");
@@ -115,6 +120,8 @@ S3ObjectTransport::S3ObjectTransport(
 
     m_connManager =
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, g_allocator);
+        AWS_TRACE_EVENT_END("Canary", "S3ObjectTransport");
+
 }
 
 void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
@@ -169,6 +176,7 @@ void S3ObjectTransport::MakeSignedRequest(
     const Http::HttpRequestOptions &requestOptions,
     SignedRequestCallback callback)
 {
+    AWS_TRACE_EVENT_BEGIN("Canary", "MakeSignedRequest");
     String region = m_canaryApp.GetOptions().region.c_str();
 
     Auth::AwsSigningConfig signingConfig(g_allocator);
@@ -235,6 +243,7 @@ void S3ObjectTransport::MakeSignedRequest(
                     });
             }
         });
+        AWS_TRACE_EVENT_END("Canary", "MakeSignedRequest");
 }
 
 void S3ObjectTransport::MakeSignedRequest_SendRequest(
@@ -242,6 +251,8 @@ void S3ObjectTransport::MakeSignedRequest_SendRequest(
     const Http::HttpRequestOptions &requestOptions,
     const std::shared_ptr<Http::HttpRequest> &signedRequest)
 {
+    AWS_TRACE_EVENT_BEGIN("Canary", "MakeSignedRequest_SendRequest");
+
     AWS_FATAL_ASSERT(conn->IsOpen());
 
     Http::HttpRequestOptions requestOptionsToSend = requestOptions;
@@ -267,12 +278,15 @@ void S3ObjectTransport::MakeSignedRequest_SendRequest(
     {
         clientStream->Activate();
     }
+    AWS_TRACE_EVENT_END("Canary", "MakeSignedRequest_SendRequest");
 }
 
 void S3ObjectTransport::AddContentLengthHeader(
     const std::shared_ptr<Http::HttpRequest> &request,
     const std::shared_ptr<Aws::Crt::Io::InputStream> &body)
 {
+        AWS_TRACE_EVENT_BEGIN("Canary", "AddContentLengthHeader");
+    
     Http::HttpHeader contentLength;
     contentLength.name = ByteCursorFromCString("content-length");
 
@@ -281,6 +295,8 @@ void S3ObjectTransport::AddContentLengthHeader(
     String contentLengthVal = intValue.str();
     contentLength.value = ByteCursorFromCString(contentLengthVal.c_str());
     request->AddHeader(contentLength);
+    AWS_TRACE_EVENT_END("Canary", "AddContentLengthHeader");
+
 }
 
 void S3ObjectTransport::PutObject(
@@ -291,6 +307,7 @@ void S3ObjectTransport::PutObject(
     const TransferConnectionAcquired &connectionCallback,
     const PutObjectFinished &finishedCallback)
 {
+    AWS_TRACE_EVENT_BEGIN("Canary", "PutObject");
     AWS_FATAL_ASSERT(body.get() != nullptr);
 
     auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
@@ -412,6 +429,8 @@ void S3ObjectTransport::PutObject(
                 }
             }
         });
+    AWS_TRACE_EVENT_END("Canary", "PutObject");
+
 }
 
 void S3ObjectTransport::GetObject(
@@ -422,6 +441,8 @@ void S3ObjectTransport::GetObject(
     const TransferConnectionAcquired &connectionCallback,
     const GetObjectFinished &getObjectFinished)
 {
+    AWS_TRACE_EVENT_BEGIN("Canary", "GetObject");
+
     auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
     request->AddHeader(m_hostHeader);
 
@@ -534,6 +555,8 @@ void S3ObjectTransport::GetObject(
                 }
             }
         });
+        AWS_TRACE_EVENT_END("Canary", "GetObject");
+
 }
 
 std::shared_ptr<MultipartUploadState> S3ObjectTransport::PutObjectMultipart(
@@ -543,6 +566,8 @@ std::shared_ptr<MultipartUploadState> S3ObjectTransport::PutObjectMultipart(
     const GetPartStream &getPartStream,
     const PutObjectMultipartFinished &finishedCallback)
 {
+    AWS_TRACE_EVENT_BEGIN("Canary", "PutObjectMultipart");
+
     std::shared_ptr<MultipartUploadState> multipartState =
         MakeShared<MultipartUploadState>(g_allocator, key, objectSize, numParts);
 
@@ -649,6 +674,8 @@ void S3ObjectTransport::UploadNextPart(
                 UploadNextPart(multipartState, getPartStream, finishedCallback);
             }
         });
+        AWS_TRACE_EVENT_END("Canary", "PutObjectMultipart");
+
 }
 
 std::shared_ptr<MultipartDownloadState> S3ObjectTransport::GetObjectMultipart(
@@ -657,10 +684,13 @@ std::shared_ptr<MultipartDownloadState> S3ObjectTransport::GetObjectMultipart(
     const ReceivePartCallback &receivePart,
     const GetObjectMultipartFinished &finishedCallback)
 {
+    AWS_TRACE_EVENT_BEGIN("Canary", "GetObjectMultipart");
+
     std::shared_ptr<MultipartDownloadState> downloadState =
         MakeShared<MultipartDownloadState>(g_allocator, key, 0L, numParts);
 
     GetNextPart(downloadState, receivePart, finishedCallback);
+    AWS_TRACE_EVENT_END("Canary", "GetObjectMultipart");
 
     return downloadState;
 }
@@ -731,6 +761,8 @@ void S3ObjectTransport::CreateMultipartUpload(
     const Aws::Crt::String &key,
     const CreateMultipartUploadFinished &finishedCallback)
 {
+    AWS_TRACE_EVENT_BEGIN("Canary", "CreateMultipartUpload");
+
     auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
     request->AddHeader(m_hostHeader);
     request->AddHeader(m_contentTypeHeader);
@@ -820,6 +852,7 @@ void S3ObjectTransport::CreateMultipartUpload(
                 finishedCallback(errorCode, "");
             }
         });
+        AWS_TRACE_EVENT_END("Canary", "CreateMultipartUpload");
 }
 
 void S3ObjectTransport::CompleteMultipartUpload(
@@ -828,6 +861,7 @@ void S3ObjectTransport::CompleteMultipartUpload(
     const Aws::Crt::Vector<Aws::Crt::String> &etags,
     const CompleteMultipartUploadFinished &finishedCallback)
 {
+    AWS_TRACE_EVENT_BEGIN("Canary", "CompleteMultipartUpload");
     AWS_LOGF_DEBUG(AWS_LS_CRT_CPP_CANARY, "Completing multipart upload for %s...", key.c_str());
 
     auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
@@ -904,6 +938,8 @@ void S3ObjectTransport::CompleteMultipartUpload(
                 finishedCallback(errorCode);
             }
         });
+            AWS_TRACE_EVENT_END("Canary", "CompleteMultipartUpload");
+
 }
 
 void S3ObjectTransport::AbortMultipartUpload(
