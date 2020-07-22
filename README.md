@@ -12,9 +12,9 @@ C++ wrapper around the aws-c-* libraries. Provides Cross-Platform Transport Prot
 
 More protocols and utilities are coming soon, so stay tuned.
 
-### OSX-Only TLS Behavior
+### Mac-Only TLS Behavior
 
-Please note that on OSX, once a private key is used with a certificate, that certificate-key pair is imported into the OSX Keychain.  All subsequent uses of that certificate will use the stored private key and ignore anything passed in programmatically.
+Please note that on Mac, once a private key is used with a certificate, that certificate-key pair is imported into the Mac Keychain.  All subsequent uses of that certificate will use the stored private key and ignore anything passed in programmatically.
 
 ## Building
 
