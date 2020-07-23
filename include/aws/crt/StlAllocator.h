@@ -7,13 +7,14 @@
 #include <memory>
 
 #include <aws/common/common.h>
+#include <aws/crt/Exports.h>
 
 namespace Aws
 {
     namespace Crt
     {
         using Allocator = aws_allocator;
-        extern Allocator *g_allocator;
+        extern AWS_CRT_CPP_API Allocator *g_allocator;
 
         template <typename T> class StlAllocator : public std::allocator<T>
         {

@@ -56,16 +56,16 @@ class CopyMoveTester
 {
   public:
     CopyMoveTester() : m_copied(false), m_moved(false) {}
-    CopyMoveTester(const CopyMoveTester &other) : m_copied(true), m_moved(false) {}
-    CopyMoveTester(CopyMoveTester &&other) : m_copied(false), m_moved(true) {}
+    CopyMoveTester(const CopyMoveTester &) : m_copied(true), m_moved(false) {}
+    CopyMoveTester(CopyMoveTester &&) : m_copied(false), m_moved(true) {}
 
-    CopyMoveTester &operator=(const CopyMoveTester &other)
+    CopyMoveTester &operator=(const CopyMoveTester &)
     {
         m_copied = true;
         m_moved = false;
         return *this;
     }
-    CopyMoveTester &operator=(CopyMoveTester &&other)
+    CopyMoveTester &operator=(CopyMoveTester &&)
     {
         m_copied = false;
         m_moved = true;

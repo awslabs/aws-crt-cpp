@@ -12,7 +12,7 @@ namespace Aws
 {
     namespace Crt
     {
-        class UUID final
+        class AWS_CRT_CPP_API UUID final
         {
           public:
             UUID() noexcept;
