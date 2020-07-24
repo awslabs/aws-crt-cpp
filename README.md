@@ -39,14 +39,6 @@ unix system. Note: we do not actually use libssl. The most likely scenario is th
 many linux distributions these days do not provide a 32-bit libcrypto package, if you're trying to perform a 32-bit build you will
 likely need to build and install libcrypto from source.
 
-## Mac-Only TLS Behavior
-
-Please note that on Mac, once a private key is used with a certificate, that certificate-key pair is imported into the Mac Keychain.  All subsequent uses of that certificate will use the stored private key and ignore anything passed in programmatically.  Beginning in v0.8.10, when a stored private key from the Keychain is used, the following will be logged at the "info" log level:
-
-```
-static: certificate has an existing certificate-key pair that was previously imported into the Keychain.  Using key from Keychain instead of the one provided.
-```
-
 ## Common Usage
 
 To do anything with IO, you'll need to create a few objects that will be used by the rest of the library.
@@ -110,6 +102,14 @@ Aws::Crt::Io::ClientBootstrap bootstrap(eventLoopGroup);
 Lastly, you will need a client or server bootstrap to use a client or server protocol implementation. Since everything is
 non-blocking and event driven, this handles most of the "callback hell" inherent in the design. Assuming you aren't partitioning
 threads for particular use-cases, you can have a single instance of this that you pass to multiple clients.
+
+## Mac-Only TLS Behavior
+
+Please note that on Mac, once a private key is used with a certificate, that certificate-key pair is imported into the Mac Keychain.  All subsequent uses of that certificate will use the stored private key and ignore anything passed in programmatically.  Beginning in v0.8.10, when a stored private key from the Keychain is used, the following will be logged at the "info" log level:
+
+```
+static: certificate has an existing certificate-key pair that was previously imported into the Keychain.  Using key from Keychain instead of the one provided.
+```
 
 ## License
 
