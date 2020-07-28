@@ -28,7 +28,7 @@ namespace Aws
             using OnHostResolved =
                 std::function<void(HostResolver &resolver, const Vector<HostAddress> &addresses, int errorCode)>;
 
-            class HostResolver
+            class AWS_CRT_CPP_API HostResolver
             {
               public:
                 virtual ~HostResolver();
@@ -40,7 +40,7 @@ namespace Aws
                 virtual aws_host_resolution_config *GetConfig() noexcept = 0;
             };
 
-            class DefaultHostResolver final : public HostResolver
+            class AWS_CRT_CPP_API DefaultHostResolver final : public HostResolver
             {
               public:
                 /**

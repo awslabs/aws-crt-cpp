@@ -41,7 +41,7 @@ namespace Aws
             /**
              * Socket Options
              */
-            class SocketOptions
+            class AWS_CRT_CPP_API SocketOptions
             {
               public:
                 SocketOptions();

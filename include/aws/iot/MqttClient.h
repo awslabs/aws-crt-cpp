@@ -73,7 +73,7 @@ namespace Aws
 
         using CreateSigningConfig = std::function<std::shared_ptr<Crt::Auth::ISigningConfig>(void)>;
 
-        struct WebsocketConfig
+        struct AWS_CRT_CPP_API WebsocketConfig
         {
             /**
              * Create a websocket configuration for use with the default credentials provider chain. Signing region

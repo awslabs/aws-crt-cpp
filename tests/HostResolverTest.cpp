@@ -27,7 +27,7 @@ static int s_TestDefaultResolution(struct aws_allocator *allocator, void *)
     size_t addressCount = 0;
     int error = 0;
 
-    auto onHostResolved = [&](Aws::Crt::Io::HostResolver &resolver,
+    auto onHostResolved = [&](Aws::Crt::Io::HostResolver &,
                               const Aws::Crt::Vector<Aws::Crt::Io::HostAddress> &addresses,
                               int errorCode) {
         {
