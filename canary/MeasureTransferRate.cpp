@@ -384,9 +384,11 @@ void MeasureTransferRate::PerformMultipartMeasurement(
             key,
             options.GetMultiPartObjectSize(),
             options.multiPartObjectNumParts,
-            [&multipartTransferStates, &waitCount](std::shared_ptr<MultipartTransferState> multipartTransferState) {
+            [&multipartTransferStates, &waitCount, &waitCountSignal](
+                std::shared_ptr<MultipartTransferState> multipartTransferState) {
                 multipartTransferStates.push_back(multipartTransferState);
                 waitCount.fetch_add(1);
+                waitCountSignal.notify_one();
             });
     }
 
@@ -440,7 +442,10 @@ void MeasureTransferRate::PerformMultipartMeasurement(
 
         endMultipartStateFn(
             multipartTransferState,
-            [&waitCount](std::shared_ptr<MultipartTransferState> multipartTransferState) { waitCount.fetch_add(1); });
+            [&waitCount, &waitCountSignal](std::shared_ptr<MultipartTransferState> multipartTransferState) {
+                waitCount.fetch_add(1);
+                waitCountSignal.notify_one();
+            });
     }
 
     // Wait until transfers have said they have completed.
@@ -486,9 +491,9 @@ void MeasureTransferRate::ProcessTransferLinePart(std::shared_ptr<TransferLine> 
     }
 
     std::shared_ptr<Http::HttpClientConnection> prevConnection;
-    if (transferLine->m_prevDownloadState != nullptr)
+    if (transferLine->m_prevMultipartTransferState != nullptr)
     {
-        prevConnection = transferLine->m_prevDownloadState->GetConnection();
+        prevConnection = transferLine->m_prevMultipartTransferState->GetConnection();
         multipartTransferState->SetConnection(prevConnection);
         partTransferState->SetConnection(prevConnection);
     }
@@ -510,14 +515,16 @@ void MeasureTransferRate::ProcessTransferLinePart(std::shared_ptr<TransferLine> 
             else
             {
                 AWS_LOGF_INFO(
-                    AWS_LS_CRT_CPP_CANARY, "Received part #%d for %s", partTransferState->GetPartNumber(), key.c_str());
+                    AWS_LS_CRT_CPP_CANARY, "Transferred part #%d for %s", partTransferState->GetPartNumber(), key.c_str());
 
                 if (multipartTransferState->IncNumPartsCompleted())
                 {
-                    AWS_LOGF_DEBUG(AWS_LS_CRT_CPP_CANARY, "Finished trying to get all parts for %s", key.c_str());
+                    AWS_LOGF_DEBUG(AWS_LS_CRT_CPP_CANARY, "Finished trying to transfer all parts for %s", key.c_str());
                     multipartTransferState->SetFinished();
                 }
             }
+
+            transferLine->m_prevMultipartTransferState = multipartTransferState;
 
             ProcessTransferLinePart(transferLine);
         };

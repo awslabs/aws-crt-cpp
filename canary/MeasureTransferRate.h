@@ -126,7 +126,7 @@ class MeasureTransferRate
 
         Aws::Crt::Vector<std::shared_ptr<MultipartTransferState>> m_multipartTransferStates;
         int32_t m_currentIndex;
-        std::shared_ptr<MultipartTransferState> m_prevDownloadState;
+        std::shared_ptr<MultipartTransferState> m_prevMultipartTransferState;
     };
 
     void PerformMultipartMeasurement(

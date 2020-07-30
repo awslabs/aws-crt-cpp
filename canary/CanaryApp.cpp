@@ -100,7 +100,7 @@ CanaryAppOptions::CanaryAppOptions(const String &configFileName) noexcept
     GET_CONFIG_VALUE_CAST(jsonView, Int64, uint64_t, "FileNameSuffixOffset", fileNameSuffixOffset);
     GET_CONFIG_VALUE_CAST(jsonView, Int64, uint64_t, "SinglePartObjectSize", singlePartObjectSize);
     GET_CONFIG_VALUE_CAST(jsonView, Int64, uint64_t, "MultiPartObjectPartSize", multiPartObjectPartSize);
-    GET_CONFIG_VALUE_CAST(jsonView, Integer, uint32_t, "MultipartObjectNumParts", multiPartObjectNumParts);
+    GET_CONFIG_VALUE_CAST(jsonView, Integer, uint32_t, "MultiPartObjectNumParts", multiPartObjectNumParts);
     GET_CONFIG_VALUE_CAST(
         jsonView,
         Integer,
@@ -144,7 +144,7 @@ CanaryApp::CanaryApp(Aws::Crt::ApiHandle &apiHandle, CanaryAppOptions &&inOption
 
     if (m_options.loggingEnabled)
     {
-        m_apiHandle.InitializeLogging(LogLevel::Info, stderr);
+        m_apiHandle.InitializeLogging(LogLevel::Error, stderr);
     }
 
     Auth::CredentialsProviderChainDefaultConfig chainConfig;
