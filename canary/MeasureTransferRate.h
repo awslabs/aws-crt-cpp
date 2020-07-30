@@ -26,6 +26,7 @@
 
 class S3ObjectTransport;
 class MetricsPublisher;
+class MultipartTransferState;
 class CanaryApp;
 struct aws_event_loop;
 
@@ -89,4 +90,55 @@ class MeasureTransferRate
         uint32_t flags,
         const std::shared_ptr<S3ObjectTransport> &transport,
         TransferFunction &&transferFunction);
+
+    class TransferLine;
+
+    using GenericMultipartStateCallback = std::function<void(std::shared_ptr<MultipartTransferState>)>;
+    using NewMultipartStateFn =
+        std::function<void(const Aws::Crt::String &, size_t, int32_t, GenericMultipartStateCallback &&)>;
+    using NotifyPartFinishedFn = std::function<void(int32_t)>;
+    using TransferPartFn = std::function<void(
+        std::shared_ptr<TransferLine>,
+        std::shared_ptr<MultipartTransferState>,
+        std::shared_ptr<TransferState>,
+        NotifyPartFinishedFn &&)>;
+    using EndMultipartStateFn =
+        std::function<void(std::shared_ptr<MultipartTransferState>, GenericMultipartStateCallback &&)>;
+    using PublishMetricsFn = std::function<void(Aws::Crt::Vector<std::shared_ptr<MultipartTransferState>> &)>;
+
+    class TransferLine
+    {
+      public:
+        TransferLine(
+            std::shared_ptr<S3ObjectTransport> transport,
+            TransferPartFn transferPartFn,
+            std::atomic<int32_t> &waitCount,
+            std::condition_variable &waitCountSignal)
+            : m_transport(transport), m_transferPartFn(transferPartFn), m_waitCount(waitCount),
+              m_waitCountSignal(waitCountSignal), m_currentIndex(0)
+        {
+        }
+
+        std::shared_ptr<S3ObjectTransport> m_transport;
+        TransferPartFn m_transferPartFn;
+        std::atomic<int32_t> &m_waitCount;
+        std::condition_variable &m_waitCountSignal;
+
+        Aws::Crt::Vector<std::shared_ptr<MultipartTransferState>> m_multipartTransferStates;
+        int32_t m_currentIndex;
+        std::shared_ptr<MultipartTransferState> m_prevDownloadState;
+    };
+
+    void PerformMultipartMeasurement(
+        const char *filenamePrefix,
+        uint32_t numTransfers,
+        uint32_t numConcurrentTransfers,
+        uint32_t flags,
+        const std::shared_ptr<S3ObjectTransport> &transport,
+        NewMultipartStateFn &&newMultipartStateFn,
+        TransferPartFn &&transferPartFn,
+        EndMultipartStateFn &&endMultipartStateFn,
+        PublishMetricsFn &&publishMetricsFn);
+
+    void ProcessTransferLinePart(std::shared_ptr<TransferLine> transferLine);
 };

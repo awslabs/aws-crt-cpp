@@ -37,8 +37,7 @@ enum class PartFinishResponse
 };
 
 /*
- * Represents a multipart object transfer state.  While it does not explicitly track an array of transfer states
- * at the moment, it does represent the progress of a number of transfer states being processed.
+ * Represents a multipart object transfer state.
  */
 class MultipartTransferState
 {

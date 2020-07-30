@@ -95,6 +95,12 @@ std::shared_ptr<TransferState> MultipartTransferState::PopNextPart()
 
     {
         std::lock_guard<std::mutex> lock(m_partIndexQueueMutex);
+
+        if (m_partIndexQueue.size() == 0)
+        {
+            return nullptr;
+        }
+
         uint32_t nextPartIndex = m_partIndexQueue.front();
         m_partIndexQueue.pop();
         transferState = MakeShared<TransferState>(g_allocator, nextPartIndex);

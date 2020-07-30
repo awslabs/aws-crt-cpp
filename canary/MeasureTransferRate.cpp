@@ -18,6 +18,7 @@
 #include "CanaryUtil.h"
 #include "MetricsPublisher.h"
 #include "S3ObjectTransport.h"
+#include <algorithm>
 #include <aws/common/clock.h>
 #include <aws/common/system_info.h>
 #include <aws/crt/http/HttpConnection.h>
@@ -325,103 +326,374 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
     m_canaryApp.GetMetricsPublisher()->UploadBackup((uint32_t)UploadBackupOptions::PrintPath);
 }
 
-void MeasureTransferRate::MeasureMultiPartObjectTransfer()
+void MeasureTransferRate::PerformMultipartMeasurement(
+    const char *filenamePrefix,
+    uint32_t numTransfers,
+    uint32_t numConcurrentTransfers,
+    uint32_t flags,
+    const std::shared_ptr<S3ObjectTransport> &transport,
+    NewMultipartStateFn &&newMultipartStateFn,
+    TransferPartFn &&transferPartFn,
+    EndMultipartStateFn &&endMultipartStateFn,
+    PublishMetricsFn &&publishMetricsFn)
 {
-    const char *filenamePrefix = "crt-canary-obj-multipart-";
+    if ((flags & (uint32_t)MeasurementFlags::DontWarmDNSCache) == 0)
+    {
+        transport->WarmDNSCache(numConcurrentTransfers);
+    }
+
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting performance measurement.");
+
+    std::mutex waitCountMutex;
+    std::atomic<int32_t> waitCount(0);
+    std::condition_variable waitCountSignal;
+
+    Vector<std::shared_ptr<MultipartTransferState>> multipartTransferStates;
+    Vector<std::shared_ptr<TransferLine>> transferLines;
 
     const CanaryAppOptions &options = m_canaryApp.GetOptions();
 
-    Vector<std::shared_ptr<MultipartUploadState>> uploadStates;
+    // Allocate the transfer lines
+    for (uint32_t i = 0; i < numConcurrentTransfers; ++i)
+    {
+        transferLines.push_back(std::make_shared<TransferLine>(transport, transferPartFn, waitCount, waitCountSignal));
+    }
 
-    PerformMeasurement(
+    // Create each multipart transfer state.  This includes allocation and any sync operation needed for initiatlization
+    // (such as a CreateMultipartUpload request)
+    for (uint32_t i = 0; i < numTransfers; ++i)
+    {
+        uint64_t counter = INT64_MAX - options.fileNameSuffixOffset;
+
+        StringStream keyStream;
+        keyStream << filenamePrefix;
+
+        if ((flags & (uint32_t)MeasurementFlags::NoFileSuffix) == 0)
+        {
+            keyStream << counter--;
+        }
+
+        String key = keyStream.str();
+
+        if (counter == 0)
+        {
+            counter = INT64_MAX;
+        }
+
+        newMultipartStateFn(
+            key,
+            options.GetMultiPartObjectSize(),
+            options.multiPartObjectNumParts,
+            [&multipartTransferStates, &waitCount](std::shared_ptr<MultipartTransferState> multipartTransferState) {
+                multipartTransferStates.push_back(multipartTransferState);
+                waitCount.fetch_add(1);
+            });
+    }
+
+    // Wait for all transfers to be initialized.
+    {
+        std::unique_lock<std::mutex> guard(waitCountMutex);
+        waitCountSignal.wait(guard, [&waitCount, numTransfers]() { return waitCount.load() >= numTransfers; });
+        waitCount.exchange(0);
+    }
+
+    uint32_t lineIndex = 0;
+
+    // Assign each multipart transfer state to n number of lines where n = number of parts for that multipart transfer
+    for (uint32_t i = 0; i < numTransfers; ++i)
+    {
+        std::shared_ptr<MultipartTransferState> multipartTransferState = multipartTransferStates[i];
+
+        for (int32_t j = 0; j < options.multiPartObjectNumParts; ++j)
+        {
+            Vector<std::shared_ptr<MultipartTransferState>> &transferLineStates =
+                transferLines[lineIndex]->m_multipartTransferStates;
+            auto it = std::find(transferLineStates.begin(), transferLineStates.end(), multipartTransferState);
+
+            // If this line doesn't already know about this transfer, add it to the line.
+            if (it == transferLineStates.end())
+            {
+                transferLineStates.emplace_back(multipartTransferState);
+            }
+
+            lineIndex = (lineIndex + 1) % numConcurrentTransfers;
+        }
+    }
+
+    // Start transferring data
+    for (uint32_t i = 0; i < numConcurrentTransfers; ++i)
+    {
+        ProcessTransferLinePart(transferLines[i]);
+    }
+
+    // Wait until all transfers have completed.
+    {
+        std::unique_lock<std::mutex> guard(waitCountMutex);
+        waitCountSignal.wait(guard, [&waitCount, numTransfers]() { return waitCount.load() >= numTransfers; });
+        waitCount.exchange(0);
+    }
+
+    // Kick off ending all transfers now.  This will allow for things like CompleteMultipartUpload to happen.
+    for (uint32_t i = 0; i < numTransfers; ++i)
+    {
+        std::shared_ptr<MultipartTransferState> multipartTransferState = multipartTransferStates[i];
+
+        endMultipartStateFn(
+            multipartTransferState,
+            [&waitCount](std::shared_ptr<MultipartTransferState> multipartTransferState) { waitCount.fetch_add(1); });
+    }
+
+    // Wait until transfers have said they have completed.
+    {
+        std::unique_lock<std::mutex> guard(waitCountMutex);
+        waitCountSignal.wait(guard, [&waitCount, numTransfers]() { return waitCount.load() >= numTransfers; });
+        waitCount.exchange(0);
+    }
+
+    // Publish metrics for those transfers!
+    publishMetricsFn(multipartTransferStates);
+}
+
+void MeasureTransferRate::ProcessTransferLinePart(std::shared_ptr<TransferLine> transferLine)
+{
+    std::shared_ptr<MultipartTransferState> multipartTransferState;
+    std::shared_ptr<TransferState> partTransferState;
+
+    Vector<std::shared_ptr<MultipartTransferState>> &multipartTransferStates = transferLine->m_multipartTransferStates;
+
+    // Find next unfinished state
+    for (int32_t i = 0; i < multipartTransferStates.size(); ++i)
+    {
+        int &index = transferLine->m_currentIndex;
+
+        index = (index + i) % multipartTransferStates.size();
+
+        partTransferState = multipartTransferStates[index]->PopNextPart();
+
+        if (partTransferState != nullptr)
+        {
+            multipartTransferState = multipartTransferStates[index];
+            break;
+        }
+    }
+
+    // If we couldn't find an unfinished multipart state, then we are done.
+    if (multipartTransferState == nullptr)
+    {
+        transferLine->m_waitCount.fetch_add(1);
+        transferLine->m_waitCountSignal.notify_one();
+        return;
+    }
+
+    std::shared_ptr<Http::HttpClientConnection> prevConnection;
+    if (transferLine->m_prevDownloadState != nullptr)
+    {
+        prevConnection = transferLine->m_prevDownloadState->GetConnection();
+        multipartTransferState->SetConnection(prevConnection);
+        partTransferState->SetConnection(prevConnection);
+    }
+
+    NotifyTransferFinished notifyPartFinished =
+        [this, multipartTransferState, partTransferState, transferLine](int32_t errorCode) {
+            const String &key = multipartTransferState->GetKey();
+
+            if (errorCode != AWS_ERROR_SUCCESS)
+            {
+                AWS_LOGF_ERROR(
+                    AWS_LS_CRT_CPP_CANARY,
+                    "Did not receive part #%d for %s",
+                    partTransferState->GetPartNumber(),
+                    key.c_str());
+
+                multipartTransferState->RequeuePart(partTransferState);
+            }
+            else
+            {
+                AWS_LOGF_INFO(
+                    AWS_LS_CRT_CPP_CANARY, "Received part #%d for %s", partTransferState->GetPartNumber(), key.c_str());
+
+                if (multipartTransferState->IncNumPartsCompleted())
+                {
+                    AWS_LOGF_DEBUG(AWS_LS_CRT_CPP_CANARY, "Finished trying to get all parts for %s", key.c_str());
+                    multipartTransferState->SetFinished();
+                }
+            }
+
+            ProcessTransferLinePart(transferLine);
+        };
+
+    transferLine->m_transferPartFn(
+        transferLine, multipartTransferState, partTransferState, std::move(notifyPartFinished));
+}
+
+void MeasureTransferRate::MeasureMultiPartObjectTransfer()
+{
+    const char *filenamePrefix = "crt-canary-obj-multipart-";
+    const CanaryAppOptions &options = m_canaryApp.GetOptions();
+    std::shared_ptr<S3ObjectTransport> uploadTransport = m_canaryApp.GetUploadTransport();
+
+    PerformMultipartMeasurement(
         filenamePrefix,
         options.numUpTransfers,
         options.numUpConcurrentTransfers,
         0,
-        m_canaryApp.GetUploadTransport(),
-        [this, &uploadStates, options](
-            uint32_t,
-            String &&key,
-            const std::shared_ptr<S3ObjectTransport> &transport,
-            NotifyTransferFinished &&notifyTransferFinished) {
-            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting upload of object %s...", key.c_str());
+        uploadTransport,
+        [uploadTransport](
+            const Aws::Crt::String &key,
+            size_t objectSize,
+            int32_t numParts,
+            GenericMultipartStateCallback &&callback) {
+            std::shared_ptr<MultipartUploadState> multipartUploadState =
+                std::make_shared<MultipartUploadState>(key, objectSize, numParts);
 
-            std::shared_ptr<MultipartUploadState> uploadState = transport->PutObjectMultipart(
-                key,
-                options.GetMultiPartObjectSize(),
-                options.multiPartObjectNumParts,
-                [this, options](const std::shared_ptr<TransferState> &transferState) {
-                    uint64_t partByteSize = options.multiPartObjectPartSize;
-
-                    if (transferState->GetPartIndex() == (int32_t)options.multiPartObjectNumParts - 1)
+            uploadTransport->CreateMultipartUpload(
+                multipartUploadState->GetKey(),
+                [multipartUploadState, callback](int errorCode, const Aws::Crt::String &uploadId) {
+                    if (errorCode != AWS_ERROR_SUCCESS)
                     {
-                        partByteSize += options.GetMultiPartObjectSize() % options.multiPartObjectNumParts;
+                        multipartUploadState->SetFinished(errorCode);
+                        return;
                     }
 
-                    return MakeShared<MeasureTransferRateStream>(g_allocator, m_canaryApp, transferState, partByteSize);
+                    multipartUploadState->SetUploadId(uploadId);
+
+                    callback(multipartUploadState);
+                });
+        },
+        [this, options](
+            std::shared_ptr<TransferLine> transferLine,
+            std::shared_ptr<MultipartTransferState> multipartTransferState,
+            std::shared_ptr<TransferState> partTransferState,
+            NotifyTransferFinished &&notifyTransferFinished) {
+            std::shared_ptr<MultipartUploadState> multipartUploadState =
+                std::static_pointer_cast<MultipartUploadState>(multipartTransferState);
+
+            StringStream keyPathStream;
+            keyPathStream << multipartTransferState->GetKey() << "?partNumber=" << partTransferState->GetPartNumber()
+                          << "&uploadId=" << multipartUploadState->GetUploadId();
+
+            String keyPathStr = keyPathStream.str();
+
+            uint64_t partByteSize = options.multiPartObjectPartSize;
+
+            if (partTransferState->GetPartIndex() == (int32_t)options.multiPartObjectNumParts - 1)
+            {
+                partByteSize += options.GetMultiPartObjectSize() % options.multiPartObjectNumParts;
+            }
+
+            std::shared_ptr<MeasureTransferRateStream> inputStream =
+                MakeShared<MeasureTransferRateStream>(g_allocator, m_canaryApp, partTransferState, partByteSize);
+
+            transferLine->m_transport->PutObject(
+                partTransferState,
+                keyPathStr,
+                inputStream,
+                (uint32_t)EPutObjectFlags::RetrieveETag,
+                [multipartTransferState,
+                 partTransferState](std::shared_ptr<Http::HttpClientConnection> connection, int32_t errorCode) {
+                    multipartTransferState->SetConnection((errorCode == AWS_ERROR_SUCCESS) ? connection : nullptr);
+                    partTransferState->SetConnection((errorCode == AWS_ERROR_SUCCESS) ? connection : nullptr);
                 },
-                [key, notifyTransferFinished](int32_t errorCode, uint32_t) {
-                    AWS_LOGF_INFO(
-                        AWS_LS_CRT_CPP_CANARY,
-                        "Upload finished for object %s with error code %d",
-                        key.c_str(),
-                        errorCode);
+                [multipartTransferState, partTransferState, notifyTransferFinished](
+                    int32_t errorCode, std::shared_ptr<Aws::Crt::String> etag) {
+                    std::shared_ptr<MultipartUploadState> multipartUploadState =
+                        std::static_pointer_cast<MultipartUploadState>(multipartTransferState);
+
+                    if (etag == nullptr)
+                    {
+                        errorCode = AWS_ERROR_UNKNOWN;
+                    }
+
+                    if (errorCode == AWS_ERROR_SUCCESS)
+                    {
+                        multipartUploadState->SetETag(partTransferState->GetPartIndex(), *etag);
+                    }
 
                     notifyTransferFinished(errorCode);
                 });
+        },
+        [uploadTransport](
+            std::shared_ptr<MultipartTransferState> multipartTransferState, GenericMultipartStateCallback callback) {
+            std::shared_ptr<MultipartUploadState> multipartUploadState =
+                std::static_pointer_cast<MultipartUploadState>(multipartTransferState);
 
-            uploadStates.push_back(uploadState);
+            multipartUploadState->SetConnection(nullptr);
+
+            Aws::Crt::Vector<Aws::Crt::String> etags;
+            multipartUploadState->GetETags(etags);
+
+            uploadTransport->CompleteMultipartUpload(
+                multipartUploadState->GetKey(),
+                multipartUploadState->GetUploadId(),
+                etags,
+                [multipartUploadState, callback](int32_t errorCode) {
+                    multipartUploadState->SetFinished(errorCode);
+
+                    callback(multipartUploadState);
+                });
+        },
+        [this](Vector<std::shared_ptr<MultipartTransferState>> &multipartTransferStates) {
+            (void)multipartTransferStates;
+
+            for (const std::shared_ptr<MultipartTransferState> &transferState : multipartTransferStates)
+            {
+                for (const std::shared_ptr<TransferState> &part : transferState->GetParts())
+                {
+                    part->FlushDataUpMetrics(m_canaryApp.GetMetricsPublisher());
+                }
+            }
+
+            m_canaryApp.GetMetricsPublisher()->FlushMetrics();
         });
 
-    for (const std::shared_ptr<MultipartUploadState> &uploadState : uploadStates)
-    {
-        for (const std::shared_ptr<TransferState> &part : uploadState->GetParts())
-        {
-            part->FlushDataUpMetrics(m_canaryApp.GetMetricsPublisher());
-        }
-    }
-
-    m_canaryApp.GetMetricsPublisher()->FlushMetrics();
-
-    Vector<std::shared_ptr<MultipartDownloadState>> downloadStates;
-
-    PerformMeasurement(
+    PerformMultipartMeasurement(
         options.downloadObjectName.c_str(),
         options.numDownTransfers,
         options.numDownConcurrentTransfers,
         (uint32_t)MeasurementFlags::NoFileSuffix,
         m_canaryApp.GetDownloadTransport(),
-        [&downloadStates, options](
-            uint32_t,
-            String &&key,
-            const std::shared_ptr<S3ObjectTransport> &transport,
-            NotifyTransferFinished &&notifyTransferFinished) {
-            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting download of object %s...", key.c_str());
+        [](const Aws::Crt::String &key, size_t objectSize, int32_t numParts, GenericMultipartStateCallback &&callback) {
+            std::shared_ptr<MultipartDownloadState> multipartDownloadState =
+                std::make_shared<MultipartDownloadState>(key, objectSize, numParts);
 
-            std::shared_ptr<MultipartDownloadState> downloadState = transport->GetObjectMultipart(
-                key,
-                options.multiPartObjectNumParts,
-                [](const std::shared_ptr<TransferState> &, const ByteCursor &) {},
-                [notifyTransferFinished, key](int32_t errorCode) {
-                    AWS_LOGF_INFO(
-                        AWS_LS_CRT_CPP_CANARY,
-                        "Download finished for object %s with error code %d",
-                        key.c_str(),
-                        errorCode);
-                    notifyTransferFinished(errorCode);
-                });
+            callback(multipartDownloadState);
+        },
+        [](std::shared_ptr<TransferLine> transferLine,
+           std::shared_ptr<MultipartTransferState> multipartTransferState,
+           std::shared_ptr<TransferState> partTransferState,
+           NotifyTransferFinished &&notifyTransferFinished) {
+            transferLine->m_transport->GetObject(
+                partTransferState,
+                multipartTransferState->GetKey(),
+                partTransferState->GetPartNumber(),
+                [](Http::HttpStream &stream, const ByteCursor &data) {
+                    (void)stream;
+                    (void)data;
+                },
+                [multipartTransferState,
+                 partTransferState](std::shared_ptr<Http::HttpClientConnection> connection, int32_t errorCode) {
+                    multipartTransferState->SetConnection((errorCode == AWS_ERROR_SUCCESS) ? connection : nullptr);
+                    partTransferState->SetConnection((errorCode == AWS_ERROR_SUCCESS) ? connection : nullptr);
+                },
+                [notifyTransferFinished](int32_t errorCode) { notifyTransferFinished(errorCode); });
+        },
+        [](std::shared_ptr<MultipartTransferState> multipartTransferState, GenericMultipartStateCallback callback) {
+            std::shared_ptr<MultipartDownloadState> multipartDownloadState =
+                std::static_pointer_cast<MultipartDownloadState>(multipartTransferState);
 
-            downloadStates.push_back(downloadState);
+            multipartDownloadState->SetConnection(nullptr);
+            callback(multipartDownloadState);
+        },
+        [this](Vector<std::shared_ptr<MultipartTransferState>> &multipartTransferStates) {
+            for (const std::shared_ptr<MultipartTransferState> &transferState : multipartTransferStates)
+            {
+                for (const std::shared_ptr<TransferState> &part : transferState->GetParts())
+                {
+                    part->FlushDataDownMetrics(m_canaryApp.GetMetricsPublisher());
+                }
+            }
+
+            m_canaryApp.GetMetricsPublisher()->FlushMetrics();
+            m_canaryApp.GetMetricsPublisher()->UploadBackup((uint32_t)UploadBackupOptions::PrintPath);
         });
-
-    for (const std::shared_ptr<MultipartDownloadState> &downloadState : downloadStates)
-    {
-        for (const std::shared_ptr<TransferState> &part : downloadState->GetParts())
-        {
-            part->FlushDataDownMetrics(m_canaryApp.GetMetricsPublisher());
-        }
-    }
-
-    m_canaryApp.GetMetricsPublisher()->FlushMetrics();
-    m_canaryApp.GetMetricsPublisher()->UploadBackup((uint32_t)UploadBackupOptions::PrintPath);
 }

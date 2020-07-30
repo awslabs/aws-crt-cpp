@@ -132,11 +132,20 @@ class S3ObjectTransport
         return m_endPointMonitorManager;
     }
 
+    using CreateMultipartUploadFinished = std::function<void(int32_t error, const Aws::Crt::String &uploadId)>;
+    using CompleteMultipartUploadFinished = std::function<void(int32_t error)>;
+
+    void CreateMultipartUpload(const Aws::Crt::String &key, const CreateMultipartUploadFinished &finishedCallback);
+
+    void CompleteMultipartUpload(
+        const Aws::Crt::String &key,
+        const Aws::Crt::String &uploadId,
+        const Aws::Crt::Vector<Aws::Crt::String> &etags,
+        const CompleteMultipartUploadFinished &finishedCallback);
+
   private:
     using SignedRequestCallback =
         std::function<void(const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &conn, int32_t errorCode)>;
-    using CreateMultipartUploadFinished = std::function<void(int32_t error, const Aws::Crt::String &uploadId)>;
-    using CompleteMultipartUploadFinished = std::function<void(int32_t error)>;
     using AbortMultipartUploadFinished = std::function<void(int32_t error)>;
     using AcquireConnManagerCallback = std::function<void(
         const std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> &connManager,
@@ -177,14 +186,6 @@ class S3ObjectTransport
         const std::shared_ptr<MultipartDownloadState> &multipartState,
         const ReceivePartCallback &receiveObjectPartData,
         const GetObjectMultipartFinished &finishedCallback);
-
-    void CreateMultipartUpload(const Aws::Crt::String &key, const CreateMultipartUploadFinished &finishedCallback);
-
-    void CompleteMultipartUpload(
-        const Aws::Crt::String &key,
-        const Aws::Crt::String &uploadId,
-        const Aws::Crt::Vector<Aws::Crt::String> &etags,
-        const CompleteMultipartUploadFinished &finishedCallback);
 
     void AbortMultipartUpload(
         const Aws::Crt::String &key,
