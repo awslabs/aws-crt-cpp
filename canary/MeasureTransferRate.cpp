@@ -491,6 +491,7 @@ void MeasureTransferRate::ProcessTransferLinePart(std::shared_ptr<TransferLine> 
     // If we couldn't find an unfinished multipart state, then we are done.
     if (multipartTransferState == nullptr)
     {
+        transferLine->m_connection.reset();
         transferLine->m_waitCount.fetch_add(1);
         transferLine->m_waitCountSignal.notify_one();
         return;
