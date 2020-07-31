@@ -526,6 +526,19 @@ void MeasureTransferRate::ProcessTransferLinePart(std::shared_ptr<TransferLine> 
 
         transferLine->m_connection = partTransferState->GetConnection();
 
+        ++transferLine->m_transferCount;
+
+        if (transferLine->m_transferCount == 100)
+        {
+            if (transferLine->m_connection != nullptr)
+            {
+                transferLine->m_connection->Close();
+                transferLine->m_connection = nullptr;
+            }
+
+            transferLine->m_transferCount = 0;
+        }
+
         AWS_LOGF_INFO(
             AWS_LS_CRT_CPP_CANARY,
             "Transfer line index %d used connection %p for multipart transfer %p",

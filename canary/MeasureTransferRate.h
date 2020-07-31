@@ -116,7 +116,7 @@ class MeasureTransferRate
             std::atomic<int32_t> &waitCount,
             std::condition_variable &waitCountSignal)
             : m_transferLineIndex(transferLineIndex), m_transport(transport), m_transferPartFn(transferPartFn),
-              m_waitCount(waitCount), m_waitCountSignal(waitCountSignal), m_currentIndex(0)
+              m_waitCount(waitCount), m_waitCountSignal(waitCountSignal), m_currentIndex(0), m_transferCount(0)
         {
         }
 
@@ -128,6 +128,7 @@ class MeasureTransferRate
 
         Aws::Crt::Vector<std::shared_ptr<MultipartTransferState>> m_multipartTransferStates;
         int32_t m_currentIndex;
+        int32_t m_transferCount;
         std::shared_ptr<Aws::Crt::Http::HttpClientConnection> m_connection;
     };
 
