@@ -527,7 +527,7 @@ void MeasureTransferRate::ProcessTransferLinePart(std::shared_ptr<TransferLine> 
             "Transfer line index %d used connection %p for multipart transfer %p",
             transferLine->m_transferLineIndex,
             (void *)partTransferState->GetConnection().get(),
-            (void*)transferLine->m_multipartTransferStates[transferLine->m_currentIndex].get());
+            (void *)transferLine->m_multipartTransferStates[transferLine->m_currentIndex].get());
 
         partTransferState->SetConnection(nullptr);
 
@@ -685,7 +685,7 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
                 [](Http::HttpStream &stream, const ByteCursor &data) {
                     (void)stream;
                     (void)data;
-                    //AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "%s", (const char*)data.ptr);
+                    // AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "%s", (const char*)data.ptr);
                 },
                 [multipartTransferState,
                  partTransferState](std::shared_ptr<Http::HttpClientConnection> connection, int32_t errorCode) {
