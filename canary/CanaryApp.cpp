@@ -144,7 +144,7 @@ CanaryApp::CanaryApp(Aws::Crt::ApiHandle &apiHandle, CanaryAppOptions &&inOption
 
     if (m_options.loggingEnabled)
     {
-        m_apiHandle.InitializeLogging(LogLevel::Error, stderr);
+        m_apiHandle.InitializeLogging(LogLevel::Info, stderr);
     }
 
     Auth::CredentialsProviderChainDefaultConfig chainConfig;

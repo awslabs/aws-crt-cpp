@@ -110,15 +110,17 @@ class MeasureTransferRate
     {
       public:
         TransferLine(
+            uint32_t transferLineIndex,
             std::shared_ptr<S3ObjectTransport> transport,
             TransferPartFn transferPartFn,
             std::atomic<int32_t> &waitCount,
             std::condition_variable &waitCountSignal)
-            : m_transport(transport), m_transferPartFn(transferPartFn), m_waitCount(waitCount),
-              m_waitCountSignal(waitCountSignal), m_currentIndex(0)
+            : m_transferLineIndex(transferLineIndex), m_transport(transport), m_transferPartFn(transferPartFn),
+              m_waitCount(waitCount), m_waitCountSignal(waitCountSignal), m_currentIndex(0)
         {
         }
 
+        uint32_t m_transferLineIndex;
         std::shared_ptr<S3ObjectTransport> m_transport;
         TransferPartFn m_transferPartFn;
         std::atomic<int32_t> &m_waitCount;
@@ -126,7 +128,7 @@ class MeasureTransferRate
 
         Aws::Crt::Vector<std::shared_ptr<MultipartTransferState>> m_multipartTransferStates;
         int32_t m_currentIndex;
-        std::shared_ptr<MultipartTransferState> m_prevMultipartTransferState;
+        std::shared_ptr<Aws::Crt::Http::HttpClientConnection> m_connection;
     };
 
     void PerformMultipartMeasurement(

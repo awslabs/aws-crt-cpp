@@ -356,7 +356,8 @@ void MeasureTransferRate::PerformMultipartMeasurement(
     // Allocate the transfer lines
     for (uint32_t i = 0; i < numConcurrentTransfers; ++i)
     {
-        transferLines.push_back(std::make_shared<TransferLine>(transport, transferPartFn, waitCount, waitCountSignal));
+        transferLines.push_back(
+            std::make_shared<TransferLine>(i, transport, transferPartFn, waitCount, waitCountSignal));
     }
 
     // Create each multipart transfer state.  This includes allocation and any sync operation needed for initiatlization
@@ -435,6 +436,8 @@ void MeasureTransferRate::PerformMultipartMeasurement(
         waitCount.exchange(0);
     }
 
+    transferLines.clear();
+
     // Kick off ending all transfers now.  This will allow for things like CompleteMultipartUpload to happen.
     for (uint32_t i = 0; i < numTransfers; ++i)
     {
@@ -490,44 +493,46 @@ void MeasureTransferRate::ProcessTransferLinePart(std::shared_ptr<TransferLine> 
         return;
     }
 
-    std::shared_ptr<Http::HttpClientConnection> prevConnection;
-    if (transferLine->m_prevMultipartTransferState != nullptr)
-    {
-        prevConnection = transferLine->m_prevMultipartTransferState->GetConnection();
-        multipartTransferState->SetConnection(prevConnection);
-        partTransferState->SetConnection(prevConnection);
-    }
+    partTransferState->SetConnection(transferLine->m_connection);
 
-    NotifyTransferFinished notifyPartFinished =
-        [this, multipartTransferState, partTransferState, transferLine](int32_t errorCode) {
-            const String &key = multipartTransferState->GetKey();
+    NotifyTransferFinished notifyPartFinished = [this, multipartTransferState, partTransferState, transferLine](
+                                                    int32_t errorCode) {
+        const String &key = multipartTransferState->GetKey();
 
-            if (errorCode != AWS_ERROR_SUCCESS)
+        if (errorCode != AWS_ERROR_SUCCESS)
+        {
+            AWS_LOGF_ERROR(
+                AWS_LS_CRT_CPP_CANARY,
+                "Did not receive part #%d for %s",
+                partTransferState->GetPartNumber(),
+                key.c_str());
+
+            multipartTransferState->RequeuePart(partTransferState);
+        }
+        else
+        {
+            AWS_LOGF_INFO(
+                AWS_LS_CRT_CPP_CANARY, "Transferred part #%d for %s", partTransferState->GetPartNumber(), key.c_str());
+
+            if (multipartTransferState->IncNumPartsCompleted())
             {
-                AWS_LOGF_ERROR(
-                    AWS_LS_CRT_CPP_CANARY,
-                    "Did not receive part #%d for %s",
-                    partTransferState->GetPartNumber(),
-                    key.c_str());
-
-                multipartTransferState->RequeuePart(partTransferState);
+                AWS_LOGF_DEBUG(AWS_LS_CRT_CPP_CANARY, "Finished trying to transfer all parts for %s", key.c_str());
             }
-            else
-            {
-                AWS_LOGF_INFO(
-                    AWS_LS_CRT_CPP_CANARY, "Transferred part #%d for %s", partTransferState->GetPartNumber(), key.c_str());
+        }
 
-                if (multipartTransferState->IncNumPartsCompleted())
-                {
-                    AWS_LOGF_DEBUG(AWS_LS_CRT_CPP_CANARY, "Finished trying to transfer all parts for %s", key.c_str());
-                    multipartTransferState->SetFinished();
-                }
-            }
+        transferLine->m_connection = partTransferState->GetConnection();
 
-            transferLine->m_prevMultipartTransferState = multipartTransferState;
+        AWS_LOGF_INFO(
+            AWS_LS_CRT_CPP_CANARY,
+            "Transfer line index %d used connection %p for multipart transfer %p",
+            transferLine->m_transferLineIndex,
+            (void *)partTransferState->GetConnection().get(),
+            (void*)transferLine->m_multipartTransferStates[transferLine->m_currentIndex].get());
 
-            ProcessTransferLinePart(transferLine);
-        };
+        partTransferState->SetConnection(nullptr);
+
+        ProcessTransferLinePart(transferLine);
+    };
 
     transferLine->m_transferPartFn(
         transferLine, multipartTransferState, partTransferState, std::move(notifyPartFinished));
@@ -598,8 +603,12 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
                 (uint32_t)EPutObjectFlags::RetrieveETag,
                 [multipartTransferState,
                  partTransferState](std::shared_ptr<Http::HttpClientConnection> connection, int32_t errorCode) {
-                    multipartTransferState->SetConnection((errorCode == AWS_ERROR_SUCCESS) ? connection : nullptr);
-                    partTransferState->SetConnection((errorCode == AWS_ERROR_SUCCESS) ? connection : nullptr);
+                    if (errorCode != AWS_ERROR_SUCCESS)
+                    {
+                        connection = nullptr;
+                    }
+
+                    partTransferState->SetConnection(connection);
                 },
                 [multipartTransferState, partTransferState, notifyTransferFinished](
                     int32_t errorCode, std::shared_ptr<Aws::Crt::String> etag) {
@@ -624,7 +633,7 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
             std::shared_ptr<MultipartUploadState> multipartUploadState =
                 std::static_pointer_cast<MultipartUploadState>(multipartTransferState);
 
-            multipartUploadState->SetConnection(nullptr);
+            // multipartUploadState->SetConnection(nullptr);
 
             Aws::Crt::Vector<Aws::Crt::String> etags;
             multipartUploadState->GetETags(etags);
@@ -676,11 +685,16 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
                 [](Http::HttpStream &stream, const ByteCursor &data) {
                     (void)stream;
                     (void)data;
+                    //AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "%s", (const char*)data.ptr);
                 },
                 [multipartTransferState,
                  partTransferState](std::shared_ptr<Http::HttpClientConnection> connection, int32_t errorCode) {
-                    multipartTransferState->SetConnection((errorCode == AWS_ERROR_SUCCESS) ? connection : nullptr);
-                    partTransferState->SetConnection((errorCode == AWS_ERROR_SUCCESS) ? connection : nullptr);
+                    if (errorCode != AWS_ERROR_SUCCESS)
+                    {
+                        connection = nullptr;
+                    }
+
+                    partTransferState->SetConnection(connection);
                 },
                 [notifyTransferFinished](int32_t errorCode) { notifyTransferFinished(errorCode); });
         },
@@ -688,7 +702,7 @@ void MeasureTransferRate::MeasureMultiPartObjectTransfer()
             std::shared_ptr<MultipartDownloadState> multipartDownloadState =
                 std::static_pointer_cast<MultipartDownloadState>(multipartTransferState);
 
-            multipartDownloadState->SetConnection(nullptr);
+            // multipartDownloadState->SetConnection(nullptr);
             callback(multipartDownloadState);
         },
         [this](Vector<std::shared_ptr<MultipartTransferState>> &multipartTransferStates) {
