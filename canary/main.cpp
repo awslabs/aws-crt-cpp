@@ -132,18 +132,6 @@ int main(int argc, char *argv[])
 
     CanaryAppOptions canaryAppOptions(canaryAppOptionsConfig);
 
-    if (argc >= 1)
-    {
-        String &toolName = canaryAppOptions.toolName;
-        toolName = argv[0];
-        size_t dirStart = toolName.rfind('\\');
-
-        if (dirStart != std::string::npos)
-        {
-            toolName = toolName.substr(dirStart + 1);
-        }
-    }
-
     aws_cli_optind = 1;
     cliGetOptResult = aws_cli_getopt_long(argc, argv, optstring, options, &cliOptionIndex);
 
