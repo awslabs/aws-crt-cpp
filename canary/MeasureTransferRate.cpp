@@ -408,7 +408,7 @@ void MeasureTransferRate::PerformMultipartMeasurement(
     {
         std::shared_ptr<MultipartTransferState> multipartTransferState = multipartTransferStates[i];
 
-        for (int32_t j = 0; j < options.multiPartObjectNumParts; ++j)
+        for (int32_t j = 0; j < (int32_t)options.multiPartObjectNumParts; ++j)
         {
             Vector<std::shared_ptr<MultipartTransferState>> &transferLineStates =
                 transferLines[lineIndex]->m_multipartTransferStates;
@@ -473,7 +473,7 @@ void MeasureTransferRate::ProcessTransferLinePart(std::shared_ptr<TransferLine> 
     Vector<std::shared_ptr<MultipartTransferState>> &multipartTransferStates = transferLine->m_multipartTransferStates;
 
     // Find next unfinished state
-    for (int32_t i = 0; i < multipartTransferStates.size(); ++i)
+    for (int32_t i = 0; i < (int32_t)multipartTransferStates.size(); ++i)
     {
         int &index = transferLine->m_currentIndex;
 
