@@ -396,7 +396,8 @@ void MeasureTransferRate::PerformMultipartMeasurement(
     // Wait for all transfers to be initialized.
     {
         std::unique_lock<std::mutex> guard(waitCountMutex);
-        waitCountSignal.wait(guard, [&waitCount, numTransfers]() { return waitCount.load() >= numTransfers; });
+        waitCountSignal.wait(
+            guard, [&waitCount, numTransfers]() { return (uint32_t)waitCount.load() >= numTransfers; });
         waitCount.exchange(0);
     }
 
@@ -432,7 +433,8 @@ void MeasureTransferRate::PerformMultipartMeasurement(
     // Wait until all transfers have completed.
     {
         std::unique_lock<std::mutex> guard(waitCountMutex);
-        waitCountSignal.wait(guard, [&waitCount, numTransfers]() { return waitCount.load() >= numTransfers; });
+        waitCountSignal.wait(
+            guard, [&waitCount, numTransfers]() { return (uint32_t)waitCount.load() >= numTransfers; });
         waitCount.exchange(0);
     }
 
@@ -454,7 +456,8 @@ void MeasureTransferRate::PerformMultipartMeasurement(
     // Wait until transfers have said they have completed.
     {
         std::unique_lock<std::mutex> guard(waitCountMutex);
-        waitCountSignal.wait(guard, [&waitCount, numTransfers]() { return waitCount.load() >= numTransfers; });
+        waitCountSignal.wait(
+            guard, [&waitCount, numTransfers]() { return (uint32_t)waitCount.load() >= numTransfers; });
         waitCount.exchange(0);
     }
 
