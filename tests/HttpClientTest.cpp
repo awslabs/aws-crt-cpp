@@ -1,16 +1,6 @@
-/*
- * Copyright 2010-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+/**
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/Api.h>
 #include <aws/crt/crypto/Hash.h>
@@ -124,7 +114,7 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, Byt
         semaphore.notify_one();
     };
 
-    auto onConnectionShutdown = [&](Http::HttpClientConnection &newConnection, int errorCode) {
+    auto onConnectionShutdown = [&](Http::HttpClientConnection &, int errorCode) {
         std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
         connectionShutdown = true;
@@ -165,7 +155,7 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, Byt
     requestOptions.request = &request;
 
     bool streamCompleted = false;
-    requestOptions.onStreamComplete = [&](Http::HttpStream &stream, int errorCode) {
+    requestOptions.onStreamComplete = [&](Http::HttpStream &, int errorCode) {
         std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
         streamCompleted = true;
@@ -178,7 +168,7 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, Byt
     };
     requestOptions.onIncomingHeadersBlockDone = nullptr;
     requestOptions.onIncomingHeaders =
-        [&](Http::HttpStream &stream, enum aws_http_header_block, const Http::HttpHeader *header, std::size_t len) {
+        [&](Http::HttpStream &stream, enum aws_http_header_block, const Http::HttpHeader *, std::size_t) {
             responseCode = stream.GetResponseStatusCode();
         };
     requestOptions.onIncomingBody = [&](Http::HttpStream &, const ByteCursor &data) {
@@ -277,7 +267,7 @@ static int s_TestHttpStreamUnActivated(struct aws_allocator *allocator, void *ct
         semaphore.notify_one();
     };
 
-    auto onConnectionShutdown = [&](Http::HttpClientConnection &newConnection, int errorCode) {
+    auto onConnectionShutdown = [&](Http::HttpClientConnection &, int errorCode) {
         std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
         connectionShutdown = true;

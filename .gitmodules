@@ -22,3 +22,9 @@
 [submodule "aws-common-runtime/s2n"]
 	path = aws-common-runtime/s2n
 	url = https://github.com/awslabs/s2n.git
+[submodule "aws-common-runtime/aws-checksums"]
+	path = aws-common-runtime/aws-checksums
+	url = https://github.com/awslabs/aws-checksums.git
+[submodule "aws-common-runtime/aws-c-event-stream"]
+	path = aws-common-runtime/aws-c-event-stream
+	url = https://github.com/awslabs/aws-c-event-stream.git

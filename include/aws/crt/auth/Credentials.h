@@ -1,21 +1,13 @@
 #pragma once
-/*
- * Copyright 2010-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+/**
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0.
  */
 
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
+#include <aws/crt/http/HttpConnection.h>
+#include <aws/crt/io/TlsOptions.h>
 
 #include <chrono>
 #include <functional>
@@ -30,6 +22,11 @@ namespace Aws
         namespace Io
         {
             class ClientBootstrap;
+        }
+
+        namespace Http
+        {
+            class HttpClientConnectionProxyOptions;
         }
 
         namespace Auth
@@ -239,6 +236,45 @@ namespace Aws
             };
 
             /**
+             * Configuration options for the X509 credentials provider
+             */
+            struct AWS_CRT_CPP_API CredentialsProviderX509Config
+            {
+                CredentialsProviderX509Config()
+                    : Bootstrap(nullptr), TlsOptions(), ThingName(), RoleAlias(), Endpoint(), ProxyOptions()
+                {
+                }
+
+                /**
+                 * Connection bootstrap to use to create the http connection required to
+                 * query credentials from the x509 provider
+                 */
+                Io::ClientBootstrap *Bootstrap;
+
+                /* TLS connection options that have been initialized with your x509 certificate and private key */
+                Io::TlsConnectionOptions TlsOptions;
+
+                /* IoT thing name you registered with AWS IOT for your device, it will be used in http request header */
+                String ThingName;
+
+                /* Iot role alias you created with AWS IoT for your IAM role, it will be used in http request path */
+                String RoleAlias;
+
+                /**
+                 * AWS account specific endpoint that can be acquired using AWS CLI following instructions from the demo
+                 * example: c2sakl5huz0afv.credentials.iot.us-east-1.amazonaws.com
+                 *
+                 * This a different endpoint than the IoT data mqtt broker endpoint.
+                 */
+                String Endpoint;
+
+                /**
+                 * (Optional) Http proxy configuration for the http request that fetches credentials
+                 */
+                Optional<Http::HttpClientConnectionProxyOptions> ProxyOptions;
+            };
+
+            /**
              * Simple credentials provider implementation that wraps one of the internal C-based implementations.
              *
              * Contains a set of static factory methods for building each supported provider, as well as one for the
@@ -323,11 +359,19 @@ namespace Aws
                 /**
                  * Creates the SDK-standard default credentials provider which is a cache-fronted chain of:
                  *
-                 *   Environment -> Profile -> IMDS
+                 *   Environment -> Profile -> IMDS/ECS
                  *
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderChainDefault(
                     const CredentialsProviderChainDefaultConfig &config,
+                    Allocator *allocator = g_allocator);
+
+                /**
+                 * Creates a provider that sources credentials from the IoT X509 provider service
+                 *
+                 */
+                static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderX509(
+                    const CredentialsProviderX509Config &config,
                     Allocator *allocator = g_allocator);
 
               private:

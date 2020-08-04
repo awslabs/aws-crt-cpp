@@ -9,6 +9,8 @@ C++ wrapper around the aws-c-* libraries. Provides Cross-Platform Transport Prot
 * aws-c-mqtt: MQTT client.
 * aws-c-auth: Auth signers such as Aws-auth sigv4
 * aws-c-http: HTTP 1.1 client, and websockets (H2 coming soon)
+* aws-checksums: Cross-Platform HW accelerated CRC32c and CRC32 with fallback to efficient SW implementations.
+* aws-c-event-stream: C99 implementation of the vnd.amazon.event-stream content-type.
 
 More protocols and utilities are coming soon, so stay tuned.
 
@@ -100,6 +102,14 @@ Aws::Crt::Io::ClientBootstrap bootstrap(eventLoopGroup);
 Lastly, you will need a client or server bootstrap to use a client or server protocol implementation. Since everything is
 non-blocking and event driven, this handles most of the "callback hell" inherent in the design. Assuming you aren't partitioning
 threads for particular use-cases, you can have a single instance of this that you pass to multiple clients.
+
+## Mac-Only TLS Behavior
+
+Please note that on Mac, once a private key is used with a certificate, that certificate-key pair is imported into the Mac Keychain.  All subsequent uses of that certificate will use the stored private key and ignore anything passed in programmatically.  Beginning in v0.8.10, when a stored private key from the Keychain is used, the following will be logged at the "info" log level:
+
+```
+static: certificate has an existing certificate-key pair that was previously imported into the Keychain.  Using key from Keychain instead of the one provided.
+```
 
 ## License
 

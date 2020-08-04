@@ -1,16 +1,6 @@
-/*
- * Copyright 2010-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+/**
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0.
  */
 
 #include <aws/crt/Api.h>
@@ -85,7 +75,7 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
         bool published = false;
         bool received = false;
         auto onConnectionCompleted =
-            [&](MqttConnection &connection, int errorCode, ReturnCode returnCode, bool sessionPresent) {
+            [&](MqttConnection &, int errorCode, ReturnCode returnCode, bool sessionPresent) {
                 printf(
                     "%s errorCode=%d returnCode=%d sessionPresent=%d\n",
                     (errorCode == 0) ? "CONNECTED" : "COMPLETED",
@@ -95,23 +85,23 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
                 connected = true;
                 cv.notify_one();
             };
-        auto onDisconnect = [&](MqttConnection &connection) {
+        auto onDisconnect = [&](MqttConnection &) {
             printf("DISCONNECTED\n");
             connected = false;
             cv.notify_one();
         };
-        auto onTest = [&](MqttConnection &connection, const String &topic, const ByteBuf &payload) {
+        auto onTest = [&](MqttConnection &, const String &topic, const ByteBuf &payload) {
             printf("GOT MESSAGE topic=%s payload=" PRInSTR "\n", topic.c_str(), AWS_BYTE_BUF_PRI(payload));
             received = true;
             cv.notify_one();
         };
         auto onSubAck =
-            [&](MqttConnection &connection, uint16_t packetId, const String &topic, QOS qos, int errorCode) {
+            [&](MqttConnection &, uint16_t packetId, const String &topic, QOS qos, int) {
                 printf("SUBACK id=%d topic=%s qos=%d\n", packetId, topic.c_str(), qos);
                 subscribed = true;
                 cv.notify_one();
             };
-        auto onPubAck = [&](MqttConnection &connection, uint16_t packetId, int errorCode) {
+        auto onPubAck = [&](MqttConnection &, uint16_t packetId, int) {
             printf("PUBLISHED id=%d\n", packetId);
             published = true;
             cv.notify_one();

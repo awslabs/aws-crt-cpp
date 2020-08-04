@@ -1,26 +1,18 @@
-/*
- * Copyright 2010-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+/**
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0.
  */
 
 #include <aws/crt/auth/Credentials.h>
 
+#include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/io/Bootstrap.h>
 
 #include <aws/auth/credentials.h>
 #include <aws/common/string.h>
 
 #include <algorithm>
+#include <aws/http/connection.h>
 
 namespace Aws
 {
@@ -277,6 +269,45 @@ namespace Aws
                 return s_CreateWrappedProvider(
                     aws_credentials_provider_new_chain_default(allocator, &raw_config), allocator);
             }
+
+            std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderX509(
+                const CredentialsProviderX509Config &config,
+                Allocator *allocator)
+            {
+                struct aws_credentials_provider_x509_options raw_config;
+                AWS_ZERO_STRUCT(raw_config);
+
+                raw_config.bootstrap = config.Bootstrap->GetUnderlyingHandle();
+                raw_config.tls_connection_options = config.TlsOptions.GetUnderlyingHandle();
+                raw_config.thing_name = aws_byte_cursor_from_c_str(config.ThingName.c_str());
+                raw_config.role_alias = aws_byte_cursor_from_c_str(config.RoleAlias.c_str());
+                raw_config.endpoint = aws_byte_cursor_from_c_str(config.Endpoint.c_str());
+
+                struct aws_http_proxy_options proxy_options;
+                AWS_ZERO_STRUCT(proxy_options);
+                if (config.ProxyOptions.has_value())
+                {
+                    const Http::HttpClientConnectionProxyOptions &proxy_config = config.ProxyOptions.value();
+
+                    proxy_options.host = aws_byte_cursor_from_c_str(proxy_config.HostName.c_str());
+                    proxy_options.port = proxy_config.Port;
+                    proxy_options.tls_options = proxy_config.TlsOptions->GetUnderlyingHandle();
+                    proxy_options.auth_type = (enum aws_http_proxy_authentication_type)proxy_config.AuthType;
+                    proxy_options.auth_username = aws_byte_cursor_from_c_str(proxy_config.BasicAuthUsername.c_str());
+                    proxy_options.auth_password = aws_byte_cursor_from_c_str(proxy_config.BasicAuthPassword.c_str());
+
+                    raw_config.proxy_options = &proxy_options;
+                }
+
+                /**
+                 * Sets the TLS options for the proxy connection.
+                 * Optional.
+                 */
+                Optional<Io::TlsConnectionOptions> TlsOptions;
+
+                return s_CreateWrappedProvider(aws_credentials_provider_new_x509(allocator, &raw_config), allocator);
+            }
+
         } // namespace Auth
     }     // namespace Crt
 } // namespace Aws

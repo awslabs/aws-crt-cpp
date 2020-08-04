@@ -1,16 +1,6 @@
-/*
- * Copyright 2010-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+/**
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/Api.h>
 #include <aws/crt/Optional.h>
@@ -66,16 +56,16 @@ class CopyMoveTester
 {
   public:
     CopyMoveTester() : m_copied(false), m_moved(false) {}
-    CopyMoveTester(const CopyMoveTester &other) : m_copied(true), m_moved(false) {}
-    CopyMoveTester(CopyMoveTester &&other) : m_copied(false), m_moved(true) {}
+    CopyMoveTester(const CopyMoveTester &) : m_copied(true), m_moved(false) {}
+    CopyMoveTester(CopyMoveTester &&) : m_copied(false), m_moved(true) {}
 
-    CopyMoveTester &operator=(const CopyMoveTester &other)
+    CopyMoveTester &operator=(const CopyMoveTester &)
     {
         m_copied = true;
         m_moved = false;
         return *this;
     }
-    CopyMoveTester &operator=(CopyMoveTester &&other)
+    CopyMoveTester &operator=(CopyMoveTester &&)
     {
         m_copied = false;
         m_moved = true;

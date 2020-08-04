@@ -6,7 +6,7 @@ file(GLOB TEST_SRC "*.cpp")
 file(GLOB TEST_HDRS "*.h")
 file(GLOB TESTS ${TEST_HDRS} ${TEST_SRC})
 
-set(TEST_BINARY_NAME ${CMAKE_PROJECT_NAME}-tests)
+set(TEST_BINARY_NAME ${PROJECT_NAME}-tests)
 
 add_test_case(EventLoopResourceSafety)
 add_net_test_case(MqttClientResourceSafety)
@@ -52,4 +52,4 @@ generate_cpp_test_driver(${TEST_BINARY_NAME})
 
 add_custom_command(TARGET ${TEST_BINARY_NAME} PRE_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/resources ${CMAKE_CURRENT_BINARY_DIR})
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources $<TARGET_FILE_DIR:${TEST_BINARY_NAME}>)
