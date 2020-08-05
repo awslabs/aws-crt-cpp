@@ -27,7 +27,7 @@ class SignWaiter
   public:
     SignWaiter() : m_lock(), m_signal(), m_done(false) {}
 
-    void OnSigningComplete(const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request, int errorCode)
+    void OnSigningComplete(const std::shared_ptr<Aws::Crt::Http::HttpRequest> &, int)
     {
         std::unique_lock<std::mutex> lock(m_lock);
         m_done = true;

@@ -16,6 +16,9 @@
  */
 
 #if defined(USE_WINDOWS_DLL_SEMANTICS) || defined(WIN32)
+#    ifdef _MSC_VER
+#        pragma warning(disable : 4251)
+#    endif // _MSC_VER
 #    ifdef AWS_CRT_CPP_USE_IMPORT_EXPORT
 #        ifdef AWS_CRT_CPP_EXPORTS
 #            define AWS_CRT_CPP_API __declspec(dllexport)

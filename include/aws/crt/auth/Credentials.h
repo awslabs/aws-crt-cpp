@@ -6,6 +6,8 @@
 
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
+#include <aws/crt/http/HttpConnection.h>
+#include <aws/crt/io/TlsOptions.h>
 
 #include <chrono>
 #include <functional>
@@ -20,6 +22,11 @@ namespace Aws
         namespace Io
         {
             class ClientBootstrap;
+        }
+
+        namespace Http
+        {
+            class HttpClientConnectionProxyOptions;
         }
 
         namespace Auth
@@ -229,6 +236,45 @@ namespace Aws
             };
 
             /**
+             * Configuration options for the X509 credentials provider
+             */
+            struct AWS_CRT_CPP_API CredentialsProviderX509Config
+            {
+                CredentialsProviderX509Config()
+                    : Bootstrap(nullptr), TlsOptions(), ThingName(), RoleAlias(), Endpoint(), ProxyOptions()
+                {
+                }
+
+                /**
+                 * Connection bootstrap to use to create the http connection required to
+                 * query credentials from the x509 provider
+                 */
+                Io::ClientBootstrap *Bootstrap;
+
+                /* TLS connection options that have been initialized with your x509 certificate and private key */
+                Io::TlsConnectionOptions TlsOptions;
+
+                /* IoT thing name you registered with AWS IOT for your device, it will be used in http request header */
+                String ThingName;
+
+                /* Iot role alias you created with AWS IoT for your IAM role, it will be used in http request path */
+                String RoleAlias;
+
+                /**
+                 * AWS account specific endpoint that can be acquired using AWS CLI following instructions from the demo
+                 * example: c2sakl5huz0afv.credentials.iot.us-east-1.amazonaws.com
+                 *
+                 * This a different endpoint than the IoT data mqtt broker endpoint.
+                 */
+                String Endpoint;
+
+                /**
+                 * (Optional) Http proxy configuration for the http request that fetches credentials
+                 */
+                Optional<Http::HttpClientConnectionProxyOptions> ProxyOptions;
+            };
+
+            /**
              * Simple credentials provider implementation that wraps one of the internal C-based implementations.
              *
              * Contains a set of static factory methods for building each supported provider, as well as one for the
@@ -313,11 +359,19 @@ namespace Aws
                 /**
                  * Creates the SDK-standard default credentials provider which is a cache-fronted chain of:
                  *
-                 *   Environment -> Profile -> IMDS
+                 *   Environment -> Profile -> IMDS/ECS
                  *
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderChainDefault(
                     const CredentialsProviderChainDefaultConfig &config,
+                    Allocator *allocator = g_allocator);
+
+                /**
+                 * Creates a provider that sources credentials from the IoT X509 provider service
+                 *
+                 */
+                static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderX509(
+                    const CredentialsProviderX509Config &config,
                     Allocator *allocator = g_allocator);
 
               private:
