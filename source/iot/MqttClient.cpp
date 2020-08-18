@@ -12,9 +12,6 @@
 
 namespace Aws
 {
-    static Crt::ByteCursor s_dateHeader = aws_byte_cursor_from_c_str("x-amz-date");
-    static Crt::ByteCursor s_securityTokenHeader = aws_byte_cursor_from_c_str("x-amz-security-token");
-
     namespace Iot
     {
         WebsocketConfig::WebsocketConfig(
@@ -40,7 +37,6 @@ namespace Aws
                 signerConfig->SetService(serviceNameCopy);
                 signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4);
                 signerConfig->SetSignatureType(Crt::Auth::SignatureType::HttpRequestViaQueryParams);
-                signerConfig->SetSignedBodyValue(Crt::Auth::SignedBodyValueType::Empty);
                 signerConfig->SetOmitSessionToken(true);
                 signerConfig->SetCredentialsProvider(credsProviderRef);
 
@@ -65,7 +61,6 @@ namespace Aws
                 signerConfig->SetService(serviceNameCopy);
                 signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4);
                 signerConfig->SetSignatureType(Crt::Auth::SignatureType::HttpRequestViaQueryParams);
-                signerConfig->SetSignedBodyValue(Crt::Auth::SignedBodyValueType::Empty);
                 signerConfig->SetOmitSessionToken(true);
                 signerConfig->SetCredentialsProvider(credsProviderRef);
 

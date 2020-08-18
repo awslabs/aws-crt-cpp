@@ -18,6 +18,14 @@ namespace Aws
     {
         namespace Auth
         {
+            namespace SignedBodyValue
+            {
+                const char *EmptySha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+                const char *UnsignedPayload = "UNSIGNED-PAYLOAD";
+                const char *StreamingAws4HmacSha256Payload = "STREAMING-AWS4-HMAC-SHA256-PAYLOAD";
+                const char *StreamingAws4HmacSha256Events = "STREAMING-AWS4-HMAC-SHA256-EVENTS";
+            } // namespace SignedBodyValue
+
             AwsSigningConfig::AwsSigningConfig(Allocator *allocator)
                 : ISigningConfig(), m_allocator(allocator), m_credentialsProvider(nullptr), m_credentials(nullptr)
             {
@@ -28,7 +36,6 @@ namespace Aws
                 SetShouldNormalizeUriPath(true);
                 SetUseDoubleUriEncode(true);
                 SetOmitSessionToken(false);
-                SetSignedBodyValue(SignedBodyValueType::Payload);
                 SetSignedBodyHeader(SignedBodyHeaderType::None);
                 SetSigningTimepoint(DateTime::Now());
                 SetExpirationInSeconds(0);
@@ -120,14 +127,12 @@ namespace Aws
                 m_config.should_sign_header = shouldSignHeaderCb;
             }
 
-            SignedBodyValueType AwsSigningConfig::GetSignedBodyValue() const noexcept
-            {
-                return static_cast<SignedBodyValueType>(m_config.signed_body_value);
-            }
+            const Crt::String &AwsSigningConfig::GetSignedBodyValue() const noexcept { return m_signedBodyValue; }
 
-            void AwsSigningConfig::SetSignedBodyValue(SignedBodyValueType signedBodyValue) noexcept
+            void AwsSigningConfig::SetSignedBodyValue(const Crt::String &signedBodyValue) noexcept
             {
-                m_config.signed_body_value = static_cast<enum aws_signed_body_value_type>(signedBodyValue);
+                m_signedBodyValue = signedBodyValue;
+                m_config.signed_body_value = ByteCursorFromString(m_signedBodyValue);
             }
 
             SignedBodyHeaderType AwsSigningConfig::GetSignedBodyHeader() const noexcept
