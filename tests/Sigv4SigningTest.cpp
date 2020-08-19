@@ -229,3 +229,48 @@ static int s_Sigv4SigningTestCredentials(struct aws_allocator *allocator, void *
 }
 
 AWS_TEST_CASE(Sigv4SigningTestCredentials, s_Sigv4SigningTestCredentials)
+
+static int s_Sigv4SigningTestUnsignedPayload(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
+    {
+        Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+        ASSERT_TRUE(eventLoopGroup);
+
+        Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+        ASSERT_TRUE(defaultHostResolver);
+
+        Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+        ASSERT_TRUE(clientBootstrap);
+        clientBootstrap.EnableBlockingShutdown();
+
+        CredentialsProviderChainDefaultConfig config;
+        config.Bootstrap = &clientBootstrap;
+
+        auto signer = Aws::Crt::MakeShared<Sigv4HttpRequestSigner>(allocator, allocator);
+
+        auto request = s_MakeDummyRequest(allocator);
+
+        AwsSigningConfig signingConfig(allocator);
+        signingConfig.SetSigningTimepoint(Aws::Crt::DateTime());
+        signingConfig.SetRegion("test");
+        signingConfig.SetService("service");
+        signingConfig.SetCredentials(s_MakeDummyCredentials(allocator));
+        signingConfig.SetSignedBodyValue(Aws::Crt::Auth::SignedBodyValue::UnsignedPayload);
+        signingConfig.SetSignedBodyHeader(Aws::Crt::Auth::SignedBodyHeaderType::XAmzContentSha256);
+
+        SignWaiter waiter;
+
+        signer->SignRequest(
+            request, signingConfig, [&](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request, int errorCode) {
+                waiter.OnSigningComplete(request, errorCode);
+            });
+        waiter.Wait();
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(Sigv4SigningTestUnsignedPayload, s_Sigv4SigningTestUnsignedPayload)
