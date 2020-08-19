@@ -34,14 +34,30 @@ namespace Aws
                 HttpRequestEvent = AWS_ST_HTTP_REQUEST_EVENT,
             };
 
-            enum class SignedBodyValueType
+            namespace SignedBodyValue
             {
-                Empty = AWS_SBVT_EMPTY,
-                Payload = AWS_SBVT_PAYLOAD,
-                UnsignedPayload = AWS_SBVT_UNSIGNED_PAYLOAD,
-                StreamingAws4HmacSha256Payload = AWS_SBVT_STREAMING_AWS4_HMAC_SHA256_PAYLOAD,
-                StreamingAws4HmacSha256Events = AWS_SBVT_STREAMING_AWS4_HMAC_SHA256_EVENTS,
-            };
+                /**
+                 * The SHA-256 of an empty string:
+                 * 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+                 * For use with `Aws::Crt::Auth::AwsSigningConfig.SetSignedBodyValue()`.
+                 */
+                AWS_CRT_CPP_API extern const char *EmptySha256;
+                /**
+                 * 'UNSIGNED-PAYLOAD'
+                 * For use with `Aws::Crt::Auth::AwsSigningConfig.SetSignedBodyValue()`.
+                 */
+                AWS_CRT_CPP_API extern const char *UnsignedPayload;
+                /**
+                 * 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD'
+                 * For use with `Aws::Crt::Auth::AwsSigningConfig.SetSignedBodyValue()`.
+                 */
+                AWS_CRT_CPP_API extern const char *StreamingAws4HmacSha256Payload;
+                /**
+                 * 'STREAMING-AWS4-HMAC-SHA256-EVENTS'
+                 * For use with `Aws::Crt::Auth::AwsSigningConfig.SetSignedBodyValue()`.
+                 */
+                AWS_CRT_CPP_API extern const char *StreamingAws4HmacSha256Events;
+            } // namespace SignedBodyValue
 
             enum class SignedBodyHeaderType
             {
@@ -165,14 +181,19 @@ namespace Aws
                 void SetShouldSignHeaderCallback(ShouldSignHeaderCb shouldSignHeaderCb) noexcept;
 
                 /**
-                 * Gets the value to use for the canonical request's payload
+                 * Gets the string used as the canonical request's body value.
+                 * If string is empty, a value is be calculated from the payload during signing.
                  */
-                SignedBodyValueType GetSignedBodyValue() const noexcept;
+                const Crt::String &GetSignedBodyValue() const noexcept;
 
                 /**
-                 * Sets the value to use for the canonical request's payload
+                 * Sets the string to use as the canonical request's body value.
+                 * If an empty string is set (the default), a value will be calculated from the payload during signing.
+                 * Typically, this is the SHA-256 of the (request/chunk/event) payload, written as lowercase hex.
+                 * If this has been precalculated, it can be set here.
+                 * Special values used by certain services can also be set (see Aws::Crt::Auth::SignedBodyValue).
                  */
-                void SetSignedBodyValue(SignedBodyValueType signedBodyValue) noexcept;
+                void SetSignedBodyValue(const Crt::String &signedBodyValue) noexcept;
 
                 /**
                  * Gets the name of the header to add that stores the signed body value
@@ -229,6 +250,7 @@ namespace Aws
                 struct aws_signing_config_aws m_config;
                 Crt::String m_signingRegion;
                 Crt::String m_serviceName;
+                Crt::String m_signedBodyValue;
             };
 
             /**

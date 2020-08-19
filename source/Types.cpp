@@ -36,6 +36,11 @@ namespace Aws
 
         ByteCursor ByteCursorFromCString(const char *str) noexcept { return aws_byte_cursor_from_c_str(str); }
 
+        ByteCursor ByteCursorFromString(const Crt::String &str) noexcept
+        {
+            return aws_byte_cursor_from_array((const void *)str.data(), str.length());
+        }
+
         ByteCursor ByteCursorFromByteBuf(const ByteBuf &buf) noexcept { return aws_byte_cursor_from_buf(&buf); }
 
         ByteCursor ByteCursorFromArray(const uint8_t *array, size_t len) noexcept
@@ -45,7 +50,7 @@ namespace Aws
 
         Vector<uint8_t> Base64Decode(const String &decode)
         {
-            ByteCursor toDecode = aws_byte_cursor_from_array((const void *)decode.data(), decode.length());
+            ByteCursor toDecode = ByteCursorFromString(decode);
 
             size_t allocation_size = 0;
 
