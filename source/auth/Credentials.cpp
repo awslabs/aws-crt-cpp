@@ -28,6 +28,16 @@ namespace Aws
                 }
             }
 
+            Credentials::Credentials(const aws_credentials *credentials, Allocator *allocator) noexcept
+                : m_credentials(aws_credentials_new(
+                      allocator,
+                      aws_credentials_get_access_key_id(credentials),
+                      aws_credentials_get_secret_access_key(credentials),
+                      aws_credentials_get_session_token(credentials),
+                      aws_credentials_get_expiration_timepoint_seconds(credentials)))
+            {
+            }
+
             Credentials::Credentials(
                 ByteCursor access_key_id,
                 ByteCursor secret_access_key,
@@ -106,7 +116,7 @@ namespace Aws
 
             CredentialsProvider::~CredentialsProvider()
             {
-                if (m_provider != nullptr)
+                if (m_provider)
                 {
                     aws_credentials_provider_release(m_provider);
                     m_provider = nullptr;
@@ -169,7 +179,6 @@ namespace Aws
 
                 /* Switch to some kind of make_shared/allocate_shared when allocator support improves */
                 auto provider = Aws::Crt::MakeShared<CredentialsProvider>(allocator, raw_provider, allocator);
-
                 return std::static_pointer_cast<ICredentialsProvider>(provider);
             }
 

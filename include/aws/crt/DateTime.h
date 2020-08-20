@@ -58,7 +58,7 @@ namespace Aws
             DateTime() noexcept;
 
             /**
-             *  Initializes time point to any other arbirtrary timepoint
+             *  Initializes time point to any other arbitrary timepoint
              */
             DateTime(const std::chrono::system_clock::time_point &timepointToAssign) noexcept;
 

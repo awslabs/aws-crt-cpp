@@ -38,6 +38,7 @@ namespace Aws
             {
               public:
                 Credentials(aws_credentials *credentials) noexcept;
+                Credentials(const aws_credentials *credentials, Allocator *allocator = g_allocator) noexcept;
                 Credentials(
                     ByteCursor access_key_id,
                     ByteCursor secret_access_key,

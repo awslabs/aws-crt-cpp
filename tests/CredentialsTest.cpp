@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 
-#include <aws/crt/Api.h>
-#include <aws/crt/auth/Credentials.h>
-
 #include <aws/auth/credentials.h>
+#include <aws/crt/Api.h>
+#include <aws/crt/DateTime.h>
+#include <aws/crt/auth/Credentials.h>
 #include <aws/testing/aws_test_harness.h>
 
 #include <condition_variable>
@@ -64,6 +64,50 @@ class GetCredentialsWaiter
     std::shared_ptr<ICredentialsProvider> m_provider;
     int m_errorCode;
 };
+
+static int s_TestCredentialsConstruction(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    ApiHandle apiHandle(allocator);
+    {
+        uint64_t expire = Aws::Crt::DateTime::Now().Millis() / 1000 + 3600;
+        aws_credentials *raw_creds = aws_credentials_new(
+            allocator,
+            aws_byte_cursor_from_c_str(s_access_key_id),
+            aws_byte_cursor_from_c_str(s_secret_access_key),
+            aws_byte_cursor_from_c_str(s_session_token),
+            expire);
+
+        ASSERT_NOT_NULL(raw_creds);
+        Credentials creds(raw_creds);
+        ASSERT_PTR_EQUALS(raw_creds, creds.GetUnderlyingHandle());
+        auto cursor = creds.GetAccessKeyId();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_access_key_id));
+        cursor = creds.GetSecretAccessKey();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_secret_access_key));
+        cursor = creds.GetSessionToken();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_session_token));
+        ASSERT_UINT_EQUALS(expire, creds.GetExpirationTimepointInSeconds());
+
+        Credentials creds2((const aws_credentials *)raw_creds);
+        ASSERT_FALSE(raw_creds == creds2.GetUnderlyingHandle());
+
+        // We can/should safely release the raw creds here, but remember creds still holds it by ref counting.
+        aws_credentials_release(raw_creds);
+
+        cursor = creds2.GetAccessKeyId();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_access_key_id));
+        cursor = creds2.GetSecretAccessKey();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_secret_access_key));
+        cursor = creds2.GetSessionToken();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_session_token));
+        ASSERT_UINT_EQUALS(expire, creds2.GetExpirationTimepointInSeconds());
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(TestCredentialsConstruction, s_TestCredentialsConstruction)
 
 static int s_TestProviderStaticGet(struct aws_allocator *allocator, void *ctx)
 {
