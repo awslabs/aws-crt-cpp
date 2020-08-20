@@ -28,6 +28,16 @@ namespace Aws
                 }
             }
 
+            Credentials::Credentials(const aws_credentials *credentials, Allocator *allocator) noexcept
+                : m_credentials(aws_credentials_new(
+                      allocator,
+                      aws_credentials_get_access_key_id(credentials),
+                      aws_credentials_get_secret_access_key(credentials),
+                      aws_credentials_get_session_token(credentials),
+                      aws_credentials_get_expiration_timepoint_seconds(credentials)))
+            {
+            }
+
             Credentials::Credentials(
                 ByteCursor access_key_id,
                 ByteCursor secret_access_key,

@@ -7,6 +7,7 @@
 #include <aws/crt/Exports.h>
 #include <aws/crt/Optional.h>
 #include <aws/crt/StlAllocator.h>
+#include <aws/crt/StringView.h>
 #include <aws/io/socket.h>
 #include <aws/mqtt/mqtt.h>
 #include <functional>
