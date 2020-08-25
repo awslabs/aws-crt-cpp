@@ -21,11 +21,14 @@ namespace Aws
                 size_t maxHosts,
                 size_t maxTTL,
                 Allocator *allocator) noexcept
-                : m_allocator(allocator), m_initialized(true)
+                : m_resolver(nullptr), m_allocator(allocator), m_initialized(false)
             {
-                if (aws_host_resolver_init_default(&m_resolver, allocator, maxHosts, elGroup.GetUnderlyingHandle()))
+                AWS_ZERO_STRUCT(m_config);
+
+                m_resolver = aws_host_resolver_new_default(allocator, maxHosts, elGroup.GetUnderlyingHandle(), NULL);
+                if (m_resolver != nullptr)
                 {
-                    m_initialized = false;
+                    m_initialized = true;
                 }
 
                 m_config.impl = aws_default_dns_resolve;
@@ -35,11 +38,8 @@ namespace Aws
 
             DefaultHostResolver::~DefaultHostResolver()
             {
-                if (m_initialized)
-                {
-                    aws_host_resolver_clean_up(&m_resolver);
-                    m_initialized = false;
-                }
+                aws_host_resolver_release(m_resolver);
+                m_initialized = false;
             }
 
             /// @private
@@ -91,7 +91,7 @@ namespace Aws
                 args->allocator = m_allocator;
 
                 if (!args->host ||
-                    aws_host_resolver_resolve_host(&m_resolver, args->host, s_onHostResolved, &m_config, args))
+                    aws_host_resolver_resolve_host(m_resolver, args->host, s_onHostResolved, &m_config, args))
                 {
                     Delete(args, m_allocator);
                     return false;

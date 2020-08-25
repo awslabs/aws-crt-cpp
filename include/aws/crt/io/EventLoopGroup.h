@@ -54,7 +54,7 @@ namespace Aws
                 aws_event_loop_group *GetUnderlyingHandle() noexcept;
 
               private:
-                aws_event_loop_group m_eventLoopGroup;
+                aws_event_loop_group *m_eventLoopGroup;
                 int m_lastError;
             };
         } // namespace Io

@@ -258,11 +258,11 @@ namespace Aws
             {
                 if (mode == TlsMode::CLIENT)
                 {
-                    m_ctx.reset(aws_tls_client_ctx_new(allocator, &options.m_options), aws_tls_ctx_destroy);
+                    m_ctx.reset(aws_tls_client_ctx_new(allocator, &options.m_options), aws_tls_ctx_release);
                 }
                 else
                 {
-                    m_ctx.reset(aws_tls_server_ctx_new(allocator, &options.m_options), aws_tls_ctx_destroy);
+                    m_ctx.reset(aws_tls_server_ctx_new(allocator, &options.m_options), aws_tls_ctx_release);
                 }
 
                 if (!m_ctx)

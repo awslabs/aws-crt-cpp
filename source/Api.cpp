@@ -37,6 +37,8 @@ namespace Aws
 
         static void s_cleanUpApi()
         {
+            aws_global_thread_shutdown_wait();
+
             g_allocator = nullptr;
             aws_auth_library_clean_up();
             aws_mqtt_library_clean_up();
