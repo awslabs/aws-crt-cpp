@@ -19,6 +19,13 @@ namespace Aws
             HttpMessage::HttpMessage(Allocator *allocator, struct aws_http_message *message, bool ownsMessage) noexcept
                 : m_allocator(allocator), m_message(message), m_bodyStream(nullptr), m_ownsMessage(ownsMessage)
             {
+                if (message && !ownsMessage)
+                {
+                    // If the message is owned by this object, it means the refcount only accessed by this object. And
+                    // the initial refcount is created as the object created. If the message is not owned by this
+                    // object, acquire a refcount to keep the message alive until this object dies.
+                    aws_http_message_acquire(this->m_message);
+                }
             }
 
             HttpMessage::~HttpMessage()
@@ -31,10 +38,8 @@ namespace Aws
                         aws_input_stream_destroy(old_stream);
                     }
 
-                    if (m_ownsMessage)
-                    {
-                        aws_http_message_destroy(m_message);
-                    }
+                    aws_http_message_release(m_message);
+
                     m_message = nullptr;
                 }
             }
