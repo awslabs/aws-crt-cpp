@@ -16,9 +16,14 @@ namespace Aws
         namespace Http
         {
 
-            HttpMessage::HttpMessage(Allocator *allocator, struct aws_http_message *message, bool ownsMessage) noexcept
-                : m_allocator(allocator), m_message(message), m_bodyStream(nullptr), m_ownsMessage(ownsMessage)
+            HttpMessage::HttpMessage(Allocator *allocator, struct aws_http_message *message) noexcept
+                : m_allocator(allocator), m_message(message), m_bodyStream(nullptr)
             {
+                if (message)
+                {
+                    // Acquire a refcount to keep the message alive until this object dies.
+                    aws_http_message_acquire(this->m_message);
+                }
             }
 
             HttpMessage::~HttpMessage()
@@ -31,10 +36,8 @@ namespace Aws
                         aws_input_stream_destroy(old_stream);
                     }
 
-                    if (m_ownsMessage)
-                    {
-                        aws_http_message_destroy(m_message);
-                    }
+                    aws_http_message_release(m_message);
+
                     m_message = nullptr;
                 }
             }
@@ -92,12 +95,14 @@ namespace Aws
             }
 
             HttpRequest::HttpRequest(Allocator *allocator)
-                : HttpMessage(allocator, aws_http_message_new_request(allocator), true)
+                : HttpMessage(allocator, aws_http_message_new_request(allocator))
             {
+                // Releas the refcount as it created, since HttpMessage is taking the ownership
+                aws_http_message_release(this->m_message);
             }
 
             HttpRequest::HttpRequest(Allocator *allocator, struct aws_http_message *message)
-                : HttpMessage(allocator, message, false)
+                : HttpMessage(allocator, message)
             {
             }
 
@@ -136,6 +141,8 @@ namespace Aws
             HttpResponse::HttpResponse(Allocator *allocator)
                 : HttpMessage(allocator, aws_http_message_new_response(allocator))
             {
+                // Releas the refcount as it created, since HttpMessage is taking the ownership
+                aws_http_message_release(this->m_message);
             }
 
             Optional<int> HttpResponse::GetResponseCode() const noexcept
