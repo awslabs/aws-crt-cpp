@@ -16,8 +16,13 @@ namespace Aws
              * Lives until the bootstrap's shutdown-complete callback fires.
              */
             /// @private
-            struct ClientBootstrapCallbackData
+            class ClientBootstrapCallbackData
             {
+              private:
+                Allocator *m_allocator;
+
+              public:
+                ClientBootstrapCallbackData(Allocator *allocator) : m_allocator(allocator) {}
                 /**
                  * Promise for bootstrap's shutdown.
                  */
@@ -40,7 +45,7 @@ namespace Aws
                         callbackData->ShutdownCallback();
                     }
 
-                    delete callbackData;
+                    Crt::Delete(callbackData, callbackData->m_allocator);
                 }
             };
 
@@ -49,7 +54,8 @@ namespace Aws
                 HostResolver &resolver,
                 Allocator *allocator) noexcept
                 : m_bootstrap(nullptr), m_lastError(AWS_ERROR_SUCCESS),
-                  m_callbackData(new ClientBootstrapCallbackData()), m_enableBlockingShutdown(false)
+                  m_callbackData(Crt::New<ClientBootstrapCallbackData>(allocator, allocator)),
+                  m_enableBlockingShutdown(false)
             {
                 m_shutdownFuture = m_callbackData->ShutdownPromise.get_future();
 
