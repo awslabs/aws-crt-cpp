@@ -85,7 +85,7 @@ namespace Aws
               private:
                 aws_client_bootstrap *m_bootstrap;
                 int m_lastError;
-                std::unique_ptr<struct ClientBootstrapCallbackData> m_callbackData;
+                std::unique_ptr<class ClientBootstrapCallbackData> m_callbackData;
                 std::future<void> m_shutdownFuture;
                 bool m_enableBlockingShutdown;
             };
