@@ -57,6 +57,7 @@ namespace Aws
                 return ctxOptions;
             }
 
+#if !defined(AWS_OS_IOS)
             TlsContextOptions TlsContextOptions::InitClientWithMtls(
                 const char *certPath,
                 const char *pKeyPath,
@@ -87,7 +88,8 @@ namespace Aws
                 }
                 return ctxOptions;
             }
-#ifdef __APPLE__
+#endif /* !AWS_OS_IOS */
+#if defined(AWS_OS_APPLE)
             TlsContextOptions TlsContextOptions::InitClientWithMtlsPkcs12(
                 const char *pkcs12Path,
                 const char *pkcs12Pwd,
@@ -102,7 +104,7 @@ namespace Aws
                 }
                 return ctxOptions;
             }
-#endif
+#endif /* AWS_OS_APPLE */
 
             bool TlsContextOptions::IsAlpnSupported() noexcept { return aws_tls_is_alpn_available(); }
 
