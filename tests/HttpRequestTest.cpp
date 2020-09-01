@@ -17,9 +17,9 @@ using namespace Aws::Crt::Http;
 static int s_HttpRequestTestCreateDestroy(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-
     {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
         Aws::Crt::Http::HttpRequest request(allocator);
         request.SetMethod(aws_byte_cursor_from_c_str("GET"));
         request.SetPath(aws_byte_cursor_from_c_str("/index"));
@@ -41,6 +41,8 @@ static int s_HttpRequestTestCreateDestroy(struct aws_allocator *allocator, void 
 
         request.EraseHeader(2);
     }
+
+    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }

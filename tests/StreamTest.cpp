@@ -16,15 +16,17 @@
 static int s_StreamTestCreateDestroyWrapper(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-
     {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
         auto stringStream = Aws::Crt::MakeShared<std::stringstream>(allocator, "SomethingInteresting");
         Aws::Crt::Io::StdIOStreamInputStream inputStream(stringStream, allocator);
 
         ASSERT_TRUE(static_cast<bool>(inputStream));
         ASSERT_NOT_NULL(inputStream.GetUnderlyingStream());
     }
+
+    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
@@ -36,9 +38,9 @@ static const char *STREAM_CONTENTS = "SomeContents";
 static int s_StreamTestLength(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-
     {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
         auto stringStream = Aws::Crt::MakeShared<std::stringstream>(allocator, STREAM_CONTENTS);
 
         Aws::Crt::Io::StdIOStreamInputStream wrappedStream(stringStream, allocator);
@@ -48,6 +50,8 @@ static int s_StreamTestLength(struct aws_allocator *allocator, void *ctx)
         ASSERT_TRUE(length == strlen(STREAM_CONTENTS));
     }
 
+    Aws::Crt::TestCleanupAndWait();
+
     return AWS_OP_SUCCESS;
 }
 
@@ -56,9 +60,9 @@ AWS_TEST_CASE(StreamTestLength, s_StreamTestLength)
 static int s_StreamTestRead(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-
     {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
         auto stringStream = Aws::Crt::MakeShared<Aws::Crt::StringStream>(allocator, STREAM_CONTENTS);
 
         Aws::Crt::Io::StdIOStreamInputStream wrappedStream(stringStream, allocator);
@@ -75,6 +79,8 @@ static int s_StreamTestRead(struct aws_allocator *allocator, void *ctx)
         aws_byte_buf_clean_up(&buffer);
     }
 
+    Aws::Crt::TestCleanupAndWait();
+
     return AWS_OP_SUCCESS;
 }
 
@@ -85,9 +91,9 @@ static const aws_off_t BEGIN_SEEK_OFFSET = 4;
 static int s_StreamTestSeekBegin(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-
     {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
         auto stringStream = Aws::Crt::MakeShared<Aws::Crt::StringStream>(allocator, STREAM_CONTENTS);
 
         Aws::Crt::Io::StdIOStreamInputStream wrappedStream(stringStream, allocator);
@@ -106,6 +112,8 @@ static int s_StreamTestSeekBegin(struct aws_allocator *allocator, void *ctx)
         aws_byte_buf_clean_up(&buffer);
     }
 
+    Aws::Crt::TestCleanupAndWait();
+
     return AWS_OP_SUCCESS;
 }
 
@@ -116,9 +124,9 @@ static const aws_off_t END_SEEK_OFFSET = -4;
 static int s_StreamTestSeekEnd(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-
     {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
         auto stringStream = Aws::Crt::MakeShared<Aws::Crt::StringStream>(allocator, STREAM_CONTENTS);
 
         Aws::Crt::Io::StdIOStreamInputStream wrappedStream(stringStream, allocator);
@@ -137,6 +145,8 @@ static int s_StreamTestSeekEnd(struct aws_allocator *allocator, void *ctx)
 
         aws_byte_buf_clean_up(&buffer);
     }
+
+    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }

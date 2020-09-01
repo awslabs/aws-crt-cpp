@@ -116,9 +116,10 @@ static std::shared_ptr<CredentialsProvider> s_MakeAsyncStaticProvider(
 static int s_Sigv4SigningTestCreateDestroy(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
 
     {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
         Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
         ASSERT_TRUE(eventLoopGroup);
 
@@ -137,6 +138,8 @@ static int s_Sigv4SigningTestCreateDestroy(struct aws_allocator *allocator, void
         auto signer = Aws::Crt::MakeShared<Sigv4HttpRequestSigner>(allocator, allocator);
     }
 
+    Aws::Crt::TestCleanupAndWait();
+
     return AWS_OP_SUCCESS;
 }
 
@@ -145,9 +148,9 @@ AWS_TEST_CASE(Sigv4SigningTestCreateDestroy, s_Sigv4SigningTestCreateDestroy)
 static int s_Sigv4SigningTestSimple(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-
     {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
         Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
         ASSERT_TRUE(eventLoopGroup);
 
@@ -182,6 +185,8 @@ static int s_Sigv4SigningTestSimple(struct aws_allocator *allocator, void *ctx)
         waiter.Wait();
     }
 
+    Aws::Crt::TestCleanupAndWait();
+
     return AWS_OP_SUCCESS;
 }
 
@@ -190,9 +195,9 @@ AWS_TEST_CASE(Sigv4SigningTestSimple, s_Sigv4SigningTestSimple)
 static int s_Sigv4SigningTestCredentials(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-
     {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
         Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
         ASSERT_TRUE(eventLoopGroup);
 
@@ -225,6 +230,8 @@ static int s_Sigv4SigningTestCredentials(struct aws_allocator *allocator, void *
         waiter.Wait();
     }
 
+    Aws::Crt::TestCleanupAndWait();
+
     return AWS_OP_SUCCESS;
 }
 
@@ -233,9 +240,9 @@ AWS_TEST_CASE(Sigv4SigningTestCredentials, s_Sigv4SigningTestCredentials)
 static int s_Sigv4SigningTestUnsignedPayload(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-
     {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
         Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
         ASSERT_TRUE(eventLoopGroup);
 
@@ -269,6 +276,8 @@ static int s_Sigv4SigningTestUnsignedPayload(struct aws_allocator *allocator, vo
             });
         waiter.Wait();
     }
+
+    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }

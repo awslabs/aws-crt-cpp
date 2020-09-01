@@ -12,23 +12,25 @@
 
 static int s_TestDefaultResolution(struct aws_allocator *allocator, void *)
 {
-    Aws::Crt::ApiHandle apiHandle(allocator);
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
 
-    Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
-    ASSERT_TRUE(eventLoopGroup);
-    ASSERT_NOT_NULL(eventLoopGroup.GetUnderlyingHandle());
+        Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+        ASSERT_TRUE(eventLoopGroup);
+        ASSERT_NOT_NULL(eventLoopGroup.GetUnderlyingHandle());
 
-    Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 5, allocator);
-    ASSERT_TRUE(defaultHostResolver);
-    ASSERT_NOT_NULL(defaultHostResolver.GetUnderlyingHandle());
+        Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 5, allocator);
+        ASSERT_TRUE(defaultHostResolver);
+        ASSERT_NOT_NULL(defaultHostResolver.GetUnderlyingHandle());
 
-    std::condition_variable semaphore;
-    std::mutex semaphoreLock;
-    size_t addressCount = 0;
-    int error = 0;
+        std::condition_variable semaphore;
+        std::mutex semaphoreLock;
+        size_t addressCount = 0;
+        int error = 0;
 
-    auto onHostResolved =
-        [&](Aws::Crt::Io::HostResolver &, const Aws::Crt::Vector<Aws::Crt::Io::HostAddress> &addresses, int errorCode) {
+        auto onHostResolved = [&](Aws::Crt::Io::HostResolver &,
+                                  const Aws::Crt::Vector<Aws::Crt::Io::HostAddress> &addresses,
+                                  int errorCode) {
             {
                 std::lock_guard<std::mutex> lock(semaphoreLock);
                 addressCount = addresses.size();
@@ -37,12 +39,15 @@ static int s_TestDefaultResolution(struct aws_allocator *allocator, void *)
             semaphore.notify_one();
         };
 
-    ASSERT_TRUE(defaultHostResolver.ResolveHost("localhost", onHostResolved));
+        ASSERT_TRUE(defaultHostResolver.ResolveHost("localhost", onHostResolved));
 
-    {
-        std::unique_lock<std::mutex> lock(semaphoreLock);
-        semaphore.wait(lock, [&]() { return addressCount || error; });
+        {
+            std::unique_lock<std::mutex> lock(semaphoreLock);
+            semaphore.wait(lock, [&]() { return addressCount || error; });
+        }
     }
+
+    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }

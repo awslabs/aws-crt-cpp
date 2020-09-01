@@ -10,19 +10,23 @@
 static int s_TestTLSContextResourceSafety(Aws::Crt::Allocator *allocator, void *ctx)
 {
     (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+        Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
 
-    Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
-    ASSERT_TRUE(tlsContext);
+        Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+        ASSERT_TRUE(tlsContext);
 
-    auto tlsContextPostMove = std::move(tlsContext);
-    ASSERT_TRUE(tlsContextPostMove);
+        auto tlsContextPostMove = std::move(tlsContext);
+        ASSERT_TRUE(tlsContextPostMove);
 
-    // NOLINTNEXTLINE
-    ASSERT_FALSE(tlsContext);
+        // NOLINTNEXTLINE
+        ASSERT_FALSE(tlsContext);
 
-    auto tlsConnectionOptions = tlsContextPostMove.NewConnectionOptions();
+        auto tlsConnectionOptions = tlsContextPostMove.NewConnectionOptions();
+    }
+
+    Aws::Crt::TestCleanupAndWait();
 
     return AWS_ERROR_SUCCESS;
 }

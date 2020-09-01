@@ -35,9 +35,11 @@ namespace Aws
             cJSON_InitHooks(&hooks);
         }
 
-        static void s_cleanUpApi()
+        static void s_cleanUpApi() {}
+
+        void TestCleanupAndWait()
         {
-            aws_global_thread_shutdown_wait();
+            aws_global_thread_creator_shutdown_wait_for(5);
 
             g_allocator = nullptr;
             aws_auth_library_clean_up();

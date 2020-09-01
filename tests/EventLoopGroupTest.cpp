@@ -10,9 +10,10 @@
 static int s_TestEventLoopResourceSafety(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    Aws::Crt::ApiHandle handle;
 
     {
+        Aws::Crt::ApiHandle handle;
+
         Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
         ASSERT_TRUE(eventLoopGroup);
         ASSERT_NOT_NULL(eventLoopGroup.GetUnderlyingHandle());
@@ -24,6 +25,8 @@ static int s_TestEventLoopResourceSafety(struct aws_allocator *allocator, void *
         // NOLINTNEXTLINE
         ASSERT_FALSE(eventLoopGroup);
     }
+
+    Aws::Crt::TestCleanupAndWait();
 
     return AWS_ERROR_SUCCESS;
 }
