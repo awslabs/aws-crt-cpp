@@ -59,7 +59,7 @@ namespace Aws
 
             size_t length() const noexcept { return m_size; }
 
-            size_t max_size() const noexcept { return std::numeric_limits<size_t>::max(); }
+            size_t max_size() const noexcept { return (std::numeric_limits<size_t>::max)(); }
 
             bool empty() const noexcept { return m_size == 0; }
 
@@ -116,7 +116,7 @@ namespace Aws
             size_t copy(char *s, size_t n, size_t pos = 0) const
             {
                 assert(pos <= m_size);
-                size_t copyLen = std::min(n, m_size - pos);
+                size_t copyLen = (std::min)(n, m_size - pos);
                 std::char_traits<char>::copy(s, m_data + pos, copyLen);
                 return copyLen;
             }
@@ -124,7 +124,7 @@ namespace Aws
             StringView substr(size_t pos = 0, size_t n = npos) const
             {
                 assert(pos <= m_size);
-                return StringView(m_data + pos, std::min(n, m_size - pos));
+                return StringView(m_data + pos, (std::min)(n, m_size - pos));
             }
 
           private:
