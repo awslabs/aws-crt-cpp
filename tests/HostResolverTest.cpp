@@ -27,16 +27,15 @@ static int s_TestDefaultResolution(struct aws_allocator *allocator, void *)
     size_t addressCount = 0;
     int error = 0;
 
-    auto onHostResolved = [&](Aws::Crt::Io::HostResolver &,
-                              const Aws::Crt::Vector<Aws::Crt::Io::HostAddress> &addresses,
-                              int errorCode) {
-        {
-            std::lock_guard<std::mutex> lock(semaphoreLock);
-            addressCount = addresses.size();
-            error = errorCode;
-        }
-        semaphore.notify_one();
-    };
+    auto onHostResolved =
+        [&](Aws::Crt::Io::HostResolver &, const Aws::Crt::Vector<Aws::Crt::Io::HostAddress> &addresses, int errorCode) {
+            {
+                std::lock_guard<std::mutex> lock(semaphoreLock);
+                addressCount = addresses.size();
+                error = errorCode;
+            }
+            semaphore.notify_one();
+        };
 
     ASSERT_TRUE(defaultHostResolver.ResolveHost("localhost", onHostResolved));
 

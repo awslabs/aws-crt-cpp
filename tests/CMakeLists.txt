@@ -48,7 +48,7 @@ add_test_case(Sigv4SigningTestSimple)
 add_test_case(Sigv4SigningTestCredentials)
 add_test_case(Sigv4SigningTestUnsignedPayload)
 add_test_case(UUIDToString)
-
+add_test_case(StringViewTest)
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 
 add_custom_command(TARGET ${TEST_BINARY_NAME} PRE_BUILD
