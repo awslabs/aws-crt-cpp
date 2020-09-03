@@ -766,6 +766,7 @@ inline size_t _Fnv1a_append_bytes(size_t _Val, const unsigned char *const _First
     return _Val;
 }
 
+#    if __cplusplus >= 201103L
 // [string.view.hash]
 template <class _CharT, class _Traits>
 struct std::hash<basic_string_view<_CharT, _Traits>>
@@ -781,6 +782,7 @@ size_t std::hash<basic_string_view<_CharT, _Traits>>::operator()(const basic_str
     return _Fnv1a_append_bytes(
         _FNV_offset_basis, reinterpret_cast<const unsigned char *>(__val.data()), __val.size() * sizeof(_CharT));
 }
+#    endif
 
 inline namespace literals
 {
