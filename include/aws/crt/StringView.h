@@ -766,23 +766,25 @@ inline size_t _Fnv1a_append_bytes(size_t _Val, const unsigned char *const _First
     return _Val;
 }
 
-#    if __cplusplus >= 201103L
 // [string.view.hash]
-template <class _CharT, class _Traits>
-struct std::hash<basic_string_view<_CharT, _Traits>>
-    : public std::unary_function<basic_string_view<_CharT, _Traits>, size_t>
+namespace std
 {
-    size_t operator()(const basic_string_view<_CharT, _Traits> __val) const noexcept;
-};
+    template <class _CharT, class _Traits>
+    struct hash<basic_string_view<_CharT, _Traits>>
+        : public std::unary_function<basic_string_view<_CharT, _Traits>, size_t>
+    {
+        size_t operator()(const basic_string_view<_CharT, _Traits> __val) const noexcept;
+    };
 
-template <class _CharT, class _Traits>
-size_t std::hash<basic_string_view<_CharT, _Traits>>::operator()(const basic_string_view<_CharT, _Traits> __val) const
-    noexcept
-{
-    return _Fnv1a_append_bytes(
-        _FNV_offset_basis, reinterpret_cast<const unsigned char *>(__val.data()), __val.size() * sizeof(_CharT));
-}
-#    endif
+    template <class _CharT, class _Traits>
+    size_t hash<basic_string_view<_CharT, _Traits>>::operator()(const basic_string_view<_CharT, _Traits> __val) const
+        noexcept
+    {
+        return _Fnv1a_append_bytes(
+            _FNV_offset_basis, reinterpret_cast<const unsigned char *>(__val.data()), __val.size() * sizeof(_CharT));
+    }
+
+} // namespace std
 
 inline namespace literals
 {
