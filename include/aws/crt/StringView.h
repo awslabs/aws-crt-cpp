@@ -299,14 +299,7 @@ template <typename _CharT, typename _Traits = std::char_traits<_CharT>> class ba
         {
             __pos = _M_len;
         }
-        const _CharT *__r = std::__find_end(
-            _M_str,
-            _M_str + __pos,
-            __str,
-            __str + __n,
-            _Traits::eq,
-            std::random_access_iterator_tag(),
-            std::random_access_iterator_tag());
+        const _CharT *__r = __find_end(_M_str, _M_str + __pos, __str, __str + __n);
         if (__n > 0 && __r == _M_str + __pos)
         {
             return npos;
@@ -331,7 +324,7 @@ template <typename _CharT, typename _Traits = std::char_traits<_CharT>> class ba
         if (__pos >= _M_len || !__n || !__str)
             return npos;
 
-        const _CharT *__r = std::__find_first_of_ce(_M_str + __pos, _M_str + _M_len, __str, __str + __n, _Traits::eq);
+        const _CharT *__r = __find_first_of_ce(_M_str + __pos, _M_str + _M_len, __str, __str + __n);
 
         if (__r == _M_str + _M_len)
             return npos;
@@ -538,6 +531,61 @@ template <typename _CharT, typename _Traits = std::char_traits<_CharT>> class ba
         }
     }
 
+    const _CharT *__find_end(
+        const _CharT *__first1,
+        const _CharT *__last1,
+        const _CharT *__first2,
+        const _CharT *__last2) const
+    {
+        // modeled after search algorithm
+        const _CharT *__r = __last1; // __last1 is the "default" answer
+        if (__first2 == __last2)
+            return __r;
+        while (true)
+        {
+            while (true)
+            {
+                if (__first1 == __last1) // if source exhausted return last correct answer
+                    return __r;          //    (or __last1 if never found)
+                if (_Traits::eq(*__first1, *__first2))
+                    break;
+                ++__first1;
+            }
+            // *__first1 matches *__first2, now match elements after here
+            const _CharT *__m1 = __first1;
+            const _CharT *__m2 = __first2;
+            while (true)
+            {
+                if (++__m2 == __last2)
+                { // Pattern exhausted, record answer and search for another one
+                    __r = __first1;
+                    ++__first1;
+                    break;
+                }
+                if (++__m1 == __last1) // Source exhausted, return last answer
+                    return __r;
+                if (!_Traits::eq(*__m1, *__m2)) // mismatch, restart with a new __first
+                {
+                    ++__first1;
+                    break;
+                } // else there is a match, check next elements
+            }
+        }
+    }
+
+    const _CharT *__find_first_of_ce(
+        const _CharT *__first1,
+        const _CharT *__last1,
+        const _CharT *__first2,
+        const _CharT *__last2) const
+    {
+        for (; __first1 != __last1; ++__first1)
+            for (const _CharT *__j = __first2; __j != __last2; ++__j)
+                if (_Traits::eq(*__first1, *__j))
+                    return __first1;
+        return __last1;
+    }
+
     size_type _M_len;
     const _CharT *_M_str;
 };
@@ -698,18 +746,19 @@ typedef basic_string_view<char16_t> u16string_view;
 typedef basic_string_view<char32_t> u32string_view;
 typedef basic_string_view<wchar_t> wstring_view;
 
-
 // This function utility is copied from Windows. Clang implementation is a bit complex.
-#if defined(_WIN64)
+#    if defined(_WIN64)
 constexpr size_t _FNV_offset_basis = 14695981039346656037ULL;
-constexpr size_t _FNV_prime        = 1099511628211ULL;
-#else // defined(_WIN64)
+constexpr size_t _FNV_prime = 1099511628211ULL;
+#    else  // defined(_WIN64)
 constexpr size_t _FNV_offset_basis = 2166136261U;
-constexpr size_t _FNV_prime        = 16777619U;
-#endif // defined(_WIN64)
+constexpr size_t _FNV_prime = 16777619U;
+#    endif // defined(_WIN64)
 
-inline size_t _Fnv1a_append_bytes(size_t _Val, const unsigned char* const _First, const size_t _Count) noexcept {
-    for (size_t _Idx = 0; _Idx < _Count; ++_Idx) {
+inline size_t _Fnv1a_append_bytes(size_t _Val, const unsigned char *const _First, const size_t _Count) noexcept
+{
+    for (size_t _Idx = 0; _Idx < _Count; ++_Idx)
+    {
         _Val ^= static_cast<size_t>(_First[_Idx]);
         _Val *= _FNV_prime;
     }
@@ -718,19 +767,19 @@ inline size_t _Fnv1a_append_bytes(size_t _Val, const unsigned char* const _First
 }
 
 // [string.view.hash]
-template<class _CharT, class _Traits>
-struct std::hash<basic_string_view<_CharT, _Traits> >
+template <class _CharT, class _Traits>
+struct std::hash<basic_string_view<_CharT, _Traits>>
     : public std::unary_function<basic_string_view<_CharT, _Traits>, size_t>
 {
     size_t operator()(const basic_string_view<_CharT, _Traits> __val) const noexcept;
 };
 
-template<class _CharT, class _Traits>
-size_t std::hash<basic_string_view<_CharT, _Traits> >::operator()(
-        const basic_string_view<_CharT, _Traits> __val) const noexcept
+template <class _CharT, class _Traits>
+size_t std::hash<basic_string_view<_CharT, _Traits>>::operator()(const basic_string_view<_CharT, _Traits> __val) const
+    noexcept
 {
     return _Fnv1a_append_bytes(
-        _FNV_offset_basis, reinterpret_cast<const unsigned char*>(__val.data()), __val.size() * sizeof(_CharT));
+        _FNV_offset_basis, reinterpret_cast<const unsigned char *>(__val.data()), __val.size() * sizeof(_CharT));
 }
 
 inline namespace literals
