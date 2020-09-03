@@ -56,6 +56,31 @@ static int s_test_string_view(struct aws_allocator *allocator, void *ctx)
 
         ASSERT_PTR_EQUALS(data + 3, sv1.data());
         ASSERT_INT_EQUALS(3u, sv1.size());
+
+        const char *data2 = "123456abc123xyzabc";
+        Aws::Crt::StringView sv2(data2);
+
+        ASSERT_INT_EQUALS(0u, sv2.find('1'));
+        ASSERT_INT_EQUALS(10u, sv2.find('2', 3));
+        ASSERT_INT_EQUALS(Aws::Crt::StringView::npos, sv2.find('A'));
+        ASSERT_INT_EQUALS(6u, sv2.find("abc123", 0, 3));
+        ASSERT_INT_EQUALS(Aws::Crt::StringView::npos, sv2.find("abc45", 0, 4));
+        ASSERT_INT_EQUALS(Aws::Crt::StringView::npos, sv2.rfind("abc123", 0, 4));
+        ASSERT_INT_EQUALS(6u, sv2.rfind("abc123", 13, 4));
+
+        ASSERT_INT_EQUALS(6u, sv2.find_first_of("abc", 0, 2));
+        ASSERT_INT_EQUALS(6u, sv2.find_first_of("abc", 0, 3));
+
+        ASSERT_INT_EQUALS(16u, sv2.find_last_of("abc", 17, 2));
+        ASSERT_INT_EQUALS(15u, sv2.find_last_of("abc", 16, 1));
+        ASSERT_INT_EQUALS(17u, sv2.find_last_of("abc", Aws::Crt::StringView::npos, 3));
+
+        ASSERT_INT_EQUALS(2u, sv2.find_first_not_of("123", 0, 2));
+        ASSERT_INT_EQUALS(3u, sv2.find_first_not_of("123", 0, 4));
+
+        ASSERT_INT_EQUALS(17u, sv2.find_last_not_of("abc", 17, 2));
+        ASSERT_INT_EQUALS(16u, sv2.find_last_not_of("123", 16, 1));
+        ASSERT_INT_EQUALS(15u, sv2.find_last_not_of("bc", Aws::Crt::StringView::npos, 3));
     }
 
     return 0;
