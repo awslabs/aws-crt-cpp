@@ -6,6 +6,7 @@
 #include <aws/crt/Exports.h>
 #include <aws/crt/Optional.h>
 #include <aws/crt/StlAllocator.h>
+#include <aws/crt/external/StringView.h>
 
 #include <aws/common/common.h>
 #include <aws/io/socket.h>
@@ -54,6 +55,12 @@ namespace Aws
         using MultiMap = std::multimap<K, V, std::less<K>, StlAllocator<std::pair<const K, V>>>;
         template <typename T> using Vector = std::vector<T, StlAllocator<T>>;
         template <typename T> using List = std::list<T, StlAllocator<T>>;
+
+#if __cplusplus < 201703L
+        using StringView = string_view;
+#else
+        using StringView = std::string_view;
+#endif
 
         AWS_CRT_CPP_API Allocator *DefaultAllocator() noexcept;
         AWS_CRT_CPP_API ByteBuf ByteBufFromCString(const char *str) noexcept;
