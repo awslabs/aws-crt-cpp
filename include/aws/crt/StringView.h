@@ -215,7 +215,7 @@ namespace Aws
                     return npos;
                 }
                 const CharT *r = Traits::find(m_data + pos, m_size - pos, c);
-                if (r == 0)
+                if (r == nullptr)
                 {
                     return npos;
                 }
@@ -543,7 +543,6 @@ namespace Aws
                     return last1;
                 }
 
-                CharT f2 = *first2;
                 while (true)
                 {
                     length1 = last1 - first1;
@@ -552,7 +551,7 @@ namespace Aws
                         return last1;
                     }
 
-                    first1 = Traits::find(first1, length1 - length2 + 1, f2);
+                    first1 = Traits::find(first1, length1 - length2 + 1, *first2);
                     if (first1 == 0)
                     {
                         return last1;
