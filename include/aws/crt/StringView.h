@@ -20,7 +20,6 @@ namespace Aws
 {
     namespace Crt
     {
-
         template <typename CharT, typename Traits = std::char_traits<CharT>> class basic_string_view
         {
           public:
@@ -513,14 +512,14 @@ namespace Aws
             {
                 const difference_type diff = n1 - n2;
 
-                if (diff > std::numeric_limits<int>::max())
+                if (diff > (std::numeric_limits<int>::max)())
                 {
-                    return std::numeric_limits<int>::max();
+                    return (std::numeric_limits<int>::max)();
                 }
 
-                if (diff < std::numeric_limits<int>::min())
+                if (diff < (std::numeric_limits<int>::min)())
                 {
-                    return std::numeric_limits<int>::min();
+                    return (std::numeric_limits<int>::min)();
                 }
 
                 return static_cast<int>(diff);
