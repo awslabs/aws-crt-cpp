@@ -74,17 +74,16 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
         bool subscribed = false;
         bool published = false;
         bool received = false;
-        auto onConnectionCompleted =
-            [&](MqttConnection &, int errorCode, ReturnCode returnCode, bool sessionPresent) {
-                printf(
-                    "%s errorCode=%d returnCode=%d sessionPresent=%d\n",
-                    (errorCode == 0) ? "CONNECTED" : "COMPLETED",
-                    errorCode,
-                    (int)returnCode,
-                    (int)sessionPresent);
-                connected = true;
-                cv.notify_one();
-            };
+        auto onConnectionCompleted = [&](MqttConnection &, int errorCode, ReturnCode returnCode, bool sessionPresent) {
+            printf(
+                "%s errorCode=%d returnCode=%d sessionPresent=%d\n",
+                (errorCode == 0) ? "CONNECTED" : "COMPLETED",
+                errorCode,
+                (int)returnCode,
+                (int)sessionPresent);
+            connected = true;
+            cv.notify_one();
+        };
         auto onDisconnect = [&](MqttConnection &) {
             printf("DISCONNECTED\n");
             connected = false;
@@ -95,12 +94,11 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
             received = true;
             cv.notify_one();
         };
-        auto onSubAck =
-            [&](MqttConnection &, uint16_t packetId, const String &topic, QOS qos, int) {
-                printf("SUBACK id=%d topic=%s qos=%d\n", packetId, topic.c_str(), qos);
-                subscribed = true;
-                cv.notify_one();
-            };
+        auto onSubAck = [&](MqttConnection &, uint16_t packetId, const String &topic, QOS qos, int) {
+            printf("SUBACK id=%d topic=%s qos=%d\n", packetId, topic.c_str(), qos);
+            subscribed = true;
+            cv.notify_one();
+        };
         auto onPubAck = [&](MqttConnection &, uint16_t packetId, int) {
             printf("PUBLISHED id=%d\n", packetId);
             published = true;

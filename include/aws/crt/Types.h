@@ -10,7 +10,6 @@
 #include <aws/common/common.h>
 #include <aws/io/socket.h>
 #include <aws/mqtt/mqtt.h>
-
 #include <functional>
 #include <list>
 #include <map>
