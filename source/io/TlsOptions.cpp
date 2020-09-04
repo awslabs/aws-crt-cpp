@@ -57,6 +57,7 @@ namespace Aws
                 return ctxOptions;
             }
 
+#if !defined(AWS_OS_IOS)
             TlsContextOptions TlsContextOptions::InitClientWithMtls(
                 const char *certPath,
                 const char *pKeyPath,
@@ -87,7 +88,8 @@ namespace Aws
                 }
                 return ctxOptions;
             }
-#ifdef __APPLE__
+#endif /* !AWS_OS_IOS */
+#if defined(AWS_OS_APPLE)
             TlsContextOptions TlsContextOptions::InitClientWithMtlsPkcs12(
                 const char *pkcs12Path,
                 const char *pkcs12Pwd,
@@ -102,7 +104,7 @@ namespace Aws
                 }
                 return ctxOptions;
             }
-#endif
+#endif /* AWS_OS_APPLE */
 
             bool TlsContextOptions::IsAlpnSupported() noexcept { return aws_tls_is_alpn_available(); }
 
@@ -258,11 +260,19 @@ namespace Aws
             {
                 if (mode == TlsMode::CLIENT)
                 {
-                    m_ctx.reset(aws_tls_client_ctx_new(allocator, &options.m_options), aws_tls_ctx_release);
+                    aws_tls_ctx *underlying_tls_ctx = aws_tls_client_ctx_new(allocator, &options.m_options);
+                    if (underlying_tls_ctx != NULL)
+                    {
+                        m_ctx.reset(underlying_tls_ctx, aws_tls_ctx_release);
+                    }
                 }
                 else
                 {
-                    m_ctx.reset(aws_tls_server_ctx_new(allocator, &options.m_options), aws_tls_ctx_release);
+                    aws_tls_ctx *underlying_tls_ctx = aws_tls_server_ctx_new(allocator, &options.m_options);
+                    if (underlying_tls_ctx != NULL)
+                    {
+                        m_ctx.reset(underlying_tls_ctx, aws_tls_ctx_release);
+                    }
                 }
 
                 if (!m_ctx)
