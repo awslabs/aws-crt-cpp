@@ -14,39 +14,6 @@ using namespace Aws::Crt;
 using namespace Aws::Crt::Auth;
 using namespace Aws::Crt::Imds;
 
-static int s_TestCreatingImdsClientFromRawClient(struct aws_allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-    {
-        aws_event_loop_group el_group;
-        ASSERT_SUCCESS(aws_event_loop_group_default_init(&el_group, allocator, 1));
-        aws_host_resolver resolver;
-        aws_host_resolver_init_default(&resolver, allocator, 8, &el_group);
-
-        aws_client_bootstrap_options bootstrap_options;
-        AWS_ZERO_STRUCT(bootstrap_options);
-        bootstrap_options.event_loop_group = &el_group;
-        bootstrap_options.host_resolver = &resolver;
-        aws_client_bootstrap *bootstrap = aws_client_bootstrap_new(allocator, &bootstrap_options);
-        ASSERT_NOT_NULL(bootstrap);
-        aws_imds_client_options options;
-        AWS_ZERO_STRUCT(options);
-        options.bootstrap = bootstrap;
-
-        struct aws_imds_client *raw_client = aws_imds_client_new(allocator, &options);
-        ImdsClient client(raw_client);
-        aws_imds_client_release(raw_client);
-
-        aws_client_bootstrap_release(bootstrap);
-        aws_host_resolver_clean_up(&resolver);
-        aws_event_loop_group_clean_up(&el_group);
-    }
-    return AWS_OP_SUCCESS;
-}
-
-AWS_TEST_CASE(TestCreatingImdsClientFromRawClient, s_TestCreatingImdsClientFromRawClient);
-
 static int s_TestCreatingImdsClient(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
@@ -114,8 +81,8 @@ static int s_TestImdsClientGetInstanceInfo(struct aws_allocator *allocator, void
 
         if (error == 0)
         {
-            ASSERT_FALSE(0 == info.instanceId.len);
-            ASSERT_NOT_NULL(info.instanceId.ptr);
+            ASSERT_FALSE(0 == info.instanceId.size());
+            ASSERT_NOT_NULL(info.instanceId.data());
         }
     }
     return AWS_OP_SUCCESS;
@@ -149,10 +116,10 @@ static int s_TestImdsClientGetCredentials(struct aws_allocator *allocator, void 
         InstanceInfo info;
         AWS_ZERO_STRUCT(info);
 
-        ByteBuf role;
-        auto roleCallback = [&](const ByteBuf *resource, int errorCode, void *) {
+        std::string role;
+        auto roleCallback = [&](const StringView &resource, int errorCode, void *) {
             std::unique_lock<std::mutex> ulock(lock);
-            role = ByteBufNewCopy(allocator, resource->buffer, resource->len);
+            role = std::string(resource.data(), resource.size());
             error = errorCode;
             signal.notify_one();
         };
@@ -172,7 +139,7 @@ static int s_TestImdsClientGetCredentials(struct aws_allocator *allocator, void 
             signal.notify_one();
         };
 
-        client.GetCredentials(ByteCursorFromByteBuf(role), callback, nullptr);
+        client.GetCredentials(StringView(role.data(), role.size()), callback, nullptr);
 
         {
             std::unique_lock<std::mutex> ulock(lock);
@@ -190,8 +157,6 @@ static int s_TestImdsClientGetCredentials(struct aws_allocator *allocator, void 
             ASSERT_FALSE(0 == creds->GetSessionToken().len);
             ASSERT_NOT_NULL(creds->GetSessionToken().ptr);
         }
-
-        ByteBufDelete(role);
     }
     return AWS_OP_SUCCESS;
 }

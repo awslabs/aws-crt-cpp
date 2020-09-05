@@ -52,7 +52,6 @@ add_test_case(UUIDToString)
 add_test_case(StringViewTest)
 add_test_case(TestIntArrayListToVector)
 add_test_case(TestByteCursorArrayListToVector)
-add_test_case(TestCreatingImdsClientFromRawClient)
 add_test_case(TestCreatingImdsClient)
 
 if (AWS_BUILDING_ON_EC2)
