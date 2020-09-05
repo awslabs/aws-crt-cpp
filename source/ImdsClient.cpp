@@ -51,7 +51,10 @@ namespace Aws
             {
                 WrappedCallbackArgs<OnResourceAcquired> *callbackArgs =
                     static_cast<WrappedCallbackArgs<OnResourceAcquired> *>(userData);
-                callbackArgs->callback(StringView(static_cast<char*>(resource->buffer), resource->len), errorCode, callbackArgs->userData);
+                callbackArgs->callback(
+                    StringView(reinterpret_cast<char *>(resource->buffer), resource->len),
+                    errorCode,
+                    callbackArgs->userData);
                 Aws::Crt::Delete(callbackArgs, callbackArgs->allocator);
             }
 
@@ -59,7 +62,10 @@ namespace Aws
             {
                 WrappedCallbackArgs<OnVectorResourceAcquired> *callbackArgs =
                     static_cast<WrappedCallbackArgs<OnVectorResourceAcquired> *>(userData);
-                callbackArgs->callback(ArrayListToVector<ByteCursor, StringView>(array, ByteCursorToStringView), errorCode, callbackArgs->userData);
+                callbackArgs->callback(
+                    ArrayListToVector<ByteCursor, StringView>(array, ByteCursorToStringView),
+                    errorCode,
+                    callbackArgs->userData);
                 Aws::Crt::Delete(callbackArgs, callbackArgs->allocator);
             }
 
@@ -81,8 +87,12 @@ namespace Aws
                     static_cast<WrappedCallbackArgs<OnIamProfileAcquired> *>(userData);
                 IamProfile iamProfile;
                 iamProfile.lastUpdated = aws_date_time_as_epoch_secs(&(iamProfileInfo->last_updated));
-                iamProfile.instanceProfileArn = iamProfileInfo->instance_profile_arn;
-                iamProfile.instanceProfileId = iamProfileInfo->instance_profile_id;
+                iamProfile.instanceProfileArn = StringView(
+                    reinterpret_cast<char *>(iamProfileInfo->instance_profile_arn.ptr),
+                    iamProfileInfo->instance_profile_arn.len);
+                iamProfile.instanceProfileId = StringView(
+                    reinterpret_cast<char *>(iamProfileInfo->instance_profile_id.ptr),
+                    iamProfileInfo->instance_profile_id.len);
                 callbackArgs->callback(iamProfile, errorCode, callbackArgs->userData);
                 Aws::Crt::Delete(callbackArgs, callbackArgs->allocator);
             }
@@ -95,26 +105,38 @@ namespace Aws
                 WrappedCallbackArgs<OnInstanceInfoAcquired> *callbackArgs =
                     static_cast<WrappedCallbackArgs<OnInstanceInfoAcquired> *>(userData);
                 InstanceInfo info;
-                info.marketplaceProductCodes =
-                    ArrayListToVector<ByteCursor, StringView>(&(instanceInfo->marketplace_product_codes), ByteCursorToStringView);
-                info.availabilityZone = instanceInfo->availability_zone;
-                info.privateIp = instanceInfo->private_ip;
-                info.version = instanceInfo->version;
-                info.instanceId = instanceInfo->instance_id;
-                info.billingProducts = ArrayListToVector<ByteCursor, StringView>(&(instanceInfo->billing_products), ByteCursorToStringView);
-                info.instanceType = instanceInfo->instance_type;
-                info.accountId = instanceInfo->account_id;
-                info.imageId = instanceInfo->image_id;
+                info.marketplaceProductCodes = ArrayListToVector<ByteCursor, StringView>(
+                    &(instanceInfo->marketplace_product_codes), ByteCursorToStringView);
+                info.availabilityZone = StringView(
+                    reinterpret_cast<char *>(instanceInfo->availability_zone.ptr), instanceInfo->availability_zone.len);
+                info.privateIp =
+                    StringView(reinterpret_cast<char *>(instanceInfo->private_ip.ptr), instanceInfo->private_ip.len);
+                info.version =
+                    StringView(reinterpret_cast<char *>(instanceInfo->version.ptr), instanceInfo->version.len);
+                ;
+                info.instanceId =
+                    StringView(reinterpret_cast<char *>(instanceInfo->instance_id.ptr), instanceInfo->instance_id.len);
+                info.billingProducts = ArrayListToVector<ByteCursor, StringView>(
+                    &(instanceInfo->billing_products), ByteCursorToStringView);
+                info.instanceType = StringView(
+                    reinterpret_cast<char *>(instanceInfo->instance_type.ptr), instanceInfo->instance_type.len);
+                info.accountId =
+                    StringView(reinterpret_cast<char *>(instanceInfo->account_id.ptr), instanceInfo->account_id.len);
+                info.imageId =
+                    StringView(reinterpret_cast<char *>(instanceInfo->image_id.ptr), instanceInfo->image_id.len);
                 info.pendingTime = aws_date_time_as_epoch_secs(&(instanceInfo->pending_time));
-                info.architecture = instanceInfo->architecture;
-                info.kernelId = instanceInfo->kernel_id;
-                info.ramdiskId = instanceInfo->ramdisk_id;
-                info.region = instanceInfo->region;
+                info.architecture = StringView(
+                    reinterpret_cast<char *>(instanceInfo->architecture.ptr), instanceInfo->architecture.len);
+                info.kernelId =
+                    StringView(reinterpret_cast<char *>(instanceInfo->kernel_id.ptr), instanceInfo->kernel_id.len);
+                info.ramdiskId =
+                    StringView(reinterpret_cast<char *>(instanceInfo->ramdisk_id.ptr), instanceInfo->ramdisk_id.len);
+                info.region = StringView(reinterpret_cast<char *>(instanceInfo->region.ptr), instanceInfo->region.len);
                 callbackArgs->callback(info, errorCode, callbackArgs->userData);
                 Aws::Crt::Delete(callbackArgs, callbackArgs->allocator);
             }
 
-            int ImdsClient::GetResource(ByteCursor resourcePath, OnResourceAcquired callback, void *userData)
+            int ImdsClient::GetResource(const StringView &resourcePath, OnResourceAcquired callback, void *userData)
             {
                 auto wrappedCallbackArgs = Aws::Crt::New<WrappedCallbackArgs<OnResourceAcquired>>(
                     m_allocator, m_allocator, callback, userData);
@@ -122,8 +144,9 @@ namespace Aws
                 {
                     return AWS_OP_ERR;
                 }
+
                 return aws_imds_client_get_resource_async(
-                    m_client, resourcePath, s_onResourceAcquired, wrappedCallbackArgs);
+                    m_client, StringViewToByteCursor(resourcePath), s_onResourceAcquired, wrappedCallbackArgs);
             }
 
             int ImdsClient::GetAmiId(OnResourceAcquired callback, void *userData)
@@ -314,7 +337,10 @@ namespace Aws
                 return aws_imds_client_get_attached_iam_role(m_client, s_onResourceAcquired, wrappedCallbackArgs);
             }
 
-            int ImdsClient::GetCredentials(ByteCursor iamRoleName, OnCredentialsAcquired callback, void *userData)
+            int ImdsClient::GetCredentials(
+                const StringView &iamRoleName,
+                OnCredentialsAcquired callback,
+                void *userData)
             {
                 auto wrappedCallbackArgs = Aws::Crt::New<WrappedCallbackArgs<OnCredentialsAcquired>>(
                     m_allocator, m_allocator, callback, userData);
@@ -323,7 +349,7 @@ namespace Aws
                     return AWS_OP_ERR;
                 }
                 return aws_imds_client_get_credentials(
-                    m_client, iamRoleName, s_onCredentialsAcquired, wrappedCallbackArgs);
+                    m_client, StringViewToByteCursor(iamRoleName), s_onCredentialsAcquired, wrappedCallbackArgs);
             }
 
             int ImdsClient::GetIamProfile(OnIamProfileAcquired callback, void *userData)

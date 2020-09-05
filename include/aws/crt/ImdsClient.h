@@ -7,7 +7,6 @@
 #include <aws/crt/DateTime.h>
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
-#include <aws/crt/StringView.h>
 #include <functional>
 
 struct aws_array_list;
@@ -278,7 +277,7 @@ namespace Aws
                  * @param userData opaque data to invoke the completion callback with
                  * @return AWS_OP_SUCCESS if the query was successfully started, AWS_OP_ERR otherwise
                  */
-                int GetCredentials(StringView iamRoleName, OnCredentialsAcquired callback, void *userData);
+                int GetCredentials(const StringView &iamRoleName, OnCredentialsAcquired callback, void *userData);
 
                 /**
                  * Gets the iam profile information of the ec2 instance from the instance metadata document
