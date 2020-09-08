@@ -68,8 +68,8 @@ class GetCredentialsWaiter
 static int s_TestCredentialsConstruction(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    ApiHandle apiHandle(allocator);
     {
+        ApiHandle apiHandle(allocator);
         uint64_t expire = Aws::Crt::DateTime::Now().Millis() / 1000 + 3600;
         aws_credentials *raw_creds = aws_credentials_new(
             allocator,
@@ -103,6 +103,7 @@ static int s_TestCredentialsConstruction(struct aws_allocator *allocator, void *
         ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_session_token));
         ASSERT_UINT_EQUALS(expire, creds2.GetExpirationTimepointInSeconds());
     }
+    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }

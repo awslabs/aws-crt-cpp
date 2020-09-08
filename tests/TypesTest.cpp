@@ -37,9 +37,8 @@ AWS_TEST_CASE(Base64RoundTrip, s_base64_round_trip)
 static int s_int_array_list_to_vector(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-
     {
+        Aws::Crt::ApiHandle apiHandle(allocator);
         size_t list_size = 10;
         aws_array_list intList;
         ASSERT_SUCCESS(
@@ -72,6 +71,8 @@ static int s_int_array_list_to_vector(struct aws_allocator *allocator, void *ctx
             ASSERT_INT_EQUALS(i + 1, resVector[i]);
         }
     }
+    Aws::Crt::TestCleanupAndWait();
+
     return 0;
 }
 
@@ -80,9 +81,8 @@ AWS_TEST_CASE(TestIntArrayListToVector, s_int_array_list_to_vector)
 static int s_byte_cursor_array_list_to_vector(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-
     {
+        Aws::Crt::ApiHandle apiHandle(allocator);
         size_t list_size = 10;
         aws_array_list cursorList;
         ASSERT_SUCCESS(
@@ -117,6 +117,8 @@ static int s_byte_cursor_array_list_to_vector(struct aws_allocator *allocator, v
             ASSERT_INT_EQUALS(i, resVector[i].len);
         }
     }
+    Aws::Crt::TestCleanupAndWait();
+
     return 0;
 }
 
