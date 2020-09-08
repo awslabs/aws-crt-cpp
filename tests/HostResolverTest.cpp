@@ -40,7 +40,6 @@ static int s_TestDefaultResolution(struct aws_allocator *allocator, void *)
         };
 
         ASSERT_TRUE(defaultHostResolver.ResolveHost("localhost", onHostResolved));
-
         {
             std::unique_lock<std::mutex> lock(semaphoreLock);
             semaphore.wait(lock, [&]() { return addressCount || error; });

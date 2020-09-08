@@ -62,7 +62,7 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
 
         Aws::Crt::Mqtt::MqttClient mqttClient(clientBootstrap, allocator);
         ASSERT_TRUE(mqttClient);
-
+S
         int tries = 0;
         while (tries++ < 10)
         {
