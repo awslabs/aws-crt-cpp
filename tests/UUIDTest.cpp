@@ -13,11 +13,15 @@
 static int s_UUIDToString(Aws::Crt::Allocator *allocator, void *ctx)
 {
     (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-    Aws::Crt::UUID Uuid;
-    Aws::Crt::String uuidStr = Uuid.ToString();
-    ASSERT_TRUE(uuidStr.length() != 0);
-    ASSERT_TRUE(Uuid == Aws::Crt::UUID(uuidStr));
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+        Aws::Crt::UUID Uuid;
+        Aws::Crt::String uuidStr = Uuid.ToString();
+        ASSERT_TRUE(uuidStr.length() != 0);
+        ASSERT_TRUE(Uuid == Aws::Crt::UUID(uuidStr));
+    }
+
+    Aws::Crt::TestCleanupAndWait();
 
     return AWS_ERROR_SUCCESS;
 }

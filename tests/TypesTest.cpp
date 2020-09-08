@@ -9,9 +9,9 @@
 static int s_base64_round_trip(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-
     {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
         Aws::Crt::String test_data = "foobar";
         Aws::Crt::String expected = "Zm9vYmFy";
 
@@ -24,6 +24,8 @@ static int s_base64_round_trip(struct aws_allocator *allocator, void *ctx)
         Aws::Crt::Vector<uint8_t> decoded = Aws::Crt::Base64Decode(encoded);
         ASSERT_BIN_ARRAYS_EQUALS(test_vector.data(), test_vector.size(), decoded.data(), decoded.size());
     }
+
+    Aws::Crt::TestCleanupAndWait();
 
     return 0;
 }

@@ -68,9 +68,9 @@ class GetCredentialsWaiter
 static int s_TestProviderStaticGet(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    ApiHandle apiHandle(allocator);
-
     {
+        ApiHandle apiHandle(allocator);
+
         CredentialsProviderStaticConfig config;
         config.AccessKeyId = aws_byte_cursor_from_c_str(s_access_key_id);
         config.SecretAccessKey = aws_byte_cursor_from_c_str(s_secret_access_key);
@@ -82,6 +82,8 @@ static int s_TestProviderStaticGet(struct aws_allocator *allocator, void *ctx)
         auto creds = waiter.GetCredentials();
     }
 
+    Aws::Crt::TestCleanupAndWait();
+
     return AWS_OP_SUCCESS;
 }
 
@@ -90,14 +92,16 @@ AWS_TEST_CASE(TestProviderStaticGet, s_TestProviderStaticGet)
 static int s_TestProviderEnvironmentGet(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    ApiHandle apiHandle(allocator);
-
     {
+        ApiHandle apiHandle(allocator);
+
         auto provider = CredentialsProvider::CreateCredentialsProviderEnvironment(allocator);
         GetCredentialsWaiter waiter(provider);
 
         auto creds = waiter.GetCredentials();
     }
+
+    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
@@ -107,9 +111,9 @@ AWS_TEST_CASE(TestProviderEnvironmentGet, s_TestProviderEnvironmentGet)
 static int s_TestProviderProfileGet(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    ApiHandle apiHandle(allocator);
-
     {
+        ApiHandle apiHandle(allocator);
+
         CredentialsProviderProfileConfig config;
 
         auto provider = CredentialsProvider::CreateCredentialsProviderProfile(config, allocator);
@@ -122,6 +126,8 @@ static int s_TestProviderProfileGet(struct aws_allocator *allocator, void *ctx)
         }
     }
 
+    Aws::Crt::TestCleanupAndWait();
+
     return AWS_OP_SUCCESS;
 }
 
@@ -130,9 +136,9 @@ AWS_TEST_CASE(TestProviderProfileGet, s_TestProviderProfileGet)
 static int s_TestProviderImdsGet(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    ApiHandle apiHandle(allocator);
 
     {
+        ApiHandle apiHandle(allocator);
         apiHandle.InitializeLogging(Aws::Crt::LogLevel::Trace, stderr);
 
         Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
@@ -154,6 +160,8 @@ static int s_TestProviderImdsGet(struct aws_allocator *allocator, void *ctx)
         auto creds = waiter.GetCredentials();
     }
 
+    Aws::Crt::TestCleanupAndWait();
+
     return AWS_OP_SUCCESS;
 }
 
@@ -162,9 +170,9 @@ AWS_TEST_CASE(TestProviderImdsGet, s_TestProviderImdsGet)
 static int s_TestProviderDefaultChainGet(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    ApiHandle apiHandle(allocator);
-
     {
+        ApiHandle apiHandle(allocator);
+
         Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
         ASSERT_TRUE(eventLoopGroup);
 
@@ -183,6 +191,8 @@ static int s_TestProviderDefaultChainGet(struct aws_allocator *allocator, void *
 
         auto creds = waiter.GetCredentials();
     }
+
+    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }

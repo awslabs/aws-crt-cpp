@@ -3,16 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/Api.h>
-#include <aws/crt/Types.h>
 #include <aws/crt/StringView.h>
+#include <aws/crt/Types.h>
 #include <aws/testing/aws_test_harness.h>
 
 static int s_test_string_view(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
 
     {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
         const char *data = "abc123xyz";
         Aws::Crt::StringView sv(data);
 
@@ -119,6 +120,8 @@ static int s_test_string_view(struct aws_allocator *allocator, void *ctx)
             ASSERT_UINT_EQUALS(std::hash<std::string>()("123456abc123xyzabc"), hashVal2);
         }
     }
+
+    Aws::Crt::TestCleanupAndWait();
 
     return 0;
 }

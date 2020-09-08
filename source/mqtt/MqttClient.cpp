@@ -283,7 +283,7 @@ namespace Aws
             {
                 if (*this)
                 {
-                    aws_mqtt_client_connection_destroy(m_underlyingConnection);
+                    aws_mqtt_client_connection_release(m_underlyingConnection);
 
                     if (m_onAnyCbData)
                     {
@@ -650,31 +650,15 @@ namespace Aws
                 return packetId;
             }
 
-            MqttClient::MqttClient(Io::ClientBootstrap &bootstrap, Allocator *allocator) noexcept : m_client(nullptr)
+            MqttClient::MqttClient(Io::ClientBootstrap &bootstrap, Allocator *allocator) noexcept
+                : m_client(aws_mqtt_client_new(allocator, bootstrap.GetUnderlyingHandle()))
             {
-                m_client =
-                    reinterpret_cast<aws_mqtt_client *>(aws_mem_acquire(allocator, sizeof(struct aws_mqtt_client)));
-                if (!m_client)
-                {
-                    return;
-                }
-
-                if (aws_mqtt_client_init(m_client, allocator, bootstrap.GetUnderlyingHandle()))
-                {
-                    aws_mem_release(allocator, reinterpret_cast<void *>(m_client));
-                    m_client = nullptr;
-                }
             }
 
             MqttClient::~MqttClient()
             {
-                if (m_client)
-                {
-                    Allocator *allocator = m_client->allocator;
-                    aws_mqtt_client_clean_up(m_client);
-                    aws_mem_release(allocator, reinterpret_cast<void *>(m_client));
-                    m_client = nullptr;
-                }
+                aws_mqtt_client_release(m_client);
+                m_client = nullptr;
             }
 
             MqttClient::MqttClient(MqttClient &&toMove) noexcept : m_client(toMove.m_client)

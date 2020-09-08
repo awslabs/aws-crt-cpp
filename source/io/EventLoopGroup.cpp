@@ -11,31 +11,22 @@ namespace Aws
         namespace Io
         {
             EventLoopGroup::EventLoopGroup(uint16_t threadCount, Allocator *allocator) noexcept
-                : m_lastError(AWS_ERROR_SUCCESS)
+                : m_eventLoopGroup(nullptr), m_lastError(AWS_ERROR_SUCCESS)
             {
-                AWS_ZERO_STRUCT(m_eventLoopGroup);
-
-                if (aws_event_loop_group_default_init(&m_eventLoopGroup, allocator, threadCount))
+                m_eventLoopGroup = aws_event_loop_group_new_default(allocator, threadCount, NULL);
+                if (m_eventLoopGroup == nullptr)
                 {
                     m_lastError = aws_last_error();
                 }
             }
 
-            EventLoopGroup::~EventLoopGroup()
-            {
-                if (!m_lastError)
-                {
-                    aws_event_loop_group_clean_up(&m_eventLoopGroup);
-                    m_lastError = AWS_ERROR_SUCCESS;
-                }
-                AWS_ZERO_STRUCT(m_eventLoopGroup);
-            }
+            EventLoopGroup::~EventLoopGroup() { aws_event_loop_group_release(m_eventLoopGroup); }
 
             EventLoopGroup::EventLoopGroup(EventLoopGroup &&toMove) noexcept
                 : m_eventLoopGroup(toMove.m_eventLoopGroup), m_lastError(toMove.m_lastError)
             {
                 toMove.m_lastError = AWS_ERROR_UNKNOWN;
-                AWS_ZERO_STRUCT(toMove.m_eventLoopGroup);
+                toMove.m_eventLoopGroup = nullptr;
             }
 
             EventLoopGroup &EventLoopGroup::operator=(EventLoopGroup &&toMove) noexcept
@@ -43,7 +34,8 @@ namespace Aws
                 m_eventLoopGroup = toMove.m_eventLoopGroup;
                 m_lastError = toMove.m_lastError;
                 toMove.m_lastError = AWS_ERROR_UNKNOWN;
-                AWS_ZERO_STRUCT(toMove.m_eventLoopGroup);
+                toMove.m_eventLoopGroup = nullptr;
+
                 return *this;
             }
 
@@ -55,7 +47,7 @@ namespace Aws
             {
                 if (*this)
                 {
-                    return &m_eventLoopGroup;
+                    return m_eventLoopGroup;
                 }
 
                 return nullptr;

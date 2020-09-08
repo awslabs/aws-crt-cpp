@@ -261,19 +261,17 @@ namespace Aws
                 if (mode == TlsMode::CLIENT)
                 {
                     aws_tls_ctx *underlying_tls_ctx = aws_tls_client_ctx_new(allocator, &options.m_options);
-
-                    if (underlying_tls_ctx != NULL)
+                    if (underlying_tls_ctx != nullptr)
                     {
-                        m_ctx.reset(underlying_tls_ctx, aws_tls_ctx_destroy);
+                        m_ctx.reset(underlying_tls_ctx, aws_tls_ctx_release);
                     }
                 }
                 else
                 {
                     aws_tls_ctx *underlying_tls_ctx = aws_tls_server_ctx_new(allocator, &options.m_options);
-
-                    if (underlying_tls_ctx != NULL)
+                    if (underlying_tls_ctx != nullptr)
                     {
-                        m_ctx.reset(underlying_tls_ctx, aws_tls_ctx_destroy);
+                        m_ctx.reset(underlying_tls_ctx, aws_tls_ctx_release);
                     }
                 }
 
