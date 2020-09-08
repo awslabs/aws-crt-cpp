@@ -17,9 +17,8 @@ using namespace Aws::Crt::Imds;
 static int s_TestCreatingImdsClient(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
     {
-
+        Aws::Crt::ApiHandle apiHandle(allocator);
         Aws::Crt::Io::EventLoopGroup eventLoopGroup(1, allocator);
         ASSERT_TRUE(eventLoopGroup);
 
@@ -34,6 +33,8 @@ static int s_TestCreatingImdsClient(struct aws_allocator *allocator, void *ctx)
         config.Bootstrap = &clientBootstrap;
         ImdsClient client(config);
     }
+    Aws::Crt::TestCleanupAndWait();
+
     return AWS_OP_SUCCESS;
 }
 
@@ -42,9 +43,8 @@ AWS_TEST_CASE(TestCreatingImdsClient, s_TestCreatingImdsClient);
 static int s_TestImdsClientGetInstanceInfo(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
     {
-
+        Aws::Crt::ApiHandle apiHandle(allocator);
         Aws::Crt::Io::EventLoopGroup eventLoopGroup(1, allocator);
         ASSERT_TRUE(eventLoopGroup);
 
@@ -85,6 +85,8 @@ static int s_TestImdsClientGetInstanceInfo(struct aws_allocator *allocator, void
             ASSERT_NOT_NULL(info.instanceId.data());
         }
     }
+    Aws::Crt::TestCleanupAndWait();
+
     return AWS_OP_SUCCESS;
 }
 
@@ -93,9 +95,8 @@ AWS_TEST_CASE(TestImdsClientGetInstanceInfo, s_TestImdsClientGetInstanceInfo);
 static int s_TestImdsClientGetCredentials(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
     {
-
+        Aws::Crt::ApiHandle apiHandle(allocator);
         Aws::Crt::Io::EventLoopGroup eventLoopGroup(1, allocator);
         ASSERT_TRUE(eventLoopGroup);
 
@@ -158,6 +159,8 @@ static int s_TestImdsClientGetCredentials(struct aws_allocator *allocator, void 
             ASSERT_NOT_NULL(creds->GetSessionToken().ptr);
         }
     }
+    Aws::Crt::TestCleanupAndWait();
+
     return AWS_OP_SUCCESS;
 }
 
