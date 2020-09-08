@@ -35,26 +35,12 @@ namespace Aws
             cJSON_InitHooks(&hooks);
         }
 
-        static void s_cleanUpApi() {}
-
-        void TestCleanupAndWait()
-        {
-            aws_global_thread_creator_shutdown_wait_for(5);
-
-            g_allocator = nullptr;
-            aws_auth_library_clean_up();
-            aws_mqtt_library_clean_up();
-            aws_http_library_clean_up();
-        }
-
         ApiHandle::ApiHandle(Allocator *allocator) noexcept : logger() { s_initApi(allocator); }
 
         ApiHandle::ApiHandle() noexcept : logger() { s_initApi(DefaultAllocator()); }
 
         ApiHandle::~ApiHandle()
         {
-            s_cleanUpApi();
-
             if (aws_logger_get() == &logger)
             {
                 aws_logger_set(NULL);
