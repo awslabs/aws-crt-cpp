@@ -64,13 +64,13 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API InstanceInfo
             {
-                /* an array of aws_byte_cursor */
+                /* an array of StringView */
                 Vector<StringView> marketplaceProductCodes;
                 StringView availabilityZone;
                 StringView privateIp;
                 StringView version;
                 StringView instanceId;
-                /* an array of aws_byte_cursor */
+                /* an array of StringView */
                 Vector<StringView> billingProducts;
                 StringView instanceType;
                 StringView accountId;
