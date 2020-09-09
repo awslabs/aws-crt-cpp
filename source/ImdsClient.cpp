@@ -52,9 +52,7 @@ namespace Aws
                 WrappedCallbackArgs<OnResourceAcquired> *callbackArgs =
                     static_cast<WrappedCallbackArgs<OnResourceAcquired> *>(userData);
                 callbackArgs->callback(
-                    StringView(reinterpret_cast<char *>(resource->buffer), resource->len),
-                    errorCode,
-                    callbackArgs->userData);
+                    ByteCursorToStringView(aws_byte_cursor_from_buf(resource)), errorCode, callbackArgs->userData);
                 Aws::Crt::Delete(callbackArgs, callbackArgs->allocator);
             }
 
@@ -87,12 +85,8 @@ namespace Aws
                     static_cast<WrappedCallbackArgs<OnIamProfileAcquired> *>(userData);
                 IamProfile iamProfile;
                 iamProfile.lastUpdated = aws_date_time_as_epoch_secs(&(iamProfileInfo->last_updated));
-                iamProfile.instanceProfileArn = StringView(
-                    reinterpret_cast<char *>(iamProfileInfo->instance_profile_arn.ptr),
-                    iamProfileInfo->instance_profile_arn.len);
-                iamProfile.instanceProfileId = StringView(
-                    reinterpret_cast<char *>(iamProfileInfo->instance_profile_id.ptr),
-                    iamProfileInfo->instance_profile_id.len);
+                iamProfile.instanceProfileArn = ByteCursorToStringView(iamProfileInfo->instance_profile_arn);
+                iamProfile.instanceProfileId = ByteCursorToStringView(iamProfileInfo->instance_profile_id);
                 callbackArgs->callback(iamProfile, errorCode, callbackArgs->userData);
                 Aws::Crt::Delete(callbackArgs, callbackArgs->allocator);
             }
@@ -107,31 +101,20 @@ namespace Aws
                 InstanceInfo info;
                 info.marketplaceProductCodes = ArrayListToVector<ByteCursor, StringView>(
                     &(instanceInfo->marketplace_product_codes), ByteCursorToStringView);
-                info.availabilityZone = StringView(
-                    reinterpret_cast<char *>(instanceInfo->availability_zone.ptr), instanceInfo->availability_zone.len);
-                info.privateIp =
-                    StringView(reinterpret_cast<char *>(instanceInfo->private_ip.ptr), instanceInfo->private_ip.len);
-                info.version =
-                    StringView(reinterpret_cast<char *>(instanceInfo->version.ptr), instanceInfo->version.len);
-                ;
-                info.instanceId =
-                    StringView(reinterpret_cast<char *>(instanceInfo->instance_id.ptr), instanceInfo->instance_id.len);
+                info.availabilityZone = ByteCursorToStringView(instanceInfo->availability_zone);
+                info.privateIp = ByteCursorToStringView(instanceInfo->private_ip);
+                info.version = ByteCursorToStringView(instanceInfo->version);
+                info.instanceId = ByteCursorToStringView(instanceInfo->instance_id);
                 info.billingProducts = ArrayListToVector<ByteCursor, StringView>(
                     &(instanceInfo->billing_products), ByteCursorToStringView);
-                info.instanceType = StringView(
-                    reinterpret_cast<char *>(instanceInfo->instance_type.ptr), instanceInfo->instance_type.len);
-                info.accountId =
-                    StringView(reinterpret_cast<char *>(instanceInfo->account_id.ptr), instanceInfo->account_id.len);
-                info.imageId =
-                    StringView(reinterpret_cast<char *>(instanceInfo->image_id.ptr), instanceInfo->image_id.len);
+                info.instanceType = ByteCursorToStringView(instanceInfo->instance_type);
+                info.accountId = ByteCursorToStringView(instanceInfo->account_id);
+                info.imageId = ByteCursorToStringView(instanceInfo->image_id);
                 info.pendingTime = aws_date_time_as_epoch_secs(&(instanceInfo->pending_time));
-                info.architecture = StringView(
-                    reinterpret_cast<char *>(instanceInfo->architecture.ptr), instanceInfo->architecture.len);
-                info.kernelId =
-                    StringView(reinterpret_cast<char *>(instanceInfo->kernel_id.ptr), instanceInfo->kernel_id.len);
-                info.ramdiskId =
-                    StringView(reinterpret_cast<char *>(instanceInfo->ramdisk_id.ptr), instanceInfo->ramdisk_id.len);
-                info.region = StringView(reinterpret_cast<char *>(instanceInfo->region.ptr), instanceInfo->region.len);
+                info.architecture = ByteCursorToStringView(instanceInfo->architecture);
+                info.kernelId = ByteCursorToStringView(instanceInfo->kernel_id);
+                info.ramdiskId = ByteCursorToStringView(instanceInfo->ramdisk_id);
+                info.region = ByteCursorToStringView(instanceInfo->region);
                 callbackArgs->callback(info, errorCode, callbackArgs->userData);
                 Aws::Crt::Delete(callbackArgs, callbackArgs->allocator);
             }
