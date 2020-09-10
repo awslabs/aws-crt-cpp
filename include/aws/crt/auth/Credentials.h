@@ -37,8 +37,7 @@ namespace Aws
             class AWS_CRT_CPP_API Credentials
             {
               public:
-                Credentials(aws_credentials *credentials) noexcept;
-                Credentials(const aws_credentials *credentials, Allocator *allocator = g_allocator) noexcept;
+                Credentials(const aws_credentials *credentials) noexcept;
                 Credentials(
                     ByteCursor access_key_id,
                     ByteCursor secret_access_key,
@@ -81,10 +80,10 @@ namespace Aws
                 /**
                  * Returns the underlying credentials implementation.
                  */
-                aws_credentials *GetUnderlyingHandle() const noexcept { return m_credentials; }
+                const aws_credentials *GetUnderlyingHandle() const noexcept { return m_credentials; }
 
               private:
-                aws_credentials *m_credentials;
+                const aws_credentials *m_credentials;
             };
 
             /**

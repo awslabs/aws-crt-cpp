@@ -20,22 +20,12 @@ namespace Aws
     {
         namespace Auth
         {
-            Credentials::Credentials(aws_credentials *credentials) noexcept : m_credentials(credentials)
+            Credentials::Credentials(const aws_credentials *credentials) noexcept : m_credentials(credentials)
             {
                 if (credentials != nullptr)
                 {
                     aws_credentials_acquire(credentials);
                 }
-            }
-
-            Credentials::Credentials(const aws_credentials *credentials, Allocator *allocator) noexcept
-                : m_credentials(aws_credentials_new(
-                      allocator,
-                      aws_credentials_get_access_key_id(credentials),
-                      aws_credentials_get_secret_access_key(credentials),
-                      aws_credentials_get_session_token(credentials),
-                      aws_credentials_get_expiration_timepoint_seconds(credentials)))
-            {
             }
 
             Credentials::Credentials(
