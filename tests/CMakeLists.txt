@@ -37,6 +37,7 @@ add_test_case(StreamTestLength)
 add_test_case(StreamTestRead)
 add_test_case(StreamTestSeekBegin)
 add_test_case(StreamTestSeekEnd)
+add_test_case(TestCredentialsConstruction)
 add_test_case(TestProviderStaticGet)
 add_test_case(TestProviderEnvironmentGet)
 add_test_case(TestProviderProfileGet)
@@ -49,6 +50,15 @@ add_test_case(Sigv4SigningTestCredentials)
 add_test_case(Sigv4SigningTestUnsignedPayload)
 add_test_case(UUIDToString)
 add_test_case(StringViewTest)
+add_test_case(TestIntArrayListToVector)
+add_test_case(TestByteCursorArrayListToVector)
+add_test_case(TestCreatingImdsClient)
+
+if (AWS_BUILDING_ON_EC2)
+    add_test_case(TestImdsClientGetInstanceInfo)
+    add_test_case(TestImdsClientGetCredentials)
+endif()
+
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 
 add_custom_command(TARGET ${TEST_BINARY_NAME} PRE_BUILD

@@ -3,11 +3,11 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include <aws/common/common.h>
 #include <aws/crt/Exports.h>
 #include <aws/crt/Optional.h>
 #include <aws/crt/StlAllocator.h>
-
-#include <aws/common/common.h>
+#include <aws/crt/StringView.h>
 #include <aws/io/socket.h>
 #include <aws/mqtt/mqtt.h>
 #include <functional>
@@ -69,6 +69,75 @@ namespace Aws
 
         AWS_CRT_CPP_API Vector<uint8_t> Base64Decode(const String &decode);
         AWS_CRT_CPP_API String Base64Encode(const Vector<uint8_t> &encode);
+
+        template <typename RawType, typename TargetType> using TypeConvertor = std::function<TargetType(RawType)>;
+
+        /**
+         * Template function to convert an aws_array_list of RawType to a C++ like Vector of TargetType.
+         * A conversion function should be provided to do the type conversion
+         */
+        template <typename RawType, typename TargetType>
+        AWS_CRT_CPP_API Vector<TargetType> ArrayListToVector(
+            const aws_array_list *array,
+            TypeConvertor<RawType, TargetType> conv)
+        {
+            Vector<TargetType> v;
+            size_t cnt = aws_array_list_length(array);
+            for (size_t i = 0; i < cnt; i++)
+            {
+                RawType t;
+                aws_array_list_get_at(array, &t, i);
+                v.emplace_back(conv(t));
+            }
+            return v;
+        }
+
+        /**
+         * Template function to convert an aws_array_list of RawType to a C++ like Vector of TargetType.
+         * This template assumes a direct constructor: TargetType(RawType) is available
+         */
+        template <typename RawType, typename TargetType>
+        AWS_CRT_CPP_API Vector<TargetType> ArrayListToVector(const aws_array_list *array)
+        {
+            Vector<TargetType> v;
+            size_t cnt = aws_array_list_length(array);
+            for (size_t i = 0; i < cnt; i++)
+            {
+                RawType t;
+                aws_array_list_get_at(array, &t, i);
+                v.emplace_back(TargetType(t));
+            }
+            return v;
+        }
+
+        /**
+         * Template function to convert an aws_array_list of Type to a C++ like Vector of Type.
+         */
+        template <typename Type> AWS_CRT_CPP_API Vector<Type> ArrayListToVector(const aws_array_list *array)
+        {
+            Vector<Type> v;
+            size_t cnt = aws_array_list_length(array);
+            for (size_t i = 0; i < cnt; i++)
+            {
+                Type t;
+                aws_array_list_get_at(array, &t, i);
+                v.emplace_back(t);
+            }
+            return v;
+        }
+
+        AWS_CRT_CPP_API inline StringView ByteCursorToStringView(const ByteCursor &bc)
+        {
+            return StringView(reinterpret_cast<char *>(bc.ptr), bc.len);
+        }
+
+        AWS_CRT_CPP_API inline ByteCursor StringViewToByteCursor(const StringView &sv)
+        {
+            ByteCursor bc;
+            bc.ptr = (uint8_t *)(sv.data());
+            bc.len = sv.size();
+            return bc;
+        }
 
         template <typename T> void Delete(T *t, Allocator *allocator)
         {

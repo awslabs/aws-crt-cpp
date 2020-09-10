@@ -20,7 +20,7 @@ namespace Aws
     {
         namespace Auth
         {
-            Credentials::Credentials(aws_credentials *credentials) noexcept : m_credentials(credentials)
+            Credentials::Credentials(const aws_credentials *credentials) noexcept : m_credentials(credentials)
             {
                 if (credentials != nullptr)
                 {
@@ -106,7 +106,7 @@ namespace Aws
 
             CredentialsProvider::~CredentialsProvider()
             {
-                if (m_provider != nullptr)
+                if (m_provider)
                 {
                     aws_credentials_provider_release(m_provider);
                     m_provider = nullptr;
@@ -169,7 +169,6 @@ namespace Aws
 
                 /* Switch to some kind of make_shared/allocate_shared when allocator support improves */
                 auto provider = Aws::Crt::MakeShared<CredentialsProvider>(allocator, raw_provider, allocator);
-
                 return std::static_pointer_cast<ICredentialsProvider>(provider);
             }
 
