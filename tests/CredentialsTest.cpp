@@ -89,8 +89,8 @@ static int s_TestCredentialsConstruction(struct aws_allocator *allocator, void *
         ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_session_token));
         ASSERT_UINT_EQUALS(expire, creds.GetExpirationTimepointInSeconds());
 
-        Credentials creds2((const aws_credentials *)raw_creds);
-        ASSERT_FALSE(raw_creds == creds2.GetUnderlyingHandle());
+        Credentials creds2(raw_creds);
+        ASSERT_TRUE(raw_creds == creds2.GetUnderlyingHandle());
 
         // We can/should safely release the raw creds here, but remember creds still holds it by ref counting.
         aws_credentials_release(raw_creds);
