@@ -143,7 +143,7 @@ namespace Aws
                  * Customize time to wait between reconnect attempts.
                  * The time will start at min and multiply by 2 until max is reached.
                  * The time resets back to min after a successful connection.
-                 * This function may only be called before Connect().
+                 * This function should only be called before Connect().
                  */
                 bool SetReconnectTimeout(uint64_t min_seconds, uint64_t max_seconds) noexcept;
 
