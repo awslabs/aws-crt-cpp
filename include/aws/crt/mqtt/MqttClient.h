@@ -140,6 +140,14 @@ namespace Aws
                 bool SetWebsocketProxyOptions(const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
 
                 /**
+                 * Customize time to wait between reconnect attempts.
+                 * The time will start at min and multiply by 2 until max is reached.
+                 * The time resets back to min after a successful connection.
+                 * This function may only be called before Connect().
+                 */
+                bool SetReconnectTimeout(uint64_t min_seconds, uint64_t max_seconds) noexcept;
+
+                /**
                  * Initiates the connection, OnConnectionCompleted will
                  * be invoked in an event-loop thread.
                  */
