@@ -330,6 +330,12 @@ namespace Aws
                 return true;
             }
 
+            bool MqttConnection::SetReconnectTimeout(uint64_t min_seconds, uint64_t max_seconds) noexcept
+            {
+                return aws_mqtt_client_connection_set_reconnect_timeout(
+                           m_underlyingConnection, min_seconds, max_seconds) == 0;
+            }
+
             bool MqttConnection::Connect(
                 const char *clientId,
                 bool cleanSession,
