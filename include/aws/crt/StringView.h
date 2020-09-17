@@ -7,21 +7,26 @@
 /**
  * string_view is introduced in C++ 17.
  */
-#if __cplusplus < 201703L
+#if __cplusplus >= 201703L
+#    include <string_view>
+namespace Aws
+{
+    namespace Crt
+    {
+        using StringView = std::string_view;
+    }
+} // namespace Aws
+#else
+
 #    include <algorithm>
 #    include <cassert>
 #    include <iterator>
 #    include <stddef.h>
 #    include <type_traits>
-#else
-#    include <string_view>
-#endif
-
 namespace Aws
 {
     namespace Crt
     {
-#if __cplusplus < 201703L
         template <typename CharT, typename Traits = std::char_traits<CharT>> class basic_string_view
         {
           public:
@@ -824,13 +829,9 @@ namespace Aws
         } // namespace literals
 
         using StringView = string_view;
-#else
-        using StringView = std::string_view;
-#endif
     } // namespace Crt
 } // namespace Aws
 
-#if __cplusplus < 201703L
 // hash
 namespace std
 {
@@ -849,4 +850,5 @@ namespace std
         return std::hash<std::basic_string<CharT, Traits>>()(str);
     }
 } // namespace std
+
 #endif
