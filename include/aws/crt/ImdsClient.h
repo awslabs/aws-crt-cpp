@@ -9,6 +9,11 @@
 #include <aws/crt/Types.h>
 #include <functional>
 
+struct aws_credentials;
+struct aws_imds_client;
+struct aws_imds_iam_profile;
+struct aws_imds_instance_info;
+
 namespace Aws
 {
 
