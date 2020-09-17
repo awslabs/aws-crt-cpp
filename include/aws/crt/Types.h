@@ -7,7 +7,6 @@
 #include <aws/crt/Exports.h>
 #include <aws/crt/Optional.h>
 #include <aws/crt/StlAllocator.h>
-#include <aws/crt/StringView.h>
 #include <aws/io/socket.h>
 #include <aws/mqtt/mqtt.h>
 #include <functional>
@@ -124,19 +123,6 @@ namespace Aws
                 v.emplace_back(t);
             }
             return v;
-        }
-
-        AWS_CRT_CPP_API inline StringView ByteCursorToStringView(const ByteCursor &bc)
-        {
-            return StringView(reinterpret_cast<char *>(bc.ptr), bc.len);
-        }
-
-        AWS_CRT_CPP_API inline ByteCursor StringViewToByteCursor(const StringView &sv)
-        {
-            ByteCursor bc;
-            bc.ptr = (uint8_t *)(sv.data());
-            bc.len = sv.size();
-            return bc;
         }
 
         template <typename T> void Delete(T *t, Allocator *allocator)
