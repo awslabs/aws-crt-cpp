@@ -9,13 +9,20 @@
  */
 #if __cplusplus >= 201703L
 #    include <string_view>
+namespace Aws
+{
+    namespace Crt
+    {
+        using StringView = std::string_view;
+    }
+} // namespace Aws
 #else
+
 #    include <algorithm>
 #    include <cassert>
 #    include <iterator>
 #    include <stddef.h>
 #    include <type_traits>
-
 namespace Aws
 {
     namespace Crt
@@ -821,12 +828,7 @@ namespace Aws
 
         } // namespace literals
 
-#    if __cplusplus < 201703L
         using StringView = string_view;
-#    else
-        using StringView = std::string_view;
-#    endif
-
     } // namespace Crt
 } // namespace Aws
 
