@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.1)
 project(aws-crt-cpp CXX C)
 option(BUILD_DEPS "Builds aws common runtime dependencies as part of build, only do this if you don't want to control your dependency chain." OFF)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(AwsCheckHeadersCxx)
 include(CTest)
 
 if (DEFINED CMAKE_PREFIX_PATH)
@@ -119,7 +121,7 @@ file(GLOB AWS_CRT_EXTERNAL_HEADERS
         "include/aws/crt/external/*.h"
 )
 
-file(GLOB AWS_CRT_CPP_HEADERS
+file(GLOB AWS_CRT_PUBLIC_HEADERS
         ${AWS_CRT_HEADERS}
         ${AWS_CRT_AUTH_HEADERS}
         ${AWS_CRT_CRYPTO_HEADERS}
@@ -127,6 +129,12 @@ file(GLOB AWS_CRT_CPP_HEADERS
         ${AWS_CRT_IOT_HEADERS}
         ${AWS_CRT_MQTT_HEADERS}
         ${AWS_CRT_HTTP_HEADERS}
+)
+
+aws_check_headers_cxx(${PROJECT_NAME} ${AWS_CRT_PUBLIC_HEADERS})
+
+file(GLOB AWS_CRT_CPP_HEADERS
+        ${AWS_CRT_PUBLIC_HEADERS}
         ${AWS_CRT_EXTERNAL_HEADERS}
 )
 
@@ -195,7 +203,7 @@ if (WIN32)
     endif ()
 endif()
 
-add_library(${PROJECT_NAME} ${AWS_CRT_CPP_SRC})
+add_library(${PROJECT_NAME} ${AWS_CRT_CPP_HEADERS} ${AWS_CRT_CPP_SRC})
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DCJSON_HIDE_SYMBOLS)
 
@@ -247,7 +255,6 @@ install(FILES ${AWS_CRT_IO_HEADERS} DESTINATION "include/aws/crt/io" COMPONENT D
 install(FILES ${AWS_CRT_IOT_HEADERS} DESTINATION "include/aws/iot" COMPONENT Development)
 install(FILES ${AWS_CRT_MQTT_HEADERS} DESTINATION "include/aws/crt/mqtt" COMPONENT Development)
 install(FILES ${AWS_CRT_HTTP_HEADERS} DESTINATION "include/aws/crt/http" COMPONENT Development)
-install(FILES ${AWS_CRT_EXTERNAL_HEADERS} DESTINATION "include/aws/crt/external" COMPONENT Development)
 
 install(
         TARGETS ${PROJECT_NAME}
