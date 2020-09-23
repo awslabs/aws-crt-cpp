@@ -13,6 +13,7 @@ option(PERFORM_HEADER_CHECK_CXX "Performs compile-time checks that each header c
 function(aws_check_headers_cxx target)
     # Check headers against each supported CXX_STANDARD
     if (PERFORM_HEADER_CHECK_CXX)
+        message(STATUS "Perform headers check")
         aws_check_headers_cxx_internal(${target} 11 ${ARGN})
         aws_check_headers_cxx_internal(${target} 14 ${ARGN})
 
