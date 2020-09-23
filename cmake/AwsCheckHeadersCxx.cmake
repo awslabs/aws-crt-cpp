@@ -17,6 +17,7 @@ function(aws_check_headers_cxx target)
         aws_check_headers_cxx_internal(${target} 14 ${ARGN})
 
         if (NOT CMAKE_VERSION VERSION_LESS "3.8")
+            message(STATUS "Perform headers check with C++17")
             aws_check_headers_cxx_internal(${target} 17 ${ARGN})
 
             if (NOT CMAKE_VERSION VERSION_LESS "3.12")
