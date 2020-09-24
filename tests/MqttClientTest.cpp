@@ -79,7 +79,7 @@ static int s_TestMqttClientNewConnectionUninitializedTlsContext(Aws::Crt::Alloca
         // Intentionally use a TlsContext that hasn't been initialized.
         Aws::Crt::Io::TlsContext tlsContext;
 
-        // Passing the uninitialized TlsContext should result in a null connection, but not a crash.
+        // Passing the uninitialized TlsContext should result in a null connection, not one in an undefined state
         auto mqttConnection = mqttClient.NewConnection("www.example.com", 443, socketOptions, tlsContext);
 
         ASSERT_TRUE(mqttConnection == nullptr);
