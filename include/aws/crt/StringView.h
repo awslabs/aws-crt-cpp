@@ -14,6 +14,10 @@
 #include <stddef.h>
 #include <type_traits>
 
+#if __cplusplus >= 201703L || (defined(_MSC_LANG) && _MSC_LANG >= 201703L)
+#    include <string_view>
+#endif
+
 namespace Aws
 {
     namespace Crt
@@ -48,6 +52,18 @@ namespace Aws
 
             basic_string_view &operator=(const basic_string_view &) noexcept = default;
 
+#if __cplusplus >= 201703L || (defined(_MSC_LANG) && _MSC_LANG >= 201703L)
+            constexpr basic_string_view(const std::basic_string_view<CharT, Traits> &other) noexcept
+                : m_size(other.size()), m_data(other.data())
+            {
+            }
+
+            basic_string_view &operator=(const std::basic_string_view<CharT, Traits> &other) noexcept
+            {
+                m_data = other->data();
+                m_size = other->size();
+            }
+#endif
             // iterators
 
             constexpr const_iterator begin() const noexcept { return this->m_data; }
