@@ -5,6 +5,7 @@
 #include <aws/crt/io/TlsOptions.h>
 
 #include <aws/crt/Api.h>
+#include <aws/io/logging.h>
 #include <aws/io/tls_channel_handler.h>
 
 namespace Aws
@@ -283,6 +284,13 @@ namespace Aws
 
             TlsConnectionOptions TlsContext::NewConnectionOptions() const noexcept
             {
+                if (!*this)
+                {
+                    AWS_LOGF_ERROR(AWS_LS_IO_TLS, "Trying to call TlsContext::NewConnectionOptions from an invalid TlsContext.");
+
+                    return TlsConnectionOptions();
+                }
+
                 return TlsConnectionOptions(m_ctx.get(), m_ctx->alloc);
             }
         } // namespace Io
