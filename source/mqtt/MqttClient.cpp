@@ -700,6 +700,7 @@ namespace Aws
                         AWS_LS_MQTT_CLIENT,
                         "id=%p Trying to call MqttClient::NewConnection using an invalid TlsContext.",
                         (void *)m_client);
+                    aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
                     return nullptr;
                 }
 

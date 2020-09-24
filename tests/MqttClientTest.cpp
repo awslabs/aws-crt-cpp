@@ -83,6 +83,7 @@ static int s_TestMqttClientNewConnectionUninitializedTlsContext(Aws::Crt::Alloca
         auto mqttConnection = mqttClient.NewConnection("www.example.com", 443, socketOptions, tlsContext);
 
         ASSERT_TRUE(mqttConnection == nullptr);
+        ASSERT_TRUE(aws_last_error() == AWS_ERROR_INVALID_ARGUMENT);
     }
 
     Aws::Crt::TestCleanupAndWait();
