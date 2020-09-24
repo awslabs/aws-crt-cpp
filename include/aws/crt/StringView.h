@@ -842,8 +842,7 @@ namespace Aws
 // hash
 namespace std
 {
-    template <class CharT, class Traits>
-    struct hash<Aws::Crt::basic_string_view<CharT, Traits>>
+    template <class CharT, class Traits> struct hash<Aws::Crt::basic_string_view<CharT, Traits>>
     {
         size_t operator()(const Aws::Crt::basic_string_view<CharT, Traits> &val) const noexcept;
     };
