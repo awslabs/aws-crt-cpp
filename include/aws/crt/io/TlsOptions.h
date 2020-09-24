@@ -202,13 +202,15 @@ namespace Aws
                 /**
                  * @return true if the instance is in a valid state, false otherwise.
                  */
-                explicit operator bool() const noexcept { return m_ctx && m_initializationError == AWS_ERROR_SUCCESS; }
+                explicit operator bool() const noexcept { return isValid(); }
                 /**
                  * @return the value of the last aws error encountered by operations on this instance.
                  */
                 int GetInitializationError() const noexcept { return m_initializationError; }
 
               private:
+                bool isValid() const noexcept { return m_ctx && m_initializationError == AWS_ERROR_SUCCESS; }
+
                 std::shared_ptr<aws_tls_ctx> m_ctx;
                 int m_initializationError;
             };

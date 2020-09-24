@@ -284,10 +284,10 @@ namespace Aws
 
             TlsConnectionOptions TlsContext::NewConnectionOptions() const noexcept
             {
-                if (!*this)
+                if (!isValid())
                 {
-                    AWS_LOGF_ERROR(AWS_LS_IO_TLS, "Trying to call TlsContext::NewConnectionOptions from an invalid TlsContext.");
-
+                    AWS_LOGF_ERROR(
+                        AWS_LS_IO_TLS, "Trying to call TlsContext::NewConnectionOptions from an invalid TlsContext.");
                     return TlsConnectionOptions();
                 }
 
