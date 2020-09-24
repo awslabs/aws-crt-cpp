@@ -53,3 +53,42 @@ static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator *allocator, void *
 }
 
 AWS_TEST_CASE(MqttClientResourceSafety, s_TestMqttClientResourceSafety)
+
+static int s_TestMqttClientNewConnectionUninitializedTlsContext(Aws::Crt::Allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        Aws::Crt::Io::SocketOptions socketOptions;
+        socketOptions.SetConnectTimeoutMs(3000);
+
+        Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+        ASSERT_TRUE(eventLoopGroup);
+
+        Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+        ASSERT_TRUE(defaultHostResolver);
+
+        Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+        ASSERT_TRUE(allocator);
+        clientBootstrap.EnableBlockingShutdown();
+
+        Aws::Crt::Mqtt::MqttClient mqttClient(clientBootstrap, allocator);
+        ASSERT_TRUE(mqttClient);
+
+        // Intentionally use a TlsContext that hasn't been initialized.
+        Aws::Crt::Io::TlsContext tlsContext;
+
+        // Passing the uninitialized TlsContext should result in a null connection, not one in an undefined state
+        auto mqttConnection = mqttClient.NewConnection("www.example.com", 443, socketOptions, tlsContext);
+
+        ASSERT_TRUE(mqttConnection == nullptr);
+        ASSERT_TRUE(aws_last_error() == AWS_ERROR_INVALID_ARGUMENT);
+    }
+
+    Aws::Crt::TestCleanupAndWait();
+
+    return AWS_ERROR_SUCCESS;
+}
+
+AWS_TEST_CASE(MqttClientNewConnectionUninitializedTlsContext, s_TestMqttClientNewConnectionUninitializedTlsContext)

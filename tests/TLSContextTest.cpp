@@ -32,3 +32,25 @@ static int s_TestTLSContextResourceSafety(Aws::Crt::Allocator *allocator, void *
 }
 
 AWS_TEST_CASE(TLSContextResourceSafety, s_TestTLSContextResourceSafety)
+
+static int s_TestTLSContextUninitializedNewConnectionOptions(Aws::Crt::Allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        // Intentionally create an uninitialized TlsContext
+        Aws::Crt::Io::TlsContext tlsContext;
+
+        Aws::Crt::Io::TlsConnectionOptions options = tlsContext.NewConnectionOptions();
+
+        // Options should be uninitialized, but creating them should not result in a crash.
+        ASSERT_TRUE(!options);
+    }
+
+    Aws::Crt::TestCleanupAndWait();
+
+    return AWS_ERROR_SUCCESS;
+}
+
+AWS_TEST_CASE(TLSContextUninitializedNewConnectionOptions, s_TestTLSContextUninitializedNewConnectionOptions)
