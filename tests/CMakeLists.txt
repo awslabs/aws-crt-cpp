@@ -53,6 +53,7 @@ add_test_case(Sigv4SigningTestUnsignedPayload)
 add_test_case(UUIDToString)
 add_test_case(TestIntArrayListToVector)
 add_test_case(TestByteCursorArrayListToVector)
+add_test_case(StringViewTest)
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 
