@@ -57,6 +57,32 @@ namespace Aws
             };
 
             /**
+             * A convenient class for you to persist data from IamProfile, which has StringView members.
+             */
+            struct AWS_CRT_CPP_API IamProfileStore
+            {
+                IamProfileStore() {}
+                IamProfileStore(const IamProfile &other)
+                    : lastUpdated(other.lastUpdated),
+                      instanceProfileArn(other.instanceProfileArn.data(), other.instanceProfileArn.size()),
+                      instanceProfileId(other.instanceProfileId.data(), other.instanceProfileId.size())
+                {
+                }
+
+                IamProfileStore &operator=(const IamProfile &other)
+                {
+                    lastUpdated = other.lastUpdated;
+                    instanceProfileArn = String(other.instanceProfileArn.data(), other.instanceProfileArn.size());
+                    instanceProfileId = String(other.instanceProfileId.data(), other.instanceProfileId.size());
+                    return *this;
+                }
+
+                DateTime lastUpdated;
+                String instanceProfileArn;
+                String instanceProfileId;
+            };
+
+            /**
              * Block of per-instance EC2-specific data
              *
              * https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-identity-documents.html
@@ -79,6 +105,81 @@ namespace Aws
                 StringView kernelId;
                 StringView ramdiskId;
                 StringView region;
+            };
+
+            /**
+             * A convenient class for you to persist data from InstanceInfo, which has StringView members.
+             */
+            struct AWS_CRT_CPP_API InstanceInfoStore
+            {
+                InstanceInfoStore() {}
+                InstanceInfoStore(const InstanceInfo &other)
+                    : availabilityZone(other.availabilityZone.data(), other.availabilityZone.size()),
+                      privateIp(other.privateIp.data(), other.privateIp.size()),
+                      version(other.version.data(), other.version.size()),
+                      instanceId(other.instanceId.data(), other.instanceId.size()),
+                      instanceType(other.instanceType.data(), other.instanceType.size()),
+                      accountId(other.accountId.data(), other.accountId.size()),
+                      imageId(other.imageId.data(), other.imageId.size()), pendingTime(other.pendingTime),
+                      architecture(other.architecture.data(), other.architecture.size()),
+                      kernelId(other.kernelId.data(), other.kernelId.size()),
+                      ramdiskId(other.ramdiskId.data(), other.ramdiskId.size()),
+                      region(other.region.data(), other.region.size())
+                {
+                    for (const auto &m : other.marketplaceProductCodes)
+                    {
+                        marketplaceProductCodes.emplace_back(m.data(), m.size());
+                    }
+
+                    for (const auto &m : other.billingProducts)
+                    {
+                        billingProducts.emplace_back(m.data(), m.size());
+                    }
+                }
+
+                InstanceInfoStore &operator=(const InstanceInfo &other)
+                {
+                    availabilityZone = {other.availabilityZone.data(), other.availabilityZone.size()};
+                    privateIp = {other.privateIp.data(), other.privateIp.size()};
+                    version = {other.version.data(), other.version.size()};
+                    instanceId = {other.instanceId.data(), other.instanceId.size()};
+                    instanceType = {other.instanceType.data(), other.instanceType.size()};
+                    accountId = {other.accountId.data(), other.accountId.size()};
+                    imageId = {other.imageId.data(), other.imageId.size()};
+                    pendingTime = other.pendingTime;
+                    architecture = {other.architecture.data(), other.architecture.size()};
+                    kernelId = {other.kernelId.data(), other.kernelId.size()};
+                    ramdiskId = {other.ramdiskId.data(), other.ramdiskId.size()};
+                    region = {other.region.data(), other.region.size()};
+
+                    for (const auto &m : other.marketplaceProductCodes)
+                    {
+                        marketplaceProductCodes.emplace_back(m.data(), m.size());
+                    }
+
+                    for (const auto &m : other.billingProducts)
+                    {
+                        billingProducts.emplace_back(m.data(), m.size());
+                    }
+                    return *this;
+                }
+
+                /* an array of StringView */
+                Vector<String> marketplaceProductCodes;
+                String availabilityZone;
+                String privateIp;
+                String version;
+                String instanceId;
+                /* an array of StringView */
+                Vector<String> billingProducts;
+                String instanceType;
+                String accountId;
+                String imageId;
+                DateTime pendingTime;
+                String architecture;
+                String kernelId;
+                String ramdiskId;
+                String region;
             };
 
             using OnResourceAcquired = std::function<void(const StringView &resource, int errorCode, void *userData)>;
