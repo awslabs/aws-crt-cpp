@@ -126,6 +126,19 @@ namespace Aws
             return v;
         }
 
+        AWS_CRT_CPP_API inline StringView ByteCursorToStringView(const ByteCursor &bc)
+        {
+            return StringView(reinterpret_cast<char *>(bc.ptr), bc.len);
+        }
+
+        AWS_CRT_CPP_API inline ByteCursor StringViewToByteCursor(const StringView &sv)
+        {
+            ByteCursor bc;
+            bc.ptr = (uint8_t *)(sv.data());
+            bc.len = sv.size();
+            return bc;
+        }
+
         template <typename T> void Delete(T *t, Allocator *allocator)
         {
             t->~T();
