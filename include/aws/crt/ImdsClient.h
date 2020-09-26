@@ -49,7 +49,7 @@ namespace Aws
             /**
              * https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-categories.html
              */
-            struct AWS_CRT_CPP_API IamProfile
+            struct AWS_CRT_CPP_API IamProfileView
             {
                 DateTime lastUpdated;
                 StringView instanceProfileArn;
@@ -57,19 +57,19 @@ namespace Aws
             };
 
             /**
-             * A convenient class for you to persist data from IamProfile, which has StringView members.
+             * A convenient class for you to persist data from IamProfileView, which has StringView members.
              */
-            struct AWS_CRT_CPP_API IamProfileStore
+            struct AWS_CRT_CPP_API IamProfile
             {
-                IamProfileStore() {}
-                IamProfileStore(const IamProfile &other)
+                IamProfile() {}
+                IamProfile(const IamProfileView &other)
                     : lastUpdated(other.lastUpdated),
                       instanceProfileArn(other.instanceProfileArn.data(), other.instanceProfileArn.size()),
                       instanceProfileId(other.instanceProfileId.data(), other.instanceProfileId.size())
                 {
                 }
 
-                IamProfileStore &operator=(const IamProfile &other)
+                IamProfile &operator=(const IamProfileView &other)
                 {
                     lastUpdated = other.lastUpdated;
                     instanceProfileArn = String(other.instanceProfileArn.data(), other.instanceProfileArn.size());
@@ -87,7 +87,7 @@ namespace Aws
              *
              * https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-identity-documents.html
              */
-            struct AWS_CRT_CPP_API InstanceInfo
+            struct AWS_CRT_CPP_API InstanceInfoView
             {
                 /* an array of StringView */
                 Vector<StringView> marketplaceProductCodes;
@@ -108,12 +108,12 @@ namespace Aws
             };
 
             /**
-             * A convenient class for you to persist data from InstanceInfo, which has StringView members.
+             * A convenient class for you to persist data from InstanceInfoView, which has StringView members.
              */
-            struct AWS_CRT_CPP_API InstanceInfoStore
+            struct AWS_CRT_CPP_API InstanceInfo
             {
-                InstanceInfoStore() {}
-                InstanceInfoStore(const InstanceInfo &other)
+                InstanceInfo() {}
+                InstanceInfo(const InstanceInfoView &other)
                     : availabilityZone(other.availabilityZone.data(), other.availabilityZone.size()),
                       privateIp(other.privateIp.data(), other.privateIp.size()),
                       version(other.version.data(), other.version.size()),
@@ -137,7 +137,7 @@ namespace Aws
                     }
                 }
 
-                InstanceInfoStore &operator=(const InstanceInfo &other)
+                InstanceInfo &operator=(const InstanceInfoView &other)
                 {
                     availabilityZone = {other.availabilityZone.data(), other.availabilityZone.size()};
                     privateIp = {other.privateIp.data(), other.privateIp.size()};
@@ -188,9 +188,9 @@ namespace Aws
             using OnCredentialsAcquired =
                 std::function<void(const Auth::Credentials &credentials, int errorCode, void *userData)>;
             using OnIamProfileAcquired =
-                std::function<void(const IamProfile &iamProfile, int errorCode, void *userData)>;
+                std::function<void(const IamProfileView &iamProfile, int errorCode, void *userData)>;
             using OnInstanceInfoAcquired =
-                std::function<void(const InstanceInfo &instanceInfo, int errorCode, void *userData)>;
+                std::function<void(const InstanceInfoView &instanceInfo, int errorCode, void *userData)>;
 
             class AWS_CRT_CPP_API ImdsClient
             {

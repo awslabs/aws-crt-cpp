@@ -83,7 +83,7 @@ namespace Aws
             {
                 WrappedCallbackArgs<OnIamProfileAcquired> *callbackArgs =
                     static_cast<WrappedCallbackArgs<OnIamProfileAcquired> *>(userData);
-                IamProfile iamProfile;
+                IamProfileView iamProfile;
                 iamProfile.lastUpdated = aws_date_time_as_epoch_secs(&(iamProfileInfo->last_updated));
                 iamProfile.instanceProfileArn = ByteCursorToStringView(iamProfileInfo->instance_profile_arn);
                 iamProfile.instanceProfileId = ByteCursorToStringView(iamProfileInfo->instance_profile_id);
@@ -98,7 +98,7 @@ namespace Aws
             {
                 WrappedCallbackArgs<OnInstanceInfoAcquired> *callbackArgs =
                     static_cast<WrappedCallbackArgs<OnInstanceInfoAcquired> *>(userData);
-                InstanceInfo info;
+                InstanceInfoView info;
                 info.marketplaceProductCodes = ArrayListToVector<ByteCursor, StringView>(
                     &(instanceInfo->marketplace_product_codes), ByteCursorToStringView);
                 info.availabilityZone = ByteCursorToStringView(instanceInfo->availability_zone);
