@@ -62,20 +62,9 @@ namespace Aws
             struct AWS_CRT_CPP_API IamProfile
             {
                 IamProfile() {}
-                IamProfile(const IamProfileView &other)
-                    : lastUpdated(other.lastUpdated),
-                      instanceProfileArn(other.instanceProfileArn.data(), other.instanceProfileArn.size()),
-                      instanceProfileId(other.instanceProfileId.data(), other.instanceProfileId.size())
-                {
-                }
+                IamProfile(const IamProfileView &other);
 
-                IamProfile &operator=(const IamProfileView &other)
-                {
-                    lastUpdated = other.lastUpdated;
-                    instanceProfileArn = String(other.instanceProfileArn.data(), other.instanceProfileArn.size());
-                    instanceProfileId = String(other.instanceProfileId.data(), other.instanceProfileId.size());
-                    return *this;
-                }
+                IamProfile &operator=(const IamProfileView &other);
 
                 DateTime lastUpdated;
                 String instanceProfileArn;
@@ -113,56 +102,9 @@ namespace Aws
             struct AWS_CRT_CPP_API InstanceInfo
             {
                 InstanceInfo() {}
-                InstanceInfo(const InstanceInfoView &other)
-                    : availabilityZone(other.availabilityZone.data(), other.availabilityZone.size()),
-                      privateIp(other.privateIp.data(), other.privateIp.size()),
-                      version(other.version.data(), other.version.size()),
-                      instanceId(other.instanceId.data(), other.instanceId.size()),
-                      instanceType(other.instanceType.data(), other.instanceType.size()),
-                      accountId(other.accountId.data(), other.accountId.size()),
-                      imageId(other.imageId.data(), other.imageId.size()), pendingTime(other.pendingTime),
-                      architecture(other.architecture.data(), other.architecture.size()),
-                      kernelId(other.kernelId.data(), other.kernelId.size()),
-                      ramdiskId(other.ramdiskId.data(), other.ramdiskId.size()),
-                      region(other.region.data(), other.region.size())
-                {
-                    for (const auto &m : other.marketplaceProductCodes)
-                    {
-                        marketplaceProductCodes.emplace_back(m.data(), m.size());
-                    }
+                InstanceInfo(const InstanceInfoView &other);
 
-                    for (const auto &m : other.billingProducts)
-                    {
-                        billingProducts.emplace_back(m.data(), m.size());
-                    }
-                }
-
-                InstanceInfo &operator=(const InstanceInfoView &other)
-                {
-                    availabilityZone = {other.availabilityZone.data(), other.availabilityZone.size()};
-                    privateIp = {other.privateIp.data(), other.privateIp.size()};
-                    version = {other.version.data(), other.version.size()};
-                    instanceId = {other.instanceId.data(), other.instanceId.size()};
-                    instanceType = {other.instanceType.data(), other.instanceType.size()};
-                    accountId = {other.accountId.data(), other.accountId.size()};
-                    imageId = {other.imageId.data(), other.imageId.size()};
-                    pendingTime = other.pendingTime;
-                    architecture = {other.architecture.data(), other.architecture.size()};
-                    kernelId = {other.kernelId.data(), other.kernelId.size()};
-                    ramdiskId = {other.ramdiskId.data(), other.ramdiskId.size()};
-                    region = {other.region.data(), other.region.size()};
-
-                    for (const auto &m : other.marketplaceProductCodes)
-                    {
-                        marketplaceProductCodes.emplace_back(m.data(), m.size());
-                    }
-
-                    for (const auto &m : other.billingProducts)
-                    {
-                        billingProducts.emplace_back(m.data(), m.size());
-                    }
-                    return *this;
-                }
+                InstanceInfo &operator=(const InstanceInfoView &other);
 
                 /* an array of StringView */
                 Vector<String> marketplaceProductCodes;

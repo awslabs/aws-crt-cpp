@@ -16,6 +16,72 @@ namespace Aws
     {
         namespace Imds
         {
+            IamProfile::IamProfile(const IamProfileView &other)
+                : lastUpdated(other.lastUpdated),
+                  instanceProfileArn(other.instanceProfileArn.data(), other.instanceProfileArn.size()),
+                  instanceProfileId(other.instanceProfileId.data(), other.instanceProfileId.size())
+            {
+            }
+
+            IamProfile &IamProfile::operator=(const IamProfileView &other)
+            {
+                lastUpdated = other.lastUpdated;
+                instanceProfileArn = String(other.instanceProfileArn.data(), other.instanceProfileArn.size());
+                instanceProfileId = String(other.instanceProfileId.data(), other.instanceProfileId.size());
+                return *this;
+            }
+
+            InstanceInfo::InstanceInfo(const InstanceInfoView &other)
+                : availabilityZone(other.availabilityZone.data(), other.availabilityZone.size()),
+                  privateIp(other.privateIp.data(), other.privateIp.size()),
+                  version(other.version.data(), other.version.size()),
+                  instanceId(other.instanceId.data(), other.instanceId.size()),
+                  instanceType(other.instanceType.data(), other.instanceType.size()),
+                  accountId(other.accountId.data(), other.accountId.size()),
+                  imageId(other.imageId.data(), other.imageId.size()), pendingTime(other.pendingTime),
+                  architecture(other.architecture.data(), other.architecture.size()),
+                  kernelId(other.kernelId.data(), other.kernelId.size()),
+                  ramdiskId(other.ramdiskId.data(), other.ramdiskId.size()),
+                  region(other.region.data(), other.region.size())
+            {
+                for (const auto &m : other.marketplaceProductCodes)
+                {
+                    marketplaceProductCodes.emplace_back(m.data(), m.size());
+                }
+
+                for (const auto &m : other.billingProducts)
+                {
+                    billingProducts.emplace_back(m.data(), m.size());
+                }
+            }
+
+            InstanceInfo &InstanceInfo::operator=(const InstanceInfoView &other)
+            {
+                availabilityZone = {other.availabilityZone.data(), other.availabilityZone.size()};
+                privateIp = {other.privateIp.data(), other.privateIp.size()};
+                version = {other.version.data(), other.version.size()};
+                instanceId = {other.instanceId.data(), other.instanceId.size()};
+                instanceType = {other.instanceType.data(), other.instanceType.size()};
+                accountId = {other.accountId.data(), other.accountId.size()};
+                imageId = {other.imageId.data(), other.imageId.size()};
+                pendingTime = other.pendingTime;
+                architecture = {other.architecture.data(), other.architecture.size()};
+                kernelId = {other.kernelId.data(), other.kernelId.size()};
+                ramdiskId = {other.ramdiskId.data(), other.ramdiskId.size()};
+                region = {other.region.data(), other.region.size()};
+
+                for (const auto &m : other.marketplaceProductCodes)
+                {
+                    marketplaceProductCodes.emplace_back(m.data(), m.size());
+                }
+
+                for (const auto &m : other.billingProducts)
+                {
+                    billingProducts.emplace_back(m.data(), m.size());
+                }
+                return *this;
+            }
+
             ImdsClient::ImdsClient(const ImdsClientConfig &config, Allocator *allocator) noexcept
             {
                 AWS_FATAL_ASSERT(config.Bootstrap != nullptr);
