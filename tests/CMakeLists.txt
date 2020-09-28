@@ -54,6 +54,12 @@ add_test_case(UUIDToString)
 add_test_case(TestIntArrayListToVector)
 add_test_case(TestByteCursorArrayListToVector)
 add_test_case(StringViewTest)
+add_test_case(TestCreatingImdsClient)
+
+if (AWS_BUILDING_ON_EC2)
+    add_test_case(TestImdsClientGetInstanceInfo)
+    add_test_case(TestImdsClientGetCredentials)
+endif()
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 

@@ -62,6 +62,7 @@ namespace Aws
             {
                 m_data = other->data();
                 m_size = other->size();
+                return *this;
             }
 #endif
             // iterators
