@@ -17,7 +17,7 @@
             ]
         }
     },
-    "search_dirs": ["aws-common-runtime"],
+    "search_dirs": ["crt"],
     "hosts": {
         "manylinux": {
             "architectures": {
@@ -31,7 +31,7 @@
         "test",
         [
             "{python}",
-            "{project_dir}/aws-common-runtime/aws-c-http/integration-testing/http_client_test.py",
+            "{project_dir}/crt/aws-c-http/integration-testing/http_client_test.py",
             "{install_dir}/bin/elasticurl_cpp{exe}"
         ]
     ]
