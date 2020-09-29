@@ -928,7 +928,7 @@ EXCLUDE_SYMLINKS       = NO
 # exclude all test directories for example use the pattern */test/*
 
 EXCLUDE_PATTERNS       = */tests/*
-EXCLUDE_PATTERNS      += */aws-common-runtime/*
+EXCLUDE_PATTERNS      += */crt/*
 EXCLUDE_PATTERNS      += */build/*
 EXCLUDE_PATTERNS      += */docsrc/*.py
 EXCLUDE_PATTERNS      += */codebuild/*
