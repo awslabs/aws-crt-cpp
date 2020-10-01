@@ -11,6 +11,7 @@
 
 #include <aws/io/logging.h>
 
+#include <Utils.h>
 #include <condition_variable>
 #include <mutex>
 

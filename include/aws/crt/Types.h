@@ -77,7 +77,7 @@ namespace Aws
          * A conversion function should be provided to do the type conversion
          */
         template <typename RawType, typename TargetType>
-        AWS_CRT_CPP_API Vector<TargetType> ArrayListToVector(
+        Vector<TargetType> ArrayListToVector(
             const aws_array_list *array,
             TypeConvertor<RawType, TargetType> conv)
         {
@@ -97,7 +97,7 @@ namespace Aws
          * This template assumes a direct constructor: TargetType(RawType) is available
          */
         template <typename RawType, typename TargetType>
-        AWS_CRT_CPP_API Vector<TargetType> ArrayListToVector(const aws_array_list *array)
+        Vector<TargetType> ArrayListToVector(const aws_array_list *array)
         {
             Vector<TargetType> v;
             size_t cnt = aws_array_list_length(array);
@@ -113,7 +113,7 @@ namespace Aws
         /**
          * Template function to convert an aws_array_list of Type to a C++ like Vector of Type.
          */
-        template <typename Type> AWS_CRT_CPP_API Vector<Type> ArrayListToVector(const aws_array_list *array)
+        template <typename Type> Vector<Type> ArrayListToVector(const aws_array_list *array)
         {
             Vector<Type> v;
             size_t cnt = aws_array_list_length(array);

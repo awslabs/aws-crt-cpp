@@ -114,7 +114,7 @@ namespace Aws
                 auto read = m_stream->gcount();
                 buffer.len += static_cast<size_t>(read);
 
-                if (read > 0)
+                if (read > 0 || (read == 0 && m_stream->eof()))
                 {
                     return true;
                 }

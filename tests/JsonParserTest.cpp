@@ -5,6 +5,7 @@
 #include <aws/crt/Api.h>
 #include <aws/crt/JsonObject.h>
 #include <aws/testing/aws_test_harness.h>
+#include <Utils.h>
 
 static int s_BasicJsonParsing(struct aws_allocator *allocator, void *ctx)
 {

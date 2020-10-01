@@ -7,6 +7,7 @@
 #include <aws/crt/io/HostResolver.h>
 #include <aws/testing/aws_test_harness.h>
 
+#include <Utils.h>
 #include <condition_variable>
 #include <mutex>
 

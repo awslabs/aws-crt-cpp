@@ -6,8 +6,9 @@
 #include <aws/crt/Api.h>
 
 #include <aws/testing/aws_test_harness.h>
-#include <utility>
 
+#include <Utils.h>
+#include <utility>
 #include <condition_variable>
 #include <fstream>
 #include <mutex>

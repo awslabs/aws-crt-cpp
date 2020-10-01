@@ -10,6 +10,7 @@
 
 #include <aws/testing/aws_test_harness.h>
 
+#include <Utils.h>
 #include <condition_variable>
 #include <fstream>
 #include <iostream>

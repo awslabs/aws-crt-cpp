@@ -5,6 +5,7 @@
 #include <aws/crt/Api.h>
 #include <aws/testing/aws_test_harness.h>
 
+#include <Utils.h>
 #include <future>
 #include <utility>
 
