@@ -77,9 +77,7 @@ namespace Aws
          * A conversion function should be provided to do the type conversion
          */
         template <typename RawType, typename TargetType>
-        Vector<TargetType> ArrayListToVector(
-            const aws_array_list *array,
-            TypeConvertor<RawType, TargetType> conv)
+        Vector<TargetType> ArrayListToVector(const aws_array_list *array, TypeConvertor<RawType, TargetType> conv)
         {
             Vector<TargetType> v;
             size_t cnt = aws_array_list_length(array);
