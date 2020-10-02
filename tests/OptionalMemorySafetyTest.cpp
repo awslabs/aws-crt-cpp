@@ -5,6 +5,7 @@
 #include <aws/crt/Api.h>
 #include <aws/crt/Optional.h>
 #include <aws/testing/aws_test_harness.h>
+#include <Utils.h>
 
 const char *s_test_str = "This is a string, that should be long enough to avoid small string optimizations";
 

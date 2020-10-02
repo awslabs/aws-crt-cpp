@@ -9,6 +9,7 @@
 #include <aws/crt/auth/Credentials.h>
 #include <aws/testing/aws_test_harness.h>
 
+#include <Utils.h>
 #include <condition_variable>
 #include <mutex>
 

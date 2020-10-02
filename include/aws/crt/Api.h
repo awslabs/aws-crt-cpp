@@ -59,12 +59,6 @@ namespace Aws
             aws_logger logger;
         };
 
-        /**
-         * Method for tests to wait for all outstanding thread-based resources to fully destruct.  Must be called
-         * before a memory check.  We don't want this to be a part of normal (ApiHandle) destruction.
-         */
-        AWS_CRT_CPP_API void TestCleanupAndWait();
-
         AWS_CRT_CPP_API const char *ErrorDebugString(int error) noexcept;
         /**
          * @return the value of the last aws error on the current thread. Return 0 if no aws-error raised before.

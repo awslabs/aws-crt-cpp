@@ -11,6 +11,7 @@
 
 #include <aws/testing/aws_test_harness.h>
 
+#include <Utils.h>
 #include <sstream>
 
 static int s_StreamTestCreateDestroyWrapper(struct aws_allocator *allocator, void *ctx)

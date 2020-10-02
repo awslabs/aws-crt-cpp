@@ -13,6 +13,6 @@ namespace Aws
          * Method for tests to wait for all outstanding thread-based resources to fully destruct.  Must be called
          * before a memory check.  We don't want this to be a part of normal (ApiHandle) destruction.
          */
-        AWS_CRT_CPP_API void TestCleanupAndWait();
+        void TestCleanupAndWait();
     } // namespace Crt
 } // namespace Aws

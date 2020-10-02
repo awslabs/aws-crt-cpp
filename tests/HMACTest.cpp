@@ -5,6 +5,7 @@
 #include <aws/crt/Api.h>
 #include <aws/crt/crypto/HMAC.h>
 #include <aws/testing/aws_test_harness.h>
+#include <Utils.h>
 
 static int s_TestSHA256HMACResourceSafety(struct aws_allocator *allocator, void *)
 {

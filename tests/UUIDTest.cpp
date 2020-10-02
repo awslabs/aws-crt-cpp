@@ -7,6 +7,7 @@
 #include <aws/crt/UUID.h>
 
 #include <aws/testing/aws_test_harness.h>
+#include <Utils.h>
 #include <iostream>
 #include <utility>
 
