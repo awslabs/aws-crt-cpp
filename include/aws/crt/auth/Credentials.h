@@ -125,7 +125,12 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API CredentialsProviderStaticConfig
             {
-                CredentialsProviderStaticConfig() : AccessKeyId{}, SecretAccessKey{}, SessionToken{} {}
+                CredentialsProviderStaticConfig()
+                {
+                    AWS_ZERO_STRUCT(AccessKeyId);
+                    AWS_ZERO_STRUCT(SecretAccessKey);
+                    AWS_ZERO_STRUCT(SessionToken);
+                }
 
                 /**
                  * The value of the access key component for the provider's static aws credentials
@@ -149,8 +154,10 @@ namespace Aws
             struct AWS_CRT_CPP_API CredentialsProviderProfileConfig
             {
                 CredentialsProviderProfileConfig()
-                    : ProfileNameOverride{}, ConfigFileNameOverride{}, CredentialsFileNameOverride{}
                 {
+                    AWS_ZERO_STRUCT(ProfileNameOverride);
+                    AWS_ZERO_STRUCT(ConfigFileNameOverride);
+                    AWS_ZERO_STRUCT(CredentialsFileNameOverride);
                 }
 
                 /**
