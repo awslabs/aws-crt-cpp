@@ -82,6 +82,7 @@ if (BUILD_DEPS)
     add_subdirectory(crt/aws-c-http)
     add_subdirectory(crt/aws-c-auth)
     add_subdirectory(crt/aws-c-mqtt)
+    add_subdirectory(crt/aws-c-iot)
     add_subdirectory(crt/aws-checksums)
     add_subdirectory(crt/aws-c-event-stream)
     set(BUILD_TESTING ${BUILD_TESTING_PREV})
@@ -111,6 +112,7 @@ file(GLOB AWS_CRT_IO_HEADERS
 
 file(GLOB AWS_CRT_IOT_HEADERS
         "include/aws/iot/*.h"
+        "include/aws/crt/iot/*.h"
 )
 
 file(GLOB AWS_CRT_MQTT_HEADERS
@@ -243,6 +245,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 aws_use_package(aws-c-http)
 aws_use_package(aws-c-mqtt)
+aws_use_package(aws-c-iot)
 aws_use_package(aws-c-cal)
 aws_use_package(aws-c-auth)
 aws_use_package(aws-c-common)

@@ -9,6 +9,7 @@ file(GLOB TESTS ${TEST_HDRS} ${TEST_SRC})
 set(TEST_BINARY_NAME ${PROJECT_NAME}-tests)
 
 add_test_case(EventLoopResourceSafety)
+add_net_test_case(DeviceDefenderResourceSafety)
 add_net_test_case(MqttClientResourceSafety)
 add_net_test_case(MqttClientNewConnectionUninitializedTlsContext)
 add_test_case(ClientBootstrapResourceSafety)

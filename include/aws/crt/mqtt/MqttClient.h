@@ -9,6 +9,7 @@
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/io/SocketOptions.h>
 #include <aws/crt/io/TlsOptions.h>
+#include <aws/crt/iot/DeviceDefender.h>
 
 #include <aws/mqtt/client.h>
 
@@ -23,6 +24,11 @@ namespace Aws
         namespace Io
         {
             class ClientBootstrap;
+        }
+
+        namespace Iot
+        {
+            class DeviceDefenderV1ReportTask;
         }
 
         namespace Http
@@ -107,6 +113,7 @@ namespace Aws
             class AWS_CRT_CPP_API MqttConnection final
             {
                 friend class MqttClient;
+                friend class Iot::DeviceDefenderV1ReportTask;
 
               public:
                 ~MqttConnection();

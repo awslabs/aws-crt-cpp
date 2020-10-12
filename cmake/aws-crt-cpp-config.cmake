@@ -1,5 +1,6 @@
 include(CMakeFindDependencyMacro)
 
+find_dependency(aws-c-iot)
 find_dependency(aws-c-http)
 find_dependency(aws-c-mqtt)
 find_dependency(aws-c-cal)

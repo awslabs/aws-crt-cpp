@@ -8,6 +8,7 @@
 #include <aws/auth/auth.h>
 #include <aws/common/ref_count.h>
 #include <aws/http/http.h>
+#include <aws/iotdevice/iotdevice.h>
 #include <aws/mqtt/mqtt.h>
 
 namespace Aws
@@ -22,6 +23,7 @@ namespace Aws
             aws_auth_library_clean_up();
             aws_mqtt_library_clean_up();
             aws_http_library_clean_up();
+            // aws_iotdevice_library_clean_up();
         }
     } // namespace Crt
 } // namespace Aws
