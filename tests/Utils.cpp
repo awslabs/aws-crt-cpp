@@ -23,7 +23,7 @@ namespace Aws
             aws_auth_library_clean_up();
             aws_mqtt_library_clean_up();
             aws_http_library_clean_up();
-            // aws_iotdevice_library_clean_up();
+            aws_iotdevice_library_clean_up();
         }
     } // namespace Crt
 } // namespace Aws
