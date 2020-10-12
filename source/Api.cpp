@@ -9,6 +9,7 @@
 
 #include <aws/auth/auth.h>
 #include <aws/http/http.h>
+#include <aws/iotdevice/iotdevice.h>
 #include <aws/mqtt/mqtt.h>
 
 namespace Aws
@@ -28,6 +29,7 @@ namespace Aws
             aws_http_library_init(allocator);
             aws_mqtt_library_init(allocator);
             aws_auth_library_init(allocator);
+            // aws_iotdevice_library_init(allocator);
 
             cJSON_Hooks hooks;
             hooks.malloc_fn = s_cJSONAlloc;
