@@ -41,6 +41,7 @@ namespace Aws
                 Ready = 0,
                 Running = 1,
                 Stopped = 2,
+                Failed = 3,
             };
 
             /**
@@ -51,7 +52,7 @@ namespace Aws
             {
 
                 friend class DeviceDefenderV1ReportTask;
-                // friend class DeviceDefenderV1ReportTaskConfigBuilder;
+                friend class DeviceDefenderV1ReportTaskConfigBuilder;
 
               public:
                 /**
@@ -73,7 +74,6 @@ namespace Aws
                 int LastError() const noexcept { return m_lastError; }
 
               private:
-                DeviceDefenderV1ReportTaskConfig(int lastError) noexcept;
                 std::shared_ptr<Mqtt::MqttConnection> mqttConnection;
                 ByteCursor thingName;
                 Io::EventLoopGroup &eventLoopGroup;
@@ -83,8 +83,6 @@ namespace Aws
                 OnDefenderV1TaskCancelledHandler onCancelled;
                 void *cancellationUserdata;
                 int m_lastError;
-
-                static DeviceDefenderV1ReportTaskConfig CreateInvalid(int lastError) noexcept;
             };
 
             /**
@@ -92,88 +90,69 @@ namespace Aws
              * single instance of this class PER DeviceDefenderV1ReportTaskConfig you want to generate. If you want to
              * generate a config for a different Thing or connection etc... you need a new instance of this class.
              */
-            // class AWS_CRT_CPP_API DeviceDefenderV1ReportTaskConfigBuilder final
-            // {
-            //   public:
-            //     DeviceDefenderV1ReportTaskConfigBuilder();
+            class AWS_CRT_CPP_API DeviceDefenderV1ReportTaskConfigBuilder final
+            {
+              public:
+                DeviceDefenderV1ReportTaskConfigBuilder(
+                    std::shared_ptr<Mqtt::MqttConnection> mqttConnection,
+                    Io::EventLoopGroup &eventLoopGroup,
+                    ByteCursor thingName);
 
-            //     /**
-            //      * Sets mqtt connection to use.
-            //      */
-            //     DeviceDefenderV1ReportTaskConfigBuilder &WithMqttConnection(
-            //         std::shared_ptr<Mqtt::MqttConnection> mqttConnection);
+                /**
+                 * Sets the device defender report format, or defaults to AWS_IDDRF_JSON.
+                 */
+                DeviceDefenderV1ReportTaskConfigBuilder &WithDeviceDefenderReportFormat(
+                    DeviceDefenderReportFormat reportFormat) noexcept;
 
-            //     /**
-            //      * Sets thing name to use.
-            //      */
-            //     DeviceDefenderV1ReportTaskConfigBuilder &WithThingName(ByteCursor thingName);
+                /**
+                 * Sets the task period nanoseconds. Defaults to 5 minutes.
+                 */
+                DeviceDefenderV1ReportTaskConfigBuilder &WithTaskPeriodNs(uint64_t taskPeriodNs) noexcept;
 
-            //     /**
-            //      * Sets event loop group to use.
-            //      */
-            //     DeviceDefenderV1ReportTaskConfigBuilder &WithEventLoopGroup(Io::EventLoopGroup *eventLoopGroup);
+                /**
+                 * Sets the network connection sample period nanoseconds. Defaults to 5 minutes.
+                 */
+                DeviceDefenderV1ReportTaskConfigBuilder &WithNetworkConnectionSamplePeriodNs(
+                    uint64_t networkConnectionSamplePeriodNs) noexcept;
 
-            //     /**
-            //      * Sets the device defender report format, or defaults to AWS_IDDRF_JSON.
-            //      */
-            //     DeviceDefenderV1ReportTaskConfigBuilder &WithDeviceDefenderReportFormat(
-            //         DeviceDefenderReportFormat reportFormat) noexcept;
+                /**
+                 * Sets the task cancelled handler function.
+                 */
+                DeviceDefenderV1ReportTaskConfigBuilder &WithDefenderV1TaskCancelledHandler(
+                    OnDefenderV1TaskCancelledHandler &&onCancelled) noexcept;
 
-            //     /**
-            //      * Sets the task period nanoseconds. Defaults to 5 minutes.
-            //      */
-            //     DeviceDefenderV1ReportTaskConfigBuilder &WithTaskPeriodNs(uint64_t taskPeriodNs) noexcept;
+                /**
+                 * Sets the user data for the task cancelled handler function.
+                 */
+                DeviceDefenderV1ReportTaskConfigBuilder &WithDefenderV1TaskCancellationUserData(
+                    void *cancellationUserdata) noexcept;
 
-            //     /**
-            //      * Sets the network connection sample period nanoseconds. Defaults to 5 minutes.
-            //      */
-            //     DeviceDefenderV1ReportTaskConfigBuilder &WithNetworkConnectionSamplePeriodNs(
-            //         uint64_t networkConnectionSamplePeriodNs) noexcept;
+                /**
+                 * Builds a device defender v1 task configuration object from the set options.
+                 */
+                DeviceDefenderV1ReportTaskConfig Build() noexcept;
 
-            //     /**
-            //      * Sets the task cancelled handler function.
-            //      */
-            //     DeviceDefenderV1ReportTaskConfigBuilder &WithDefenderV1TaskCancelledHandler(
-            //         OnDefenderV1TaskCancelledHandler &&onCancelled) noexcept;
+                /**
+                 * @return the value of the last aws error encountered by operations on this instance.
+                 */
+                int LastError() const noexcept { return aws_last_error(); }
 
-            //     /**
-            //      * Sets the user data for the task cancelled handler function.
-            //      */
-            //     DeviceDefenderV1ReportTaskConfigBuilder &WithDefenderV1TaskCancelationUserData(
-            //         void *cancellationUserdata) noexcept;
-
-            //     /**
-            //      * Builds a device defender v1 task configuration object from the set options.
-            //      */
-            //     DeviceDefenderV1ReportTaskConfig Build() noexcept;
-            //     /**
-            //      * @return true if the instance is in a valid state, false otherwise.
-            //      */
-            //     explicit operator bool() const noexcept { return m_isGood; }
-            //     /**
-            //      * @return the value of the last aws error encountered by operations on this instance.
-            //      */
-            //     int LastError() const noexcept { return aws_last_error(); }
-
-            //   private:
-            //     std::shared_ptr<Mqtt::MqttConnection> m_mqttConnection;
-            //     ByteCursor m_thingName;
-            //     Io::EventLoopGroup *m_eventLoopGroup;
-            //     DeviceDefenderReportFormat m_reportFormat;
-            //     uint64_t m_taskPeriodNs;
-            //     uint64_t m_networkConnectionSamplePeriodNs;
-            //     OnDefenderV1TaskCancelledHandler m_onCancelled;
-            //     void *m_cancellationUserdata;
-            //     bool m_isGood;
-            // };
+              private:
+                std::shared_ptr<Mqtt::MqttConnection> m_mqttConnection;
+                ByteCursor m_thingName;
+                Io::EventLoopGroup m_eventLoopGroup;
+                DeviceDefenderReportFormat m_reportFormat;
+                uint64_t m_taskPeriodNs;
+                uint64_t m_networkConnectionSamplePeriodNs;
+                OnDefenderV1TaskCancelledHandler m_onCancelled;
+                void *m_cancellationUserdata;
+            };
 
             /**
              * Represents a persistent DeviceDefender V1 task.
              */
             class AWS_CRT_CPP_API DeviceDefenderV1ReportTask final
             {
-                friend class DeviceDefender;
-
               public:
                 DeviceDefenderV1ReportTask(
                     Aws::Crt::Allocator *allocator,
