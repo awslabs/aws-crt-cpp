@@ -187,8 +187,8 @@ static int s_TestDeviceDefenderFailedTest(Aws::Crt::Allocator *allocator, void *
             .WithNetworkConnectionSamplePeriodNs((uint64_t)1000000000UL)
             .WithDeviceDefenderReportFormat(Aws::Crt::Iot::DeviceDefenderReportFormat::AWS_IDDRF_SHORT_JSON)
             .WithDefenderV1TaskCancelledHandler([](void *a) {
-              auto data = reinterpret_cast<Aws::Crt::String *>(a);
-              ASSERT_INT_EQUALS(0, data->compare("TestData"));
+                auto data = reinterpret_cast<Aws::Crt::String *>(a);
+                ASSERT_INT_EQUALS(0, data->compare("TestData"));
             })
             .WithDefenderV1TaskCancellationUserData(&data);
 

@@ -63,7 +63,8 @@ namespace Aws
                 };
 
                 this->m_owningTask = aws_iotdevice_defender_v1_report_task(this->m_allocator, &config);
-                if (this->m_owningTask == nullptr) {
+                if (this->m_owningTask == nullptr)
+                {
                     this->m_lastError = aws_last_error();
                     this->m_status = DeviceDefenderV1ReportTaskStatus::Failed;
                     return;
