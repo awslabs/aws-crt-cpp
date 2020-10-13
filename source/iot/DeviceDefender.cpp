@@ -14,12 +14,12 @@ namespace Aws
 
             void DeviceDefenderV1ReportTask::s_onDefenderV1TaskCancelled(void *userData)
             {
-                auto taskWrapper = reinterpret_cast<DeviceDefenderV1ReportTask *>(userData);
+                auto *taskWrapper = reinterpret_cast<DeviceDefenderV1ReportTask *>(userData);
                 taskWrapper->m_status = DeviceDefenderV1ReportTaskStatus::Stopped;
 
-                if (taskWrapper->OnDefenderV1TaskCancelled)
+                if (taskWrapper->m_config.onCancelled)
                 {
-                    taskWrapper->OnDefenderV1TaskCancelled(taskWrapper->m_config.cancellationUserdata);
+                    taskWrapper->m_config.onCancelled(taskWrapper->m_config.cancellationUserdata);
                 }
             }
 
@@ -63,97 +63,89 @@ namespace Aws
                 };
 
                 this->m_owningTask = aws_iotdevice_defender_v1_report_task(this->m_allocator, &config);
-            } // namespace Iot
+                if (this->m_owningTask == nullptr) {
+                    this->m_lastError = aws_last_error();
+                    this->m_status = DeviceDefenderV1ReportTaskStatus::Failed;
+                    return;
+                }
+                this->m_status = DeviceDefenderV1ReportTaskStatus::Running;
+            }
 
             void DeviceDefenderV1ReportTask::StopTask() noexcept
             {
-                aws_iotdevice_defender_v1_stop_task(this->m_owningTask);
+                if (this->GetStatus() == DeviceDefenderV1ReportTaskStatus::Running)
+                {
+                    aws_iotdevice_defender_v1_stop_task(this->m_owningTask);
+                }
             }
 
             DeviceDefenderV1ReportTask::~DeviceDefenderV1ReportTask()
             {
-                if (this->GetStatus() != DeviceDefenderV1ReportTaskStatus::Stopped)
-                {
-                    this->StopTask();
-                }
+                StopTask();
+                this->m_owningTask = nullptr;
             }
 
-            // DeviceDefenderV1ReportTaskConfig DeviceDefenderV1ReportTaskConfig::CreateInvalid(int lastError) noexcept
-            // {
-            //     return DeviceDefenderV1ReportTaskConfig(lastError);
-            // }
+            DeviceDefenderV1ReportTaskConfigBuilder::DeviceDefenderV1ReportTaskConfigBuilder(
+                std::shared_ptr<Mqtt::MqttConnection> mqttConnection,
+                Io::EventLoopGroup &eventLoopGroup,
+                ByteCursor thingName)
+                : m_mqttConnection(mqttConnection), m_thingName(thingName), m_eventLoopGroup(std::move(eventLoopGroup))
+            {
+                m_reportFormat = DeviceDefenderReportFormat::AWS_IDDRF_JSON;
+                m_taskPeriodNs = 5UL * 60UL * 1000000000UL;
+                m_networkConnectionSamplePeriodNs = 5UL * 60UL * 1000000000UL;
+                m_onCancelled = nullptr;
+                m_cancellationUserdata = nullptr;
+            }
 
-            // DeviceDefenderV1ReportTaskConfigBuilder::DeviceDefenderV1ReportTaskConfigBuilder() : m_isGood(false) {}
+            DeviceDefenderV1ReportTaskConfigBuilder &DeviceDefenderV1ReportTaskConfigBuilder::
+                WithDeviceDefenderReportFormat(DeviceDefenderReportFormat reportFormat) noexcept
+            {
+                m_reportFormat = reportFormat;
+                return *this;
+            }
 
-            // DeviceDefenderV1ReportTaskConfigBuilder &DeviceDefenderV1ReportTaskConfigBuilder::WithThingName(
-            //     ByteCursor thingName)
-            // {
-            //     m_thingName = thingName;
-            // }
+            DeviceDefenderV1ReportTaskConfigBuilder &DeviceDefenderV1ReportTaskConfigBuilder::WithTaskPeriodNs(
+                uint64_t taskPeriodNs) noexcept
+            {
+                m_taskPeriodNs = taskPeriodNs;
+                return *this;
+            }
 
-            // DeviceDefenderV1ReportTaskConfigBuilder &DeviceDefenderV1ReportTaskConfigBuilder::WithEventLoopGroup(
-            //     Io::EventLoopGroup *eventLoopGroup)
-            // {
-            //     m_eventLoopGroup = eventLoopGroup;
-            // }
+            DeviceDefenderV1ReportTaskConfigBuilder &DeviceDefenderV1ReportTaskConfigBuilder::
+                WithNetworkConnectionSamplePeriodNs(uint64_t networkConnectionSamplePeriodNs) noexcept
+            {
+                m_networkConnectionSamplePeriodNs = networkConnectionSamplePeriodNs;
+                return *this;
+            }
 
-            // DeviceDefenderV1ReportTaskConfigBuilder &DeviceDefenderV1ReportTaskConfigBuilder::
-            //     WithDeviceDefenderReportFormat(DeviceDefenderReportFormat reportFormat)
-            // {
-            //     m_reportFormat = reportFormat;
-            // }
+            DeviceDefenderV1ReportTaskConfigBuilder &DeviceDefenderV1ReportTaskConfigBuilder::
+                WithDefenderV1TaskCancelledHandler(OnDefenderV1TaskCancelledHandler &&onCancelled) noexcept
+            {
+                m_onCancelled = std::move(onCancelled);
+                return *this;
+            }
 
-            // DeviceDefenderV1ReportTaskConfigBuilder &DeviceDefenderV1ReportTaskConfigBuilder::WithTaskPeriodNs(
-            //     uint64_t taskPeriodNs)
-            // {
-            //     m_taskPeriodNs = taskPeriodNs;
-            // }
+            DeviceDefenderV1ReportTaskConfigBuilder &DeviceDefenderV1ReportTaskConfigBuilder::
+                WithDefenderV1TaskCancellationUserData(void *cancellationUserdata) noexcept
+            {
+                m_cancellationUserdata = cancellationUserdata;
+                return *this;
+            }
 
-            // DeviceDefenderV1ReportTaskConfigBuilder &DeviceDefenderV1ReportTaskConfigBuilder::
-            //     WithNetworkConnectionSamplePeriodNs(uint64_t networkConnectionSamplePeriodNs)
-            // {
-            //     m_networkConnectionSamplePeriodNs = networkConnectionSamplePeriodNs;
-            // }
+            DeviceDefenderV1ReportTaskConfig DeviceDefenderV1ReportTaskConfigBuilder::Build() noexcept
+            {
 
-            // DeviceDefenderV1ReportTaskConfigBuilder &DeviceDefenderV1ReportTaskConfigBuilder::
-            //     WithDefenderV1TaskCancelledHandler(OnDefenderV1TaskCancelledHandler &&onCancelled)
-            // {
-            //     m_onCancelled = std::move(onCancelled);
-            // }
-
-            // DeviceDefenderV1ReportTaskConfigBuilder &DeviceDefenderV1ReportTaskConfigBuilder::
-            //     WithDefenderV1TaskCancelationUserData(void *cancellationUserdata)
-            // {
-            //     m_cancellationUserdata = cancellationUserdata;
-            // }
-
-            // DeviceDefenderV1ReportTaskConfig DeviceDefenderV1ReportTaskConfigBuilder::Build() noexcept
-            // {
-            //     if (!m_isGood)
-            //     {
-            //         return DeviceDefenderV1ReportTaskConfig::CreateInvalid(aws_last_error());
-            //     }
-
-            //     if (!m_taskPeriodNs)
-            //     {
-            //         m_taskPeriodNs = 5UL * 60UL * 1000000000UL;
-            //     }
-
-            //     if (!m_networkConnectionSamplePeriodNs)
-            //     {
-            //         m_networkConnectionSamplePeriodNs = 5UL * 60UL * 1000000000UL;
-            //     }
-
-            //     return DeviceDefenderV1ReportTaskConfig(
-            //         m_mqttConnection,
-            //         m_thingName,
-            //         (Io::EventLoopGroup)*m_eventLoopGroup,
-            //         m_reportFormat,
-            //         m_taskPeriodNs,
-            //         m_networkConnectionSamplePeriodNs,
-            //         m_onCancelled,
-            //         m_cancellationUserdata);
-            // }
+                return DeviceDefenderV1ReportTaskConfig(
+                    m_mqttConnection,
+                    m_thingName,
+                    m_eventLoopGroup,
+                    m_reportFormat,
+                    m_taskPeriodNs,
+                    m_networkConnectionSamplePeriodNs,
+                    static_cast<OnDefenderV1TaskCancelledHandler &&>(m_onCancelled),
+                    m_cancellationUserdata);
+            }
 
         } // namespace Iot
     }     // namespace Crt
