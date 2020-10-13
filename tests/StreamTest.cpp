@@ -72,7 +72,7 @@ static int s_StreamTestRead(struct aws_allocator *allocator, void *ctx)
         AWS_ZERO_STRUCT(buffer);
         aws_byte_buf_init(&buffer, allocator, 256);
 
-        aws_input_stream_read(wrappedStream.GetUnderlyingStream(), &buffer);
+        ASSERT_SUCCESS(aws_input_stream_read(wrappedStream.GetUnderlyingStream(), &buffer));
 
         ASSERT_TRUE(buffer.len == strlen(STREAM_CONTENTS));
         ASSERT_BIN_ARRAYS_EQUALS(STREAM_CONTENTS, buffer.len, buffer.buffer, buffer.len);
@@ -86,6 +86,34 @@ static int s_StreamTestRead(struct aws_allocator *allocator, void *ctx)
 }
 
 AWS_TEST_CASE(StreamTestRead, s_StreamTestRead)
+
+static int s_StreamTestReadEmpty(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        auto stringStream = Aws::Crt::MakeShared<Aws::Crt::StringStream>(allocator, "");
+
+        Aws::Crt::Io::StdIOStreamInputStream wrappedStream(stringStream, allocator);
+
+        aws_byte_buf buffer;
+        AWS_ZERO_STRUCT(buffer);
+        aws_byte_buf_init(&buffer, allocator, 256);
+
+        ASSERT_SUCCESS(aws_input_stream_read(wrappedStream.GetUnderlyingStream(), &buffer));
+
+        ASSERT_TRUE(buffer.len == 0);
+
+        aws_byte_buf_clean_up(&buffer);
+    }
+
+    Aws::Crt::TestCleanupAndWait();
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(StreamTestReadEmpty, s_StreamTestReadEmpty)
 
 static const aws_off_t BEGIN_SEEK_OFFSET = 4;
 
@@ -105,7 +133,7 @@ static int s_StreamTestSeekBegin(struct aws_allocator *allocator, void *ctx)
         AWS_ZERO_STRUCT(buffer);
         aws_byte_buf_init(&buffer, allocator, 256);
 
-        aws_input_stream_read(wrappedStream.GetUnderlyingStream(), &buffer);
+        ASSERT_SUCCESS(aws_input_stream_read(wrappedStream.GetUnderlyingStream(), &buffer));
 
         ASSERT_TRUE(buffer.len == strlen(STREAM_CONTENTS) - BEGIN_SEEK_OFFSET);
         ASSERT_BIN_ARRAYS_EQUALS(STREAM_CONTENTS + BEGIN_SEEK_OFFSET, buffer.len, buffer.buffer, buffer.len);
@@ -138,7 +166,7 @@ static int s_StreamTestSeekEnd(struct aws_allocator *allocator, void *ctx)
         AWS_ZERO_STRUCT(buffer);
         aws_byte_buf_init(&buffer, allocator, 256);
 
-        aws_input_stream_read(wrappedStream.GetUnderlyingStream(), &buffer);
+        ASSERT_SUCCESS(aws_input_stream_read(wrappedStream.GetUnderlyingStream(), &buffer));
 
         ASSERT_TRUE(buffer.len == -END_SEEK_OFFSET);
         ASSERT_BIN_ARRAYS_EQUALS(
