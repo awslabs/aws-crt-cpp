@@ -129,7 +129,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [linux-armv6, linux-armv7, linux-arm64, android-armv7]
+        arch: [linux-armv6, linux-armv7, linux-arm64]
 
     steps:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
