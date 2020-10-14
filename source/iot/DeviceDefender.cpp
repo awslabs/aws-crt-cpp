@@ -50,26 +50,29 @@ namespace Aws
 
             void DeviceDefenderV1ReportTask::StartTask()
             {
-
-                struct aws_iotdevice_defender_report_task_config config = {
-                    this->m_config.mqttConnection.get()->m_underlyingConnection,
-                    this->m_config.thingName,
-                    aws_event_loop_group_get_next_loop(this->m_config.eventLoopGroup.GetUnderlyingHandle()),
-                    this->m_config.reportFormat,
-                    this->m_config.taskPeriodNs,
-                    this->m_config.networkConnectionSamplePeriodNs,
-                    DeviceDefenderV1ReportTask::s_onDefenderV1TaskCancelled,
-                    this,
-                };
-
-                this->m_owningTask = aws_iotdevice_defender_v1_report_task(this->m_allocator, &config);
-                if (this->m_owningTask == nullptr)
+                if (this->GetStatus() == DeviceDefenderV1ReportTaskStatus::Ready)
                 {
-                    this->m_lastError = aws_last_error();
-                    this->m_status = DeviceDefenderV1ReportTaskStatus::Failed;
-                    return;
+
+                    struct aws_iotdevice_defender_report_task_config config = {
+                        this->m_config.mqttConnection.get()->m_underlyingConnection,
+                        this->m_config.thingName,
+                        aws_event_loop_group_get_next_loop(this->m_config.eventLoopGroup.GetUnderlyingHandle()),
+                        this->m_config.reportFormat,
+                        this->m_config.taskPeriodNs,
+                        this->m_config.networkConnectionSamplePeriodNs,
+                        DeviceDefenderV1ReportTask::s_onDefenderV1TaskCancelled,
+                        this,
+                    };
+
+                    this->m_owningTask = aws_iotdevice_defender_v1_report_task(this->m_allocator, &config);
+                    if (this->m_owningTask == nullptr)
+                    {
+                        this->m_lastError = aws_last_error();
+                        this->m_status = DeviceDefenderV1ReportTaskStatus::Failed;
+                        return;
+                    }
+                    this->m_status = DeviceDefenderV1ReportTaskStatus::Running;
                 }
-                this->m_status = DeviceDefenderV1ReportTaskStatus::Running;
             }
 
             void DeviceDefenderV1ReportTask::StopTask() noexcept
