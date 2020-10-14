@@ -9,9 +9,8 @@ file(GLOB TESTS ${TEST_HDRS} ${TEST_SRC})
 set(TEST_BINARY_NAME ${PROJECT_NAME}-tests)
 
 add_test_case(EventLoopResourceSafety)
-if (UNIX AND NOT APPLE) # DeviceDefender in aws-c-iot is currently only supported on Linux
+if (UNIX AND NOT APPLE AND NOT TARGET_ARCH MATCHES ANDROID) # DeviceDefender in aws-c-iot is currently only supported on Linux
     add_net_test_case(DeviceDefenderResourceSafety)
-    add_net_test_case(DeviceDefenderBuilderResourceSafety)
     add_net_test_case(DeviceDefenderFailedTest)
 endif()
 add_net_test_case(MqttClientResourceSafety)
