@@ -61,14 +61,14 @@ static int s_TestDeviceDefenderResourceSafety(Aws::Crt::Allocator *allocator, vo
         ASSERT_INT_EQUALS((int)Aws::Crt::Iot::DeviceDefenderV1ReportTaskStatus::Running, (int)task.GetStatus());
         std::this_thread::sleep_for(std::chrono::seconds(1));
         task.StopTask();
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-
-        ASSERT_INT_EQUALS((int)Aws::Crt::Iot::DeviceDefenderV1ReportTaskStatus::Stopped, (int)task.GetStatus());
+        std::this_thread::sleep_for(std::chrono::milliseconds(1100));
 
         mqttConnection->Disconnect();
         ASSERT_TRUE(mqttConnection);
 
         ASSERT_FALSE(mqttClient);
+
+        ASSERT_INT_EQUALS((int)Aws::Crt::Iot::DeviceDefenderV1ReportTaskStatus::Stopped, (int)task.GetStatus());
     }
 
     Aws::Crt::TestCleanupAndWait();
