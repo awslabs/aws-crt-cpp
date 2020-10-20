@@ -7,7 +7,6 @@
 #include <aws/crt/ImdsClient.h>
 #include <aws/crt/auth/Credentials.h>
 #include <aws/testing/aws_test_harness.h>
-#include <Utils.h>
 #include <condition_variable>
 #include <mutex>
 
@@ -34,7 +33,6 @@ static int s_TestCreatingImdsClient(struct aws_allocator *allocator, void *ctx)
         config.Bootstrap = &clientBootstrap;
         ImdsClient client(config);
     }
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
@@ -86,7 +84,6 @@ static int s_TestImdsClientGetInstanceInfo(struct aws_allocator *allocator, void
             ASSERT_NOT_NULL(info.instanceId.data());
         }
     }
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
@@ -160,7 +157,6 @@ static int s_TestImdsClientGetCredentials(struct aws_allocator *allocator, void 
             ASSERT_NOT_NULL(creds->GetSessionToken().ptr);
         }
     }
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }

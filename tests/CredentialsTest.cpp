@@ -9,7 +9,6 @@
 #include <aws/crt/auth/Credentials.h>
 #include <aws/testing/aws_test_harness.h>
 
-#include <Utils.h>
 #include <condition_variable>
 #include <mutex>
 
@@ -104,7 +103,6 @@ static int s_TestCredentialsConstruction(struct aws_allocator *allocator, void *
         ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_session_token));
         ASSERT_UINT_EQUALS(expire, creds2.GetExpirationTimepointInSeconds());
     }
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
@@ -128,8 +126,6 @@ static int s_TestProviderStaticGet(struct aws_allocator *allocator, void *ctx)
         auto creds = waiter.GetCredentials();
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_OP_SUCCESS;
 }
 
@@ -146,8 +142,6 @@ static int s_TestProviderEnvironmentGet(struct aws_allocator *allocator, void *c
 
         auto creds = waiter.GetCredentials();
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
@@ -171,8 +165,6 @@ static int s_TestProviderProfileGet(struct aws_allocator *allocator, void *ctx)
             auto creds = waiter.GetCredentials();
         }
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
@@ -206,8 +198,6 @@ static int s_TestProviderImdsGet(struct aws_allocator *allocator, void *ctx)
         auto creds = waiter.GetCredentials();
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_OP_SUCCESS;
 }
 
@@ -237,8 +227,6 @@ static int s_TestProviderDefaultChainGet(struct aws_allocator *allocator, void *
 
         auto creds = waiter.GetCredentials();
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }

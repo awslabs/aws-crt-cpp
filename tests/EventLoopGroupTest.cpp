@@ -5,7 +5,6 @@
 #include <aws/crt/Api.h>
 #include <aws/testing/aws_test_harness.h>
 
-#include <Utils.h>
 #include <utility>
 
 static int s_TestEventLoopResourceSafety(struct aws_allocator *allocator, void *ctx)
@@ -26,8 +25,6 @@ static int s_TestEventLoopResourceSafety(struct aws_allocator *allocator, void *
         // NOLINTNEXTLINE
         ASSERT_FALSE(eventLoopGroup);
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_ERROR_SUCCESS;
 }

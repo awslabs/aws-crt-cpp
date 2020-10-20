@@ -28,6 +28,12 @@ namespace Aws
             Count
         };
 
+        enum class ApiHandleShutdownBehavior
+        {
+            Blocking,
+            NonBlocking
+        };
+
         class AWS_CRT_CPP_API ApiHandle
         {
           public:
@@ -53,10 +59,18 @@ namespace Aws
              */
             void InitializeLogging(LogLevel level, FILE *fp);
 
+            /**
+             * Configures the shutdown behavior of the api handle instance
+             * @param shutdownBehavior desired shutdown behavior
+             */
+            void SetShutdownBehavior(ApiHandleShutdownBehavior behavior);
+
           private:
             void InitializeLoggingCommon(struct aws_logger_standard_options &options);
 
             aws_logger logger;
+
+            ApiHandleShutdownBehavior shutdownBehavior;
         };
 
         AWS_CRT_CPP_API const char *ErrorDebugString(int error) noexcept;

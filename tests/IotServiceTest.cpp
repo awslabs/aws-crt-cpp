@@ -7,11 +7,10 @@
 
 #include <aws/testing/aws_test_harness.h>
 
-#include <Utils.h>
-#include <utility>
 #include <condition_variable>
 #include <fstream>
 #include <mutex>
+#include <utility>
 
 #include <aws/io/logging.h>
 
@@ -149,8 +148,6 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
             ASSERT_TRUE(mqttConnection);
         }
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_ERROR_SUCCESS;
 }

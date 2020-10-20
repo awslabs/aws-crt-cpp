@@ -5,7 +5,7 @@
 #include <aws/crt/Api.h>
 
 #include <aws/testing/aws_test_harness.h>
-#include <Utils.h>
+
 #include <utility>
 
 static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator *allocator, void *ctx)
@@ -48,8 +48,6 @@ static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator *allocator, void *
         ASSERT_FALSE(mqttClient);
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_ERROR_SUCCESS;
 }
 
@@ -86,8 +84,6 @@ static int s_TestMqttClientNewConnectionUninitializedTlsContext(Aws::Crt::Alloca
         ASSERT_TRUE(mqttConnection == nullptr);
         ASSERT_TRUE(aws_last_error() == AWS_ERROR_INVALID_ARGUMENT);
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_ERROR_SUCCESS;
 }

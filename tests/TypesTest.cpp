@@ -5,7 +5,6 @@
 #include <aws/crt/Api.h>
 #include <aws/crt/Types.h>
 #include <aws/testing/aws_test_harness.h>
-#include <Utils.h>
 
 using namespace Aws::Crt;
 
@@ -27,8 +26,6 @@ static int s_base64_round_trip(struct aws_allocator *allocator, void *ctx)
         Aws::Crt::Vector<uint8_t> decoded = Aws::Crt::Base64Decode(encoded);
         ASSERT_BIN_ARRAYS_EQUALS(test_vector.data(), test_vector.size(), decoded.data(), decoded.size());
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return 0;
 }
@@ -72,7 +69,6 @@ static int s_int_array_list_to_vector(struct aws_allocator *allocator, void *ctx
             ASSERT_INT_EQUALS(i + 1, resVector[i]);
         }
     }
-    Aws::Crt::TestCleanupAndWait();
 
     return 0;
 }
@@ -118,7 +114,6 @@ static int s_byte_cursor_array_list_to_vector(struct aws_allocator *allocator, v
             ASSERT_INT_EQUALS(i, resVector[i].len);
         }
     }
-    Aws::Crt::TestCleanupAndWait();
 
     return 0;
 }

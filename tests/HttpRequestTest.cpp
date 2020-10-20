@@ -10,7 +10,6 @@
 
 #include <aws/testing/aws_test_harness.h>
 
-#include <Utils.h>
 #include <sstream>
 
 using namespace Aws::Crt::Http;
@@ -42,8 +41,6 @@ static int s_HttpRequestTestCreateDestroy(struct aws_allocator *allocator, void 
 
         request.EraseHeader(2);
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
