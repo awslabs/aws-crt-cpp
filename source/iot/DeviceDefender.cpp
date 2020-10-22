@@ -17,9 +17,9 @@ namespace Aws
                 auto *taskWrapper = reinterpret_cast<DeviceDefenderV1ReportTask *>(userData);
                 taskWrapper->m_status = DeviceDefenderV1ReportTaskStatus::Stopped;
 
-                if (taskWrapper->m_config.onCancelled)
+                if (taskWrapper->OnDefenderV1TaskCancelled)
                 {
-                    taskWrapper->m_config.onCancelled(taskWrapper->m_config.cancellationUserdata);
+                    taskWrapper->OnDefenderV1TaskCancelled(taskWrapper->cancellationUserdata);
                 }
             }
 
@@ -32,43 +32,92 @@ namespace Aws
                 uint64_t networkConnectionSamplePeriodNs,
                 OnDefenderV1TaskCancelledHandler &&onCancelled,
                 void *cancellationUserdata) noexcept
-                : mqttConnection(mqttConnection), thingName(thingName), eventLoopGroup(eventLoopGroup),
-                  reportFormat(reportFormat), taskPeriodNs(taskPeriodNs),
-                  networkConnectionSamplePeriodNs(networkConnectionSamplePeriodNs), onCancelled(std::move(onCancelled)),
-                  cancellationUserdata(cancellationUserdata)
+                : onCancelled(std::move(onCancelled)),
+                  cancellationUserdata(cancellationUserdata), taskConfig{
+                                                                  mqttConnection.get()->m_underlyingConnection,
+                                                                  thingName,
+                                                                  aws_event_loop_group_get_next_loop(
+                                                                      eventLoopGroup.GetUnderlyingHandle()),
+                                                                  reportFormat,
+                                                                  taskPeriodNs,
+                                                                  networkConnectionSamplePeriodNs,
+                                                                  NULL,
+                                                                  NULL}
             {
             }
 
             DeviceDefenderV1ReportTask::DeviceDefenderV1ReportTask(
                 Aws::Crt::Allocator *allocator,
                 const DeviceDefenderV1ReportTaskConfig &config) noexcept
-                : m_allocator(allocator), m_config(config), m_status(DeviceDefenderV1ReportTaskStatus::Ready)
+                : OnDefenderV1TaskCancelled(std::move(config.onCancelled)),
+                  cancellationUserdata(config.cancellationUserdata), m_allocator(allocator),
+                  m_status(DeviceDefenderV1ReportTaskStatus::Ready),
+                  m_taskConfig{
+                      config.taskConfig.connection,
+                      config.taskConfig.thing_name,
+                      config.taskConfig.event_loop,
+                      config.taskConfig.report_format,
+                      config.taskConfig.task_period_ns,
+                      config.taskConfig.netconn_sample_period_ns,
+                      DeviceDefenderV1ReportTask::s_onDefenderV1TaskCancelled,
+                      this},
+                  m_lastError(0)
             {
+            }
+
+            DeviceDefenderV1ReportTask::DeviceDefenderV1ReportTask(DeviceDefenderV1ReportTask &&toMove) noexcept
+                : OnDefenderV1TaskCancelled(std::move(toMove.OnDefenderV1TaskCancelled)),
+                  cancellationUserdata(toMove.cancellationUserdata), m_allocator(toMove.m_allocator),
+                  m_status(toMove.m_status), m_taskConfig(std::move(toMove.m_taskConfig)),
+                  m_owningTask(toMove.m_owningTask), m_lastError(toMove.m_lastError)
+            {
+                toMove.OnDefenderV1TaskCancelled = nullptr;
+                toMove.cancellationUserdata = nullptr;
+                toMove.m_allocator = nullptr;
+                toMove.m_status = DeviceDefenderV1ReportTaskStatus::Stopped;
+                toMove.m_taskConfig = {0};
+                toMove.m_owningTask = nullptr;
+                toMove.m_lastError = AWS_ERROR_UNKNOWN;
+            }
+
+            DeviceDefenderV1ReportTask &DeviceDefenderV1ReportTask::operator=(
+                DeviceDefenderV1ReportTask &&toMove) noexcept
+            {
+                OnDefenderV1TaskCancelled = std::move(toMove.OnDefenderV1TaskCancelled);
+                cancellationUserdata = toMove.cancellationUserdata;
+                m_allocator = toMove.m_allocator;
+                m_status = toMove.m_status;
+                m_taskConfig = std::move(toMove.m_taskConfig);
+                m_owningTask = toMove.m_owningTask;
+                m_lastError = toMove.m_lastError;
+
+                toMove.OnDefenderV1TaskCancelled = nullptr;
+                toMove.cancellationUserdata = nullptr;
+                toMove.m_allocator = nullptr;
+                toMove.m_status = DeviceDefenderV1ReportTaskStatus::Stopped;
+                toMove.m_taskConfig = {0};
+                toMove.m_owningTask = nullptr;
+                toMove.m_lastError = AWS_ERROR_UNKNOWN;
+
+                return *this;
             }
 
             DeviceDefenderV1ReportTaskStatus DeviceDefenderV1ReportTask::GetStatus() noexcept { return this->m_status; }
 
-            void DeviceDefenderV1ReportTask::StartTask()
+            void DeviceDefenderV1ReportTask::StartTask() noexcept
             {
                 if (this->GetStatus() == DeviceDefenderV1ReportTaskStatus::Ready)
                 {
 
-                    struct aws_iotdevice_defender_report_task_config config = {
-                        this->m_config.mqttConnection.get()->m_underlyingConnection,
-                        this->m_config.thingName,
-                        aws_event_loop_group_get_next_loop(this->m_config.eventLoopGroup.GetUnderlyingHandle()),
-                        this->m_config.reportFormat,
-                        this->m_config.taskPeriodNs,
-                        this->m_config.networkConnectionSamplePeriodNs,
-                        DeviceDefenderV1ReportTask::s_onDefenderV1TaskCancelled,
-                        this,
-                    };
-
-                    this->m_owningTask = aws_iotdevice_defender_v1_report_task(this->m_allocator, &config);
+                    this->m_owningTask = aws_iotdevice_defender_v1_report_task(this->m_allocator, &this->m_taskConfig);
                     if (this->m_owningTask == nullptr)
                     {
                         this->m_lastError = aws_last_error();
                         this->m_status = DeviceDefenderV1ReportTaskStatus::Failed;
+                        if (this->OnDefenderV1TaskCancelled)
+                        {
+                            this->OnDefenderV1TaskCancelled(this->cancellationUserdata);
+                        }
                         return;
                     }
                     this->m_status = DeviceDefenderV1ReportTaskStatus::Running;
@@ -87,6 +136,9 @@ namespace Aws
             {
                 StopTask();
                 this->m_owningTask = nullptr;
+                this->m_allocator = nullptr;
+                this->OnDefenderV1TaskCancelled = nullptr;
+                this->cancellationUserdata = nullptr;
             }
 
             DeviceDefenderV1ReportTaskConfigBuilder::DeviceDefenderV1ReportTaskConfigBuilder(

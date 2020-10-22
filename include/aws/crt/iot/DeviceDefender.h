@@ -65,30 +65,17 @@ namespace Aws
                     DeviceDefenderReportFormat reportFormat,
                     uint64_t taskPeriodNs,
                     uint64_t networkConnectionSamplePeriodNs,
-                    OnDefenderV1TaskCancelledHandler &&onCancelled,
-                    void *cancellationUserdata) noexcept;
-
-                /**
-                 * @return the value of the last aws error encountered by operations on this instance.
-                 */
-                int LastError() const noexcept { return m_lastError; }
+                    OnDefenderV1TaskCancelledHandler &&onCancelled = NULL,
+                    void *cancellationUserdata = nullptr) noexcept;
 
               private:
-                std::shared_ptr<Mqtt::MqttConnection> mqttConnection;
-                ByteCursor thingName;
-                Io::EventLoopGroup &eventLoopGroup;
-                DeviceDefenderReportFormat reportFormat;
-                uint64_t taskPeriodNs;
-                uint64_t networkConnectionSamplePeriodNs;
                 OnDefenderV1TaskCancelledHandler onCancelled;
                 void *cancellationUserdata;
-                int m_lastError;
+                aws_iotdevice_defender_report_task_config taskConfig;
             };
 
             /**
-             * Represents configuration parameters for building a DeviceDefenderV1ReportTaskConfig object. You can use a
-             * single instance of this class PER DeviceDefenderV1ReportTaskConfig you want to generate. If you want to
-             * generate a config for a different Thing or connection etc... you need a new instance of this class.
+             * Represents a builder for creating a DeviceDefenderV1ReportTaskConfig object.
              */
             class AWS_CRT_CPP_API DeviceDefenderV1ReportTaskConfigBuilder final
             {
@@ -132,11 +119,6 @@ namespace Aws
                  */
                 DeviceDefenderV1ReportTaskConfig Build() noexcept;
 
-                /**
-                 * @return the value of the last aws error encountered by operations on this instance.
-                 */
-                int LastError() const noexcept { return aws_last_error(); }
-
               private:
                 std::shared_ptr<Mqtt::MqttConnection> m_mqttConnection;
                 ByteCursor m_thingName;
@@ -159,9 +141,9 @@ namespace Aws
                     const DeviceDefenderV1ReportTaskConfig &config) noexcept;
                 ~DeviceDefenderV1ReportTask();
                 DeviceDefenderV1ReportTask(const DeviceDefenderV1ReportTask &) = delete;
-                DeviceDefenderV1ReportTask(DeviceDefenderV1ReportTask &&) = delete;
+                DeviceDefenderV1ReportTask(DeviceDefenderV1ReportTask &&) noexcept;
                 DeviceDefenderV1ReportTask &operator=(const DeviceDefenderV1ReportTask &) = delete;
-                DeviceDefenderV1ReportTask &operator=(DeviceDefenderV1ReportTask &&) = delete;
+                DeviceDefenderV1ReportTask &operator=(DeviceDefenderV1ReportTask &&) noexcept;
 
                 /**
                  * Initiates stopping of the Defender V1 task.
@@ -171,7 +153,7 @@ namespace Aws
                 /**
                  * Initiates Defender V1 reporting task.
                  */
-                void StartTask();
+                void StartTask() noexcept;
 
                 /**
                  * Returns the task status.
@@ -180,6 +162,8 @@ namespace Aws
 
                 OnDefenderV1TaskCancelledHandler OnDefenderV1TaskCancelled;
 
+                void *cancellationUserdata;
+
                 /**
                  * @return the value of the last aws error encountered by operations on this instance.
                  */
@@ -187,9 +171,9 @@ namespace Aws
 
               private:
                 Aws::Crt::Allocator *m_allocator;
-                DeviceDefenderV1ReportTaskConfig m_config;
-                aws_iotdevice_defender_v1_task *m_owningTask;
                 DeviceDefenderV1ReportTaskStatus m_status;
+                aws_iotdevice_defender_report_task_config m_taskConfig;
+                aws_iotdevice_defender_v1_task *m_owningTask;
                 int m_lastError;
 
                 static void s_onDefenderV1TaskCancelled(void *userData);
