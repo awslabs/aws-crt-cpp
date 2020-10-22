@@ -110,6 +110,7 @@ namespace Aws
                 {
 
                     this->m_owningTask = aws_iotdevice_defender_v1_report_task(this->m_allocator, &this->m_taskConfig);
+
                     if (this->m_owningTask == nullptr)
                     {
                         this->m_lastError = aws_last_error();
@@ -118,6 +119,7 @@ namespace Aws
                         {
                             this->OnDefenderV1TaskCancelled(this->cancellationUserdata);
                         }
+
                         return;
                     }
                     this->m_status = DeviceDefenderV1ReportTaskStatus::Running;

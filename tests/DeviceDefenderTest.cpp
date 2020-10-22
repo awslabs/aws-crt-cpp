@@ -111,7 +111,6 @@ static int s_TestDeviceDefenderFailedTest(Aws::Crt::Allocator *allocator, void *
         auto mqttConnection = mqttClientMoved.NewConnection("www.example.com", 443, socketOptions, tlsContext);
 
         Aws::Crt::String data("TestData");
-        Aws::Crt::String duh("Oops");
 
         Aws::Crt::Iot::DeviceDefenderV1ReportTaskConfigBuilder taskBuilder(
             mqttConnection, eventLoopGroup, Aws::Crt::ByteCursorFromCString("TestThing"));
@@ -128,6 +127,7 @@ static int s_TestDeviceDefenderFailedTest(Aws::Crt::Allocator *allocator, void *
             ASSERT_INT_EQUALS(0, data->compare("TestData"));
         };
         task.cancellationUserdata = &data;
+
         ASSERT_INT_EQUALS((int)Aws::Crt::Iot::DeviceDefenderV1ReportTaskStatus::Ready, (int)task.GetStatus());
 
         task.StartTask();
