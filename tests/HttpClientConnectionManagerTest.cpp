@@ -11,7 +11,6 @@
 
 #include <aws/io/logging.h>
 
-#include <Utils.h>
 #include <condition_variable>
 #include <mutex>
 
@@ -118,8 +117,6 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
         }
         connectionManager->InitiateShutdown().get();
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/
     return AWS_OP_SUCCESS;
@@ -238,8 +235,6 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
         }
         connectionManager->InitiateShutdown().get();
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/
     return AWS_OP_SUCCESS;
@@ -370,8 +365,6 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
         }
         connectionManager->InitiateShutdown().get();
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/
     return AWS_OP_SUCCESS;

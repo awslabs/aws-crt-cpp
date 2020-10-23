@@ -37,17 +37,35 @@ namespace Aws
             cJSON_InitHooks(&hooks);
         }
 
-        ApiHandle::ApiHandle(Allocator *allocator) noexcept : logger() { s_initApi(allocator); }
+        ApiHandle::ApiHandle(Allocator *allocator) noexcept
+            : logger(), shutdownBehavior(ApiHandleShutdownBehavior::Blocking)
+        {
+            s_initApi(allocator);
+        }
 
-        ApiHandle::ApiHandle() noexcept : logger() { s_initApi(DefaultAllocator()); }
+        ApiHandle::ApiHandle() noexcept : logger(), shutdownBehavior(ApiHandleShutdownBehavior::Blocking)
+        {
+            s_initApi(DefaultAllocator());
+        }
 
         ApiHandle::~ApiHandle()
         {
+            if (shutdownBehavior == ApiHandleShutdownBehavior::Blocking)
+            {
+                aws_global_thread_creator_shutdown_wait();
+            }
+
             if (aws_logger_get() == &logger)
             {
                 aws_logger_set(NULL);
                 aws_logger_clean_up(&logger);
             }
+
+            g_allocator = nullptr;
+            aws_auth_library_clean_up();
+            aws_mqtt_library_clean_up();
+            aws_http_library_clean_up();
+            aws_iotdevice_library_clean_up();
         }
 
         void ApiHandle::InitializeLogging(Aws::Crt::LogLevel level, const char *filename)
@@ -92,6 +110,8 @@ namespace Aws
 
             aws_logger_set(&logger);
         }
+
+        void ApiHandle::SetShutdownBehavior(ApiHandleShutdownBehavior behavior) { shutdownBehavior = behavior; }
 
         const char *ErrorDebugString(int error) noexcept { return aws_error_debug_str(error); }
 

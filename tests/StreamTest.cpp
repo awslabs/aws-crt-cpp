@@ -11,7 +11,6 @@
 
 #include <aws/testing/aws_test_harness.h>
 
-#include <Utils.h>
 #include <sstream>
 
 static int s_StreamTestCreateDestroyWrapper(struct aws_allocator *allocator, void *ctx)
@@ -26,8 +25,6 @@ static int s_StreamTestCreateDestroyWrapper(struct aws_allocator *allocator, voi
         ASSERT_TRUE(static_cast<bool>(inputStream));
         ASSERT_NOT_NULL(inputStream.GetUnderlyingStream());
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
@@ -50,8 +47,6 @@ static int s_StreamTestLength(struct aws_allocator *allocator, void *ctx)
         ASSERT_SUCCESS(aws_input_stream_get_length(wrappedStream.GetUnderlyingStream(), &length));
         ASSERT_TRUE(length == strlen(STREAM_CONTENTS));
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
@@ -80,8 +75,6 @@ static int s_StreamTestRead(struct aws_allocator *allocator, void *ctx)
         aws_byte_buf_clean_up(&buffer);
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_OP_SUCCESS;
 }
 
@@ -107,8 +100,6 @@ static int s_StreamTestReadEmpty(struct aws_allocator *allocator, void *ctx)
 
         aws_byte_buf_clean_up(&buffer);
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
@@ -141,8 +132,6 @@ static int s_StreamTestSeekBegin(struct aws_allocator *allocator, void *ctx)
         aws_byte_buf_clean_up(&buffer);
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_OP_SUCCESS;
 }
 
@@ -174,8 +163,6 @@ static int s_StreamTestSeekEnd(struct aws_allocator *allocator, void *ctx)
 
         aws_byte_buf_clean_up(&buffer);
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }

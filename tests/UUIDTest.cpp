@@ -7,7 +7,7 @@
 #include <aws/crt/UUID.h>
 
 #include <aws/testing/aws_test_harness.h>
-#include <Utils.h>
+
 #include <iostream>
 #include <utility>
 
@@ -21,8 +21,6 @@ static int s_UUIDToString(Aws::Crt::Allocator *allocator, void *ctx)
         ASSERT_TRUE(uuidStr.length() != 0);
         ASSERT_TRUE(Uuid == Aws::Crt::UUID(uuidStr));
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_ERROR_SUCCESS;
 }

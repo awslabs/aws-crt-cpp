@@ -4,7 +4,6 @@
  */
 #include <aws/crt/Api.h>
 
-#include <Utils.h>
 #include <aws/crt/iot/DeviceDefender.h>
 #include <aws/testing/aws_test_harness.h>
 #include <utility>
@@ -72,8 +71,6 @@ static int s_TestDeviceDefenderResourceSafety(Aws::Crt::Allocator *allocator, vo
         ASSERT_INT_EQUALS((int)Aws::Crt::Iot::DeviceDefenderV1ReportTaskStatus::Stopped, (int)task.GetStatus());
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_ERROR_SUCCESS;
 }
 
@@ -139,8 +136,6 @@ static int s_TestDeviceDefenderFailedTest(Aws::Crt::Allocator *allocator, void *
 
         ASSERT_FALSE(mqttClient);
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_ERROR_SUCCESS;
 }

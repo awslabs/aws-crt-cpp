@@ -5,7 +5,6 @@
 #include <aws/crt/Api.h>
 #include <aws/testing/aws_test_harness.h>
 
-#include <Utils.h>
 #include <future>
 #include <utility>
 
@@ -34,8 +33,6 @@ static int s_TestClientBootstrapResourceSafety(struct aws_allocator *allocator, 
 
         ASSERT_TRUE(std::future_status::ready == bootstrapShutdownFuture.wait_for(std::chrono::seconds(10)));
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_ERROR_SUCCESS;
 }

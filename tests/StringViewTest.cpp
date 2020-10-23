@@ -5,7 +5,6 @@
 #include <aws/crt/Api.h>
 #include <aws/crt/Types.h>
 #include <aws/testing/aws_test_harness.h>
-#include <Utils.h>
 
 static int s_test_string_view(struct aws_allocator *allocator, void *ctx)
 {
@@ -119,7 +118,6 @@ static int s_test_string_view(struct aws_allocator *allocator, void *ctx)
             ASSERT_UINT_EQUALS(std::hash<std::string>()("123456abc123xyzabc"), hashVal2);
         }
     }
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }

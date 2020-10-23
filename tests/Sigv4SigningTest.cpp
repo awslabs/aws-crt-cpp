@@ -13,7 +13,6 @@
 
 #include <aws/testing/aws_test_harness.h>
 
-#include <Utils.h>
 #include <condition_variable>
 #include <mutex>
 
@@ -139,8 +138,6 @@ static int s_Sigv4SigningTestCreateDestroy(struct aws_allocator *allocator, void
         auto signer = Aws::Crt::MakeShared<Sigv4HttpRequestSigner>(allocator, allocator);
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_OP_SUCCESS;
 }
 
@@ -186,8 +183,6 @@ static int s_Sigv4SigningTestSimple(struct aws_allocator *allocator, void *ctx)
         waiter.Wait();
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_OP_SUCCESS;
 }
 
@@ -230,8 +225,6 @@ static int s_Sigv4SigningTestCredentials(struct aws_allocator *allocator, void *
             });
         waiter.Wait();
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
@@ -277,8 +270,6 @@ static int s_Sigv4SigningTestUnsignedPayload(struct aws_allocator *allocator, vo
             });
         waiter.Wait();
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
