@@ -10,7 +10,6 @@
 
 #include <aws/testing/aws_test_harness.h>
 
-#include <Utils.h>
 #include <condition_variable>
 #include <fstream>
 #include <iostream>
@@ -201,8 +200,6 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, Byt
         result = s_VerifyFilesAreTheSame(allocator, fileName.c_str(), "http_test_doc.txt");
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return result;
 }
 
@@ -336,8 +333,6 @@ static int s_TestHttpStreamUnActivated(struct aws_allocator *allocator, void *ct
         connection->Close();
         semaphore.wait(semaphoreULock, [&]() { return connectionShutdown; });
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }

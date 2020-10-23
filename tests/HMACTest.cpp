@@ -5,7 +5,6 @@
 #include <aws/crt/Api.h>
 #include <aws/crt/crypto/HMAC.h>
 #include <aws/testing/aws_test_harness.h>
-#include <Utils.h>
 
 static int s_TestSHA256HMACResourceSafety(struct aws_allocator *allocator, void *)
 {
@@ -37,8 +36,6 @@ static int s_TestSHA256HMACResourceSafety(struct aws_allocator *allocator, void 
 
         ASSERT_BIN_ARRAYS_EQUALS(expectedBuf.buffer, expectedBuf.len, outputBuf.buffer, outputBuf.len);
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }

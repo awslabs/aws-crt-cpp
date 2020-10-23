@@ -7,7 +7,6 @@
 #include <aws/crt/io/HostResolver.h>
 #include <aws/testing/aws_test_harness.h>
 
-#include <Utils.h>
 #include <condition_variable>
 #include <mutex>
 
@@ -46,8 +45,6 @@ static int s_TestDefaultResolution(struct aws_allocator *allocator, void *)
             semaphore.wait(lock, [&]() { return addressCount || error; });
         }
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }

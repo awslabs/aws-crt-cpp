@@ -5,7 +5,6 @@
 #include <aws/crt/Api.h>
 #include <aws/crt/JsonObject.h>
 #include <aws/testing/aws_test_harness.h>
-#include <Utils.h>
 
 static int s_BasicJsonParsing(struct aws_allocator *allocator, void *ctx)
 {
@@ -31,8 +30,6 @@ static int s_BasicJsonParsing(struct aws_allocator *allocator, void *ctx)
         ASSERT_TRUE("testObjectStringValue" == view.GetJsonObject("object").GetString("testObjectStringKey"));
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_OP_SUCCESS;
 }
 
@@ -56,8 +53,6 @@ static int s_JsonNullParseTest(struct aws_allocator *allocator, void *ctx)
         str = value.View().WriteCompact(false);
         ASSERT_STR_EQUALS(jsonValue.c_str(), str.c_str());
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
@@ -89,8 +84,6 @@ static int s_JsonNullNestedObjectTest(struct aws_allocator *allocator, void *ctx
         ASSERT_STR_EQUALS(expectedValue.c_str(), str.c_str());
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_OP_SUCCESS;
 }
 
@@ -115,8 +108,6 @@ static int s_JsonExplicitNullTest(struct aws_allocator *allocator, void *ctx)
         str = doc.View().WriteCompact(false);
         ASSERT_STR_EQUALS(expectedValue.c_str(), str.c_str());
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }

@@ -5,7 +5,6 @@
 #include <aws/crt/Api.h>
 
 #include <aws/testing/aws_test_harness.h>
-#include <Utils.h>
 #include <utility>
 
 static int s_TestTLSContextResourceSafety(Aws::Crt::Allocator *allocator, void *ctx)
@@ -27,8 +26,6 @@ static int s_TestTLSContextResourceSafety(Aws::Crt::Allocator *allocator, void *
         auto tlsConnectionOptions = tlsContextPostMove.NewConnectionOptions();
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_ERROR_SUCCESS;
 }
 
@@ -48,8 +45,6 @@ static int s_TestTLSContextUninitializedNewConnectionOptions(Aws::Crt::Allocator
         // Options should be uninitialized, but creating them should not result in a crash.
         ASSERT_TRUE(!options);
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_ERROR_SUCCESS;
 }
