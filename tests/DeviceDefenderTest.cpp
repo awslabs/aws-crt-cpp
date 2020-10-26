@@ -41,8 +41,8 @@ static int s_TestDeviceDefenderResourceSafety(Aws::Crt::Allocator *allocator, vo
 
         Aws::Crt::String data("TestData");
 
-        Aws::Crt::Iot::DeviceDefenderV1ReportTaskConfigBuilder taskBuilder(
-            mqttConnection, eventLoopGroup, Aws::Crt::ByteCursorFromCString("TestThing"));
+        Aws::Crt::Iot::DeviceDefenderV1ReportTaskBuilder taskBuilder(
+            allocator, mqttConnection, eventLoopGroup, Aws::Crt::ByteCursorFromCString("TestThing"));
         taskBuilder.WithTaskPeriodNs((uint64_t)1000000000UL)
             .WithNetworkConnectionSamplePeriodNs((uint64_t)1000000000UL)
             .WithDefenderV1TaskCancelledHandler([](void *a) {
@@ -51,9 +51,8 @@ static int s_TestDeviceDefenderResourceSafety(Aws::Crt::Allocator *allocator, vo
             })
             .WithDefenderV1TaskCancellationUserData(&data);
 
-        Aws::Crt::Iot::DeviceDefenderV1ReportTaskConfig taskConfig = taskBuilder.Build();
+        Aws::Crt::Iot::DeviceDefenderV1ReportTask task = taskBuilder.Build();
 
-        Aws::Crt::Iot::DeviceDefenderV1ReportTask task(allocator, taskConfig);
         ASSERT_INT_EQUALS((int)Aws::Crt::Iot::DeviceDefenderV1ReportTaskStatus::Ready, (int)task.GetStatus());
 
         task.StartTask();
@@ -109,15 +108,13 @@ static int s_TestDeviceDefenderFailedTest(Aws::Crt::Allocator *allocator, void *
 
         Aws::Crt::String data("TestData");
 
-        Aws::Crt::Iot::DeviceDefenderV1ReportTaskConfigBuilder taskBuilder(
-            mqttConnection, eventLoopGroup, Aws::Crt::ByteCursorFromCString("TestThing"));
+        Aws::Crt::Iot::DeviceDefenderV1ReportTaskBuilder taskBuilder(
+            allocator, mqttConnection, eventLoopGroup, Aws::Crt::ByteCursorFromCString("TestThing"));
         taskBuilder.WithTaskPeriodNs((uint64_t)1000000000UL)
             .WithNetworkConnectionSamplePeriodNs((uint64_t)1000000000UL)
             .WithDeviceDefenderReportFormat(Aws::Crt::Iot::DeviceDefenderReportFormat::AWS_IDDRF_SHORT_JSON);
 
-        Aws::Crt::Iot::DeviceDefenderV1ReportTaskConfig taskConfig = taskBuilder.Build();
-
-        Aws::Crt::Iot::DeviceDefenderV1ReportTask task(allocator, taskConfig);
+        Aws::Crt::Iot::DeviceDefenderV1ReportTask task = taskBuilder.Build();
 
         task.OnDefenderV1TaskCancelled = [](void *a) {
             auto data = reinterpret_cast<Aws::Crt::String *>(a);
