@@ -42,33 +42,43 @@ static int s_TestDeviceDefenderResourceSafety(Aws::Crt::Allocator *allocator, vo
         const Aws::Crt::String thingName("TestThing");
         Aws::Crt::String data("TestData");
 
-        Aws::Crt::Iot::DeviceDefenderV1ReportTaskBuilder taskBuilder(
+        std::mutex mutex;
+        std::condition_variable cv;
+        bool taskStopped = false;
+
+        auto onCancelled = [&](void *a) {
+            auto data = reinterpret_cast<Aws::Crt::String *>(a);
+            ASSERT_INT_EQUALS(0, data->compare("TestData"));
+            taskStopped = true;
+            cv.notify_one();
+        };
+
+        Aws::Crt::Iot::DeviceDefenderV1::ReportTaskBuilder taskBuilder(
             allocator, mqttConnection, eventLoopGroup, thingName);
-        taskBuilder.WithTaskPeriodNs((uint64_t)1000000000UL)
-            .WithNetworkConnectionSamplePeriodNs((uint64_t)1000000000UL)
-            .WithDefenderV1TaskCancelledHandler([](void *a) {
-                auto data = reinterpret_cast<Aws::Crt::String *>(a);
-                ASSERT_INT_EQUALS(0, data->compare("TestData"));
-            })
-            .WithDefenderV1TaskCancellationUserData(&data);
+        taskBuilder.WithTaskPeriodSeconds((uint64_t)1UL)
+            .WithNetworkConnectionSamplePeriodSeconds((uint64_t)1UL)
+            .WithTaskCancelledHandler(onCancelled)
+            .WithTaskCancellationUserData(&data);
 
-        Aws::Crt::Iot::DeviceDefenderV1ReportTask task = taskBuilder.Build();
+        Aws::Crt::Iot::DeviceDefenderV1::ReportTask task = taskBuilder.Build();
 
-        ASSERT_INT_EQUALS((int)Aws::Crt::Iot::DeviceDefenderV1ReportTaskStatus::Ready, (int)task.GetStatus());
+        ASSERT_INT_EQUALS((int)Aws::Crt::Iot::DeviceDefenderV1::ReportTaskStatus::Ready, (int)task.GetStatus());
 
         task.StartTask();
-
-        ASSERT_INT_EQUALS((int)Aws::Crt::Iot::DeviceDefenderV1ReportTaskStatus::Running, (int)task.GetStatus());
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        ASSERT_INT_EQUALS((int)Aws::Crt::Iot::DeviceDefenderV1::ReportTaskStatus::Running, (int)task.GetStatus());
         task.StopTask();
-        std::this_thread::sleep_for(std::chrono::milliseconds(1100));
+
+        {
+            std::unique_lock<std::mutex> lock(mutex);
+            cv.wait(lock, [&]() { return taskStopped; });
+        }
 
         mqttConnection->Disconnect();
         ASSERT_TRUE(mqttConnection);
 
         ASSERT_FALSE(mqttClient);
 
-        ASSERT_INT_EQUALS((int)Aws::Crt::Iot::DeviceDefenderV1ReportTaskStatus::Stopped, (int)task.GetStatus());
+        ASSERT_INT_EQUALS((int)Aws::Crt::Iot::DeviceDefenderV1::ReportTaskStatus::Stopped, (int)task.GetStatus());
     }
 
     return AWS_ERROR_SUCCESS;
@@ -110,13 +120,13 @@ static int s_TestDeviceDefenderFailedTest(Aws::Crt::Allocator *allocator, void *
         const Aws::Crt::String thingName("TestThing");
         Aws::Crt::String data("TestData");
 
-        Aws::Crt::Iot::DeviceDefenderV1ReportTaskBuilder taskBuilder(
+        Aws::Crt::Iot::DeviceDefenderV1::ReportTaskBuilder taskBuilder(
             allocator, mqttConnection, eventLoopGroup, thingName);
-        taskBuilder.WithTaskPeriodNs((uint64_t)1000000000UL)
-            .WithNetworkConnectionSamplePeriodNs((uint64_t)1000000000UL)
-            .WithDeviceDefenderReportFormat(Aws::Crt::Iot::DeviceDefenderReportFormat::AWS_IDDRF_SHORT_JSON);
+        taskBuilder.WithTaskPeriodSeconds((uint64_t)1UL)
+            .WithTaskPeriodSeconds((uint64_t)1UL)
+            .WithReportFormat(Aws::Crt::Iot::DeviceDefenderV1::ReportFormat::AWS_IDDRF_SHORT_JSON);
 
-        Aws::Crt::Iot::DeviceDefenderV1ReportTask task = taskBuilder.Build();
+        Aws::Crt::Iot::DeviceDefenderV1::ReportTask task = taskBuilder.Build();
 
         task.OnDefenderV1TaskCancelled = [](void *a) {
             auto data = reinterpret_cast<Aws::Crt::String *>(a);
@@ -124,7 +134,7 @@ static int s_TestDeviceDefenderFailedTest(Aws::Crt::Allocator *allocator, void *
         };
         task.cancellationUserdata = &data;
 
-        ASSERT_INT_EQUALS((int)Aws::Crt::Iot::DeviceDefenderV1ReportTaskStatus::Ready, (int)task.GetStatus());
+        ASSERT_INT_EQUALS((int)Aws::Crt::Iot::DeviceDefenderV1::ReportTaskStatus::Ready, (int)task.GetStatus());
 
         ASSERT_INT_EQUALS(AWS_OP_ERR, task.StartTask());
         ASSERT_INT_EQUALS(AWS_ERROR_IOTDEVICE_DEFENDER_UNSUPPORTED_REPORT_FORMAT, task.LastError());

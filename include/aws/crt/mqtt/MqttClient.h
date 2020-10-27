@@ -28,8 +28,11 @@ namespace Aws
 
         namespace Iot
         {
-            class DeviceDefenderV1ReportTask;
-        }
+            namespace DeviceDefenderV1
+            {
+                class ReportTask;
+            }
+        } // namespace Iot
 
         namespace Http
         {
@@ -113,7 +116,7 @@ namespace Aws
             class AWS_CRT_CPP_API MqttConnection final
             {
                 friend class MqttClient;
-                friend class Iot::DeviceDefenderV1ReportTask;
+                friend class Iot::DeviceDefenderV1::ReportTask;
 
               public:
                 ~MqttConnection();
