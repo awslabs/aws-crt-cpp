@@ -44,7 +44,6 @@ namespace Aws
                 Ready = 0,
                 Running = 1,
                 Stopped = 2,
-                Failed = 3,
             };
 
             /**
@@ -69,7 +68,7 @@ namespace Aws
                 /**
                  * Initiates Defender V1 reporting task.
                  */
-                void StartTask() noexcept;
+                int StartTask() noexcept;
 
                 /**
                  * Returns the task status.
@@ -86,16 +85,16 @@ namespace Aws
                 int LastError() const noexcept { return m_lastError; }
 
               private:
-                Aws::Crt::Allocator *m_allocator;
+                Crt::Allocator *m_allocator;
                 DeviceDefenderV1ReportTaskStatus m_status;
                 aws_iotdevice_defender_report_task_config m_taskConfig;
                 aws_iotdevice_defender_v1_task *m_owningTask;
                 int m_lastError;
 
                 DeviceDefenderV1ReportTask(
-                    Aws::Crt::Allocator *allocator,
+                    Crt::Allocator *allocator,
                     std::shared_ptr<Mqtt::MqttConnection> mqttConnection,
-                    ByteCursor thingName,
+                    const Crt::String &thingName,
                     Io::EventLoopGroup &eventLoopGroup,
                     DeviceDefenderReportFormat reportFormat,
                     uint64_t taskPeriodNs,
@@ -113,10 +112,10 @@ namespace Aws
             {
               public:
                 DeviceDefenderV1ReportTaskBuilder(
-                    Aws::Crt::Allocator *allocator,
+                    Crt::Allocator *allocator,
                     std::shared_ptr<Mqtt::MqttConnection> mqttConnection,
                     Io::EventLoopGroup &eventLoopGroup,
-                    ByteCursor thingName);
+                    const Crt::String &thingName);
 
                 /**
                  * Sets the device defender report format, or defaults to AWS_IDDRF_JSON.
@@ -153,9 +152,9 @@ namespace Aws
                 DeviceDefenderV1ReportTask Build() noexcept;
 
               private:
-                Aws::Crt::Allocator *m_allocator;
+                Crt::Allocator *m_allocator;
                 std::shared_ptr<Mqtt::MqttConnection> m_mqttConnection;
-                ByteCursor m_thingName;
+                Crt::String m_thingName;
                 Io::EventLoopGroup m_eventLoopGroup;
                 DeviceDefenderReportFormat m_reportFormat;
                 uint64_t m_taskPeriodNs;

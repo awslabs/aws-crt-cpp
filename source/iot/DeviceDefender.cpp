@@ -26,7 +26,7 @@ namespace Aws
             DeviceDefenderV1ReportTask::DeviceDefenderV1ReportTask(
                 Aws::Crt::Allocator *allocator,
                 std::shared_ptr<Mqtt::MqttConnection> mqttConnection,
-                ByteCursor thingName,
+                const Crt::String &thingName,
                 Io::EventLoopGroup &eventLoopGroup,
                 DeviceDefenderReportFormat reportFormat,
                 uint64_t taskPeriodNs,
@@ -36,7 +36,7 @@ namespace Aws
                 : OnDefenderV1TaskCancelled(std::move(onCancelled)), cancellationUserdata(cancellationUserdata),
                   m_allocator(allocator), m_status(DeviceDefenderV1ReportTaskStatus::Ready),
                   m_taskConfig{mqttConnection.get()->m_underlyingConnection,
-                               thingName,
+                               ByteCursorFromString(thingName),
                                aws_event_loop_group_get_next_loop(eventLoopGroup.GetUnderlyingHandle()),
                                reportFormat,
                                taskPeriodNs,
@@ -86,7 +86,7 @@ namespace Aws
 
             DeviceDefenderV1ReportTaskStatus DeviceDefenderV1ReportTask::GetStatus() noexcept { return this->m_status; }
 
-            void DeviceDefenderV1ReportTask::StartTask() noexcept
+            int DeviceDefenderV1ReportTask::StartTask() noexcept
             {
                 if (this->GetStatus() == DeviceDefenderV1ReportTaskStatus::Ready ||
                     this->GetStatus() == DeviceDefenderV1ReportTaskStatus::Stopped)
@@ -97,16 +97,15 @@ namespace Aws
                     if (this->m_owningTask == nullptr)
                     {
                         this->m_lastError = aws_last_error();
-                        this->m_status = DeviceDefenderV1ReportTaskStatus::Failed;
-                        if (this->OnDefenderV1TaskCancelled)
-                        {
-                            this->OnDefenderV1TaskCancelled(this->cancellationUserdata);
-                        }
-
-                        return;
+                        aws_raise_error(this->m_lastError);
+                        return AWS_OP_ERR;
                     }
-                    this->m_status = DeviceDefenderV1ReportTaskStatus::Running;
+                    else
+                    {
+                        this->m_status = DeviceDefenderV1ReportTaskStatus::Running;
+                    }
                 }
+                return AWS_OP_SUCCESS;
             }
 
             void DeviceDefenderV1ReportTask::StopTask() noexcept
@@ -131,7 +130,7 @@ namespace Aws
                 Aws::Crt::Allocator *allocator,
                 std::shared_ptr<Mqtt::MqttConnection> mqttConnection,
                 Io::EventLoopGroup &eventLoopGroup,
-                ByteCursor thingName)
+                const Crt::String &thingName)
                 : m_allocator(allocator), m_mqttConnection(mqttConnection), m_thingName(thingName),
                   m_eventLoopGroup(std::move(eventLoopGroup))
             {

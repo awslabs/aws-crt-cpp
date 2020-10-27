@@ -39,10 +39,11 @@ static int s_TestDeviceDefenderResourceSafety(Aws::Crt::Allocator *allocator, vo
 
         auto mqttConnection = mqttClientMoved.NewConnection("www.example.com", 443, socketOptions, tlsContext);
 
+        const Aws::Crt::String thingName("TestThing");
         Aws::Crt::String data("TestData");
 
         Aws::Crt::Iot::DeviceDefenderV1ReportTaskBuilder taskBuilder(
-            allocator, mqttConnection, eventLoopGroup, Aws::Crt::ByteCursorFromCString("TestThing"));
+            allocator, mqttConnection, eventLoopGroup, thingName);
         taskBuilder.WithTaskPeriodNs((uint64_t)1000000000UL)
             .WithNetworkConnectionSamplePeriodNs((uint64_t)1000000000UL)
             .WithDefenderV1TaskCancelledHandler([](void *a) {
@@ -106,10 +107,11 @@ static int s_TestDeviceDefenderFailedTest(Aws::Crt::Allocator *allocator, void *
 
         auto mqttConnection = mqttClientMoved.NewConnection("www.example.com", 443, socketOptions, tlsContext);
 
+        const Aws::Crt::String thingName("TestThing");
         Aws::Crt::String data("TestData");
 
         Aws::Crt::Iot::DeviceDefenderV1ReportTaskBuilder taskBuilder(
-            allocator, mqttConnection, eventLoopGroup, Aws::Crt::ByteCursorFromCString("TestThing"));
+            allocator, mqttConnection, eventLoopGroup, thingName);
         taskBuilder.WithTaskPeriodNs((uint64_t)1000000000UL)
             .WithNetworkConnectionSamplePeriodNs((uint64_t)1000000000UL)
             .WithDeviceDefenderReportFormat(Aws::Crt::Iot::DeviceDefenderReportFormat::AWS_IDDRF_SHORT_JSON);
@@ -124,8 +126,7 @@ static int s_TestDeviceDefenderFailedTest(Aws::Crt::Allocator *allocator, void *
 
         ASSERT_INT_EQUALS((int)Aws::Crt::Iot::DeviceDefenderV1ReportTaskStatus::Ready, (int)task.GetStatus());
 
-        task.StartTask();
-        ASSERT_INT_EQUALS((int)Aws::Crt::Iot::DeviceDefenderV1ReportTaskStatus::Failed, (int)task.GetStatus());
+        ASSERT_INT_EQUALS(AWS_OP_ERR, task.StartTask());
         ASSERT_INT_EQUALS(AWS_ERROR_IOTDEVICE_DEFENDER_UNSUPPORTED_REPORT_FORMAT, task.LastError());
 
         mqttConnection->Disconnect();
