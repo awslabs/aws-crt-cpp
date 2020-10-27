@@ -14,11 +14,11 @@ namespace Aws
     {
         namespace Iot
         {
-            // Callbacks
+            // Client callback type definitions
             using OnSecureTunnelingConnectionComplete = std::function<void(void)>;
             using OnSecureTunnelingSendDataComplete = std::function<void(int errorCode)>;
             using OnSecureTunnelingDataReceive = std::function<void(const ByteBuf &data)>;
-            using OnSecureTunnelingStreamStart = std::function<void(int32_t streamId)>;
+            using OnSecureTunnelingStreamStart = std::function<void()>;
             using OnSecureTunnelingStreamReset = std::function<void(void)>;
             using OnSecureTunnelingSessionReset = std::function<void(void)>;
 
@@ -60,7 +60,7 @@ namespace Aws
                 static void s_OnConnectionComplete(void *user_data);
                 static void s_OnSendDataComplete(int error_code, void *user_data);
                 static void s_OnDataReceive(const struct aws_byte_buf *data, void *user_data);
-                static void s_OnStreamStart(int32_t stream_id, void *user_data);
+                static void s_OnStreamStart(void *user_data);
                 static void s_OnStreamReset(void *user_data);
                 static void s_OnSessionReset(void *user_data);
 

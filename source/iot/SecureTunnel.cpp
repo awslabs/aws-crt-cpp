@@ -61,7 +61,6 @@ namespace Aws
 
             SecureTunnel::~SecureTunnel()
             {
-                aws_secure_tunnel_close(m_secure_tunnel);
                 aws_secure_tunnel_release(m_secure_tunnel);
             }
 
@@ -80,37 +79,37 @@ namespace Aws
 
             void SecureTunnel::s_OnConnectionComplete(void *user_data)
             {
-                auto *secureTunnel = reinterpret_cast<SecureTunnel *>(user_data);
+                auto *secureTunnel = static_cast<SecureTunnel *>(user_data);
                 secureTunnel->m_OnConnectionComplete();
             }
 
             void SecureTunnel::s_OnSendDataComplete(int error_code, void *user_data)
             {
-                auto *secureTunnel = reinterpret_cast<SecureTunnel *>(user_data);
+                auto *secureTunnel = static_cast<SecureTunnel *>(user_data);
                 secureTunnel->m_OnSendDataComplete(error_code);
             }
 
             void SecureTunnel::s_OnDataReceive(const struct aws_byte_buf *data, void *user_data)
             {
-                auto *secureTunnel = reinterpret_cast<SecureTunnel *>(user_data);
+                auto *secureTunnel = static_cast<SecureTunnel *>(user_data);
                 secureTunnel->m_OnDataReceive(*data);
             }
 
-            void SecureTunnel::s_OnStreamStart(int32_t stream_id, void *user_data)
+            void SecureTunnel::s_OnStreamStart(void *user_data)
             {
-                auto *secureTunnel = reinterpret_cast<SecureTunnel *>(user_data);
-                secureTunnel->m_OnStreamStart(stream_id);
+                auto *secureTunnel = static_cast<SecureTunnel *>(user_data);
+                secureTunnel->m_OnStreamStart();
             }
 
             void SecureTunnel::s_OnStreamReset(void *user_data)
             {
-                auto *secureTunnel = reinterpret_cast<SecureTunnel *>(user_data);
+                auto *secureTunnel = static_cast<SecureTunnel *>(user_data);
                 secureTunnel->m_OnStreamReset();
             }
 
             void SecureTunnel::s_OnSessionReset(void *user_data)
             {
-                auto *secureTunnel = reinterpret_cast<SecureTunnel *>(user_data);
+                auto *secureTunnel = static_cast<SecureTunnel *>(user_data);
                 secureTunnel->m_OnSessionReset();
             }
 
