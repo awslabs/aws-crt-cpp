@@ -40,15 +40,15 @@ static int s_TestDeviceDefenderResourceSafety(Aws::Crt::Allocator *allocator, vo
         auto mqttConnection = mqttClientMoved.NewConnection("www.example.com", 443, socketOptions, tlsContext);
 
         const Aws::Crt::String thingName("TestThing");
-        Aws::Crt::String data("TestData");
+        bool callbackSuccess = false;
 
         std::mutex mutex;
         std::condition_variable cv;
         bool taskStopped = false;
 
-        auto onCancelled = [&](void *a) {
-            auto data = reinterpret_cast<Aws::Crt::String *>(a);
-            ASSERT_INT_EQUALS(0, data->compare("TestData"));
+        auto onCancelled = [&](void *a) -> void {
+            auto *data = reinterpret_cast<bool *>(a);
+            *data = true;
             taskStopped = true;
             cv.notify_one();
         };
@@ -58,7 +58,7 @@ static int s_TestDeviceDefenderResourceSafety(Aws::Crt::Allocator *allocator, vo
         taskBuilder.WithTaskPeriodSeconds((uint64_t)1UL)
             .WithNetworkConnectionSamplePeriodSeconds((uint64_t)1UL)
             .WithTaskCancelledHandler(onCancelled)
-            .WithTaskCancellationUserData(&data);
+            .WithTaskCancellationUserData(&callbackSuccess);
 
         Aws::Crt::Iot::DeviceDefenderV1::ReportTask task = taskBuilder.Build();
 
@@ -72,6 +72,8 @@ static int s_TestDeviceDefenderResourceSafety(Aws::Crt::Allocator *allocator, vo
             std::unique_lock<std::mutex> lock(mutex);
             cv.wait(lock, [&]() { return taskStopped; });
         }
+
+        ASSERT_TRUE(callbackSuccess);
 
         mqttConnection->Disconnect();
         ASSERT_TRUE(mqttConnection);
@@ -127,12 +129,6 @@ static int s_TestDeviceDefenderFailedTest(Aws::Crt::Allocator *allocator, void *
             .WithReportFormat(Aws::Crt::Iot::DeviceDefenderV1::ReportFormat::AWS_IDDRF_SHORT_JSON);
 
         Aws::Crt::Iot::DeviceDefenderV1::ReportTask task = taskBuilder.Build();
-
-        task.OnDefenderV1TaskCancelled = [](void *a) {
-            auto data = reinterpret_cast<Aws::Crt::String *>(a);
-            ASSERT_INT_EQUALS(0, data->compare("TestData"));
-        };
-        task.cancellationUserdata = &data;
 
         ASSERT_INT_EQUALS((int)Aws::Crt::Iot::DeviceDefenderV1::ReportTaskStatus::Ready, (int)task.GetStatus());
 

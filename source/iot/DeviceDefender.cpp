@@ -21,9 +21,9 @@ namespace Aws
                     auto *taskWrapper = reinterpret_cast<ReportTask *>(userData);
                     taskWrapper->m_status = ReportTaskStatus::Stopped;
 
-                    if (taskWrapper->OnDefenderV1TaskCancelled)
+                    if (taskWrapper->OnTaskCancelled)
                     {
-                        taskWrapper->OnDefenderV1TaskCancelled(taskWrapper->cancellationUserdata);
+                        taskWrapper->OnTaskCancelled(taskWrapper->cancellationUserdata);
                     }
                 }
 
@@ -37,7 +37,7 @@ namespace Aws
                     uint64_t networkConnectionSamplePeriodSeconds,
                     OnTaskCancelledHandler &&onCancelled,
                     void *cancellationUserdata) noexcept
-                    : OnDefenderV1TaskCancelled(std::move(onCancelled)), cancellationUserdata(cancellationUserdata),
+                    : OnTaskCancelled(std::move(onCancelled)), cancellationUserdata(cancellationUserdata),
                       m_allocator(allocator), m_status(ReportTaskStatus::Ready),
                       m_taskConfig{
                           mqttConnection.get()->m_underlyingConnection,
@@ -57,12 +57,12 @@ namespace Aws
                 }
 
                 ReportTask::ReportTask(ReportTask &&toMove) noexcept
-                    : OnDefenderV1TaskCancelled(std::move(toMove.OnDefenderV1TaskCancelled)),
+                    : OnTaskCancelled(std::move(toMove.OnTaskCancelled)),
                       cancellationUserdata(toMove.cancellationUserdata), m_allocator(toMove.m_allocator),
                       m_status(toMove.m_status), m_taskConfig(std::move(toMove.m_taskConfig)),
                       m_owningTask(toMove.m_owningTask), m_lastError(toMove.m_lastError)
                 {
-                    toMove.OnDefenderV1TaskCancelled = nullptr;
+                    toMove.OnTaskCancelled = nullptr;
                     toMove.cancellationUserdata = nullptr;
                     toMove.m_allocator = nullptr;
                     toMove.m_status = ReportTaskStatus::Stopped;
@@ -73,7 +73,7 @@ namespace Aws
 
                 ReportTask &ReportTask::operator=(ReportTask &&toMove) noexcept
                 {
-                    OnDefenderV1TaskCancelled = std::move(toMove.OnDefenderV1TaskCancelled);
+                    OnTaskCancelled = std::move(toMove.OnTaskCancelled);
                     cancellationUserdata = toMove.cancellationUserdata;
                     m_allocator = toMove.m_allocator;
                     m_status = toMove.m_status;
@@ -81,7 +81,7 @@ namespace Aws
                     m_owningTask = toMove.m_owningTask;
                     m_lastError = toMove.m_lastError;
 
-                    toMove.OnDefenderV1TaskCancelled = nullptr;
+                    toMove.OnTaskCancelled = nullptr;
                     toMove.cancellationUserdata = nullptr;
                     toMove.m_allocator = nullptr;
                     toMove.m_status = ReportTaskStatus::Stopped;
@@ -130,7 +130,7 @@ namespace Aws
                     StopTask();
                     this->m_owningTask = nullptr;
                     this->m_allocator = nullptr;
-                    this->OnDefenderV1TaskCancelled = nullptr;
+                    this->OnTaskCancelled = nullptr;
                     this->cancellationUserdata = nullptr;
                 }
 

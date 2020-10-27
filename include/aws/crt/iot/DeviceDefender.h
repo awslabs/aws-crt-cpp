@@ -78,7 +78,7 @@ namespace Aws
                      */
                     ReportTaskStatus GetStatus() noexcept;
 
-                    OnTaskCancelledHandler OnDefenderV1TaskCancelled;
+                    OnTaskCancelledHandler OnTaskCancelled;
 
                     void *cancellationUserdata;
 
