@@ -165,7 +165,7 @@ namespace Aws
                 /**
                  * @return the pointer to the underlying mqtt connection
                  */
-                aws_mqtt_client_connection* GetUnderlyingConnection() noexcept;
+                aws_mqtt_client_connection *GetUnderlyingConnection() noexcept;
 
                 /**
                  * Subscribes to topicFilter. OnPublishReceivedHandler will be invoked from an event-loop
