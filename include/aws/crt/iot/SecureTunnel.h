@@ -27,7 +27,6 @@ namespace Aws
               public:
                 SecureTunnel(
                     // Parameters map to aws_secure_tunneling_connection_config
-
                     Allocator *allocator,
                     Aws::Crt::Io::ClientBootstrap *clientBootstrap,
                     Aws::Crt::Io::SocketOptions *socketOptions,
@@ -54,6 +53,8 @@ namespace Aws
                 int SendStreamStart();
 
                 int SendStreamReset();
+
+                aws_secure_tunnel *GetUnderlyingHandle();
 
               private:
                 // aws-c-iot callbacks

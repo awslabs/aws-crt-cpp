@@ -38,9 +38,10 @@ namespace Aws
                 // Initialize aws_secure_tunneling_connection_config
                 aws_secure_tunneling_connection_config config;
                 AWS_ZERO_STRUCT(config);
+
                 config.allocator = allocator;
-                config.bootstrap = clientBootstrap->GetUnderlyingHandle();
-                config.socket_options = &socketOptions->GetImpl();
+                config.bootstrap = clientBootstrap ? clientBootstrap->GetUnderlyingHandle() : nullptr;
+                config.socket_options = socketOptions ? &socketOptions->GetImpl() : nullptr;
 
                 config.access_token = aws_byte_cursor_from_c_str(accessToken.c_str());
                 config.local_proxy_mode = localProxyMode;
@@ -59,10 +60,7 @@ namespace Aws
                 m_secure_tunnel = aws_secure_tunnel_new(&config);
             }
 
-            SecureTunnel::~SecureTunnel()
-            {
-                aws_secure_tunnel_release(m_secure_tunnel);
-            }
+            SecureTunnel::~SecureTunnel() { aws_secure_tunnel_release(m_secure_tunnel); }
 
             int SecureTunnel::Connect() { return aws_secure_tunnel_connect(m_secure_tunnel); }
 
@@ -76,6 +74,8 @@ namespace Aws
             int SecureTunnel::SendStreamStart() { return aws_secure_tunnel_stream_start(m_secure_tunnel); }
 
             int SecureTunnel::SendStreamReset() { return aws_secure_tunnel_stream_reset(m_secure_tunnel); }
+
+            aws_secure_tunnel *SecureTunnel::GetUnderlyingHandle() { return m_secure_tunnel; }
 
             void SecureTunnel::s_OnConnectionComplete(void *user_data)
             {
