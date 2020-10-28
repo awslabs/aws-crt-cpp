@@ -163,6 +163,11 @@ namespace Aws
                 bool Disconnect() noexcept;
 
                 /**
+                 * @return the pointer to the underlying mqtt connection
+                 */
+                aws_mqtt_client_connection *GetUnderlyingConnection() noexcept;
+
+                /**
                  * Subscribes to topicFilter. OnPublishReceivedHandler will be invoked from an event-loop
                  * thread upon an incoming Publish message. OnSubAckHandler will be invoked
                  * upon receipt of a suback message.
