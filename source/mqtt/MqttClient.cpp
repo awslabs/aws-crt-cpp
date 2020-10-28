@@ -421,6 +421,11 @@ namespace Aws
                            m_underlyingConnection, MqttConnection::s_onDisconnect, this) == AWS_OP_SUCCESS;
             }
 
+            aws_mqtt_client_connection* MqttConnection::GetUnderlyingConnection() noexcept
+            {
+                return m_underlyingConnection;
+            }
+
             bool MqttConnection::SetOnMessageHandler(OnPublishReceivedHandler &&onPublish) noexcept
             {
                 auto pubCallbackData = Aws::Crt::New<PubCallbackData>(m_owningClient->allocator);
