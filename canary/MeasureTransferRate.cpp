@@ -43,6 +43,11 @@ void MeasureTransferRate::PerformMeasurement(
     const std::shared_ptr<S3ObjectTransport> &transport,
     TransferFunction &&transferFunction)
 {
+    if (numTransfers == 0)
+    {
+        return;
+    }
+
     if ((flags & (uint32_t)MeasurementFlags::DontWarmDNSCache) == 0)
     {
         transport->WarmDNSCache(numConcurrentTransfers);
