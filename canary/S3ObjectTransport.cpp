@@ -44,7 +44,7 @@ S3ObjectTransport::S3ObjectTransport(
     uint64_t minThroughputBytesPerSecond)
     : m_canaryApp(canaryApp), m_bucketName(bucket)
 {
-    m_endpoint = m_bucketName + ".s3." + m_canaryApp.GetOptions().region.c_str() + ".amazonaws.com";
+    m_endpoint = m_bucketName; // + ".s3." + m_canaryApp.GetOptions().region.c_str() + ".amazonaws.com";
 
     m_hostHeader.name = ByteCursorFromCString("host");
     m_hostHeader.value = ByteCursorFromCString(m_endpoint.c_str());
