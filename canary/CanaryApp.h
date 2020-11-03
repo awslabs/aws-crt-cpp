@@ -49,6 +49,7 @@ struct CanaryAppOptions
     uint32_t numDownTransfers;
     uint32_t numDownConcurrentTransfers;
     uint32_t numTransfersPerAddress;
+    uint32_t maxNumThreads;
 
     uint64_t fileNameSuffixOffset;
     uint64_t singlePartObjectSize;

@@ -47,12 +47,13 @@ namespace
 CanaryAppOptions::CanaryAppOptions(const String &configFileName) noexcept
     : platformName(CanaryUtil::GetPlatformName().c_str()), toolName("S3Canary"), instanceType("unknown"),
       region("us-west-2"), bucketName("aws-crt-canary-bucket"), numUpTransfers(0), numUpConcurrentTransfers(0),
-      numDownTransfers(0), numDownConcurrentTransfers(0), numTransfersPerAddress(10), fileNameSuffixOffset(1),
-      singlePartObjectSize(5ULL * 1024ULL * 1024ULL * 1024ULL), multiPartObjectPartSize(52LL * 1024ULL * 1024ULL),
-      multiPartObjectNumParts(100), connectionMonitoringFailureIntervalSeconds(1), targetThroughputGbps(80.0),
-      measureSinglePartTransfer(false), measureMultiPartTransfer(false), measureHttpTransfer(false),
-      sendEncrypted(false), loggingEnabled(false), rehydrateBackup(false), connectionMonitoringEnabled(false),
-      endPointMonitoringEnabled(false), metricsPublishingEnabled(true)
+      numDownTransfers(0), numDownConcurrentTransfers(0), numTransfersPerAddress(10), maxNumThreads(0),
+      fileNameSuffixOffset(1), singlePartObjectSize(5ULL * 1024ULL * 1024ULL * 1024ULL),
+      multiPartObjectPartSize(52LL * 1024ULL * 1024ULL), multiPartObjectNumParts(100),
+      connectionMonitoringFailureIntervalSeconds(1), targetThroughputGbps(80.0), measureSinglePartTransfer(false),
+      measureMultiPartTransfer(false), measureHttpTransfer(false), sendEncrypted(false), loggingEnabled(false),
+      rehydrateBackup(false), connectionMonitoringEnabled(false), endPointMonitoringEnabled(false),
+      metricsPublishingEnabled(true)
 {
     if (configFileName.empty())
     {
@@ -96,6 +97,7 @@ CanaryAppOptions::CanaryAppOptions(const String &configFileName) noexcept
     GET_CONFIG_VALUE_CAST(jsonView, Integer, uint32_t, "NumDownTransfers", numDownTransfers);
     GET_CONFIG_VALUE_CAST(jsonView, Integer, uint32_t, "NumDownConcurrentTransfers", numDownConcurrentTransfers);
     GET_CONFIG_VALUE_CAST(jsonView, Integer, uint32_t, "NumTransfersPerAddress", numTransfersPerAddress);
+    GET_CONFIG_VALUE_CAST(jsonView, Integer, uint32_t, "MaxNumThreads", maxNumThreads);
 
     GET_CONFIG_VALUE_CAST(jsonView, Int64, uint64_t, "FileNameSuffixOffset", fileNameSuffixOffset);
     GET_CONFIG_VALUE_CAST(jsonView, Int64, uint64_t, "SinglePartObjectSize", singlePartObjectSize);
@@ -124,7 +126,7 @@ CanaryAppOptions::CanaryAppOptions(const String &configFileName) noexcept
 }
 
 CanaryApp::CanaryApp(Aws::Crt::ApiHandle &apiHandle, CanaryAppOptions &&inOptions) noexcept
-    : m_apiHandle(apiHandle), m_options(inOptions), m_eventLoopGroup(0, g_allocator),
+    : m_apiHandle(apiHandle), m_options(inOptions), m_eventLoopGroup(m_options.maxNumThreads, g_allocator),
       m_defaultHostResolver(m_eventLoopGroup, 60, 3600, g_allocator),
       m_bootstrap(m_eventLoopGroup, m_defaultHostResolver, g_allocator)
 {
