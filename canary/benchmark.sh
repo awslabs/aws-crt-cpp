@@ -70,8 +70,6 @@ for dev in ${devices[*]}; do
 done
 sudo sysctl -w net.core.netdev_max_backlog=$backlog
 
-exit 0
-
 declare -a pids=()
 idx=0
 for local_ip in ${local_ips[*]}; do
@@ -80,9 +78,10 @@ for local_ip in ${local_ips[*]}; do
 	if [ -n "$numactl" ] && [ -n "$numa_node" ]; then
 		numactl="${numactl} --${numactl_mode}=${numa_node}"
 	fi
+    log_file=/tmp/benchmark_${devices[$idx]}.log
 
     set -x
-	LD_PRELOAD=${bindhack} BIND_SRC=${local_ip} ${numactl} ../build/canary/aws-crt-cpp-canary -g canary_config_no_upload_100.json 2>&1 > /tmp/benchmark_${devices[$idx]}.log &
+	LD_PRELOAD=${bindhack} BIND_SRC=${local_ip} ${numactl} ../build/canary/aws-crt-cpp-canary -g canary_config_no_upload_100.json 2>&1 > ${log_file} &
     set +x
 	pids=(${pids[@]} $!)
 	echo Launched ${pids[-1]}
