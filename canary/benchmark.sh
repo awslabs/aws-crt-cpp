@@ -13,7 +13,7 @@ fi
 mtu=9001
 
 echo Enumerating local devices...
-devices=$(ip link show | grep -e '^[0-9]' | sed -E 's/[0-9]+: eth([0-9]+).+/eth\1/')
+devices=$(ip link show | grep -E '^[0-9]+:[ ]+eth' | sed -E 's/[0-9]+: eth([0-9]+).+/eth\1/')
 
 declare -a local_ips=()
 declare -a numa_nodes=()
