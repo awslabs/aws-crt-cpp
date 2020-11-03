@@ -17,7 +17,7 @@ devices=$(ip link show | grep -e '^[0-9]' | sed -E 's/[0-9]+: eth([0-9]+).+/eth\
 
 declare -a local_ips=()
 declare -a numa_nodes=()
-for dev in ${devices[*]}; done
+for dev in ${devices[*]}; do
     local_ip=$(ip address show ${dev} | | grep -E '^\s+inet ' | sed -E 's/.+inet ([0-9\.]+).+/\1/')
     local_ips=(${local_ips} ${local_ip})
     numa_node=$(cat /sys/class/net/${dev}/device/numa_node)
