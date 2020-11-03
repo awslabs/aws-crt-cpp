@@ -20,9 +20,9 @@ declare -a local_ips=()
 declare -a numa_nodes=()
 for dev in ${devices[*]}; do
     local_ip=$(ip address show ${dev} | grep -E '^\s+inet ' | sed -E 's/.+inet ([0-9\.]+).+/\1/')
-    local_ips=(${local_ips} ${local_ip})
+    local_ips+=(${local_ip})
     numa_node=$(cat /sys/class/net/${dev}/device/numa_node)
-    numa_nodes=(${numa_nodes} ${numa_node})
+    numa_nodes+=(${numa_node})
 done
 
 while (( "$#" )); do
@@ -69,6 +69,8 @@ for dev in ${devices[*]}; do
     idx=$(($idx + 1))
 done
 sudo sysctl -w net.core.netdev_max_backlog=$backlog
+
+exit 0
 
 declare -a pids=()
 idx=0
