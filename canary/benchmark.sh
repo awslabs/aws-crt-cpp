@@ -17,7 +17,7 @@ devices=$(ip link show | grep -e '^[0-9]' | sed -E 's/[0-9]+: eth([0-9]+).+/eth\
 
 declare -a local_ips=()
 declare -a numa_nodes=()
-for dev in ${devices[@]}; done
+for dev in ${devices[*]}; done
     local_ip=$(ip address show ${dev} | | grep -E '^\s+inet ' | sed -E 's/.+inet ([0-9\.]+).+/\1/')
     local_ips=(${local_ips} ${local_ip})
     numa_node=$(cat /sys/class/net/${dev}/device/numa_node)
@@ -62,16 +62,16 @@ rm -f /tmp/benchmark_*.log
 
 echo Using devices:
 idx=0
-for dev in "${devices[@]}"; do
+for dev in ${devices[*]}; do
     sudo ip link set dev ${dev} mtu ${mtu};
-    echo Device: ${dev} Address: ${local_ips[${idx}]} MTU: ${mtu}
+    echo Device: ${dev} Address: ${local_ips[${idx}]} MTU: ${mtu} NUMA: ${numa_nodes[$idx]}
     idx=$(($idx + 1))
 done
 sudo sysctl -w net.core.netdev_max_backlog=$backlog
 
 declare -a pids=()
 idx=0
-for local_ip in "${local_ips[@]}"; do
+for local_ip in ${local_ips[*]}; do
 	echo Launching on ${local_ip}
 	numa_node=${numa_nodes[$idx]}
 	if [ -n "$numactl" && -n "$numa_node" ]; then
