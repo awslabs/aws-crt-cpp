@@ -10,8 +10,17 @@ if [ ! -e bindhack.so ]; then
 	gcc -fPIC -shared -o bindhack.so bindhack.c -lc -ldl
 fi
 
-# get local ips from command line
+mtu=9001
+
+echo Enumerating local devices...
+devices=$(ip link show | grep -e '^[0-9]' | sed -E 's/[0-9]+: eth([0-9]+).+/eth\1/')
+
 declare -a local_ips=()
+for dev in ${devices[@]}; done
+    local_ip=$(ip address show ${dev} | | grep -E '^\s+inet ' | sed -E 's/.+inet ([0-9\.]+).+/\1/')
+    local_ips=(${local_ips} ${local_ip})
+done
+
 while (( "$#" )); do
 	case "$1" in
 		--numactl)
@@ -33,9 +42,12 @@ while (( "$#" )); do
 			;;
 		--backlog=*)
 			backlog=$(echo $1 | cut -f2 -d=)
-			sysctl net.core.netdev_max_backlog=$backlog
 			shift
 			;;
+        --dev=*
+            devices=$(echo $1 | cut -f2 -d= | sed 's/,/ /g')
+            shift
+            ;;
 		*)
 			local_ips=(${local_ips[@]} $1)
 			shift
@@ -45,7 +57,15 @@ done
 
 rm -f /tmp/benchmark_*.log
 
-echo Local Interfaces: ${local_ips[@]}
+echo Using devices:
+idx=0
+for dev in "${devices[@]}"; do
+    sudo ip link set dev ${dev} mtu ${mtu};
+    echo Device: ${dev} Address: ${local_ips[${idx}]} MTU: ${mtu}
+    idx=$(($idx + 1))
+done
+
+sudo sysctl -w net.core.netdev_max_backlog=$backlog
 
 declare -a pids=()
 idx=0
