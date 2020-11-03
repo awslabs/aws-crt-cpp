@@ -14,11 +14,11 @@ bindhack=$(pwd)/bindhack.so
 mtu=9001
 
 echo Enumerating local devices...
-devices=$(ip link show | grep -E '^[0-9]+:[ ]+eth' | sed -E 's/[0-9]+: eth([0-9]+).+/eth\1/')
+IFS=$'\r\n' GLOBIGNORE='*' command eval 'devices=$(ip link show | grep -E '^[0-9]+:[ ]+eth' | sed -E 's/[0-9]+: eth([0-9]+).+/eth\1/')'
 
 declare -a local_ips=()
 declare -a numa_nodes=()
-for dev in "${devices[@]}"; do
+for dev in ${devices[*]}; do
     local_ip=$(ip address show ${dev} | grep -E '^\s+inet ' | sed -E 's/.+inet ([0-9\.]+).+/\1/')
     local_ips+=(${local_ip})
     numa_node=$(cat /sys/class/net/${dev}/device/numa_node)
