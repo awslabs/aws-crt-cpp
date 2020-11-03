@@ -47,7 +47,7 @@ while (( "$#" )); do
 			backlog=$(echo $1 | cut -f2 -d=)
 			shift
 			;;
-        --dev=*
+        --dev=*)
             devices=$(echo $1 | cut -f2 -d= | sed 's/,/ /g')
             shift
             ;;
