@@ -33,7 +33,7 @@ class MeasureTransferRate;
  */
 struct CanaryAppOptions
 {
-    CanaryAppOptions(const Aws::Crt::String &configFileName) noexcept;
+    CanaryAppOptions(const Aws::Crt::String &configFileName, const Aws::Crt::String &argv0) noexcept;
 
     Aws::Crt::String platformName;
     Aws::Crt::String toolName;

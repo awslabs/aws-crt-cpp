@@ -44,7 +44,7 @@ namespace
     const char *MetricNamespace = "CRT-CPP-Canary-V2";
 } // namespace
 
-CanaryAppOptions::CanaryAppOptions(const String &configFileName) noexcept
+CanaryAppOptions::CanaryAppOptions(const String &configFileName, const String &argv0) noexcept
     : platformName(CanaryUtil::GetPlatformName().c_str()), toolName("S3Canary"), instanceType("unknown"),
       region("us-west-2"), bucketName("aws-crt-canary-bucket"), numUpTransfers(0), numUpConcurrentTransfers(0),
       numDownTransfers(0), numDownConcurrentTransfers(0), numTransfersPerAddress(10), maxNumThreads(0),
@@ -55,6 +55,14 @@ CanaryAppOptions::CanaryAppOptions(const String &configFileName) noexcept
       rehydrateBackup(false), connectionMonitoringEnabled(false), endPointMonitoringEnabled(false),
       metricsPublishingEnabled(true)
 {
+
+    size_t dirStart = argv0.rfind('\\');
+
+    if (dirStart != std::string::npos)
+    {
+        toolName = argv0.substr(dirStart + 1);
+    }
+
     if (configFileName.empty())
     {
         return;
