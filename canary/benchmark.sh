@@ -9,6 +9,7 @@ if [ ! -e bindhack.so ]; then
 	curl -sSL -o bindhack.c http://wari.mckay.com/~rm/bindhack.c.txt
 	gcc -fPIC -shared -o bindhack.so bindhack.c -lc -ldl
 fi
+bindhack=$(pwd)/bindhack.so
 
 mtu=9001
 
@@ -79,7 +80,7 @@ for local_ip in ${local_ips[*]}; do
 	fi
 
     set -x
-	LD_PRELOAD=`pwd`/bindhack.so BIND_SRC=${local_ip} ${numactl} ../build/canary/aws-crt-cpp-canary -g canary_config_no_upload_100.json 2>&1 > /tmp/benchmark_${devices[$idx]}.log &
+	LD_PRELOAD=${bindhack} BIND_SRC=${local_ip} ${numactl} ../build/canary/aws-crt-cpp-canary -g canary_config_no_upload_100.json 2>&1 > /tmp/benchmark_${devices[$idx]}.log &
     set +x
 	pids=(${pids[@]} $!)
 	echo Launched ${pids[-1]}
