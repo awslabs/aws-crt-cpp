@@ -23,9 +23,9 @@ threads=0
 bucket_name=multicard-s3-test
 object_name=crt-canary-obj-single-part-9223372036854775807
 
-single_part=1
-multi_part=0
-use_tls=0
+single_part=--measureSinglePartTransfer
+multi_part=
+use_tls=
 
 echo "Enumerating local devices on ${instance_id}(${region}/${instance_type})..."
 devices=($(ip link show | grep -E '^[0-9]+:[ ]+eth' | sed -E 's/[0-9]+: eth([0-9]+).+/eth\1/'))
@@ -80,12 +80,12 @@ while (( "$#" )); do
 			shift
 			;;
 		--multipart)
-			multi_part=1
-			single_part=0
+			multi_part=--measureMultiPartTransfer
+			single_part=
 			shift
 			;;
 		--tls)
-			use_tls=1
+			use_tls=--sendEncrypted
 			shift
 			;;
 		*)
@@ -137,9 +137,7 @@ for local_ip in ${local_ips[*]}; do
 		--downloadObjectName ${object_name} \
 		--bucketName ${bucket_name} \
 		--maxNumThreads ${threads} \
-		--measureSinglePartTransfer ${single_part} \
-		--measureMultiPartTransfer ${multi_part} \
-		--sendEncrypted ${use_tls} \
+		${single_part} ${multi_part} ${use_tls} \
 		--numTransfers ${uploads}:${downloads} --numConcurrentTransfers ${uploads}:${downloads} 2>&1 > ${log_file} &
 	set +x
 	pids+=($!)
