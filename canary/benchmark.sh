@@ -44,7 +44,7 @@ while (( "$#" )); do
             echo CLI Devices: ${devices[@]}
             shift
             ;;
-        --config)
+        --config=*)
             config_file=$(echo $1 | cut -f2 -d=)
             shift
             ;;
