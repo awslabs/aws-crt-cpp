@@ -131,6 +131,7 @@ for local_ip in ${local_ips[*]}; do
 
 	set -x
     LD_PRELOAD=${bindhack} BIND_SRC=${local_ip} ${numactl} ../build/canary/aws-crt-cpp-canary \
+		-l \
 		--toolName 'S3CRTBenchmark' --instanceType ${instance_type} \
 		--region ${region} --metricsPublishingEnabled 0 \
 		--downloadObjectName ${object_name} \
