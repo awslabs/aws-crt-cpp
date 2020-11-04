@@ -14,8 +14,6 @@ mtu=9001
 echo Enumerating local devices...
 devices=($(ip link show | grep -E '^[0-9]+:[ ]+eth' | sed -E 's/[0-9]+: eth([0-9]+).+/eth\1/'))
 
-config=../canary_config_no_upload_100.json
-
 while (( "$#" )); do
 	case "$1" in
 		--numactl)
@@ -57,6 +55,11 @@ while (( "$#" )); do
 	esac
 done
 
+if [ -n "$config_file" ]; then
+    echo Config file not specified, --config=/path/to/config.json is required
+    exit 1
+fi
+
 if [ ! -e "$config_file" ]; then
     echo Config file ${config_file} does not exist
     exit 1
@@ -64,6 +67,7 @@ fi
 
 rm -f /tmp/benchmark_*.log
 
+# Find local IP and NUMA node per device
 declare -a local_ips=()
 declare -a numa_nodes=()
 for dev in ${devices[*]}; do
@@ -73,6 +77,7 @@ for dev in ${devices[*]}; do
     numa_nodes+=(${numa_node})
 done
 
+# Dump some device info
 echo Using devices:
 idx=0
 for dev in ${devices[*]}; do
@@ -82,8 +87,8 @@ for dev in ${devices[*]}; do
 done
 sudo sysctl -w net.core.netdev_max_backlog=$backlog
 
+# Run the canary in benchmark mode
 pushd $(dirname $0) 2>&1 >/dev/null
-
 declare -a pids=()
 idx=0
 for local_ip in ${local_ips[*]}; do
@@ -102,20 +107,21 @@ done
 
 popd 2>1 >/dev/null
 
+# make sure ctrl+C kills the benchmarks too
 kill_benchmarks() {
 	echo Killing benchmarks...
 	kill $(jobs -p)
 	echo Done
 }
-
-# make sure ctrl+C kills the benchmarks too
 trap 'kill_benchmarks' SIGINT
 
+# Wait for all of the canaries to finish
 for pid in ${pids[*]}; do
 	echo Waiting for ${pid}
 	wait $pid
 done
 
+# Results
 echo Avg Line rate per interface:
 line_rates=$(cat /tmp/benchmark*.log | grep BytesDown | grep -ve '^Possible' | sed -E 's/.+BytesDown,([0-9\.]+).+/\1/')
 total_line_rate=0
