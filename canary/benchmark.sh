@@ -59,7 +59,7 @@ while (( "$#" )); do
 	esac
 done
 
-if [ ! -e "$config_file"; ]; then
+if [ ! -e "$config_file" ]; then
     echo Config file ${config_file} does not exist
     exit 1
 fi
