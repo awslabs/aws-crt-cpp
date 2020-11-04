@@ -129,6 +129,7 @@ for local_ip in ${local_ips[*]}; do
 	fi
     log_file=/tmp/benchmark_${devices[$idx]}.log
 
+	set -x
     LD_PRELOAD=${bindhack} BIND_SRC=${local_ip} ${numactl} ../build/canary/aws-crt-cpp-canary \
 		--toolName 'S3CRTBenchmark' --instanceType ${instance_type} \
 		--region ${region} --metricsPublishingEnabled 0 \
@@ -139,6 +140,7 @@ for local_ip in ${local_ips[*]}; do
 		--measureMultiPartTransfer ${multi_part} \
 		--sendEncrypted ${use_tls} \
 		--numTransfers ${uploads}:${downloads} --numConcurrentTransfers ${uploads}:${downloads} 2>&1 > ${log_file} &
+	set +x
 	pids+=($!)
 	echo Launched $!
 	idx=$(( $idx + 1 ))
