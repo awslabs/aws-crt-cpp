@@ -59,11 +59,6 @@ while (( "$#" )); do
             devices=($(echo $1 | cut -f2 -d= | sed 's/,/ /g'))
             shift
             ;;
-        --config=*)
-            config_file=$(echo $1 | cut -f2 -d=)
-            config_file=$(cd $(dirname ${config_file}); pwd -P)/$(basename ${config_file})
-            shift
-            ;;
 		--uploads=*)
 			uploads=$(echo $1 | cut -f2 -d=)
 			shift
@@ -100,16 +95,6 @@ while (( "$#" )); do
 	esac
 done
 
-if [ -z "${config_file}" ]; then
-    echo Config file not specified, --config=/path/to/config.json is required
-    exit 1
-fi
-
-if [ ! -e ${config_file} ]; then
-    echo Config file ${config_file} does not exist
-    exit 1
-fi
-
 rm -f /tmp/benchmark_*.log
 
 # Find local IP and NUMA node per device
@@ -131,8 +116,6 @@ for dev in ${devices[*]}; do
     idx=$(($idx + 1))
 done
 sudo sysctl -w net.core.netdev_max_backlog=$backlog
-
-echo Using config ${config_file}
 
 # Run the canary in benchmark mode
 pushd $(dirname $0) 2>&1 >/dev/null
