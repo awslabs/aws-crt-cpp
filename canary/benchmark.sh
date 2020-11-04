@@ -6,7 +6,7 @@ set -e
 bindhack=/tmp/bindhack.so
 if [ ! -e ${bindhack} ]; then
 	curl -sSL -o /tmp/bindhack.c http://wari.mckay.com/~rm/bindhack.c.txt
-	gcc -fPIC -shared -o ${bindhack} bindhack.c -lc -ldl
+	gcc -fPIC -shared -o ${bindhack} /tmp/bindhack.c -lc -ldl
 fi
 
 mtu=9001
