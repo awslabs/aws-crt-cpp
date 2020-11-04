@@ -87,6 +87,8 @@ for dev in ${devices[*]}; do
 done
 sudo sysctl -w net.core.netdev_max_backlog=$backlog
 
+echo Using config ${config_file}
+
 # Run the canary in benchmark mode
 pushd $(dirname $0) 2>&1 >/dev/null
 declare -a pids=()
