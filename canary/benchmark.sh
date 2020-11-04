@@ -76,7 +76,7 @@ sudo sysctl -w net.core.netdev_max_backlog=$backlog
 declare -a pids=()
 idx=0
 for local_ip in ${local_ips[*]}; do
-	echo Launching on ${devices[$idx]}/${local_ip}
+	echo Launching on ${devices[${idx}]}/${local_ip}
 	numa_node=${numa_nodes[$idx]}
 	if [ -n "$numactl" ] && [ -n "$numa_node" ]; then
 		numactl="${numactl} --${numactl_mode}=${numa_node}"
