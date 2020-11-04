@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 pushd $(dirname $0) 2>&1 >/dev/null
 
