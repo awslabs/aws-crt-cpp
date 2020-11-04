@@ -45,6 +45,7 @@ while (( "$#" )); do
             ;;
         --config=*)
             config_file=$(echo $1 | cut -f2 -d=)
+            config_file=$(cd $(dirname ${config_file}); pwd -P)/$(basename ${config_file})
             shift
             ;;
 		*)
