@@ -135,7 +135,9 @@ for local_ip in ${local_ips[*]}; do
 	fi
     log_file=/tmp/benchmark_${devices[$idx]}.log
 
-	set -x
+	if [ -n "${verbose}" ]; then
+		set -x
+	fi
     LD_PRELOAD=${bindhack} BIND_SRC=${local_ip} ${numactl} ../build/canary/aws-crt-cpp-canary \
 		${verbose} \
 		--toolName 'S3CRTBenchmark' --instanceType ${instance_type} \
@@ -145,7 +147,9 @@ for local_ip in ${local_ips[*]}; do
 		--maxNumThreads ${threads} \
 		${single_part} ${multi_part} ${use_tls} \
 		--numTransfers ${uploads}:${downloads} --numConcurrentTransfers ${uploads}:${downloads} 2>&1 > ${log_file} &
-	set +x
+	if [ -n "${verbose}" ]; then
+		set +x
+	fi
 	pids+=($!)
 	echo Launched $!
 	idx=$(( $idx + 1 ))
