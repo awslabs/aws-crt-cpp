@@ -27,7 +27,7 @@ single_part=1
 multi_part=0
 use_tls=0
 
-echo Enumerating local devices on ${instance_id}(${region}/${instance_type})...
+echo "Enumerating local devices on ${instance_id}(${region}/${instance_type})..."
 devices=($(ip link show | grep -E '^[0-9]+:[ ]+eth' | sed -E 's/[0-9]+: eth([0-9]+).+/eth\1/'))
 
 while (( "$#" )); do
