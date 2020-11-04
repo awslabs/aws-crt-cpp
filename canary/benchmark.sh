@@ -16,6 +16,8 @@ mtu=9001
 echo Enumerating local devices...
 devices=($(ip link show | grep -E '^[0-9]+:[ ]+eth' | sed -E 's/[0-9]+: eth([0-9]+).+/eth\1/'))
 
+config=canary_config_no_upload_100.json
+
 while (( "$#" )); do
 	case "$1" in
 		--numactl)
@@ -44,6 +46,10 @@ while (( "$#" )); do
         --dev=*)
             devices=($(echo $1 | cut -f2 -d= | sed 's/,/ /g'))
             echo CLI Devices: ${devices[@]}
+            shift
+            ;;
+        --upload)
+            config_file=canary_config_upload_100.json
             shift
             ;;
 		*)
@@ -83,9 +89,9 @@ for local_ip in ${local_ips[*]}; do
 	fi
     log_file=/tmp/benchmark_${devices[$idx]}.log
 
-	cmd="LD_PRELOAD=${bindhack} BIND_SRC=${local_ip} ${numactl} ../build/canary/aws-crt-cpp-canary -g canary_config_no_upload_100.json 2>&1 > ${log_file}"
+	cmd="LD_PRELOAD=${bindhack} BIND_SRC=${local_ip} ${numactl} ../build/canary/aws-crt-cpp-canary -g ../${config_file} 2>&1 > ${log_file}"
     echo $cmd
-    LD_PRELOAD=${bindhack} BIND_SRC=${local_ip} ${numactl} ../build/canary/aws-crt-cpp-canary -g ../canary_config_no_upload_100.json 2>&1 > ${log_file} &
+    LD_PRELOAD=${bindhack} BIND_SRC=${local_ip} ${numactl} ../build/canary/aws-crt-cpp-canary -g ../${config_file} 2>&1 > ${log_file} &
 	pids+=($!)
 	echo Launched $!
 	idx=$(( $idx + 1 ))
