@@ -12,7 +12,22 @@ fi
 mtu=9001
 backlog=10000
 
-echo Enumerating local devices...
+instance_type=$(curl -sSL http://169.254.169.254/latest/meta-data/instance-type)
+instance_id=$(curl -sSL http://169.254.169.254/latest/meta-data/instance-id)
+region=$(curl -sSL http://169.254.169.254/latest/meta-data/placement/availability-zone | sed -E 's/[a-z]*$//')
+
+uploads=0
+downloads=160
+threads=0
+
+bucket_name=multicard-s3-test
+object_name=crt-canary-obj-single-part-9223372036854775807
+
+single_part=1
+multi_part=0
+use_tls=0
+
+echo Enumerating local devices on ${instance_id}(${region}/${instance_type})...
 devices=($(ip link show | grep -E '^[0-9]+:[ ]+eth' | sed -E 's/[0-9]+: eth([0-9]+).+/eth\1/'))
 
 while (( "$#" )); do
@@ -49,6 +64,35 @@ while (( "$#" )); do
             config_file=$(cd $(dirname ${config_file}); pwd -P)/$(basename ${config_file})
             shift
             ;;
+		--uploads=*)
+			uploads=$(echo $1 | cut -f2 -d=)
+			shift
+			;;
+		--downloads=*)
+			downloads=$(echo $1 | cut -f2 -d=)
+			shift
+			;;
+		--threads=*)
+			threads=$(echo $1 | cut -f2 -d=)
+			shift
+			;;
+		--bucket=*)
+			bucket_name=$(echo $1 | cut -f2 -d=)
+			shift
+			;;
+		--object=*)
+			object_name=$(echo $1 | cut -f2 -d=)
+			shift
+			;;
+		--multipart)
+			multi_part=1
+			single_part=0
+			shift
+			;;
+		--tls)
+			use_tls=1
+			shift
+			;;
 		*)
 			local_ips=(${local_ips[@]} $1)
 			shift
@@ -102,7 +146,16 @@ for local_ip in ${local_ips[*]}; do
 	fi
     log_file=/tmp/benchmark_${devices[$idx]}.log
 
-    LD_PRELOAD=${bindhack} BIND_SRC=${local_ip} ${numactl} ../build/canary/aws-crt-cpp-canary -g ${config_file} 2>&1 > ${log_file} &
+    LD_PRELOAD=${bindhack} BIND_SRC=${local_ip} ${numactl} ../build/canary/aws-crt-cpp-canary \
+		--toolName 'S3CRTBenchmark' --instanceType ${instance_type} \
+		--region ${region} --metricsPublishingEnabled 0 \
+		--downloadObjectName ${object_name} \
+		--bucketName ${bucket_name} \
+		--maxNumThreads ${threads} \
+		--measureSinglePartTransfer ${single_part} \
+		--measureMultiPartTransfer ${multi_part} \
+		--sendEncrypted ${use_tls} \
+		--numTransfers ${uploads}:${downloads} --numConcurrentTransfers ${uploads}:${downloads} 2>&1 > ${log_file} &
 	pids+=($!)
 	echo Launched $!
 	idx=$(( $idx + 1 ))
