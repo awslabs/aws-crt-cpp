@@ -86,7 +86,7 @@ for local_ip in ${local_ips[*]}; do
 	cmd="LD_PRELOAD=${bindhack} BIND_SRC=${local_ip} ${numactl} ../build/canary/aws-crt-cpp-canary -g canary_config_no_upload_100.json 2>&1 > ${log_file}"
     echo $cmd
     LD_PRELOAD=${bindhack} BIND_SRC=${local_ip} ${numactl} ../build/canary/aws-crt-cpp-canary -g canary_config_no_upload_100.json 2>&1 > ${log_file}
-	pids=(${pids[@]} $!)
+	pids+=($!)
 	echo Launched $!
 	idx=$(( $idx + 1 ))
 done
