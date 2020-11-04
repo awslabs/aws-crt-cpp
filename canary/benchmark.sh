@@ -2,14 +2,12 @@
 
 set -e
 
-pushd $(dirname $0) 2>&1 >/dev/null
-
 # build bindhack
 if [ ! -e bindhack.so ]; then
-	curl -sSL -o bindhack.c http://wari.mckay.com/~rm/bindhack.c.txt
-	gcc -fPIC -shared -o bindhack.so bindhack.c -lc -ldl
+	curl -sSL -o /tmp/bindhack.c http://wari.mckay.com/~rm/bindhack.c.txt
+	gcc -fPIC -shared -o /tmp/bindhack.so bindhack.c -lc -ldl
 fi
-bindhack=$(pwd)/bindhack.so
+bindhack=/tmp/bindhack.so
 
 mtu=9001
 
@@ -84,6 +82,8 @@ for dev in ${devices[*]}; do
 done
 sudo sysctl -w net.core.netdev_max_backlog=$backlog
 
+pushd $(dirname $0) 2>&1 >/dev/null
+
 declare -a pids=()
 idx=0
 for local_ip in ${local_ips[*]}; do
@@ -99,6 +99,8 @@ for local_ip in ${local_ips[*]}; do
 	echo Launched $!
 	idx=$(( $idx + 1 ))
 done
+
+popd 2>1 >/dev/null
 
 kill_benchmarks() {
 	echo Killing benchmarks...
@@ -123,5 +125,3 @@ for line_rate in ${line_rates[*]}; do
 done
 
 echo Avg Total: $total_line_rate Gbps
-
-popd 2>1 >/dev/null
