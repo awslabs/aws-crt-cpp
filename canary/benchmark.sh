@@ -133,4 +133,4 @@ for line_rate in ${line_rates[*]}; do
 	echo $line_rate Gbps
 done
 
-echo Avg Total: $total_line_rate Gbps
+echo Avg Overall Line Rate: $total_line_rate Gbps
