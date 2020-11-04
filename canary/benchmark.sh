@@ -45,7 +45,6 @@ while (( "$#" )); do
             ;;
         --config=*)
             config_file=$(echo $1 | cut -f2 -d=)
-            echo Config: $config_file
             shift
             ;;
 		*)
@@ -55,12 +54,12 @@ while (( "$#" )); do
 	esac
 done
 
-if [ -n "$config_file" ]; then
+if [ -z "${config_file}" ]; then
     echo Config file not specified, --config=/path/to/config.json is required
     exit 1
 fi
 
-if [ ! -e "$config_file" ]; then
+if [ ! -e ${config_file} ]; then
     echo Config file ${config_file} does not exist
     exit 1
 fi
