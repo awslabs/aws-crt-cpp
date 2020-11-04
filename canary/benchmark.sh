@@ -27,11 +27,17 @@ single_part=--measureSinglePartTransfer
 multi_part=
 use_tls=
 
+verbose=
+
 echo "Enumerating local devices on ${instance_id}(${region}/${instance_type})..."
 devices=($(ip link show | grep -E '^[0-9]+:[ ]+eth' | sed -E 's/[0-9]+: eth([0-9]+).+/eth\1/'))
 
 while (( "$#" )); do
 	case "$1" in
+		--verbose)
+			verbose=-l
+			shift
+			;;
 		--numactl)
 			numactl=numactl
 			numactl_mode=preferred
@@ -131,7 +137,7 @@ for local_ip in ${local_ips[*]}; do
 
 	set -x
     LD_PRELOAD=${bindhack} BIND_SRC=${local_ip} ${numactl} ../build/canary/aws-crt-cpp-canary \
-		-l \
+		${verbose} \
 		--toolName 'S3CRTBenchmark' --instanceType ${instance_type} \
 		--region ${region} --metricsPublishingEnabled 0 \
 		--downloadObjectName ${object_name} \
