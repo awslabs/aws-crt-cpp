@@ -10,6 +10,7 @@ if [ ! -e ${bindhack} ]; then
 fi
 
 mtu=9001
+backlog=10000
 
 echo Enumerating local devices...
 devices=($(ip link show | grep -E '^[0-9]+:[ ]+eth' | sed -E 's/[0-9]+: eth([0-9]+).+/eth\1/'))
