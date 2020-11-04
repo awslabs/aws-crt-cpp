@@ -51,7 +51,7 @@ while (( "$#" )); do
         --devices=*)
             ;&
         --dev=*)
-            devices=$(echo $1 | cut -f2 -d= | sed 's/,/ /g')
+            devices=($(echo $1 | cut -f2 -d= | sed 's/,/ /g'))
             echo CLI Devices: ${devices[@]}
             shift
             ;;
