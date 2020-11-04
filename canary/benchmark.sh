@@ -16,15 +16,6 @@ mtu=9001
 echo Enumerating local devices...
 devices=($(ip link show | grep -E '^[0-9]+:[ ]+eth' | sed -E 's/[0-9]+: eth([0-9]+).+/eth\1/'))
 
-declare -a local_ips=()
-declare -a numa_nodes=()
-for dev in ${devices[*]}; do
-    local_ip=$(ip address show ${dev} | grep -E '^\s+inet ' | sed -E 's/.+inet ([0-9\.]+).+/\1/')
-    local_ips+=(${local_ip})
-    numa_node=$(cat /sys/class/net/${dev}/device/numa_node)
-    numa_nodes+=(${numa_node})
-done
-
 while (( "$#" )); do
 	case "$1" in
 		--numactl)
@@ -63,6 +54,15 @@ while (( "$#" )); do
 done
 
 rm -f /tmp/benchmark_*.log
+
+declare -a local_ips=()
+declare -a numa_nodes=()
+for dev in ${devices[*]}; do
+    local_ip=$(ip address show ${dev} | grep -E '^\s+inet ' | sed -E 's/.+inet ([0-9\.]+).+/\1/')
+    local_ips+=(${local_ip})
+    numa_node=$(cat /sys/class/net/${dev}/device/numa_node)
+    numa_nodes+=(${numa_node})
+done
 
 echo Using devices:
 idx=0
