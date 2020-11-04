@@ -86,6 +86,8 @@ int main(int argc, char *argv[])
         DownloadObjectName,
         Region,
         Config,
+        MaxNumThreads,
+        MetricsPublishingEnabled,
 
         MAX
     };
@@ -103,9 +105,11 @@ int main(int argc, char *argv[])
                                       {"bucketName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'b'},
                                       {"downloadObjectName", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'o'},
                                       {"region", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'r'},
-                                      {"config", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'g'}};
+                                      {"config", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'g'},
+                                      {"maxNumThreads", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'z'},
+                                      {"metricsPublishingEnabled", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'p'}};
 
-    const char *optstring = "t:i:smh:len:c:u:b:o:r:g:";
+    const char *optstring = "t:i:smh:len:c:u:b:o:r:g:z:p:";
 
     int cliOptionIndex = 0;
     int cliGetOptResult = aws_cli_getopt_long(argc, argv, optstring, options, &cliOptionIndex);
@@ -132,7 +136,8 @@ int main(int argc, char *argv[])
 
     String argv0;
 
-    if(argc >= 1) {
+    if (argc >= 1)
+    {
         argv0 = argv[0];
     }
 
@@ -195,7 +200,13 @@ int main(int argc, char *argv[])
                 canaryAppOptions.region = aws_cli_optarg;
                 break;
             case CLIOption::Config:
-                canaryAppOptionsConfig = aws_cli_optarg;
+                /* We detect the the config value earlier. */
+                break;
+            case CLIOption::MaxNumThreads:
+                canaryAppOptions.maxNumThreads = atoi(aws_cli_optarg);
+                break;
+            case CLIOption::MetricsPublishingEnabled:
+                canaryAppOptions.metricsPublishingEnabled = atoi(aws_cli_optarg) != 0;
                 break;
             default:
                 AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Unknown CLI option used.");
