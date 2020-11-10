@@ -20,7 +20,7 @@ uploads=0
 downloads=160
 threads=0
 
-bucket_name=multicard-s3-test
+bucket_name=aws-crt-canary-bucket
 object_name=crt-canary-obj-single-part-9223372036854775807
 
 single_part=--measureSinglePartTransfer
