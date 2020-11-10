@@ -27,6 +27,8 @@ single_part=--measureSinglePartTransfer
 multi_part=
 use_tls=
 
+num_cpus=$(lscpu | grep -e '^CPU(s)' | sed -E 's/.+:\s+//')
+
 verbose=
 
 echo "Enumerating local devices on ${instance_id}(${region}/${instance_type})..."
@@ -102,6 +104,12 @@ while (( "$#" )); do
 done
 
 rm -f /tmp/benchmark_*.log
+
+# figure out number of threads: 1/interfaces * num CPUs
+if [[ $threads == 0 ]]; then
+    threads=$((1 / ${#devices[@]} * ${num_cpus}))
+    echo "Detected ${num_cpus} CPUs, using ${threads} per interface"
+fi
 
 # Find local IP and NUMA node per device
 declare -a local_ips=()
