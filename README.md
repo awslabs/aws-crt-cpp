@@ -31,7 +31,7 @@ If you want to use a statically linked MSVCRT (/MT, /MTd), you can add `-DSTATIC
 ### Windows and Apple
 There are no non-OS dependencies that AWS does not own, maintain, and ship.
 
-### Unix
+### Unix 
 The most likely answer is: none that you should care about.
 
 We do depend on an openssl compatible libcrypto implementation being in your path if you are on a
