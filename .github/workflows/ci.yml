@@ -13,6 +13,7 @@ env:
   PACKAGE_NAME: aws-crt-cpp
   LINUX_BASE_IMAGE: ubuntu-16-x64
   RUN: ${{ github.run_id }}-${{ github.run_number }}
+  ACCESS_TOKEN: ${{secrets.BOT_PAT}}
 
 jobs:
   linux-compat:
@@ -23,24 +24,34 @@ jobs:
           - manylinux2014-x64
           - manylinux2014-x86
     steps:
+      - name: Checkout Sources
+        uses: actions/checkout@v2
+        with:
+          token: ${{ env.ACCESS_TOKEN }}
+          submodules: "recursive"
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
-    - name: Build ${{ env.PACKAGE_NAME }}
-      run: |
-        echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u awslabs --password-stdin
-        export DOCKER_IMAGE=docker.pkg.github.com/awslabs/aws-crt-builder/aws-crt-${{ matrix.image }}:${{ env.BUILDER_VERSION }}
-        docker pull $DOCKER_IMAGE
-        docker run --env GITHUB_REF $DOCKER_IMAGE build -p ${{ env.PACKAGE_NAME }}
+      - name: Build ${{ env.PACKAGE_NAME }}
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u awslabs --password-stdin
+          export DOCKER_IMAGE=docker.pkg.github.com/awslabs/aws-crt-builder/aws-crt-${{ matrix.image }}:${{ env.BUILDER_VERSION }}
+          docker pull $DOCKER_IMAGE
+          docker run --mount type=bind,source=$(pwd),target=/root/${{ env.PACKAGE_NAME }} --env GITHUB_REF $DOCKER_IMAGE build -p ${{ env.PACKAGE_NAME }}
 
   al2:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Sources
+        uses: actions/checkout@v2
+        with:
+          token: ${{ env.ACCESS_TOKEN }}
+          submodules: "recursive"
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
-    - name: Build ${{ env.PACKAGE_NAME }} + consumers
-      run: |
-        echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u awslabs --password-stdin
-        export DOCKER_IMAGE=docker.pkg.github.com/awslabs/aws-crt-builder/aws-crt-al2-x64:${{ env.BUILDER_VERSION }}
-        docker pull $DOCKER_IMAGE
-        docker run --env GITHUB_REF $DOCKER_IMAGE build -p ${{ env.PACKAGE_NAME }} --spec=downstream
+      - name: Build ${{ env.PACKAGE_NAME }} + consumers
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u awslabs --password-stdin
+          export DOCKER_IMAGE=docker.pkg.github.com/awslabs/aws-crt-builder/aws-crt-al2-x64:${{ env.BUILDER_VERSION }}
+          docker pull $DOCKER_IMAGE
+          docker run --mount type=bind,source=$(pwd),target=/root/${{ env.PACKAGE_NAME }} --env GITHUB_REF $DOCKER_IMAGE build -p ${{ env.PACKAGE_NAME }} --spec=downstream
 
   clang-compat:
     runs-on: ubuntu-latest
@@ -49,12 +60,17 @@ jobs:
         version: [3, 6, 8, 9]
     steps:
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
-    - name: Build ${{ env.PACKAGE_NAME }}
-      run: |
-        echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u awslabs --password-stdin
-        export DOCKER_IMAGE=docker.pkg.github.com/awslabs/aws-crt-builder/aws-crt-${{ env.LINUX_BASE_IMAGE }}:${{ env.BUILDER_VERSION }}
-        docker pull $DOCKER_IMAGE
-        docker run --env GITHUB_REF $DOCKER_IMAGE build -p ${{ env.PACKAGE_NAME }} --compiler=clang-${{ matrix.version }}
+      - name: Checkout Sources
+        uses: actions/checkout@v2
+        with:
+          token: ${{ env.ACCESS_TOKEN }}
+          submodules: "recursive"
+      - name: Build ${{ env.PACKAGE_NAME }}
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u awslabs --password-stdin
+          export DOCKER_IMAGE=docker.pkg.github.com/awslabs/aws-crt-builder/aws-crt-${{ env.LINUX_BASE_IMAGE }}:${{ env.BUILDER_VERSION }}
+          docker pull $DOCKER_IMAGE
+          docker run --mount type=bind,source=$(pwd),target=/root/${{ env.PACKAGE_NAME }} --env GITHUB_REF $DOCKER_IMAGE build -p ${{ env.PACKAGE_NAME }} --compiler=clang-${{ matrix.version }}
 
   gcc-compat:
     runs-on: ubuntu-latest
@@ -62,13 +78,18 @@ jobs:
       matrix:
         version: [4.8, 5, 6, 7, 8]
     steps:
+      - name: Checkout Sources
+        uses: actions/checkout@v2
+        with:
+          token: ${{ env.ACCESS_TOKEN }}
+          submodules: "recursive"
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
-    - name: Build ${{ env.PACKAGE_NAME }}
-      run: |
-        echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u awslabs --password-stdin
-        export DOCKER_IMAGE=docker.pkg.github.com/awslabs/aws-crt-builder/aws-crt-${{ env.LINUX_BASE_IMAGE }}:${{ env.BUILDER_VERSION }}
-        docker pull $DOCKER_IMAGE
-        docker run --env GITHUB_REF $DOCKER_IMAGE build -p ${{ env.PACKAGE_NAME }} --compiler=gcc-${{ matrix.version }}
+      - name: Build ${{ env.PACKAGE_NAME }}
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u awslabs --password-stdin
+          export DOCKER_IMAGE=docker.pkg.github.com/awslabs/aws-crt-builder/aws-crt-${{ env.LINUX_BASE_IMAGE }}:${{ env.BUILDER_VERSION }}
+          docker pull $DOCKER_IMAGE
+          docker run --mount type=bind,source=$(pwd),target=/root/${{ env.PACKAGE_NAME }} --env GITHUB_REF $DOCKER_IMAGE build -p ${{ env.PACKAGE_NAME }} --compiler=gcc-${{ matrix.version }}
 
   std-compat:
     runs-on: ubuntu-latest
@@ -77,24 +98,32 @@ jobs:
         compiler: [gcc-8, clang-9]
         std: [c++11, c++14, c++17, c++2a]
     steps:
+      - name: Checkout Sources
+        uses: actions/checkout@v2
+        with:
+          token: ${{ env.ACCESS_TOKEN }}
+          submodules: "recursive"
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
-    - name: Build ${{ env.PACKAGE_NAME }} with ${{ matrix.std }}
-      run: |
-        export CXXFLAGS=-std=${{ matrix.std }}
-        echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u awslabs --password-stdin
-        export DOCKER_IMAGE=docker.pkg.github.com/awslabs/aws-crt-builder/aws-crt-${{ env.LINUX_BASE_IMAGE }}:${{ env.BUILDER_VERSION }}
-        docker pull $DOCKER_IMAGE
-        docker run --env GITHUB_REF --env CXXFLAGS $DOCKER_IMAGE build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }}
+      - name: Build ${{ env.PACKAGE_NAME }} with ${{ matrix.std }}
+        run: |
+          export CXXFLAGS=-std=${{ matrix.std }}
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u awslabs --password-stdin
+          export DOCKER_IMAGE=docker.pkg.github.com/awslabs/aws-crt-builder/aws-crt-${{ env.LINUX_BASE_IMAGE }}:${{ env.BUILDER_VERSION }}
+          docker pull $DOCKER_IMAGE
+          docker run --mount type=bind,source=$(pwd),target=/root/${{ env.PACKAGE_NAME }} --env GITHUB_REF --env CXXFLAGS $DOCKER_IMAGE build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }}
 
   windows-vs16:
     runs-on: windows-latest
     steps:
-    - name: Build ${{ env.PACKAGE_NAME }} + consumers
-      run: |
-        md D:\a\work
-        cd D:\a\work
-        python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
-        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --spec=downstream
+      - name: Checkout Sources
+        uses: actions/checkout@v2
+        with:
+          token: ${{ env.ACCESS_TOKEN }}
+          submodules: "recursive"
+      - name: Build ${{ env.PACKAGE_NAME }} + consumers
+        run: |
+          python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
+          python builder.pyz build -p ${{ env.PACKAGE_NAME }} --spec=downstream
 
   windows-vs14:
     runs-on: windows-latest
@@ -102,27 +131,35 @@ jobs:
       matrix:
         arch: [x86, x64]
     steps:
-    - uses: ilammy/msvc-dev-cmd@v1
-      with:
-        toolset: 14.0
-        arch: ${{ matrix.arch }}
-        uwp: false
-        spectre: true
-    - name: Build ${{ env.PACKAGE_NAME }} + consumers
-      run: |
-        md D:\a\work
-        cd D:\a\work
-        python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
-        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --spec=downstream
+      - name: Checkout Sources
+        uses: actions/checkout@v2
+        with:
+          token: ${{ env.ACCESS_TOKEN }}
+          submodules: "recursive"
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          toolset: 14.0
+          arch: ${{ matrix.arch }}
+          uwp: false
+          spectre: true
+      - name: Build ${{ env.PACKAGE_NAME }} + consumers
+        run: |
+          python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
+          python builder.pyz build -p ${{ env.PACKAGE_NAME }} --spec=downstream
 
   osx:
     runs-on: macos-latest
     steps:
-    - name: Build ${{ env.PACKAGE_NAME }} + consumers
-      run: |
-        python3 -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder')"
-        chmod a+x builder
-        ./builder build -p ${{ env.PACKAGE_NAME }} --spec=downstream
+      - name: Checkout Sources
+        uses: actions/checkout@v2
+        with:
+          token: ${{ env.ACCESS_TOKEN }}
+          submodules: "recursive"
+      - name: Build ${{ env.PACKAGE_NAME }} + consumers
+        run: |
+          python3 -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder')"
+          chmod a+x builder
+          ./builder build -p ${{ env.PACKAGE_NAME }} --spec=downstream
 
   cross_compile:
     name: Cross Compile ${{matrix.arch}}
@@ -132,8 +169,13 @@ jobs:
         arch: [linux-armv6, linux-armv7, linux-arm64, android-armv7]
 
     steps:
-    - name: Build ${{ env.PACKAGE_NAME }} + consumers
-      run: |
-        python3 -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder')"
-        chmod a+x builder
-        ./builder build -p aws-crt-cpp --spec=downstream --target=${{matrix.arch}} run_tests=false
+      - name: Checkout Sources
+        uses: actions/checkout@v2
+        with:
+          token: ${{ env.ACCESS_TOKEN }}
+          submodules: "recursive"
+      - name: Build ${{ env.PACKAGE_NAME }} + consumers
+        run: |
+          python3 -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder')"
+          chmod a+x builder
+          ./builder build -p ${{ env.PACKAGE_NAME }} --spec=downstream --target=${{matrix.arch}} run_tests=false
