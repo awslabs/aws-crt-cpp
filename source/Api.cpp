@@ -11,6 +11,7 @@
 #include <aws/common/ref_count.h>
 #include <aws/http/http.h>
 #include <aws/mqtt/mqtt.h>
+#include <aws/s3/s3.h>
 
 namespace Aws
 {
@@ -34,6 +35,7 @@ namespace Aws
             hooks.malloc_fn = s_cJSONAlloc;
             hooks.free_fn = s_cJSONFree;
             cJSON_InitHooks(&hooks);
+            aws_s3_library_init(allocator);
         }
 
         ApiHandle::ApiHandle(Allocator *allocator) noexcept
@@ -53,12 +55,13 @@ namespace Aws
             {
                 aws_thread_join_all_managed();
             }
-
             if (aws_logger_get() == &logger)
             {
                 aws_logger_set(NULL);
                 aws_logger_clean_up(&logger);
             }
+
+            aws_s3_library_clean_up();
 
             g_allocator = nullptr;
             aws_auth_library_clean_up();
