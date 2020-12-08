@@ -19,7 +19,7 @@ function(aws_check_headers_cxx target)
         if (NOT CMAKE_VERSION VERSION_LESS "3.8")
             aws_check_headers_cxx_internal(${target} 17 ${ARGN})
 
-            if (NOT CMAKE_VERSION VERSION_LESS "3.12")
+            if (NOT CMAKE_VERSION VERSION_LESS "3.12" AND NOT MSVC)
                 aws_check_headers_cxx_internal(${target} 20 ${ARGN})
             endif ()
         endif ()
