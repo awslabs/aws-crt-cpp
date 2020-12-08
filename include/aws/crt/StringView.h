@@ -843,16 +843,16 @@ namespace Aws
 // hash
 namespace std
 {
-    template <class CharT, class Traits> struct hash<Aws::Crt::basic_string_view<CharT, Traits>>
+    template <class CharT, class StringViewTraits> struct hash<Aws::Crt::basic_string_view<CharT, StringViewTraits>>
     {
-        size_t operator()(const Aws::Crt::basic_string_view<CharT, Traits> &val) const noexcept;
+        size_t operator()(const Aws::Crt::basic_string_view<CharT, StringViewTraits> &val) const noexcept;
     };
 
-    template <class CharT, class Traits>
-    size_t hash<Aws::Crt::basic_string_view<CharT, Traits>>::operator()(
-        const Aws::Crt::basic_string_view<CharT, Traits> &val) const noexcept
+    template <class CharT, class StringViewTraits>
+    size_t hash<Aws::Crt::basic_string_view<CharT, StringViewTraits>>::operator()(
+        const Aws::Crt::basic_string_view<CharT, StringViewTraits> &val) const noexcept
     {
-        auto str = std::basic_string<CharT, Traits>(val.data(), val.size());
-        return std::hash<std::basic_string<CharT, Traits>>()(str);
+        auto str = std::basic_string<CharT, StringViewTraits>(val.data(), val.size());
+        return std::hash<std::basic_string<CharT, StringViewTraits>>()(str);
     }
 } // namespace std
