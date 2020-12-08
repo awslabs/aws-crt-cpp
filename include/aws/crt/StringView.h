@@ -845,10 +845,14 @@ namespace std
 {
     template <class CharT, class Traits> struct hash<Aws::Crt::basic_string_view<CharT, Traits>>
     {
-        size_t operator()(const Aws::Crt::basic_string_view<CharT, Traits> &val) const noexcept {
-            auto str = std::basic_string<CharT, Traits>(val.data(), val.size());
-            return std::hash<std::basic_string<CharT, Traits>>()(str);
-        }
+        size_t operator()(const Aws::Crt::basic_string_view<CharT, Traits> &val) const noexcept;
     };
 
+    template <class CharT, class Traits>
+    size_t hash<Aws::Crt::basic_string_view<CharT, Traits>>::operator()(
+        const Aws::Crt::basic_string_view<CharT, Traits> &val) const noexcept
+    {
+        auto str = std::basic_string<CharT, Traits>(val.data(), val.size());
+        return std::hash<std::basic_string<CharT, Traits>>()(str);
+    }
 } // namespace std
