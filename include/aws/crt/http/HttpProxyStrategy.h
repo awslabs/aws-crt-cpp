@@ -30,6 +30,11 @@ namespace Aws
                     const String &password,
                     Allocator *allocator = g_allocator);
 
+                static std::shared_ptr<HttpProxyStrategyFactory> CreateExperimentalHttpProxyStrategyFactory(
+                    const String &username,
+                    const String &password,
+                    Allocator *allocator = g_allocator);
+
               private:
                 struct aws_http_proxy_strategy_factory *m_factory;
             };
