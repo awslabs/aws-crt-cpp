@@ -5,6 +5,7 @@
 #include <aws/crt/mqtt/MqttClient.h>
 
 #include <aws/crt/StlAllocator.h>
+#include <aws/crt/http/HttpProxyStrategy.h>
 #include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Bootstrap.h>
 
@@ -381,16 +382,8 @@ namespace Aws
                         struct aws_http_proxy_options proxyOptions;
                         AWS_ZERO_STRUCT(proxyOptions);
 
-                        if (!m_proxyOptions->BasicAuthUsername.empty())
-                        {
-                            proxyOptions.auth_username =
-                                ByteCursorFromCString(m_proxyOptions->BasicAuthUsername.c_str());
-                        }
-
-                        if (!m_proxyOptions->BasicAuthPassword.empty())
-                        {
-                            proxyOptions.auth_password =
-                                ByteCursorFromCString(m_proxyOptions->BasicAuthPassword.c_str());
+                        if (m_proxyOptions->ProxyStrategyFactory) {
+                            proxyOptions.proxy_strategy_factory = m_proxyOptions->ProxyStrategyFactory->GetUnderlyingHandle();
                         }
 
                         if (m_proxyOptions->TlsOptions)
@@ -399,8 +392,6 @@ namespace Aws
                                 m_proxyOptions->TlsOptions->GetUnderlyingHandle());
                         }
 
-                        proxyOptions.auth_type =
-                            static_cast<enum aws_http_proxy_authentication_type>(m_proxyOptions->AuthType);
                         proxyOptions.host = ByteCursorFromCString(m_proxyOptions->HostName.c_str());
                         proxyOptions.port = m_proxyOptions->Port;
 

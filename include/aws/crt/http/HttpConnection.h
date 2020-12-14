@@ -29,6 +29,7 @@ namespace Aws
             class HttpStream;
             class HttpClientStream;
             class HttpRequest;
+            class HttpProxyStrategyFactory;
             using HttpHeader = aws_http_header;
 
             /**
@@ -211,16 +212,6 @@ namespace Aws
             };
 
             /**
-             * Mirror of the aws_http_proxy_authentication_type C enum - designates what kind of
-             * authentication, if any, to use when connecting to a proxy server
-             */
-            enum class AwsHttpProxyAuthenticationType
-            {
-                None = AWS_HPAT_NONE,
-                Basic = AWS_HPAT_BASIC,
-            };
-
-            /**
              * Configuration structure that holds all proxy-related http connection options
              */
             class AWS_CRT_CPP_API HttpClientConnectionProxyOptions
@@ -253,20 +244,9 @@ namespace Aws
                  */
                 Optional<Io::TlsConnectionOptions> TlsOptions;
 
-                /**
-                 * What kind of authentication approach to use when connecting to the proxy
-                 */
-                AwsHttpProxyAuthenticationType AuthType;
+                enum aws_http_proxy_connection_type ProxyConnectionType;
 
-                /**
-                 * The username to use if connecting to the proxy via basic authentication
-                 */
-                String BasicAuthUsername;
-
-                /**
-                 * The password to use if connecting to the proxy via basic authentication
-                 */
-                String BasicAuthPassword;
+                std::shared_ptr<HttpProxyStrategyFactory> ProxyStrategyFactory;
             };
 
             /**
