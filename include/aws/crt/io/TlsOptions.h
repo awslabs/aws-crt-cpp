@@ -54,6 +54,7 @@ namespace Aws
                  * @param cert_path: Path to certificate file.
                  * @param pkey_path: Path to private key file.
                  */
+#if !defined(AWS_OS_IOS)
                 static TlsContextOptions InitClientWithMtls(
                     const char *cert_path,
                     const char *pkey_path,
@@ -70,8 +71,9 @@ namespace Aws
                     const ByteCursor &cert,
                     const ByteCursor &pkey,
                     Allocator *allocator = g_allocator) noexcept;
+#endif /* !AWS_OS_IOS */
 
-#ifdef __APPLE__
+#if defined(AWS_OS_APPLE)
                 /**
                  * Initializes TlsContextOptions with secure by default options, with
                  * client certificateand private key in the PKCS#12 format.
@@ -85,7 +87,7 @@ namespace Aws
                     const char *pkcs12_path,
                     const char *pkcs12_pwd,
                     Allocator *allocator = g_allocator) noexcept;
-#endif
+#endif /* AWS_OS_APPLE */
 
                 /**
                  * @return true if alpn is supported by the underlying security provider, false
