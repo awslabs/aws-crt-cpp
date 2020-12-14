@@ -71,7 +71,36 @@ namespace Aws
                     const ByteCursor &cert,
                     const ByteCursor &pkey,
                     Allocator *allocator = g_allocator) noexcept;
-#endif /* !AWS_OS_IOS */
+#    if defined(AWS_OS_APPLE)
+                /**
+                 * Initializes TlsContextOptions with secure by default options, with
+                 * client certificate and private key. These are paths to a file on disk. These files
+                 * must be in the PEM format. The certificate and the key are stored in the custom keychain.
+                 * @param cert_path: Path to certificate file.
+                 * @param pkey_path: Path to private key file.
+                 * @param keychain_path: Path to custom keychain.
+                 */
+                static TlsContextOptions InitClientWithMtls(
+                    const char *cert_path,
+                    const char *pkey_path,
+                    const char *keychain_path,
+                    Allocator *allocator = g_allocator) noexcept;
+
+                /**
+                 * Initializes TlsContextOptions with secure by default options, with
+                 * client certificate and private key. These are in memory buffers. These buffers
+                 * must be in the PEM format. The certificate and the key are stored in the custom keychain.
+                 * @param cert: Certificate contents in memory.
+                 * @param pkey: Private key contents in memory.
+                 * @param keychain_path: Path to custom keychain.
+                 */
+                static TlsContextOptions InitClientWithMtls(
+                    const ByteCursor &cert,
+                    const ByteCursor &pkey,
+                    const char *keychain_path,
+                    Allocator *allocator = g_allocator) noexcept;
+#    endif /* AWS_OS_APPLE */
+#endif     /* !AWS_OS_IOS */
 
 #if defined(AWS_OS_APPLE)
                 /**

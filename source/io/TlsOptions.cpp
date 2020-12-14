@@ -89,7 +89,43 @@ namespace Aws
                 }
                 return ctxOptions;
             }
-#endif /* !AWS_OS_IOS */
+#    if defined(AWS_OS_APPLE)
+            TlsContextOptions TlsContextOptions::InitClientWithMtls(
+                const char *certPath,
+                const char *pKeyPath,
+                const char *keychainPath,
+                Allocator *allocator) noexcept
+            {
+                TlsContextOptions ctxOptions;
+                if (!aws_tls_ctx_options_init_client_mtls_from_path_custom_keychain(
+                        &ctxOptions.m_options, allocator, certPath, pKeyPath, keychainPath))
+                {
+                    ctxOptions.m_isInit = true;
+                }
+                return ctxOptions;
+            }
+
+            TlsContextOptions TlsContextOptions::InitClientWithMtls(
+                const ByteCursor &cert,
+                const ByteCursor &pkey,
+                const char *keychainPath,
+                Allocator *allocator) noexcept
+            {
+                TlsContextOptions ctxOptions;
+                if (!aws_tls_ctx_options_init_client_mtls_custom_keychain(
+                        &ctxOptions.m_options,
+                        allocator,
+                        const_cast<ByteCursor *>(&cert),
+                        const_cast<ByteCursor *>(&pkey),
+                        keychainPath))
+                {
+                    ctxOptions.m_isInit = true;
+                }
+                return ctxOptions;
+            }
+#    endif /* AWS_OS_APPLE */
+#endif     /* !AWS_OS_IOS */
+
 #if defined(AWS_OS_APPLE)
             TlsContextOptions TlsContextOptions::InitClientWithMtlsPkcs12(
                 const char *pkcs12Path,
