@@ -29,18 +29,20 @@ namespace Aws
                 config.user_name = aws_byte_cursor_from_c_str(username.c_str());
                 config.password = aws_byte_cursor_from_c_str(password.c_str());
 
-                struct aws_http_proxy_strategy_factory *factory = aws_http_proxy_strategy_factory_new_basic_auth(allocator, &config);
-                if (factory == NULL) {
+                struct aws_http_proxy_strategy_factory *factory =
+                    aws_http_proxy_strategy_factory_new_basic_auth(allocator, &config);
+                if (factory == NULL)
+                {
                     return NULL;
                 }
 
                 return Aws::Crt::MakeShared<HttpProxyStrategyFactory>(allocator, factory);
             }
 
-            HttpProxyStrategyFactory::HttpProxyStrategyFactory(struct aws_http_proxy_strategy_factory *factory) :
-                m_factory(factory)
+            HttpProxyStrategyFactory::HttpProxyStrategyFactory(struct aws_http_proxy_strategy_factory *factory)
+                : m_factory(factory)
             {
             }
-        }
-    }
-}
+        } // namespace Http
+    }     // namespace Crt
+} // namespace Aws

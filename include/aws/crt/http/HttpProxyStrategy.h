@@ -16,9 +16,9 @@ namespace Aws
     {
         namespace Http
         {
-            class HttpProxyStrategyFactory {
+            class HttpProxyStrategyFactory
+            {
               public:
-
                 HttpProxyStrategyFactory(struct aws_http_proxy_strategy_factory *factory);
                 virtual ~HttpProxyStrategyFactory();
 
@@ -31,9 +31,8 @@ namespace Aws
                     Allocator *allocator = g_allocator);
 
               private:
-
                 struct aws_http_proxy_strategy_factory *m_factory;
             };
-        }
-    }
-}
+        } // namespace Http
+    }     // namespace Crt
+} // namespace Aws

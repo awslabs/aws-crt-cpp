@@ -382,8 +382,10 @@ namespace Aws
                         struct aws_http_proxy_options proxyOptions;
                         AWS_ZERO_STRUCT(proxyOptions);
 
-                        if (m_proxyOptions->ProxyStrategyFactory) {
-                            proxyOptions.proxy_strategy_factory = m_proxyOptions->ProxyStrategyFactory->GetUnderlyingHandle();
+                        if (m_proxyOptions->ProxyStrategyFactory)
+                        {
+                            proxyOptions.proxy_strategy_factory =
+                                m_proxyOptions->ProxyStrategyFactory->GetUnderlyingHandle();
                         }
 
                         if (m_proxyOptions->TlsOptions)
@@ -392,6 +394,7 @@ namespace Aws
                                 m_proxyOptions->TlsOptions->GetUnderlyingHandle());
                         }
 
+                        proxyOptions.connection_type = m_proxyOptions->ProxyConnectionType;
                         proxyOptions.host = ByteCursorFromCString(m_proxyOptions->HostName.c_str());
                         proxyOptions.port = m_proxyOptions->Port;
 

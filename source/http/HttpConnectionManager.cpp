@@ -84,7 +84,8 @@ namespace Aws
                     proxyOptions.host = aws_byte_cursor_from_c_str(proxyOpts->HostName.c_str());
                     proxyOptions.port = proxyOpts->Port;
 
-                    if (proxyOpts->ProxyStrategyFactory) {
+                    if (proxyOpts->ProxyStrategyFactory)
+                    {
                         proxyOptions.proxy_strategy_factory = proxyOpts->ProxyStrategyFactory->GetUnderlyingHandle();
                     }
 
