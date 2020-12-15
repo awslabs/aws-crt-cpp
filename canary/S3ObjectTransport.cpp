@@ -20,7 +20,6 @@
 #include <aws/crt/Api.h>
 #include <aws/crt/http/HttpConnectionManager.h>
 #include <aws/crt/http/HttpRequestResponse.h>
-#include <aws/crt/io/EndPointMonitor.h>
 #include <aws/crt/io/Stream.h>
 #include <aws/io/stream.h>
 #include <inttypes.h>
@@ -74,6 +73,7 @@ S3ObjectTransport::S3ObjectTransport(
 
     if (m_minThroughputBytes > 0)
     {
+/*
         if (options.endPointMonitoringEnabled)
         {
             AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Endpoint monitoring enabled.");
@@ -96,7 +96,7 @@ S3ObjectTransport::S3ObjectTransport(
                 }
             };
         }
-
+*/
         if (options.connectionMonitoringEnabled)
         {
             AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Connection monitoring enabled.");
@@ -119,11 +119,12 @@ S3ObjectTransport::S3ObjectTransport(
 
 void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
 {
+/*
     if (m_endPointMonitorManager != nullptr)
     {
         m_endPointMonitorManager->SetupCallbacks();
     }
-
+*/
     uint32_t transfersPerAddress = m_canaryApp.GetOptions().numTransfersPerAddress;
 
     // Each transfer is in a group the size of TransfersPerAddress,
@@ -176,7 +177,7 @@ void S3ObjectTransport::MakeSignedRequest(
     signingConfig.SetCredentialsProvider(m_canaryApp.GetCredsProvider());
     signingConfig.SetService("s3");
     signingConfig.SetSignedBodyHeader(Auth::SignedBodyHeaderType::XAmzContentSha256);
-    signingConfig.SetSignedBodyValue(Auth::SignedBodyValueType::UnsignedPayload);
+    signingConfig.SetSignedBodyValue(Auth::SignedBodyValue::UnsignedPayload);
     signingConfig.SetSigningTimepoint(DateTime::Now());
     signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4);
 

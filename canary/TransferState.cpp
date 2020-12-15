@@ -18,7 +18,7 @@
 #include <aws/common/clock.h>
 #include <aws/common/date_time.h>
 #include <aws/crt/Api.h>
-#include <aws/crt/io/EndPointMonitor.h>
+//#include <aws/crt/io/EndPointMonitor.h>
 #include <aws/http/connection.h>
 #include <cinttypes>
 
@@ -229,7 +229,7 @@ void TransferState::UpdateRateTracking(uint64_t dataUsed, bool forceFlush)
 
     if ((forceFlush && m_dataUsedRateSum > 0ULL) || dataUsedRateTimeInterval > 1000ULL)
     {
-        double dataUsedRateTimeIntervalSeconds = (double)dataUsedRateTimeInterval / 1000.0;
+/*        double dataUsedRateTimeIntervalSeconds = (double)dataUsedRateTimeInterval / 1000.0;
 
         uint64_t perSecondRate = (uint64_t)((double)m_dataUsedRateSum / dataUsedRateTimeIntervalSeconds);
 
@@ -241,6 +241,7 @@ void TransferState::UpdateRateTracking(uint64_t dataUsed, bool forceFlush)
         }
         else
         {
+            
             Io::EndPointMonitor *monitor =
                 (Io::EndPointMonitor *)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle());
 
@@ -254,7 +255,7 @@ void TransferState::UpdateRateTracking(uint64_t dataUsed, bool forceFlush)
                 //    null.");
             }
         }
-
+*/
         m_dataUsedRateTimestamp = now;
         m_dataUsedRateSum = 0;
     }
@@ -290,7 +291,7 @@ void TransferState::SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClie
     }
 
     m_hostAddress = connection->GetHostAddress();
-
+/*
     Io::EndPointMonitor *endPointMonitor =
         (Io::EndPointMonitor *)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle());
 
@@ -300,6 +301,7 @@ void TransferState::SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClie
             AWS_LS_CRT_CPP_CANARY,
             "TransferState::SetConnection - Connection being set on transfer state that has a fail-listed endpoint.");
     }
+*/
 }
 
 void TransferState::SetTransferSuccess(bool success)
@@ -319,7 +321,7 @@ void TransferState::SetTransferSuccess(bool success)
             "TransferState::SetTransferSuccess - No connection currently exists for TransferState");
         return;
     }
-
+/*
     Io::EndPointMonitor *endPointMonitor =
         connection != nullptr
             ? (Io::EndPointMonitor *)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle())
@@ -342,6 +344,7 @@ void TransferState::SetTransferSuccess(bool success)
         // Force connection to close so that it doesn't go back into the pool.
         connection->Close();
     }
+*/
 }
 
 void TransferState::InitDataUpMetric()

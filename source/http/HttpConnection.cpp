@@ -139,9 +139,12 @@ namespace Aws
 
             Aws::Crt::String HttpClientConnection::GetHostAddress()
             {
+				/*
                 aws_host_address* hostAddress = aws_http_connection_get_host_address(m_connection);
 
                 return Aws::Crt::String( aws_string_c_str(hostAddress->address) );
+				*/
+				return Aws::Crt::String("");
             }
 
             std::shared_ptr<HttpClientStream> HttpClientConnection::NewClientStream(

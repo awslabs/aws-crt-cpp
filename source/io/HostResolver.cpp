@@ -107,9 +107,12 @@ namespace Aws
 
             size_t DefaultHostResolver::GetHostAddressCount(const String &host, uint32_t flags) noexcept
             {
+				/*
                 aws_string *hostNameString = aws_string_new_from_array(m_allocator, reinterpret_cast<const uint8_t *>(host.data()), host.length());
 
                 return aws_host_resolver_get_host_address_count(&m_resolver, hostNameString, flags);
+				*/
+				return 0;
             }
         } // namespace Io
     }     // namespace Crt

@@ -21,7 +21,7 @@
 #include <aws/crt/JsonObject.h>
 #include <aws/crt/http/HttpConnectionManager.h>
 #include <aws/crt/http/HttpRequestResponse.h>
-#include <aws/crt/io/EndPointMonitor.h>
+//#include <aws/crt/io/EndPointMonitor.h>
 
 #include <aws/common/clock.h>
 #include <aws/common/task_scheduler.h>
@@ -950,6 +950,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
             });
     }
 
+/*
     if (m_canaryApp.GetUploadTransport()->GetEndPointMonitorManager() != nullptr)
     {
         AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading endpoint upload rate dump.");
@@ -973,6 +974,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
                 signal.notify_one();
             });
     }
+
     if (m_canaryApp.GetDownloadTransport()->GetEndPointMonitorManager() != nullptr)
     {
         AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading endpoint download rate dump.");
@@ -996,6 +998,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
                 signal.notify_one();
             });
     }
+*/
 
     std::unique_lock<std::mutex> signalLock(signalMutex);
     signal.wait(signalLock, [&numFilesUploaded, numFilesBeingUploaded]() {
@@ -1526,60 +1529,60 @@ void MetricsPublisher::PollMetricsForS3ObjectTransport(
     uint64_t nowTimestamp = 0ULL;
     aws_sys_clock_get_ticks(&nowTimestamp);
     nowTimestamp = aws_timestamp_convert(nowTimestamp, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, nullptr);
+    /*
+        std::shared_ptr<Http::HttpClientConnectionManager> connManager = transport->GetConnectionManager();
 
-    std::shared_ptr<Http::HttpClientConnectionManager> connManager = transport->GetConnectionManager();
+        if (connManager != nullptr)
+        {
+            aws_http_connection_manager *connManagerHandle = connManager->GetUnderlyingHandle();
+            aws_http_connection_manager_snapshot snapshot;
+            AWS_ZERO_STRUCT(snapshot);
 
-    if (connManager != nullptr)
-    {
-        aws_http_connection_manager *connManagerHandle = connManager->GetUnderlyingHandle();
-        aws_http_connection_manager_snapshot snapshot;
-        AWS_ZERO_STRUCT(snapshot);
+            aws_http_connection_manager_get_snapshot(connManagerHandle, &snapshot);
 
-        aws_http_connection_manager_get_snapshot(connManagerHandle, &snapshot);
+            AddDataPoint(Metric(
+                (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::PendingAcquisitionCount),
+                MetricUnit::Count,
+                nowTimestamp,
+                0ULL,
+                snapshot.pending_acquisition_count));
 
-        AddDataPoint(Metric(
-            (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::PendingAcquisitionCount),
-            MetricUnit::Count,
-            nowTimestamp,
-            0ULL,
-            snapshot.pending_acquisition_count));
+            AddDataPoint(Metric(
+                (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::PendingConnectsCount),
+                MetricUnit::Count,
+                nowTimestamp,
+                0ULL,
+                snapshot.pending_connects_count));
 
-        AddDataPoint(Metric(
-            (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::PendingConnectsCount),
-            MetricUnit::Count,
-            nowTimestamp,
-            0ULL,
-            snapshot.pending_connects_count));
+            AddDataPoint(Metric(
+                (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::VendedConnectionCount),
+                MetricUnit::Count,
+                nowTimestamp,
+                0ULL,
+                snapshot.vended_connection_count));
 
-        AddDataPoint(Metric(
-            (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::VendedConnectionCount),
-            MetricUnit::Count,
-            nowTimestamp,
-            0ULL,
-            snapshot.vended_connection_count));
+            AddDataPoint(Metric(
+                (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::OpenConnectionCount),
+                MetricUnit::Count,
+                nowTimestamp,
+                0ULL,
+                snapshot.open_connection_count));
+        }
 
-        AddDataPoint(Metric(
-            (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::OpenConnectionCount),
-            MetricUnit::Count,
-            nowTimestamp,
-            0ULL,
-            snapshot.open_connection_count));
-    }
+        std::shared_ptr<Aws::Crt::Io::EndPointMonitorManager> endPointMonitorManager =
+            transport->GetEndPointMonitorManager();
 
-    std::shared_ptr<Aws::Crt::Io::EndPointMonitorManager> endPointMonitorManager =
-        transport->GetEndPointMonitorManager();
+        if (endPointMonitorManager != nullptr)
+        {
+            uint32_t count = endPointMonitorManager->GetFailTableCount();
 
-    if (endPointMonitorManager != nullptr)
-    {
-        uint32_t count = endPointMonitorManager->GetFailTableCount();
-
-        AddDataPoint(Metric(
-            (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::FailTableCount),
-            MetricUnit::Count,
-            nowTimestamp,
-            0ULL,
-            count));
-    }
+            AddDataPoint(Metric(
+                (MetricName)(metricNameOffset + (uint32_t)TransportMetricName::FailTableCount),
+                MetricUnit::Count,
+                nowTimestamp,
+                0ULL,
+                count));
+        }*/
 }
 
 void MetricsPublisher::s_OnPollingTask(aws_task *task, void *arg, aws_task_status status)
@@ -1702,7 +1705,7 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
     signingConfig.SetCredentialsProvider(publisher->m_canaryApp.GetCredsProvider());
     signingConfig.SetService("monitoring");
     signingConfig.SetSignedBodyHeader(Auth::SignedBodyHeaderType::XAmzContentSha256);
-    signingConfig.SetSignedBodyValue(Auth::SignedBodyValueType::Payload);
+    signingConfig.SetSignedBodyValue(Auth::SignedBodyValue::UnsignedPayload);
     signingConfig.SetSigningTimepoint(DateTime::Now());
     signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4);
 
