@@ -206,12 +206,6 @@ void CanaryApp::Run()
         m_measureTransferRate->MeasureSinglePartObjectTransfer();
     }
 
-    if (m_options.measureMultiPartTransfer)
-    {
-        m_publisher->SetMetricTransferType(MetricTransferType::MultiPart);
-        m_measureTransferRate->MeasureMultiPartObjectTransfer();
-    }
-
     if (m_options.measureHttpTransfer)
     {
         m_publisher->SetMetricTransferType(MetricTransferType::SinglePart);

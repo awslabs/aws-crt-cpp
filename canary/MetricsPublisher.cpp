@@ -552,7 +552,7 @@ void MetricsPublisher::GeneratePerStreamCSVRow(
         {
             streamStringValues[(size_t)CSVColumnString::RequestId] = transferState->GetAmzRequestId();
             streamStringValues[(size_t)CSVColumnString::AmzId2] = transferState->GetAmzId2();
-            streamStringValues[(size_t)CSVColumnString::HostAddress] = transferState->GetHostAddress();
+            /*            streamStringValues[(size_t)CSVColumnString::HostAddress] = transferState->GetHostAddress();*/
         }
     }
 
@@ -885,7 +885,6 @@ String MetricsPublisher::UploadBackup(uint32_t options)
             backupPath,
             metricsBackupContentsStream,
             0,
-            nullptr,
             [&signal, &numFilesUploaded](int32_t, std::shared_ptr<Aws::Crt::String>) {
                 ++numFilesUploaded;
                 signal.notify_one();
@@ -920,7 +919,6 @@ String MetricsPublisher::UploadBackup(uint32_t options)
             s3Path + "uploadStreams.csv",
             uploadCSVContentsStream,
             0,
-            nullptr,
             [&signal, &numFilesUploaded](int32_t, std::shared_ptr<Aws::Crt::String>) {
                 ++numFilesUploaded;
                 signal.notify_one();
@@ -943,62 +941,61 @@ String MetricsPublisher::UploadBackup(uint32_t options)
             s3Path + "downloadStreams.csv",
             downloadCSVContentsStream,
             0,
-            nullptr,
             [&signal, &numFilesUploaded](int32_t, std::shared_ptr<Aws::Crt::String>) {
                 ++numFilesUploaded;
                 signal.notify_one();
             });
     }
 
-/*
-    if (m_canaryApp.GetUploadTransport()->GetEndPointMonitorManager() != nullptr)
-    {
-        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading endpoint upload rate dump.");
+    /*
+        if (m_canaryApp.GetUploadTransport()->GetEndPointMonitorManager() != nullptr)
+        {
+            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading endpoint upload rate dump.");
 
-        std::shared_ptr<StringStream> uploadCSVContents =
-            m_canaryApp.GetUploadTransport()->GetEndPointMonitorManager()->GenerateEndPointCSV();
+            std::shared_ptr<StringStream> uploadCSVContents =
+                m_canaryApp.GetUploadTransport()->GetEndPointMonitorManager()->GenerateEndPointCSV();
 
-        std::shared_ptr<Io::StdIOStreamInputStream> uploadCSVContentsStream =
-            MakeShared<Io::StdIOStreamInputStream>(g_allocator, uploadCSVContents);
+            std::shared_ptr<Io::StdIOStreamInputStream> uploadCSVContentsStream =
+                MakeShared<Io::StdIOStreamInputStream>(g_allocator, uploadCSVContents);
 
-        ++numFilesBeingUploaded;
+            ++numFilesBeingUploaded;
 
-        transport->PutObject(
-            nullptr,
-            s3Path + "uploadEndpoints.csv",
-            uploadCSVContentsStream,
-            0,
-            nullptr,
-            [&signal, &numFilesUploaded](int32_t, std::shared_ptr<Aws::Crt::String>) {
-                ++numFilesUploaded;
-                signal.notify_one();
-            });
-    }
+            transport->PutObject(
+                nullptr,
+                s3Path + "uploadEndpoints.csv",
+                uploadCSVContentsStream,
+                0,
+                nullptr,
+                [&signal, &numFilesUploaded](int32_t, std::shared_ptr<Aws::Crt::String>) {
+                    ++numFilesUploaded;
+                    signal.notify_one();
+                });
+        }
 
-    if (m_canaryApp.GetDownloadTransport()->GetEndPointMonitorManager() != nullptr)
-    {
-        AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading endpoint download rate dump.");
+        if (m_canaryApp.GetDownloadTransport()->GetEndPointMonitorManager() != nullptr)
+        {
+            AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading endpoint download rate dump.");
 
-        std::shared_ptr<StringStream> downloadCSVContents =
-            m_canaryApp.GetDownloadTransport()->GetEndPointMonitorManager()->GenerateEndPointCSV();
+            std::shared_ptr<StringStream> downloadCSVContents =
+                m_canaryApp.GetDownloadTransport()->GetEndPointMonitorManager()->GenerateEndPointCSV();
 
-        std::shared_ptr<Io::StdIOStreamInputStream> downloadCSVContentsStream =
-            MakeShared<Io::StdIOStreamInputStream>(g_allocator, downloadCSVContents);
+            std::shared_ptr<Io::StdIOStreamInputStream> downloadCSVContentsStream =
+                MakeShared<Io::StdIOStreamInputStream>(g_allocator, downloadCSVContents);
 
-        ++numFilesBeingUploaded;
+            ++numFilesBeingUploaded;
 
-        transport->PutObject(
-            nullptr,
-            s3Path + "downloadEndpoints.csv",
-            downloadCSVContentsStream,
-            0,
-            nullptr,
-            [&signal, &numFilesUploaded](int32_t, std::shared_ptr<Aws::Crt::String>) {
-                ++numFilesUploaded;
-                signal.notify_one();
-            });
-    }
-*/
+            transport->PutObject(
+                nullptr,
+                s3Path + "downloadEndpoints.csv",
+                downloadCSVContentsStream,
+                0,
+                nullptr,
+                [&signal, &numFilesUploaded](int32_t, std::shared_ptr<Aws::Crt::String>) {
+                    ++numFilesUploaded;
+                    signal.notify_one();
+                });
+        }
+    */
 
     std::unique_lock<std::mutex> signalLock(signalMutex);
     signal.wait(signalLock, [&numFilesUploaded, numFilesBeingUploaded]() {
@@ -1380,7 +1377,6 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
         s3Path,
         0,
         [transport, &contents](const Http::HttpStream &, const ByteCursor &cur) { contents << cur.ptr; },
-        nullptr,
         [transport, &signalMutex, &signal, &signalVal](int32_t errorCode) {
             if (errorCode != AWS_ERROR_SUCCESS)
             {
@@ -1602,8 +1598,9 @@ void MetricsPublisher::s_OnPollingTask(aws_task *task, void *arg, aws_task_statu
         return;
     }
 
-    std::shared_ptr<S3ObjectTransport> uploadTransport = publisher->m_canaryApp.GetUploadTransport();
-    std::shared_ptr<S3ObjectTransport> downloadTransport = publisher->m_canaryApp.GetDownloadTransport();
+    /* TODO weird that these reference the same object now. */
+    std::shared_ptr<S3ObjectTransport> uploadTransport = publisher->m_canaryApp.GetTransport();
+    std::shared_ptr<S3ObjectTransport> downloadTransport = publisher->m_canaryApp.GetTransport();
 
     publisher->PollMetricsForS3ObjectTransport(uploadTransport, (uint32_t)MetricName::UploadTransportMetricStart);
     publisher->PollMetricsForS3ObjectTransport(downloadTransport, (uint32_t)MetricName::DownloadTransportMetricStart);

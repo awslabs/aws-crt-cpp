@@ -24,7 +24,6 @@
 #include <queue>
 #include <set>
 
-#include "MultipartTransferState.h"
 #include "TransferState.h"
 
 class CanaryApp;
@@ -38,17 +37,6 @@ enum class EPutObjectFlags : uint32_t
 
 using GetObjectFinished = std::function<void(int32_t errorCode)>;
 using PutObjectFinished = std::function<void(int32_t errorCode, std::shared_ptr<Aws::Crt::String> etag)>;
-
-using PutObjectMultipartFinished = std::function<void(int32_t errorCode, uint32_t numParts)>;
-using GetObjectMultipartFinished = std::function<void(int32_t errorCode)>;
-
-using GetPartStream =
-    std::function<std::shared_ptr<Aws::Crt::Io::InputStream>(const std::shared_ptr<TransferState> &transferState)>;
-using ReceivePartCallback =
-    std::function<void(const std::shared_ptr<TransferState> &transferState, const Aws::Crt::ByteCursor &data)>;
-
-using TransferConnectionAcquired =
-    std::function<void(std::shared_ptr<Aws::Crt::Http::HttpClientConnection> connection, int32_t errorCode)>;
 
 namespace Aws
 {
@@ -87,7 +75,6 @@ class S3ObjectTransport
         const Aws::Crt::String &key,
         const std::shared_ptr<Aws::Crt::Io::InputStream> &inputStream,
         std::uint32_t flags,
-        const TransferConnectionAcquired &connectionCallback,
         const PutObjectFinished &finishedCallback);
 
     /*
@@ -98,96 +85,30 @@ class S3ObjectTransport
         const Aws::Crt::String &key,
         std::uint32_t partNumber,
         Aws::Crt::Http::OnIncomingBody onIncomingBody,
-        const TransferConnectionAcquired &connectionCallback,
         const GetObjectFinished &getObjectFinished);
-
-    /*
-     * Upload a multipart object.
-     */
-    std::shared_ptr<MultipartUploadState> PutObjectMultipart(
-        const Aws::Crt::String &key,
-        std::uint64_t objectSize,
-        std::uint32_t numParts,
-        const GetPartStream &getPartStream,
-        const PutObjectMultipartFinished &finishedCallback);
-
-    /*
-     * Download a multipart object.
-     */
-    std::shared_ptr<MultipartDownloadState> GetObjectMultipart(
-        const Aws::Crt::String &key,
-        std::uint32_t numParts,
-        const ReceivePartCallback &receivePart,
-        const GetObjectMultipartFinished &finishedCallback);
 
     /*
      * Given a number of transfers, resolve the appropriate amount of DNS addresses.
      */
     void WarmDNSCache(uint32_t numTransfers);
 
-    const std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> &GetConnectionManager() { return m_connManager; }
-
+    /*
     const std::shared_ptr<Aws::Crt::Io::EndPointMonitorManager> &GetEndPointMonitorManager()
     {
         return m_endPointMonitorManager;
     }
+    */
 
   private:
-    using SignedRequestCallback =
-        std::function<void(const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &conn, int32_t errorCode)>;
-    using CreateMultipartUploadFinished = std::function<void(int32_t error, const Aws::Crt::String &uploadId)>;
-    using CompleteMultipartUploadFinished = std::function<void(int32_t error)>;
-    using AbortMultipartUploadFinished = std::function<void(int32_t error)>;
-    using AcquireConnManagerCallback = std::function<void(
-        const std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> &connManager,
-        const Aws::Crt::String &address)>;
-
     CanaryApp &m_canaryApp;
     const Aws::Crt::String m_bucketName;
     Aws::Crt::Http::HttpHeader m_hostHeader;
     Aws::Crt::Http::HttpHeader m_contentTypeHeader;
     Aws::Crt::String m_endpoint;
 
-    std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> m_connManager;
-    std::shared_ptr<Aws::Crt::Io::EndPointMonitorManager> m_endPointMonitorManager;
-
-    uint64_t m_minThroughputBytes;
-
-    void MakeSignedRequest(
-        const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &connection,
-        const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
-        const Aws::Crt::Http::HttpRequestOptions &requestOptions,
-        SignedRequestCallback callback);
-
-    void MakeSignedRequest_SendRequest(
-        const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &conn,
-        const Aws::Crt::Http::HttpRequestOptions &requestOptions,
-        const std::shared_ptr<Aws::Crt::Http::HttpRequest> &signedRequest);
+    // std::shared_ptr<Aws::Crt::Io::EndPointMonitorManager> m_endPointMonitorManager;
 
     void AddContentLengthHeader(
         const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
         const std::shared_ptr<Aws::Crt::Io::InputStream> &body);
-
-    void UploadNextPart(
-        const std::shared_ptr<MultipartUploadState> &state,
-        const GetPartStream &getPartStream,
-        const PutObjectMultipartFinished &finishedCallback);
-
-    void GetNextPart(
-        const std::shared_ptr<MultipartDownloadState> &multipartState,
-        const ReceivePartCallback &receiveObjectPartData,
-        const GetObjectMultipartFinished &finishedCallback);
-
-    void CreateMultipartUpload(const Aws::Crt::String &key, const CreateMultipartUploadFinished &finishedCallback);
-
-    void CompleteMultipartUpload(
-        const Aws::Crt::String &key,
-        const Aws::Crt::String &uploadId,
-        const Aws::Crt::Vector<Aws::Crt::String> &etags,
-        const CompleteMultipartUploadFinished &finishedCallback);
-
-    void AbortMultipartUpload(
-        const Aws::Crt::String &key,
-        const Aws::Crt::String &uploadId,
-        const AbortMultipartUploadFinished &finishedCallback);
 };

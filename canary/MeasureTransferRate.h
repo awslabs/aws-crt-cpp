@@ -48,11 +48,6 @@ class MeasureTransferRate
      */
     void MeasureSinglePartObjectTransfer();
 
-    /*
-     * Measure upload/download speed of multipart objects from S3.
-     */
-    void MeasureMultiPartObjectTransfer();
-
   private:
     enum MeasurementFlags
     {

@@ -28,17 +28,10 @@
 class TransferState : public std::enable_shared_from_this<TransferState>
 {
   public:
+    /* TODO Meta request gets tracked here. */
+
     TransferState();
     TransferState(int32_t partIndex);
-
-    int32_t GetPartIndex() const { return m_partIndex; }
-    int32_t GetPartNumber() const { return m_partIndex + 1; }
-
-    void SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &connection);
-
-    std::shared_ptr<Aws::Crt::Http::HttpClientConnection> GetConnection() const { return m_connection.lock(); }
-
-    const Aws::Crt::String &GetHostAddress() { return m_hostAddress; }
 
     bool HasDataUpMetrics() { return !m_uploadMetrics.empty(); }
 
@@ -104,7 +97,6 @@ class TransferState : public std::enable_shared_from_this<TransferState>
     uint64_t m_dataUsedRateSum;
     uint64_t m_dataUsedRateTimestamp;
 
-    int32_t m_partIndex;
     uint64_t m_transferId;
     uint64_t m_queuedDataUp;
     uint32_t m_transferSuccess : 1;
@@ -115,7 +107,6 @@ class TransferState : public std::enable_shared_from_this<TransferState>
     Aws::Crt::Vector<Metric> m_uploadMetrics;
     Aws::Crt::Vector<Metric> m_downloadMetrics;
 
-    std::weak_ptr<Aws::Crt::Http::HttpClientConnection> m_connection;
     std::weak_ptr<MetricsPublisher> m_publisher;
 
     static uint64_t GetNextTransferId();

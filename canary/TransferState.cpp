@@ -38,8 +38,7 @@ uint64_t TransferState::GetNextTransferId()
 TransferState::TransferState() : TransferState(-1) {}
 
 TransferState::TransferState(int32_t partIndex)
-    : m_partIndex(partIndex), m_transferId(TransferState::GetNextTransferId()), m_queuedDataUp(0ULL),
-      m_transferSuccess(false)
+    : m_transferId(TransferState::GetNextTransferId()), m_queuedDataUp(0ULL), m_transferSuccess(false)
 {
 }
 
@@ -229,33 +228,36 @@ void TransferState::UpdateRateTracking(uint64_t dataUsed, bool forceFlush)
 
     if ((forceFlush && m_dataUsedRateSum > 0ULL) || dataUsedRateTimeInterval > 1000ULL)
     {
-/*        double dataUsedRateTimeIntervalSeconds = (double)dataUsedRateTimeInterval / 1000.0;
+        /*        double dataUsedRateTimeIntervalSeconds = (double)dataUsedRateTimeInterval / 1000.0;
 
-        uint64_t perSecondRate = (uint64_t)((double)m_dataUsedRateSum / dataUsedRateTimeIntervalSeconds);
+                uint64_t perSecondRate = (uint64_t)((double)m_dataUsedRateSum / dataUsedRateTimeIntervalSeconds);
 
-        std::shared_ptr<Http::HttpClientConnection> connection = m_connection.lock();
+                std::shared_ptr<Http::HttpClientConnection> connection = m_connection.lock();
 
-        if (connection == nullptr)
-        {
-            AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "TransferState::UpdateRateTracking - Attached connection is null.");
-        }
-        else
-        {
-            
-            Io::EndPointMonitor *monitor =
-                (Io::EndPointMonitor *)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle());
+                if (connection == nullptr)
+                {
+                    AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "TransferState::UpdateRateTracking - Attached connection is
+           null.");
+                }
+                else
+                {
 
-            if (monitor != nullptr)
-            {
-                monitor->AddSample(perSecondRate);
-            }
-            else
-            {
-                //    AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "TransferState::UpdateRateTracking - Attached monitor is
-                //    null.");
-            }
-        }
-*/
+                    Io::EndPointMonitor *monitor =
+                        (Io::EndPointMonitor
+           *)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle());
+
+                    if (monitor != nullptr)
+                    {
+                        monitor->AddSample(perSecondRate);
+                    }
+                    else
+                    {
+                        //    AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "TransferState::UpdateRateTracking - Attached
+           monitor is
+                        //    null.");
+                    }
+                }
+        */
         m_dataUsedRateTimestamp = now;
         m_dataUsedRateSum = 0;
     }
@@ -281,29 +283,6 @@ void TransferState::ProcessHeaders(const Http::HttpHeader *headersArray, size_t 
     }
 }
 
-void TransferState::SetConnection(const std::shared_ptr<Aws::Crt::Http::HttpClientConnection> &connection)
-{
-    m_connection = connection;
-
-    if (connection == nullptr)
-    {
-        return;
-    }
-
-    m_hostAddress = connection->GetHostAddress();
-/*
-    Io::EndPointMonitor *endPointMonitor =
-        (Io::EndPointMonitor *)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle());
-
-    if (endPointMonitor != nullptr && endPointMonitor->IsInFailTable())
-    {
-        AWS_LOGF_INFO(
-            AWS_LS_CRT_CPP_CANARY,
-            "TransferState::SetConnection - Connection being set on transfer state that has a fail-listed endpoint.");
-    }
-*/
-}
-
 void TransferState::SetTransferSuccess(bool success)
 {
     ConsumeQueuedDataUpMetric();
@@ -311,40 +290,41 @@ void TransferState::SetTransferSuccess(bool success)
     m_transferSuccess = success;
 
     UpdateRateTracking(0ULL, true);
+    /*
+        std::shared_ptr<Http::HttpClientConnection> connection = GetConnection();
 
-    std::shared_ptr<Http::HttpClientConnection> connection = GetConnection();
+        if (connection == nullptr)
+        {
+            AWS_LOGF_ERROR(
+                AWS_LS_CRT_CPP_CANARY,
+                "TransferState::SetTransferSuccess - No connection currently exists for TransferState");
+            return;
+        }
 
-    if (connection == nullptr)
-    {
-        AWS_LOGF_ERROR(
-            AWS_LS_CRT_CPP_CANARY,
-            "TransferState::SetTransferSuccess - No connection currently exists for TransferState");
-        return;
-    }
-/*
-    Io::EndPointMonitor *endPointMonitor =
-        connection != nullptr
-            ? (Io::EndPointMonitor *)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle())
-            : nullptr;
+        Io::EndPointMonitor *endPointMonitor =
+            connection != nullptr
+                ? (Io::EndPointMonitor *)aws_http_connection_get_endpoint_monitor(connection->GetUnderlyingHandle())
+                : nullptr;
 
-    if (endPointMonitor == nullptr)
-    {
-        AWS_LOGF_INFO(
-            AWS_LS_CRT_CPP_CANARY,
-            "TransferState::SetTransferSuccess - No Endpoint Monitor currently exists for TransferState");
-        return;
-    }
+        if (endPointMonitor == nullptr)
+        {
+            AWS_LOGF_INFO(
+                AWS_LS_CRT_CPP_CANARY,
+                "TransferState::SetTransferSuccess - No Endpoint Monitor currently exists for TransferState");
+            return;
+        }
 
-    if (endPointMonitor->IsInFailTable())
-    {
-        AWS_LOGF_INFO(
-            AWS_LS_CRT_CPP_CANARY,
-            "TransferState::SetTransferSuccess - Cnnection's endpoint is in the fail table, force closing connection.");
+        if (endPointMonitor->IsInFailTable())
+        {
+            AWS_LOGF_INFO(
+                AWS_LS_CRT_CPP_CANARY,
+                "TransferState::SetTransferSuccess - Cnnection's endpoint is in the fail table, force closing
+       connection.");
 
-        // Force connection to close so that it doesn't go back into the pool.
-        connection->Close();
-    }
-*/
+            // Force connection to close so that it doesn't go back into the pool.
+            connection->Close();
+        }
+    */
 }
 
 void TransferState::InitDataUpMetric()
