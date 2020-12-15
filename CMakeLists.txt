@@ -84,6 +84,8 @@ if (BUILD_DEPS)
     add_subdirectory(crt/aws-c-mqtt)
     add_subdirectory(crt/aws-checksums)
     add_subdirectory(crt/aws-c-event-stream)
+    add_subdirectory(crt/aws-c-s3)
+
     set(BUILD_TESTING ${BUILD_TESTING_PREV})
 else()
     include(AwsFindPackage)
@@ -249,6 +251,7 @@ aws_use_package(aws-c-common)
 aws_use_package(aws-c-io)
 aws_use_package(aws-checksums)
 aws_use_package(aws-c-event-stream)
+aws_use_package(aws-c-s3)
 
 target_link_libraries(${PROJECT_NAME} ${DEP_AWS_LIBS})
 
