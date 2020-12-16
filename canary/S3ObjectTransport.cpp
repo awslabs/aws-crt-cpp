@@ -58,6 +58,7 @@ S3ObjectTransport::S3ObjectTransport(
     client_config.signing_config = &signing_config;
     client_config.shutdown_callback = CanaryApp::ShutdownCallbackDecRefCount;
     client_config.shutdown_callback_user_data = NULL;
+    client_config.throughput_target_gbps = canaryApp.GetOptions().targetThroughputGbps;
 
     CanaryApp::IncResourceRefCount();
     m_client = aws_s3_client_new(g_allocator, &client_config);

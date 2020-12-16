@@ -98,7 +98,7 @@ class CanaryApp
     const std::shared_ptr<MetricsPublisher> &GetMetricsPublisher() const { return m_publisher; }
     const std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> &GetCredsProvider() const { return m_credsProvider; }
     const std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> &GetSigner() const { return m_signer; }
-    const std::shared_ptr<S3ObjectTransport> &GetTransport() const { return m_uploadTransport; }
+    const std::shared_ptr<S3ObjectTransport> &GetTransport() const { return m_transport; }
     const std::shared_ptr<MeasureTransferRate> &GetMeasureTransferRate() const { return m_measureTransferRate; }
 
   private:
@@ -117,7 +117,6 @@ class CanaryApp
     std::shared_ptr<MetricsPublisher> m_publisher;
     std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> m_credsProvider;
     std::shared_ptr<Aws::Crt::Auth::Sigv4HttpRequestSigner> m_signer;
-    std::shared_ptr<S3ObjectTransport> m_uploadTransport;
-    std::shared_ptr<S3ObjectTransport> m_downloadTransport;
+    std::shared_ptr<S3ObjectTransport> m_transport;
     std::shared_ptr<MeasureTransferRate> m_measureTransferRate;
 };
