@@ -880,15 +880,13 @@ String MetricsPublisher::UploadBackup(uint32_t options)
 
         ++numFilesBeingUploaded;
 
-        transport->PutObject(
-            nullptr,
-            backupPath,
-            metricsBackupContentsStream,
-            0,
-            [&signal, &numFilesUploaded](int32_t, std::shared_ptr<Aws::Crt::String>) {
-                ++numFilesUploaded;
-                signal.notify_one();
-            });
+        std::shared_ptr<TransferState> transferState = std::make_shared<TransferState>();
+        transferState->SetFinishCallback([&signal, &numFilesUploaded](int32_t errorCode) {
+            ++numFilesUploaded;
+            signal.notify_one();
+        });
+
+        transport->PutObject(transferState, backupPath, metricsBackupContentsStream);
     }
 
     Map<AggregateMetricKey, size_t> aggregateDataPointsLU;
@@ -914,15 +912,13 @@ String MetricsPublisher::UploadBackup(uint32_t options)
 
         ++numFilesBeingUploaded;
 
-        transport->PutObject(
-            nullptr,
-            s3Path + "uploadStreams.csv",
-            uploadCSVContentsStream,
-            0,
-            [&signal, &numFilesUploaded](int32_t, std::shared_ptr<Aws::Crt::String>) {
-                ++numFilesUploaded;
-                signal.notify_one();
-            });
+        std::shared_ptr<TransferState> transferState = std::make_shared<TransferState>();
+        transferState->SetFinishCallback([&signal, &numFilesUploaded](int32_t errorCode) {
+            ++numFilesUploaded;
+            signal.notify_one();
+        });
+
+        transport->PutObject(transferState, s3Path + "uploadStreams.csv", uploadCSVContentsStream);
     }
 
     {
@@ -936,15 +932,13 @@ String MetricsPublisher::UploadBackup(uint32_t options)
 
         ++numFilesBeingUploaded;
 
-        transport->PutObject(
-            nullptr,
-            s3Path + "downloadStreams.csv",
-            downloadCSVContentsStream,
-            0,
-            [&signal, &numFilesUploaded](int32_t, std::shared_ptr<Aws::Crt::String>) {
-                ++numFilesUploaded;
-                signal.notify_one();
-            });
+        std::shared_ptr<TransferState> transferState = std::make_shared<TransferState>();
+        transferState->SetFinishCallback([&signal, &numFilesUploaded](int32_t errorCode) {
+            ++numFilesUploaded;
+            signal.notify_one();
+        });
+
+        transport->PutObject(transferState, s3Path + "downloadStreams.csv", downloadCSVContentsStream);
     }
 
     /*
@@ -1372,25 +1366,28 @@ void MetricsPublisher::RehydrateBackup(const char *s3Path)
     std::condition_variable signal;
     bool signalVal = false;
 
-    transport->GetObject(
-        nullptr,
-        s3Path,
-        0,
-        [transport, &contents](const Http::HttpStream &, const ByteCursor &cur) { contents << cur.ptr; },
-        [transport, &signalMutex, &signal, &signalVal](int32_t errorCode) {
-            if (errorCode != AWS_ERROR_SUCCESS)
-            {
-                AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Failed to rehydrate file: file download returned error.");
-                return;
-            }
-
-            {
-                std::lock_guard<std::mutex> locker(signalMutex);
-                signalVal = true;
-            }
-
-            signal.notify_one();
+    std::shared_ptr<TransferState> transferState = std::make_shared<TransferState>();
+    transferState->SetIncomingBodyCallback(
+        [transport, &contents](const struct aws_byte_cursor *body, uint64_t range_start) {
+            contents << body->ptr; /* TODO should make sure this only ever writes the length of the body byte cursor*/
         });
+
+    transferState->SetFinishCallback([transport, &signalMutex, &signal, &signalVal](int32_t errorCode) {
+        if (errorCode != AWS_ERROR_SUCCESS)
+        {
+            AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Failed to rehydrate file: file download returned error.");
+            return;
+        }
+
+        {
+            std::lock_guard<std::mutex> locker(signalMutex);
+            signalVal = true;
+        }
+
+        signal.notify_one();
+    });
+
+    transport->GetObject(transferState, s3Path);
 
     std::unique_lock<std::mutex> lock(signalMutex);
     signal.wait(lock, [&signalVal]() { return signalVal; });

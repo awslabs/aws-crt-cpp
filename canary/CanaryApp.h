@@ -79,6 +79,12 @@ struct CanaryAppOptions
 class CanaryApp
 {
   public:
+    static void IncResourceRefCount();
+    static void DecResourceRefCount();
+    static void WaitForZeroResourceRefCount();
+    
+    static void ShutdownCallbackDecRefCount(void *user_data);
+
     CanaryApp(Aws::Crt::ApiHandle &apiHandle, CanaryAppOptions &&options) noexcept;
 
     void Run();
@@ -96,6 +102,11 @@ class CanaryApp
     const std::shared_ptr<MeasureTransferRate> &GetMeasureTransferRate() const { return m_measureTransferRate; }
 
   private:
+
+    static uint32_t s_resourceRefCount;
+    static std::mutex s_resourceRefCountMutex;
+    static std::condition_variable s_resourceRefCountSignal;
+
     Aws::Crt::ApiHandle &m_apiHandle;
     CanaryAppOptions m_options;
 

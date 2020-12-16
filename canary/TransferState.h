@@ -16,6 +16,10 @@
 
 #include "MetricsPublisher.h"
 #include <aws/crt/Types.h>
+#include <aws/s3/s3.h>
+
+using TransferStateFinishCallback = std::function<void(int32_t errorCode)>;
+using TransferStateIncomingBodyCallback = std::function<void(const struct aws_byte_cursor *body, uint64_t range_start)>;
 
 /*
  * TransferState represents an individual transfer, which can be an entire object, or an individual part of a multipart
@@ -28,12 +32,29 @@
 class TransferState : public std::enable_shared_from_this<TransferState>
 {
   public:
-    /* TODO Meta request gets tracked here. */
+    static void StaticIncomingHeaders(
+        struct aws_s3_meta_request *meta_request,
+        const struct aws_http_headers *headers,
+        int response_status,
+        void *user_data);
+
+    static void StaticIncomingBody(
+        struct aws_s3_meta_request *meta_request,
+        const struct aws_byte_cursor *body,
+        uint64_t range_start,
+        void *user_data);
+
+    static void StaticFinish(
+        struct aws_s3_meta_request *meta_request,
+        const struct aws_s3_meta_request_result *meta_request_result,
+        void *user_data);
 
     TransferState();
-    TransferState(int32_t partIndex);
+    ~TransferState();
 
     bool HasDataUpMetrics() { return !m_uploadMetrics.empty(); }
+
+    bool HasDataDownMetrics() { return !m_downloadMetrics.empty(); }
 
     void QueueDataUpMetric(uint64_t dataUsed) { m_queuedDataUp = dataUsed; }
 
@@ -48,11 +69,21 @@ class TransferState : public std::enable_shared_from_this<TransferState>
         m_queuedDataUp = 0ULL;
     }
 
+    void IncomingHeaders(
+        struct aws_s3_meta_request *meta_request,
+        const struct aws_http_headers *headers,
+        int response_status);
+
+    void IncomingBody(
+        struct aws_s3_meta_request *meta_request,
+        const struct aws_byte_cursor *body,
+        uint64_t range_start);
+
     /*
      * Flags this is a success or failure, which will be reported as a metric on a flush
-     * of one of up or down metrics.
+     * of either of up or down metrics.
      */
-    void SetTransferSuccess(bool success);
+    void Finish(struct aws_s3_meta_request *meta_request, const struct aws_s3_meta_request_result *meta_request_result);
 
     /*
      * Initializes data up metric, setting a start time for when the upload started.
@@ -89,7 +120,17 @@ class TransferState : public std::enable_shared_from_this<TransferState>
     const Aws::Crt::String &GetAmzRequestId() const { return m_amzRequestId; }
     const Aws::Crt::String &GetAmzId2() const { return m_amzId2; }
 
-    void ProcessHeaders(const Aws::Crt::Http::HttpHeader *headersArray, size_t headersCount);
+    void SetMetaRequest(aws_s3_meta_request *meta_request)
+    {
+        m_meta_request = meta_request;
+    }
+
+    void SetIncomingBodyCallback(const TransferStateIncomingBodyCallback &&incomingBodyCallback)
+    {
+        m_incomingBodyCallback = incomingBodyCallback;
+    }
+
+    void SetFinishCallback(const TransferStateFinishCallback &&finishCallback) { m_finishCallback = finishCallback; }
 
   private:
     static std::atomic<uint64_t> s_nextTransferId;
@@ -108,6 +149,10 @@ class TransferState : public std::enable_shared_from_this<TransferState>
     Aws::Crt::Vector<Metric> m_downloadMetrics;
 
     std::weak_ptr<MetricsPublisher> m_publisher;
+    aws_s3_meta_request *m_meta_request;
+
+    TransferStateIncomingBodyCallback m_incomingBodyCallback;
+    TransferStateFinishCallback m_finishCallback;
 
     static uint64_t GetNextTransferId();
 

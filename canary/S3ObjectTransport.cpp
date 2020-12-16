@@ -31,11 +31,6 @@
 
 using namespace Aws::Crt;
 
-namespace
-{
-    const int32_t S3GetObjectResponseStatus_PartialContent = 206;
-} // namespace
-
 S3ObjectTransport::S3ObjectTransport(
     CanaryApp &canaryApp,
     const Aws::Crt::String &bucket,
@@ -50,6 +45,22 @@ S3ObjectTransport::S3ObjectTransport(
 
     m_contentTypeHeader.name = ByteCursorFromCString("content-type");
     m_contentTypeHeader.value = ByteCursorFromCString("text/plain");
+
+    struct aws_signing_config_aws signing_config;
+    aws_s3_init_default_signing_config(
+        &signing_config,
+        aws_byte_cursor_from_c_str(m_canaryApp.GetOptions().region.c_str()),
+        m_canaryApp.GetCredsProvider()->GetUnderlyingHandle());
+
+    struct aws_s3_client_config client_config;
+    AWS_ZERO_STRUCT(client_config);
+    client_config.client_bootstrap = m_canaryApp.GetBootstrap().GetUnderlyingHandle();
+    client_config.signing_config = &signing_config;
+    client_config.shutdown_callback = CanaryApp::ShutdownCallbackDecRefCount;
+    client_config.shutdown_callback_user_data = NULL;
+
+    CanaryApp::IncResourceRefCount();
+    m_client = aws_s3_client_new(g_allocator, &client_config);
 
     /*m_minThroughputBytes = minThroughputBytesPerSecond;
 
@@ -100,6 +111,11 @@ S3ObjectTransport::S3ObjectTransport(
             connectionManagerOptions.ConnectionOptions.MonitoringOptions = monitoringOptions;
         }
     }*/
+}
+
+S3ObjectTransport::~S3ObjectTransport()
+{
+    aws_s3_client_release(m_client);
 }
 
 void S3ObjectTransport::WarmDNSCache(uint32_t numTransfers)
@@ -166,9 +182,7 @@ void S3ObjectTransport::AddContentLengthHeader(
 void S3ObjectTransport::PutObject(
     const std::shared_ptr<TransferState> &transferState,
     const Aws::Crt::String &key,
-    const std::shared_ptr<Io::InputStream> &body,
-    uint32_t flags,
-    const PutObjectFinished &finishedCallback)
+    const std::shared_ptr<Io::InputStream> &body)
 {
     AWS_FATAL_ASSERT(body.get() != nullptr);
 
@@ -188,239 +202,47 @@ void S3ObjectTransport::PutObject(
     ByteCursor path = ByteCursorFromCString(keyPath.c_str());
     request->SetPath(path);
 
+    SendMetaRequest(transferState, AWS_S3_META_REQUEST_TYPE_PUT_OBJECT, request->GetUnderlyingMessage());
+
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "PutObject initiated for path %s...", keyPath.c_str());
-
-    std::shared_ptr<String> etag = nullptr;
-
-    if ((flags & (uint32_t)EPutObjectFlags::RetrieveETag) != 0)
-    {
-        etag = MakeShared<String>(g_allocator);
-    }
-
-    Http::HttpRequestOptions requestOptions;
-    requestOptions.request = nullptr;
-
-    /* TODO Header callback.  Ignore ETag*/
-    requestOptions.onIncomingHeaders = [etag, transferState](
-                                           Http::HttpStream &stream,
-                                           enum aws_http_header_block headerBlock,
-                                           const Http::HttpHeader *headersArray,
-                                           std::size_t headersCount) {
-        (void)stream;
-        (void)headerBlock;
-
-        if (transferState != nullptr)
-        {
-            transferState->ProcessHeaders(headersArray, headersCount);
-        }
-
-        if (etag == nullptr)
-        {
-            return;
-        }
-
-        for (size_t i = 0; i < headersCount; ++i)
-        {
-            const aws_byte_cursor &name = headersArray[i].name;
-
-            if (aws_byte_cursor_eq_c_str(&name, "ETag"))
-            {
-                const aws_byte_cursor &value = headersArray[i].value;
-                *etag = String((const char *)value.ptr, value.len);
-            }
-        }
-    };
-
-    /* TODO Finish callback.  Ignore ETags. */
-    requestOptions.onStreamComplete =
-        [transferState, keyPath, etag, finishedCallback](Http::HttpStream &stream, int errorCode) {
-            if (errorCode == AWS_ERROR_SUCCESS)
-            {
-                if (stream.GetResponseStatusCode() != 200)
-                {
-                    errorCode = AWS_ERROR_UNKNOWN;
-                }
-
-                aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_INFO;
-
-                AWS_LOGF(
-                    logLevel,
-                    AWS_LS_CRT_CPP_CANARY,
-                    "PutObject finished for path %s with response status %d",
-                    keyPath.c_str(),
-                    stream.GetResponseStatusCode());
-            }
-            else
-            {
-                AWS_LOGF_DEBUG(
-                    AWS_LS_CRT_CPP_CANARY,
-                    "PutObject finished for path %s with error '%s'",
-                    keyPath.c_str(),
-                    aws_error_debug_str(errorCode));
-            }
-
-            if (transferState != nullptr)
-            {
-                transferState->SetTransferSuccess(errorCode == AWS_ERROR_SUCCESS);
-            }
-
-            finishedCallback(errorCode, etag);
-        };
-
-    /*
-        std::shared_ptr<Http::HttpClientConnection> existingConn =
-            transferState != nullptr ? transferState->GetConnection() : nullptr;
-
-        MakeSignedRequest(
-            existingConn,
-            request,
-            requestOptions,
-            [keyPath, transferState, connectionCallback, finishedCallback](
-                std::shared_ptr<Http::HttpClientConnection> conn, int32_t errorCode) {
-                if (connectionCallback)
-                {
-                    connectionCallback(conn, errorCode);
-                }
-
-                if (errorCode != AWS_ERROR_SUCCESS)
-                {
-                    AWS_LOGF_ERROR(AWS_LS_CRT_CPP_CANARY, "Making signed request failed with error code %d", errorCode);
-                    finishedCallback(errorCode, nullptr);
-                }
-                else
-                {
-                    if (transferState != nullptr)
-                    {
-                        transferState->SetConnection(conn);
-                    }
-                }
-            });
-        */
 }
 
-void S3ObjectTransport::GetObject(
-    const std::shared_ptr<TransferState> &transferState,
-    const Aws::Crt::String &key,
-    uint32_t partNumber,
-    Aws::Crt::Http::OnIncomingBody onIncomingBody,
-    const GetObjectFinished &getObjectFinished)
+void S3ObjectTransport::GetObject(const std::shared_ptr<TransferState> &transferState, const Aws::Crt::String &key)
 {
     auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
     request->AddHeader(m_hostHeader);
-
     request->SetMethod(aws_http_method_get);
 
     StringStream keyPathStream;
     keyPathStream << "/" << key;
 
-    if (partNumber > 0)
-    {
-        keyPathStream << "?partNumber=" << partNumber;
-    }
-
     String keyPath = keyPathStream.str();
     ByteCursor path = ByteCursorFromCString(keyPath.c_str());
     request->SetPath(path);
 
-    Http::HttpRequestOptions requestOptions;
-    requestOptions.request = nullptr;
+    SendMetaRequest(transferState, AWS_S3_META_REQUEST_TYPE_GET_OBJECT, request->GetUnderlyingMessage());
 
-    /* TODO Body Callback. InitDataDown metric here too. */
-    requestOptions.onIncomingBody = [transferState, onIncomingBody](Http::HttpStream &stream, const ByteCursor &cur) {
-        if (transferState != nullptr)
-        {
-            transferState->AddDataDownMetric(cur.len);
-        }
+    AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "GetObject initiated for path %s...", keyPath.c_str());
+}
 
-        if (onIncomingBody != nullptr)
-        {
-            onIncomingBody(stream, cur);
-        }
-    };
+void S3ObjectTransport::SendMetaRequest(
+    const std::shared_ptr<TransferState> &transferState,
+    enum aws_s3_meta_request_type meta_request_type,
+    struct aws_http_message *message)
+{
+    aws_s3_meta_request_options meta_request_options;
+    AWS_ZERO_STRUCT(meta_request_options);
+    meta_request_options.headers_callback = TransferState::StaticIncomingHeaders;
+    meta_request_options.body_callback = TransferState::StaticIncomingBody;
+    meta_request_options.finish_callback = TransferState::StaticFinish;
+    meta_request_options.shutdown_callback = CanaryApp::ShutdownCallbackDecRefCount;
+    meta_request_options.user_data = transferState.get();
+    meta_request_options.type = meta_request_type;
+    meta_request_options.message = message;
 
-    /* TODO Header callback. */
-    requestOptions.onIncomingHeaders = [transferState](
-                                           Http::HttpStream &stream,
-                                           enum aws_http_header_block headerBlock,
-                                           const Http::HttpHeader *headersArray,
-                                           std::size_t headersCount) {
-        if (transferState != nullptr)
-        {
-            transferState->ProcessHeaders(headersArray, headersCount);
-        }
-    };
+    aws_s3_meta_request *meta_request = aws_s3_client_make_meta_request(m_client, &meta_request_options);
+    AWS_ASSERT(meta_request != nullptr);
 
-    /* TODO Finish callback. */
-    requestOptions.onStreamComplete =
-        [keyPath, partNumber, transferState, getObjectFinished](Http::HttpStream &stream, int error) {
-            int errorCode = error;
-
-            if (errorCode == AWS_ERROR_SUCCESS)
-            {
-                int32_t successStatus = partNumber > 0 ? S3GetObjectResponseStatus_PartialContent : 200;
-
-                if (stream.GetResponseStatusCode() != successStatus)
-                {
-                    errorCode = AWS_ERROR_UNKNOWN;
-                }
-
-                aws_log_level logLevel = (errorCode != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_INFO;
-
-                AWS_LOGF(
-                    logLevel,
-                    AWS_LS_CRT_CPP_CANARY,
-                    "GetObject finished for path %s with response status %d",
-                    keyPath.c_str(),
-                    stream.GetResponseStatusCode());
-            }
-            else
-            {
-                AWS_LOGF_ERROR(
-                    AWS_LS_CRT_CPP_CANARY,
-                    "GetObject finished for path %s with error '%s'",
-                    keyPath.c_str(),
-                    aws_error_debug_str(errorCode));
-            }
-
-            if (transferState != nullptr)
-            {
-                transferState->SetTransferSuccess(errorCode == AWS_ERROR_SUCCESS);
-            }
-
-            getObjectFinished(errorCode);
-        };
-    /*
-        std::shared_ptr<Http::HttpClientConnection> existingConn =
-            transferState != nullptr ? transferState->GetConnection() : nullptr;
-
-        MakeSignedRequest(
-            existingConn,
-            request,
-            requestOptions,
-            [transferState, connectionCallback, getObjectFinished](
-                std::shared_ptr<Http::HttpClientConnection> conn, int32_t errorCode) {
-                if (connectionCallback)
-                {
-                    connectionCallback(conn, errorCode);
-                }
-
-                if (errorCode != AWS_ERROR_SUCCESS)
-                {
-                    getObjectFinished(errorCode);
-                }
-                else
-                {
-                    // AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Setting transfer state address to %s", connAddr.c_str());
-                    if (transferState != nullptr)
-                    {
-                        transferState->InitDataDownMetric();
-                    }
-
-                    if (transferState != nullptr)
-                    {
-                        transferState->SetConnection(conn);
-                    }
-                }
-            });
-            */
+    CanaryApp::IncResourceRefCount();
+    transferState->SetMetaRequest(meta_request);
 }

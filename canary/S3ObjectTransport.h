@@ -20,6 +20,7 @@
 #include <aws/crt/auth/Sigv4Signing.h>
 #include <aws/crt/http/HttpConnectionManager.h>
 #include <aws/crt/io/Stream.h>
+#include <aws/s3/s3_client.h>
 
 #include <queue>
 #include <set>
@@ -29,14 +30,6 @@
 class CanaryApp;
 struct aws_allocator;
 struct aws_event_loop;
-
-enum class EPutObjectFlags : uint32_t
-{
-    RetrieveETag = 0x00000001
-};
-
-using GetObjectFinished = std::function<void(int32_t errorCode)>;
-using PutObjectFinished = std::function<void(int32_t errorCode, std::shared_ptr<Aws::Crt::String> etag)>;
 
 namespace Aws
 {
@@ -61,6 +54,7 @@ class S3ObjectTransport
         const Aws::Crt::String &bucket,
         uint32_t maxConnections,
         uint64_t minThroughputBytesPerSecond = 0ULL);
+    ~S3ObjectTransport();
 
     /*
      * Returns the endpoint of the bucket being used.
@@ -73,19 +67,12 @@ class S3ObjectTransport
     void PutObject(
         const std::shared_ptr<TransferState> &transferState,
         const Aws::Crt::String &key,
-        const std::shared_ptr<Aws::Crt::Io::InputStream> &inputStream,
-        std::uint32_t flags,
-        const PutObjectFinished &finishedCallback);
+        const std::shared_ptr<Aws::Crt::Io::InputStream> &inputStream);
 
     /*
      * Get a single part object, or a part of an object.
      */
-    void GetObject(
-        const std::shared_ptr<TransferState> &transferState,
-        const Aws::Crt::String &key,
-        std::uint32_t partNumber,
-        Aws::Crt::Http::OnIncomingBody onIncomingBody,
-        const GetObjectFinished &getObjectFinished);
+    void GetObject(const std::shared_ptr<TransferState> &transferState, const Aws::Crt::String &key);
 
     /*
      * Given a number of transfers, resolve the appropriate amount of DNS addresses.
@@ -106,9 +93,16 @@ class S3ObjectTransport
     Aws::Crt::Http::HttpHeader m_contentTypeHeader;
     Aws::Crt::String m_endpoint;
 
+    struct aws_s3_client *m_client;
+
     // std::shared_ptr<Aws::Crt::Io::EndPointMonitorManager> m_endPointMonitorManager;
 
     void AddContentLengthHeader(
         const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
         const std::shared_ptr<Aws::Crt::Io::InputStream> &body);
+
+    void SendMetaRequest(
+        const std::shared_ptr<TransferState> &transferState,
+        enum aws_s3_meta_request_type meta_request_type,
+        struct aws_http_message *message);
 };

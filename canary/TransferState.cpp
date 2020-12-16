@@ -14,10 +14,11 @@
  */
 
 #include "TransferState.h"
-
+#include "CanaryApp.h"
 #include <aws/common/clock.h>
 #include <aws/common/date_time.h>
 #include <aws/crt/Api.h>
+#include <aws/s3/s3_client.h>
 //#include <aws/crt/io/EndPointMonitor.h>
 #include <aws/http/connection.h>
 #include <cinttypes>
@@ -35,11 +36,14 @@ uint64_t TransferState::GetNextTransferId()
     return s_nextTransferId.fetch_add(1) + 1;
 }
 
-TransferState::TransferState() : TransferState(-1) {}
-
-TransferState::TransferState(int32_t partIndex)
-    : m_transferId(TransferState::GetNextTransferId()), m_queuedDataUp(0ULL), m_transferSuccess(false)
+TransferState::TransferState()
+    : m_transferId(TransferState::GetNextTransferId()), m_queuedDataUp(0ULL), m_transferSuccess(false), m_meta_request(nullptr)
 {
+}
+
+TransferState::~TransferState()
+{
+    aws_s3_meta_request_release(m_meta_request);
 }
 
 void TransferState::DistributeDataUsedOverSeconds(
@@ -263,33 +267,117 @@ void TransferState::UpdateRateTracking(uint64_t dataUsed, bool forceFlush)
     }
 }
 
-void TransferState::ProcessHeaders(const Http::HttpHeader *headersArray, size_t headersCount)
+void TransferState::StaticIncomingHeaders(
+    struct aws_s3_meta_request *meta_request,
+    const struct aws_http_headers *headers,
+    int response_status,
+    void *user_data)
 {
-    for (size_t i = 0; i < headersCount; ++i)
+    if (user_data == nullptr)
     {
-        const Http::HttpHeader *header = &headersArray[i];
-        const aws_byte_cursor &headerName = header->name;
+        return;
+    }
+
+    TransferState *transferState = (TransferState *)user_data;
+    transferState->IncomingHeaders(meta_request, headers, response_status);
+}
+
+void TransferState::StaticIncomingBody(
+    struct aws_s3_meta_request *meta_request,
+    const struct aws_byte_cursor *body,
+    uint64_t range_start,
+    void *user_data)
+{
+    if (user_data == nullptr)
+    {
+        return;
+    }
+
+    TransferState *transferState = (TransferState *)user_data;
+    transferState->IncomingBody(meta_request, body, range_start);
+}
+
+void TransferState::StaticFinish(
+    struct aws_s3_meta_request *meta_request,
+    const struct aws_s3_meta_request_result *meta_request_result,
+    void *user_data)
+{
+    if (user_data == nullptr)
+    {
+        return;
+    }
+
+    TransferState *transferState = (TransferState *)user_data;
+    transferState->Finish(meta_request, meta_request_result);
+}
+
+void TransferState::IncomingHeaders(
+    struct aws_s3_meta_request *meta_request,
+    const struct aws_http_headers *headers,
+    int response_status)
+{
+    for (size_t i = 0; i < aws_http_headers_count(headers); ++i)
+    {
+        struct aws_http_header header;
+        AWS_ZERO_STRUCT(header);
+
+        aws_http_headers_get_index(headers, i, &header);
+
+        const aws_byte_cursor &headerName = header.name;
 
         if (aws_byte_cursor_eq_c_str(&headerName, "x-amz-request-id"))
         {
-            const aws_byte_cursor &value = header->value;
+            const aws_byte_cursor &value = header.value;
             m_amzRequestId = String((const char *)value.ptr, value.len);
         }
         else if (aws_byte_cursor_eq_c_str(&headerName, "x-amz-id-2"))
         {
-            const aws_byte_cursor &value = header->value;
+            const aws_byte_cursor &value = header.value;
             m_amzId2 = String((const char *)value.ptr, value.len);
         }
     }
 }
 
-void TransferState::SetTransferSuccess(bool success)
+void TransferState::IncomingBody(
+    struct aws_s3_meta_request *meta_request,
+    const struct aws_byte_cursor *body,
+    uint64_t range_start)
 {
+    if (!HasDataDownMetrics())
+    {
+        InitDataDownMetric();
+    }
+
+    AddDataDownMetric(body->len);
+
+    if (m_incomingBodyCallback != NULL)
+    {
+        m_incomingBodyCallback(body, range_start);
+    }
+}
+
+void TransferState::Finish(
+    struct aws_s3_meta_request *meta_request,
+    const struct aws_s3_meta_request_result *meta_request_result)
+{
+    AWS_LOGF(
+        (meta_request_result->error_code != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_INFO,
+        AWS_LS_CRT_CPP_CANARY,
+        "Transfer finished with error code %d (%s) and response status %d",
+        meta_request_result->error_code,
+        aws_error_debug_str(meta_request_result->error_code),
+        meta_request_result->response_status);
+
     ConsumeQueuedDataUpMetric();
 
-    m_transferSuccess = success;
+    m_transferSuccess = meta_request_result->error_code == AWS_ERROR_SUCCESS;
 
     UpdateRateTracking(0ULL, true);
+
+    if (m_finishCallback)
+    {
+        m_finishCallback(meta_request_result->error_code);
+    }
     /*
         std::shared_ptr<Http::HttpClientConnection> connection = GetConnection();
 

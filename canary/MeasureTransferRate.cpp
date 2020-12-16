@@ -125,6 +125,7 @@ void MeasureTransferRate::PerformMeasurement(
 
 void MeasureTransferRate::MeasureHttpTransfer()
 {
+    /*
     String endpoint = m_canaryApp.GetOptions().httpTestEndpoint.c_str();
 
     Aws::Crt::Http::HttpHeader hostHeader;
@@ -239,6 +240,7 @@ void MeasureTransferRate::MeasureHttpTransfer()
 
     m_canaryApp.GetMetricsPublisher()->FlushMetrics();
     m_canaryApp.GetMetricsPublisher()->UploadBackup((uint32_t)UploadBackupOptions::PrintPath);
+    */
 }
 
 void MeasureTransferRate::MeasureSinglePartObjectTransfer()
@@ -276,15 +278,14 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
             NotifyTransferFinished &&notifyTransferFinished) {
             std::shared_ptr<TransferState> transferState = uploads[transferIndex];
 
+            transferState->SetFinishCallback(
+                [notifyTransferFinished](int32_t errorCode) { notifyTransferFinished(errorCode); });
+
             transport->PutObject(
                 transferState,
                 key,
                 MakeShared<MeasureTransferRateStream>(
-                    g_allocator, m_canaryApp, transferState, options.singlePartObjectSize),
-                0,
-                [transferState, notifyTransferFinished](int32_t errorCode, std::shared_ptr<Aws::Crt::String>) {
-                    notifyTransferFinished(errorCode);
-                });
+                    g_allocator, m_canaryApp, transferState, options.singlePartObjectSize));
         });
 
     for (uint32_t i = 0; i < options.numUpTransfers; ++i)
@@ -314,10 +315,10 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
             NotifyTransferFinished &&notifyTransferFinished) {
             std::shared_ptr<TransferState> transferState = downloads[transferIndex];
 
-            transport->GetObject(
-                transferState, key, 0, nullptr, [transferState, notifyTransferFinished](int32_t errorCode) {
-                    notifyTransferFinished(errorCode);
-                });
+            transferState->SetFinishCallback(
+                [notifyTransferFinished](int32_t errorCode) { notifyTransferFinished(errorCode); });
+
+            transport->GetObject(transferState, key);
         });
 
     for (uint32_t i = 0; i < m_canaryApp.GetOptions().numDownTransfers; ++i)

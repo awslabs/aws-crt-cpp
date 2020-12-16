@@ -39,6 +39,10 @@
 
 using namespace Aws::Crt;
 
+uint32_t CanaryApp::s_resourceRefCount = 0;
+std::mutex CanaryApp::s_resourceRefCountMutex;
+std::condition_variable CanaryApp::s_resourceRefCountSignal;
+
 namespace
 {
     const char *MetricNamespace = "CRT-CPP-Canary-V2";
@@ -211,4 +215,40 @@ void CanaryApp::Run()
         m_publisher->SetMetricTransferType(MetricTransferType::SinglePart);
         m_measureTransferRate->MeasureHttpTransfer();
     }
+
+    CanaryApp::WaitForZeroResourceRefCount();
+}
+
+void CanaryApp::IncResourceRefCount()
+{
+    std::lock_guard<std::mutex> lock(CanaryApp::s_resourceRefCountMutex);
+    ++CanaryApp::s_resourceRefCount;
+}
+
+void CanaryApp::DecResourceRefCount()
+{
+    bool notify = false;
+
+    {
+        std::lock_guard<std::mutex> lock(CanaryApp::s_resourceRefCountMutex);
+        --CanaryApp::s_resourceRefCount;
+        notify = CanaryApp::s_resourceRefCount == 0;
+    }
+
+    if (notify)
+    {
+        CanaryApp::s_resourceRefCountSignal.notify_one();
+    }
+}
+
+void CanaryApp::WaitForZeroResourceRefCount()
+{
+    std::unique_lock<std::mutex> guard(CanaryApp::s_resourceRefCountMutex);
+    CanaryApp::s_resourceRefCountSignal.wait(guard, []() { return CanaryApp::s_resourceRefCount == 0; });
+}
+
+void CanaryApp::ShutdownCallbackDecRefCount(void *user_data)
+{
+    (void)user_data;
+    CanaryApp::DecResourceRefCount();
 }
