@@ -190,10 +190,7 @@ CanaryApp::CanaryApp(Aws::Crt::ApiHandle &apiHandle, CanaryAppOptions &&inOption
     }
 
     m_publisher = MakeShared<MetricsPublisher>(g_allocator, *this, MetricNamespace);
-    m_uploadTransport = MakeShared<S3ObjectTransport>(
-        g_allocator, *this, m_options.bucketName.c_str(), m_options.numUpConcurrentTransfers, perConnThroughputUp);
-    m_downloadTransport = MakeShared<S3ObjectTransport>(
-        g_allocator, *this, m_options.bucketName.c_str(), m_options.numDownConcurrentTransfers, perConnThroughputDown);
+    m_transport = MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.bucketName.c_str(), 0, 0);
     m_measureTransferRate = MakeShared<MeasureTransferRate>(g_allocator, *this);
 }
 
@@ -215,6 +212,9 @@ void CanaryApp::Run()
         m_publisher->SetMetricTransferType(MetricTransferType::SinglePart);
         m_measureTransferRate->MeasureHttpTransfer();
     }
+
+    m_transport = nullptr;
+    m_publisher = nullptr;
 
     CanaryApp::WaitForZeroResourceRefCount();
 }

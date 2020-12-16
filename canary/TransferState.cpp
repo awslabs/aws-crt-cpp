@@ -207,7 +207,7 @@ void TransferState::FlushMetricsVector(const std::shared_ptr<MetricsPublisher> &
 
         publisher->AddDataPoints(metrics);
     }
-
+    
     metrics.clear();
 }
 

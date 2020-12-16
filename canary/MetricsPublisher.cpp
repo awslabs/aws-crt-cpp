@@ -866,11 +866,12 @@ String MetricsPublisher::UploadBackup(uint32_t options)
     std::atomic<uint32_t> numFilesUploaded(0);
     uint32_t numFilesBeingUploaded = 0;
 
-    std::shared_ptr<S3ObjectTransport> transport =
-        MakeShared<S3ObjectTransport>(g_allocator, m_canaryApp, m_canaryApp.GetOptions().bucketName.c_str(), 4);
+    std::shared_ptr<S3ObjectTransport> transport = m_canaryApp.GetTransport();
+
+    //    MakeShared<S3ObjectTransport>(g_allocator, m_canaryApp, m_canaryApp.GetOptions().bucketName.c_str(), 4);
 
     String backupPath = s3Path + "metricsBackup.json";
-
+/*
     {
         AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading metrics backup.");
 
@@ -890,6 +891,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
 
         transport->PutObject(transferState, backupPath);
     }
+*/
 
     Map<AggregateMetricKey, size_t> aggregateDataPointsLU;
     Vector<Metric> aggregateDataPoints;
@@ -902,7 +904,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
             AggregateDataPoints(dataPoints, aggregateDataPointsLU, aggregateDataPoints, true);
         }
     }
-
+/*
     {
         AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Uploading per stream upload metrics.");
 
@@ -946,6 +948,7 @@ String MetricsPublisher::UploadBackup(uint32_t options)
 
         transport->PutObject(transferState, s3Path + "downloadStreams.csv");
     }
+*/
 
     /*
         if (m_canaryApp.GetUploadTransport()->GetEndPointMonitorManager() != nullptr)
@@ -1705,7 +1708,7 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
     signingConfig.SetCredentialsProvider(publisher->m_canaryApp.GetCredsProvider());
     signingConfig.SetService("monitoring");
     signingConfig.SetSignedBodyHeader(Auth::SignedBodyHeaderType::XAmzContentSha256);
-    signingConfig.SetSignedBodyValue(Auth::SignedBodyValue::UnsignedPayload);
+    signingConfig.SetSignedBodyValue(Auth::SignedBodyValue::StreamingAws4HmacSha256Payload);
     signingConfig.SetSigningTimepoint(DateTime::Now());
     signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4);
 
