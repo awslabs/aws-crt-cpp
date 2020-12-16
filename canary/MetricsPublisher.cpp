@@ -1708,7 +1708,7 @@ void MetricsPublisher::s_OnPublishTask(aws_task *task, void *arg, aws_task_statu
     signingConfig.SetCredentialsProvider(publisher->m_canaryApp.GetCredsProvider());
     signingConfig.SetService("monitoring");
     signingConfig.SetSignedBodyHeader(Auth::SignedBodyHeaderType::XAmzContentSha256);
-    signingConfig.SetSignedBodyValue(Auth::SignedBodyValue::StreamingAws4HmacSha256Payload);
+    //signingConfig.SetSignedBodyValue(Auth::SignedBodyValue::StreamingAws4HmacSha256Payload);
     signingConfig.SetSigningTimepoint(DateTime::Now());
     signingConfig.SetSigningAlgorithm(Auth::SigningAlgorithm::SigV4);
 

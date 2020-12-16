@@ -28,11 +28,11 @@ namespace Aws
         namespace Io
         {
             class InputStream;
-        };
+        }
 
-    }; // namespace Crt
+    } // namespace Crt
 
-}; // namespace Aws
+} // namespace Aws
 
 /*
  * TransferState represents an individual transfer, which can be an entire object, or an individual part of a multipart

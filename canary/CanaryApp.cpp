@@ -170,7 +170,7 @@ CanaryApp::CanaryApp(Aws::Crt::ApiHandle &apiHandle, CanaryAppOptions &&inOption
 
     Io::TlsContextOptions tlsContextOptions = Io::TlsContextOptions::InitDefaultClient(g_allocator);
     m_tlsContext = Io::TlsContext(tlsContextOptions, Io::TlsMode::CLIENT, g_allocator);
-
+/*
     uint64_t perConnThroughputUp = 0ULL;
     uint64_t perConnThroughputDown = 0ULL;
 
@@ -188,7 +188,7 @@ CanaryApp::CanaryApp(Aws::Crt::ApiHandle &apiHandle, CanaryAppOptions &&inOption
             perConnThroughputDown = targetThroughputBytesPerSecond / m_options.numDownConcurrentTransfers;
         }
     }
-
+*/
     m_publisher = MakeShared<MetricsPublisher>(g_allocator, *this, MetricNamespace);
     m_transport = MakeShared<S3ObjectTransport>(g_allocator, *this, m_options.bucketName.c_str(), 0, 0);
     m_measureTransferRate = MakeShared<MeasureTransferRate>(g_allocator, *this);
