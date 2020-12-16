@@ -37,7 +37,8 @@ uint64_t TransferState::GetNextTransferId()
 }
 
 TransferState::TransferState()
-    : m_transferId(TransferState::GetNextTransferId()), m_queuedDataUp(0ULL), m_transferSuccess(false), m_meta_request(nullptr)
+    : m_transferId(TransferState::GetNextTransferId()), m_queuedDataUp(0ULL), m_transferSuccess(false),
+      m_meta_request(nullptr)
 {
 }
 
@@ -360,8 +361,10 @@ void TransferState::Finish(
     struct aws_s3_meta_request *meta_request,
     const struct aws_s3_meta_request_result *meta_request_result)
 {
+    aws_log_level log_level = (meta_request_result->error_code != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_INFO;
+
     AWS_LOGF(
-        (meta_request_result->error_code != AWS_ERROR_SUCCESS) ? AWS_LL_ERROR : AWS_LL_INFO,
+        log_level,
         AWS_LS_CRT_CPP_CANARY,
         "Transfer finished with error code %d (%s) and response status %d",
         meta_request_result->error_code,
