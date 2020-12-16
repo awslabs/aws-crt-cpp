@@ -21,6 +21,19 @@
 using TransferStateFinishCallback = std::function<void(int32_t errorCode)>;
 using TransferStateIncomingBodyCallback = std::function<void(const struct aws_byte_cursor *body, uint64_t range_start)>;
 
+namespace Aws
+{
+    namespace Crt
+    {
+        namespace Io
+        {
+            class InputStream;
+        };
+
+    }; // namespace Crt
+
+}; // namespace Aws
+
 /*
  * TransferState represents an individual transfer, which can be an entire object, or an individual part of a multipart
  * object. It holds onto arrays that track upload/download metrics, which can be sent to the metrics publisher using the
@@ -120,10 +133,7 @@ class TransferState : public std::enable_shared_from_this<TransferState>
     const Aws::Crt::String &GetAmzRequestId() const { return m_amzRequestId; }
     const Aws::Crt::String &GetAmzId2() const { return m_amzId2; }
 
-    void SetMetaRequest(aws_s3_meta_request *meta_request)
-    {
-        m_meta_request = meta_request;
-    }
+    void SetMetaRequest(aws_s3_meta_request *meta_request) { m_meta_request = meta_request; }
 
     void SetIncomingBodyCallback(const TransferStateIncomingBodyCallback &&incomingBodyCallback)
     {
@@ -131,6 +141,10 @@ class TransferState : public std::enable_shared_from_this<TransferState>
     }
 
     void SetFinishCallback(const TransferStateFinishCallback &&finishCallback) { m_finishCallback = finishCallback; }
+
+    void SetBody(std::shared_ptr<Aws::Crt::Io::InputStream> body) { m_body = body; }
+
+    std::shared_ptr<Aws::Crt::Io::InputStream> GetBody() { return m_body; }
 
   private:
     static std::atomic<uint64_t> s_nextTransferId;
@@ -150,6 +164,7 @@ class TransferState : public std::enable_shared_from_this<TransferState>
 
     std::weak_ptr<MetricsPublisher> m_publisher;
     aws_s3_meta_request *m_meta_request;
+    std::shared_ptr<Aws::Crt::Io::InputStream> m_body;
 
     TransferStateIncomingBodyCallback m_incomingBodyCallback;
     TransferStateFinishCallback m_finishCallback;

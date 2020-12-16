@@ -117,11 +117,6 @@ int main(int argc, char *argv[])
 
     while (cliGetOptResult != -1)
     {
-        if (cliGetOptResult == '?')
-        {
-            continue;
-        }
-
         switch ((CLIOption)cliOptionIndex)
         {
             case CLIOption::Config:
@@ -148,11 +143,6 @@ int main(int argc, char *argv[])
 
     while (cliGetOptResult != -1)
     {
-        if (cliGetOptResult == '?')
-        {
-            continue;
-        }
-
         switch ((CLIOption)cliOptionIndex)
         {
             case CLIOption::ToolName:

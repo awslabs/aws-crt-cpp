@@ -64,10 +64,7 @@ class S3ObjectTransport
     /*
      * Upload a single part object, or a part of an object.
      */
-    void PutObject(
-        const std::shared_ptr<TransferState> &transferState,
-        const Aws::Crt::String &key,
-        const std::shared_ptr<Aws::Crt::Io::InputStream> &inputStream);
+    void PutObject(const std::shared_ptr<TransferState> &transferState, const Aws::Crt::String &key);
 
     /*
      * Get a single part object, or a part of an object.

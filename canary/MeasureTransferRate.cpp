@@ -47,12 +47,12 @@ void MeasureTransferRate::PerformMeasurement(
     {
         return;
     }
-
-    if ((flags & (uint32_t)MeasurementFlags::DontWarmDNSCache) == 0)
-    {
-        transport->WarmDNSCache(numConcurrentTransfers);
-    }
-
+    /*
+        if ((flags & (uint32_t)MeasurementFlags::DontWarmDNSCache) == 0)
+        {
+            transport->WarmDNSCache(numConcurrentTransfers);
+        }
+    */
     AWS_LOGF_INFO(AWS_LS_CRT_CPP_CANARY, "Starting performance measurement.");
 
     std::mutex transferCompletedMutex;
@@ -281,11 +281,10 @@ void MeasureTransferRate::MeasureSinglePartObjectTransfer()
             transferState->SetFinishCallback(
                 [notifyTransferFinished](int32_t errorCode) { notifyTransferFinished(errorCode); });
 
-            transport->PutObject(
-                transferState,
-                key,
-                MakeShared<MeasureTransferRateStream>(
-                    g_allocator, m_canaryApp, transferState, options.singlePartObjectSize));
+            transferState->SetBody(MakeShared<MeasureTransferRateStream>(
+                g_allocator, m_canaryApp, transferState, options.singlePartObjectSize));
+
+            transport->PutObject(transferState, key);
         });
 
     for (uint32_t i = 0; i < options.numUpTransfers; ++i)

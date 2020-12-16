@@ -179,20 +179,17 @@ void S3ObjectTransport::AddContentLengthHeader(
     request->AddHeader(contentLength);
 }
 
-void S3ObjectTransport::PutObject(
-    const std::shared_ptr<TransferState> &transferState,
-    const Aws::Crt::String &key,
-    const std::shared_ptr<Io::InputStream> &body)
+void S3ObjectTransport::PutObject(const std::shared_ptr<TransferState> &transferState, const Aws::Crt::String &key)
 {
-    AWS_FATAL_ASSERT(body.get() != nullptr);
+    AWS_ASSERT(transferState->GetBody() != nullptr);
 
     auto request = MakeShared<Http::HttpRequest>(g_allocator, g_allocator);
 
-    AddContentLengthHeader(request, body);
+    AddContentLengthHeader(request, transferState->GetBody());
 
     request->AddHeader(m_hostHeader);
     request->AddHeader(m_contentTypeHeader);
-    request->SetBody(body);
+    request->SetBody(transferState->GetBody());
     request->SetMethod(aws_http_method_put);
 
     StringStream keyPathStream;

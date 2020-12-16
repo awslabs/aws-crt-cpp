@@ -886,7 +886,9 @@ String MetricsPublisher::UploadBackup(uint32_t options)
             signal.notify_one();
         });
 
-        transport->PutObject(transferState, backupPath, metricsBackupContentsStream);
+        transferState->SetBody(metricsBackupContentsStream);
+
+        transport->PutObject(transferState, backupPath);
     }
 
     Map<AggregateMetricKey, size_t> aggregateDataPointsLU;
@@ -918,7 +920,9 @@ String MetricsPublisher::UploadBackup(uint32_t options)
             signal.notify_one();
         });
 
-        transport->PutObject(transferState, s3Path + "uploadStreams.csv", uploadCSVContentsStream);
+        transferState->SetBody(uploadCSVContentsStream);
+
+        transport->PutObject(transferState, s3Path + "uploadStreams.csv");
     }
 
     {
@@ -938,7 +942,9 @@ String MetricsPublisher::UploadBackup(uint32_t options)
             signal.notify_one();
         });
 
-        transport->PutObject(transferState, s3Path + "downloadStreams.csv", downloadCSVContentsStream);
+        transferState->SetBody(downloadCSVContentsStream);
+
+        transport->PutObject(transferState, s3Path + "downloadStreams.csv");
     }
 
     /*
