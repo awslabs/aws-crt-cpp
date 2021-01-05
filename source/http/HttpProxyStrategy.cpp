@@ -78,6 +78,26 @@ namespace Aws
                 return Aws::Crt::MakeShared<HttpProxyStrategyFactory>(allocator, factory);
             }
 
+            std::shared_ptr<HttpProxyStrategyFactory> HttpProxyStrategyFactory::CreateKerberosHttpProxyStrategyFactory(
+                enum aws_http_proxy_connection_type connectionType,
+                const String &usertoken,
+                Allocator *allocator)
+            {
+                struct aws_http_proxy_strategy_factory_kerberos_auth_config config;
+                AWS_ZERO_STRUCT(config);
+                config.proxy_connection_type = connectionType;
+                config.user_token = aws_byte_cursor_from_c_str(usertoken.c_str());
+
+                struct aws_http_proxy_strategy_factory *factory =
+                    aws_http_proxy_strategy_factory_new_kerberos_auth(allocator, &config);
+                if (factory == NULL)
+                {
+                    return NULL;
+                }
+
+                return Aws::Crt::MakeShared<HttpProxyStrategyFactory>(allocator, factory);
+            }
+
             HttpProxyStrategyFactory::HttpProxyStrategyFactory(struct aws_http_proxy_strategy_factory *factory)
                 : m_factory(factory)
             {

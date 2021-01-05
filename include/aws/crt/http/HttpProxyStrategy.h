@@ -38,6 +38,11 @@ namespace Aws
                 static std::shared_ptr<HttpProxyStrategyFactory> CreateAdaptiveKerberosHttpProxyStrategyFactory(
                     Allocator *allocator = g_allocator);
 
+                static std::shared_ptr<HttpProxyStrategyFactory> CreateKerberosHttpProxyStrategyFactory(
+                    enum aws_http_proxy_connection_type connectionType,
+                    const String &usertoken,
+                    Allocator *allocator = g_allocator);
+
               private:
                 struct aws_http_proxy_strategy_factory *m_factory;
             };
