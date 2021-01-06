@@ -2,9 +2,41 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include <aws/crt/http/HttpProxyStrategy.h>
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Bootstrap.h>
+#include <iostream>
+
+/*get kerberos usertoken*/
+extern "C" char* get_kerberos_usertoken()
+{
+    /*TODO - this token will have to come from user code*/
+    char *kerberos_testtoken = "YIIHaQYGKwYBBQUCoIIHXTCCB1mgMDAuBgkqhkiC9xIBAgIGCSqGSIb3EgECAgYKKwYBBAGCNwICHgYKKwYBBAGCNwICCqKCByMEggcfYIIHGwYJKoZIhvcSAQICAQBuggcKMIIHBqADAgEFoQMCAQ6iBwMFACAAAACjggUfYYIFGzCCBRegAwIBBaERGw9TUVVJRFBST1hZLlRFU1SiKDAmoAMCAQKhHzAdGwRIVFRQGxVwcm94eS5zcXVpZHByb3h5LnRlc3SjggTRMIIEzaADAgEXoQMCAQSiggS/BIIEuya4B6JYG3rHBOl/k7M2kjFqEH8kfxGVqELJU7fGeSYd5slkJ/4PuEx7562HQwZ9f5+0Zsnh44OORilcQDg9Vpy1FxvMNQgArX+5L7rHViMoVPcUc2tqVAk+aHgFzynCvJo33Yi1D464YhQAmSC7hWEOoqMEaR1/ox56MmZtTfwcDsSHt3LpcpfZRnvGudvICO1OUiBb9ays0Min6joA7eAhyYS6EJ1HkHAEFtLauft7FHvxEfQFFDlB0VEL4riBJEIxWZp00m9uZuV0Z7QCg90n7GXtDm98SUP0KmdPTtDRhUeQ3y9PYYQZosUihOpvw/VQixg9hDNVBW1i5UBq8p2bPNsO4xnUSNqiTnDQMcj5WDQPJ5yIuT8NuTWrT0nTPTmTuQN5Q2lsVOv38+r4KL02prroGOI+fx7/t7epoBoib802tYHnA0jhnymLgqHwbPxTb3VLoxuEhw5YR/ZQr2ld7fewf85bb060Z14WPBRXxzeJr3wVmweam8WFsES/YjFhwUhZ34chIb0oD1/JE7BB0OkUT8KizQ2k9ms3pzh2yrOCaWuEzaz5M3tyO3ljBribYPb9Hg6M8+fFT/bMA8FAb5/5N1yP+U6zYK2QMS+Omu70ssDEKtl8T/6emuMxiSglYqtJP0CWJ3BytSmPWMQrx0rO1sB0tzKSNAqQ/2HPErIWBRr1tKQ3WhL5MXOD9hJ05RPZUxkl48wyCOzUM3ud7soSvtd0s8xiSyOvs9KUnbiXQ/xk+yNi+xWg3i4Um+TW0VkUeOEKDT/DckJg8GfQe7spRMWCeZHVWDUXiUg7OjJWd+Ht3WbJHErAnr2hGZ6CZ/JpC0ngreHABKSUMB8FEUIMypwLFNIbgvjeiFUk9zs41bhVDTuV1+dUHyGHZwpvE7lOd3crWAqBPK153Zd91rVhzNmHBq4emMQiIecJZQJ3Xwm32qgAAxE3x2Qjzd0GfzIpT2vtJvI+6VCctm6kK35++UHKcXHI6Lz/W7ZIOmV86oaYW+NaurRNkP/gCsGtDXUpF6YgKDsVr9g7Cr4RGByjFa4DzmpndrrHZ7V4bycKe9emGlwvCSnejLvU4ET5PNZ+yJsW1hJaVZFK4NTowMdAc5peOb090Ts2cDGnv9vEq2twuw6es9I4YEzVWQEsfcB1+bT5Nspm+3VysjIH982u+GVu6yseoHj5P09n2+WcR3MctMs/D8UH6ZAWoc8Fr0wYlXPsqOTl5Xk4ICDUoWK/nS/0fSY/weqD/xjBDgVYLxI8LNPDlExj6CeBMORV9kqPxHOw/Xht/DuTZQu7Rpqm2BwoOmwdv1vNFR4xm6bII6m6g61SSM7NVrfV5ik2vUJ14hC3Jl7FopQo2KPv1A/R21FNjd8lHoezHfJCkL41yXgWm1q0Qc5d97Jq0lSenayA81qtpxdQVtNt+Us6u4i5F84Frtqx5CVsHIYb45M15eutZSELf+Wju43r6PSegHCuRn5xnIUYQGfPuZ0pCxkESaxFJ4MCbLZs5L3i396naRIcWg1Qj8tgyO0l6Wcnkytr6Kp8AlapK12+TeODEpyFZf1aNcnuzt1Q3AmVtNfKFn/pUQAlGn4MKKx0lhe5/gNNEzWEzgnFpIIBzDCCAcigAwIBF6KCAb8EggG7zYJPoP4DrZVk3ZExdAHrnx0ZHikrZ9kMMauHUzRIhtl8c4AjyNrsHucUNX5cPW/nd9f+UjFrx+R5ANoL7KMfqmCRHEm0qjFX956Euvr9Wh/WaJU5h1AKW0KBXmHBDd3k+CHV6AlNOKsowXvOcAh9cUHlK0xp9q4wOfDlz2qr4VeDH5896ZFn3gbX6HBvLC2rro9Lh1eA53CoOYArdFbzCV4NfYvzXL/Zmc47+9VLwuIgcQ14RqhFgx6u0Bs2UeziilYLL22ICvRusNPa//BJ/2Ky2XHUD+mqmml4wJnIahz1CwXXuWNNrWUUzQ6+TVUQZr//5tdC1UasVYKGhGfR6Kjis9T/sWO8Sx7Z7IsDCWN3X5fM7MOfW1Qq0QQ4QHVId0hAsA3VydCDfUFuB1TAKFw/CkmbufZ1UBA+4jQhNyd7X27WR5pXeLUlU9WrFv9+VnzAtzHmWG29QepAkjo/5GtHsia/9XVtPtCDIG9q2aVSTR+gyPUVcpHUHF0M/+Yjw8mtkYRN67gFrYqFqJY71PQCfDSPGxzXphCigNNkPdfULMkmLUnmS9sIds8OrQi8ipc0gPu/ZKyD0sQ=";
+    return kerberos_testtoken;
+}
+
+/*print kerberos header*/
+extern "C" void send_kerberos_header(size_t length,uint8_t *httpHeader,size_t length1,
+                            uint8_t *httpHeader1,size_t num_headers)
+{
+    /*TODO - printing only for informational purpose - move to user area*/
+    for (size_t i = 0; i < num_headers; ++i)
+    {
+        std::cout.write((char *)httpHeader, length);
+        std::cout << ": ";
+        std::cout.write((char *)httpHeader1, length1);
+        std::cout << std::endl;
+    }
+}
+
+/*print kerberos https status*/
+extern "C" void send_kerberos_https_status(int httpStatusCode)
+{
+    /*TODO - printing only for informational purpose - move to user area*/
+    std::cout << "httpStatusCode = " << httpStatusCode;
+    
+}
 
 namespace Aws
 {
