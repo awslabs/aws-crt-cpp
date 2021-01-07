@@ -288,6 +288,7 @@ namespace Aws
                 {
                     const Http::HttpClientConnectionProxyOptions &proxy_config = config.ProxyOptions.value();
 
+                    proxy_options.connection_type = proxy_config.ProxyConnectionType;
                     proxy_options.host = aws_byte_cursor_from_c_str(proxy_config.HostName.c_str());
                     proxy_options.port = proxy_config.Port;
                     proxy_options.tls_options = proxy_config.TlsOptions->GetUnderlyingHandle();
