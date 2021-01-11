@@ -83,6 +83,7 @@ namespace Aws
                     const auto &proxyOpts = connectionOptions.ProxyOptions;
                     proxyOptions.host = aws_byte_cursor_from_c_str(proxyOpts->HostName.c_str());
                     proxyOptions.port = proxyOpts->Port;
+                    proxyOptions.connection_type = proxyOpts->ProxyConnectionType;
 
                     if (proxyOpts->ProxyStrategyFactory)
                     {
