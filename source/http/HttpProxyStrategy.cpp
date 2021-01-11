@@ -98,6 +98,22 @@ namespace Aws
                 return Aws::Crt::MakeShared<HttpProxyStrategyFactory>(allocator, factory);
             }
 
+            std::shared_ptr<HttpProxyStrategyFactory> HttpProxyStrategyFactory::
+                CreateAdaptiveNtlmHttpProxyStrategyFactory(Allocator *allocator)
+            {
+
+                struct aws_http_proxy_strategy_factory_tunneling_adaptive_ntlm_options config;
+                AWS_ZERO_STRUCT(config);
+                struct aws_http_proxy_strategy_factory *factory =
+                    aws_http_proxy_strategy_factory_new_tunneling_adaptive_ntlm(allocator, &config);
+                if (factory == NULL)
+                {
+                    return NULL;
+                }
+
+                return Aws::Crt::MakeShared<HttpProxyStrategyFactory>(allocator, factory);
+            }
+
             HttpProxyStrategyFactory::HttpProxyStrategyFactory(struct aws_http_proxy_strategy_factory *factory)
                 : m_factory(factory)
             {
