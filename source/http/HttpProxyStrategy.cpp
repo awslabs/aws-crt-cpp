@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/http/HttpProxyStrategy.h>
-
 #include <aws/http/proxy_strategy.h>
 
 namespace Aws
@@ -12,6 +11,39 @@ namespace Aws
     {
         namespace Http
         {
+            /*SA-Added Start*/
+            char *HttpProxyStrategyCallback::_getDataCallbackUser(int callback_state)
+            {
+                char *user_data = (mycallback_2)(callback_state);
+                return user_data;
+            }
+
+            char *HttpProxyStrategyCallback::_getDataCallback(int callback_state, void *user)
+            {
+                HttpProxyStrategyCallback *mySelf = (HttpProxyStrategyCallback *)user;
+                char *user_data = mySelf->_getDataCallbackUser(callback_state);
+                return user_data;
+            }
+            
+            void HttpProxyStrategyCallback::_sendDataCallbackUser(size_t data_length, uint8_t *data) 
+            { 
+                (mycallback_1)(data_length, data); 
+            }
+
+            void HttpProxyStrategyCallback::_sendDataCallback(size_t data_length, uint8_t *data, void *user)
+            {
+                HttpProxyStrategyCallback *mySelf = (HttpProxyStrategyCallback *)user;
+
+                mySelf->_sendDataCallbackUser(data_length, data); 
+            }
+            
+            HttpProxyStrategyCallback::HttpProxyStrategyCallback(proxy_callback_send_t callback_1,proxy_callback_get_t callback_2)
+            {
+                mycallback_1 = callback_1;
+                mycallback_2 = callback_2;
+                aws_http_proxy_connection_configure_callback(_sendDataCallback, _getDataCallback, this);
+            }
+            /*SA-Added End*/                       
             HttpProxyStrategyFactory::~HttpProxyStrategyFactory()
             {
                 aws_http_proxy_strategy_factory_release(m_factory);
@@ -77,7 +109,7 @@ namespace Aws
 
                 return Aws::Crt::MakeShared<HttpProxyStrategyFactory>(allocator, factory);
             }
-
+            /*SA-Added Start*/
             std::shared_ptr<HttpProxyStrategyFactory> HttpProxyStrategyFactory::CreateKerberosHttpProxyStrategyFactory(
                 enum aws_http_proxy_connection_type connectionType,
                 const String &usertoken,
@@ -113,7 +145,7 @@ namespace Aws
 
                 return Aws::Crt::MakeShared<HttpProxyStrategyFactory>(allocator, factory);
             }
-
+            /*SA-Added End*/
             HttpProxyStrategyFactory::HttpProxyStrategyFactory(struct aws_http_proxy_strategy_factory *factory)
                 : m_factory(factory)
             {
