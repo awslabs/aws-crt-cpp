@@ -5,16 +5,13 @@
  */
 
 #include <aws/crt/Types.h>
-
 #include <memory>
-
 #include <aws/http/proxy_strategy.h>
 
-void send_kerberos_status(int httpStatusCode);
-char *get_kerb_usertoken();
-char *get_ntlm_resp();
-char *get_ntlm_cred();
-void send_ntlm_chall_header(size_t length, uint8_t *httpHeader, size_t length1, uint8_t *httpHeader1, size_t num_headers);
+/*SA-Added Start*/
+typedef void (*proxy_callback_send_t)(size_t data_length, uint8_t *data);
+typedef char* (*proxy_callback_get_t)(int callback_state);
+/*SA-Added End*/
 
 namespace Aws
 {
@@ -22,6 +19,24 @@ namespace Aws
     {
         namespace Http
         {
+            /*SA-Added Start*/
+            class HttpProxyStrategyCallback
+            {
+                proxy_callback_send_t mycallback_1;
+                proxy_callback_get_t mycallback_2;
+                
+                void _sendDataCallbackUser(size_t data_length, uint8_t *data);
+                static void _sendDataCallback(size_t data_length, uint8_t *data, void *user);
+
+                char *_getDataCallbackUser(int callback_state);
+                static char *_getDataCallback(int callback_state, void *user);
+
+              public:
+               
+                HttpProxyStrategyCallback(proxy_callback_send_t callback_A, proxy_callback_get_t callback_B);
+                
+            };
+            /*SA-Added End*/
             class HttpProxyStrategyFactory
             {
               public:
@@ -44,6 +59,7 @@ namespace Aws
                 static std::shared_ptr<HttpProxyStrategyFactory> CreateAdaptiveKerberosHttpProxyStrategyFactory(
                     Allocator *allocator = g_allocator);
 
+                /*SA-Added Start*/
                 static std::shared_ptr<HttpProxyStrategyFactory> CreateKerberosHttpProxyStrategyFactory(
                     enum aws_http_proxy_connection_type connectionType,
                     const String &usertoken,
@@ -51,7 +67,7 @@ namespace Aws
 
                 static std::shared_ptr<HttpProxyStrategyFactory> CreateAdaptiveNtlmHttpProxyStrategyFactory(
                     Allocator *allocator = g_allocator);
-
+                /*SA-Added End*/
               private:
                 struct aws_http_proxy_strategy_factory *m_factory;
             };
