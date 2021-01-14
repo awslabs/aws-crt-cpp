@@ -29,6 +29,10 @@ namespace Aws
             class HttpStream;
             class HttpClientStream;
             class HttpRequest;
+            /*SA-Added Start*/
+            /*class handling all callback functions*/
+            class HttpProxyStrategyCallback;
+            /*SA-Added End*/
             class HttpProxyStrategyFactory;
             using HttpHeader = aws_http_header;
 
@@ -335,6 +339,7 @@ namespace Aws
                 Http1_1 = AWS_HTTP_VERSION_1_1,
                 Http2 = AWS_HTTP_VERSION_2,
             };
+
             /**
              * Represents a connection from a Http Client to a Server.
              */
@@ -379,6 +384,7 @@ namespace Aws
                  * @return protocol version the connection used
                  */
                 HttpVersion GetVersion() noexcept;
+
                 /**
                  * @return the value of the last aws error encountered by operations on this instance.
                  */
