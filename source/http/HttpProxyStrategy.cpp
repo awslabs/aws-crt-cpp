@@ -12,6 +12,7 @@ namespace Aws
         namespace Http
         {
             /*SA-Added Start*/
+            /*
             char *HttpProxyStrategyCallback::_getDataCallbackUser(int callback_state)
             {
                 char *user_data = (mycallback_2)(callback_state);
@@ -43,7 +44,36 @@ namespace Aws
                 mycallback_2 = callback_2;
                 aws_http_proxy_connection_configure_callback(_sendDataCallback, _getDataCallback, this);
             }
-            /*SA-Added End*/                       
+            */
+            /*SA-Added End*/   
+
+            /*SA-Added Start*/
+            char *HttpProxyStrategyFactory::_getDataCallbackUser(int callback_state)
+            {
+                char *user_data = (mycallback_2)(callback_state);
+                return user_data;
+            }
+
+            char *HttpProxyStrategyFactory::_getDataCallback(int callback_state, void *user)
+            {
+                HttpProxyStrategyFactory *mySelf = (HttpProxyStrategyFactory *)user;
+                char *user_data = mySelf->_getDataCallbackUser(callback_state);
+                return user_data;
+            }
+
+            void HttpProxyStrategyFactory::_sendDataCallbackUser(size_t data_length, uint8_t *data)
+            {
+                (mycallback_1)(data_length, data);
+            }
+
+            void HttpProxyStrategyFactory::_sendDataCallback(size_t data_length, uint8_t *data, void *user)
+            {
+                
+                HttpProxyStrategyFactory *mySelf = (HttpProxyStrategyFactory *)user;
+                mySelf->_sendDataCallbackUser(data_length, data);
+            }
+            /*SA-Added End*/        
+
             HttpProxyStrategyFactory::~HttpProxyStrategyFactory()
             {
                 aws_http_proxy_strategy_factory_release(m_factory);
@@ -94,14 +124,30 @@ namespace Aws
             }
 
             std::shared_ptr<HttpProxyStrategyFactory> HttpProxyStrategyFactory::
-                CreateAdaptiveKerberosHttpProxyStrategyFactory(Allocator *allocator)
+                CreateAdaptiveKerberosNtlmHttpProxyStrategyFactory(
+                    proxy_callback_send_t callback_1,
+                    proxy_callback_get_t callback_2,
+                    Allocator *allocator)
             {
 
-                struct aws_http_proxy_strategy_factory_tunneling_adaptive_kerberos_options config;
-                AWS_ZERO_STRUCT(config);
+                struct aws_http_proxy_strategy_factory_tunneling_adaptive_kerberos_options kerberos_config;
+                struct aws_http_proxy_strategy_factory_tunneling_adaptive_ntlm_options ntlm_config;
+
+                AWS_ZERO_STRUCT(kerberos_config);
+                AWS_ZERO_STRUCT(ntlm_config);
+
+                mycallback_1 = callback_1;
+                mycallback_2 = callback_2;
+                kerberos_config.kerberos_options.func_1 = _sendDataCallback;
+                kerberos_config.kerberos_options.func_2 = _getDataCallback;
+                kerberos_config.kerberos_options.userData = this;
+                ntlm_config.ntlm_options.func_1 = _sendDataCallback;
+                ntlm_config.ntlm_options.func_2 = _getDataCallback;
+                ntlm_config.ntlm_options.userData = this;
 
                 struct aws_http_proxy_strategy_factory *factory =
-                    aws_http_proxy_strategy_factory_new_tunneling_adaptive_kerberos(allocator, &config);
+                    aws_http_proxy_strategy_factory_new_tunneling_adaptive_kerberos_ntlm(
+                        allocator, &kerberos_config, &ntlm_config);
                 if (factory == NULL)
                 {
                     return NULL;
@@ -131,11 +177,22 @@ namespace Aws
             }
 
             std::shared_ptr<HttpProxyStrategyFactory> HttpProxyStrategyFactory::
-                CreateAdaptiveNtlmHttpProxyStrategyFactory(Allocator *allocator)
+                CreateAdaptiveNtlmHttpProxyStrategyFactory(
+                    proxy_callback_send_t callback_1,
+                    proxy_callback_get_t callback_2,
+                    Allocator *allocator)
+
             {
 
                 struct aws_http_proxy_strategy_factory_tunneling_adaptive_ntlm_options config;
                 AWS_ZERO_STRUCT(config);
+               
+                mycallback_1 = callback_1;
+                mycallback_2 = callback_2;
+                config.ntlm_options.func_1 = _sendDataCallback;
+                config.ntlm_options.func_2 = _getDataCallback;
+                config.ntlm_options.userData = this;
+                             
                 struct aws_http_proxy_strategy_factory *factory =
                     aws_http_proxy_strategy_factory_new_tunneling_adaptive_ntlm(allocator, &config);
                 if (factory == NULL)
