@@ -209,9 +209,9 @@ namespace Aws
                 if (options.m_isInit)
                 {
                     m_tls_connection_options = options.m_tls_connection_options;
+                    m_allocator = options.m_allocator;
                     AWS_ZERO_STRUCT(options.m_tls_connection_options);
                     options.m_isInit = false;
-                    options.m_allocator = options.m_allocator;
                 }
             }
 
