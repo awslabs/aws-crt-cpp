@@ -12,76 +12,30 @@ namespace Aws
     {
         namespace Http
         {
-            HttpProxyStrategyFactory::~HttpProxyStrategyFactory()
-            {
-                aws_http_proxy_strategy_factory_release(m_factory);
-            }
+            HttpProxyStrategy::~HttpProxyStrategy() { aws_http_proxy_strategy_release(m_strategy); }
 
-            std::shared_ptr<HttpProxyStrategyFactory> HttpProxyStrategyFactory::CreateBasicHttpProxyStrategyFactory(
+            std::shared_ptr<HttpProxyStrategy> HttpProxyStrategy::CreateBasicHttpProxyStrategy(
                 enum aws_http_proxy_connection_type connectionType,
                 const String &username,
                 const String &password,
                 Allocator *allocator)
             {
-                struct aws_http_proxy_strategy_factory_basic_auth_config config;
+                struct aws_http_proxy_strategy_basic_auth_options config;
                 AWS_ZERO_STRUCT(config);
                 config.proxy_connection_type = connectionType;
                 config.user_name = aws_byte_cursor_from_c_str(username.c_str());
                 config.password = aws_byte_cursor_from_c_str(password.c_str());
 
-                struct aws_http_proxy_strategy_factory *factory =
-                    aws_http_proxy_strategy_factory_new_basic_auth(allocator, &config);
-                if (factory == NULL)
+                struct aws_http_proxy_strategy *strategy = aws_http_proxy_strategy_new_basic_auth(allocator, &config);
+                if (strategy == NULL)
                 {
                     return NULL;
                 }
 
-                return Aws::Crt::MakeShared<HttpProxyStrategyFactory>(allocator, factory);
+                return Aws::Crt::MakeShared<HttpProxyStrategy>(allocator, strategy);
             }
 
-            std::shared_ptr<HttpProxyStrategyFactory> HttpProxyStrategyFactory::
-                CreateExperimentalHttpProxyStrategyFactory(
-                    const String &username,
-                    const String &password,
-                    Allocator *allocator)
-            {
-
-                struct aws_http_proxy_strategy_factory_tunneling_adaptive_test_options config;
-                AWS_ZERO_STRUCT(config);
-                config.user_name = aws_byte_cursor_from_c_str(username.c_str());
-                config.password = aws_byte_cursor_from_c_str(password.c_str());
-
-                struct aws_http_proxy_strategy_factory *factory =
-                    aws_http_proxy_strategy_factory_new_tunneling_adaptive_test(allocator, &config);
-                if (factory == NULL)
-                {
-                    return NULL;
-                }
-
-                return Aws::Crt::MakeShared<HttpProxyStrategyFactory>(allocator, factory);
-            }
-
-            std::shared_ptr<HttpProxyStrategyFactory> HttpProxyStrategyFactory::
-                CreateAdaptiveKerberosHttpProxyStrategyFactory(Allocator *allocator)
-            {
-
-                struct aws_http_proxy_strategy_factory_tunneling_adaptive_kerberos_options config;
-                AWS_ZERO_STRUCT(config);
-
-                struct aws_http_proxy_strategy_factory *factory =
-                    aws_http_proxy_strategy_factory_new_tunneling_adaptive_kerberos(allocator, &config);
-                if (factory == NULL)
-                {
-                    return NULL;
-                }
-
-                return Aws::Crt::MakeShared<HttpProxyStrategyFactory>(allocator, factory);
-            }
-
-            HttpProxyStrategyFactory::HttpProxyStrategyFactory(struct aws_http_proxy_strategy_factory *factory)
-                : m_factory(factory)
-            {
-            }
+            HttpProxyStrategy::HttpProxyStrategy(struct aws_http_proxy_strategy *strategy) : m_strategy(strategy) {}
         } // namespace Http
     }     // namespace Crt
 } // namespace Aws

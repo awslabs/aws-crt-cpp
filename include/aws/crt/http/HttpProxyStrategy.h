@@ -16,30 +16,25 @@ namespace Aws
     {
         namespace Http
         {
-            class HttpProxyStrategyFactory
+            class HttpProxyStrategy
             {
               public:
-                HttpProxyStrategyFactory(struct aws_http_proxy_strategy_factory *factory);
-                virtual ~HttpProxyStrategyFactory();
+                HttpProxyStrategy(struct aws_http_proxy_strategy *strategy);
+                virtual ~HttpProxyStrategy();
 
-                struct aws_http_proxy_strategy_factory *GetUnderlyingHandle() const noexcept { return m_factory; }
+                struct aws_http_proxy_strategy *GetUnderlyingHandle() const noexcept { return m_strategy; }
 
-                static std::shared_ptr<HttpProxyStrategyFactory> CreateBasicHttpProxyStrategyFactory(
+                static std::shared_ptr<HttpProxyStrategy> CreateBasicHttpProxyStrategy(
                     enum aws_http_proxy_connection_type connectionType,
                     const String &username,
                     const String &password,
                     Allocator *allocator = g_allocator);
 
-                static std::shared_ptr<HttpProxyStrategyFactory> CreateExperimentalHttpProxyStrategyFactory(
-                    const String &username,
-                    const String &password,
-                    Allocator *allocator = g_allocator);
-
-                static std::shared_ptr<HttpProxyStrategyFactory> CreateAdaptiveKerberosHttpProxyStrategyFactory(
+                static std::shared_ptr<HttpProxyStrategy> CreateAdaptiveKerberosHttpProxyStrategy(
                     Allocator *allocator = g_allocator);
 
               private:
-                struct aws_http_proxy_strategy_factory *m_factory;
+                struct aws_http_proxy_strategy *m_strategy;
             };
         } // namespace Http
     }     // namespace Crt

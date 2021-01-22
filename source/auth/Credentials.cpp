@@ -292,9 +292,9 @@ namespace Aws
                     proxy_options.host = aws_byte_cursor_from_c_str(proxy_config.HostName.c_str());
                     proxy_options.port = proxy_config.Port;
                     proxy_options.tls_options = proxy_config.TlsOptions->GetUnderlyingHandle();
-                    if (proxy_config.ProxyStrategyFactory)
+                    if (proxy_config.ProxyStrategy)
                     {
-                        proxy_options.proxy_strategy_factory = proxy_config.ProxyStrategyFactory->GetUnderlyingHandle();
+                        proxy_options.proxy_strategy = proxy_config.ProxyStrategy->GetUnderlyingHandle();
                     }
 
                     raw_config.proxy_options = &proxy_options;
