@@ -290,7 +290,10 @@ namespace Aws
 
                     proxy_options.host = aws_byte_cursor_from_c_str(proxy_config.HostName.c_str());
                     proxy_options.port = proxy_config.Port;
-                    proxy_options.tls_options = proxy_config.TlsOptions->GetUnderlyingHandle();
+                    if (proxy_config.TlsOptions.has_value())
+                    {
+                        proxy_options.tls_options = proxy_config.TlsOptions->GetUnderlyingHandle();
+                    }
                     proxy_options.auth_type = (enum aws_http_proxy_authentication_type)proxy_config.AuthType;
                     proxy_options.auth_username = aws_byte_cursor_from_c_str(proxy_config.BasicAuthUsername.c_str());
                     proxy_options.auth_password = aws_byte_cursor_from_c_str(proxy_config.BasicAuthPassword.c_str());
