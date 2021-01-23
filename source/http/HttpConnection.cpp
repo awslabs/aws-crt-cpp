@@ -306,7 +306,7 @@ namespace Aws
             }
 
             HttpClientConnectionProxyOptions::HttpClientConnectionProxyOptions()
-                : HostName(), Port(0), TlsOptions(), ProxyStrategyFactory()
+                : HostName(), Port(0), TlsOptions(), ProxyStrategy()
             {
             }
 

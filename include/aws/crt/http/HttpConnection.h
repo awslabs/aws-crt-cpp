@@ -29,7 +29,7 @@ namespace Aws
             class HttpStream;
             class HttpClientStream;
             class HttpRequest;
-            class HttpProxyStrategyFactory;
+            class HttpProxyStrategy;
             using HttpHeader = aws_http_header;
 
             /**
@@ -246,7 +246,7 @@ namespace Aws
 
                 enum aws_http_proxy_connection_type ProxyConnectionType;
 
-                std::shared_ptr<HttpProxyStrategyFactory> ProxyStrategyFactory;
+                std::shared_ptr<HttpProxyStrategy> ProxyStrategy;
             };
 
             /**

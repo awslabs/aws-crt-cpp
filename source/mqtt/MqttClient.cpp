@@ -382,10 +382,9 @@ namespace Aws
                         struct aws_http_proxy_options proxyOptions;
                         AWS_ZERO_STRUCT(proxyOptions);
 
-                        if (m_proxyOptions->ProxyStrategyFactory)
+                        if (m_proxyOptions->ProxyStrategy)
                         {
-                            proxyOptions.proxy_strategy_factory =
-                                m_proxyOptions->ProxyStrategyFactory->GetUnderlyingHandle();
+                            proxyOptions.proxy_strategy = m_proxyOptions->ProxyStrategy->GetUnderlyingHandle();
                         }
 
                         if (m_proxyOptions->TlsOptions)
