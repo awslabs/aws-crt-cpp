@@ -7,8 +7,8 @@
 #include <aws/crt/external/cJSON.h>
 #include <aws/crt/io/TlsOptions.h>
 
-#include <aws/common/ref_count.h>
 #include <aws/auth/auth.h>
+#include <aws/common/ref_count.h>
 #include <aws/http/http.h>
 #include <aws/mqtt/mqtt.h>
 
