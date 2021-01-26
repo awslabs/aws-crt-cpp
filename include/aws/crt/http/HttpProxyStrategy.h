@@ -16,7 +16,30 @@ namespace Aws
     {
         namespace Http
         {
-            class HttpProxyStrategy
+            struct AWS_CRT_CPP_API HttpProxyStrategyBasicAuthConfig
+            {
+                HttpProxyStrategyBasicAuthConfig() : ConnectionType(AWS_HPCT_HTTP_TUNNEL), Username(), Password() {}
+
+                enum aws_http_proxy_connection_type ConnectionType;
+
+                String Username;
+
+                String Password;
+            };
+
+            using KerberosGetTokenFunction = std::function<bool(String &)>;
+            using NtlmGetTokenFunction = std::function<bool(const String &, String &)>;
+
+            struct AWS_CRT_CPP_API HttpProxyStrategyAdaptiveConfig
+            {
+                HttpProxyStrategyAdaptiveConfig() : KerberosGetToken(), NtlmGetToken() {}
+
+                KerberosGetTokenFunction KerberosGetToken;
+
+                NtlmGetTokenFunction NtlmGetToken;
+            };
+
+            class AWS_CRT_CPP_API HttpProxyStrategy
             {
               public:
                 HttpProxyStrategy(struct aws_http_proxy_strategy *strategy);
@@ -25,15 +48,14 @@ namespace Aws
                 struct aws_http_proxy_strategy *GetUnderlyingHandle() const noexcept { return m_strategy; }
 
                 static std::shared_ptr<HttpProxyStrategy> CreateBasicHttpProxyStrategy(
-                    enum aws_http_proxy_connection_type connectionType,
-                    const String &username,
-                    const String &password,
+                    const HttpProxyStrategyBasicAuthConfig &config,
                     Allocator *allocator = g_allocator);
 
-                static std::shared_ptr<HttpProxyStrategy> CreateAdaptiveKerberosHttpProxyStrategy(
+                static std::shared_ptr<HttpProxyStrategy> CreateAdaptiveHttpProxyStrategy(
+                    const HttpProxyStrategyAdaptiveConfig &config,
                     Allocator *allocator = g_allocator);
 
-              private:
+              protected:
                 struct aws_http_proxy_strategy *m_strategy;
             };
         } // namespace Http
