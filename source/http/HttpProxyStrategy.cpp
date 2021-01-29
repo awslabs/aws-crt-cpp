@@ -46,8 +46,7 @@ namespace Aws
                     const KerberosGetTokenFunction &ntlmGetCredential,
                     const NtlmGetTokenFunction &ntlmGetToken)
                     : HttpProxyStrategy(nullptr), m_Allocator(allocator), m_KerberosGetToken(kerberosGetToken),
-                      m_NtlmGetCredential(ntlmGetCredential),  
-                    m_NtlmGetToken(ntlmGetToken)
+                      m_NtlmGetCredential(ntlmGetCredential), m_NtlmGetToken(ntlmGetToken)
                 {
                 }
 
@@ -107,7 +106,7 @@ namespace Aws
                     return NULL;
                 }
 
-                 static struct aws_string *NtlmGetToken(
+                static struct aws_string *NtlmGetToken(
                     void *user_data,
                     const struct aws_byte_cursor *challenge_cursor,
                     int *error_code)
@@ -119,8 +118,7 @@ namespace Aws
                     if (strategy->m_NtlmGetToken(challengeToken, ntlmToken))
                     {
                         struct aws_string *token = aws_string_new_from_c_str(strategy->m_Allocator, ntlmToken.c_str());
-                        
-                                       
+
                         if (token != NULL)
                         {
                             return token;
@@ -151,7 +149,7 @@ namespace Aws
                 std::shared_ptr<AdaptiveHttpProxyStrategy> adaptiveStrategy =
                     Aws::Crt::MakeShared<AdaptiveHttpProxyStrategy>(
                         allocator, allocator, config.KerberosGetToken, config.NtlmGetCredential, config.NtlmGetToken);
-                
+
                 struct aws_http_proxy_strategy_tunneling_kerberos_options kerberosConfig;
                 AWS_ZERO_STRUCT(kerberosConfig);
                 kerberosConfig.get_token = AdaptiveHttpProxyStrategy::KerberosGetToken;

@@ -32,7 +32,7 @@ namespace Aws
 
             struct AWS_CRT_CPP_API HttpProxyStrategyAdaptiveConfig
             {
-                HttpProxyStrategyAdaptiveConfig() : KerberosGetToken(), NtlmGetCredential(),NtlmGetToken() {}
+                HttpProxyStrategyAdaptiveConfig() : KerberosGetToken(), NtlmGetCredential(), NtlmGetToken() {}
 
                 KerberosGetTokenFunction KerberosGetToken;
 
