@@ -93,7 +93,7 @@ namespace Aws
                 bool retain)>;
 
             /**
-             * \deprecated Use OnMessageReceivedHandler
+             * @deprecated Use OnMessageReceivedHandler
              */
             using OnPublishReceivedHandler =
                 std::function<void(MqttConnection &connection, const String &topic, const ByteBuf &payload)>;
@@ -198,7 +198,7 @@ namespace Aws
                     OnSubAckHandler &&onSubAck) noexcept;
 
                 /**
-                 * \deprecated Use alternate Subscribe()
+                 * @deprecated Use alternate Subscribe()
                  */
                 uint16_t Subscribe(
                     const char *topicFilter,
@@ -217,7 +217,7 @@ namespace Aws
                     OnMultiSubAckHandler &&onOpComplete) noexcept;
 
                 /**
-                 * \deprecated Use alternate Subscribe()
+                 * @deprecated Use alternate Subscribe()
                  */
                 uint16_t Subscribe(
                     const Vector<std::pair<const char *, OnPublishReceivedHandler>> &topicFilters,
@@ -231,7 +231,7 @@ namespace Aws
                 bool SetOnMessageHandler(OnMessageReceivedHandler &&onPublish) noexcept;
 
                 /**
-                 * \deprecated Use alternate SetOnMessageHandler()
+                 * @deprecated Use alternate SetOnMessageHandler()
                  */
                 bool SetOnMessageHandler(OnPublishReceivedHandler &&onPublish) noexcept;
 
