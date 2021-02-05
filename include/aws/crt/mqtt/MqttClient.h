@@ -75,6 +75,25 @@ namespace Aws
 
             /**
              * Invoked upon receipt of a Publish message on a subscribed topic.
+             * @param connection    The connection object
+             * @param topic         The information channel to which the payload data was published.
+             * @param payload       The payload data.
+             * @param dup           DUP flag. If true, this might be re-delivery of an earlier
+             *                      attempt to send the message.
+             * @param qos           Quality of Service used to deliver the message.
+             * @param retain        Retain flag. If true, the message was sent as a result of
+             *                      a new subscription being made by the client.
+             */
+            using OnMessageReceivedHandler = std::function<void(
+                MqttConnection &connection,
+                const String &topic,
+                const ByteBuf &payload,
+                bool dup,
+                QOS qos,
+                bool retain)>;
+
+            /**
+             * \deprecated Use OnMessageReceivedHandler
              */
             using OnPublishReceivedHandler =
                 std::function<void(MqttConnection &connection, const String &topic, const ByteBuf &payload)>;
@@ -168,9 +187,18 @@ namespace Aws
                 aws_mqtt_client_connection *GetUnderlyingConnection() noexcept;
 
                 /**
-                 * Subscribes to topicFilter. OnPublishReceivedHandler will be invoked from an event-loop
+                 * Subscribes to topicFilter. OnMessageReceivedHandler will be invoked from an event-loop
                  * thread upon an incoming Publish message. OnSubAckHandler will be invoked
                  * upon receipt of a suback message.
+                 */
+                uint16_t Subscribe(
+                    const char *topicFilter,
+                    QOS qos,
+                    OnMessageReceivedHandler &&onPublish,
+                    OnSubAckHandler &&onSubAck) noexcept;
+
+                /**
+                 * \deprecated Use alternate Subscribe()
                  */
                 uint16_t Subscribe(
                     const char *topicFilter,
@@ -179,9 +207,17 @@ namespace Aws
                     OnSubAckHandler &&onSubAck) noexcept;
 
                 /**
-                 * Subscribes to multiple topicFilters. OnPublishReceivedHandler will be invoked from an event-loop
+                 * Subscribes to multiple topicFilters. OnMessageReceivedHandler will be invoked from an event-loop
                  * thread upon an incoming Publish message. OnMultiSubAckHandler will be invoked
                  * upon receipt of a suback message.
+                 */
+                uint16_t Subscribe(
+                    const Vector<std::pair<const char *, OnMessageReceivedHandler>> &topicFilters,
+                    QOS qos,
+                    OnMultiSubAckHandler &&onOpComplete) noexcept;
+
+                /**
+                 * \deprecated Use alternate Subscribe()
                  */
                 uint16_t Subscribe(
                     const Vector<std::pair<const char *, OnPublishReceivedHandler>> &topicFilters,
@@ -191,6 +227,11 @@ namespace Aws
                 /**
                  * Installs a handler for all incoming publish messages, regardless of if Subscribe has been
                  * called on the topic.
+                 */
+                bool SetOnMessageHandler(OnMessageReceivedHandler &&onPublish) noexcept;
+
+                /**
+                 * \deprecated Use alternate SetOnMessageHandler()
                  */
                 bool SetOnMessageHandler(OnPublishReceivedHandler &&onPublish) noexcept;
 
@@ -263,6 +304,9 @@ namespace Aws
                     aws_mqtt_client_connection *connection,
                     const aws_byte_cursor *topic,
                     const aws_byte_cursor *payload,
+                    bool dup,
+                    enum aws_mqtt_qos qos,
+                    bool retain,
                     void *user_data);
 
                 static void s_onSubAck(

@@ -66,7 +66,7 @@ namespace Aws
                 PubCallbackData() : connection(nullptr), allocator(nullptr) {}
 
                 MqttConnection *connection;
-                OnPublishReceivedHandler onPublishReceived;
+                OnMessageReceivedHandler onPublishReceived;
                 Allocator *allocator;
             };
 
@@ -80,6 +80,9 @@ namespace Aws
                 aws_mqtt_client_connection *,
                 const aws_byte_cursor *topic,
                 const aws_byte_cursor *payload,
+                bool dup,
+                enum aws_mqtt_qos qos,
+                bool retain,
                 void *userData)
             {
                 auto callbackData = reinterpret_cast<PubCallbackData *>(userData);
@@ -88,7 +91,8 @@ namespace Aws
                 {
                     String topicStr(reinterpret_cast<char *>(topic->ptr), topic->len);
                     ByteBuf payloadBuf = aws_byte_buf_from_array(payload->ptr, payload->len);
-                    callbackData->onPublishReceived(*(callbackData->connection), topicStr, payloadBuf);
+                    callbackData->onPublishReceived(
+                        *(callbackData->connection), topicStr, payloadBuf, dup, qos, retain);
                 }
             }
 
@@ -428,6 +432,17 @@ namespace Aws
 
             bool MqttConnection::SetOnMessageHandler(OnPublishReceivedHandler &&onPublish) noexcept
             {
+                return SetOnMessageHandler([onPublish](
+                                               MqttConnection &connection,
+                                               const String &topic,
+                                               const ByteBuf &payload,
+                                               bool dup,
+                                               QOS qos,
+                                               bool retain) { onPublish(connection, topic, payload); });
+            }
+
+            bool MqttConnection::SetOnMessageHandler(OnMessageReceivedHandler &&onPublish) noexcept
+            {
                 auto pubCallbackData = Aws::Crt::New<PubCallbackData>(m_owningClient->allocator);
 
                 if (!pubCallbackData)
@@ -456,7 +471,25 @@ namespace Aws
                 OnPublishReceivedHandler &&onPublish,
                 OnSubAckHandler &&onSubAck) noexcept
             {
+                return Subscribe(
+                    topicFilter,
+                    qos,
+                    [onPublish](
+                        MqttConnection &connection,
+                        const String &topic,
+                        const ByteBuf &payload,
+                        bool dup,
+                        QOS qos,
+                        bool retain) { onPublish(connection, topic, payload); },
+                    std::move(onSubAck));
+            }
 
+            uint16_t MqttConnection::Subscribe(
+                const char *topicFilter,
+                QOS qos,
+                OnMessageReceivedHandler &&onPublish,
+                OnSubAckHandler &&onSubAck) noexcept
+            {
                 auto pubCallbackData = Crt::New<PubCallbackData>(m_owningClient->allocator);
 
                 if (!pubCallbackData)
@@ -506,6 +539,29 @@ namespace Aws
 
             uint16_t MqttConnection::Subscribe(
                 const Vector<std::pair<const char *, OnPublishReceivedHandler>> &topicFilters,
+                QOS qos,
+                OnMultiSubAckHandler &&onSubAck) noexcept
+            {
+                Vector<std::pair<const char *, OnMessageReceivedHandler>> newTopicFilters;
+                newTopicFilters.reserve(topicFilters.size());
+                for (const auto &pair : topicFilters)
+                {
+                    const OnPublishReceivedHandler &pubHandler = pair.second;
+                    newTopicFilters.emplace_back(
+                        pair.first,
+                        [pubHandler](
+                            MqttConnection &connection,
+                            const String &topic,
+                            const ByteBuf &payload,
+                            bool dup,
+                            QOS qos,
+                            bool retain) { pubHandler(connection, topic, payload); });
+                }
+                return Subscribe(newTopicFilters, qos, std::move(onSubAck));
+            }
+
+            uint16_t MqttConnection::Subscribe(
+                const Vector<std::pair<const char *, OnMessageReceivedHandler>> &topicFilters,
                 QOS qos,
                 OnMultiSubAckHandler &&onSubAck) noexcept
             {
