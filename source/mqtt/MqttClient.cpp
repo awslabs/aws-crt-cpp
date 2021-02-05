@@ -432,13 +432,11 @@ namespace Aws
 
             bool MqttConnection::SetOnMessageHandler(OnPublishReceivedHandler &&onPublish) noexcept
             {
-                return SetOnMessageHandler([onPublish](
-                                               MqttConnection &connection,
-                                               const String &topic,
-                                               const ByteBuf &payload,
-                                               bool dup,
-                                               QOS qos,
-                                               bool retain) { onPublish(connection, topic, payload); });
+                return SetOnMessageHandler(
+                    [onPublish](
+                        MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
+                        onPublish(connection, topic, payload);
+                    });
             }
 
             bool MqttConnection::SetOnMessageHandler(OnMessageReceivedHandler &&onPublish) noexcept
@@ -475,12 +473,9 @@ namespace Aws
                     topicFilter,
                     qos,
                     [onPublish](
-                        MqttConnection &connection,
-                        const String &topic,
-                        const ByteBuf &payload,
-                        bool dup,
-                        QOS qos,
-                        bool retain) { onPublish(connection, topic, payload); },
+                        MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
+                        onPublish(connection, topic, payload);
+                    },
                     std::move(onSubAck));
             }
 
@@ -550,12 +545,9 @@ namespace Aws
                     newTopicFilters.emplace_back(
                         pair.first,
                         [pubHandler](
-                            MqttConnection &connection,
-                            const String &topic,
-                            const ByteBuf &payload,
-                            bool dup,
-                            QOS qos,
-                            bool retain) { pubHandler(connection, topic, payload); });
+                            MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
+                            pubHandler(connection, topic, payload);
+                        });
                 }
                 return Subscribe(newTopicFilters, qos, std::move(onSubAck));
             }
