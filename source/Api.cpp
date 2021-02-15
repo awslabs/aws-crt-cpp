@@ -27,15 +27,13 @@ namespace Aws
         {
             // sets up the StlAllocator for use.
             g_allocator = allocator;
-            aws_http_library_init(allocator);
             aws_mqtt_library_init(allocator);
-            aws_auth_library_init(allocator);
+            aws_s3_library_init(allocator);
 
             cJSON_Hooks hooks;
             hooks.malloc_fn = s_cJSONAlloc;
             hooks.free_fn = s_cJSONFree;
             cJSON_InitHooks(&hooks);
-            aws_s3_library_init(allocator);
         }
 
         ApiHandle::ApiHandle(Allocator *allocator) noexcept
@@ -61,12 +59,10 @@ namespace Aws
                 aws_logger_clean_up(&logger);
             }
 
-            aws_s3_library_clean_up();
 
             g_allocator = nullptr;
-            aws_auth_library_clean_up();
+            aws_s3_library_clean_up();
             aws_mqtt_library_clean_up();
-            aws_http_library_clean_up();
         }
 
         void ApiHandle::InitializeLogging(Aws::Crt::LogLevel level, const char *filename)
