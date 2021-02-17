@@ -194,7 +194,7 @@ namespace Aws
                 uint16_t Subscribe(
                     const char *topicFilter,
                     QOS qos,
-                    OnMessageReceivedHandler &&onPublish,
+                    OnMessageReceivedHandler &&onMessage,
                     OnSubAckHandler &&onSubAck) noexcept;
 
                 /**
@@ -228,7 +228,7 @@ namespace Aws
                  * Installs a handler for all incoming publish messages, regardless of if Subscribe has been
                  * called on the topic.
                  */
-                bool SetOnMessageHandler(OnMessageReceivedHandler &&onPublish) noexcept;
+                bool SetOnMessageHandler(OnMessageReceivedHandler &&onMessage) noexcept;
 
                 /**
                  * @deprecated Use alternate SetOnMessageHandler()

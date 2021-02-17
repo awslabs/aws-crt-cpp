@@ -66,7 +66,7 @@ namespace Aws
                 PubCallbackData() : connection(nullptr), allocator(nullptr) {}
 
                 MqttConnection *connection;
-                OnMessageReceivedHandler onPublishReceived;
+                OnMessageReceivedHandler onMessageReceived;
                 Allocator *allocator;
             };
 
@@ -87,11 +87,11 @@ namespace Aws
             {
                 auto callbackData = reinterpret_cast<PubCallbackData *>(userData);
 
-                if (callbackData->onPublishReceived)
+                if (callbackData->onMessageReceived)
                 {
                     String topicStr(reinterpret_cast<char *>(topic->ptr), topic->len);
                     ByteBuf payloadBuf = aws_byte_buf_from_array(payload->ptr, payload->len);
-                    callbackData->onPublishReceived(
+                    callbackData->onMessageReceived(
                         *(callbackData->connection), topicStr, payloadBuf, dup, qos, retain);
                 }
             }
@@ -439,7 +439,7 @@ namespace Aws
                     });
             }
 
-            bool MqttConnection::SetOnMessageHandler(OnMessageReceivedHandler &&onPublish) noexcept
+            bool MqttConnection::SetOnMessageHandler(OnMessageReceivedHandler &&onMessage) noexcept
             {
                 auto pubCallbackData = Aws::Crt::New<PubCallbackData>(m_owningClient->allocator);
 
@@ -449,7 +449,7 @@ namespace Aws
                 }
 
                 pubCallbackData->connection = this;
-                pubCallbackData->onPublishReceived = std::move(onPublish);
+                pubCallbackData->onMessageReceived = std::move(onMessage);
                 pubCallbackData->allocator = m_owningClient->allocator;
 
                 if (!aws_mqtt_client_connection_set_on_any_publish_handler(
@@ -482,7 +482,7 @@ namespace Aws
             uint16_t MqttConnection::Subscribe(
                 const char *topicFilter,
                 QOS qos,
-                OnMessageReceivedHandler &&onPublish,
+                OnMessageReceivedHandler &&onMessage,
                 OnSubAckHandler &&onSubAck) noexcept
             {
                 auto pubCallbackData = Crt::New<PubCallbackData>(m_owningClient->allocator);
@@ -493,7 +493,7 @@ namespace Aws
                 }
 
                 pubCallbackData->connection = this;
-                pubCallbackData->onPublishReceived = std::move(onPublish);
+                pubCallbackData->onMessageReceived = std::move(onMessage);
                 pubCallbackData->allocator = m_owningClient->allocator;
 
                 auto subAckCallbackData = Crt::New<SubAckCallbackData>(m_owningClient->allocator);
@@ -585,7 +585,7 @@ namespace Aws
                     }
 
                     pubCallbackData->connection = this;
-                    pubCallbackData->onPublishReceived = topicFilter.second;
+                    pubCallbackData->onMessageReceived = topicFilter.second;
                     pubCallbackData->allocator = m_owningClient->allocator;
 
                     ByteBuf topicFilterBuf = aws_byte_buf_from_c_str(topicFilter.first);
