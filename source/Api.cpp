@@ -51,7 +51,7 @@ namespace Aws
         {
             if (shutdownBehavior == ApiHandleShutdownBehavior::Blocking)
             {
-                aws_global_thread_creator_shutdown_wait();
+                aws_thread_join_all_managed();
             }
 
             if (aws_logger_get() == &logger)
