@@ -5,6 +5,7 @@
 #include <aws/crt/http/HttpProxyStrategy.h>
 
 #include <aws/common/string.h>
+#include <aws/crt/http/HttpConnection.h>
 #include <aws/http/proxy_strategy.h>
 
 namespace Aws
@@ -17,13 +18,18 @@ namespace Aws
 
             HttpProxyStrategy::~HttpProxyStrategy() { aws_http_proxy_strategy_release(m_strategy); }
 
+            HttpProxyStrategyBasicAuthConfig::HttpProxyStrategyBasicAuthConfig()
+                : ConnectionType(AwsHttpProxyConnectionType::Legacy), Username(), Password()
+            {
+            }
+
             std::shared_ptr<HttpProxyStrategy> HttpProxyStrategy::CreateBasicHttpProxyStrategy(
                 const HttpProxyStrategyBasicAuthConfig &config,
                 Allocator *allocator)
             {
                 struct aws_http_proxy_strategy_basic_auth_options basicConfig;
                 AWS_ZERO_STRUCT(basicConfig);
-                basicConfig.proxy_connection_type = config.ConnectionType;
+                basicConfig.proxy_connection_type = (enum aws_http_proxy_connection_type)config.ConnectionType;
                 basicConfig.user_name = aws_byte_cursor_from_c_str(config.Username.c_str());
                 basicConfig.password = aws_byte_cursor_from_c_str(config.Password.c_str());
 

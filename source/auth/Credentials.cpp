@@ -287,20 +287,7 @@ namespace Aws
                 if (config.ProxyOptions.has_value())
                 {
                     const Http::HttpClientConnectionProxyOptions &proxy_config = config.ProxyOptions.value();
-
-                    proxy_options.connection_type = proxy_config.ProxyConnectionType;
-                    proxy_options.host = aws_byte_cursor_from_c_str(proxy_config.HostName.c_str());
-                    proxy_options.port = proxy_config.Port;
-
-                    if (proxy_config.TlsOptions.has_value())
-                    {
-                        proxy_options.tls_options = proxy_config.TlsOptions->GetUnderlyingHandle();
-                    }
-
-                    if (proxy_config.ProxyStrategy)
-                    {
-                        proxy_options.proxy_strategy = proxy_config.ProxyStrategy->GetUnderlyingHandle();
-                    }
+                    proxy_config.InitializeRawProxyOptions(proxy_options);
 
                     raw_config.proxy_options = &proxy_options;
                 }

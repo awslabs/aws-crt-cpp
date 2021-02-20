@@ -8,7 +8,7 @@
 
 #include <memory>
 
-#include <aws/http/proxy_strategy.h>
+struct aws_http_proxy_strategy;
 
 namespace Aws
 {
@@ -16,11 +16,13 @@ namespace Aws
     {
         namespace Http
         {
+            enum class AwsHttpProxyConnectionType;
+
             struct AWS_CRT_CPP_API HttpProxyStrategyBasicAuthConfig
             {
-                HttpProxyStrategyBasicAuthConfig() : ConnectionType(AWS_HPCT_HTTP_TUNNEL), Username(), Password() {}
+                HttpProxyStrategyBasicAuthConfig();
 
-                enum aws_http_proxy_connection_type ConnectionType;
+                AwsHttpProxyConnectionType ConnectionType;
 
                 String Username;
 

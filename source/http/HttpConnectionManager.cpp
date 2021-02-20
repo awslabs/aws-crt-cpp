@@ -80,20 +80,8 @@ namespace Aws
                 AWS_ZERO_STRUCT(proxyOptions);
                 if (connectionOptions.ProxyOptions)
                 {
-                    const auto &proxyOpts = connectionOptions.ProxyOptions;
-                    proxyOptions.host = aws_byte_cursor_from_c_str(proxyOpts->HostName.c_str());
-                    proxyOptions.port = proxyOpts->Port;
-
-                    if (proxyOpts->ProxyStrategy)
-                    {
-                        proxyOptions.proxy_strategy = proxyOpts->ProxyStrategy->GetUnderlyingHandle();
-                    }
-
-                    if (proxyOpts->TlsOptions)
-                    {
-                        proxyOptions.tls_options =
-                            const_cast<aws_tls_connection_options *>(proxyOpts->TlsOptions->GetUnderlyingHandle());
-                    }
+                    const auto &proxyOpts = connectionOptions.ProxyOptions.value();
+                    proxyOpts.InitializeRawProxyOptions(proxyOptions);
 
                     managerOptions.proxy_options = &proxyOptions;
                 }

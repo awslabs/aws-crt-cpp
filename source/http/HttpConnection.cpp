@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/http/HttpConnection.h>
+#include <aws/crt/http/HttpProxyStrategy.h>
 #include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Bootstrap.h>
 
@@ -308,6 +309,32 @@ namespace Aws
             HttpClientConnectionProxyOptions::HttpClientConnectionProxyOptions()
                 : HostName(), Port(0), TlsOptions(), ProxyStrategy()
             {
+            }
+
+            void HttpClientConnectionProxyOptions::InitializeRawProxyOptions(
+                struct aws_http_proxy_options &rawOptions) const
+            {
+                AWS_ZERO_STRUCT(rawOptions);
+                rawOptions.connection_type = (enum aws_http_proxy_connection_type)ProxyConnectionType;
+                rawOptions.host = aws_byte_cursor_from_c_str(HostName.c_str());
+                rawOptions.port = Port;
+
+                if (TlsOptions.has_value())
+                {
+                    rawOptions.tls_options = TlsOptions->GetUnderlyingHandle();
+                }
+
+                if (ProxyStrategy)
+                {
+                    rawOptions.proxy_strategy = ProxyStrategy->GetUnderlyingHandle();
+                }
+
+                if (AuthType == AwsHttpProxyAuthenticationType::Basic)
+                {
+                    rawOptions.auth_type = AWS_HPAT_BASIC;
+                    rawOptions.auth_username = ByteCursorFromCString(BasicAuthUsername.c_str());
+                    rawOptions.auth_password = ByteCursorFromCString(BasicAuthPassword.c_str());
+                }
             }
 
             HttpClientConnectionOptions::HttpClientConnectionOptions()

@@ -384,22 +384,7 @@ namespace Aws
                     if (m_proxyOptions)
                     {
                         struct aws_http_proxy_options proxyOptions;
-                        AWS_ZERO_STRUCT(proxyOptions);
-
-                        if (m_proxyOptions->ProxyStrategy)
-                        {
-                            proxyOptions.proxy_strategy = m_proxyOptions->ProxyStrategy->GetUnderlyingHandle();
-                        }
-
-                        if (m_proxyOptions->TlsOptions)
-                        {
-                            proxyOptions.tls_options = const_cast<struct aws_tls_connection_options *>(
-                                m_proxyOptions->TlsOptions->GetUnderlyingHandle());
-                        }
-
-                        proxyOptions.connection_type = m_proxyOptions->ProxyConnectionType;
-                        proxyOptions.host = ByteCursorFromCString(m_proxyOptions->HostName.c_str());
-                        proxyOptions.port = m_proxyOptions->Port;
+                        m_proxyOptions->InitializeRawProxyOptions(proxyOptions);
 
                         if (aws_mqtt_client_connection_set_websocket_proxy_options(
                                 m_underlyingConnection, &proxyOptions))
