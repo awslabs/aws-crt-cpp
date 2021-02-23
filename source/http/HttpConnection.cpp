@@ -307,7 +307,8 @@ namespace Aws
             }
 
             HttpClientConnectionProxyOptions::HttpClientConnectionProxyOptions()
-                : HostName(), Port(0), TlsOptions(), ProxyStrategy()
+                : HostName(), Port(0), TlsOptions(), ProxyConnectionType(AwsHttpProxyConnectionType::Legacy),
+                  ProxyStrategy(), AuthType(AwsHttpProxyAuthenticationType::None)
             {
             }
 

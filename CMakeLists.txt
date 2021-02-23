@@ -6,6 +6,31 @@ endif()
 project(aws-crt-cpp CXX C)
 option(BUILD_DEPS "Builds aws common runtime dependencies as part of build, only do this if you don't want to control your dependency chain." OFF)
 
+# Proxy integration test control - In addition to this option, all proxy tests require the following environment variables set appropriately when running tests:
+#
+# AWS_TEST_HTTP_PROXY_HOST - host address of the proxy to use for tests that make open connections to the proxy
+# AWS_TEST_HTTP_PROXY_PORT - port to use for tests that make open connections to the proxy
+# AWS_TEST_HTTPS_PROXY_HOST - host address of the proxy to use for tests that make tls-protected connections to the proxy
+# AWS_TEST_HTTPS_PROXY_PORT - port to use for tests that make tls-protected connections to the proxy
+# AWS_TEST_HTTP_PROXY_BASIC_HOST - host address of the proxy to use for tests that make open connections to the proxy with basic authentication
+# AWS_TEST_HTTP_PROXY_BASIC_PORT - port to use for tests that make open connections to the proxy with basic authentication
+#
+# The x509 proxy tests also require:
+#
+# X509_ENDPOINT
+# AWS_TLS_CERT_PATH
+# AWS_TLS_KEY_PATH
+# AWS_TLS_ROOT_CERT_PATH
+#
+# And the mqtt websocket tests require x509 sourced credentials with sufficient permission to
+# connect to IoT Core as well as:
+#
+# MQTT_ENDPOINT
+#
+# ToDo: Scripts to populate environment variables via the CLI and IoT, SecretsManager calls
+#
+option(ENABLE_PROXY_INTEGRATION_TESTS "Whether or not to build and run the proxy integration tests that rely on a proxy server installed and running locally" OFF)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(AwsCheckHeadersCxx)
 include(CTest)

@@ -62,6 +62,12 @@ if (AWS_BUILDING_ON_EC2)
     add_test_case(TestImdsClientGetCredentials)
 endif()
 
+if (ENABLE_PROXY_INTEGRATION_TESTS)
+    add_test_case(ConnectionManagerTunnelingProxyHttp)
+    add_test_case(ConnectionManagerTunnelingProxyHttps)
+    add_test_case(ConnectionManagerForwardingProxy)
+endif()
+
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 
 add_custom_command(TARGET ${TEST_BINARY_NAME} PRE_BUILD
