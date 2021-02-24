@@ -11,22 +11,24 @@
 #include <aws/crt/http/HttpProxyStrategy.h>
 #include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Uri.h>
+#include <aws/crt/UUID.h>
+#include <aws/iot/MqttClient.h>
 
 #include <aws/testing/aws_test_harness.h>
 
 #include <condition_variable>
 #include <mutex>
 
+using namespace Aws;
 using namespace Aws::Crt;
-
 using namespace Aws::Crt::Auth;
 using namespace Aws::Crt::Http;
 using namespace Aws::Crt::Io;
 
-struct HttpConnectionManagerProxyTestState
+struct ProxyIntegrationTestState
 {
-    HttpConnectionManagerProxyTestState(struct aws_allocator *allocator)
-        : m_allocator(allocator), m_streamComplete(false), m_streamStatusCode(0), m_credentialsFetched(false)
+    ProxyIntegrationTestState(struct aws_allocator *allocator)
+        : m_allocator(allocator), m_streamComplete(false), m_streamStatusCode(0), m_credentialsFetched(false), m_mqttConnectComplete(false), m_mqttDisconnectComplete(false), m_mqttErrorCode(0)
     {
     }
 
@@ -39,6 +41,10 @@ struct HttpConnectionManagerProxyTestState
     int32_t m_streamStatusCode;
     Aws::Crt::StringStream m_responseBuffer;
     bool m_credentialsFetched;
+
+    bool m_mqttConnectComplete;
+    bool m_mqttDisconnectComplete;
+    int m_mqttErrorCode;
 
     HttpClientConnectionProxyOptions m_proxyOptions;
     HttpClientConnectionOptions m_connectionOptions;
@@ -54,12 +60,14 @@ struct HttpConnectionManagerProxyTestState
     std::shared_ptr<ICredentialsProvider> m_x509Provider;
     std::shared_ptr<TlsContext> m_x509TlsContext;
     std::shared_ptr<Credentials> m_credentials;
+    std::shared_ptr<Iot::MqttClient> m_mqttClient;
+    std::shared_ptr<Mqtt::MqttConnection> m_mqttConnection;
 };
 
 AWS_STATIC_STRING_FROM_LITERAL(s_https_endpoint, "https://s3.amazonaws.com");
 AWS_STATIC_STRING_FROM_LITERAL(s_http_endpoint, "http://www.example.com");
 
-static void s_InitializeProxyTestSupport(HttpConnectionManagerProxyTestState &testState)
+static void s_InitializeProxyTestSupport(ProxyIntegrationTestState &testState)
 {
 
     struct aws_allocator *allocator = testState.m_allocator;
@@ -71,8 +79,7 @@ static void s_InitializeProxyTestSupport(HttpConnectionManagerProxyTestState &te
         allocator, *testState.m_eventLoopGroup, *testState.m_hostResolver, allocator);
 }
 
-static void s_InitializeProxiedConnectionOptions(
-    HttpConnectionManagerProxyTestState &testState,
+static void s_InitializeProxiedConnectionOptions(ProxyIntegrationTestState &testState,
     struct aws_byte_cursor url)
 {
     struct aws_allocator *allocator = testState.m_allocator;
@@ -108,8 +115,7 @@ static void s_InitializeProxiedConnectionOptions(
     }
 }
 
-static void s_InitializeProxiedConnectionManager(
-    HttpConnectionManagerProxyTestState &testState,
+static void s_InitializeProxiedConnectionManager(ProxyIntegrationTestState &testState,
     struct aws_byte_cursor url)
 {
     struct aws_allocator *allocator = testState.m_allocator;
@@ -125,7 +131,7 @@ static void s_InitializeProxiedConnectionManager(
         Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
 }
 
-static void s_InitializeProxiedRawConnection(HttpConnectionManagerProxyTestState &testState, struct aws_byte_cursor url)
+static void s_InitializeProxiedRawConnection(ProxyIntegrationTestState &testState, struct aws_byte_cursor url)
 {
     struct aws_allocator *allocator = testState.m_allocator;
 
@@ -161,7 +167,7 @@ static void s_InitializeProxiedRawConnection(HttpConnectionManagerProxyTestState
     testState.m_connection = connection;
 }
 
-static void s_AcquireProxyTestHttpConnection(HttpConnectionManagerProxyTestState &testState)
+static void s_AcquireProxyTestHttpConnection(ProxyIntegrationTestState &testState)
 {
 
     int acquisitionErrorCode = 0;
@@ -238,7 +244,7 @@ static const struct aws_string *s_GetProxyPortVariable(enum HttpProxyTestHostTyp
 }
 
 static int s_InitializeProxyEnvironmentalOptions(
-    HttpConnectionManagerProxyTestState &testState,
+    ProxyIntegrationTestState &testState,
     enum HttpProxyTestHostType proxyHostType)
 {
     struct aws_allocator *allocator = testState.m_allocator;
@@ -264,7 +270,7 @@ static int s_TestConnectionManagerTunnelingProxyHttp(struct aws_allocator *alloc
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
 
-        HttpConnectionManagerProxyTestState testState(allocator);
+        ProxyIntegrationTestState testState(allocator);
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::Http);
         testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
 
@@ -280,7 +286,7 @@ static int s_TestConnectionManagerTunnelingProxyHttp(struct aws_allocator *alloc
 
 AWS_TEST_CASE(ConnectionManagerTunnelingProxyHttp, s_TestConnectionManagerTunnelingProxyHttp)
 
-static void s_InitializeTlsToProxy(HttpConnectionManagerProxyTestState &testState)
+static void s_InitializeTlsToProxy(ProxyIntegrationTestState &testState)
 {
     struct aws_allocator *allocator = testState.m_allocator;
 
@@ -304,7 +310,7 @@ static int s_TestConnectionManagerTunnelingProxyHttps(struct aws_allocator *allo
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
 
-        HttpConnectionManagerProxyTestState testState(allocator);
+        ProxyIntegrationTestState testState(allocator);
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::Https);
         testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
 
@@ -322,7 +328,7 @@ static int s_TestConnectionManagerTunnelingProxyHttps(struct aws_allocator *allo
 
 AWS_TEST_CASE(ConnectionManagerTunnelingProxyHttps, s_TestConnectionManagerTunnelingProxyHttps)
 
-static void s_MakeForwardingTestRequest(HttpConnectionManagerProxyTestState &testState)
+static void s_MakeForwardingTestRequest(ProxyIntegrationTestState &testState)
 {
     struct aws_allocator *allocator = testState.m_allocator;
 
@@ -361,7 +367,7 @@ static void s_MakeForwardingTestRequest(HttpConnectionManagerProxyTestState &tes
     testState.m_stream->Activate();
 }
 
-static void s_WaitOnTestStream(HttpConnectionManagerProxyTestState &testState)
+static void s_WaitOnTestStream(ProxyIntegrationTestState &testState)
 {
     std::unique_lock<std::mutex> uniqueLock(testState.m_lock);
     testState.m_signal.wait(
@@ -374,7 +380,7 @@ static int s_TestConnectionManagerForwardingProxy(struct aws_allocator *allocato
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
 
-        HttpConnectionManagerProxyTestState testState(allocator);
+        ProxyIntegrationTestState testState(allocator);
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::Http);
         testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Forwarding;
 
@@ -402,7 +408,7 @@ AWS_TEST_CASE(ConnectionManagerForwardingProxy, s_TestConnectionManagerForwardin
 AWS_STATIC_STRING_FROM_LITERAL(s_basicAuthUsername, "Terb");
 AWS_STATIC_STRING_FROM_LITERAL(s_basicAuthPassword, "Derp");
 
-static void s_InitializeDeprecatedBasicAuth(HttpConnectionManagerProxyTestState &testState)
+static void s_InitializeDeprecatedBasicAuth(ProxyIntegrationTestState &testState)
 {
     testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Legacy;
     testState.m_proxyOptions.AuthType = AwsHttpProxyAuthenticationType::Basic;
@@ -416,7 +422,7 @@ static int s_TestConnectionManagerTunnelingProxyBasicAuthDeprecated(struct aws_a
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
 
-        HttpConnectionManagerProxyTestState testState(allocator);
+        ProxyIntegrationTestState testState(allocator);
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::HttpBasic);
         s_InitializeDeprecatedBasicAuth(testState);
         s_InitializeProxiedConnectionManager(testState, aws_byte_cursor_from_string(s_https_endpoint));
@@ -433,7 +439,7 @@ AWS_TEST_CASE(
     ConnectionManagerTunnelingProxyBasicAuthDeprecated,
     s_TestConnectionManagerTunnelingProxyBasicAuthDeprecated)
 
-static void s_InitializeBasicAuth(HttpConnectionManagerProxyTestState &testState)
+static void s_InitializeBasicAuth(ProxyIntegrationTestState &testState)
 {
     struct aws_allocator *allocator = testState.m_allocator;
 
@@ -452,7 +458,7 @@ static int s_TestConnectionManagerTunnelingProxyBasicAuth(struct aws_allocator *
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
 
-        HttpConnectionManagerProxyTestState testState(allocator);
+        ProxyIntegrationTestState testState(allocator);
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::HttpBasic);
         testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
 
@@ -476,7 +482,7 @@ static int s_TestDirectConnectionTunnelingProxyHttp(struct aws_allocator *alloca
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
 
-        HttpConnectionManagerProxyTestState testState(allocator);
+        ProxyIntegrationTestState testState(allocator);
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::Http);
         testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
 
@@ -497,7 +503,7 @@ static int s_TestDirectConnectionTunnelingProxyHttps(struct aws_allocator *alloc
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
 
-        HttpConnectionManagerProxyTestState testState(allocator);
+        ProxyIntegrationTestState testState(allocator);
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::Https);
         testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
 
@@ -520,7 +526,7 @@ static int s_TestDirectConnectionForwardingProxy(struct aws_allocator *allocator
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
 
-        HttpConnectionManagerProxyTestState testState(allocator);
+        ProxyIntegrationTestState testState(allocator);
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::Http);
         testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Forwarding;
 
@@ -549,7 +555,7 @@ static int s_TestDirectConnectionTunnelingProxyBasicAuthDeprecated(struct aws_al
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
 
-        HttpConnectionManagerProxyTestState testState(allocator);
+        ProxyIntegrationTestState testState(allocator);
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::HttpBasic);
         s_InitializeDeprecatedBasicAuth(testState);
 
@@ -571,7 +577,7 @@ static int s_TestDirectConnectionTunnelingProxyBasicAuth(struct aws_allocator *a
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
 
-        HttpConnectionManagerProxyTestState testState(allocator);
+        ProxyIntegrationTestState testState(allocator);
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::HttpBasic);
         testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
 
@@ -594,7 +600,7 @@ AWS_STATIC_STRING_FROM_LITERAL(s_CertificatePathVariable, "AWS_TEST_TLS_CERT_PAT
 AWS_STATIC_STRING_FROM_LITERAL(s_KeyPathVariable, "AWS_TEST_TLS_KEY_PATH");
 AWS_STATIC_STRING_FROM_LITERAL(s_RootCAPathVariable, "AWS_TEST_TLS_ROOT_CERT_PATH");
 
-static int s_InitializeX509Provider(HttpConnectionManagerProxyTestState &testState)
+static int s_InitializeX509Provider(ProxyIntegrationTestState &testState)
 {
 
     struct aws_allocator *allocator = testState.m_allocator;
@@ -643,7 +649,7 @@ static int s_InitializeX509Provider(HttpConnectionManagerProxyTestState &testSta
     return AWS_OP_SUCCESS;
 }
 
-static int s_X509GetCredentials(HttpConnectionManagerProxyTestState &testState)
+static int s_X509GetCredentials(ProxyIntegrationTestState &testState)
 {
 
     auto credentialsResolved = [&testState](std::shared_ptr<Credentials> credentials, int errorCode) {
@@ -659,7 +665,7 @@ static int s_X509GetCredentials(HttpConnectionManagerProxyTestState &testState)
     ASSERT_TRUE(testState.m_x509Provider->GetCredentials(credentialsResolved));
 }
 
-static void s_WaitOnCredentials(HttpConnectionManagerProxyTestState &testState)
+static void s_WaitOnCredentials(ProxyIntegrationTestState &testState)
 {
     std::unique_lock<std::mutex> uniqueLock(testState.m_lock);
     testState.m_signal.wait(uniqueLock, [&testState]() { return testState.m_credentialsFetched; });
@@ -671,7 +677,7 @@ static int s_TestX509ProxyHttpGetCredentials(struct aws_allocator *allocator, vo
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
 
-        HttpConnectionManagerProxyTestState testState(allocator);
+        ProxyIntegrationTestState testState(allocator);
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::Http);
         testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
 
@@ -695,9 +701,8 @@ static int s_TestX509ProxyHttpsGetCredentials(struct aws_allocator *allocator, v
     (void)ctx;
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
-        apiHandle.InitializeLogging(LogLevel::Trace, "/tmp/log.txt");
 
-        HttpConnectionManagerProxyTestState testState(allocator);
+        ProxyIntegrationTestState testState(allocator);
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::Https);
         testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
 
@@ -724,7 +729,7 @@ static int s_TestX509ProxyBasicAuthDeprecatedGetCredentials(struct aws_allocator
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
 
-        HttpConnectionManagerProxyTestState testState(allocator);
+        ProxyIntegrationTestState testState(allocator);
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::HttpBasic);
         s_InitializeDeprecatedBasicAuth(testState);
 
@@ -749,7 +754,7 @@ static int s_TestX509ProxyBasicAuthGetCredentials(struct aws_allocator *allocato
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
 
-        HttpConnectionManagerProxyTestState testState(allocator);
+        ProxyIntegrationTestState testState(allocator);
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::HttpBasic);
         s_InitializeBasicAuth(testState);
         testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
@@ -768,3 +773,180 @@ static int s_TestX509ProxyBasicAuthGetCredentials(struct aws_allocator *allocato
 }
 
 AWS_TEST_CASE(X509ProxyBasicAuthGetCredentials, s_TestX509ProxyBasicAuthGetCredentials)
+
+AWS_STATIC_STRING_FROM_LITERAL(s_AwsIotSigningRegionVariable, "AWS_TEST_IOT_SIGNING_REGION");
+AWS_STATIC_STRING_FROM_LITERAL(s_AwsIotMqttEndpointVariable, "AWS_TEST_IOT_MQTT_ENDPOINT");
+
+static int s_BuildMqttConnection(ProxyIntegrationTestState &testState) {
+
+    struct aws_allocator *allocator = testState.m_allocator;
+
+    testState.m_mqttClient = Aws::Crt::MakeShared<Aws::Iot::MqttClient>(allocator, *testState.m_clientBootstrap, allocator);
+
+    struct aws_string *awsIotSigningRegion = NULL;
+    struct aws_string *awsIotEndpoint = NULL;
+    ASSERT_SUCCESS(aws_get_environment_value(allocator, s_AwsIotSigningRegionVariable, &awsIotSigningRegion));
+    ASSERT_SUCCESS(aws_get_environment_value(allocator, s_AwsIotMqttEndpointVariable, &awsIotEndpoint));
+
+    Iot::WebsocketConfig config(Aws::Crt::String((const char *)awsIotSigningRegion->bytes), testState.m_x509Provider);
+    config.ProxyOptions = testState.m_proxyOptions;
+
+    Iot::MqttClientConnectionConfigBuilder builder = Aws::Iot::MqttClientConnectionConfigBuilder(config);
+    builder.WithEndpoint(Aws::Crt::String((const char *)awsIotEndpoint->bytes));
+
+    testState.m_mqttConnection = testState.m_mqttClient->NewConnection(builder.Build());
+    ASSERT_NOT_NULL(testState.m_mqttConnection.get());
+
+    aws_string_destroy(awsIotSigningRegion);
+    aws_string_destroy(awsIotEndpoint);
+
+    return AWS_OP_SUCCESS;
+}
+
+static int s_ConnectToIotCore(ProxyIntegrationTestState &testState) {
+
+    testState.m_mqttConnection->OnConnectionCompleted = [&testState](Mqtt::MqttConnection &, int errorCode, Mqtt::ReturnCode , bool ) {
+      std::lock_guard<std::mutex> lock(testState.m_lock);
+
+      testState.m_mqttConnectComplete = true;
+      testState.m_mqttErrorCode = errorCode;
+      testState.m_signal.notify_one();
+    };
+
+    testState.m_mqttConnection->OnDisconnect = [&testState](Mqtt::MqttConnection &) {
+      std::lock_guard<std::mutex> lock(testState.m_lock);
+
+      testState.m_mqttDisconnectComplete = true;
+      testState.m_signal.notify_one();
+    };
+
+    UUID uuid;
+
+    Aws::Crt::StringStream clientId;
+    clientId << "IntegrationTest-" << uuid.ToString();
+
+    ASSERT_TRUE(testState.m_mqttConnection->Connect(clientId.str().c_str(), true));
+
+    return AWS_OP_SUCCESS;
+}
+
+static void s_WaitForIotCoreConnection(ProxyIntegrationTestState &testState) {
+    std::unique_lock<std::mutex> uniqueLock(testState.m_lock);
+    testState.m_signal.wait(uniqueLock, [&testState]() { return testState.m_mqttConnectComplete; });
+}
+
+static void s_WaitForIotCoreDisconnect(ProxyIntegrationTestState &testState) {
+    std::unique_lock<std::mutex> uniqueLock(testState.m_lock);
+    testState.m_signal.wait(uniqueLock, [&testState]() { return testState.m_mqttDisconnectComplete; });
+}
+
+static int s_TestMqttOverWebsocketsViaHttpProxy(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        ProxyIntegrationTestState testState(allocator);
+        s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::Http);
+        testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
+
+        s_InitializeProxyTestSupport(testState);
+        ASSERT_SUCCESS(s_InitializeX509Provider(testState));
+
+        ASSERT_SUCCESS(s_BuildMqttConnection(testState));
+        ASSERT_SUCCESS(s_ConnectToIotCore(testState));
+
+        s_WaitForIotCoreConnection(testState);
+        testState.m_mqttConnection->Disconnect();
+        s_WaitForIotCoreDisconnect(testState);
+    }
+
+    /* now let everything tear down and make sure we don't leak or deadlock.*/
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(MqttOverWebsocketsViaHttpProxy, s_TestMqttOverWebsocketsViaHttpProxy)
+
+static int s_TestMqttOverWebsocketsViaHttpsProxy(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        ProxyIntegrationTestState testState(allocator);
+        s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::Https);
+        testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
+
+        s_InitializeProxyTestSupport(testState);
+        s_InitializeTlsToProxy(testState);
+
+        ASSERT_SUCCESS(s_InitializeX509Provider(testState));
+
+        ASSERT_SUCCESS(s_BuildMqttConnection(testState));
+        ASSERT_SUCCESS(s_ConnectToIotCore(testState));
+
+        s_WaitForIotCoreConnection(testState);
+        testState.m_mqttConnection->Disconnect();
+        s_WaitForIotCoreDisconnect(testState);
+    }
+
+    /* now let everything tear down and make sure we don't leak or deadlock.*/
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(MqttOverWebsocketsViaHttpsProxy, s_TestMqttOverWebsocketsViaHttpsProxy)
+
+static int s_TestMqttOverWebsocketsViaHttpProxyBasicAuthDeprecated(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        ProxyIntegrationTestState testState(allocator);
+        s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::HttpBasic);
+        s_InitializeDeprecatedBasicAuth(testState);
+
+        s_InitializeProxyTestSupport(testState);
+        ASSERT_SUCCESS(s_InitializeX509Provider(testState));
+
+        ASSERT_SUCCESS(s_BuildMqttConnection(testState));
+        ASSERT_SUCCESS(s_ConnectToIotCore(testState));
+
+        s_WaitForIotCoreConnection(testState);
+        testState.m_mqttConnection->Disconnect();
+        s_WaitForIotCoreDisconnect(testState);
+    }
+
+    /* now let everything tear down and make sure we don't leak or deadlock.*/
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(MqttOverWebsocketsViaHttpProxyBasicAuthDeprecated, s_TestMqttOverWebsocketsViaHttpProxyBasicAuthDeprecated)
+
+static int s_TestMqttOverWebsocketsViaHttpProxyBasicAuth(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        ProxyIntegrationTestState testState(allocator);
+        s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::HttpBasic);
+        s_InitializeBasicAuth(testState);
+        testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
+
+        s_InitializeProxyTestSupport(testState);
+        ASSERT_SUCCESS(s_InitializeX509Provider(testState));
+
+        ASSERT_SUCCESS(s_BuildMqttConnection(testState));
+        ASSERT_SUCCESS(s_ConnectToIotCore(testState));
+
+        s_WaitForIotCoreConnection(testState);
+        testState.m_mqttConnection->Disconnect();
+        s_WaitForIotCoreDisconnect(testState);
+    }
+
+    /* now let everything tear down and make sure we don't leak or deadlock.*/
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(MqttOverWebsocketsViaHttpProxyBasicAuth, s_TestMqttOverWebsocketsViaHttpProxyBasicAuth)

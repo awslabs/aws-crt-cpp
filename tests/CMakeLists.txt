@@ -84,7 +84,10 @@ if (ENABLE_PROXY_INTEGRATION_TESTS)
     add_test_case(X509ProxyBasicAuthGetCredentials)
 
     # mqtt-over-websockets proxy tests
-
+    add_test_case(MqttOverWebsocketsViaHttpProxy)
+    add_test_case(MqttOverWebsocketsViaHttpsProxy)
+    add_test_case(MqttOverWebsocketsViaHttpProxyBasicAuthDeprecated)
+    add_test_case(MqttOverWebsocketsViaHttpProxyBasicAuth)
 endif()
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
