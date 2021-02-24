@@ -123,6 +123,16 @@ namespace Aws
                 options.on_shutdown = HttpClientConnection::s_onClientConnectionShutdown;
                 options.manual_window_management = connectionOptions.ManualWindowManagement;
 
+                aws_http_proxy_options proxyOptions;
+                AWS_ZERO_STRUCT(proxyOptions);
+                if (connectionOptions.ProxyOptions)
+                {
+                    const auto &proxyOpts = connectionOptions.ProxyOptions.value();
+                    proxyOpts.InitializeRawProxyOptions(proxyOptions);
+
+                    options.proxy_options = &proxyOptions;
+                }
+
                 if (aws_http_client_connect(&options))
                 {
                     Delete(callbackData, allocator);

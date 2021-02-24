@@ -17,15 +17,17 @@ option(BUILD_DEPS "Builds aws common runtime dependencies as part of build, only
 #
 # The x509 proxy tests also require:
 #
-# X509_ENDPOINT
-# AWS_TLS_CERT_PATH
-# AWS_TLS_KEY_PATH
-# AWS_TLS_ROOT_CERT_PATH
+# AWS_TEST_TLS_CERT_PATH - file path to certificate used to initialize the tls context of the x509 provider connection
+# AWS_TEST_TLS_KEY_PATH - file path to the key used to initialize the tls context of the x509 provider connection
+# AWS_TEST_TLS_ROOT_CERT_PATH - file path to the root CA used to initialize the tls context of the x509 provider connection
+# AWS_TEST_X509_ENDPOINT - AWS account-specific endpoint to source x509 credentials from
+# AWS_TEST_X509_THING_NAME - associated name of the x509 thing
+# AWS_TEST_X509_ROLE_ALIAS - associated role alias ...
 #
 # And the mqtt websocket tests require x509 sourced credentials with sufficient permission to
 # connect to IoT Core as well as:
 #
-# MQTT_ENDPOINT
+# MQTT_ENDPOINT - AWS account-specific endpoint to connect to IoT core by
 #
 # ToDo: Scripts to populate environment variables via the CLI and IoT, SecretsManager calls
 #

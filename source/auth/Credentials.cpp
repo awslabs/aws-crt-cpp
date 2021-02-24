@@ -292,12 +292,6 @@ namespace Aws
                     raw_config.proxy_options = &proxy_options;
                 }
 
-                /**
-                 * Sets the TLS options for the proxy connection.
-                 * Optional.
-                 */
-                Optional<Io::TlsConnectionOptions> TlsOptions;
-
                 return s_CreateWrappedProvider(aws_credentials_provider_new_x509(allocator, &raw_config), allocator);
             }
 
