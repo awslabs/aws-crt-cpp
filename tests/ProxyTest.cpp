@@ -6,12 +6,12 @@
 #include <aws/common/environment.h>
 
 #include <aws/crt/Api.h>
+#include <aws/crt/UUID.h>
 #include <aws/crt/auth/Credentials.h>
 #include <aws/crt/http/HttpConnectionManager.h>
 #include <aws/crt/http/HttpProxyStrategy.h>
 #include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Uri.h>
-#include <aws/crt/UUID.h>
 #include <aws/iot/MqttClient.h>
 
 #include <aws/testing/aws_test_harness.h>
@@ -28,7 +28,8 @@ using namespace Aws::Crt::Io;
 struct ProxyIntegrationTestState
 {
     ProxyIntegrationTestState(struct aws_allocator *allocator)
-        : m_allocator(allocator), m_streamComplete(false), m_streamStatusCode(0), m_credentialsFetched(false), m_mqttConnectComplete(false), m_mqttDisconnectComplete(false), m_mqttErrorCode(0)
+        : m_allocator(allocator), m_streamComplete(false), m_streamStatusCode(0), m_credentialsFetched(false),
+          m_mqttConnectComplete(false), m_mqttDisconnectComplete(false), m_mqttErrorCode(0)
     {
     }
 
@@ -79,8 +80,7 @@ static void s_InitializeProxyTestSupport(ProxyIntegrationTestState &testState)
         allocator, *testState.m_eventLoopGroup, *testState.m_hostResolver, allocator);
 }
 
-static void s_InitializeProxiedConnectionOptions(ProxyIntegrationTestState &testState,
-    struct aws_byte_cursor url)
+static void s_InitializeProxiedConnectionOptions(ProxyIntegrationTestState &testState, struct aws_byte_cursor url)
 {
     struct aws_allocator *allocator = testState.m_allocator;
 
@@ -115,8 +115,7 @@ static void s_InitializeProxiedConnectionOptions(ProxyIntegrationTestState &test
     }
 }
 
-static void s_InitializeProxiedConnectionManager(ProxyIntegrationTestState &testState,
-    struct aws_byte_cursor url)
+static void s_InitializeProxiedConnectionManager(ProxyIntegrationTestState &testState, struct aws_byte_cursor url)
 {
     struct aws_allocator *allocator = testState.m_allocator;
 
@@ -777,11 +776,13 @@ AWS_TEST_CASE(X509ProxyBasicAuthGetCredentials, s_TestX509ProxyBasicAuthGetCrede
 AWS_STATIC_STRING_FROM_LITERAL(s_AwsIotSigningRegionVariable, "AWS_TEST_IOT_SIGNING_REGION");
 AWS_STATIC_STRING_FROM_LITERAL(s_AwsIotMqttEndpointVariable, "AWS_TEST_IOT_MQTT_ENDPOINT");
 
-static int s_BuildMqttConnection(ProxyIntegrationTestState &testState) {
+static int s_BuildMqttConnection(ProxyIntegrationTestState &testState)
+{
 
     struct aws_allocator *allocator = testState.m_allocator;
 
-    testState.m_mqttClient = Aws::Crt::MakeShared<Aws::Iot::MqttClient>(allocator, *testState.m_clientBootstrap, allocator);
+    testState.m_mqttClient =
+        Aws::Crt::MakeShared<Aws::Iot::MqttClient>(allocator, *testState.m_clientBootstrap, allocator);
 
     struct aws_string *awsIotSigningRegion = NULL;
     struct aws_string *awsIotEndpoint = NULL;
@@ -803,21 +804,23 @@ static int s_BuildMqttConnection(ProxyIntegrationTestState &testState) {
     return AWS_OP_SUCCESS;
 }
 
-static int s_ConnectToIotCore(ProxyIntegrationTestState &testState) {
+static int s_ConnectToIotCore(ProxyIntegrationTestState &testState)
+{
 
-    testState.m_mqttConnection->OnConnectionCompleted = [&testState](Mqtt::MqttConnection &, int errorCode, Mqtt::ReturnCode , bool ) {
-      std::lock_guard<std::mutex> lock(testState.m_lock);
+    testState.m_mqttConnection->OnConnectionCompleted =
+        [&testState](Mqtt::MqttConnection &, int errorCode, Mqtt::ReturnCode, bool) {
+            std::lock_guard<std::mutex> lock(testState.m_lock);
 
-      testState.m_mqttConnectComplete = true;
-      testState.m_mqttErrorCode = errorCode;
-      testState.m_signal.notify_one();
-    };
+            testState.m_mqttConnectComplete = true;
+            testState.m_mqttErrorCode = errorCode;
+            testState.m_signal.notify_one();
+        };
 
     testState.m_mqttConnection->OnDisconnect = [&testState](Mqtt::MqttConnection &) {
-      std::lock_guard<std::mutex> lock(testState.m_lock);
+        std::lock_guard<std::mutex> lock(testState.m_lock);
 
-      testState.m_mqttDisconnectComplete = true;
-      testState.m_signal.notify_one();
+        testState.m_mqttDisconnectComplete = true;
+        testState.m_signal.notify_one();
     };
 
     UUID uuid;
@@ -830,12 +833,14 @@ static int s_ConnectToIotCore(ProxyIntegrationTestState &testState) {
     return AWS_OP_SUCCESS;
 }
 
-static void s_WaitForIotCoreConnection(ProxyIntegrationTestState &testState) {
+static void s_WaitForIotCoreConnection(ProxyIntegrationTestState &testState)
+{
     std::unique_lock<std::mutex> uniqueLock(testState.m_lock);
     testState.m_signal.wait(uniqueLock, [&testState]() { return testState.m_mqttConnectComplete; });
 }
 
-static void s_WaitForIotCoreDisconnect(ProxyIntegrationTestState &testState) {
+static void s_WaitForIotCoreDisconnect(ProxyIntegrationTestState &testState)
+{
     std::unique_lock<std::mutex> uniqueLock(testState.m_lock);
     testState.m_signal.wait(uniqueLock, [&testState]() { return testState.m_mqttDisconnectComplete; });
 }
@@ -921,7 +926,9 @@ static int s_TestMqttOverWebsocketsViaHttpProxyBasicAuthDeprecated(struct aws_al
     return AWS_OP_SUCCESS;
 }
 
-AWS_TEST_CASE(MqttOverWebsocketsViaHttpProxyBasicAuthDeprecated, s_TestMqttOverWebsocketsViaHttpProxyBasicAuthDeprecated)
+AWS_TEST_CASE(
+    MqttOverWebsocketsViaHttpProxyBasicAuthDeprecated,
+    s_TestMqttOverWebsocketsViaHttpProxyBasicAuthDeprecated)
 
 static int s_TestMqttOverWebsocketsViaHttpProxyBasicAuth(struct aws_allocator *allocator, void *ctx)
 {
