@@ -258,7 +258,7 @@ static int s_InitializeProxyEnvironmentalOptions(
     testState.m_proxyOptions.Port = atoi((const char *)proxy_port->bytes);
 
     aws_string_destroy(proxy_host_name);
-    
+
     aws_string_destroy(proxy_port);
 
     return AWS_OP_SUCCESS;
