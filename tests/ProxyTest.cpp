@@ -824,7 +824,7 @@ static int s_ConnectToIotCore(ProxyIntegrationTestState &testState)
         testState.m_signal.notify_one();
     };
 
-    UUID uuid;
+    Aws::Crt::UUID uuid;
 
     Aws::Crt::StringStream clientId;
     clientId << "IntegrationTest-" << uuid.ToString();
