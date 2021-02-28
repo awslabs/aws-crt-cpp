@@ -3,8 +3,9 @@
 set -e
 
 if test -f "/tmp/setup_proxy_test_env.sh"; then
-    /tmp/setup_proxy_test_env.sh
+    source /tmp/setup_proxy_test_env.sh
     env
+    ls /tmp
 fi
 
 git submodule update --init
