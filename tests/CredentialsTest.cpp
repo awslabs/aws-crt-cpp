@@ -232,3 +232,38 @@ static int s_TestProviderDefaultChainGet(struct aws_allocator *allocator, void *
 }
 
 AWS_TEST_CASE(TestProviderDefaultChainGet, s_TestProviderDefaultChainGet)
+
+static int s_TestProviderDelegateGet(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        ApiHandle apiHandle(allocator);
+
+        auto delegateGetCredentials = [&allocator]() -> std::shared_ptr<Credentials> {
+            Credentials credetials(
+                aws_byte_cursor_from_c_str(s_access_key_id),
+                aws_byte_cursor_from_c_str(s_secret_access_key),
+                aws_byte_cursor_from_c_str(s_session_token),
+                UINT32_MAX,
+                allocator);
+            return Aws::Crt::MakeShared<Auth::Credentials>(allocator, credetials.GetUnderlyingHandle());
+        };
+
+        CredentialsProviderDelegateConfig config;
+        config.Handler = delegateGetCredentials;
+        auto provider = CredentialsProvider::CreateCredentialsProviderDelegate(config, allocator);
+        GetCredentialsWaiter waiter(provider);
+
+        auto creds = waiter.GetCredentials();
+        auto cursor = creds->GetAccessKeyId();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_access_key_id));
+        cursor = creds->GetSecretAccessKey();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_secret_access_key));
+        cursor = creds->GetSessionToken();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_session_token));
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(TestProviderDelegateGet, s_TestProviderDelegateGet)
