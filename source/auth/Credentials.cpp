@@ -348,10 +348,10 @@ namespace Aws
                 delegateCallbackArgs->m_Handler = config.Handler;
                 raw_config.delegate_user_data = delegateCallbackArgs;
                 raw_config.get_credentials = s_onDelegateGetCredentials;
-                raw_config.shutdown_options = {
-                    .shutdown_callback = s_onDelegateShutdownComplete,
-                    .shutdown_user_data = delegateCallbackArgs,
-                };
+                aws_credentials_provider_shutdown_options options;
+                options.shutdown_callback = s_onDelegateShutdownComplete;
+                options.shutdown_user_data = delegateCallbackArgs;
+                raw_config.shutdown_options = options;
                 return s_CreateWrappedProvider(
                     aws_credentials_provider_new_delegate(allocator, &raw_config), allocator);
             }
