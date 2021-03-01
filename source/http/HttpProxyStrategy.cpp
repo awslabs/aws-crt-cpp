@@ -6,7 +6,7 @@
 
 #include <aws/common/string.h>
 #include <aws/crt/http/HttpConnection.h>
-#include <aws/http/proxy_strategy.h>
+#include <aws/http/proxy.h>
 
 namespace Aws
 {

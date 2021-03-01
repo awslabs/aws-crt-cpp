@@ -154,9 +154,16 @@ namespace Aws
                 bool SetLogin(const char *userName, const char *password) noexcept;
 
                 /**
-                 * Sets websocket proxy options. Proxies are only allowed for use with websockets.
+                 * @Deprecated Sets websocket proxy options. Replaced by SetHttpProxyOptions.
                  */
                 bool SetWebsocketProxyOptions(const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
+
+                /**
+                 * Sets http proxy options. In order to use an http proxy with mqtt either
+                 *   (1) Websockets are used
+                 *   (2) Mqtt-over-tls is used and the ALPN list of the tls context contains a tag that resolves to mqtt
+                 */
+                bool SetHttpProxyOptions(const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
 
                 /**
                  * Customize time to wait between reconnect attempts.

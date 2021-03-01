@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/http/connection.h>
+#include <aws/http/proxy.h>
 #include <aws/http/request_response.h>
 
 #include <aws/crt/Types.h>

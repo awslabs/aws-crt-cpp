@@ -335,6 +335,13 @@ namespace Aws
                 return true;
             }
 
+            bool MqttConnection::SetHttpProxyOptions(
+                const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept
+            {
+                m_proxyOptions = proxyOptions;
+                return true;
+            }
+
             bool MqttConnection::SetReconnectTimeout(uint64_t min_seconds, uint64_t max_seconds) noexcept
             {
                 return aws_mqtt_client_connection_set_reconnect_timeout(
@@ -380,17 +387,16 @@ namespace Aws
                             return false;
                         }
                     }
+                }
 
-                    if (m_proxyOptions)
+                if (m_proxyOptions)
+                {
+                    struct aws_http_proxy_options proxyOptions;
+                    m_proxyOptions->InitializeRawProxyOptions(proxyOptions);
+
+                    if (aws_mqtt_client_connection_set_http_proxy_options(m_underlyingConnection, &proxyOptions))
                     {
-                        struct aws_http_proxy_options proxyOptions;
-                        m_proxyOptions->InitializeRawProxyOptions(proxyOptions);
-
-                        if (aws_mqtt_client_connection_set_websocket_proxy_options(
-                                m_underlyingConnection, &proxyOptions))
-                        {
-                            return false;
-                        }
+                        return false;
                     }
                 }
 
