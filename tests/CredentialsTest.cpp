@@ -240,13 +240,13 @@ static int s_TestProviderDelegateGet(struct aws_allocator *allocator, void *ctx)
         ApiHandle apiHandle(allocator);
 
         auto delegateGetCredentials = [&allocator]() -> std::shared_ptr<Credentials> {
-            Credentials credetials(
+            Credentials credentials(
                 aws_byte_cursor_from_c_str(s_access_key_id),
                 aws_byte_cursor_from_c_str(s_secret_access_key),
                 aws_byte_cursor_from_c_str(s_session_token),
                 UINT32_MAX,
                 allocator);
-            return Aws::Crt::MakeShared<Auth::Credentials>(allocator, credetials.GetUnderlyingHandle());
+            return Aws::Crt::MakeShared<Auth::Credentials>(allocator, credentials.GetUnderlyingHandle());
         };
 
         CredentialsProviderDelegateConfig config;
@@ -256,6 +256,7 @@ static int s_TestProviderDelegateGet(struct aws_allocator *allocator, void *ctx)
 
         auto creds = waiter.GetCredentials();
         auto cursor = creds->GetAccessKeyId();
+        // Don't use ASSERT_STR_EQUALS(), which could log actual credentials if test fails.
         ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_access_key_id));
         cursor = creds->GetSecretAccessKey();
         ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_secret_access_key));
