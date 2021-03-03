@@ -13,7 +13,7 @@ git submodule update --init
 mkdir build
 cd build
 
-cmake -DBUILD_DEPS=ON $@ ../
+cmake -DENABLE_PROXY_INTEGRATION_TESTS=ON -DBUILD_DEPS=ON $@ ../
 make
 ctest --output-on-failure
 
