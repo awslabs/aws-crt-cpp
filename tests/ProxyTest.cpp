@@ -423,6 +423,8 @@ static int s_InitializeBasicAuthParameters(ProxyIntegrationTestState &testState)
 
     ASSERT_SUCCESS(aws_get_environment_value(allocator, s_BasicAuthUsernameEnvVariable, &testState.m_BasicUsername));
     ASSERT_SUCCESS(aws_get_environment_value(allocator, s_BasicAuthPasswordEnvVariable, &testState.m_BasicPassword));
+
+    return AWS_OP_SUCCESS;
 }
 
 static int s_InitializeDeprecatedBasicAuth(ProxyIntegrationTestState &testState)
