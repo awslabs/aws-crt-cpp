@@ -29,8 +29,15 @@ struct ProxyIntegrationTestState
 {
     ProxyIntegrationTestState(struct aws_allocator *allocator)
         : m_allocator(allocator), m_streamComplete(false), m_streamStatusCode(0), m_credentialsFetched(false),
-          m_mqttConnectComplete(false), m_mqttDisconnectComplete(false), m_mqttErrorCode(0)
+          m_mqttConnectComplete(false), m_mqttDisconnectComplete(false), m_mqttErrorCode(0), m_BasicUsername(NULL),
+          m_BasicPassword(NULL)
     {
+    }
+
+    ~ProxyIntegrationTestState()
+    {
+        aws_string_destroy(m_BasicUsername);
+        aws_string_destroy(m_BasicPassword);
     }
 
     struct aws_allocator *m_allocator;
@@ -46,6 +53,9 @@ struct ProxyIntegrationTestState
     bool m_mqttConnectComplete;
     bool m_mqttDisconnectComplete;
     int m_mqttErrorCode;
+
+    struct aws_string *m_BasicUsername;
+    struct aws_string *m_BasicPassword;
 
     HttpClientConnectionProxyOptions m_proxyOptions;
     HttpClientConnectionOptions m_connectionOptions;
@@ -258,7 +268,6 @@ static int s_InitializeProxyEnvironmentalOptions(
     testState.m_proxyOptions.Port = atoi((const char *)proxy_port->bytes);
 
     aws_string_destroy(proxy_host_name);
-
     aws_string_destroy(proxy_port);
 
     return AWS_OP_SUCCESS;
@@ -405,15 +414,30 @@ static int s_TestConnectionManagerForwardingProxy(struct aws_allocator *allocato
 
 AWS_TEST_CASE(ConnectionManagerForwardingProxy, s_TestConnectionManagerForwardingProxy)
 
-AWS_STATIC_STRING_FROM_LITERAL(s_basicAuthUsername, "Terb");
-AWS_STATIC_STRING_FROM_LITERAL(s_basicAuthPassword, "Derp");
+AWS_STATIC_STRING_FROM_LITERAL(s_BasicAuthUsernameEnvVariable, "AWS_TEST_BASIC_AUTH_USERNAME");
+AWS_STATIC_STRING_FROM_LITERAL(s_BasicAuthPasswordEnvVariable, "AWS_TEST_BASIC_AUTH_PASSWORD");
 
-static void s_InitializeDeprecatedBasicAuth(ProxyIntegrationTestState &testState)
+static int s_InitializeBasicAuthParameters(ProxyIntegrationTestState &testState)
+{
+    struct aws_allocator *allocator = testState.m_allocator;
+
+    ASSERT_SUCCESS(aws_get_environment_value(allocator, s_BasicAuthUsernameEnvVariable, &testState.m_BasicUsername));
+    ASSERT_SUCCESS(aws_get_environment_value(allocator, s_BasicAuthPasswordEnvVariable, &testState.m_BasicPassword));
+
+    return AWS_OP_SUCCESS;
+}
+
+static int s_InitializeDeprecatedBasicAuth(ProxyIntegrationTestState &testState)
 {
     testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Legacy;
     testState.m_proxyOptions.AuthType = AwsHttpProxyAuthenticationType::Basic;
-    testState.m_proxyOptions.BasicAuthUsername = (const char *)(s_basicAuthUsername->bytes);
-    testState.m_proxyOptions.BasicAuthPassword = (const char *)(s_basicAuthPassword->bytes);
+
+    ASSERT_SUCCESS(s_InitializeBasicAuthParameters(testState));
+
+    testState.m_proxyOptions.BasicAuthUsername = (const char *)(testState.m_BasicUsername->bytes);
+    testState.m_proxyOptions.BasicAuthPassword = (const char *)(testState.m_BasicPassword->bytes);
+
+    return AWS_OP_SUCCESS;
 }
 
 static int s_TestConnectionManagerTunnelingProxyBasicAuthDeprecated(struct aws_allocator *allocator, void *ctx)
@@ -424,7 +448,7 @@ static int s_TestConnectionManagerTunnelingProxyBasicAuthDeprecated(struct aws_a
 
         ProxyIntegrationTestState testState(allocator);
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::HttpBasic);
-        s_InitializeDeprecatedBasicAuth(testState);
+        ASSERT_SUCCESS(s_InitializeDeprecatedBasicAuth(testState));
         s_InitializeProxiedConnectionManager(testState, aws_byte_cursor_from_string(s_https_endpoint));
 
         s_AcquireProxyTestHttpConnection(testState);
@@ -439,17 +463,22 @@ AWS_TEST_CASE(
     ConnectionManagerTunnelingProxyBasicAuthDeprecated,
     s_TestConnectionManagerTunnelingProxyBasicAuthDeprecated)
 
-static void s_InitializeBasicAuth(ProxyIntegrationTestState &testState)
+static int s_InitializeBasicAuth(ProxyIntegrationTestState &testState)
 {
     struct aws_allocator *allocator = testState.m_allocator;
 
     HttpProxyStrategyBasicAuthConfig basicAuthConfig;
     basicAuthConfig.ConnectionType = AwsHttpProxyConnectionType::Tunneling;
-    basicAuthConfig.Username = (const char *)(s_basicAuthUsername->bytes);
-    basicAuthConfig.Password = (const char *)(s_basicAuthPassword->bytes);
+
+    ASSERT_SUCCESS(s_InitializeBasicAuthParameters(testState));
+
+    basicAuthConfig.Username = (const char *)(testState.m_BasicUsername->bytes);
+    basicAuthConfig.Password = (const char *)(testState.m_BasicPassword->bytes);
 
     testState.m_proxyOptions.ProxyStrategy =
         HttpProxyStrategy::CreateBasicHttpProxyStrategy(basicAuthConfig, allocator);
+
+    return AWS_OP_SUCCESS;
 }
 
 static int s_TestConnectionManagerTunnelingProxyBasicAuth(struct aws_allocator *allocator, void *ctx)
@@ -462,7 +491,7 @@ static int s_TestConnectionManagerTunnelingProxyBasicAuth(struct aws_allocator *
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::HttpBasic);
         testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
 
-        s_InitializeBasicAuth(testState);
+        ASSERT_SUCCESS(s_InitializeBasicAuth(testState));
 
         s_InitializeProxiedConnectionManager(testState, aws_byte_cursor_from_string(s_https_endpoint));
 
@@ -557,7 +586,7 @@ static int s_TestDirectConnectionTunnelingProxyBasicAuthDeprecated(struct aws_al
 
         ProxyIntegrationTestState testState(allocator);
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::HttpBasic);
-        s_InitializeDeprecatedBasicAuth(testState);
+        ASSERT_SUCCESS(s_InitializeDeprecatedBasicAuth(testState));
 
         s_InitializeProxiedRawConnection(testState, aws_byte_cursor_from_string(s_https_endpoint));
         ASSERT_TRUE(testState.m_connection != nullptr);
@@ -581,7 +610,7 @@ static int s_TestDirectConnectionTunnelingProxyBasicAuth(struct aws_allocator *a
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::HttpBasic);
         testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
 
-        s_InitializeBasicAuth(testState);
+        ASSERT_SUCCESS(s_InitializeBasicAuth(testState));
 
         s_InitializeProxiedRawConnection(testState, aws_byte_cursor_from_string(s_https_endpoint));
         ASSERT_TRUE(testState.m_connection != nullptr);
@@ -731,7 +760,7 @@ static int s_TestX509ProxyBasicAuthDeprecatedGetCredentials(struct aws_allocator
 
         ProxyIntegrationTestState testState(allocator);
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::HttpBasic);
-        s_InitializeDeprecatedBasicAuth(testState);
+        ASSERT_SUCCESS(s_InitializeDeprecatedBasicAuth(testState));
 
         s_InitializeProxyTestSupport(testState);
         ASSERT_SUCCESS(s_InitializeX509Provider(testState));
@@ -756,7 +785,7 @@ static int s_TestX509ProxyBasicAuthGetCredentials(struct aws_allocator *allocato
 
         ProxyIntegrationTestState testState(allocator);
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::HttpBasic);
-        s_InitializeBasicAuth(testState);
+        ASSERT_SUCCESS(s_InitializeBasicAuth(testState));
         testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
 
         s_InitializeProxyTestSupport(testState);
@@ -910,7 +939,7 @@ static int s_TestMqttOverWebsocketsViaHttpProxyBasicAuthDeprecated(struct aws_al
 
         ProxyIntegrationTestState testState(allocator);
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::HttpBasic);
-        s_InitializeDeprecatedBasicAuth(testState);
+        ASSERT_SUCCESS(s_InitializeDeprecatedBasicAuth(testState));
 
         s_InitializeProxyTestSupport(testState);
         ASSERT_SUCCESS(s_InitializeX509Provider(testState));
@@ -939,7 +968,7 @@ static int s_TestMqttOverWebsocketsViaHttpProxyBasicAuth(struct aws_allocator *a
 
         ProxyIntegrationTestState testState(allocator);
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::HttpBasic);
-        s_InitializeBasicAuth(testState);
+        ASSERT_SUCCESS(s_InitializeBasicAuth(testState));
         testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
 
         s_InitializeProxyTestSupport(testState);
