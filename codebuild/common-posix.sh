@@ -7,6 +7,8 @@ if test -f "/tmp/setup_proxy_test_env.sh"; then
     env
     ls /tmp
     curl --verbose --proxy http://ec2-100-25-139-228.compute-1.amazonaws.com:3128 www.example.com
+    echo $AWS_TEST_BASIC_AUTH_USERNAME
+    echo $AWS_TEST_BASIC_AUTH_PASSWORD
 fi
 
 git submodule update --init
