@@ -359,11 +359,11 @@ namespace Aws
             if (useWebsocket)
             {
                 newConnection->WebsocketInterceptor = config.m_webSocketInterceptor;
+            }
 
-                if (config.m_proxyOptions)
-                {
-                    newConnection->SetWebsocketProxyOptions(config.m_proxyOptions.value());
-                }
+            if (config.m_proxyOptions)
+            {
+                newConnection->SetHttpProxyOptions(config.m_proxyOptions.value());
             }
 
             return newConnection;

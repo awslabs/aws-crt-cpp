@@ -88,6 +88,9 @@ if (ENABLE_PROXY_INTEGRATION_TESTS)
     add_test_case(MqttOverWebsocketsViaHttpsProxy)
     add_test_case(MqttOverWebsocketsViaHttpProxyBasicAuthDeprecated)
     add_test_case(MqttOverWebsocketsViaHttpProxyBasicAuth)
+
+    # WIP mqtt-via-alpn proxy tests
+    add_test_case(MqttViaHttpProxyAlpn)
 endif()
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})

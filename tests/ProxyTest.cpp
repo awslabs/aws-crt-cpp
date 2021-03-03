@@ -806,9 +806,8 @@ AWS_TEST_CASE(X509ProxyBasicAuthGetCredentials, s_TestX509ProxyBasicAuthGetCrede
 AWS_STATIC_STRING_FROM_LITERAL(s_AwsIotSigningRegionVariable, "AWS_TEST_IOT_SIGNING_REGION");
 AWS_STATIC_STRING_FROM_LITERAL(s_AwsIotMqttEndpointVariable, "AWS_TEST_IOT_MQTT_ENDPOINT");
 
-static int s_BuildMqttConnection(ProxyIntegrationTestState &testState)
+static int s_BuildMqttWebsocketConnection(ProxyIntegrationTestState &testState)
 {
-
     struct aws_allocator *allocator = testState.m_allocator;
 
     testState.m_mqttClient =
@@ -888,7 +887,7 @@ static int s_TestMqttOverWebsocketsViaHttpProxy(struct aws_allocator *allocator,
         s_InitializeProxyTestSupport(testState);
         ASSERT_SUCCESS(s_InitializeX509Provider(testState));
 
-        ASSERT_SUCCESS(s_BuildMqttConnection(testState));
+        ASSERT_SUCCESS(s_BuildMqttWebsocketConnection(testState));
         ASSERT_SUCCESS(s_ConnectToIotCore(testState));
 
         s_WaitForIotCoreConnection(testState);
@@ -917,7 +916,7 @@ static int s_TestMqttOverWebsocketsViaHttpsProxy(struct aws_allocator *allocator
 
         ASSERT_SUCCESS(s_InitializeX509Provider(testState));
 
-        ASSERT_SUCCESS(s_BuildMqttConnection(testState));
+        ASSERT_SUCCESS(s_BuildMqttWebsocketConnection(testState));
         ASSERT_SUCCESS(s_ConnectToIotCore(testState));
 
         s_WaitForIotCoreConnection(testState);
@@ -944,7 +943,7 @@ static int s_TestMqttOverWebsocketsViaHttpProxyBasicAuthDeprecated(struct aws_al
         s_InitializeProxyTestSupport(testState);
         ASSERT_SUCCESS(s_InitializeX509Provider(testState));
 
-        ASSERT_SUCCESS(s_BuildMqttConnection(testState));
+        ASSERT_SUCCESS(s_BuildMqttWebsocketConnection(testState));
         ASSERT_SUCCESS(s_ConnectToIotCore(testState));
 
         s_WaitForIotCoreConnection(testState);
@@ -974,7 +973,7 @@ static int s_TestMqttOverWebsocketsViaHttpProxyBasicAuth(struct aws_allocator *a
         s_InitializeProxyTestSupport(testState);
         ASSERT_SUCCESS(s_InitializeX509Provider(testState));
 
-        ASSERT_SUCCESS(s_BuildMqttConnection(testState));
+        ASSERT_SUCCESS(s_BuildMqttWebsocketConnection(testState));
         ASSERT_SUCCESS(s_ConnectToIotCore(testState));
 
         s_WaitForIotCoreConnection(testState);
@@ -987,3 +986,64 @@ static int s_TestMqttOverWebsocketsViaHttpProxyBasicAuth(struct aws_allocator *a
 }
 
 AWS_TEST_CASE(MqttOverWebsocketsViaHttpProxyBasicAuth, s_TestMqttOverWebsocketsViaHttpProxyBasicAuth)
+
+static int s_BuildMqttAlpnConnection(ProxyIntegrationTestState &testState)
+{
+    struct aws_allocator *allocator = testState.m_allocator;
+
+    testState.m_mqttClient =
+        Aws::Crt::MakeShared<Aws::Iot::MqttClient>(allocator, *testState.m_clientBootstrap, allocator);
+
+    struct aws_string *awsIotEndpoint = NULL;
+    struct aws_string *certificatePath = NULL;
+    struct aws_string *keyPath = NULL;
+    struct aws_string *rootCAPath = NULL;
+
+    ASSERT_SUCCESS(aws_get_environment_value(allocator, s_AwsIotMqttEndpointVariable, &awsIotEndpoint));
+    ASSERT_SUCCESS(aws_get_environment_value(allocator, s_CertificatePathVariable, &certificatePath));
+    ASSERT_SUCCESS(aws_get_environment_value(allocator, s_KeyPathVariable, &keyPath));
+    ASSERT_SUCCESS(aws_get_environment_value(allocator, s_RootCAPathVariable, &rootCAPath));
+
+    Iot::MqttClientConnectionConfigBuilder builder =
+        Aws::Iot::MqttClientConnectionConfigBuilder((const char *)certificatePath->bytes, (const char *)keyPath->bytes);
+    builder.WithCertificateAuthority((const char *)rootCAPath->bytes);
+    builder.WithEndpoint(Aws::Crt::String((const char *)awsIotEndpoint->bytes));
+    builder.WithHttpProxyOptions(testState.m_proxyOptions);
+
+    testState.m_mqttConnection = testState.m_mqttClient->NewConnection(builder.Build());
+    ASSERT_NOT_NULL(testState.m_mqttConnection.get());
+
+    aws_string_destroy(awsIotEndpoint);
+    aws_string_destroy(certificatePath);
+    aws_string_destroy(keyPath);
+    aws_string_destroy(rootCAPath);
+
+    return AWS_OP_SUCCESS;
+}
+
+static int s_TestMqttViaHttpProxyAlpn(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+        apiHandle.InitializeLogging(LogLevel::Trace, "/tmp/log.txt");
+
+        ProxyIntegrationTestState testState(allocator);
+        s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::Http);
+        testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
+
+        s_InitializeProxyTestSupport(testState);
+
+        ASSERT_SUCCESS(s_BuildMqttAlpnConnection(testState));
+        ASSERT_SUCCESS(s_ConnectToIotCore(testState));
+
+        s_WaitForIotCoreConnection(testState);
+        testState.m_mqttConnection->Disconnect();
+        s_WaitForIotCoreDisconnect(testState);
+    }
+
+    /* now let everything tear down and make sure we don't leak or deadlock.*/
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(MqttViaHttpProxyAlpn, s_TestMqttViaHttpProxyAlpn)
