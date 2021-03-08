@@ -310,6 +310,52 @@ namespace Aws
                 return s_CreateWrappedProvider(aws_credentials_provider_new_x509(allocator, &raw_config), allocator);
             }
 
+            struct DelegateCredentialsProviderCallbackArgs
+            {
+                DelegateCredentialsProviderCallbackArgs() = default;
+
+                Allocator *allocator;
+                GetCredentialsHandler m_Handler;
+            };
+
+            static int s_onDelegateGetCredentials(
+                void *delegate_user_data,
+                aws_on_get_credentials_callback_fn callback,
+                void *callback_user_data)
+            {
+                auto args = static_cast<DelegateCredentialsProviderCallbackArgs *>(delegate_user_data);
+                auto creds = args->m_Handler();
+                struct aws_credentials *m_credentials = (struct aws_credentials *)(void *)creds->GetUnderlyingHandle();
+                callback(m_credentials, AWS_ERROR_SUCCESS, callback_user_data);
+                return AWS_OP_SUCCESS;
+            }
+
+            static void s_onDelegateShutdownComplete(void *user_data)
+            {
+                auto args = static_cast<DelegateCredentialsProviderCallbackArgs *>(user_data);
+                Aws::Crt::Delete(args, args->allocator);
+            }
+
+            std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderDelegate(
+                const CredentialsProviderDelegateConfig &config,
+                Allocator *allocator)
+            {
+                struct aws_credentials_provider_delegate_options raw_config;
+                AWS_ZERO_STRUCT(raw_config);
+
+                auto delegateCallbackArgs = Aws::Crt::New<DelegateCredentialsProviderCallbackArgs>(allocator);
+                delegateCallbackArgs->allocator = allocator;
+                delegateCallbackArgs->m_Handler = config.Handler;
+                raw_config.delegate_user_data = delegateCallbackArgs;
+                raw_config.get_credentials = s_onDelegateGetCredentials;
+                aws_credentials_provider_shutdown_options options;
+                options.shutdown_callback = s_onDelegateShutdownComplete;
+                options.shutdown_user_data = delegateCallbackArgs;
+                raw_config.shutdown_options = options;
+                return s_CreateWrappedProvider(
+                    aws_credentials_provider_new_delegate(allocator, &raw_config), allocator);
+            }
+
         } // namespace Auth
     }     // namespace Crt
 } // namespace Aws
