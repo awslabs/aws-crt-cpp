@@ -65,6 +65,20 @@ namespace Aws
              */
             void SetShutdownBehavior(ApiHandleShutdownBehavior behavior);
 
+#ifdef BYO_CRYPTO
+            /**
+             * If using BYO_CRYPTO, you need to call this function prior to creating any client channels in the
+             * application.
+             */
+            void SetBYOCryptoClientTlsCallback(Io::NewClientTlsHandlerCallback &&callback);
+
+            /**
+             * If using BYO_CRYPTO, you need to call this function prior to accepting any server channels in the
+             * application.
+             */
+            void SetBYOCryptoServerTlsCallback(Io::NewServerTlsHandlerCallback &&callback);
+#endif /* BYO_CRYPTO */
+
           private:
             void InitializeLoggingCommon(struct aws_logger_standard_options &options);
 

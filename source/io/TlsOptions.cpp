@@ -107,6 +107,18 @@ namespace Aws
             }
 #endif /* AWS_OS_APPLE */
 
+#ifdef _WIN32
+            TlsContextOptions TlsContextOptions::InitClientWithMtlsSystemPath(
+                const char *registryPath,
+                Allocator *allocator)
+            {
+                TlsContextOptions ctxOptions;
+                aws_tls_ctx_options_init_client_mtls_from_system_path(&ctxOptions.m_options, allocator, registryPath);
+                ctxOptions.m_isInit = true;
+                return ctxOptions;
+            }
+#endif /* _WIN32 */
+
             bool TlsContextOptions::IsAlpnSupported() noexcept { return aws_tls_is_alpn_available(); }
 
             bool TlsContextOptions::SetAlpnList(const char *alpn_list) noexcept
@@ -293,6 +305,38 @@ namespace Aws
 
                 return TlsConnectionOptions(m_ctx.get(), m_ctx->alloc);
             }
+
+#ifdef BYO_CRYPTO
+
+            TlsChannelHandler::TlsChannelHandler(
+                struct aws_channel_slot *,
+                const struct aws_tls_connection_options &options,
+                Allocator *allocator)
+                : ChannelHandler(allocator)
+            {
+                m_OnNegotiationResult = options.on_negotiation_result;
+                m_userData = options.user_data;
+            }
+
+            void TlsChannelHandler::CompleteTlsNegotiation(int errorCode)
+            {
+                m_OnNegotiationResult(&this->m_handler, GetSlot(), errorCode, m_userData);
+            }
+
+            bool ClientTlsChannelHandler::StartNegotiation()
+            {
+                return aws_tls_client_handler_start_negotiation(&m_handler) == AWS_OP_SUCCESS;
+            }
+
+            ClientTlsChannelHandler::ClientTlsChannelHandler(
+                struct aws_channel_slot *slot,
+                const struct aws_tls_connection_options &options,
+                Allocator *allocator)
+                : TlsChannelHandler(slot, options, allocator)
+            {
+            }
+#endif /* BYO_CRYPTO */
+
         } // namespace Io
     }     // namespace Crt
 } // namespace Aws

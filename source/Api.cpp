@@ -18,6 +18,11 @@ namespace Aws
     {
         Allocator *g_allocator = Aws::Crt::DefaultAllocator();
 
+#ifdef BYO_CRYPTO
+        static Io::NewClientTlsHandlerCallback s_ClientCallback;
+        static Io::NewServerTlsHandlerCallback s_ServerCallback;
+#endif /* BYO_CRYPTO */
+
         static void *s_cJSONAlloc(size_t sz) { return aws_mem_acquire(g_allocator, sz); }
 
         static void s_cJSONFree(void *ptr) { return aws_mem_release(g_allocator, ptr); }
@@ -64,6 +69,11 @@ namespace Aws
             aws_auth_library_clean_up();
             aws_mqtt_library_clean_up();
             aws_http_library_clean_up();
+
+#ifdef BYO_CRYPTO
+            s_ClientCallback = nullptr;
+            s_ServerCallback = nullptr;
+#endif /* BYO_CRYPTO */
         }
 
         void ApiHandle::InitializeLogging(Aws::Crt::LogLevel level, const char *filename)
@@ -110,6 +120,52 @@ namespace Aws
         }
 
         void ApiHandle::SetShutdownBehavior(ApiHandleShutdownBehavior behavior) { shutdownBehavior = behavior; }
+
+#ifdef BYO_CRYPTO
+        static struct aws_channel_handler *s_NewClientHandler(
+            struct aws_allocator *allocator,
+            struct aws_tls_connection_options *options,
+            struct aws_channel_slot *slot,
+            void *)
+        {
+            auto clientHandlerSelfReferencing = s_ClientCallback(slot, *options, allocator);
+            return clientHandlerSelfReferencing->GetUnderlyingHandle();
+        }
+
+        static int s_StartNegotiation(struct aws_channel_handler *handler, void *)
+        {
+            auto *clientHandler = reinterpret_cast<Io::ClientTlsChannelHandler *>(handler->impl);
+            return clientHandler->StartNegotiation();
+        }
+
+        static struct aws_channel_handler *s_NewServerHandler(
+            struct aws_allocator *allocator,
+            struct aws_tls_connection_options *options,
+            struct aws_channel_slot *slot,
+            void *)
+        {
+            auto serverHandlerSelfReferencing = s_ServerCallback(slot, *options, allocator);
+            return serverHandlerSelfReferencing->GetUnderlyingHandle();
+        }
+
+        void ApiHandle::SetBYOCryptoClientTlsCallback(Io::NewClientTlsHandlerCallback &&callback)
+        {
+            s_ClientCallback = std::move(callback);
+            struct aws_tls_byo_crypto_setup_options setupOptions;
+            setupOptions.new_handler_fn = s_NewClientHandler;
+            setupOptions.start_negotiation_fn = s_StartNegotiation;
+            setupOptions.user_data = nullptr;
+        }
+
+        void ApiHandle::SetBYOCryptoServerTlsCallback(Io::NewServerTlsHandlerCallback &&callback)
+        {
+            s_ServerCallback = std::move(callback);
+            struct aws_tls_byo_crypto_setup_options setupOptions;
+            setupOptions.new_handler_fn = s_NewServerHandler;
+            setupOptions.start_negotiation_fn = nullptr;
+            setupOptions.user_data = nullptr;
+        }
+#endif /* BYO_CRYPTO */
 
         const char *ErrorDebugString(int error) noexcept { return aws_error_debug_str(error); }
 

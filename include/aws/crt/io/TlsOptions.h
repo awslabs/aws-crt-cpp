@@ -5,8 +5,11 @@
  */
 
 #include <aws/crt/Types.h>
-
+#include <aws/crt/io/ChannelHandler.h>
 #include <aws/io/tls_channel_handler.h>
+
+#include <functional>
+#include <memory>
 
 struct aws_tls_ctx_options;
 
@@ -86,6 +89,18 @@ namespace Aws
                     const char *pkcs12_pwd,
                     Allocator *allocator = g_allocator) noexcept;
 #endif
+
+#ifdef _WIN32
+                /**
+                 * Initializes options for use with mutual tls in client mode. This function is only available on
+                 * windows. cert_reg_path is the path to a system
+                 * installed certficate/private key pair. Example:
+                 * CurrentUser\\MY\\<thumprint>
+                 */
+                static TlsContextOptions InitClientWithMtlsSystemPath(
+                    const char *registryPath,
+                    Allocator *allocator = g_allocator) noexcept;
+#endif /* _WIN32 */
 
                 /**
                  * @return true if alpn is supported by the underlying security provider, false
@@ -217,6 +232,53 @@ namespace Aws
 
             AWS_CRT_CPP_API void InitTlsStaticState(Allocator *alloc) noexcept;
             AWS_CRT_CPP_API void CleanUpTlsStaticState() noexcept;
+
+#ifdef BYO_CRYPTO
+            class AWS_CRT_CPP_API TlsChannelHandler : public ChannelHandler
+            {
+              protected:
+                TlsChannelHandler(
+                    struct aws_channel_slot *slot,
+                    const struct aws_tls_connection_options &options,
+                    Allocator *allocator = g_allocator);
+
+                /**
+                 * Invoke this function from inside your handler after TLS negotiation completes. errorCode ==
+                 * AWS_ERROR_SUCCESS or 0 means the session was successfully established and the connection should
+                 * continue on.
+                 */
+                void CompleteTlsNegotiation(int errorCode);
+
+              private:
+                aws_tls_on_negotiation_result_fn *m_OnNegotiationResult;
+                void *m_userData;
+            };
+
+            class AWS_CRT_CPP_API ClientTlsChannelHandler : public TlsChannelHandler
+            {
+              public:
+                /**
+                 * Initiates the TLS session negotiation. This is called by the common runtime when it's time to start
+                 * a new session.
+                 */
+                bool StartNegotiation();
+
+              protected:
+                ClientTlsChannelHandler(
+                    struct aws_channel_slot *slot,
+                    const struct aws_tls_connection_options &options,
+                    Allocator *allocator = g_allocator);
+            };
+
+            using NewClientTlsHandlerCallback = std::function<std::shared_ptr<ClientTlsChannelHandler>(
+                struct aws_channel_slot *slot,
+                const struct aws_tls_connection_options &options,
+                Allocator *allocator)>;
+            using NewServerTlsHandlerCallback = std::function<std::shared_ptr<TlsChannelHandler>(
+                struct aws_channel_slot *slot,
+                const struct aws_tls_connection_options &options,
+                Allocator *allocator)>;
+#endif /* BYO_CRYPTO */
 
         } // namespace Io
     }     // namespace Crt

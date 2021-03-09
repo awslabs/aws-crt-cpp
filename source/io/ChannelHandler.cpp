@@ -1,0 +1,160 @@
+/**
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0.
+ */
+#include <aws/crt/io/ChannelHandler.h>
+
+namespace Aws
+{
+    namespace Crt
+    {
+        namespace Io
+        {
+            static int s_ProcessReadMessage(
+                struct aws_channel_handler *handler,
+                struct aws_channel_slot *,
+                struct aws_io_message *message)
+            {
+                auto *channelHandler = reinterpret_cast<ChannelHandler *>(handler->impl);
+
+                return channelHandler->ProcessReadMessage(*message);
+            }
+
+            static int s_ProcessWriteMessage(
+                struct aws_channel_handler *handler,
+                struct aws_channel_slot *,
+                struct aws_io_message *message)
+            {
+                auto *channelHandler = reinterpret_cast<ChannelHandler *>(handler->impl);
+
+                return channelHandler->ProcessWriteMessage(*message);
+            }
+
+            static int s_IncrementReadWindow(
+                struct aws_channel_handler *handler,
+                struct aws_channel_slot *,
+                size_t size)
+            {
+                auto *channelHandler = reinterpret_cast<ChannelHandler *>(handler->impl);
+
+                return channelHandler->IncrementReadWindow(size);
+            }
+
+            static int s_Shutdown(
+                struct aws_channel_handler *handler,
+                struct aws_channel_slot *,
+                enum aws_channel_direction dir,
+                int errorCode,
+                bool freeScarceResourcesImmediately)
+            {
+                auto *channelHandler = reinterpret_cast<ChannelHandler *>(handler->impl);
+
+                return channelHandler->Shutdown(
+                    static_cast<ChannelDirection>(dir), errorCode, freeScarceResourcesImmediately);
+            }
+
+            static size_t s_InitialWindowSize(struct aws_channel_handler *handler)
+            {
+                auto *channelHandler = reinterpret_cast<ChannelHandler *>(handler->impl);
+                return channelHandler->InitialWindowSize();
+            }
+
+            static size_t s_MessageOverhead(struct aws_channel_handler *handler)
+            {
+                auto *channelHandler = reinterpret_cast<ChannelHandler *>(handler->impl);
+                return channelHandler->MessageOverhead();
+            }
+
+            static void s_ResetStatistics(struct aws_channel_handler *handler)
+            {
+                auto *channelHandler = reinterpret_cast<ChannelHandler *>(handler->impl);
+                channelHandler->ResetStatistics();
+            }
+
+            static void s_GatherStatistics(struct aws_channel_handler *handler, struct aws_array_list *statsList)
+            {
+                auto *channelHandler = reinterpret_cast<ChannelHandler *>(handler->impl);
+                channelHandler->GatherStatistics(statsList);
+            }
+
+            void ChannelHandler::s_Destroy(struct aws_channel_handler *handler)
+            {
+                auto *channelHandler = reinterpret_cast<ChannelHandler *>(handler->impl);
+                channelHandler->m_selfReference = nullptr;
+            }
+
+            struct aws_channel_handler_vtable ChannelHandler::s_vtable = {
+                s_ProcessReadMessage,
+                s_ProcessWriteMessage,
+                s_IncrementReadWindow,
+                s_Shutdown,
+                s_InitialWindowSize,
+                s_MessageOverhead,
+                ChannelHandler::s_Destroy,
+                s_ResetStatistics,
+                s_GatherStatistics,
+            };
+
+            ChannelHandler::ChannelHandler(Allocator *allocator)
+            {
+                AWS_ZERO_STRUCT(m_handler);
+                m_handler.alloc = allocator;
+                m_handler.impl = reinterpret_cast<void *>(this);
+                m_handler.vtable = &ChannelHandler::s_vtable;
+                /* To force C to tell us when it's safe to clean up, but keep it from actually cleaning up. */
+                m_selfReference = shared_from_this();
+            }
+
+            struct aws_io_message *ChannelHandler::AcquireMessageFromPool(MessageType messageType, size_t sizeHint)
+            {
+                return aws_channel_acquire_message_from_pool(
+                    GetSlot()->channel, static_cast<aws_io_message_type>(messageType), sizeHint);
+            }
+
+            struct aws_io_message *ChannelHandler::AcquireMaxSizeMessageForWrite()
+            {
+                return aws_channel_slot_acquire_max_message_for_write(GetSlot());
+            }
+
+            bool ChannelHandler::ChannelsThreadIsCallersThread() const
+            {
+                return aws_channel_thread_is_callers_thread(GetSlot()->channel);
+            }
+
+            bool ChannelHandler::SendMessage(struct aws_io_message *message, ChannelDirection direction)
+            {
+                return aws_channel_slot_send_message(
+                           GetSlot(), message, static_cast<aws_channel_direction>(direction)) == AWS_OP_SUCCESS;
+            }
+
+            bool ChannelHandler::IncrementUpstreamReadWindow(size_t windowUpdateSize)
+            {
+                return aws_channel_slot_increment_read_window(GetSlot(), windowUpdateSize) == AWS_OP_SUCCESS;
+            }
+
+            bool ChannelHandler::OnShutdownComplete(
+                ChannelDirection direction,
+                int errorCode,
+                bool freeScarceResourcesImmediately)
+            {
+                return aws_channel_slot_on_handler_shutdown_complete(
+                           GetSlot(),
+                           static_cast<aws_channel_direction>(direction),
+                           errorCode,
+                           freeScarceResourcesImmediately) == AWS_OP_SUCCESS;
+            }
+
+            size_t ChannelHandler::DownstreamReadWindow() const
+            {
+                return aws_channel_slot_downstream_read_window(GetSlot());
+            }
+
+            size_t ChannelHandler::UpstreamMessageOverhead() const
+            {
+                return aws_channel_slot_upstream_message_overhead(GetSlot());
+            }
+
+            struct aws_channel_slot *ChannelHandler::GetSlot() const { return m_handler.slot; }
+        } // namespace Io
+    }     // namespace Crt
+} // namespace Aws
