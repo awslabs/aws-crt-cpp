@@ -95,7 +95,7 @@ namespace Aws
                 s_GatherStatistics,
             };
 
-            ChannelHandler::ChannelHandler(Allocator *allocator)
+            ChannelHandler::ChannelHandler(Allocator *allocator) : m_allocator(allocator)
             {
                 AWS_ZERO_STRUCT(m_handler);
                 m_handler.alloc = allocator;
@@ -155,6 +155,47 @@ namespace Aws
             }
 
             struct aws_channel_slot *ChannelHandler::GetSlot() const { return m_handler.slot; }
+
+            struct TaskWrapper
+            {
+                struct aws_channel_task task
+                {
+                };
+                Allocator *allocator{};
+                std::function<void(TaskStatus)> wrappingFn;
+            };
+
+            static void s_ChannelTaskCallback(struct aws_channel_task *, void *arg, enum aws_task_status status)
+            {
+                auto *taskWrapper = reinterpret_cast<TaskWrapper *>(arg);
+                taskWrapper->wrappingFn(static_cast<TaskStatus>(status));
+                Delete(taskWrapper, taskWrapper->allocator);
+            }
+
+            void ChannelHandler::ScheduleTask(std::function<void(TaskStatus)> &&task, std::chrono::nanoseconds run_in)
+            {
+                auto *wrapper = New<TaskWrapper>(m_allocator);
+                wrapper->wrappingFn = std::move(task);
+                wrapper->allocator = m_allocator;
+                aws_channel_task_init(
+                    &wrapper->task, s_ChannelTaskCallback, wrapper, "cpp-crt-custom-channel-handler-task");
+
+                uint64_t currentTimestamp = 0;
+                aws_channel_current_clock_time(GetSlot()->channel, &currentTimestamp);
+                aws_channel_schedule_task_future(GetSlot()->channel, &wrapper->task, currentTimestamp + run_in.count());
+            }
+
+            template <typename... Args> void ChannelHandler::ScheduleTask(std::function<void(TaskStatus)> &&task)
+            {
+                auto *wrapper = New<TaskWrapper>(m_allocator);
+                wrapper->wrappingFn = std::move(task);
+                wrapper->allocator = m_allocator;
+                aws_channel_task_init(
+                    &wrapper->task, s_ChannelTaskCallback, wrapper, "cpp-crt-custom-channel-handler-task");
+
+                aws_channel_schedule_task_now(GetSlot()->channel, &wrapper->task);
+            }
+
         } // namespace Io
     }     // namespace Crt
 } // namespace Aws

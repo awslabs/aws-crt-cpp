@@ -30,6 +30,12 @@ namespace Aws
                 ApplicationData,
             };
 
+            enum class TaskStatus
+            {
+                RunReady,
+                Canceled,
+            };
+
             /**
              * Wrapper for aws-c-io channel handlers. The semantics are identical as the functions on
              * aws_channel_handler.
@@ -122,7 +128,12 @@ namespace Aws
                 size_t UpstreamMessageOverhead() const;
                 struct aws_channel_slot *GetSlot() const;
 
+                void ScheduleTask(std::function<void(TaskStatus)> &&task);
+
+                void ScheduleTask(std::function<void(TaskStatus)> &&task, std::chrono::nanoseconds run_in);
+
                 struct aws_channel_handler m_handler;
+                Allocator *m_allocator;
 
               private:
                 std::shared_ptr<ChannelHandler> m_selfReference;
