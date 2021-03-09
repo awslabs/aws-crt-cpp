@@ -185,7 +185,7 @@ namespace Aws
                 aws_channel_schedule_task_future(GetSlot()->channel, &wrapper->task, currentTimestamp + run_in.count());
             }
 
-            template <typename... Args> void ChannelHandler::ScheduleTask(std::function<void(TaskStatus)> &&task)
+            void ChannelHandler::ScheduleTask(std::function<void(TaskStatus)> &&task)
             {
                 auto *wrapper = New<TaskWrapper>(m_allocator);
                 wrapper->wrappingFn = std::move(task);
