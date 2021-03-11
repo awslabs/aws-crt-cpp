@@ -3,6 +3,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include <aws/cal/hmac.h>
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
 
@@ -44,7 +45,7 @@ namespace Aws
              * load into memory. You can call Update() multiple times as you load chunks of data into memory. When
              * you're finished simply call Digest(). After Digest() is called, this object is no longer usable.
              */
-            class AWS_CRT_CPP_API HMAC final
+            class AWS_CRT_CPP_API HMAC
             {
               public:
                 ~HMAC();
@@ -87,14 +88,43 @@ namespace Aws
                  */
                 bool Digest(ByteBuf &output, size_t truncateTo = 0) noexcept;
 
-              private:
+                aws_hmac *GetUnderlyingHandle() const { return m_hmac; }
+
+              protected:
                 HMAC(aws_hmac *hmac) noexcept;
                 HMAC() = delete;
 
+              private:
                 aws_hmac *m_hmac;
                 bool m_good;
                 int m_lastError;
             };
+
+#ifdef BYO_CRYPTO
+            class AWS_CRT_CPP_API ByoHMAC : public HMAC, std::enable_shared_from_this<ByoHMAC>
+            {
+              public:
+                virtual ~ByoHMAC() = default;
+
+              protected:
+                ByoHMAC(size_t digestSize, const ByteCursor &secret, Allocator *allocator = g_allocator);
+
+                virtual bool UpdateInternal(const ByteCursor &toHash) noexcept = 0;
+                virtual bool DigestInternal(ByteBuf &output, size_t truncateTo = 0) noexcept = 0;
+
+              private:
+                static void s_Destroy(struct aws_hmac *hmac);
+                static int s_Update(struct aws_hmac *hmac, const struct aws_byte_cursor *buf);
+                static int s_Finalize(struct aws_hmac *hmac, struct aws_byte_buf *out);
+
+                static aws_hmac_vtable s_Vtable;
+                aws_hmac m_hmacValue;
+                std::shared_ptr<ByoHMAC> m_selfReference;
+            };
+
+            using CreateHMACCallback =
+                std::function<std::shared_ptr<ByoHMAC>(size_t, const ByteCursor &secret, Allocator *)>;
+#endif /* BYO_CRYPTO */
 
         } // namespace Crypto
     }     // namespace Crt

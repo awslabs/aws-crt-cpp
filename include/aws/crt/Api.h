@@ -3,13 +3,14 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include <aws/common/logging.h>
 #include <aws/crt/Types.h>
+#include <aws/crt/crypto/HMAC.h>
+#include <aws/crt/crypto/Hash.h>
 #include <aws/crt/io/Bootstrap.h>
 #include <aws/crt/io/EventLoopGroup.h>
 #include <aws/crt/io/TlsOptions.h>
 #include <aws/crt/mqtt/MqttClient.h>
-
-#include <aws/common/logging.h>
 
 namespace Aws
 {
@@ -77,6 +78,11 @@ namespace Aws
              * application.
              */
             void SetBYOCryptoServerTlsCallback(Io::NewServerTlsHandlerCallback &&callback);
+
+            void SetBYOCryptoNewMD5Callback(Crypto::CreateHashCallback &&callback);
+            void SetBYOCryptoNewSHA256Callback(Crypto::CreateHashCallback &&callback);
+            void SetBYOCryptoNewSHA256HMACCallback(Crypto::CreateHMACCallback &&callback);
+
 #endif /* BYO_CRYPTO */
 
           private:

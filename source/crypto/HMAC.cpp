@@ -110,6 +110,43 @@ namespace Aws
                 return false;
             }
 
+#ifdef BYO_CRYPTO
+            aws_hmac_vtable ByoHMAC::s_Vtable = {
+                "aws-crt-cpp-byo-crypto-hmac",
+                "aws-crt-cpp-byo-crypto",
+                ByoHMAC::s_Destroy,
+                ByoHMAC::s_Update,
+                ByoHMAC::s_Finalize,
+            };
+
+            ByoHMAC::ByoHMAC(size_t digestSize, const ByteCursor &, Allocator *allocator) : HMAC(&m_hmacValue)
+            {
+                AWS_ZERO_STRUCT(m_hmacValue);
+                m_hmacValue.impl = reinterpret_cast<void *>(this);
+                m_hmacValue.digest_size = digestSize;
+                m_hmacValue.allocator = allocator;
+                m_hmacValue.good = true;
+                m_selfReference = shared_from_this();
+            }
+
+            void ByoHMAC::s_Destroy(struct aws_hmac *hmac)
+            {
+                auto *byoHash = reinterpret_cast<ByoHMAC *>(hmac->impl);
+                byoHash->m_selfReference = nullptr;
+            }
+
+            int ByoHMAC::s_Update(struct aws_hmac *hmac, const struct aws_byte_cursor *buf)
+            {
+                auto *byoHash = reinterpret_cast<ByoHMAC *>(hmac->impl);
+                return byoHash->UpdateInternal(*buf) ? AWS_OP_SUCCESS : AWS_OP_ERR;
+            }
+
+            int ByoHMAC::s_Finalize(struct aws_hmac *hmac, struct aws_byte_buf *out)
+            {
+                auto *byoHash = reinterpret_cast<ByoHMAC *>(hmac->impl);
+                return byoHash->DigestInternal(*out) ? AWS_OP_SUCCESS : AWS_OP_ERR;
+            }
+#endif    /* BYO_CRYPTO */
         } // namespace Crypto
     }     // namespace Crt
 } // namespace Aws

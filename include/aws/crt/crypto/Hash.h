@@ -6,6 +6,8 @@
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
 
+#include <aws/cal/hash.h>
+
 struct aws_hash;
 namespace Aws
 {
@@ -62,10 +64,10 @@ namespace Aws
              * load into memory. You can call Update() multiple times as you load chunks of data into memory. When
              * you're finished simply call Digest(). After Digest() is called, this object is no longer usable.
              */
-            class AWS_CRT_CPP_API Hash final
+            class AWS_CRT_CPP_API Hash
             {
               public:
-                ~Hash();
+                virtual ~Hash();
                 Hash(const Hash &) = delete;
                 Hash &operator=(const Hash &) = delete;
                 Hash(Hash &&toMove);
@@ -105,14 +107,42 @@ namespace Aws
                  */
                 bool Digest(ByteBuf &output, size_t truncateTo = 0) noexcept;
 
-              private:
+                aws_hash *GetUnderlyingHandle() const { return m_hash; }
+
+              protected:
                 Hash(aws_hash *hash) noexcept;
                 Hash() = delete;
 
+              private:
                 aws_hash *m_hash;
                 bool m_good;
                 int m_lastError;
             };
+
+#ifdef BYO_CRYPTO
+            class AWS_CRT_CPP_API ByoHash : public Hash, public std::enable_shared_from_this<ByoHash>
+            {
+              public:
+                virtual ~ByoHash() = default;
+
+              protected:
+                ByoHash(size_t digestSize, Allocator *allocator = g_allocator);
+
+                virtual bool UpdateInternal(const ByteCursor &toHash) noexcept = 0;
+                virtual bool DigestInternal(ByteBuf &output, size_t truncateTo = 0) noexcept = 0;
+
+              private:
+                static void s_Destroy(struct aws_hash *hash);
+                static int s_Update(struct aws_hash *hash, const struct aws_byte_cursor *buf);
+                static int s_Finalize(struct aws_hash *hash, struct aws_byte_buf *out);
+
+                static aws_hash_vtable s_Vtable;
+                aws_hash m_hashValue;
+                std::shared_ptr<ByoHash> m_selfReference;
+            };
+
+            using CreateHashCallback = std::function<std::shared_ptr<ByoHash>(size_t, Allocator *)>;
+#endif /* BYO_CRYPTO */
 
         } // namespace Crypto
     }     // namespace Crt

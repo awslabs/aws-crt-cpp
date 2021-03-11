@@ -165,6 +165,43 @@ namespace Aws
             setupOptions.start_negotiation_fn = nullptr;
             setupOptions.user_data = nullptr;
         }
+
+        static Crypto::CreateHashCallback md5NewCallback;
+        static struct aws_hash *s_MD5New(struct aws_allocator *allocator)
+        {
+            return md5NewCallback(AWS_MD5_LEN, allocator)->GetUnderlyingHandle();
+        }
+
+        void ApiHandle::SetBYOCryptoNewMD5Callback(Crypto::CreateHashCallback &&callback)
+        {
+            md5NewCallback = std::move(callback);
+            aws_set_md5_new_fn(s_MD5New);
+        }
+
+        static Crypto::CreateHashCallback sha256NewCallback;
+        static struct aws_hash *s_Sha256New(struct aws_allocator *allocator)
+        {
+            return sha256NewCallback(AWS_SHA256_LEN, allocator)->GetUnderlyingHandle();
+        }
+
+        void SetBYOCryptoNewSHA256Callback(Crypto::CreateHashCallback &&callback)
+        {
+            sha256NewCallback = std::move(callback);
+            aws_set_sha256_new_fn(s_Sha256New);
+        }
+
+        static Crypto::CreateHMACCallback sha256HMACNewCallback;
+        static struct aws_hmac *s_sha256HMACNew(struct aws_allocator *allocator, const struct aws_byte_cursor *secret)
+        {
+            return sha256HMACNewCallback(AWS_SHA256_HMAC_LEN, *secret, allocator)->GetUnderlyingHandle();
+        }
+
+        void SetBYOCryptoNewSHA256HMACCallback(Crypto::CreateHMACCallback &&callback)
+        {
+            sha256HMACNewCallback = std::move(callback);
+            aws_set_sha256_hmac_new_fn(s_sha256HMACNew);
+        }
+
 #endif /* BYO_CRYPTO */
 
         const char *ErrorDebugString(int error) noexcept { return aws_error_debug_str(error); }
