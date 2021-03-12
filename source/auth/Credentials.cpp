@@ -204,6 +204,8 @@ namespace Aws
                 raw_config.config_file_name_override = config.ConfigFileNameOverride;
                 raw_config.credentials_file_name_override = config.CredentialsFileNameOverride;
                 raw_config.profile_name_override = config.ProfileNameOverride;
+                raw_config.bootstrap = config.Bootstrap ? config.Bootstrap->GetUnderlyingHandle() : nullptr;
+                raw_config.tls_ctx = config.TlsContext ? config.TlsContext->GetUnderlyingHandle() : nullptr;
 
                 return s_CreateWrappedProvider(aws_credentials_provider_new_profile(allocator, &raw_config), allocator);
             }
@@ -264,7 +266,7 @@ namespace Aws
                 AWS_ZERO_STRUCT(raw_config);
 
                 raw_config.bootstrap = config.Bootstrap->GetUnderlyingHandle();
-                raw_config.tls_ctx = config.TlsContext->GetUnderlyingHandle();
+                raw_config.tls_ctx = config.TlsContext ? config.TlsContext->GetUnderlyingHandle() : nullptr;
 
                 return s_CreateWrappedProvider(
                     aws_credentials_provider_new_chain_default(allocator, &raw_config), allocator);

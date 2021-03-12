@@ -158,7 +158,7 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API CredentialsProviderProfileConfig
             {
-                CredentialsProviderProfileConfig()
+                CredentialsProviderProfileConfig() : Bootstrap(nullptr), TlsContext(nullptr)
                 {
                     AWS_ZERO_STRUCT(ProfileNameOverride);
                     AWS_ZERO_STRUCT(ConfigFileNameOverride);
@@ -181,6 +181,22 @@ namespace Aws
                  * credential sourcing
                  */
                 ByteCursor CredentialsFileNameOverride;
+
+                /**
+                 * Connection bootstrap to use for any network connections made while sourcing credentials.
+                 * (for example, a profile that uses assume-role will need to query STS).
+                 */
+                Io::ClientBootstrap *Bootstrap;
+
+                /**
+                 * Client TLS context to use for any secure network connections made while sourcing credentials
+                 * (for example, a profile that uses assume-role will need to query STS).
+                 *
+                 * If a TLS context is needed, and you did not pass one in, it will be created automatically.
+                 * However, you are encouraged to pass in a shared one since these are expensive objects.
+                 * If using BYO_CRYPTO, you must provide the TLS context since it cannot be created automatically.
+                 */
+                Io::TlsContext *TlsContext;
             };
 
             /**
@@ -250,7 +266,6 @@ namespace Aws
                  *
                  * If not provided the default chain will construct a new one, but these
                  * are expensive objects so you are encouraged to pass in a shared one.
-                 *
                  * Must be provided if using BYO_CRYPTO.
                  */
                 Io::TlsContext *TlsContext;
