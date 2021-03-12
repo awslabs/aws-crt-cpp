@@ -219,8 +219,12 @@ static int s_TestProviderDefaultChainGet(struct aws_allocator *allocator, void *
         ASSERT_TRUE(clientBootstrap);
         clientBootstrap.EnableBlockingShutdown();
 
+        Aws::Crt::Io::TlsContextOptions tlsOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient(allocator);
+        Aws::Crt::Io::TlsContext tlsContext(tlsOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+
         CredentialsProviderChainDefaultConfig config;
         config.Bootstrap = &clientBootstrap;
+        config.TlsContext = &tlsContext;
 
         auto provider = CredentialsProvider::CreateCredentialsProviderChainDefault(config, allocator);
         GetCredentialsWaiter waiter(provider);
@@ -232,6 +236,40 @@ static int s_TestProviderDefaultChainGet(struct aws_allocator *allocator, void *
 }
 
 AWS_TEST_CASE(TestProviderDefaultChainGet, s_TestProviderDefaultChainGet)
+
+static int s_TestProviderDefaultChainManualTlsContextGet(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        ApiHandle apiHandle(allocator);
+
+        Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+        ASSERT_TRUE(eventLoopGroup);
+
+        Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+        ASSERT_TRUE(defaultHostResolver);
+
+        Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+        ASSERT_TRUE(clientBootstrap);
+        clientBootstrap.EnableBlockingShutdown();
+
+        Aws::Crt::Io::TlsContextOptions tlsOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient(allocator);
+        Aws::Crt::Io::TlsContext tlsContext(tlsOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+
+        CredentialsProviderChainDefaultConfig config;
+        config.Bootstrap = &clientBootstrap;
+        config.TlsContext = &tlsContext;
+
+        auto provider = CredentialsProvider::CreateCredentialsProviderChainDefault(config, allocator);
+        GetCredentialsWaiter waiter(provider);
+
+        auto creds = waiter.GetCredentials();
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(TestProviderDefaultChainManualTlsContextGet, s_TestProviderDefaultChainManualTlsContextGet)
 
 static int s_TestProviderDelegateGet(struct aws_allocator *allocator, void *ctx)
 {

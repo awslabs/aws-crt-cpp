@@ -238,13 +238,22 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API CredentialsProviderChainDefaultConfig
             {
-                CredentialsProviderChainDefaultConfig() : Bootstrap(nullptr) {}
+                CredentialsProviderChainDefaultConfig() : Bootstrap(nullptr), TlsContext(nullptr) {}
 
                 /**
-                 * Connection bootstrap to use to create the http connection required to
-                 * query credentials from the Ec2 instance metadata service
+                 * Connection bootstrap to use for any network connections made while sourcing credentials.
                  */
                 Io::ClientBootstrap *Bootstrap;
+
+                /**
+                 * Client TLS context to use for any secure network connections made while sourcing credentials.
+                 *
+                 * If not provided the default chain will construct a new one, but these
+                 * are expensive objects so you are encouraged to pass in a shared one.
+                 *
+                 * Must be provided if using BYO_CRYPTO.
+                 */
+                Io::TlsContext *TlsContext;
             };
 
             /**

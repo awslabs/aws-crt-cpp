@@ -208,6 +208,8 @@ namespace Aws
                  */
                 int GetInitializationError() const noexcept { return m_initializationError; }
 
+                aws_tls_ctx *GetUnderlyingHandle() noexcept { return m_ctx.get(); }
+
               private:
                 bool isValid() const noexcept { return m_ctx && m_initializationError == AWS_ERROR_SUCCESS; }
 

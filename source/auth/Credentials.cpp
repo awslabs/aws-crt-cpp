@@ -264,6 +264,7 @@ namespace Aws
                 AWS_ZERO_STRUCT(raw_config);
 
                 raw_config.bootstrap = config.Bootstrap->GetUnderlyingHandle();
+                raw_config.tls_ctx = config.TlsContext->GetUnderlyingHandle();
 
                 return s_CreateWrappedProvider(
                     aws_credentials_provider_new_chain_default(allocator, &raw_config), allocator);
