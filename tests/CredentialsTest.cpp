@@ -224,6 +224,7 @@ static int s_TestProviderDefaultChainGet(struct aws_allocator *allocator, void *
 
         CredentialsProviderChainDefaultConfig config;
         config.Bootstrap = &clientBootstrap;
+        /* TlsContext didn't used to be an option. So test with and without setting it. */
         config.TlsContext = manual_tls ? &tlsContext : nullptr;
 
         auto provider = CredentialsProvider::CreateCredentialsProviderChainDefault(config, allocator);
