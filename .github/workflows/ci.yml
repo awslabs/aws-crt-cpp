@@ -45,8 +45,9 @@ jobs:
   clang-compat:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false # TODO: turn back on when android is fixed
       matrix:
-        version: [6, 8, 9] # TODO: fix 3
+        version: [3, 6, 8, 9]
     steps:
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
     - name: Build ${{ env.PACKAGE_NAME }}
@@ -128,7 +129,7 @@ jobs:
     name: Cross Compile ${{matrix.arch}}
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
+      fail-fast: false # TODO: turn back on when android is fixed
       matrix:
         arch: [linux-armv6, linux-armv7, linux-arm64, android-armv7]
 
