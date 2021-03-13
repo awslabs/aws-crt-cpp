@@ -10,16 +10,16 @@
             "versions": {
                 "_comment": "TODO aws-crt-builder should do this automatically",
                 "3": {
-                    "apt_compiler_packages": ["libc++-3.9-dev", "libc++abi-3.9-dev"]
+                    "apt_compiler_packages": ["libc++-dev", "libc++abi-dev"]
                 },
                 "6": {
-                    "apt_compiler_packages": ["libc++-6-dev", "libc++abi-6-dev"]
+                    "apt_compiler_packages": ["libc++-dev", "libc++abi-dev"]
                 },
                 "8": {
-                    "apt_compiler_packages": ["libc++-8-dev", "libc++abi-8-dev"]
+                    "apt_compiler_packages": ["libc++-dev", "libc++abi-dev"]
                 },
                 "9": {
-                    "apt_compiler_packages": ["libc++-9-dev", "libc++abi-9-dev"]
+                    "apt_compiler_packages": ["libc++-dev", "libc++abi-dev"]
                 }
             }
         }
