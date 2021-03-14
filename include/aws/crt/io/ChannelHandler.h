@@ -8,6 +8,7 @@
 #include <aws/crt/Types.h>
 #include <aws/io/channel.h>
 
+#include <chrono>
 #include <cstddef>
 
 struct aws_array_list;

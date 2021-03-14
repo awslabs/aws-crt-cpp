@@ -12,6 +12,20 @@ namespace Aws
 {
     namespace Crt
     {
+#if BYO_CRYPTO
+        static Io::NewTlsContextImplCallback s_newTlsContextImplCallback;
+        static Io::DeleteTlsContextImplCallback s_deleteTlsContextImplCallback;
+
+        void ApiHandle::SetBYOCryptoTlsContextCallbacks(
+            Io::NewTlsContextImplCallback &&newCallback,
+            Io::DeleteTlsContextImplCallback &&deleteCallback)
+        {
+
+            s_newTlsContextImplCallback = std::move(newCallback);
+            s_deleteTlsContextImplCallback = std::move(deleteCallback);
+        }
+#endif /* BYO_CRYPTO */
+
         namespace Io
         {
             TlsContextOptions::~TlsContextOptions()
@@ -271,6 +285,37 @@ namespace Aws
             TlsContext::TlsContext(TlsContextOptions &options, TlsMode mode, Allocator *allocator) noexcept
                 : m_ctx(nullptr), m_initializationError(AWS_ERROR_SUCCESS)
             {
+#if BYO_CRYPTO
+                if (!s_newTlsContextImplCallback || !s_deleteTlsContextImplCallback)
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_IO_TLS,
+                        "Must call ApiHandle::SetBYOCryptoTlsContextCallbacks() before TlsContext can be created");
+                    m_initializationError = AWS_IO_TLS_CTX_ERROR;
+                    return;
+                }
+
+                void *impl = s_newTlsContextImplCallback(options, mode, allocator);
+                if (!impl)
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_IO_TLS, "Creation callback from ApiHandle::SetBYOCryptoTlsContextCallbacks() failed");
+                    m_initializationError = AWS_IO_TLS_CTX_ERROR;
+                    return;
+                }
+
+                auto underlying_tls_ctx = static_cast<aws_tls_ctx *>(aws_mem_calloc(allocator, 1, sizeof(aws_tls_ctx)));
+                underlying_tls_ctx->alloc = allocator;
+                underlying_tls_ctx->impl = impl;
+
+                aws_ref_count_init(&underlying_tls_ctx->ref_count, underlying_tls_ctx, [](void *userdata) {
+                    auto dying_ctx = static_cast<aws_tls_ctx *>(userdata);
+                    s_deleteTlsContextImplCallback(dying_ctx->impl);
+                    aws_mem_release(dying_ctx->alloc, dying_ctx);
+                });
+
+                m_ctx.reset(underlying_tls_ctx, aws_tls_ctx_release);
+#else
                 if (mode == TlsMode::CLIENT)
                 {
                     aws_tls_ctx *underlying_tls_ctx = aws_tls_client_ctx_new(allocator, &options.m_options);
@@ -287,11 +332,11 @@ namespace Aws
                         m_ctx.reset(underlying_tls_ctx, aws_tls_ctx_release);
                     }
                 }
-
                 if (!m_ctx)
                 {
                     m_initializationError = Aws::Crt::LastErrorOrUnknown();
                 }
+#endif /* BYO_CRYPTO */
             }
 
             TlsConnectionOptions TlsContext::NewConnectionOptions() const noexcept

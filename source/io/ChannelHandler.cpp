@@ -4,6 +4,8 @@
  */
 #include <aws/crt/io/ChannelHandler.h>
 
+#include <chrono>
+
 namespace Aws
 {
     namespace Crt

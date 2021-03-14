@@ -155,6 +155,7 @@ namespace Aws
             setupOptions.new_handler_fn = s_NewClientHandler;
             setupOptions.start_negotiation_fn = s_StartNegotiation;
             setupOptions.user_data = nullptr;
+            (void)setupOptions; // TODO actually do something with this
         }
 
         void ApiHandle::SetBYOCryptoServerTlsCallback(Io::NewServerTlsHandlerCallback &&callback)
@@ -164,6 +165,7 @@ namespace Aws
             setupOptions.new_handler_fn = s_NewServerHandler;
             setupOptions.start_negotiation_fn = nullptr;
             setupOptions.user_data = nullptr;
+            (void)setupOptions; // TODO actually do something with this
         }
 
         static Crypto::CreateHashCallback md5NewCallback;

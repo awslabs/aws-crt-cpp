@@ -202,6 +202,11 @@ namespace Aws
                 friend class TlsContext;
             };
 
+#ifdef BYO_CRYPTO
+            using NewTlsContextImplCallback = std::function<void *(TlsContextOptions &, TlsMode, Allocator *)>;
+            using DeleteTlsContextImplCallback = std::function<void(void *)>;
+#endif /* BYO_CRYPTO */
+
             class AWS_CRT_CPP_API TlsContext final
             {
               public:

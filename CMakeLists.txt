@@ -5,6 +5,7 @@ endif()
 
 project(aws-crt-cpp CXX C)
 option(BUILD_DEPS "Builds aws common runtime dependencies as part of build, only do this if you don't want to control your dependency chain." OFF)
+option(BYO_CRYPTO "Don't build a tls implementation or link against a crypto interface. This feature is only for unix builds currently" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(AwsCheckHeadersCxx)
@@ -72,7 +73,7 @@ if (BUILD_DEPS)
     set(BUILD_TESTING OFF)
     add_subdirectory(crt/aws-c-common)
 
-    if (UNIX AND NOT APPLE)
+    if (UNIX AND NOT APPLE AND NOT BYO_CRYPTO)
         add_subdirectory(crt/s2n)
     endif()
 

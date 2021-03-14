@@ -67,6 +67,11 @@ namespace Aws
             void SetShutdownBehavior(ApiHandleShutdownBehavior behavior);
 
 #ifdef BYO_CRYPTO
+
+            void SetBYOCryptoTlsContextCallbacks(
+                Io::NewTlsContextImplCallback &&newCallback,
+                Io::DeleteTlsContextImplCallback &&deleteCallback);
+
             /**
              * If using BYO_CRYPTO, you need to call this function prior to creating any client channels in the
              * application.
