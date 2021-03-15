@@ -15,14 +15,16 @@ namespace Aws
 #if BYO_CRYPTO
         static Io::NewTlsContextImplCallback s_newTlsContextImplCallback;
         static Io::DeleteTlsContextImplCallback s_deleteTlsContextImplCallback;
+        static Io::IsTlsAlpnSupportedCallback s_isTlsAlpnSupportedCallback;
 
         void ApiHandle::SetBYOCryptoTlsContextCallbacks(
             Io::NewTlsContextImplCallback &&newCallback,
-            Io::DeleteTlsContextImplCallback &&deleteCallback)
+            Io::DeleteTlsContextImplCallback &&deleteCallback,
+            Io::IsTlsAlpnSupportedCallback &&alpnCallback)
         {
-
             s_newTlsContextImplCallback = std::move(newCallback);
             s_deleteTlsContextImplCallback = std::move(deleteCallback);
+            s_isTlsAlpnSupportedCallback = std::move(alpnCallback);
         }
 #endif /* BYO_CRYPTO */
 
@@ -361,6 +363,11 @@ namespace Aws
             {
                 m_OnNegotiationResult = options.on_negotiation_result;
                 m_userData = options.user_data;
+                aws_byte_buf_init(&m_protocolByteBuf, allocator, 16);
+            }
+
+            TlsChannelHandler::~TlsChannelHandler() {
+                aws_byte_buf_clean_up(&m_protocolByteBuf);
             }
 
             void TlsChannelHandler::CompleteTlsNegotiation(int errorCode)
@@ -385,3 +392,33 @@ namespace Aws
         } // namespace Io
     }     // namespace Crt
 } // namespace Aws
+
+#ifdef BYO_CRYPTO
+AWS_EXTERN_C_BEGIN
+
+bool aws_tls_is_alpn_available(void)
+{
+    if (!Aws::Crt::s_isTlsAlpnSupportedCallback)
+    {
+        AWS_LOGF_ERROR(
+            AWS_LS_IO_TLS,
+            "Must call ApiHandle::SetBYOCryptoTlsContextCallbacks() before ALPN can be queried");
+        return false;
+    }
+    return Aws::Crt::s_isTlsAlpnSupportedCallback();
+}
+
+struct aws_byte_buf aws_tls_handler_protocol(struct aws_channel_handler *handler)
+{
+    auto *channelHandler = reinterpret_cast<Aws::Crt::Io::ChannelHandler *>(handler->impl);
+    auto *tlsHandler = static_cast<Aws::Crt::Io::TlsChannelHandler*>(channelHandler);
+    Aws::Crt::String protocolString = const_cast<const Aws::Crt::Io::TlsChannelHandler *>(tlsHandler)->GetProtocol();
+
+    tlsHandler->m_protocolByteBuf.len = 0;
+    aws_byte_cursor protocolCursor = Aws::Crt::ByteCursorFromString(protocolString);
+    aws_byte_buf_append_dynamic(&tlsHandler->m_protocolByteBuf, &protocolCursor);
+    return tlsHandler->m_protocolByteBuf;
+}
+
+AWS_EXTERN_C_END
+#endif /* BYO_CRYPTO */

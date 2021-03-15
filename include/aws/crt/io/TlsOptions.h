@@ -205,6 +205,7 @@ namespace Aws
 #ifdef BYO_CRYPTO
             using NewTlsContextImplCallback = std::function<void *(TlsContextOptions &, TlsMode, Allocator *)>;
             using DeleteTlsContextImplCallback = std::function<void(void *)>;
+            using IsTlsAlpnSupportedCallback = std::function<bool()>;
 #endif /* BYO_CRYPTO */
 
             class AWS_CRT_CPP_API TlsContext final
@@ -241,6 +242,14 @@ namespace Aws
 #ifdef BYO_CRYPTO
             class AWS_CRT_CPP_API TlsChannelHandler : public ChannelHandler
             {
+              public:
+                virtual ~TlsChannelHandler();
+
+                /**
+                 * Return negotiated protocol (or empty string if no agreed upon protocol)
+                 */
+                virtual String GetProtocol() const = 0;
+
               protected:
                 TlsChannelHandler(
                     struct aws_channel_slot *slot,
@@ -257,6 +266,9 @@ namespace Aws
               private:
                 aws_tls_on_negotiation_result_fn *m_OnNegotiationResult;
                 void *m_userData;
+
+                aws_byte_buf m_protocolByteBuf;
+                friend aws_byte_buf (::aws_tls_handler_protocol)(aws_channel_handler *);
             };
 
             class AWS_CRT_CPP_API ClientTlsChannelHandler : public TlsChannelHandler

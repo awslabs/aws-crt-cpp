@@ -70,7 +70,8 @@ namespace Aws
 
             void SetBYOCryptoTlsContextCallbacks(
                 Io::NewTlsContextImplCallback &&newCallback,
-                Io::DeleteTlsContextImplCallback &&deleteCallback);
+                Io::DeleteTlsContextImplCallback &&deleteCallback,
+                Io::IsTlsAlpnSupportedCallback &&alpnCallback);
 
             /**
              * If using BYO_CRYPTO, you need to call this function prior to creating any client channels in the
