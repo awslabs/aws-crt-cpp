@@ -15,18 +15,20 @@ function(aws_check_headers_cxx target)
     if (PERFORM_HEADER_CHECK_CXX)
         aws_check_headers_cxx_internal(${target} 11 ${ARGN})
         aws_check_headers_cxx_internal(${target} 14 ${ARGN})
-
-        if (NOT CMAKE_VERSION VERSION_LESS "3.8")
-            aws_check_headers_cxx_internal(${target} 17 ${ARGN})
-
-            if (NOT CMAKE_VERSION VERSION_LESS "3.12" AND NOT MSVC)
-                aws_check_headers_cxx_internal(${target} 20 ${ARGN})
-            endif ()
-        endif ()
+        aws_check_headers_cxx_internal(${target} 17 ${ARGN})
+        aws_check_headers_cxx_internal(${target} 20 ${ARGN})
+        aws_check_headers_cxx_internal(${target} 23 ${ARGN})
     endif ()
 endfunction()
 
 function(aws_check_headers_cxx_internal target std)
+    # Check that compiler supports this std
+    list (FIND CMAKE_CXX_COMPILE_FEATURES "cxx_std_${std}" feature_idx)
+    if (${feature_idx} LESS 0)
+        message("cxx_std_${std} not supported")
+        return()
+    endif()
+
     set(HEADER_CHECKER_ROOT "${CMAKE_CURRENT_BINARY_DIR}/header-checker-cxx-${std}")
 
     # Write stub main file
