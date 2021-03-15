@@ -15,6 +15,12 @@
 #include <type_traits>
 
 #if __cplusplus >= 201703L || (defined(_MSC_LANG) && _MSC_LANG >= 201703L)
+#   if !defined(__has_include) || __has_include(<string_view>)
+#       define AWS_HAS_STD_STRING_VIEW 1
+#   endif
+#endif
+
+#if AWS_HAS_STD_STRING_VIEW
 #    include <string_view>
 #endif
 
@@ -52,7 +58,7 @@ namespace Aws
 
             basic_string_view &operator=(const basic_string_view &) noexcept = default;
 
-#if __cplusplus >= 201703L || (defined(_MSC_LANG) && _MSC_LANG >= 201703L)
+#if AWS_HAS_STD_STRING_VIEW
             constexpr basic_string_view(const std::basic_string_view<CharT, Traits> &other) noexcept
                 : m_size(other.size()), m_data(other.data())
             {
@@ -64,7 +70,7 @@ namespace Aws
                 m_size = other->size();
                 return *this;
             }
-#endif
+#endif // AWS_HAS_STD_STRING_VIEW
             // iterators
 
             constexpr const_iterator begin() const noexcept { return this->m_data; }
