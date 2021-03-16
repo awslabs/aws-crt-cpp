@@ -43,10 +43,10 @@ static int s_TestSHA256HMACResourceSafety(struct aws_allocator *allocator, void 
 }
 
 #else
-class ByoCryptoInterceptor : public Aws::Crt::Crypto::ByoHMAC
+class ByoCryptoHMACInterceptor : public Aws::Crt::Crypto::ByoHMAC
 {
   public:
-    ByoCryptoInterceptor(
+    ByoCryptoHMACInterceptor(
         size_t digestSize,
         Aws::Crt::Allocator *allocator,
         const Aws::Crt::ByteCursor &secret,
@@ -98,7 +98,7 @@ static int s_TestSHA256HMACResourceSafety(struct aws_allocator *allocator, void 
 
         apiHandle.SetBYOCryptoNewSHA256HMACCallback(
             [&](size_t digest_size, const Aws::Crt::ByteCursor &secretCur, Aws::Crt::Allocator *allocator) {
-                return Aws::Crt::MakeShared<ByoCryptoInterceptor>(
+                return Aws::Crt::MakeShared<ByoCryptoHMACInterceptor>(
                     allocator, digest_size, allocator, secretCur, expectedStr);
             });
 

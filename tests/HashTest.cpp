@@ -83,16 +83,15 @@ AWS_TEST_CASE(MD5ResourceSafety, s_TestMD5ResourceSafety)
 
 #else
 
-class ByoCryptoInterceptor : public Aws::Crt::Crypto::ByoHash
+class ByoCryptoHashInterceptor : public Aws::Crt::Crypto::ByoHash
 {
   public:
-    ByoCryptoInterceptor(size_t digestSize, Aws::Crt::Allocator *allocator, Aws::Crt::String output)
+    ByoCryptoHashInterceptor(size_t digestSize, Aws::Crt::Allocator *allocator, Aws::Crt::String output)
         : ByoHash(digestSize, allocator), m_output(std::move(output))
     {
-        fprintf(stderr, "len a %d\n", (int)m_output.length());
     }
 
-    ~ByoCryptoInterceptor() { fprintf(stderr, "shit happens\n"); }
+    ~ByoCryptoHashInterceptor() {}
 
     bool UpdateInternal(const Aws::Crt::ByteCursor &toHash) noexcept
     {
@@ -102,8 +101,6 @@ class ByoCryptoInterceptor : public Aws::Crt::Crypto::ByoHash
 
     bool DigestInternal(Aws::Crt::ByteBuf &output, size_t) noexcept
     {
-        fprintf(stderr, "len %d\n", (int)m_output.length());
-
         aws_byte_buf_write(&output, reinterpret_cast<const uint8_t *>(m_output.data()), m_output.length());
         return true;
     }
@@ -126,7 +123,7 @@ static int s_TestSHA256ResourceSafety(struct aws_allocator *allocator, void *)
         Aws::Crt::String expectedStr = Aws::Crt::String(reinterpret_cast<const char *>(expected), sizeof(expected));
 
         apiHandle.SetBYOCryptoNewSHA256Callback([&](size_t digestSize, Aws::Crt::Allocator *allocator) {
-            return Aws::Crt::MakeShared<ByoCryptoInterceptor>(allocator, digestSize, allocator, expectedStr);
+            return Aws::Crt::MakeShared<ByoCryptoHashInterceptor>(allocator, digestSize, allocator, expectedStr);
         });
 
         Aws::Crt::Crypto::Hash sha256 = Aws::Crt::Crypto::Hash::CreateSHA256(allocator);
@@ -174,7 +171,7 @@ static int s_TestMD5ResourceSafety(struct aws_allocator *allocator, void *)
         Aws::Crt::String expectedStr = Aws::Crt::String(reinterpret_cast<const char *>(expected), sizeof(expected));
 
         apiHandle.SetBYOCryptoNewMD5Callback([&](size_t digestSize, struct aws_allocator *allocator) {
-            return Aws::Crt::MakeShared<ByoCryptoInterceptor>(allocator, digestSize, allocator, expectedStr);
+            return Aws::Crt::MakeShared<ByoCryptoHashInterceptor>(allocator, digestSize, allocator, expectedStr);
         });
 
         Aws::Crt::Crypto::Hash md5 = Aws::Crt::Crypto::Hash::CreateMD5(allocator);
