@@ -118,7 +118,7 @@ namespace Aws
                 ByoHash::s_Finalize,
             };
 
-            ByoHash::ByoHash(size_t digestSize, Allocator *allocator) : Hash(&m_hashValue)
+            ByoHash::ByoHash(size_t digestSize, Allocator *allocator)
             {
                 AWS_ZERO_STRUCT(m_hashValue);
                 m_hashValue.vtable = &s_Vtable;
@@ -126,7 +126,15 @@ namespace Aws
                 m_hashValue.impl = reinterpret_cast<void *>(this);
                 m_hashValue.digest_size = digestSize;
                 m_hashValue.good = true;
-                m_selfReference = shared_from_this();
+            }
+
+            ByoHash::~ByoHash() {}
+
+            aws_hash *ByoHash::SeatForCInterop(const std::shared_ptr<ByoHash> &selfRef)
+            {
+                AWS_FATAL_ASSERT(this == selfRef.get());
+                m_selfReference = selfRef;
+                return &m_hashValue;
             }
 
             void ByoHash::s_Destroy(struct aws_hash *hash)

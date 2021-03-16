@@ -107,8 +107,6 @@ namespace Aws
                  */
                 bool Digest(ByteBuf &output, size_t truncateTo = 0) noexcept;
 
-                aws_hash *GetUnderlyingHandle() const { return m_hash; }
-
               protected:
                 Hash(aws_hash *hash) noexcept;
                 Hash() = delete;
@@ -120,10 +118,15 @@ namespace Aws
             };
 
 #ifdef BYO_CRYPTO
-            class AWS_CRT_CPP_API ByoHash : public Hash, public std::enable_shared_from_this<ByoHash>
+            class AWS_CRT_CPP_API ByoHash
             {
               public:
-                virtual ~ByoHash() = default;
+                virtual ~ByoHash();
+
+                /** this is called by the framework. If you're trying to create instances of this class manually,
+                 * please don't. But if you do. Look at the other factory functions for reference.
+                 */
+                aws_hash *SeatForCInterop(const std::shared_ptr<ByoHash> &selfRef);
 
               protected:
                 ByoHash(size_t digestSize, Allocator *allocator = g_allocator);

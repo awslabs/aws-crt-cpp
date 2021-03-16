@@ -119,14 +119,21 @@ namespace Aws
                 ByoHMAC::s_Finalize,
             };
 
-            ByoHMAC::ByoHMAC(size_t digestSize, const ByteCursor &, Allocator *allocator) : HMAC(&m_hmacValue)
+            ByoHMAC::ByoHMAC(size_t digestSize, const ByteCursor &, Allocator *allocator)
             {
                 AWS_ZERO_STRUCT(m_hmacValue);
                 m_hmacValue.impl = reinterpret_cast<void *>(this);
                 m_hmacValue.digest_size = digestSize;
                 m_hmacValue.allocator = allocator;
                 m_hmacValue.good = true;
-                m_selfReference = shared_from_this();
+                m_hmacValue.vtable = &s_Vtable;
+            }
+
+            aws_hmac *ByoHMAC::SeatForCInterop(const std::shared_ptr<ByoHMAC> &selfRef)
+            {
+                AWS_FATAL_ASSERT(this == selfRef.get());
+                m_selfReference = selfRef;
+                return &m_hmacValue;
             }
 
             void ByoHMAC::s_Destroy(struct aws_hmac *hmac)

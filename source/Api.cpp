@@ -49,7 +49,7 @@ namespace Aws
 
         ApiHandle::ApiHandle() noexcept : logger(), shutdownBehavior(ApiHandleShutdownBehavior::Blocking)
         {
-            s_initApi(DefaultAllocator());
+            s_initApi(g_allocator);
         }
 
         ApiHandle::~ApiHandle()
@@ -171,7 +171,8 @@ namespace Aws
         static Crypto::CreateHashCallback md5NewCallback;
         static struct aws_hash *s_MD5New(struct aws_allocator *allocator)
         {
-            return md5NewCallback(AWS_MD5_LEN, allocator)->GetUnderlyingHandle();
+            auto hash = md5NewCallback(AWS_MD5_LEN, allocator);
+            return hash->SeatForCInterop(hash);
         }
 
         void ApiHandle::SetBYOCryptoNewMD5Callback(Crypto::CreateHashCallback &&callback)
@@ -183,10 +184,11 @@ namespace Aws
         static Crypto::CreateHashCallback sha256NewCallback;
         static struct aws_hash *s_Sha256New(struct aws_allocator *allocator)
         {
-            return sha256NewCallback(AWS_SHA256_LEN, allocator)->GetUnderlyingHandle();
+            auto hash = sha256NewCallback(AWS_SHA256_LEN, allocator);
+            return hash->SeatForCInterop(hash);
         }
 
-        void SetBYOCryptoNewSHA256Callback(Crypto::CreateHashCallback &&callback)
+        void ApiHandle::SetBYOCryptoNewSHA256Callback(Crypto::CreateHashCallback &&callback)
         {
             sha256NewCallback = std::move(callback);
             aws_set_sha256_new_fn(s_Sha256New);
@@ -195,10 +197,11 @@ namespace Aws
         static Crypto::CreateHMACCallback sha256HMACNewCallback;
         static struct aws_hmac *s_sha256HMACNew(struct aws_allocator *allocator, const struct aws_byte_cursor *secret)
         {
-            return sha256HMACNewCallback(AWS_SHA256_HMAC_LEN, *secret, allocator)->GetUnderlyingHandle();
+            auto hmac = sha256HMACNewCallback(AWS_SHA256_HMAC_LEN, *secret, allocator);
+            return hmac->SeatForCInterop(hmac);
         }
 
-        void SetBYOCryptoNewSHA256HMACCallback(Crypto::CreateHMACCallback &&callback)
+        void ApiHandle::SetBYOCryptoNewSHA256HMACCallback(Crypto::CreateHMACCallback &&callback)
         {
             sha256HMACNewCallback = std::move(callback);
             aws_set_sha256_hmac_new_fn(s_sha256HMACNew);
