@@ -25,13 +25,13 @@ namespace Aws
                 SERVER,
             };
 
-            class AWS_CRT_CPP_API TlsContextOptions final
+            class AWS_CRT_CPP_API TlsContextOptions
             {
                 friend class TlsContext;
 
               public:
                 TlsContextOptions() noexcept;
-                ~TlsContextOptions();
+                virtual ~TlsContextOptions();
                 TlsContextOptions(const TlsContextOptions &) noexcept = delete;
                 TlsContextOptions &operator=(const TlsContextOptions &) noexcept = delete;
                 TlsContextOptions(TlsContextOptions &&) noexcept;
