@@ -15,9 +15,9 @@
 #include <type_traits>
 
 #if __cplusplus >= 201703L || (defined(_MSC_LANG) && _MSC_LANG >= 201703L)
-#   if !defined(__has_include) || __has_include(<string_view>)
-#       define AWS_HAS_STD_STRING_VIEW 1
-#   endif
+#    if !defined(__has_include) || __has_include(<string_view>)
+#        define AWS_HAS_STD_STRING_VIEW 1
+#    endif
 #endif
 
 #if AWS_HAS_STD_STRING_VIEW
@@ -71,7 +71,7 @@ namespace Aws
                 return *this;
             }
 #endif // AWS_HAS_STD_STRING_VIEW
-            // iterators
+       // iterators
 
             constexpr const_iterator begin() const noexcept { return this->m_data; }
 
