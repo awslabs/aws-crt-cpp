@@ -25,13 +25,13 @@ namespace Aws
                 SERVER,
             };
 
-            class AWS_CRT_CPP_API TlsContextOptions final
+            class AWS_CRT_CPP_API TlsContextOptions
             {
                 friend class TlsContext;
 
               public:
                 TlsContextOptions() noexcept;
-                ~TlsContextOptions();
+                virtual ~TlsContextOptions();
                 TlsContextOptions(const TlsContextOptions &) noexcept = delete;
                 TlsContextOptions &operator=(const TlsContextOptions &) noexcept = delete;
                 TlsContextOptions(TlsContextOptions &&) noexcept;
@@ -268,7 +268,7 @@ namespace Aws
                 void *m_userData;
 
                 aws_byte_buf m_protocolByteBuf;
-                friend aws_byte_buf (::aws_tls_handler_protocol)(aws_channel_handler *);
+                friend aws_byte_buf(::aws_tls_handler_protocol)(aws_channel_handler *);
             };
 
             class AWS_CRT_CPP_API ClientTlsChannelHandler : public TlsChannelHandler

@@ -366,9 +366,7 @@ namespace Aws
                 aws_byte_buf_init(&m_protocolByteBuf, allocator, 16);
             }
 
-            TlsChannelHandler::~TlsChannelHandler() {
-                aws_byte_buf_clean_up(&m_protocolByteBuf);
-            }
+            TlsChannelHandler::~TlsChannelHandler() { aws_byte_buf_clean_up(&m_protocolByteBuf); }
 
             void TlsChannelHandler::CompleteTlsNegotiation(int errorCode)
             {
@@ -401,8 +399,7 @@ bool aws_tls_is_alpn_available(void)
     if (!Aws::Crt::s_isTlsAlpnSupportedCallback)
     {
         AWS_LOGF_ERROR(
-            AWS_LS_IO_TLS,
-            "Must call ApiHandle::SetBYOCryptoTlsContextCallbacks() before ALPN can be queried");
+            AWS_LS_IO_TLS, "Must call ApiHandle::SetBYOCryptoTlsContextCallbacks() before ALPN can be queried");
         return false;
     }
     return Aws::Crt::s_isTlsAlpnSupportedCallback();
@@ -411,7 +408,7 @@ bool aws_tls_is_alpn_available(void)
 struct aws_byte_buf aws_tls_handler_protocol(struct aws_channel_handler *handler)
 {
     auto *channelHandler = reinterpret_cast<Aws::Crt::Io::ChannelHandler *>(handler->impl);
-    auto *tlsHandler = static_cast<Aws::Crt::Io::TlsChannelHandler*>(channelHandler);
+    auto *tlsHandler = static_cast<Aws::Crt::Io::TlsChannelHandler *>(channelHandler);
     Aws::Crt::String protocolString = const_cast<const Aws::Crt::Io::TlsChannelHandler *>(tlsHandler)->GetProtocol();
 
     tlsHandler->m_protocolByteBuf.len = 0;
