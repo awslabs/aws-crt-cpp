@@ -129,7 +129,7 @@ namespace Aws
             void *)
         {
             auto clientHandlerSelfReferencing = s_ClientCallback(slot, *options, allocator);
-            return clientHandlerSelfReferencing->GetUnderlyingHandle();
+            return clientHandlerSelfReferencing->SeatForCInterop(clientHandlerSelfReferencing);
         }
 
         static int s_StartNegotiation(struct aws_channel_handler *handler, void *)
@@ -145,7 +145,7 @@ namespace Aws
             void *)
         {
             auto serverHandlerSelfReferencing = s_ServerCallback(slot, *options, allocator);
-            return serverHandlerSelfReferencing->GetUnderlyingHandle();
+            return serverHandlerSelfReferencing->SeatForCInterop(serverHandlerSelfReferencing);
         }
 
         void ApiHandle::SetBYOCryptoClientTlsCallback(Io::NewClientTlsHandlerCallback &&callback)

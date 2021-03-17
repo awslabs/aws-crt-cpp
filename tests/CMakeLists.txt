@@ -56,6 +56,7 @@ add_test_case(TestIntArrayListToVector)
 add_test_case(TestByteCursorArrayListToVector)
 add_test_case(StringViewTest)
 add_test_case(TestCreatingImdsClient)
+add_test_case(ChannelHandlerInterop)
 
 if (AWS_BUILDING_ON_EC2)
     add_test_case(TestImdsClientGetInstanceInfo)

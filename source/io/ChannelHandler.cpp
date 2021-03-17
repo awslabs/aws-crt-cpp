@@ -103,8 +103,13 @@ namespace Aws
                 m_handler.alloc = allocator;
                 m_handler.impl = reinterpret_cast<void *>(this);
                 m_handler.vtable = &ChannelHandler::s_vtable;
-                /* To force C to tell us when it's safe to clean up, but keep it from actually cleaning up. */
-                m_selfReference = shared_from_this();
+            }
+
+            struct aws_channel_handler *ChannelHandler::SeatForCInterop(const std::shared_ptr<ChannelHandler> &selfRef)
+            {
+                AWS_FATAL_ASSERT(this == selfRef.get());
+                m_selfReference = selfRef;
+                return &m_handler;
             }
 
             struct aws_io_message *ChannelHandler::AcquireMessageFromPool(MessageType messageType, size_t sizeHint)

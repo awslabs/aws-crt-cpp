@@ -41,7 +41,7 @@ namespace Aws
              * Wrapper for aws-c-io channel handlers. The semantics are identical as the functions on
              * aws_channel_handler.
              */
-            class AWS_CRT_CPP_API ChannelHandler : public std::enable_shared_from_this<ChannelHandler>
+            class AWS_CRT_CPP_API ChannelHandler
             {
               public:
                 virtual ~ChannelHandler() = default;
@@ -113,7 +113,7 @@ namespace Aws
                  */
                 virtual void GatherStatistics(struct aws_array_list *) {}
 
-                struct aws_channel_handler *GetUnderlyingHandle() { return &m_handler; }
+                struct aws_channel_handler *SeatForCInterop(const std::shared_ptr<ChannelHandler> &selfRef);
 
               protected:
                 ChannelHandler(Allocator *allocator = g_allocator);
