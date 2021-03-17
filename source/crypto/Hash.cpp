@@ -153,7 +153,7 @@ namespace Aws
                 if (!byoHash->UpdateInternal(*buf))
                 {
                     byoHash->m_hashValue.good = false;
-                    return AWS_OP_ERROR;
+                    return AWS_OP_ERR;
                 }
                 return AWS_OP_SUCCESS;
             }
@@ -168,7 +168,7 @@ namespace Aws
 
                 bool success = byoHash->DigestInternal(*out);
                 byoHash->m_hashValue.good = false;
-                return success ? AWS_OP_SUCCESS : AWS_OP_ERROR;
+                return success ? AWS_OP_SUCCESS : AWS_OP_ERR;
             }
 #endif    /* BYO_CRYPTO */
         } // namespace Crypto

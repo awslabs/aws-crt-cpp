@@ -152,7 +152,7 @@ namespace Aws
                 if (!byoHmac->UpdateInternal(*buf))
                 {
                     byoHmac->m_hmacValue.good = false;
-                    return AWS_OP_ERROR;
+                    return AWS_OP_ERR;
                 }
                 return AWS_OP_SUCCESS;
             }
@@ -167,7 +167,7 @@ namespace Aws
 
                 bool success = byoHmac->DigestInternal(*out);
                 byoHmac->m_hmacValue.good = false;
-                return success ? AWS_OP_SUCCESS : AWS_OP_ERROR;
+                return success ? AWS_OP_SUCCESS : AWS_OP_ERR;
             }
 #endif    /* BYO_CRYPTO */
         } // namespace Crypto
