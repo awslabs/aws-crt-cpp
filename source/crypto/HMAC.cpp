@@ -144,14 +144,30 @@ namespace Aws
 
             int ByoHMAC::s_Update(struct aws_hmac *hmac, const struct aws_byte_cursor *buf)
             {
-                auto *byoHash = reinterpret_cast<ByoHMAC *>(hmac->impl);
-                return byoHash->UpdateInternal(*buf) ? AWS_OP_SUCCESS : AWS_OP_ERR;
+                auto *byoHmac = reinterpret_cast<ByoHMAC *>(hmac->impl);
+                if (!byoHmac->m_hmacValue.good)
+                {
+                    return aws_raise_error(AWS_ERROR_INVALID_STATE);
+                }
+                if (!byoHmac->UpdateInternal(*buf))
+                {
+                    byoHmac->m_hmacValue.good = false;
+                    return AWS_OP_ERROR;
+                }
+                return AWS_OP_SUCCESS;
             }
 
             int ByoHMAC::s_Finalize(struct aws_hmac *hmac, struct aws_byte_buf *out)
             {
-                auto *byoHash = reinterpret_cast<ByoHMAC *>(hmac->impl);
-                return byoHash->DigestInternal(*out) ? AWS_OP_SUCCESS : AWS_OP_ERR;
+                auto *byoHmac = reinterpret_cast<ByoHMAC *>(hmac->impl);
+                if (!byoHmac->m_hmacValue.good)
+                {
+                    return aws_raise_error(AWS_ERROR_INVALID_STATE);
+                }
+
+                bool success = byoHmac->DigestInternal(*out);
+                byoHmac->m_hmacValue.good = false;
+                return success ? AWS_OP_SUCCESS : AWS_OP_ERROR;
             }
 #endif    /* BYO_CRYPTO */
         } // namespace Crypto

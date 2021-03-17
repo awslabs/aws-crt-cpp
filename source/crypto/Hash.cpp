@@ -146,13 +146,29 @@ namespace Aws
             int ByoHash::s_Update(struct aws_hash *hash, const struct aws_byte_cursor *buf)
             {
                 auto *byoHash = reinterpret_cast<ByoHash *>(hash->impl);
-                return byoHash->UpdateInternal(*buf) ? AWS_OP_SUCCESS : AWS_OP_ERR;
+                if (!byoHash->m_hashValue.good)
+                {
+                    return aws_raise_error(AWS_ERROR_INVALID_STATE);
+                }
+                if (!byoHash->UpdateInternal(*buf))
+                {
+                    byoHash->m_hashValue.good = false;
+                    return AWS_OP_ERROR;
+                }
+                return AWS_OP_SUCCESS;
             }
 
             int ByoHash::s_Finalize(struct aws_hash *hash, struct aws_byte_buf *out)
             {
                 auto *byoHash = reinterpret_cast<ByoHash *>(hash->impl);
-                return byoHash->DigestInternal(*out) ? AWS_OP_SUCCESS : AWS_OP_ERR;
+                if (!byoHash->m_hashValue.good)
+                {
+                    return aws_raise_error(AWS_ERROR_INVALID_STATE);
+                }
+
+                bool success = byoHash->DigestInternal(*out);
+                byoHash->m_hashValue.good = false;
+                return success ? AWS_OP_SUCCESS : AWS_OP_ERROR;
             }
 #endif    /* BYO_CRYPTO */
         } // namespace Crypto

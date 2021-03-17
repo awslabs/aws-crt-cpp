@@ -172,7 +172,11 @@ namespace Aws
         static struct aws_hash *s_MD5New(struct aws_allocator *allocator)
         {
             auto hash = md5NewCallback(AWS_MD5_LEN, allocator);
-            return hash->SeatForCInterop(hash);
+            if (hash) {
+                return hash->SeatForCInterop(hash);
+            } else {
+                return nullptr;
+            }
         }
 
         void ApiHandle::SetBYOCryptoNewMD5Callback(Crypto::CreateHashCallback &&callback)
@@ -185,7 +189,11 @@ namespace Aws
         static struct aws_hash *s_Sha256New(struct aws_allocator *allocator)
         {
             auto hash = sha256NewCallback(AWS_SHA256_LEN, allocator);
-            return hash->SeatForCInterop(hash);
+            if (hash) {
+                return hash->SeatForCInterop(hash);
+            } else {
+                return nullptr;
+            }
         }
 
         void ApiHandle::SetBYOCryptoNewSHA256Callback(Crypto::CreateHashCallback &&callback)
