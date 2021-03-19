@@ -278,7 +278,7 @@ namespace Aws
                  * Initiates the TLS session negotiation. This is called by the common runtime when it's time to start
                  * a new session.
                  */
-                bool StartNegotiation();
+                virtual void StartNegotiation() = 0;
 
               protected:
                 ClientTlsChannelHandler(

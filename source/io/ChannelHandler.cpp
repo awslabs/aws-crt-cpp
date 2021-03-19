@@ -19,7 +19,7 @@ namespace Aws
             {
                 auto *channelHandler = reinterpret_cast<ChannelHandler *>(handler->impl);
 
-                return channelHandler->ProcessReadMessage(*message);
+                return channelHandler->ProcessReadMessage(message);
             }
 
             static int s_ProcessWriteMessage(
@@ -29,7 +29,7 @@ namespace Aws
             {
                 auto *channelHandler = reinterpret_cast<ChannelHandler *>(handler->impl);
 
-                return channelHandler->ProcessWriteMessage(*message);
+                return channelHandler->ProcessWriteMessage(message);
             }
 
             static int s_IncrementReadWindow(
@@ -42,7 +42,7 @@ namespace Aws
                 return channelHandler->IncrementReadWindow(size);
             }
 
-            static int s_Shutdown(
+            static int s_ProcessShutdown(
                 struct aws_channel_handler *handler,
                 struct aws_channel_slot *,
                 enum aws_channel_direction dir,
@@ -51,8 +51,9 @@ namespace Aws
             {
                 auto *channelHandler = reinterpret_cast<ChannelHandler *>(handler->impl);
 
-                return channelHandler->Shutdown(
+                channelHandler->ProcessShutdown(
                     static_cast<ChannelDirection>(dir), errorCode, freeScarceResourcesImmediately);
+                return AWS_OP_SUCCESS;
             }
 
             static size_t s_InitialWindowSize(struct aws_channel_handler *handler)
@@ -89,7 +90,7 @@ namespace Aws
                 s_ProcessReadMessage,
                 s_ProcessWriteMessage,
                 s_IncrementReadWindow,
-                s_Shutdown,
+                s_ProcessShutdown,
                 s_InitialWindowSize,
                 s_MessageOverhead,
                 ChannelHandler::s_Destroy,
@@ -123,6 +124,8 @@ namespace Aws
                 return aws_channel_slot_acquire_max_message_for_write(GetSlot());
             }
 
+            void ChannelHandler::ShutDownChannel(int errorCode) { aws_channel_shutdown(GetSlot()->channel, errorCode); }
+
             bool ChannelHandler::ChannelsThreadIsCallersThread() const
             {
                 return aws_channel_thread_is_callers_thread(GetSlot()->channel);
@@ -139,20 +142,24 @@ namespace Aws
                 return aws_channel_slot_increment_read_window(GetSlot(), windowUpdateSize) == AWS_OP_SUCCESS;
             }
 
-            bool ChannelHandler::OnShutdownComplete(
+            void ChannelHandler::OnShutdownComplete(
                 ChannelDirection direction,
                 int errorCode,
                 bool freeScarceResourcesImmediately)
             {
-                return aws_channel_slot_on_handler_shutdown_complete(
-                           GetSlot(),
-                           static_cast<aws_channel_direction>(direction),
-                           errorCode,
-                           freeScarceResourcesImmediately) == AWS_OP_SUCCESS;
+                aws_channel_slot_on_handler_shutdown_complete(
+                    GetSlot(),
+                    static_cast<aws_channel_direction>(direction),
+                    errorCode,
+                    freeScarceResourcesImmediately);
             }
 
             size_t ChannelHandler::DownstreamReadWindow() const
             {
+                if (!GetSlot()->adj_right)
+                {
+                    return 0;
+                }
                 return aws_channel_slot_downstream_read_window(GetSlot());
             }
 

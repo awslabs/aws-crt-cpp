@@ -15,17 +15,19 @@ class ChannelHandlerMock : public Aws::Crt::Io::ChannelHandler
 
     ~ChannelHandlerMock() {}
 
-    int ProcessReadMessage(struct aws_io_message &message) override
+    int ProcessReadMessage(struct aws_io_message *message) override
     {
         ReceivedReadMessage =
-            Aws::Crt::String(reinterpret_cast<const char *>(message.message_data.buffer), message.message_data.len);
+            Aws::Crt::String(reinterpret_cast<const char *>(message->message_data.buffer), message->message_data.len);
+        aws_mem_release(message->allocator, message);
         return AWS_OP_SUCCESS;
     }
 
-    int ProcessWriteMessage(struct aws_io_message &message) override
+    int ProcessWriteMessage(struct aws_io_message *message) override
     {
         ReceivedWriteMessage =
-            Aws::Crt::String(reinterpret_cast<const char *>(message.message_data.buffer), message.message_data.len);
+            Aws::Crt::String(reinterpret_cast<const char *>(message->message_data.buffer), message->message_data.len);
+        aws_mem_release(message->allocator, message);
         return AWS_OP_SUCCESS;
     }
 
@@ -35,12 +37,12 @@ class ChannelHandlerMock : public Aws::Crt::Io::ChannelHandler
         return AWS_OP_SUCCESS;
     }
 
-    int Shutdown(Aws::Crt::Io::ChannelDirection dir, int errorCode, bool freeScarceResourcesImmediately) override
+    void ProcessShutdown(Aws::Crt::Io::ChannelDirection dir, int errorCode, bool freeScarceResourcesImmediately)
+        override
     {
         ShutdownDir = dir;
         ShutdownErrorCode = errorCode;
         FreeScarceResourcesImmediately = freeScarceResourcesImmediately;
-        return AWS_OP_SUCCESS;
     }
 
     size_t InitialWindowSize() override { return InitialWindowSizeMock; }

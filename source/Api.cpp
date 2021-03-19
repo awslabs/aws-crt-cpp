@@ -129,13 +129,25 @@ namespace Aws
             void *)
         {
             auto clientHandlerSelfReferencing = s_ClientCallback(slot, *options, allocator);
+            if (!clientHandlerSelfReferencing)
+            {
+                return nullptr;
+            }
             return clientHandlerSelfReferencing->SeatForCInterop(clientHandlerSelfReferencing);
         }
 
         static int s_StartNegotiation(struct aws_channel_handler *handler, void *)
         {
             auto *clientHandler = reinterpret_cast<Io::ClientTlsChannelHandler *>(handler->impl);
-            return clientHandler->StartNegotiation();
+            if (clientHandler->ChannelsThreadIsCallersThread())
+            {
+                clientHandler->StartNegotiation();
+            }
+            else
+            {
+                clientHandler->ScheduleTask([clientHandler](Io::TaskStatus) { clientHandler->StartNegotiation(); });
+            }
+            return AWS_OP_SUCCESS;
         }
 
         static struct aws_channel_handler *s_NewServerHandler(
@@ -145,6 +157,10 @@ namespace Aws
             void *)
         {
             auto serverHandlerSelfReferencing = s_ServerCallback(slot, *options, allocator);
+            if (!serverHandlerSelfReferencing)
+            {
+                return nullptr;
+            }
             return serverHandlerSelfReferencing->SeatForCInterop(serverHandlerSelfReferencing);
         }
 
@@ -155,7 +171,7 @@ namespace Aws
             setupOptions.new_handler_fn = s_NewClientHandler;
             setupOptions.start_negotiation_fn = s_StartNegotiation;
             setupOptions.user_data = nullptr;
-            (void)setupOptions; // TODO actually do something with this
+            aws_tls_byo_crypto_set_client_setup_options(&setupOptions);
         }
 
         void ApiHandle::SetBYOCryptoServerTlsCallback(Io::NewServerTlsHandlerCallback &&callback)
@@ -165,16 +181,19 @@ namespace Aws
             setupOptions.new_handler_fn = s_NewServerHandler;
             setupOptions.start_negotiation_fn = nullptr;
             setupOptions.user_data = nullptr;
-            (void)setupOptions; // TODO actually do something with this
+            aws_tls_byo_crypto_set_server_setup_options(&setupOptions);
         }
 
         static Crypto::CreateHashCallback md5NewCallback;
         static struct aws_hash *s_MD5New(struct aws_allocator *allocator)
         {
             auto hash = md5NewCallback(AWS_MD5_LEN, allocator);
-            if (hash) {
+            if (hash)
+            {
                 return hash->SeatForCInterop(hash);
-            } else {
+            }
+            else
+            {
                 return nullptr;
             }
         }
@@ -189,9 +208,12 @@ namespace Aws
         static struct aws_hash *s_Sha256New(struct aws_allocator *allocator)
         {
             auto hash = sha256NewCallback(AWS_SHA256_LEN, allocator);
-            if (hash) {
+            if (hash)
+            {
                 return hash->SeatForCInterop(hash);
-            } else {
+            }
+            else
+            {
                 return nullptr;
             }
         }

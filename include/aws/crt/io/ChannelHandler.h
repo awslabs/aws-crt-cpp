@@ -61,14 +61,14 @@ namespace Aws
                  * aws_channel_slot_increment_read_window() at some point in the future if you want to keep receiving
                  * data.
                  */
-                virtual int ProcessReadMessage(struct aws_io_message &message) = 0;
+                virtual int ProcessReadMessage(struct aws_io_message *message) = 0;
 
                 /**
                  * Called by the channel when a message is available for processing in the write direction. It is your
                  * responsibility to call aws_mem_release(message->allocator, message); on message when you are finished
                  * with it.
                  */
-                virtual int ProcessWriteMessage(struct aws_io_message &message) = 0;
+                virtual int ProcessWriteMessage(struct aws_io_message *message) = 0;
 
                 /**
                  * Called by the channel when a downstream handler has issued a window increment. You'll want to update
@@ -89,7 +89,10 @@ namespace Aws
                  * then resources vulnerable to denial-of-service attacks (such as sockets and file handles)
                  * must be closed immediately before the shutdown() call returns.
                  */
-                virtual int Shutdown(ChannelDirection dir, int errorCode, bool freeScarceResourcesImmediately) = 0;
+                virtual void ProcessShutdown(
+                    ChannelDirection dir,
+                    int errorCode,
+                    bool freeScarceResourcesImmediately) = 0;
 
                 /**
                  * Called by the channel when the handler is added to a slot, to get the initial window size.
@@ -115,23 +118,23 @@ namespace Aws
 
                 struct aws_channel_handler *SeatForCInterop(const std::shared_ptr<ChannelHandler> &selfRef);
 
-              protected:
-                ChannelHandler(Allocator *allocator = g_allocator);
-
                 struct aws_io_message *AcquireMessageFromPool(MessageType messageType, size_t sizeHint);
                 struct aws_io_message *AcquireMaxSizeMessageForWrite();
 
                 bool ChannelsThreadIsCallersThread() const;
+                void ShutDownChannel(int errorCode);
+                void ScheduleTask(std::function<void(TaskStatus)> &&task);
+                void ScheduleTask(std::function<void(TaskStatus)> &&task, std::chrono::nanoseconds run_in);
+
+              protected:
+                ChannelHandler(Allocator *allocator = g_allocator);
+
                 bool SendMessage(struct aws_io_message *message, ChannelDirection direction);
                 bool IncrementUpstreamReadWindow(size_t windowUpdateSize);
-                bool OnShutdownComplete(ChannelDirection direction, int errorCode, bool freeScarceResourcesImmediately);
+                void OnShutdownComplete(ChannelDirection direction, int errorCode, bool freeScarceResourcesImmediately);
                 size_t DownstreamReadWindow() const;
                 size_t UpstreamMessageOverhead() const;
                 struct aws_channel_slot *GetSlot() const;
-
-                void ScheduleTask(std::function<void(TaskStatus)> &&task);
-
-                void ScheduleTask(std::function<void(TaskStatus)> &&task, std::chrono::nanoseconds run_in);
 
                 struct aws_channel_handler m_handler;
                 Allocator *m_allocator;

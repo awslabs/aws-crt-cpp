@@ -373,11 +373,6 @@ namespace Aws
                 m_OnNegotiationResult(&this->m_handler, GetSlot(), errorCode, m_userData);
             }
 
-            bool ClientTlsChannelHandler::StartNegotiation()
-            {
-                return aws_tls_client_handler_start_negotiation(&m_handler) == AWS_OP_SUCCESS;
-            }
-
             ClientTlsChannelHandler::ClientTlsChannelHandler(
                 struct aws_channel_slot *slot,
                 const struct aws_tls_connection_options &options,
