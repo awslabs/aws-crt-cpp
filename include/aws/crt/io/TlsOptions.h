@@ -146,6 +146,12 @@ namespace Aws
                  */
                 bool OverrideDefaultTrustStore(const ByteCursor &ca) noexcept;
 
+                /// @private
+                const aws_tls_ctx_options *GetUnderlyingHandle() const noexcept
+                {
+                    return &m_options;
+                }
+
               private:
                 aws_tls_ctx_options m_options;
                 bool m_isInit;
