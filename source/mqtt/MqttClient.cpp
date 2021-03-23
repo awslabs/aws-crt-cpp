@@ -352,7 +352,8 @@ namespace Aws
                 const char *clientId,
                 bool cleanSession,
                 uint16_t keepAliveTime,
-                uint32_t requestTimeoutMs) noexcept
+                uint32_t pingTimeoutMs,
+                uint32_t protocolOperationTimeoutMs) noexcept
             {
                 aws_mqtt_connection_options options;
                 AWS_ZERO_STRUCT(options);
@@ -365,7 +366,8 @@ namespace Aws
                 options.socket_options = &m_socketOptions.GetImpl();
                 options.clean_session = cleanSession;
                 options.keep_alive_time_secs = keepAliveTime;
-                options.ping_timeout_ms = requestTimeoutMs;
+                options.ping_timeout_ms = pingTimeoutMs;
+                options.protocol_operation_timeout_ms = protocolOperationTimeoutMs;
                 options.on_connection_complete = MqttConnection::s_onConnectionCompleted;
                 options.user_data = this;
 
@@ -394,7 +396,7 @@ namespace Aws
                     struct aws_http_proxy_options proxyOptions;
                     m_proxyOptions->InitializeRawProxyOptions(proxyOptions);
 
-                    if (aws_mqtt_client_connection_set_http_proxy_options(m_underlyingConnection, &proxyOptions))
+                    if (aws_mqtt_client_connection_set_websocket_proxy_options(m_underlyingConnection, &proxyOptions))
                     {
                         return false;
                     }
