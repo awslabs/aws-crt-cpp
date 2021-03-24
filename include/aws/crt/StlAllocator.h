@@ -8,6 +8,7 @@
 
 #include <aws/common/common.h>
 #include <aws/crt/Exports.h>
+#include <type_traits>
 
 namespace Aws
 {
@@ -47,7 +48,10 @@ namespace Aws
             {
                 (void)hint;
                 AWS_ASSERT(m_allocator);
-                return reinterpret_cast<RawPointer>(aws_mem_acquire(m_allocator, n * sizeof(T)));
+                if (reinterpret_is_safe()) {
+                    return reinterpret_cast<RawPointer>(aws_mem_acquire(m_allocator, n * sizeof(T)));
+                }
+                return static_cast<RawPointer>(aws_mem_acquire(m_allocator, n * sizeof(T)));
             }
 
             void deallocate(RawPointer p, size_type)
@@ -57,6 +61,12 @@ namespace Aws
             }
 
             Allocator *m_allocator;
+        private:
+            constexpr auto reinterpret_is_safe() const -> bool
+            {
+                return std::is_pointer<RawPointer>::value ||
+                (std::is_integral<RawPointer>::value && std::is_unsigned<RawPointer>::value);
+            }
         };
     } // namespace Crt
 } // namespace Aws
