@@ -46,6 +46,7 @@ namespace Aws
             class AWS_CRT_CPP_API HttpProxyStrategy
             {
               public:
+                HttpProxyStrategy(struct aws_http_proxy_strategy *strategy);
                 virtual ~HttpProxyStrategy();
 
                 struct aws_http_proxy_strategy *GetUnderlyingHandle() const noexcept { return m_strategy; }
@@ -58,9 +59,7 @@ namespace Aws
                     const HttpProxyStrategyAdaptiveConfig &config,
                     Allocator *allocator = g_allocator);
 
-              private:
-                HttpProxyStrategy(struct aws_http_proxy_strategy *strategy);
-
+              protected:
                 struct aws_http_proxy_strategy *m_strategy;
             };
         } // namespace Http
