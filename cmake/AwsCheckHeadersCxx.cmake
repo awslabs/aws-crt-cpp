@@ -28,6 +28,11 @@ function(aws_check_headers_cxx_internal target std)
         return()
     endif()
 
+    # MSVC's c++ 20 has issues with templates
+    if (MSVC and ${std} NOT LESS 20)
+        return()
+    endif()
+
     set(HEADER_CHECKER_ROOT "${CMAKE_CURRENT_BINARY_DIR}/header-checker-cxx-${std}")
 
     # Write stub main file
