@@ -29,7 +29,7 @@ function(aws_check_headers_cxx_internal target std)
     endif()
 
     # MSVC's c++ 20 has issues with templates
-    if (MSVC and ${std} NOT LESS 20)
+    if (MSVC AND NOT ${std} LESS 20)
         return()
     endif()
 
