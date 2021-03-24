@@ -27,7 +27,7 @@ option(BUILD_DEPS "Builds aws common runtime dependencies as part of build, only
 # And the mqtt websocket tests require x509 sourced credentials with sufficient permission to
 # connect to IoT Core as well as:
 #
-# AWS_TEST_IOT_SIGNING_REGION -
+# AWS_TEST_IOT_SIGNING_REGION - AWS region to make a websocket connection to
 # AWS_TEST_IOT_MQTT_ENDPOINT - AWS account-specific endpoint to connect to IoT core by
 #
 # ToDo: Scripts to populate environment variables via the CLI and IoT, SecretsManager calls
