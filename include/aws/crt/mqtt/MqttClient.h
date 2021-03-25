@@ -181,7 +181,8 @@ namespace Aws
                     const char *clientId,
                     bool cleanSession,
                     uint16_t keepAliveTimeSecs = 0,
-                    uint32_t pingTimeoutMs = 0) noexcept;
+                    uint32_t pingTimeoutMs = 0,
+                    uint32_t protocolOperationTimeoutMs = 0) noexcept;
 
                 /**
                  * Initiates disconnect, OnDisconnectHandler will be invoked in an event-loop thread.

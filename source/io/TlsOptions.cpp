@@ -234,6 +234,12 @@ namespace Aws
 
             bool TlsConnectionOptions::SetServerName(ByteCursor &serverName) noexcept
             {
+                if (!isValid())
+                {
+                    m_lastError = LastErrorOrUnknown();
+                    return false;
+                }
+
                 if (aws_tls_connection_options_set_server_name(&m_tls_connection_options, m_allocator, &serverName))
                 {
                     m_lastError = LastErrorOrUnknown();
@@ -245,6 +251,12 @@ namespace Aws
 
             bool TlsConnectionOptions::SetAlpnList(const char *alpnList) noexcept
             {
+                if (!isValid())
+                {
+                    m_lastError = LastErrorOrUnknown();
+                    return false;
+                }
+
                 if (aws_tls_connection_options_set_alpn_list(&m_tls_connection_options, m_allocator, alpnList))
                 {
                     m_lastError = LastErrorOrUnknown();

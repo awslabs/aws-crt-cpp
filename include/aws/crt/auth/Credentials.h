@@ -93,6 +93,11 @@ namespace Aws
             using OnCredentialsResolved = std::function<void(std::shared_ptr<Credentials>, int errorCode)>;
 
             /**
+             * Invoked when the native delegate credentials provider needs to fetch a credential.
+             */
+            using GetCredentialsHandler = std::function<std::shared_ptr<Credentials>()>;
+
+            /**
              * Base interface for all credentials providers.  Credentials providers are objects that
              * retrieve AWS credentials from some source.
              */
@@ -282,6 +287,15 @@ namespace Aws
             };
 
             /**
+             * Configuration options for the delegate credentials provider
+             */
+            struct AWS_CRT_CPP_API CredentialsProviderDelegateConfig
+            {
+                /* handler to provider credentials */
+                GetCredentialsHandler Handler;
+            };
+
+            /**
              * Simple credentials provider implementation that wraps one of the internal C-based implementations.
              *
              * Contains a set of static factory methods for building each supported provider, as well as one for the
@@ -379,6 +393,14 @@ namespace Aws
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderX509(
                     const CredentialsProviderX509Config &config,
+                    Allocator *allocator = g_allocator);
+
+                /**
+                 * Creates a provider that sources credentials from the provided function.
+                 *
+                 */
+                static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderDelegate(
+                    const CredentialsProviderDelegateConfig &config,
                     Allocator *allocator = g_allocator);
 
               private:
