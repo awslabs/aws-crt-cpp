@@ -184,7 +184,7 @@ namespace Aws
                 /**
                  * @return true if the instance is in a valid state, false otherwise.
                  */
-                explicit operator bool() const noexcept { return m_isInit; }
+                explicit operator bool() const noexcept { return isValid(); }
                 /**
                  * @return the value of the last aws error encountered by operations on this instance.
                  */
@@ -196,6 +196,8 @@ namespace Aws
                 }
 
               private:
+                bool isValid() const noexcept { return m_isInit; }
+
                 TlsConnectionOptions(aws_tls_ctx *ctx, Allocator *allocator) noexcept;
                 aws_tls_connection_options m_tls_connection_options;
                 aws_allocator *m_allocator;
