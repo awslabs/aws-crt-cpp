@@ -121,7 +121,7 @@ namespace Aws
             CreateSigningConfig CreateSigningConfigCb;
 
             /**
-             * @Deprecated Specify ProxyOptions to use a proxy with your websocket connection.
+             * @deprecated Specify ProxyOptions to use a proxy with your websocket connection.
              *
              * If MqttClientConnectionConfigBuilder::m_proxyOptions is valid, then that will be used over
              * this value.
