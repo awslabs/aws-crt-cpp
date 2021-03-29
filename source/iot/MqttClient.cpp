@@ -111,6 +111,17 @@ namespace Aws
         {
         }
 
+        MqttClientConnectionConfig::MqttClientConnectionConfig(
+            const Crt::String &endpoint,
+            uint16_t port,
+            const Crt::Io::SocketOptions &socketOptions,
+            Crt::Io::TlsContext &&tlsContext,
+            const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions)
+            : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
+              m_proxyOptions(proxyOptions), m_lastError(0)
+        {
+        }
+
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder() : m_isGood(false) {}
 
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
@@ -240,6 +251,13 @@ namespace Aws
             return *this;
         }
 
+        MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithHttpProxyOptions(
+            const Crt::Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept
+        {
+            m_proxyOptions = proxyOptions;
+            return *this;
+        }
+
         MqttClientConnectionConfig MqttClientConnectionConfigBuilder::Build() noexcept
         {
             if (!m_isGood)
@@ -275,7 +293,8 @@ namespace Aws
                     m_endpoint,
                     port,
                     m_socketOptions,
-                    Crt::Io::TlsContext(m_contextOptions, Crt::Io::TlsMode::CLIENT, m_allocator));
+                    Crt::Io::TlsContext(m_contextOptions, Crt::Io::TlsMode::CLIENT, m_allocator),
+                    m_proxyOptions);
             }
 
             auto websocketConfig = m_websocketConfig.value();
@@ -294,13 +313,15 @@ namespace Aws
                 websocketConfig.Signer->SignRequest(req, *signerConfig, signingComplete);
             };
 
+            bool useWebsocketProxyOptions = m_websocketConfig->ProxyOptions.has_value() && !m_proxyOptions.has_value();
+
             return MqttClientConnectionConfig(
                 m_endpoint,
                 port,
                 m_socketOptions,
                 Crt::Io::TlsContext(m_contextOptions, Crt::Io::TlsMode::CLIENT, m_allocator),
                 signerTransform,
-                m_websocketConfig->ProxyOptions);
+                useWebsocketProxyOptions ? m_websocketConfig->ProxyOptions : m_proxyOptions);
         }
 
         MqttClient::MqttClient(Crt::Io::ClientBootstrap &bootstrap, Crt::Allocator *allocator) noexcept

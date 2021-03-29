@@ -6,7 +6,7 @@
 #include <aws/crt/auth/Credentials.h>
 
 #include <aws/crt/http/HttpConnection.h>
-#include <aws/crt/io/Bootstrap.h>
+#include <aws/crt/http/HttpProxyStrategy.h>
 
 #include <aws/auth/credentials.h>
 #include <aws/common/string.h>
@@ -287,25 +287,10 @@ namespace Aws
                 if (config.ProxyOptions.has_value())
                 {
                     const Http::HttpClientConnectionProxyOptions &proxy_config = config.ProxyOptions.value();
-
-                    proxy_options.host = aws_byte_cursor_from_c_str(proxy_config.HostName.c_str());
-                    proxy_options.port = proxy_config.Port;
-                    if (proxy_config.TlsOptions.has_value())
-                    {
-                        proxy_options.tls_options = proxy_config.TlsOptions->GetUnderlyingHandle();
-                    }
-                    proxy_options.auth_type = (enum aws_http_proxy_authentication_type)proxy_config.AuthType;
-                    proxy_options.auth_username = aws_byte_cursor_from_c_str(proxy_config.BasicAuthUsername.c_str());
-                    proxy_options.auth_password = aws_byte_cursor_from_c_str(proxy_config.BasicAuthPassword.c_str());
+                    proxy_config.InitializeRawProxyOptions(proxy_options);
 
                     raw_config.proxy_options = &proxy_options;
                 }
-
-                /**
-                 * Sets the TLS options for the proxy connection.
-                 * Optional.
-                 */
-                Optional<Io::TlsConnectionOptions> TlsOptions;
 
                 return s_CreateWrappedProvider(aws_credentials_provider_new_x509(allocator, &raw_config), allocator);
             }

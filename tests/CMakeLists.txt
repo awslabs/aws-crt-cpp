@@ -72,6 +72,34 @@ if (AWS_BUILDING_ON_EC2)
     add_test_case(TestImdsClientGetCredentials)
 endif()
 
+if (ENABLE_PROXY_INTEGRATION_TESTS)
+    # connection manager proxy tests
+    add_test_case(ConnectionManagerTunnelingProxyHttp)
+    add_test_case(ConnectionManagerTunnelingProxyHttps)
+    add_test_case(ConnectionManagerForwardingProxy)
+    add_test_case(ConnectionManagerTunnelingProxyBasicAuthDeprecated)
+    add_test_case(ConnectionManagerTunnelingProxyBasicAuth)
+
+    # direction connection proxy tests
+    add_test_case(DirectConnectionTunnelingProxyHttp)
+    add_test_case(DirectConnectionTunnelingProxyHttps)
+    add_test_case(DirectConnectionForwardingProxy)
+    add_test_case(DirectConnectionTunnelingProxyBasicAuthDeprecated)
+    add_test_case(DirectConnectionTunnelingProxyBasicAuth)
+
+    # x509 provider proxy tests
+    add_test_case(X509ProxyHttpGetCredentials)
+    add_test_case(X509ProxyHttpsGetCredentials)
+    add_test_case(X509ProxyBasicAuthDeprecatedGetCredentials)
+    add_test_case(X509ProxyBasicAuthGetCredentials)
+
+    # mqtt-over-websockets proxy tests
+    add_test_case(MqttOverWebsocketsViaHttpProxy)
+    add_test_case(MqttOverWebsocketsViaHttpsProxy)
+    add_test_case(MqttOverWebsocketsViaHttpProxyBasicAuthDeprecated)
+    add_test_case(MqttOverWebsocketsViaHttpProxyBasicAuth)
+endif()
+
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 
 add_custom_command(TARGET ${TEST_BINARY_NAME} PRE_BUILD
