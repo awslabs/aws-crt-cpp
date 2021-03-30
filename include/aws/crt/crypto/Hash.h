@@ -117,7 +117,7 @@ namespace Aws
                 int m_lastError;
             };
 
-#ifdef BYO_CRYPTO
+#if BYO_CRYPTO
             class AWS_CRT_CPP_API ByoHash
             {
               public:

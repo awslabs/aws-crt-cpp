@@ -338,7 +338,7 @@ namespace Aws
                 {
                     m_initializationError = Aws::Crt::LastErrorOrUnknown();
                 }
-#endif /* BYO_CRYPTO */
+#endif // BYO_CRYPTO
             }
 
             TlsConnectionOptions TlsContext::NewConnectionOptions() const noexcept

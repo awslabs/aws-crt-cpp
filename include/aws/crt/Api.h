@@ -66,8 +66,16 @@ namespace Aws
              */
             void SetShutdownBehavior(ApiHandleShutdownBehavior behavior);
 
-#ifdef BYO_CRYPTO
+#if BYO_CRYPTO
 
+            /**
+             * If using BYO_CRYPTO, you need to call this function prior to creating a TlsContext.
+             *
+             * @param newCallback Create custom implementation object, stored inside TlsContext.
+             *                    Return nullptr if failure occurs.
+             * @param deleteCallback Destroy object was created by newCallback.
+             * @param alpnCallback Return whether ALPN is supported.
+             */
             void SetBYOCryptoTlsContextCallbacks(
                 Io::NewTlsContextImplCallback &&newCallback,
                 Io::DeleteTlsContextImplCallback &&deleteCallback,

@@ -147,10 +147,7 @@ namespace Aws
                 bool OverrideDefaultTrustStore(const ByteCursor &ca) noexcept;
 
                 /// @private
-                const aws_tls_ctx_options *GetUnderlyingHandle() const noexcept
-                {
-                    return &m_options;
-                }
+                const aws_tls_ctx_options *GetUnderlyingHandle() const noexcept { return &m_options; }
 
               private:
                 aws_tls_ctx_options m_options;
@@ -208,12 +205,6 @@ namespace Aws
                 friend class TlsContext;
             };
 
-#ifdef BYO_CRYPTO
-            using NewTlsContextImplCallback = std::function<void *(TlsContextOptions &, TlsMode, Allocator *)>;
-            using DeleteTlsContextImplCallback = std::function<void(void *)>;
-            using IsTlsAlpnSupportedCallback = std::function<bool()>;
-#endif /* BYO_CRYPTO */
-
             class AWS_CRT_CPP_API TlsContext final
             {
               public:
@@ -242,10 +233,11 @@ namespace Aws
                 int m_initializationError;
             };
 
-            AWS_CRT_CPP_API void InitTlsStaticState(Allocator *alloc) noexcept;
-            AWS_CRT_CPP_API void CleanUpTlsStaticState() noexcept;
+#if BYO_CRYPTO
+            using NewTlsContextImplCallback = std::function<void *(TlsContextOptions &, TlsMode, Allocator *)>;
+            using DeleteTlsContextImplCallback = std::function<void(void *)>;
+            using IsTlsAlpnSupportedCallback = std::function<bool()>;
 
-#ifdef BYO_CRYPTO
             class AWS_CRT_CPP_API TlsChannelHandler : public ChannelHandler
             {
               public:

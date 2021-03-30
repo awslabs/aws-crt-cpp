@@ -19,7 +19,6 @@ class ChannelHandlerMock : public Aws::Crt::Io::ChannelHandler
     {
         ReceivedReadMessage =
             Aws::Crt::String(reinterpret_cast<const char *>(message->message_data.buffer), message->message_data.len);
-        aws_mem_release(message->allocator, message);
         return AWS_OP_SUCCESS;
     }
 
@@ -27,7 +26,6 @@ class ChannelHandlerMock : public Aws::Crt::Io::ChannelHandler
     {
         ReceivedWriteMessage =
             Aws::Crt::String(reinterpret_cast<const char *>(message->message_data.buffer), message->message_data.len);
-        aws_mem_release(message->allocator, message);
         return AWS_OP_SUCCESS;
     }
 
