@@ -2,14 +2,15 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+
+#include <aws/common/environment.h>
+
 #include <aws/crt/Api.h>
 #include <aws/crt/crypto/Hash.h>
 #include <aws/crt/http/HttpConnectionManager.h>
 #include <aws/crt/io/Uri.h>
 
 #include <aws/testing/aws_test_harness.h>
-
-#include <aws/io/logging.h>
 
 #include <condition_variable>
 #include <mutex>
