@@ -5,19 +5,6 @@
         "-DPERFORM_HEADER_CHECK_CXX=ON",
         "-DS2N_NO_PQ_ASM=ON"
     ],
-    "targets": {
-        "linux" : {
-            "imports": [
-                "s2n"
-            ]
-        },
-        "android": {
-            "imports": [
-                "s2n"
-            ]
-        }
-    },
-    "search_dirs": ["crt"],
     "hosts": {
         "manylinux": {
             "architectures": {

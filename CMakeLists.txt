@@ -102,6 +102,7 @@ if (BUILD_DEPS)
     add_subdirectory(crt/aws-c-common)
 
     if (UNIX AND NOT APPLE AND NOT BYO_CRYPTO)
+        include(crt/aws-c-cal/cmake/modules/aws-lc.cmake)
         add_subdirectory(crt/s2n)
     endif()
 
