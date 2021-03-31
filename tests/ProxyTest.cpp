@@ -692,6 +692,7 @@ static int s_X509GetCredentials(ProxyIntegrationTestState &testState)
     };
 
     ASSERT_TRUE(testState.m_x509Provider->GetCredentials(credentialsResolved));
+    return AWS_OP_SUCCESS;
 }
 
 static void s_WaitOnCredentials(ProxyIntegrationTestState &testState)
