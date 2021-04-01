@@ -126,7 +126,7 @@ namespace Aws
 #ifdef _WIN32
             TlsContextOptions TlsContextOptions::InitClientWithMtlsSystemPath(
                 const char *registryPath,
-                Allocator *allocator)
+                Allocator *allocator) noexcept
             {
                 TlsContextOptions ctxOptions;
                 aws_tls_ctx_options_init_client_mtls_from_system_path(&ctxOptions.m_options, allocator, registryPath);
