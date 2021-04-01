@@ -73,7 +73,7 @@ if (AWS_BUILDING_ON_EC2)
     add_test_case(TestImdsClientGetCredentials)
 endif()
 
-if (ENABLE_PROXY_INTEGRATION_TESTS)
+if (ENABLE_PROXY_INTEGRATION_TESTS AND NOT BYO_CRYPTO)
     # connection manager proxy tests
     add_test_case(ConnectionManagerTunnelingProxyHttp)
     add_test_case(ConnectionManagerTunnelingProxyHttps)
