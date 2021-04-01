@@ -129,7 +129,6 @@ jobs:
     name: Cross Compile ${{matrix.arch}}
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false # TODO: turn back on when android is fixed
       matrix:
         # TODO: bring back "android-armv7" when aws-lc builds on android
         arch: [linux-armv6, linux-armv7, linux-arm64]
