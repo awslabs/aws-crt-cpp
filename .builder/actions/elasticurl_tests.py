@@ -9,10 +9,9 @@ class ElasticurlTests(Builder.Action):
             elasticurl_path += '.exe'
 
         # don't run elasticurl if we didn't build it for whatever reason (ex: BYO_CRYPTO)
-        actions = []
-        if os.path.exists(elasticurl_path):
-            actions.append([sys.executable, 'crt/aws-c-http/integration-testing/http_client_test.py', elasticurl_path])
-        else:
-            print('Skipping elasticurl tests')
+        if not os.path.exists(elasticurl_path):
+            print('{} not found, skipping elasticurl tests'.format(elasticurl_path))
+            return
 
-        return Builder.Script(actions, name='elasticurl-tests')
+        env.shell.exec(sys.executable, 'crt/aws-c-http/integration-testing/http_client_test.py', elasticurl_path,
+                       check=True)
