@@ -90,6 +90,8 @@ string(REPLACE ";" "${AWS_MODULE_DIR};" AWS_MODULE_PATH "${CMAKE_PREFIX_PATH}${A
 # Append that generated list to the module search path
 list(APPEND CMAKE_MODULE_PATH ${AWS_MODULE_PATH})
 
+message(STATUS "====================CMAKE_SYSTEM_PROCESSOR:${CMAKE_SYSTEM_PROCESSOR}")
+
 if (BUILD_DEPS)
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/crt/aws-c-common/cmake")
 
