@@ -154,7 +154,7 @@ namespace Aws
                 bool SetLogin(const char *userName, const char *password) noexcept;
 
                 /**
-                 * @Deprecated Sets websocket proxy options. Replaced by SetHttpProxyOptions.
+                 * @deprecated Sets websocket proxy options. Replaced by SetHttpProxyOptions.
                  */
                 bool SetWebsocketProxyOptions(const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
 

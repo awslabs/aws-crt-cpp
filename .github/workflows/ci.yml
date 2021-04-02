@@ -7,7 +7,7 @@ on:
       - '!main'
 
 env:
-  BUILDER_VERSION: v0.7.0
+  BUILDER_VERSION: v0.8.11
   BUILDER_SOURCE: releases
   BUILDER_HOST: https://d19elf31gohf1l.cloudfront.net
   PACKAGE_NAME: aws-crt-cpp
@@ -46,7 +46,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        version: [3, 6, 8, 9]
+        # TODO: fix version 3. Changes to aws-crt-builder on 2021.03.11 changed docker container and now we get errors when including the std lib
+        version: [6, 8, 9]
     steps:
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
     - name: Build ${{ env.PACKAGE_NAME }}
@@ -129,7 +130,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [linux-armv6, linux-armv7, linux-arm64, android-armv7]
+        # TODO: bring back "android-armv7" when aws-lc builds on android
+        arch: [linux-armv6, linux-armv7, linux-arm64]
 
     steps:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers

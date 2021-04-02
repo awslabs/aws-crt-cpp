@@ -692,6 +692,8 @@ static int s_X509GetCredentials(ProxyIntegrationTestState &testState)
     };
 
     ASSERT_TRUE(testState.m_x509Provider->GetCredentials(credentialsResolved));
+
+    return AWS_OP_SUCCESS;
 }
 
 static void s_WaitOnCredentials(ProxyIntegrationTestState &testState)
@@ -806,7 +808,7 @@ AWS_TEST_CASE(X509ProxyBasicAuthGetCredentials, s_TestX509ProxyBasicAuthGetCrede
 AWS_STATIC_STRING_FROM_LITERAL(s_AwsIotSigningRegionVariable, "AWS_TEST_IOT_SIGNING_REGION");
 AWS_STATIC_STRING_FROM_LITERAL(s_AwsIotMqttEndpointVariable, "AWS_TEST_IOT_MQTT_ENDPOINT");
 
-static int s_BuildMqttWebsocketConnection(ProxyIntegrationTestState &testState)
+static int s_BuildMqttConnection(ProxyIntegrationTestState &testState)
 {
     struct aws_allocator *allocator = testState.m_allocator;
 
@@ -887,7 +889,7 @@ static int s_TestMqttOverWebsocketsViaHttpProxy(struct aws_allocator *allocator,
         s_InitializeProxyTestSupport(testState);
         ASSERT_SUCCESS(s_InitializeX509Provider(testState));
 
-        ASSERT_SUCCESS(s_BuildMqttWebsocketConnection(testState));
+        ASSERT_SUCCESS(s_BuildMqttConnection(testState));
         ASSERT_SUCCESS(s_ConnectToIotCore(testState));
 
         s_WaitForIotCoreConnection(testState);
@@ -916,7 +918,7 @@ static int s_TestMqttOverWebsocketsViaHttpsProxy(struct aws_allocator *allocator
 
         ASSERT_SUCCESS(s_InitializeX509Provider(testState));
 
-        ASSERT_SUCCESS(s_BuildMqttWebsocketConnection(testState));
+        ASSERT_SUCCESS(s_BuildMqttConnection(testState));
         ASSERT_SUCCESS(s_ConnectToIotCore(testState));
 
         s_WaitForIotCoreConnection(testState);
@@ -943,7 +945,7 @@ static int s_TestMqttOverWebsocketsViaHttpProxyBasicAuthDeprecated(struct aws_al
         s_InitializeProxyTestSupport(testState);
         ASSERT_SUCCESS(s_InitializeX509Provider(testState));
 
-        ASSERT_SUCCESS(s_BuildMqttWebsocketConnection(testState));
+        ASSERT_SUCCESS(s_BuildMqttConnection(testState));
         ASSERT_SUCCESS(s_ConnectToIotCore(testState));
 
         s_WaitForIotCoreConnection(testState);
@@ -973,7 +975,7 @@ static int s_TestMqttOverWebsocketsViaHttpProxyBasicAuth(struct aws_allocator *a
         s_InitializeProxyTestSupport(testState);
         ASSERT_SUCCESS(s_InitializeX509Provider(testState));
 
-        ASSERT_SUCCESS(s_BuildMqttWebsocketConnection(testState));
+        ASSERT_SUCCESS(s_BuildMqttConnection(testState));
         ASSERT_SUCCESS(s_ConnectToIotCore(testState));
 
         s_WaitForIotCoreConnection(testState);
@@ -1047,3 +1049,4 @@ static int s_TestMqttViaHttpProxyAlpn(struct aws_allocator *allocator, void *ctx
 }
 
 AWS_TEST_CASE(MqttViaHttpProxyAlpn, s_TestMqttViaHttpProxyAlpn)
+
