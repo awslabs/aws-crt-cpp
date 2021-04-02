@@ -130,6 +130,7 @@ namespace Aws
                 if (callbackData->payload)
                 {
                     aws_byte_buf_clean_up(callbackData->payload);
+                    Crt::Delete(callbackData->payload, callbackData->allocator);
                 }
 
                 Crt::Delete(callbackData, callbackData->allocator);
@@ -681,6 +682,7 @@ namespace Aws
                 opCompleteCallbackData->allocator = m_owningClient->allocator;
                 opCompleteCallbackData->onOperationComplete = std::move(onOpComplete);
                 opCompleteCallbackData->topic = topicCpy;
+                opCompleteCallbackData->payload = Crt::New<ByteBuf>(m_owningClient->allocator);
                 aws_byte_buf_init_copy_from_cursor(
                     opCompleteCallbackData->payload, m_owningClient->allocator, aws_byte_cursor_from_buf(&payload));
                 ByteCursor payloadCur = aws_byte_cursor_from_buf(opCompleteCallbackData->payload);
