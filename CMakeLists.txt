@@ -102,6 +102,7 @@ if (BUILD_DEPS)
 
     if (UNIX AND NOT APPLE)
         if (ANDROID)
+            message(STATUS "============ANDROID_ABI:${ANDROID_ABI}")
             set(DISABLE_GO ON)
         endif()
         add_subdirectory(crt/aws-lc)
