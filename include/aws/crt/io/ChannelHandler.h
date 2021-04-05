@@ -40,6 +40,8 @@ namespace Aws
             /**
              * Wrapper for aws-c-io channel handlers. The semantics are identical as the functions on
              * aws_channel_handler.
+             *
+             * All virtual calls are made from the same thread (the channel's thread).
              */
             class AWS_CRT_CPP_API ChannelHandler
             {
@@ -60,6 +62,10 @@ namespace Aws
                  * Also keep in mind that your slot's internal window has been decremented. You'll want to call
                  * aws_channel_slot_increment_read_window() at some point in the future if you want to keep receiving
                  * data.
+                 *
+                 * Return AWS_OP_SUCCESS if the message is being processed.
+                 * If the message cannot be processed raise an error and return AWS_OP_ERR
+                 * and do NOT release the message, it will be released by the caller.
                  */
                 virtual int ProcessReadMessage(struct aws_io_message *message) = 0;
 
@@ -67,13 +73,17 @@ namespace Aws
                  * Called by the channel when a message is available for processing in the write direction. It is your
                  * responsibility to call aws_mem_release(message->allocator, message); on message when you are finished
                  * with it.
+                 *
+                 * Return AWS_OP_SUCCESS if the message is being processed.
+                 * If the message cannot be processed raise an error and return AWS_OP_ERR
+                 * and do NOT release the message, it will be released by the caller.
                  */
                 virtual int ProcessWriteMessage(struct aws_io_message *message) = 0;
 
                 /**
                  * Called by the channel when a downstream handler has issued a window increment. You'll want to update
                  * your internal state and likely propagate a window increment message of your own by calling
-                 * 'aws_channel_slot_increment_read_window()'
+                 * IncrementUpstreamReadWindow()
                  */
                 virtual int IncrementReadWindow(size_t size) = 0;
 
@@ -84,10 +94,10 @@ namespace Aws
                  * ChannelDirection::Write.
                  *
                  * The shutdown process does not need to complete immediately and may rely on scheduled tasks.
-                 * The handler must call aws_channel_slot_on_handler_shutdown_complete() when it is finished,
-                 * which propagates shutdown to the next handler.  If 'free_scarce_resources_immediately' is true,
+                 * The handler MUST call OnShutdownComplete() when it is finished,
+                 * which propagates shutdown to the next handler.  If 'freeScarceResourcesImmediately' is true,
                  * then resources vulnerable to denial-of-service attacks (such as sockets and file handles)
-                 * must be closed immediately before the shutdown() call returns.
+                 * must be closed immediately before the shutdown process complete.
                  */
                 virtual void ProcessShutdown(
                     ChannelDirection dir,
@@ -116,24 +126,81 @@ namespace Aws
                  */
                 virtual void GatherStatistics(struct aws_array_list *) {}
 
+                /// @private
                 struct aws_channel_handler *SeatForCInterop(const std::shared_ptr<ChannelHandler> &selfRef);
 
+                /**
+                 * Acquire an aws_io_message from the channel's pool.
+                 */
                 struct aws_io_message *AcquireMessageFromPool(MessageType messageType, size_t sizeHint);
+
+                /**
+                 * Convenience function that invokes AcquireMessageFromPool(),
+                 * asking for the largest reasonable DATA message that can be sent in the write direction,
+                 * with upstream overhead accounted for.
+                 */
                 struct aws_io_message *AcquireMaxSizeMessageForWrite();
 
+                /**
+                 * Return whether the caller is on the same thread as the handler's channel.
+                 */
                 bool ChannelsThreadIsCallersThread() const;
+
+                /**
+                 * Initiate a shutdown of the handler's channel.
+                 *
+                 * If the channel is already shutting down, this call has no effect.
+                 */
                 void ShutDownChannel(int errorCode);
+
+                /**
+                 * Schedule a task to run on the next "tick" of the event loop.
+                 * If the channel is completely shut down, the task will run with the 'Canceled' status.
+                 */
                 void ScheduleTask(std::function<void(TaskStatus)> &&task);
+
+                /**
+                 * Schedule a task to run after a desired length of time has passed.
+                 * The task will run with the 'Canceled' status if the channel completes shutdown
+                 * before that length of time elapses.
+                 */
                 void ScheduleTask(std::function<void(TaskStatus)> &&task, std::chrono::nanoseconds run_in);
 
               protected:
                 ChannelHandler(Allocator *allocator = g_allocator);
 
+                /**
+                 * Send a message in the read or write direction.
+                 * Returns true if message successfully sent.
+                 * If false is returned, you must release the message yourself.
+                 */
                 bool SendMessage(struct aws_io_message *message, ChannelDirection direction);
+
+                /**
+                 * Issue a window update notification upstream.
+                 * Returns true if successful.
+                 */
                 bool IncrementUpstreamReadWindow(size_t windowUpdateSize);
+
+                /**
+                 * Must be called by a handler once they have finished their shutdown in the 'dir' direction.
+                 * Propagates the shutdown process to the next handler in the channel.
+                 */
                 void OnShutdownComplete(ChannelDirection direction, int errorCode, bool freeScarceResourcesImmediately);
+
+                /**
+                 * Fetches the downstream read window.
+                 * This gives you the information necessary to honor the read window.
+                 * If you call send_message() and it exceeds this window, the message will be rejected.
+                 */
                 size_t DownstreamReadWindow() const;
+
+                /**
+                 * Fetches the current overhead of upstream handlers.
+                 * This provides a hint to avoid fragmentation if you care.
+                 */
                 size_t UpstreamMessageOverhead() const;
+
                 struct aws_channel_slot *GetSlot() const;
 
                 struct aws_channel_handler m_handler;
