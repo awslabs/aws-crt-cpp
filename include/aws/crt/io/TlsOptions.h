@@ -92,10 +92,10 @@ namespace Aws
 
 #ifdef _WIN32
                 /**
-                 * Initializes options for use with mutual tls in client mode. This function is only available on
-                 * windows. cert_reg_path is the path to a system
-                 * installed certficate/private key pair. Example:
-                 * CurrentUser\\MY\\<thumprint>
+                 * Initializes options for use with mutual tls in client mode.
+                 * This function is only available on windows.
+                 * @param registryPath Path to a system installed certficate/private key pair.
+                 * Example: "CurrentUser\\MY\\<thumprint>"
                  */
                 static TlsContextOptions InitClientWithMtlsSystemPath(
                     const char *registryPath,
