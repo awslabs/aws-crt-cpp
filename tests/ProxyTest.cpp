@@ -1028,7 +1028,6 @@ static int s_TestMqttViaHttpProxyAlpn(struct aws_allocator *allocator, void *ctx
     (void)ctx;
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
-        apiHandle.InitializeLogging(LogLevel::Trace, "/tmp/log.txt");
 
         ProxyIntegrationTestState testState(allocator);
         s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::Http);
@@ -1050,3 +1049,82 @@ static int s_TestMqttViaHttpProxyAlpn(struct aws_allocator *allocator, void *ctx
 
 AWS_TEST_CASE(MqttViaHttpProxyAlpn, s_TestMqttViaHttpProxyAlpn)
 
+static int s_TestMqttViaHttpsProxyAlpn(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        ProxyIntegrationTestState testState(allocator);
+        s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::Https);
+        testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
+
+        s_InitializeProxyTestSupport(testState);
+        s_InitializeTlsToProxy(testState);
+
+        ASSERT_SUCCESS(s_BuildMqttAlpnConnection(testState));
+        ASSERT_SUCCESS(s_ConnectToIotCore(testState));
+
+        s_WaitForIotCoreConnection(testState);
+        testState.m_mqttConnection->Disconnect();
+        s_WaitForIotCoreDisconnect(testState);
+    }
+
+    /* now let everything tear down and make sure we don't leak or deadlock.*/
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(MqttViaHttpsProxyAlpn, s_TestMqttViaHttpsProxyAlpn)
+
+static int s_TestMqttViaHttpProxyAlpnBasicAuthDeprecated(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        ProxyIntegrationTestState testState(allocator);
+        s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::HttpBasic);
+        ASSERT_SUCCESS(s_InitializeDeprecatedBasicAuth(testState));
+
+        s_InitializeProxyTestSupport(testState);
+
+        ASSERT_SUCCESS(s_BuildMqttAlpnConnection(testState));
+        ASSERT_SUCCESS(s_ConnectToIotCore(testState));
+
+        s_WaitForIotCoreConnection(testState);
+        testState.m_mqttConnection->Disconnect();
+        s_WaitForIotCoreDisconnect(testState);
+    }
+
+    /* now let everything tear down and make sure we don't leak or deadlock.*/
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(MqttViaHttpProxyAlpnBasicAuthDeprecated, s_TestMqttViaHttpProxyAlpnBasicAuthDeprecated)
+
+static int s_TestMqttViaHttpProxyAlpnBasicAuth(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        ProxyIntegrationTestState testState(allocator);
+        s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::HttpBasic);
+        ASSERT_SUCCESS(s_InitializeBasicAuth(testState));
+        testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
+
+        s_InitializeProxyTestSupport(testState);
+
+        ASSERT_SUCCESS(s_BuildMqttAlpnConnection(testState));
+        ASSERT_SUCCESS(s_ConnectToIotCore(testState));
+
+        s_WaitForIotCoreConnection(testState);
+        testState.m_mqttConnection->Disconnect();
+        s_WaitForIotCoreDisconnect(testState);
+    }
+
+    /* now let everything tear down and make sure we don't leak or deadlock.*/
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(MqttViaHttpProxyAlpnBasicAuth, s_TestMqttViaHttpProxyAlpnBasicAuth)
