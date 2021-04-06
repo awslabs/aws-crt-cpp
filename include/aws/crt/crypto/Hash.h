@@ -64,10 +64,10 @@ namespace Aws
              * load into memory. You can call Update() multiple times as you load chunks of data into memory. When
              * you're finished simply call Digest(). After Digest() is called, this object is no longer usable.
              */
-            class AWS_CRT_CPP_API Hash
+            class AWS_CRT_CPP_API Hash final
             {
               public:
-                virtual ~Hash();
+                ~Hash();
                 Hash(const Hash &) = delete;
                 Hash &operator=(const Hash &) = delete;
                 Hash(Hash &&toMove);
@@ -107,16 +107,21 @@ namespace Aws
                  */
                 bool Digest(ByteBuf &output, size_t truncateTo = 0) noexcept;
 
-              protected:
+              private:
                 Hash(aws_hash *hash) noexcept;
                 Hash() = delete;
 
-              private:
                 aws_hash *m_hash;
                 bool m_good;
                 int m_lastError;
             };
 
+            /**
+             * BYO_CRYPTO: Base class for custom hash implementations.
+             *
+             * If using BYO_CRYPTO, you must define concrete implementations for the required hash algorithms
+             * and set their creation callbacks via functions like ApiHandle.SetBYOCryptoNewMD5Callback().
+             */
             class AWS_CRT_CPP_API ByoHash
             {
               public:
@@ -131,7 +136,19 @@ namespace Aws
               protected:
                 ByoHash(size_t digestSize, Allocator *allocator = g_allocator);
 
+                /**
+                 * Update the running hash with to_hash.
+                 * This can be called multiple times.
+                 * Raise an AWS error and return false to indicate failure.
+                 */
                 virtual bool UpdateInternal(const ByteCursor &toHash) noexcept = 0;
+
+                /**
+                 * Complete the hash computation and write the final digest to output.
+                 * This cannote be called more than once.
+                 * If truncate_to is something other than 0, the output must be truncated to that number of bytes.
+                 * Raise an AWS error and return false to indicate failure.
+                 */
                 virtual bool DigestInternal(ByteBuf &output, size_t truncateTo = 0) noexcept = 0;
 
               private:
@@ -144,7 +161,7 @@ namespace Aws
                 std::shared_ptr<ByoHash> m_selfReference;
             };
 
-            using CreateHashCallback = std::function<std::shared_ptr<ByoHash>(size_t, Allocator *)>;
+            using CreateHashCallback = std::function<std::shared_ptr<ByoHash>(size_t digestSize, Allocator *)>;
 
         } // namespace Crypto
     }     // namespace Crt
