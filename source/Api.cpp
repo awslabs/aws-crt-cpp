@@ -216,6 +216,16 @@ namespace Aws
             aws_tls_byo_crypto_set_client_setup_options(&setupOptions);
         }
 
+        void ApiHandle::SetBYOCryptoTlsContextCallbacks(
+            Io::NewTlsContextImplCallback &&newCallback,
+            Io::DeleteTlsContextImplCallback &&deleteCallback,
+            Io::IsTlsAlpnSupportedCallback &&alpnCallback)
+        {
+            s_BYOCryptoNewTlsContextImplCallback = newCallback;
+            s_BYOCryptoDeleteTlsContextImplCallback = deleteCallback;
+            s_BYOCryptoIsTlsAlpnSupportedCallback = alpnCallback;
+        }
+
 #else  // BYO_CRYPTO
         void ApiHandle::SetBYOCryptoClientTlsCallback(Io::NewClientTlsHandlerCallback &&)
         {
