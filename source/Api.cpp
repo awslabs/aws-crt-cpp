@@ -227,29 +227,27 @@ namespace Aws
         }
 
 #else  // BYO_CRYPTO
-        void ApiHandle::SetBYOCryptoClientTlsCallback(Io::NewClientTlsHandlerCallback &&)
-        {
-            AWS_LOGF_ERROR(AWS_LS_IO_TLS, "aws-crt-cpp must be compiled with BYO_CRYPTO=1");
-        }
-
         void ApiHandle::SetBYOCryptoNewMD5Callback(Crypto::CreateHashCallback &&)
         {
-            AWS_LOGF_ERROR(AWS_LS_IO_TLS, "aws-crt-cpp must be compiled with BYO_CRYPTO=1");
+            AWS_LOGF_WARN(AWS_LS_IO_TLS, "SetBYOCryptoNewMD5Callback() has no effect unless compiled with BYO_CRYPTO");
         }
 
         void ApiHandle::SetBYOCryptoNewSHA256Callback(Crypto::CreateHashCallback &&)
         {
-            AWS_LOGF_ERROR(AWS_LS_IO_TLS, "aws-crt-cpp must be compiled with BYO_CRYPTO=1");
+            AWS_LOGF_WARN(
+                AWS_LS_IO_TLS, "SetBYOCryptoNewSHA256Callback() has no effect unless compiled with BYO_CRYPTO");
         }
 
         void ApiHandle::SetBYOCryptoNewSHA256HMACCallback(Crypto::CreateHMACCallback &&)
         {
-            AWS_LOGF_ERROR(AWS_LS_IO_TLS, "aws-crt-cpp must be compiled with BYO_CRYPTO=1");
+            AWS_LOGF_WARN(
+                AWS_LS_IO_TLS, "SetBYOCryptoNewSHA256HMACCallback() has no effect unless compiled with BYO_CRYPTO");
         }
 
         void ApiHandle::SetBYOCryptoClientTlsCallback(Io::NewClientTlsHandlerCallback &&)
         {
-            AWS_LOGF_ERROR(AWS_LS_IO_TLS, "aws-crt-cpp must be compiled with BYO_CRYPTO=1");
+            AWS_LOGF_WARN(
+                AWS_LS_IO_TLS, "SetBYOCryptoClientTlsCallback() has no effect unless compiled with BYO_CRYPTO");
         }
 
         void ApiHandle::SetBYOCryptoTlsContextCallbacks(
@@ -257,7 +255,8 @@ namespace Aws
             Io::DeleteTlsContextImplCallback &&,
             Io::IsTlsAlpnSupportedCallback &&)
         {
-            AWS_LOGF_ERROR(AWS_LS_IO_TLS, "aws-crt-cpp must be compiled with BYO_CRYPTO=1");
+            AWS_LOGF_WARN(
+                AWS_LS_IO_TLS, "SetBYOCryptoClientTlsCallback() has no effect unless compiled with BYO_CRYPTO");
         }
 #endif // BYO_CRYPTO
 

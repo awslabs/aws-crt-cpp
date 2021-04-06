@@ -241,6 +241,9 @@ namespace Aws
             using DeleteTlsContextImplCallback = std::function<void(void *)>;
             using IsTlsAlpnSupportedCallback = std::function<bool()>;
 
+            /**
+             * BYO_CRYPTO: TLS channel-handler base class.
+             */
             class AWS_CRT_CPP_API TlsChannelHandler : public ChannelHandler
             {
               public:
@@ -272,6 +275,12 @@ namespace Aws
                 friend aws_byte_buf(::aws_tls_handler_protocol)(aws_channel_handler *);
             };
 
+            /**
+             * BYO_CRYPTO: Client TLS channel-handler base class.
+             *
+             * If using BYO_CRYPTO, you must define a concrete implementation
+             * and set its creation callback via ApiHandle.SetBYOCryptoClientTlsCallback().
+             */
             class AWS_CRT_CPP_API ClientTlsChannelHandler : public TlsChannelHandler
             {
               public:

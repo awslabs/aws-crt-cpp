@@ -49,11 +49,9 @@ namespace Aws
                 virtual ~ChannelHandler() = default;
 
                 ChannelHandler(const ChannelHandler &) = delete;
-                ChannelHandler(ChannelHandler &&) = delete;
+                ChannelHandler &operator=(const ChannelHandler &) = delete;
 
-                const ChannelHandler &operator=(const ChannelHandler &) = delete;
-                const ChannelHandler &operator=(ChannelHandler &&) = delete;
-
+              protected:
                 /**
                  * Called by the channel when a message is available for processing in the read direction. It is your
                  * responsibility to call aws_mem_release(message->allocator, message); on message when you are finished
@@ -84,6 +82,9 @@ namespace Aws
                  * Called by the channel when a downstream handler has issued a window increment. You'll want to update
                  * your internal state and likely propagate a window increment message of your own by calling
                  * IncrementUpstreamReadWindow()
+                 *
+                 * Return AWS_OP_SUCCESS if successful.
+                 * Otherwise, raise an error and return AWS_OP_ERR.
                  */
                 virtual int IncrementReadWindow(size_t size) = 0;
 
@@ -126,20 +127,9 @@ namespace Aws
                  */
                 virtual void GatherStatistics(struct aws_array_list *) {}
 
+              public:
                 /// @private
                 struct aws_channel_handler *SeatForCInterop(const std::shared_ptr<ChannelHandler> &selfRef);
-
-                /**
-                 * Acquire an aws_io_message from the channel's pool.
-                 */
-                struct aws_io_message *AcquireMessageFromPool(MessageType messageType, size_t sizeHint);
-
-                /**
-                 * Convenience function that invokes AcquireMessageFromPool(),
-                 * asking for the largest reasonable DATA message that can be sent in the write direction,
-                 * with upstream overhead accounted for.
-                 */
-                struct aws_io_message *AcquireMaxSizeMessageForWrite();
 
                 /**
                  * Return whether the caller is on the same thread as the handler's channel.
@@ -168,6 +158,18 @@ namespace Aws
 
               protected:
                 ChannelHandler(Allocator *allocator = g_allocator);
+
+                /**
+                 * Acquire an aws_io_message from the channel's pool.
+                 */
+                struct aws_io_message *AcquireMessageFromPool(MessageType messageType, size_t sizeHint);
+
+                /**
+                 * Convenience function that invokes AcquireMessageFromPool(),
+                 * asking for the largest reasonable DATA message that can be sent in the write direction,
+                 * with upstream overhead accounted for.
+                 */
+                struct aws_io_message *AcquireMaxSizeMessageForWrite();
 
                 /**
                  * Send a message in the read or write direction.
@@ -211,6 +213,25 @@ namespace Aws
                 static struct aws_channel_handler_vtable s_vtable;
 
                 static void s_Destroy(struct aws_channel_handler *handler);
+                static int s_ProcessReadMessage(
+                    struct aws_channel_handler *,
+                    struct aws_channel_slot *,
+                    struct aws_io_message *);
+                static int s_ProcessWriteMessage(
+                    struct aws_channel_handler *,
+                    struct aws_channel_slot *,
+                    struct aws_io_message *);
+                static int s_IncrementReadWindow(struct aws_channel_handler *, struct aws_channel_slot *, size_t size);
+                static int s_ProcessShutdown(
+                    struct aws_channel_handler *,
+                    struct aws_channel_slot *,
+                    enum aws_channel_direction,
+                    int errorCode,
+                    bool freeScarceResourcesImmediately);
+                static size_t s_InitialWindowSize(struct aws_channel_handler *);
+                static size_t s_MessageOverhead(struct aws_channel_handler *);
+                static void s_ResetStatistics(struct aws_channel_handler *);
+                static void s_GatherStatistics(struct aws_channel_handler *, struct aws_array_list *statsList);
             };
         } // namespace Io
     }     // namespace Crt

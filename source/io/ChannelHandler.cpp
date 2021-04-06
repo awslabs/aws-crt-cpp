@@ -12,7 +12,7 @@ namespace Aws
     {
         namespace Io
         {
-            static int s_ProcessReadMessage(
+            int ChannelHandler::s_ProcessReadMessage(
                 struct aws_channel_handler *handler,
                 struct aws_channel_slot *,
                 struct aws_io_message *message)
@@ -22,7 +22,7 @@ namespace Aws
                 return channelHandler->ProcessReadMessage(message);
             }
 
-            static int s_ProcessWriteMessage(
+            int ChannelHandler::s_ProcessWriteMessage(
                 struct aws_channel_handler *handler,
                 struct aws_channel_slot *,
                 struct aws_io_message *message)
@@ -32,7 +32,7 @@ namespace Aws
                 return channelHandler->ProcessWriteMessage(message);
             }
 
-            static int s_IncrementReadWindow(
+            int ChannelHandler::s_IncrementReadWindow(
                 struct aws_channel_handler *handler,
                 struct aws_channel_slot *,
                 size_t size)
@@ -42,7 +42,7 @@ namespace Aws
                 return channelHandler->IncrementReadWindow(size);
             }
 
-            static int s_ProcessShutdown(
+            int ChannelHandler::s_ProcessShutdown(
                 struct aws_channel_handler *handler,
                 struct aws_channel_slot *,
                 enum aws_channel_direction dir,
@@ -56,25 +56,27 @@ namespace Aws
                 return AWS_OP_SUCCESS;
             }
 
-            static size_t s_InitialWindowSize(struct aws_channel_handler *handler)
+            size_t ChannelHandler::s_InitialWindowSize(struct aws_channel_handler *handler)
             {
                 auto *channelHandler = reinterpret_cast<ChannelHandler *>(handler->impl);
                 return channelHandler->InitialWindowSize();
             }
 
-            static size_t s_MessageOverhead(struct aws_channel_handler *handler)
+            size_t ChannelHandler::s_MessageOverhead(struct aws_channel_handler *handler)
             {
                 auto *channelHandler = reinterpret_cast<ChannelHandler *>(handler->impl);
                 return channelHandler->MessageOverhead();
             }
 
-            static void s_ResetStatistics(struct aws_channel_handler *handler)
+            void ChannelHandler::s_ResetStatistics(struct aws_channel_handler *handler)
             {
                 auto *channelHandler = reinterpret_cast<ChannelHandler *>(handler->impl);
                 channelHandler->ResetStatistics();
             }
 
-            static void s_GatherStatistics(struct aws_channel_handler *handler, struct aws_array_list *statsList)
+            void ChannelHandler::s_GatherStatistics(
+                struct aws_channel_handler *handler,
+                struct aws_array_list *statsList)
             {
                 auto *channelHandler = reinterpret_cast<ChannelHandler *>(handler->impl);
                 channelHandler->GatherStatistics(statsList);
