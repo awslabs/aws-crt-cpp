@@ -116,9 +116,9 @@ namespace Aws
           private:
             void InitializeLoggingCommon(struct aws_logger_standard_options &options);
 
-            aws_logger logger;
+            aws_logger m_logger;
 
-            ApiHandleShutdownBehavior shutdownBehavior;
+            ApiHandleShutdownBehavior m_shutdownBehavior;
         };
 
         AWS_CRT_CPP_API const char *ErrorDebugString(int error) noexcept;

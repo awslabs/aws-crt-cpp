@@ -45,27 +45,27 @@ namespace Aws
         }
 
         ApiHandle::ApiHandle(Allocator *allocator) noexcept
-            : logger(), shutdownBehavior(ApiHandleShutdownBehavior::Blocking)
+            : m_logger(), m_shutdownBehavior(ApiHandleShutdownBehavior::Blocking)
         {
             s_initApi(allocator);
         }
 
-        ApiHandle::ApiHandle() noexcept : logger(), shutdownBehavior(ApiHandleShutdownBehavior::Blocking)
+        ApiHandle::ApiHandle() noexcept : m_logger(), m_shutdownBehavior(ApiHandleShutdownBehavior::Blocking)
         {
             s_initApi(g_allocator);
         }
 
         ApiHandle::~ApiHandle()
         {
-            if (shutdownBehavior == ApiHandleShutdownBehavior::Blocking)
+            if (m_shutdownBehavior == ApiHandleShutdownBehavior::Blocking)
             {
                 aws_thread_join_all_managed();
             }
 
-            if (aws_logger_get() == &logger)
+            if (aws_logger_get() == &m_logger)
             {
                 aws_logger_set(NULL);
-                aws_logger_clean_up(&logger);
+                aws_logger_clean_up(&m_logger);
             }
 
             g_allocator = nullptr;
@@ -106,58 +106,69 @@ namespace Aws
 
         void ApiHandle::InitializeLoggingCommon(struct aws_logger_standard_options &options)
         {
-            if (aws_logger_get() == &logger)
+            if (aws_logger_get() == &m_logger)
             {
                 aws_logger_set(NULL);
-                aws_logger_clean_up(&logger);
+                aws_logger_clean_up(&m_logger);
                 if (options.level == AWS_LL_NONE)
                 {
-                    AWS_ZERO_STRUCT(logger);
+                    AWS_ZERO_STRUCT(m_logger);
                     return;
                 }
             }
 
-            if (aws_logger_init_standard(&logger, g_allocator, &options))
+            if (aws_logger_init_standard(&m_logger, g_allocator, &options))
             {
                 return;
             }
 
-            aws_logger_set(&logger);
+            aws_logger_set(&m_logger);
         }
 
-        void ApiHandle::SetShutdownBehavior(ApiHandleShutdownBehavior behavior) { shutdownBehavior = behavior; }
+        void ApiHandle::SetShutdownBehavior(ApiHandleShutdownBehavior behavior) { m_shutdownBehavior = behavior; }
 
-#ifdef BYO_CRYPTO
+#if BYO_CRYPTO
         static struct aws_hash *s_MD5New(struct aws_allocator *allocator)
         {
-            auto hash = s_BYOCryptoNewMD5Callback(AWS_MD5_LEN, allocator);
-            if (hash)
+            if (!s_BYOCryptoNewMD5Callback)
             {
-                return hash->SeatForCInterop(hash);
+                AWS_LOGF_ERROR(
+                    AWS_LS_IO_TLS, "Must call ApiHandle::SetBYOCryptoNewMD5Callback() before MD5 hash can be created");
+                aws_raise_error(AWS_ERROR_UNIMPLEMENTED);
+                return nullptr;
             }
-            else
+
+            auto hash = s_BYOCryptoNewMD5Callback(AWS_MD5_LEN, allocator);
+            if (!hash)
             {
                 return nullptr;
             }
+            return hash->SeatForCInterop(hash);
         }
 
         void ApiHandle::SetBYOCryptoNewMD5Callback(Crypto::CreateHashCallback &&callback)
         {
-            s_BYOCryptoNewSHA256Callback = std::move(callback);
+            s_BYOCryptoNewMD5Callback = std::move(callback);
             aws_set_md5_new_fn(s_MD5New);
         }
 
         static struct aws_hash *s_Sha256New(struct aws_allocator *allocator)
         {
-            auto hash = s_BYOCryptoNewSHA256Callback(AWS_SHA256_LEN, allocator);
-            if (hash)
+            if (!s_BYOCryptoNewSHA256Callback)
             {
-                return hash->SeatForCInterop(hash);
+                AWS_LOGF_ERROR(
+                    AWS_LS_IO_TLS,
+                    "Must call ApiHandle::SetBYOCryptoNewSHA256Callback() before SHA256 hash can be created");
+                aws_raise_error(AWS_ERROR_UNIMPLEMENTED);
+                return nullptr;
             }
-            else
+
+            auto hash = s_BYOCryptoNewSHA256Callback(AWS_SHA256_LEN, allocator);
+            if (!hash)
             {
                 return nullptr;
             }
+            return hash->SeatForCInterop(hash);
         }
 
         void ApiHandle::SetBYOCryptoNewSHA256Callback(Crypto::CreateHashCallback &&callback)
@@ -168,7 +179,20 @@ namespace Aws
 
         static struct aws_hmac *s_sha256HMACNew(struct aws_allocator *allocator, const struct aws_byte_cursor *secret)
         {
+            if (!s_BYOCryptoNewSHA256HMACCallback)
+            {
+                AWS_LOGF_ERROR(
+                    AWS_LS_IO_TLS,
+                    "Must call ApiHandle::SetBYOCryptoNewSHA256HMACCallback() before SHA256 HMAC can be created");
+                aws_raise_error(AWS_ERROR_UNIMPLEMENTED);
+                return nullptr;
+            }
+
             auto hmac = s_BYOCryptoNewSHA256HMACCallback(AWS_SHA256_HMAC_LEN, *secret, allocator);
+            if (!hmac)
+            {
+                return nullptr;
+            }
             return hmac->SeatForCInterop(hmac);
         }
 
@@ -184,6 +208,15 @@ namespace Aws
             struct aws_channel_slot *slot,
             void *)
         {
+            if (!s_BYOCryptoNewClientTlsHandlerCallback)
+            {
+                AWS_LOGF_ERROR(
+                    AWS_LS_IO_TLS,
+                    "Must call ApiHandle::SetBYOCryptoClientTlsCallback() before client TLS handler can be created");
+                aws_raise_error(AWS_ERROR_UNIMPLEMENTED);
+                return nullptr;
+            }
+
             auto clientHandlerSelfReferencing = s_BYOCryptoNewClientTlsHandlerCallback(slot, *options, allocator);
             if (!clientHandlerSelfReferencing)
             {

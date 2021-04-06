@@ -8,7 +8,7 @@
 
 #include <utility>
 
-#ifndef BYO_CRYPTO
+#if !BYO_CRYPTO
 static int s_TestSHA256ResourceSafety(struct aws_allocator *allocator, void *)
 {
     {

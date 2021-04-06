@@ -6,7 +6,7 @@
 #include <aws/crt/crypto/HMAC.h>
 #include <aws/testing/aws_test_harness.h>
 
-#ifndef BYO_CRYPTO
+#if !BYO_CRYPTO
 
 static int s_TestSHA256HMACResourceSafety(struct aws_allocator *allocator, void *)
 {

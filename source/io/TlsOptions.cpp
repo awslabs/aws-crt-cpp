@@ -380,7 +380,7 @@ namespace Aws
     }     // namespace Crt
 } // namespace Aws
 
-#ifdef BYO_CRYPTO
+#if BYO_CRYPTO
 AWS_EXTERN_C_BEGIN
 
 bool aws_tls_is_alpn_available(void)
