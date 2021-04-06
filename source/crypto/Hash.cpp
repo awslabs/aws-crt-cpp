@@ -109,7 +109,6 @@ namespace Aws
                 return false;
             }
 
-#ifdef BYO_CRYPTO
             aws_hash_vtable ByoHash::s_Vtable = {
                 "aws-crt-cpp-byo-crypto-hash",
                 "aws-crt-cpp-byo-crypto",
@@ -170,7 +169,6 @@ namespace Aws
                 byoHash->m_hashValue.good = false;
                 return success ? AWS_OP_SUCCESS : AWS_OP_ERR;
             }
-#endif    /* BYO_CRYPTO */
         } // namespace Crypto
     }     // namespace Crt
 } // namespace Aws

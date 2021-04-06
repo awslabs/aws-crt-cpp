@@ -117,13 +117,13 @@ namespace Aws
                 int m_lastError;
             };
 
-#if BYO_CRYPTO
             class AWS_CRT_CPP_API ByoHash
             {
               public:
                 virtual ~ByoHash();
 
-                /** this is called by the framework. If you're trying to create instances of this class manually,
+                /** @private
+                 * this is called by the framework. If you're trying to create instances of this class manually,
                  * please don't. But if you do. Look at the other factory functions for reference.
                  */
                 aws_hash *SeatForCInterop(const std::shared_ptr<ByoHash> &selfRef);
@@ -145,7 +145,6 @@ namespace Aws
             };
 
             using CreateHashCallback = std::function<std::shared_ptr<ByoHash>(size_t, Allocator *)>;
-#endif /* BYO_CRYPTO */
 
         } // namespace Crypto
     }     // namespace Crt

@@ -3,7 +3,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
-#include <aws/common/logging.h>
 #include <aws/crt/Types.h>
 #include <aws/crt/crypto/HMAC.h>
 #include <aws/crt/crypto/Hash.h>
@@ -11,6 +10,8 @@
 #include <aws/crt/io/EventLoopGroup.h>
 #include <aws/crt/io/TlsOptions.h>
 #include <aws/crt/mqtt/MqttClient.h>
+
+#include <aws/common/logging.h>
 
 namespace Aws
 {
@@ -66,14 +67,38 @@ namespace Aws
              */
             void SetShutdownBehavior(ApiHandleShutdownBehavior behavior);
 
-#if BYO_CRYPTO
+            /**
+             * BYO_CRYPTO: set callback for creating MD5 hashes.
+             * If using BYO_CRYPTO, you must call this.
+             */
+            void SetBYOCryptoNewMD5Callback(Crypto::CreateHashCallback &&callback);
 
             /**
+             * BYO_CRYPTO: set callback for creating SHA256 hashes.
+             * If using BYO_CRYPTO, you must call this.
+             */
+            void SetBYOCryptoNewSHA256Callback(Crypto::CreateHashCallback &&callback);
+
+            /**
+             * BYO_CRYPTO: set callback for creating Streaming SHA256 HMAC objects.
+             * If using BYO_CRYPTO, you must call this.
+             */
+            void SetBYOCryptoNewSHA256HMACCallback(Crypto::CreateHMACCallback &&callback);
+
+            /**
+             * BYO_CRYPTO: set callback for creating a ClientTlsChannelHandler.
+             * If using BYO_CRYPTO, you must call this prior to creating any client channels in the
+             * application.
+             */
+            void SetBYOCryptoClientTlsCallback(Io::NewClientTlsHandlerCallback &&callback);
+
+            /**
+             * BYO_CRYPTO: set callbacks for the TlsContext.
              * If using BYO_CRYPTO, you need to call this function prior to creating a TlsContext.
              *
-             * @param newCallback Create custom implementation object, stored inside TlsContext.
+             * @param newCallback Create custom implementation object, to be stored inside TlsContext.
              *                    Return nullptr if failure occurs.
-             * @param deleteCallback Destroy object was created by newCallback.
+             * @param deleteCallback Destroy object that was created by newCallback.
              * @param alpnCallback Return whether ALPN is supported.
              */
             void SetBYOCryptoTlsContextCallbacks(
@@ -81,23 +106,12 @@ namespace Aws
                 Io::DeleteTlsContextImplCallback &&deleteCallback,
                 Io::IsTlsAlpnSupportedCallback &&alpnCallback);
 
-            /**
-             * If using BYO_CRYPTO, you need to call this function prior to creating any client channels in the
-             * application.
-             */
-            void SetBYOCryptoClientTlsCallback(Io::NewClientTlsHandlerCallback &&callback);
-
-            /**
-             * If using BYO_CRYPTO, you need to call this function prior to accepting any server channels in the
-             * application.
-             */
-            void SetBYOCryptoServerTlsCallback(Io::NewServerTlsHandlerCallback &&callback);
-
-            void SetBYOCryptoNewMD5Callback(Crypto::CreateHashCallback &&callback);
-            void SetBYOCryptoNewSHA256Callback(Crypto::CreateHashCallback &&callback);
-            void SetBYOCryptoNewSHA256HMACCallback(Crypto::CreateHMACCallback &&callback);
-
-#endif /* BYO_CRYPTO */
+            /// @private
+            static const Io::NewTlsContextImplCallback &GetBYOCryptoNewTlsContextImplCallback();
+            /// @private
+            static const Io::DeleteTlsContextImplCallback &GetBYOCryptoDeleteTlsContextImplCallback();
+            /// @private
+            static const Io::IsTlsAlpnSupportedCallback &GetBYOCryptoIsTlsAlpnSupportedCallback();
 
           private:
             void InitializeLoggingCommon(struct aws_logger_standard_options &options);

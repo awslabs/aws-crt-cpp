@@ -110,7 +110,6 @@ namespace Aws
                 return false;
             }
 
-#ifdef BYO_CRYPTO
             aws_hmac_vtable ByoHMAC::s_Vtable = {
                 "aws-crt-cpp-byo-crypto-hmac",
                 "aws-crt-cpp-byo-crypto",
@@ -169,7 +168,6 @@ namespace Aws
                 byoHmac->m_hmacValue.good = false;
                 return success ? AWS_OP_SUCCESS : AWS_OP_ERR;
             }
-#endif    /* BYO_CRYPTO */
         } // namespace Crypto
     }     // namespace Crt
 } // namespace Aws

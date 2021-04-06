@@ -237,7 +237,6 @@ namespace Aws
                 int m_initializationError;
             };
 
-#if BYO_CRYPTO
             using NewTlsContextImplCallback = std::function<void *(TlsContextOptions &, TlsMode, Allocator *)>;
             using DeleteTlsContextImplCallback = std::function<void(void *)>;
             using IsTlsAlpnSupportedCallback = std::function<bool()>;
@@ -293,11 +292,6 @@ namespace Aws
                 struct aws_channel_slot *slot,
                 const struct aws_tls_connection_options &options,
                 Allocator *allocator)>;
-            using NewServerTlsHandlerCallback = std::function<std::shared_ptr<TlsChannelHandler>(
-                struct aws_channel_slot *slot,
-                const struct aws_tls_connection_options &options,
-                Allocator *allocator)>;
-#endif /* BYO_CRYPTO */
 
         } // namespace Io
     }     // namespace Crt

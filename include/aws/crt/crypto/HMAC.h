@@ -98,13 +98,13 @@ namespace Aws
                 int m_lastError;
             };
 
-#if BYO_CRYPTO
             class AWS_CRT_CPP_API ByoHMAC
             {
               public:
                 virtual ~ByoHMAC() = default;
 
-                /** this is called by the framework. If you're trying to create instances of this class manually,
+                /** @private
+                 * this is called by the framework. If you're trying to create instances of this class manually,
                  * please don't. But if you do. Look at the other factory functions for reference.
                  */
                 aws_hmac *SeatForCInterop(const std::shared_ptr<ByoHMAC> &selfRef);
@@ -127,7 +127,6 @@ namespace Aws
 
             using CreateHMACCallback =
                 std::function<std::shared_ptr<ByoHMAC>(size_t, const ByteCursor &secret, Allocator *)>;
-#endif /* BYO_CRYPTO */
 
         } // namespace Crypto
     }     // namespace Crt

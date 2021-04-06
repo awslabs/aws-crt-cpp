@@ -18,10 +18,13 @@ namespace Aws
     {
         Allocator *g_allocator = Aws::Crt::DefaultAllocator();
 
-#ifdef BYO_CRYPTO
-        static Io::NewClientTlsHandlerCallback s_ClientCallback;
-        static Io::NewServerTlsHandlerCallback s_ServerCallback;
-#endif /* BYO_CRYPTO */
+        static Crypto::CreateHashCallback s_BYOCryptoNewMD5Callback;
+        static Crypto::CreateHashCallback s_BYOCryptoNewSHA256Callback;
+        static Crypto::CreateHMACCallback s_BYOCryptoNewSHA256HMACCallback;
+        static Io::NewClientTlsHandlerCallback s_BYOCryptoNewClientTlsHandlerCallback;
+        static Io::NewTlsContextImplCallback s_BYOCryptoNewTlsContextImplCallback;
+        static Io::DeleteTlsContextImplCallback s_BYOCryptoDeleteTlsContextImplCallback;
+        static Io::IsTlsAlpnSupportedCallback s_BYOCryptoIsTlsAlpnSupportedCallback;
 
         static void *s_cJSONAlloc(size_t sz) { return aws_mem_acquire(g_allocator, sz); }
 
@@ -70,10 +73,13 @@ namespace Aws
             aws_mqtt_library_clean_up();
             aws_http_library_clean_up();
 
-#ifdef BYO_CRYPTO
-            s_ClientCallback = nullptr;
-            s_ServerCallback = nullptr;
-#endif /* BYO_CRYPTO */
+            s_BYOCryptoNewMD5Callback = nullptr;
+            s_BYOCryptoNewSHA256Callback = nullptr;
+            s_BYOCryptoNewSHA256HMACCallback = nullptr;
+            s_BYOCryptoNewClientTlsHandlerCallback = nullptr;
+            s_BYOCryptoNewTlsContextImplCallback = nullptr;
+            s_BYOCryptoDeleteTlsContextImplCallback = nullptr;
+            s_BYOCryptoIsTlsAlpnSupportedCallback = nullptr;
         }
 
         void ApiHandle::InitializeLogging(Aws::Crt::LogLevel level, const char *filename)
@@ -122,13 +128,63 @@ namespace Aws
         void ApiHandle::SetShutdownBehavior(ApiHandleShutdownBehavior behavior) { shutdownBehavior = behavior; }
 
 #ifdef BYO_CRYPTO
-        static struct aws_channel_handler *s_NewClientHandler(
+        static struct aws_hash *s_MD5New(struct aws_allocator *allocator)
+        {
+            auto hash = s_BYOCryptoNewMD5Callback(AWS_MD5_LEN, allocator);
+            if (hash)
+            {
+                return hash->SeatForCInterop(hash);
+            }
+            else
+            {
+                return nullptr;
+            }
+        }
+
+        void ApiHandle::SetBYOCryptoNewMD5Callback(Crypto::CreateHashCallback &&callback)
+        {
+            s_BYOCryptoNewSHA256Callback = std::move(callback);
+            aws_set_md5_new_fn(s_MD5New);
+        }
+
+        static struct aws_hash *s_Sha256New(struct aws_allocator *allocator)
+        {
+            auto hash = s_BYOCryptoNewSHA256Callback(AWS_SHA256_LEN, allocator);
+            if (hash)
+            {
+                return hash->SeatForCInterop(hash);
+            }
+            else
+            {
+                return nullptr;
+            }
+        }
+
+        void ApiHandle::SetBYOCryptoNewSHA256Callback(Crypto::CreateHashCallback &&callback)
+        {
+            s_BYOCryptoNewSHA256Callback = std::move(callback);
+            aws_set_sha256_new_fn(s_Sha256New);
+        }
+
+        static struct aws_hmac *s_sha256HMACNew(struct aws_allocator *allocator, const struct aws_byte_cursor *secret)
+        {
+            auto hmac = s_BYOCryptoNewSHA256HMACCallback(AWS_SHA256_HMAC_LEN, *secret, allocator);
+            return hmac->SeatForCInterop(hmac);
+        }
+
+        void ApiHandle::SetBYOCryptoNewSHA256HMACCallback(Crypto::CreateHMACCallback &&callback)
+        {
+            s_BYOCryptoNewSHA256HMACCallback = std::move(callback);
+            aws_set_sha256_hmac_new_fn(s_sha256HMACNew);
+        }
+
+        static struct aws_channel_handler *s_NewClientTlsHandler(
             struct aws_allocator *allocator,
             struct aws_tls_connection_options *options,
             struct aws_channel_slot *slot,
             void *)
         {
-            auto clientHandlerSelfReferencing = s_ClientCallback(slot, *options, allocator);
+            auto clientHandlerSelfReferencing = s_BYOCryptoNewClientTlsHandlerCallback(slot, *options, allocator);
             if (!clientHandlerSelfReferencing)
             {
                 return nullptr;
@@ -136,7 +192,7 @@ namespace Aws
             return clientHandlerSelfReferencing->SeatForCInterop(clientHandlerSelfReferencing);
         }
 
-        static int s_StartNegotiation(struct aws_channel_handler *handler, void *)
+        static int s_ClientTlsHandlerStartNegotiation(struct aws_channel_handler *handler, void *)
         {
             auto *clientHandler = reinterpret_cast<Io::ClientTlsChannelHandler *>(handler->impl);
             if (clientHandler->ChannelsThreadIsCallersThread())
@@ -150,94 +206,65 @@ namespace Aws
             return AWS_OP_SUCCESS;
         }
 
-        static struct aws_channel_handler *s_NewServerHandler(
-            struct aws_allocator *allocator,
-            struct aws_tls_connection_options *options,
-            struct aws_channel_slot *slot,
-            void *)
-        {
-            auto serverHandlerSelfReferencing = s_ServerCallback(slot, *options, allocator);
-            if (!serverHandlerSelfReferencing)
-            {
-                return nullptr;
-            }
-            return serverHandlerSelfReferencing->SeatForCInterop(serverHandlerSelfReferencing);
-        }
-
         void ApiHandle::SetBYOCryptoClientTlsCallback(Io::NewClientTlsHandlerCallback &&callback)
         {
-            s_ClientCallback = std::move(callback);
+            s_BYOCryptoNewClientTlsHandlerCallback = std::move(callback);
             struct aws_tls_byo_crypto_setup_options setupOptions;
-            setupOptions.new_handler_fn = s_NewClientHandler;
-            setupOptions.start_negotiation_fn = s_StartNegotiation;
+            setupOptions.new_handler_fn = s_NewClientTlsHandler;
+            setupOptions.start_negotiation_fn = s_ClientTlsHandlerStartNegotiation;
             setupOptions.user_data = nullptr;
             aws_tls_byo_crypto_set_client_setup_options(&setupOptions);
         }
 
-        void ApiHandle::SetBYOCryptoServerTlsCallback(Io::NewServerTlsHandlerCallback &&callback)
+#else  // BYO_CRYPTO
+        void ApiHandle::SetBYOCryptoClientTlsCallback(Io::NewClientTlsHandlerCallback &&)
         {
-            s_ServerCallback = std::move(callback);
-            struct aws_tls_byo_crypto_setup_options setupOptions;
-            setupOptions.new_handler_fn = s_NewServerHandler;
-            setupOptions.start_negotiation_fn = nullptr;
-            setupOptions.user_data = nullptr;
-            aws_tls_byo_crypto_set_server_setup_options(&setupOptions);
+            AWS_LOGF_ERROR(AWS_LS_IO_TLS, "aws-crt-cpp must be compiled with BYO_CRYPTO=1");
         }
 
-        static Crypto::CreateHashCallback md5NewCallback;
-        static struct aws_hash *s_MD5New(struct aws_allocator *allocator)
+        void ApiHandle::SetBYOCryptoNewMD5Callback(Crypto::CreateHashCallback &&)
         {
-            auto hash = md5NewCallback(AWS_MD5_LEN, allocator);
-            if (hash)
-            {
-                return hash->SeatForCInterop(hash);
-            }
-            else
-            {
-                return nullptr;
-            }
+            AWS_LOGF_ERROR(AWS_LS_IO_TLS, "aws-crt-cpp must be compiled with BYO_CRYPTO=1");
         }
 
-        void ApiHandle::SetBYOCryptoNewMD5Callback(Crypto::CreateHashCallback &&callback)
+        void ApiHandle::SetBYOCryptoNewSHA256Callback(Crypto::CreateHashCallback &&)
         {
-            md5NewCallback = std::move(callback);
-            aws_set_md5_new_fn(s_MD5New);
+            AWS_LOGF_ERROR(AWS_LS_IO_TLS, "aws-crt-cpp must be compiled with BYO_CRYPTO=1");
         }
 
-        static Crypto::CreateHashCallback sha256NewCallback;
-        static struct aws_hash *s_Sha256New(struct aws_allocator *allocator)
+        void ApiHandle::SetBYOCryptoNewSHA256HMACCallback(Crypto::CreateHMACCallback &&)
         {
-            auto hash = sha256NewCallback(AWS_SHA256_LEN, allocator);
-            if (hash)
-            {
-                return hash->SeatForCInterop(hash);
-            }
-            else
-            {
-                return nullptr;
-            }
+            AWS_LOGF_ERROR(AWS_LS_IO_TLS, "aws-crt-cpp must be compiled with BYO_CRYPTO=1");
         }
 
-        void ApiHandle::SetBYOCryptoNewSHA256Callback(Crypto::CreateHashCallback &&callback)
+        void ApiHandle::SetBYOCryptoClientTlsCallback(Io::NewClientTlsHandlerCallback &&)
         {
-            sha256NewCallback = std::move(callback);
-            aws_set_sha256_new_fn(s_Sha256New);
+            AWS_LOGF_ERROR(AWS_LS_IO_TLS, "aws-crt-cpp must be compiled with BYO_CRYPTO=1");
         }
 
-        static Crypto::CreateHMACCallback sha256HMACNewCallback;
-        static struct aws_hmac *s_sha256HMACNew(struct aws_allocator *allocator, const struct aws_byte_cursor *secret)
+        void ApiHandle::SetBYOCryptoTlsContextCallbacks(
+            Io::NewTlsContextImplCallback &&,
+            Io::DeleteTlsContextImplCallback &&,
+            Io::IsTlsAlpnSupportedCallback &&)
         {
-            auto hmac = sha256HMACNewCallback(AWS_SHA256_HMAC_LEN, *secret, allocator);
-            return hmac->SeatForCInterop(hmac);
+            AWS_LOGF_ERROR(AWS_LS_IO_TLS, "aws-crt-cpp must be compiled with BYO_CRYPTO=1");
+        }
+#endif // BYO_CRYPTO
+
+        const Io::NewTlsContextImplCallback &ApiHandle::GetBYOCryptoNewTlsContextImplCallback()
+        {
+            return s_BYOCryptoNewTlsContextImplCallback;
         }
 
-        void ApiHandle::SetBYOCryptoNewSHA256HMACCallback(Crypto::CreateHMACCallback &&callback)
+        const Io::DeleteTlsContextImplCallback &ApiHandle::GetBYOCryptoDeleteTlsContextImplCallback()
         {
-            sha256HMACNewCallback = std::move(callback);
-            aws_set_sha256_hmac_new_fn(s_sha256HMACNew);
+            return s_BYOCryptoDeleteTlsContextImplCallback;
         }
 
-#endif /* BYO_CRYPTO */
+        const Io::IsTlsAlpnSupportedCallback &ApiHandle::GetBYOCryptoIsTlsAlpnSupportedCallback()
+        {
+            return s_BYOCryptoIsTlsAlpnSupportedCallback;
+        }
 
         const char *ErrorDebugString(int error) noexcept { return aws_error_debug_str(error); }
 

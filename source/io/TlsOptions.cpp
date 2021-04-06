@@ -12,22 +12,6 @@ namespace Aws
 {
     namespace Crt
     {
-#if BYO_CRYPTO
-        static Io::NewTlsContextImplCallback s_newTlsContextImplCallback;
-        static Io::DeleteTlsContextImplCallback s_deleteTlsContextImplCallback;
-        static Io::IsTlsAlpnSupportedCallback s_isTlsAlpnSupportedCallback;
-
-        void ApiHandle::SetBYOCryptoTlsContextCallbacks(
-            Io::NewTlsContextImplCallback &&newCallback,
-            Io::DeleteTlsContextImplCallback &&deleteCallback,
-            Io::IsTlsAlpnSupportedCallback &&alpnCallback)
-        {
-            s_newTlsContextImplCallback = std::move(newCallback);
-            s_deleteTlsContextImplCallback = std::move(deleteCallback);
-            s_isTlsAlpnSupportedCallback = std::move(alpnCallback);
-        }
-#endif /* BYO_CRYPTO */
-
         namespace Io
         {
             TlsContextOptions::~TlsContextOptions()
@@ -300,7 +284,8 @@ namespace Aws
                 : m_ctx(nullptr), m_initializationError(AWS_ERROR_SUCCESS)
             {
 #if BYO_CRYPTO
-                if (!s_newTlsContextImplCallback || !s_deleteTlsContextImplCallback)
+                if (!ApiHandle::GetBYOCryptoNewTlsContextImplCallback() ||
+                    !ApiHandle::GetBYOCryptoDeleteTlsContextImplCallback())
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_IO_TLS,
@@ -309,7 +294,7 @@ namespace Aws
                     return;
                 }
 
-                void *impl = s_newTlsContextImplCallback(options, mode, allocator);
+                void *impl = ApiHandle::GetBYOCryptoNewTlsContextImplCallback()(options, mode, allocator);
                 if (!impl)
                 {
                     AWS_LOGF_ERROR(
@@ -324,7 +309,7 @@ namespace Aws
 
                 aws_ref_count_init(&underlying_tls_ctx->ref_count, underlying_tls_ctx, [](void *userdata) {
                     auto dying_ctx = static_cast<aws_tls_ctx *>(userdata);
-                    s_deleteTlsContextImplCallback(dying_ctx->impl);
+                    ApiHandle::GetBYOCryptoDeleteTlsContextImplCallback()(dying_ctx->impl);
                     aws_mem_release(dying_ctx->alloc, dying_ctx);
                 });
 
@@ -365,8 +350,6 @@ namespace Aws
                 return TlsConnectionOptions(m_ctx.get(), m_ctx->alloc);
             }
 
-#ifdef BYO_CRYPTO
-
             TlsChannelHandler::TlsChannelHandler(
                 struct aws_channel_slot *,
                 const struct aws_tls_connection_options &options,
@@ -392,7 +375,6 @@ namespace Aws
                 : TlsChannelHandler(slot, options, allocator)
             {
             }
-#endif /* BYO_CRYPTO */
 
         } // namespace Io
     }     // namespace Crt
@@ -403,13 +385,14 @@ AWS_EXTERN_C_BEGIN
 
 bool aws_tls_is_alpn_available(void)
 {
-    if (!Aws::Crt::s_isTlsAlpnSupportedCallback)
+    const auto &callback = Aws::Crt::ApiHandle::GetBYOCryptoIsTlsAlpnSupportedCallback();
+    if (!callback)
     {
         AWS_LOGF_ERROR(
             AWS_LS_IO_TLS, "Must call ApiHandle::SetBYOCryptoTlsContextCallbacks() before ALPN can be queried");
         return false;
     }
-    return Aws::Crt::s_isTlsAlpnSupportedCallback();
+    return callback();
 }
 
 struct aws_byte_buf aws_tls_handler_protocol(struct aws_channel_handler *handler)
