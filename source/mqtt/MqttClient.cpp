@@ -104,7 +104,6 @@ namespace Aws
                 MqttConnection *connection;
                 OnOperationCompleteHandler onOperationComplete;
                 const char *topic;
-                ByteBuf *payload;
                 Allocator *allocator;
             };
 
@@ -125,12 +124,6 @@ namespace Aws
                 {
                     aws_mem_release(
                         callbackData->allocator, reinterpret_cast<void *>(const_cast<char *>(callbackData->topic)));
-                }
-
-                if (callbackData->payload)
-                {
-                    aws_byte_buf_clean_up(callbackData->payload);
-                    Crt::Delete(callbackData->payload, callbackData->allocator);
                 }
 
                 Crt::Delete(callbackData, callbackData->allocator);
@@ -638,7 +631,6 @@ namespace Aws
                 opCompleteCallbackData->allocator = m_owningClient->allocator;
                 opCompleteCallbackData->onOperationComplete = std::move(onOpComplete);
                 opCompleteCallbackData->topic = nullptr;
-                opCompleteCallbackData->payload = nullptr;
                 ByteBuf topicFilterBuf = aws_byte_buf_from_c_str(topicFilter);
                 ByteCursor topicFilterCur = aws_byte_cursor_from_buf(&topicFilterBuf);
 
@@ -682,12 +674,9 @@ namespace Aws
                 opCompleteCallbackData->allocator = m_owningClient->allocator;
                 opCompleteCallbackData->onOperationComplete = std::move(onOpComplete);
                 opCompleteCallbackData->topic = topicCpy;
-                opCompleteCallbackData->payload = Crt::New<ByteBuf>(m_owningClient->allocator);
-                aws_byte_buf_init_copy_from_cursor(
-                    opCompleteCallbackData->payload, m_owningClient->allocator, aws_byte_cursor_from_buf(&payload));
-                ByteCursor payloadCur = aws_byte_cursor_from_buf(opCompleteCallbackData->payload);
                 ByteCursor topicCur = aws_byte_cursor_from_array(topicCpy, topicLen - 1);
 
+                ByteCursor payloadCur = aws_byte_cursor_from_buf(&payload);
                 uint16_t packetId = aws_mqtt_client_connection_publish(
                     m_underlyingConnection,
                     &topicCur,
