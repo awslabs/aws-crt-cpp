@@ -94,11 +94,18 @@ if (ENABLE_PROXY_INTEGRATION_TESTS AND NOT BYO_CRYPTO)
     add_test_case(X509ProxyBasicAuthDeprecatedGetCredentials)
     add_test_case(X509ProxyBasicAuthGetCredentials)
 
-    # mqtt-over-websockets proxy tests
+    # mqtt-over-websockets proxy tests using x509 credentials
     add_test_case(MqttOverWebsocketsViaHttpProxy)
     add_test_case(MqttOverWebsocketsViaHttpsProxy)
     add_test_case(MqttOverWebsocketsViaHttpProxyBasicAuthDeprecated)
     add_test_case(MqttOverWebsocketsViaHttpProxyBasicAuth)
+
+    # mqtt-via-alpn proxy tests
+    add_test_case(MqttViaHttpProxyAlpn)
+    add_test_case(MqttViaHttpsProxyAlpn)
+    add_test_case(MqttViaHttpProxyAlpnBasicAuthDeprecated)
+    add_test_case(MqttViaHttpProxyAlpnBasicAuth)
+
 endif()
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})

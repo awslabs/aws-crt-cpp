@@ -220,8 +220,8 @@ namespace Aws
              */
             enum class AwsHttpProxyAuthenticationType
             {
-                None = AWS_HPAT_NONE,
-                Basic = AWS_HPAT_BASIC,
+                None,
+                Basic,
             };
 
             /*

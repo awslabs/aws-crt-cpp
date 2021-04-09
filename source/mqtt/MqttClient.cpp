@@ -396,7 +396,7 @@ namespace Aws
                     struct aws_http_proxy_options proxyOptions;
                     m_proxyOptions->InitializeRawProxyOptions(proxyOptions);
 
-                    if (aws_mqtt_client_connection_set_websocket_proxy_options(m_underlyingConnection, &proxyOptions))
+                    if (aws_mqtt_client_connection_set_http_proxy_options(m_underlyingConnection, &proxyOptions))
                     {
                         return false;
                     }
