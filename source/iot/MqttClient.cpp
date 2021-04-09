@@ -10,6 +10,8 @@
 #include <aws/crt/auth/Sigv4Signing.h>
 #include <aws/crt/http/HttpRequestResponse.h>
 
+#if !BYO_CRYPTO
+
 namespace Aws
 {
     namespace Iot
@@ -370,3 +372,5 @@ namespace Aws
         }
     } // namespace Iot
 } // namespace Aws
+
+#endif // !BYO_CRYPTO

@@ -109,6 +109,66 @@ namespace Aws
                 return false;
             }
 
+            aws_hash_vtable ByoHash::s_Vtable = {
+                "aws-crt-cpp-byo-crypto-hash",
+                "aws-crt-cpp-byo-crypto",
+                ByoHash::s_Destroy,
+                ByoHash::s_Update,
+                ByoHash::s_Finalize,
+            };
+
+            ByoHash::ByoHash(size_t digestSize, Allocator *allocator)
+            {
+                AWS_ZERO_STRUCT(m_hashValue);
+                m_hashValue.vtable = &s_Vtable;
+                m_hashValue.allocator = allocator;
+                m_hashValue.impl = reinterpret_cast<void *>(this);
+                m_hashValue.digest_size = digestSize;
+                m_hashValue.good = true;
+            }
+
+            ByoHash::~ByoHash() {}
+
+            aws_hash *ByoHash::SeatForCInterop(const std::shared_ptr<ByoHash> &selfRef)
+            {
+                AWS_FATAL_ASSERT(this == selfRef.get());
+                m_selfReference = selfRef;
+                return &m_hashValue;
+            }
+
+            void ByoHash::s_Destroy(struct aws_hash *hash)
+            {
+                auto *byoHash = reinterpret_cast<ByoHash *>(hash->impl);
+                byoHash->m_selfReference = nullptr;
+            }
+
+            int ByoHash::s_Update(struct aws_hash *hash, const struct aws_byte_cursor *buf)
+            {
+                auto *byoHash = reinterpret_cast<ByoHash *>(hash->impl);
+                if (!byoHash->m_hashValue.good)
+                {
+                    return aws_raise_error(AWS_ERROR_INVALID_STATE);
+                }
+                if (!byoHash->UpdateInternal(*buf))
+                {
+                    byoHash->m_hashValue.good = false;
+                    return AWS_OP_ERR;
+                }
+                return AWS_OP_SUCCESS;
+            }
+
+            int ByoHash::s_Finalize(struct aws_hash *hash, struct aws_byte_buf *out)
+            {
+                auto *byoHash = reinterpret_cast<ByoHash *>(hash->impl);
+                if (!byoHash->m_hashValue.good)
+                {
+                    return aws_raise_error(AWS_ERROR_INVALID_STATE);
+                }
+
+                bool success = byoHash->DigestInternal(*out);
+                byoHash->m_hashValue.good = false;
+                return success ? AWS_OP_SUCCESS : AWS_OP_ERR;
+            }
         } // namespace Crypto
     }     // namespace Crt
 } // namespace Aws

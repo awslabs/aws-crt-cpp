@@ -15,10 +15,6 @@
     },
     "test_steps": [
         "test",
-        [
-            "{python}",
-            "{project_dir}/crt/aws-c-http/integration-testing/http_client_test.py",
-            "{install_dir}/bin/elasticurl_cpp{exe}"
-        ]
+        "elasticurl-tests"
     ]
 }
