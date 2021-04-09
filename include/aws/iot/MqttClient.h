@@ -7,6 +7,8 @@
 #include <aws/crt/auth/Sigv4Signing.h>
 #include <aws/crt/mqtt/MqttClient.h>
 
+#if !BYO_CRYPTO
+
 namespace Aws
 {
     namespace Iot
@@ -277,3 +279,5 @@ namespace Aws
         };
     } // namespace Iot
 } // namespace Aws
+
+#endif // !BYO_CRYPTO

@@ -3,21 +3,12 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
-#if __cplusplus >= 201703L
-#    include <optional>
-#else
-#    include <cstdint>
-#    include <type_traits>
-#    include <utility>
-#endif
+#include <utility>
 
 namespace Aws
 {
     namespace Crt
     {
-#if __cplusplus >= 201703L
-        template <typename T> using Optional = std::optional<T>;
-#else
         template <typename T> class Optional
         {
           public:
@@ -195,6 +186,5 @@ namespace Aws
             typename std::aligned_storage<sizeof(T)>::type m_storage;
             T *m_value;
         };
-#endif
     } // namespace Crt
 } // namespace Aws

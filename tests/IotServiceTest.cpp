@@ -18,6 +18,8 @@
 #define TEST_PRIVATEKEY "/tmp/privatekey.pem"
 #define TEST_ROOTCA "/tmp/AmazonRootCA1.pem"
 
+#if !BYO_CRYPTO
+
 static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
 {
     using namespace Aws::Crt;
@@ -153,3 +155,5 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
 }
 
 AWS_TEST_CASE(IotPublishSubscribe, s_TestIotPublishSubscribe)
+
+#endif // !BYO_CRYPTO

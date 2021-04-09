@@ -25,6 +25,8 @@ using namespace Aws::Crt::Auth;
 using namespace Aws::Crt::Http;
 using namespace Aws::Crt::Io;
 
+#if !BYO_CRYPTO
+
 struct ProxyIntegrationTestState
 {
     ProxyIntegrationTestState(struct aws_allocator *allocator)
@@ -988,3 +990,5 @@ static int s_TestMqttOverWebsocketsViaHttpProxyBasicAuth(struct aws_allocator *a
 }
 
 AWS_TEST_CASE(MqttOverWebsocketsViaHttpProxyBasicAuth, s_TestMqttOverWebsocketsViaHttpProxyBasicAuth)
+
+#endif // !BYO_CRYPTO

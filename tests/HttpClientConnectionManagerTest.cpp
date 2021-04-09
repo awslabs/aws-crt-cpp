@@ -17,6 +17,8 @@
 
 using namespace Aws::Crt;
 
+#if !BYO_CRYPTO
+
 /* make 30 connections, release them to the pool, then make sure the destructor cleans everything up properly. */
 static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator *allocator, void *ctx)
 {
@@ -374,3 +376,5 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
 AWS_TEST_CASE(
     HttpClientConnectionWithPendingAcquisitionsAndClosedConnections,
     s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections)
+
+#endif // !BYO_CRYPTO

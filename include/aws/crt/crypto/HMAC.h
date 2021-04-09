@@ -3,6 +3,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include <aws/cal/hmac.h>
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
 
@@ -95,6 +96,54 @@ namespace Aws
                 bool m_good;
                 int m_lastError;
             };
+
+            /**
+             * BYO_CRYPTO: Base class for custom HMAC implementations.
+             *
+             * If using BYO_CRYPTO, you must define concrete implementations for the required HMAC algorithms
+             * and set their creation callbacks via functions like ApiHandle.SetBYOCryptoNewSHA256HMACCallback().
+             */
+            class AWS_CRT_CPP_API ByoHMAC
+            {
+              public:
+                virtual ~ByoHMAC() = default;
+
+                /** @private
+                 * this is called by the framework. If you're trying to create instances of this class manually,
+                 * please don't. But if you do. Look at the other factory functions for reference.
+                 */
+                aws_hmac *SeatForCInterop(const std::shared_ptr<ByoHMAC> &selfRef);
+
+              protected:
+                ByoHMAC(size_t digestSize, const ByteCursor &secret, Allocator *allocator = g_allocator);
+
+                /**
+                 * Updates the running HMAC with to_hash.
+                 * This can be called multiple times.
+                 * Raise an AWS error and return false to indicate failure.
+                 */
+                virtual bool UpdateInternal(const ByteCursor &toHash) noexcept = 0;
+
+                /**
+                 * Complete the HMAC computation and write the final digest to output.
+                 * This cannote be called more than once.
+                 * If truncate_to is something other than 0, the output must be truncated to that number of bytes.
+                 * Raise an AWS error and return false to indicate failure.
+                 */
+                virtual bool DigestInternal(ByteBuf &output, size_t truncateTo = 0) noexcept = 0;
+
+              private:
+                static void s_Destroy(struct aws_hmac *hmac);
+                static int s_Update(struct aws_hmac *hmac, const struct aws_byte_cursor *buf);
+                static int s_Finalize(struct aws_hmac *hmac, struct aws_byte_buf *out);
+
+                static aws_hmac_vtable s_Vtable;
+                aws_hmac m_hmacValue;
+                std::shared_ptr<ByoHMAC> m_selfReference;
+            };
+
+            using CreateHMACCallback =
+                std::function<std::shared_ptr<ByoHMAC>(size_t digestSize, const ByteCursor &secret, Allocator *)>;
 
         } // namespace Crypto
     }     // namespace Crt
