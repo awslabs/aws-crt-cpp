@@ -69,7 +69,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 if (NOT DEFINED AWS_CRT_CPP_VERSION)
-    set(AWS_CRT_CPP_VERSION "v1.0.0-dev")
+    set(AWS_CRT_CPP_VERSION "v0.13.2")
     # Try to determine the current git tag and use that as the version
     execute_process(COMMAND git describe --tags
         RESULT_VARIABLE GIT_EXIT_CODE
