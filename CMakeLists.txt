@@ -35,34 +35,6 @@ option(BYO_CRYPTO "Don't build a tls implementation or link against a crypto int
 #
 option(ENABLE_PROXY_INTEGRATION_TESTS "Whether or not to build and run the proxy integration tests that rely on a proxy server installed and running locally" OFF)
 
-# Proxy integration test control - In addition to this option, all proxy tests require the following environment variables set appropriately when running tests:
-#
-# AWS_TEST_HTTP_PROXY_HOST - host address of the proxy to use for tests that make open connections to the proxy
-# AWS_TEST_HTTP_PROXY_PORT - port to use for tests that make open connections to the proxy
-# AWS_TEST_HTTPS_PROXY_HOST - host address of the proxy to use for tests that make tls-protected connections to the proxy
-# AWS_TEST_HTTPS_PROXY_PORT - port to use for tests that make tls-protected connections to the proxy
-# AWS_TEST_HTTP_PROXY_BASIC_HOST - host address of the proxy to use for tests that make open connections to the proxy with basic authentication
-# AWS_TEST_HTTP_PROXY_BASIC_PORT - port to use for tests that make open connections to the proxy with basic authentication
-#
-# The x509 proxy tests also require:
-#
-# AWS_TEST_TLS_CERT_PATH - file path to certificate used to initialize the tls context of the x509 provider connection
-# AWS_TEST_TLS_KEY_PATH - file path to the key used to initialize the tls context of the x509 provider connection
-# AWS_TEST_TLS_ROOT_CERT_PATH - file path to the root CA used to initialize the tls context of the x509 provider connection
-# AWS_TEST_X509_ENDPOINT - AWS account-specific endpoint to source x509 credentials from
-# AWS_TEST_X509_THING_NAME - associated name of the x509 thing
-# AWS_TEST_X509_ROLE_ALIAS - associated role alias ...
-#
-# And the mqtt websocket tests require x509 sourced credentials with sufficient permission to
-# connect to IoT Core as well as:
-#
-# AWS_TEST_IOT_SIGNING_REGION -
-# AWS_TEST_IOT_MQTT_ENDPOINT - AWS account-specific endpoint to connect to IoT core by
-#
-# ToDo: Scripts to populate environment variables via the CLI and IoT, SecretsManager calls
-#
-option(ENABLE_PROXY_INTEGRATION_TESTS "Whether or not to build and run the proxy integration tests that rely on a proxy server installed and running locally" OFF)
-
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(AwsCheckHeadersCxx)
 include(CTest)
