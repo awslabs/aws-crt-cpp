@@ -124,7 +124,7 @@ namespace Aws
 
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder() : m_isGood(false) {}
 
- #ifdef _WIN32
+#    ifdef _WIN32
         /**
          * Sets the builder up for MTLS using system certificate path. These are certitficates managed by
          * WindowsCertStoreMgr
@@ -141,7 +141,7 @@ namespace Aws
                 m_isGood = false;
             }
         }
-#endif
+#    endif
 
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
             const char *certPath,
