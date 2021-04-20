@@ -8,6 +8,8 @@ file(GLOB TESTS ${TEST_HDRS} ${TEST_SRC})
 
 set(TEST_BINARY_NAME ${PROJECT_NAME}-tests)
 
+add_test_case(ApiMultiCreateDestroy)
+add_test_case(ApiMultiDefaultCreateDestroy)
 add_test_case(EventLoopResourceSafety)
 add_test_case(ClientBootstrapResourceSafety)
 if (NOT BYO_CRYPTO)
