@@ -52,7 +52,7 @@ namespace Aws
 
         ApiHandle::ApiHandle() noexcept : m_logger(), m_shutdownBehavior(ApiHandleShutdownBehavior::Blocking)
         {
-            s_initApi(g_allocator);
+            s_initApi(DefaultAllocator());
         }
 
         ApiHandle::~ApiHandle()
