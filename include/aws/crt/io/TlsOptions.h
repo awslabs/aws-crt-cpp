@@ -88,6 +88,14 @@ namespace Aws
                     const char *pkcs12_path,
                     const char *pkcs12_pwd,
                     Allocator *allocator = g_allocator) noexcept;
+
+                /**
+                 * By default the certificates and private keys are stored in the default keychain
+                 * of the account of the process. If you instead wish to provide your own keychain
+                 * for storing them, this makes the TlsContext to use that instead.
+                 * NOTE: The password of your keychain must be empty.
+                 */
+                bool SetKeychainPath(ByteCursor &keychain_path) noexcept;
 #endif
 
 #ifdef _WIN32
