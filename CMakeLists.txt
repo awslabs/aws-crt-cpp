@@ -151,6 +151,10 @@ file(GLOB AWS_CRT_HTTP_HEADERS
         "include/aws/crt/http/*.h"
 )
 
+file(GLOB AWS_CRT_EVENTSTREAM_HEADERS
+        "include/aws/crt/event-stream/*.h"
+)
+
 file(GLOB AWS_CRT_EXTERNAL_HEADERS
         "include/aws/crt/external/*.h"
 )
@@ -163,6 +167,7 @@ file(GLOB AWS_CRT_PUBLIC_HEADERS
         ${AWS_CRT_IOT_HEADERS}
         ${AWS_CRT_MQTT_HEADERS}
         ${AWS_CRT_HTTP_HEADERS}
+        ${AWS_CRT_EVENTSTREAM_HEADERS}
 )
 
 aws_check_headers_cxx(${PROJECT_NAME} ${AWS_CRT_PUBLIC_HEADERS})
@@ -200,6 +205,10 @@ file (GLOB AWS_CRT_HTTP_SRC
         "source/http/*.cpp"
 )
 
+file (GLOB AWS_CRT_EVENTSTREAM_SRC
+        "source/event-stream/*.cpp"
+)
+
 file(GLOB AWS_CRT_EXTERNAL_CRC
         "source/external/*.cpp"
 )
@@ -212,6 +221,7 @@ file(GLOB AWS_CRT_CPP_SRC
         ${AWS_CRT_IOT_SRC}
         ${AWS_CRT_MQTT_SRC}
         ${AWS_CRT_HTTP_SRC}
+        ${AWS_CRT_EVENTSTREAM_SRC}
         ${AWS_CRT_EXTERNAL_CRC}
 )
 
@@ -224,6 +234,7 @@ if (WIN32)
         source_group("Header Files\\aws\\iot" FILES ${AWS_CRT_IOT_HEADERS})
         source_group("Header Files\\aws\\crt\\mqtt" FILES ${AWS_CRT_MQTT_HEADERS})
         source_group("Header Files\\aws\\crt\\http" FILES ${AWS_CRT_HTTP_HEADERS})
+        source_group("Header Files\\aws\\crt\\event-stream" FILES ${AWS_CRT_EVENTSTREAM_HEADERS})
         source_group("Header Files\\aws\\crt\\external" FILES ${AWS_CRT_EXTERNAL_HEADERS})
 
         source_group("Source Files" FILES ${AWS_CRT_SRC})
@@ -233,6 +244,7 @@ if (WIN32)
         source_group("Source Files\\iot" FILES ${AWS_CRT_IOT_SRC})
         source_group("Source Files\\mqtt" FILES ${AWS_CRT_MQTT_SRC})
         source_group("Source Files\\http" FILES ${AWS_CRT_HTTP_SRC})
+        source_group("Source Files\\event-stream" FILES ${AWS_CRT_EVENTSTREAM_SRC})
         source_group("Source Files\\external" FILES ${AWS_CRT_EXTERNAL_SRC})
     endif ()
 endif()
