@@ -13,14 +13,6 @@
 
 using namespace Aws::Crt;
 
-static bool OnError(int errorCode)
-{
-    return false;
-}
-static void OnPing(List<Eventstream::EventStreamHeader> headers, ByteBuf payload)
-{
-}
-
 static int s_TestEventStreamConnect(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
@@ -45,7 +37,7 @@ static int s_TestEventStreamConnect(struct aws_allocator *allocator, void *ctx)
         clientBootstrap.EnableBlockingShutdown();
         auto messageAmender = [&](void) -> Eventstream::MessageAmendment {
             Aws::Crt::List<Eventstream::EventStreamHeader> authHeaders;
-            authHeaders.push_back(Eventstream::EventStreamHeader(String("client-name"), String("accepted.testy_mc_testerson")));
+            authHeaders.push_back(Eventstream::EventStreamHeader(String("client-name"), String("accepted.testy_mc_testerson"), g_allocator));
             Eventstream::MessageAmendment messageAmendInfo(authHeaders);
             return messageAmendInfo;
         };
@@ -71,8 +63,8 @@ static int s_TestEventStreamConnect(struct aws_allocator *allocator, void *ctx)
         options.ConnectMessageAmenderCallback = messageAmender;
         options.OnConnectCallback = onConnect;
         options.OnDisconnectCallback = onDisconnect;
-        options.OnErrorCallback = OnError;
-        options.OnPingCallback = OnPing;
+        options.OnErrorCallback = nullptr;
+        options.OnPingCallback = nullptr;
 
         ASSERT_TRUE(Eventstream::EventstreamRpcConnection::CreateConnection(options, allocator));
     }

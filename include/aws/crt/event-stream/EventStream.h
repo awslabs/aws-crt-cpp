@@ -79,6 +79,7 @@ namespace Aws
                 public:
                     EventStreamHeader(const EventStreamHeader &rhs) = default;
                     EventStreamHeader(EventStreamHeader &&rhs) = default;
+                    ~EventStreamHeader() noexcept;
                     EventStreamHeader(const struct aws_event_stream_header_value_pair& header);
                     EventStreamHeader(const String& name, bool value);
                     EventStreamHeader(const String& name, int8_t value);
@@ -86,7 +87,7 @@ namespace Aws
                     EventStreamHeader(const String& name, int32_t value);
                     EventStreamHeader(const String& name, int64_t value);
                     EventStreamHeader(const String& name, DateTime& value);
-                    EventStreamHeader(const String& name, const String& value);
+                    EventStreamHeader(const String& name, const String& value, Allocator *allocator = g_allocator) noexcept;
                     EventStreamHeader(const String& name, ByteBuf& value);
                     EventStreamHeader(const String& name, Crt::UUID value);
 
@@ -116,6 +117,7 @@ namespace Aws
 
                     bool operator==(const EventStreamHeader &other) const noexcept;
                 private:
+                    Allocator *m_allocator;
                     struct aws_event_stream_header_value_pair m_underlyingHandle;
                     ByteBuf valueByteBuf;
             };

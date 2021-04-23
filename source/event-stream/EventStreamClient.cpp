@@ -37,6 +37,7 @@ namespace Aws
                 std::weak_ptr<EventstreamRpcConnection> connection;
                 Allocator *allocator;
                 OnMessageFlush onMessageFlush;
+                struct aws_array_list* headersArray;
             };
 
             EventStreamHeader::EventStreamHeader(const struct aws_event_stream_header_value_pair& header)
@@ -108,10 +109,6 @@ namespace Aws
                 Allocator *allocator
             ) noexcept
             {
-                AWS_FATAL_ASSERT(connectionOptions.OnConnectCallback);
-                AWS_FATAL_ASSERT(connectionOptions.OnDisconnectCallback);
-                AWS_FATAL_ASSERT(connectionOptions.OnErrorCallback);
-
                 auto *callbackData = New<ConnectionCallbackData>(allocator, allocator);
                 callbackData->allocator = allocator;
                 callbackData->connection = nullptr;
@@ -213,7 +210,10 @@ namespace Aws
                 }
                 /* Call the user-provided callback. */
                 if(callbackData->onMessageFlush) callbackData->onMessageFlush(errorCode);
-
+                
+                if (aws_array_list_is_valid(callbackData->headersArray)) {
+                    aws_event_stream_headers_list_cleanup(callbackData->headersArray);
+                }
                 Delete(callbackData, callbackData->allocator);
             }
 
@@ -235,7 +235,7 @@ namespace Aws
                 if (auto connectionPtr = connection.lock())
                 {
                     if(aws_event_stream_headers_list_init(&headersArray, connectionPtr->m_allocator)) {
-                    onMessageFlushCallback(AWS_OP_ERR);
+                        onMessageFlushCallback(AWS_OP_ERR);
                     } else {
                         msg_args.message_flags = flags;
                         msg_args.message_type = messageType;
@@ -256,15 +256,15 @@ namespace Aws
                         auto *callbackData = New<ProtocolMessageCallbackData>(connectionPtr->m_allocator, connectionPtr->m_allocator);
                         callbackData->connection = connectionPtr;
                         callbackData->onMessageFlush = onMessageFlushCallback;
+                        callbackData->headersArray = &headersArray;
 
                         if (aws_event_stream_rpc_client_connection_send_protocol_message(
                                 connectionPtr->m_underlyingConnection, &msg_args, s_protocolMessageCallback, callbackData)) {
+                            if (aws_array_list_is_valid(callbackData->headersArray)) {
+                                aws_event_stream_headers_list_cleanup(callbackData->headersArray);
+                            }
                         }
                     }
-                }
-
-                if (aws_array_list_is_valid(&headersArray)) {
-                    aws_event_stream_headers_list_cleanup(&headersArray);
                 }
             }
 
@@ -278,12 +278,13 @@ namespace Aws
                 aws_event_stream_rpc_client_connection_close(this->m_underlyingConnection, errorCode);
             }
 
-            EventStreamHeader::EventStreamHeader(const String& name, const String& value)
+            EventStreamHeader::EventStreamHeader(const String& name, const String& value, Allocator *allocator)
+            noexcept : m_allocator(allocator)
             {
                 m_underlyingHandle.header_name_len = (uint8_t)name.length();
                 (void) strncpy(m_underlyingHandle.header_name, name.c_str(), std::min((int)name.length(), INT8_MAX));
                 m_underlyingHandle.header_value_type = AWS_EVENT_STREAM_HEADER_STRING;
-                valueByteBuf = Crt::ByteBufFromCString(value.c_str());
+                valueByteBuf = Crt::ByteBufNewCopy(allocator, (uint8_t*)value.c_str(), value.length());
                 m_underlyingHandle.header_value.variable_len_val = valueByteBuf.buffer;
                 m_underlyingHandle.header_value_len = (uint16_t)valueByteBuf.len;
             }
@@ -295,6 +296,15 @@ namespace Aws
                     other.m_underlyingHandle.header_name_len == m_underlyingHandle.header_name_len &&
                     strncmp(other.m_underlyingHandle.header_name, m_underlyingHandle.header_name, m_underlyingHandle.header_name_len)
                 );
+            }
+
+            EventStreamHeader::~EventStreamHeader()
+            {
+                if(m_allocator)
+                {
+                    // TODO: Since we're copying the headers to another list, we're deallocating twice so need to fix that.
+                    //ByteBufDelete(valueByteBuf);
+                }
             }
 
             void EventstreamRpcConnection::s_onConnectionSetup(
@@ -315,7 +325,7 @@ namespace Aws
                         Aws::Crt::StlAllocator<UnmanagedConnection>(), connection, callbackData->allocator); 
                     if (connectionObj)
                     {
-                        Crt::List<EventStreamHeader> defaultHeaders{EventStreamHeader(String(":version"), String("0.1.0"))};
+                        Crt::List<EventStreamHeader> defaultHeaders{EventStreamHeader(String(":version"), String("0.1.0"), callbackData->allocator)};
                         MessageAmendment messageAmendment(defaultHeaders);
                         if(callbackData->connectMessageAmender)
                         {
