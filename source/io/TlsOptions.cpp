@@ -105,6 +105,12 @@ namespace Aws
                 }
                 return ctxOptions;
             }
+
+            bool TlsContextOptions::SetKeychainPath(ByteCursor &keychain_path) noexcept
+            {
+                AWS_ASSERT(m_isInit);
+                return aws_tls_ctx_options_set_keychain_path(&m_options, &keychain_path) == 0;
+            }
 #endif /* AWS_OS_APPLE */
 
 #ifdef _WIN32
