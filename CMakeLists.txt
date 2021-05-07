@@ -251,20 +251,23 @@ set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDA
 
 aws_prepare_symbol_visibility_args(${PROJECT_NAME} "AWS_CRT_CPP")
 
-#set warnings and runtime library
+#set runtime library
 if (MSVC)
     if(STATIC_CRT)
         target_compile_options(${PROJECT_NAME} PRIVATE "/MT$<$<CONFIG:Debug>:d>")
     else()
         target_compile_options(${PROJECT_NAME} PRIVATE "/MD$<$<CONFIG:Debug>:d>")
     endif()
-    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
-else ()
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
 endif ()
 
 if (CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE MATCHES Debug)
     target_compile_definitions(${PROJECT_NAME} PRIVATE "-DDEBUG_BUILD")
+    #set extra warning flags for debug build
+    if (MSVC)
+        target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
+    else ()
+        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
+    endif ()
 endif ()
 
 target_include_directories(${PROJECT_NAME} PUBLIC
