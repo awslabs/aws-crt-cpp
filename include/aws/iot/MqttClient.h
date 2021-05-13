@@ -3,6 +3,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include <aws/crt/Config.h>
 #include <aws/crt/Exports.h>
 #include <aws/crt/auth/Sigv4Signing.h>
 #include <aws/crt/mqtt/MqttClient.h>
@@ -52,28 +53,6 @@ namespace Aws
                 const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions);
 
             /**
-             * Creates a client configuration for use with making new AWS Iot specific MQTT Connections with web
-             * sockets. interceptor: a callback invoked during web socket handshake giving you the opportunity to mutate
-             * the request for authorization/signing purposes. If not specified, it's assumed you don't need to sign the
-             * request. proxyOptions: optional, if you want to use a proxy with websockets, specify the configuration
-             * options here.
-             *
-             * If proxy options are used, the tlsContext is applied to the connection to the remote endpoint, NOT the
-             * proxy. To make a tls connection to the proxy itself, you'll want to specify tls options in proxyOptions.
-             *
-             * It also provides option to save SDK Name and its version which will be sent as an metric to IoT Cloud.
-             */
-            MqttClientConnectionConfig(
-                const Crt::String &endpoint,
-                uint16_t port,
-                const Crt::Io::SocketOptions &socketOptions,
-                Crt::Io::TlsContext &&tlsContext,
-                Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
-                const Crt::String &sdkName,
-                const Crt::String &sdkVersion,
-                const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions);
-
-            /**
              * @return true if the instance is in a valid state, false otherwise.
              */
             explicit operator bool() const noexcept { return m_context ? true : false; }
@@ -92,22 +71,13 @@ namespace Aws
                 Crt::Io::TlsContext &&tlsContext,
                 const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions);
 
-            MqttClientConnectionConfig(
-                const Crt::String &endpoint,
-                uint16_t port,
-                const Crt::Io::SocketOptions &socketOptions,
-                Crt::Io::TlsContext &&tlsContext,
-                const Crt::String &sdkName,
-                const Crt::String &sdkVersion,
-                const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions);
-
             Crt::String m_endpoint;
             uint16_t m_port;
             Crt::Io::TlsContext m_context;
             Crt::Io::SocketOptions m_socketOptions;
             Crt::Mqtt::OnWebSocketHandshakeIntercept m_webSocketInterceptor;
-            Crt::String m_sdkName;
-            Crt::String m_sdkVersion;
+            Crt::String m_username;
+            Crt::String m_password;
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
             int m_lastError;
 
@@ -212,16 +182,6 @@ namespace Aws
             MqttClientConnectionConfigBuilder &WithEndpoint(Crt::String &&endpoint);
 
             /**
-             * Store SDK Name to send as a metric while creating MQTT connection
-             */
-            MqttClientConnectionConfigBuilder &WithSdkName(const Crt::String &sdkName);
-
-            /**
-             * Store SDK Version to send as a metric while creating MQTT connection
-             */
-            MqttClientConnectionConfigBuilder &WithSdkVersion(const Crt::String &sdkVersion);
-
-            /**
              * Overrides the default port. By default, if ALPN is supported, 443 will be used. Otherwise 8883 will be
              * used. If you specify 443 and ALPN is not supported, we will still attempt to connect over 443 without
              * ALPN.
@@ -272,6 +232,22 @@ namespace Aws
                 const Crt::Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
 
             /**
+             * Whether to send the SDK name and version number in the MQTT CONNECT packet.
+             * Default is True.
+             */
+            MqttClientConnectionConfigBuilder &WithMetricsCollection(bool enabled);
+
+            /**
+             * Overrides the default SDK Name to send as a metric in the MQTT CONNECT packet.
+             */
+            MqttClientConnectionConfigBuilder &WithSdkName(const Crt::String &sdkName);
+
+            /**
+             * Overrides the default SDK Version to send as a metric in the MQTT CONNECT packet.
+             */
+            MqttClientConnectionConfigBuilder &WithSdkVersion(const Crt::String &sdkVersion);
+
+            /**
              * Builds a client configuration object from the set options.
              */
             MqttClientConnectionConfig Build() noexcept;
@@ -291,9 +267,10 @@ namespace Aws
             Crt::Io::SocketOptions m_socketOptions;
             Crt::Io::TlsContextOptions m_contextOptions;
             Crt::Optional<WebsocketConfig> m_websocketConfig;
-            Crt::String m_sdkName;
-            Crt::String m_sdkVersion;
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
+            bool m_enableMetricsCollection = true;
+            Crt::String m_sdkName = "CPPv2";
+            Crt::String m_sdkVersion = AWS_CRT_CPP_VERSION;
 
             bool m_isGood;
         };
