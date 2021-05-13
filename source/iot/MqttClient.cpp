@@ -403,8 +403,10 @@ namespace Aws
                 return nullptr;
             }
 
-            char username[100] = "";
-            sprintf(username, "%s%s%s%s", "?SDK=", config.m_sdkName.c_str(), "&Version=", config.m_sdkVersion.c_str());
+            size_t username_size = sizeof(config.m_sdkName.c_str()) + sizeof(config.m_sdkVersion.c_str()) + 15;
+            char *username = new char[username_size];
+            snprintf(
+                username, username_size, "%s%s%s%s", "?SDK=", config.m_sdkName.c_str(), "&Version=", config.m_sdkVersion.c_str());
 
             if (!(*newConnection) || !newConnection->SetLogin(username, nullptr))
             {
@@ -421,6 +423,8 @@ namespace Aws
             {
                 newConnection->SetHttpProxyOptions(config.m_proxyOptions.value());
             }
+
+            delete[] username;
 
             return newConnection;
         }
