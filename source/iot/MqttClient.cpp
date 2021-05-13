@@ -403,10 +403,16 @@ namespace Aws
                 return nullptr;
             }
 
-            size_t username_size = sizeof(config.m_sdkName.c_str()) + sizeof(config.m_sdkVersion.c_str()) + 15;
+            size_t username_size = sizeof(config.m_sdkName.c_str()) + sizeof(config.m_sdkVersion.c_str()) + 16;
             char *username = new char[username_size];
             snprintf(
-                username, username_size, "%s%s%s%s", "?SDK=", config.m_sdkName.c_str(), "&Version=", config.m_sdkVersion.c_str());
+                username,
+                username_size,
+                "%s%s%s%s",
+                "?SDK=",
+                config.m_sdkName.c_str(),
+                "&Version=",
+                config.m_sdkVersion.c_str());
 
             if (!(*newConnection) || !newConnection->SetLogin(username, nullptr))
             {
