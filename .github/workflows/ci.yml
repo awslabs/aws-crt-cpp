@@ -7,7 +7,7 @@ on:
       - '!main'
 
 env:
-  BUILDER_VERSION: v0.8.11
+  BUILDER_VERSION: v0.8.15
   BUILDER_SOURCE: releases
   BUILDER_HOST: https://d19elf31gohf1l.cloudfront.net
   PACKAGE_NAME: aws-crt-cpp
@@ -24,6 +24,10 @@ jobs:
           - manylinux2014-x86
           - manylinux2014-aarch64
     steps:
+      # Only aarch64 needs this, but it doesn't hurt anything
+    - name: Install qemu/docker
+      run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
