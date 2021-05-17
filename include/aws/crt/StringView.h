@@ -11,9 +11,9 @@
 #include <algorithm>
 #include <cassert>
 #include <iterator>
+#include <limits>
 #include <stddef.h>
 #include <type_traits>
-#include <limits>
 
 #if __cplusplus >= 201703L || (defined(_MSC_LANG) && _MSC_LANG >= 201703L)
 #    include <string_view>
