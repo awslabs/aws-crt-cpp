@@ -113,3 +113,26 @@ static int s_JsonExplicitNullTest(struct aws_allocator *allocator, void *ctx)
 }
 
 AWS_TEST_CASE(JsonExplicitNull, s_JsonExplicitNullTest)
+
+static int s_JsonBoolTest(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        Aws::Crt::JsonObject object;
+        object.WithBool("my_true_bool", true).WithBool("my_false_bool", false);
+
+        ASSERT_TRUE(object.View().GetJsonObject("my_false_bool").IsBool());  // pass
+        ASSERT_FALSE(object.View().GetJsonObject("my_false_bool").AsBool()); // pass
+        ASSERT_FALSE(object.View().GetBool("my_false_bool"));                // pass
+
+        ASSERT_TRUE(object.View().GetJsonObject("my_true_bool").IsBool()); // pass
+        ASSERT_TRUE(object.View().GetJsonObject("my_true_bool").AsBool()); // pass
+        ASSERT_TRUE(object.View().GetBool("my_true_bool"));                // fail ?!?!
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(JsonBoolTest, s_JsonBoolTest)

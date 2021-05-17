@@ -378,7 +378,7 @@ namespace Aws
             AWS_ASSERT(m_value);
             auto item = cJSON_GetObjectItemCaseSensitive(m_value, key);
             AWS_ASSERT(item);
-            return item->valueint != 0;
+            return cJSON_IsTrue(item);
         }
 
         bool JsonView::AsBool() const
