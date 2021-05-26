@@ -15,6 +15,10 @@ namespace Aws
         namespace Io
         {
             using StreamStatus = aws_stream_status;
+
+            /**
+             * @deprecated Use int64_t instead for offsets in public APIs.
+             */
             using OffsetType = aws_off_t;
 
             enum class StreamSeekBasis
@@ -44,7 +48,7 @@ namespace Aws
                 aws_input_stream *GetUnderlyingStream() noexcept { return &m_underlying_stream; }
 
                 bool Read(ByteBuf &dest) { return aws_input_stream_read(&m_underlying_stream, &dest) == 0; }
-                bool Seek(OffsetType offset, StreamSeekBasis seekBasis)
+                bool Seek(int64_t offset, StreamSeekBasis seekBasis)
                 {
                     return aws_input_stream_seek(&m_underlying_stream, offset, (aws_stream_seek_basis)seekBasis) == 0;
                 }
@@ -93,10 +97,10 @@ namespace Aws
                  * @return true on success, false otherwise. You SHOULD raise an error via aws_raise_error()
                  * if a failure occurs.
                  */
-                virtual bool SeekImpl(OffsetType offset, StreamSeekBasis seekBasis) noexcept = 0;
+                virtual bool SeekImpl(int64_t offset, StreamSeekBasis seekBasis) noexcept = 0;
 
               private:
-                static int s_Seek(aws_input_stream *stream, aws_off_t offset, enum aws_stream_seek_basis basis);
+                static int s_Seek(aws_input_stream *stream, int64_t offset, enum aws_stream_seek_basis basis);
                 static int s_Read(aws_input_stream *stream, aws_byte_buf *dest);
                 static int s_GetStatus(aws_input_stream *stream, aws_stream_status *status);
                 static int s_GetLength(struct aws_input_stream *stream, int64_t *out_length);

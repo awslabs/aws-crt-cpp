@@ -20,7 +20,7 @@ namespace Aws
                 // resources to clean up in the future.
             }
 
-            int InputStream::s_Seek(aws_input_stream *stream, aws_off_t offset, enum aws_stream_seek_basis basis)
+            int InputStream::s_Seek(aws_input_stream *stream, int64_t offset, enum aws_stream_seek_basis basis)
             {
                 auto impl = static_cast<InputStream *>(stream->impl);
 
@@ -150,7 +150,7 @@ namespace Aws
                 return retVal;
             }
 
-            bool StdIOStreamInputStream::SeekImpl(OffsetType offsetType, StreamSeekBasis seekBasis) noexcept
+            bool StdIOStreamInputStream::SeekImpl(int64_t offset, StreamSeekBasis seekBasis) noexcept
             {
                 // very important, otherwise the stream can't be reused after reading the entire stream the first time.
                 m_stream->clear();
@@ -169,7 +169,14 @@ namespace Aws
                         return false;
                 }
 
-                m_stream->seekg(Aws::Crt::Io::IStream::off_type(offsetType), seekDir);
+                using stdOffType = Aws::Crt::Io::IStream::off_type;
+                if (offset < std::numeric_limits<stdOffType>::min() || offset > std::numeric_limits<stdOffType>::max())
+                {
+                    aws_raise_error(AWS_IO_STREAM_INVALID_SEEK_POSITION);
+                    return false;
+                }
+
+                m_stream->seekg(static_cast<stdOffType>(offset), seekDir);
 
                 return true;
             }
