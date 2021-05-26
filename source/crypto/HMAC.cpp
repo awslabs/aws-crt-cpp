@@ -110,6 +110,64 @@ namespace Aws
                 return false;
             }
 
+            aws_hmac_vtable ByoHMAC::s_Vtable = {
+                "aws-crt-cpp-byo-crypto-hmac",
+                "aws-crt-cpp-byo-crypto",
+                ByoHMAC::s_Destroy,
+                ByoHMAC::s_Update,
+                ByoHMAC::s_Finalize,
+            };
+
+            ByoHMAC::ByoHMAC(size_t digestSize, const ByteCursor &, Allocator *allocator)
+            {
+                AWS_ZERO_STRUCT(m_hmacValue);
+                m_hmacValue.impl = reinterpret_cast<void *>(this);
+                m_hmacValue.digest_size = digestSize;
+                m_hmacValue.allocator = allocator;
+                m_hmacValue.good = true;
+                m_hmacValue.vtable = &s_Vtable;
+            }
+
+            aws_hmac *ByoHMAC::SeatForCInterop(const std::shared_ptr<ByoHMAC> &selfRef)
+            {
+                AWS_FATAL_ASSERT(this == selfRef.get());
+                m_selfReference = selfRef;
+                return &m_hmacValue;
+            }
+
+            void ByoHMAC::s_Destroy(struct aws_hmac *hmac)
+            {
+                auto *byoHash = reinterpret_cast<ByoHMAC *>(hmac->impl);
+                byoHash->m_selfReference = nullptr;
+            }
+
+            int ByoHMAC::s_Update(struct aws_hmac *hmac, const struct aws_byte_cursor *buf)
+            {
+                auto *byoHmac = reinterpret_cast<ByoHMAC *>(hmac->impl);
+                if (!byoHmac->m_hmacValue.good)
+                {
+                    return aws_raise_error(AWS_ERROR_INVALID_STATE);
+                }
+                if (!byoHmac->UpdateInternal(*buf))
+                {
+                    byoHmac->m_hmacValue.good = false;
+                    return AWS_OP_ERR;
+                }
+                return AWS_OP_SUCCESS;
+            }
+
+            int ByoHMAC::s_Finalize(struct aws_hmac *hmac, struct aws_byte_buf *out)
+            {
+                auto *byoHmac = reinterpret_cast<ByoHMAC *>(hmac->impl);
+                if (!byoHmac->m_hmacValue.good)
+                {
+                    return aws_raise_error(AWS_ERROR_INVALID_STATE);
+                }
+
+                bool success = byoHmac->DigestInternal(*out);
+                byoHmac->m_hmacValue.good = false;
+                return success ? AWS_OP_SUCCESS : AWS_OP_ERR;
+            }
         } // namespace Crypto
     }     // namespace Crt
 } // namespace Aws

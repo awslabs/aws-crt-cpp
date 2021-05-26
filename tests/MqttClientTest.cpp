@@ -7,7 +7,7 @@
 #include <aws/testing/aws_test_harness.h>
 
 #include <utility>
-
+#if !BYO_CRYPTO
 static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator *allocator, void *ctx)
 {
     (void)ctx;
@@ -89,3 +89,4 @@ static int s_TestMqttClientNewConnectionUninitializedTlsContext(Aws::Crt::Alloca
 }
 
 AWS_TEST_CASE(MqttClientNewConnectionUninitializedTlsContext, s_TestMqttClientNewConnectionUninitializedTlsContext)
+#endif // !BYO_CRYPTO

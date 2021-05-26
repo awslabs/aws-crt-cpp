@@ -4,7 +4,8 @@ if (POLICY CMP0077)
 endif()
 
 project(aws-crt-cpp CXX C)
-option(BUILD_DEPS "Builds aws common runtime dependencies as part of build, only do this if you don't want to control your dependency chain." OFF)
+option(BUILD_DEPS "Builds aws common runtime dependencies as part of build. Turn off if you want to control your dependency chain." ON)
+option(BYO_CRYPTO "Don't build a tls implementation or link against a crypto interface. This feature is only for unix builds currently" OFF)
 
 # Proxy integration test control - In addition to this option, all proxy tests require the following environment variables set appropriately when running tests:
 #
@@ -100,7 +101,8 @@ if (BUILD_DEPS)
     set(BUILD_TESTING OFF)
     add_subdirectory(crt/aws-c-common)
 
-    if (UNIX AND NOT APPLE)
+    if (UNIX AND NOT APPLE AND NOT BYO_CRYPTO)
+        include(crt/aws-c-cal/cmake/modules/aws-lc.cmake)
         add_subdirectory(crt/s2n)
     endif()
 
@@ -250,20 +252,23 @@ set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDA
 
 aws_prepare_symbol_visibility_args(${PROJECT_NAME} "AWS_CRT_CPP")
 
-#set warnings and runtime library
+#set runtime library
 if (MSVC)
     if(STATIC_CRT)
         target_compile_options(${PROJECT_NAME} PRIVATE "/MT$<$<CONFIG:Debug>:d>")
     else()
         target_compile_options(${PROJECT_NAME} PRIVATE "/MD$<$<CONFIG:Debug>:d>")
     endif()
-    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
-else ()
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
 endif ()
 
 if (CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE MATCHES Debug)
     target_compile_definitions(${PROJECT_NAME} PRIVATE "-DDEBUG_BUILD")
+    #set extra warning flags for debug build
+    if (MSVC)
+        target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
+    else ()
+        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
+    endif ()
 endif ()
 
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -320,6 +325,8 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
 if (NOT CMAKE_CROSSCOMPILING)
     if (BUILD_TESTING)
         add_subdirectory(tests)
-        add_subdirectory(bin/elasticurl_cpp)
+        if (NOT BYO_CRYPTO)
+            add_subdirectory(bin/elasticurl_cpp)
+        endif ()
     endif()
 endif()

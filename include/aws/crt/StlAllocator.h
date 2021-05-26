@@ -8,6 +8,7 @@
 
 #include <aws/common/common.h>
 #include <aws/crt/Exports.h>
+#include <type_traits>
 
 namespace Aws
 {
@@ -47,7 +48,7 @@ namespace Aws
             {
                 (void)hint;
                 AWS_ASSERT(m_allocator);
-                return reinterpret_cast<RawPointer>(aws_mem_acquire(m_allocator, n * sizeof(T)));
+                return static_cast<RawPointer>(aws_mem_acquire(m_allocator, n * sizeof(T)));
             }
 
             void deallocate(RawPointer p, size_type)

@@ -17,6 +17,8 @@
 
 using namespace Aws::Crt;
 
+#if !BYO_CRYPTO
+
 static int s_VerifyFilesAreTheSame(Allocator *allocator, const char *fileName1, const char *fileName2)
 {
     std::ifstream file1(fileName1, std::ios_base::binary);
@@ -338,3 +340,5 @@ static int s_TestHttpStreamUnActivated(struct aws_allocator *allocator, void *ct
 }
 
 AWS_TEST_CASE(HttpStreamUnActivated, s_TestHttpStreamUnActivated)
+
+#endif // !BYO_CRYPTO

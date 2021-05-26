@@ -105,7 +105,25 @@ namespace Aws
                 }
                 return ctxOptions;
             }
+
+            bool TlsContextOptions::SetKeychainPath(ByteCursor &keychain_path) noexcept
+            {
+                AWS_ASSERT(m_isInit);
+                return aws_tls_ctx_options_set_keychain_path(&m_options, &keychain_path) == 0;
+            }
 #endif /* AWS_OS_APPLE */
+
+#ifdef _WIN32
+            TlsContextOptions TlsContextOptions::InitClientWithMtlsSystemPath(
+                const char *registryPath,
+                Allocator *allocator) noexcept
+            {
+                TlsContextOptions ctxOptions;
+                aws_tls_ctx_options_init_client_mtls_from_system_path(&ctxOptions.m_options, allocator, registryPath);
+                ctxOptions.m_isInit = true;
+                return ctxOptions;
+            }
+#endif /* _WIN32 */
 
             bool TlsContextOptions::IsAlpnSupported() noexcept { return aws_tls_is_alpn_available(); }
 
@@ -271,6 +289,38 @@ namespace Aws
             TlsContext::TlsContext(TlsContextOptions &options, TlsMode mode, Allocator *allocator) noexcept
                 : m_ctx(nullptr), m_initializationError(AWS_ERROR_SUCCESS)
             {
+#if BYO_CRYPTO
+                if (!ApiHandle::GetBYOCryptoNewTlsContextImplCallback() ||
+                    !ApiHandle::GetBYOCryptoDeleteTlsContextImplCallback())
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_IO_TLS,
+                        "Must call ApiHandle::SetBYOCryptoTlsContextCallbacks() before TlsContext can be created");
+                    m_initializationError = AWS_IO_TLS_CTX_ERROR;
+                    return;
+                }
+
+                void *impl = ApiHandle::GetBYOCryptoNewTlsContextImplCallback()(options, mode, allocator);
+                if (!impl)
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_IO_TLS, "Creation callback from ApiHandle::SetBYOCryptoTlsContextCallbacks() failed");
+                    m_initializationError = AWS_IO_TLS_CTX_ERROR;
+                    return;
+                }
+
+                auto underlying_tls_ctx = static_cast<aws_tls_ctx *>(aws_mem_calloc(allocator, 1, sizeof(aws_tls_ctx)));
+                underlying_tls_ctx->alloc = allocator;
+                underlying_tls_ctx->impl = impl;
+
+                aws_ref_count_init(&underlying_tls_ctx->ref_count, underlying_tls_ctx, [](void *userdata) {
+                    auto dying_ctx = static_cast<aws_tls_ctx *>(userdata);
+                    ApiHandle::GetBYOCryptoDeleteTlsContextImplCallback()(dying_ctx->impl);
+                    aws_mem_release(dying_ctx->alloc, dying_ctx);
+                });
+
+                m_ctx.reset(underlying_tls_ctx, aws_tls_ctx_release);
+#else
                 if (mode == TlsMode::CLIENT)
                 {
                     aws_tls_ctx *underlying_tls_ctx = aws_tls_client_ctx_new(allocator, &options.m_options);
@@ -287,11 +337,11 @@ namespace Aws
                         m_ctx.reset(underlying_tls_ctx, aws_tls_ctx_release);
                     }
                 }
-
                 if (!m_ctx)
                 {
                     m_initializationError = Aws::Crt::LastErrorOrUnknown();
                 }
+#endif // BYO_CRYPTO
             }
 
             TlsConnectionOptions TlsContext::NewConnectionOptions() const noexcept
@@ -305,6 +355,63 @@ namespace Aws
 
                 return TlsConnectionOptions(m_ctx.get(), m_ctx->alloc);
             }
+
+            TlsChannelHandler::TlsChannelHandler(
+                struct aws_channel_slot *,
+                const struct aws_tls_connection_options &options,
+                Allocator *allocator)
+                : ChannelHandler(allocator)
+            {
+                m_OnNegotiationResult = options.on_negotiation_result;
+                m_userData = options.user_data;
+                aws_byte_buf_init(&m_protocolByteBuf, allocator, 16);
+            }
+
+            TlsChannelHandler::~TlsChannelHandler() { aws_byte_buf_clean_up(&m_protocolByteBuf); }
+
+            void TlsChannelHandler::CompleteTlsNegotiation(int errorCode)
+            {
+                m_OnNegotiationResult(&this->m_handler, GetSlot(), errorCode, m_userData);
+            }
+
+            ClientTlsChannelHandler::ClientTlsChannelHandler(
+                struct aws_channel_slot *slot,
+                const struct aws_tls_connection_options &options,
+                Allocator *allocator)
+                : TlsChannelHandler(slot, options, allocator)
+            {
+            }
+
         } // namespace Io
     }     // namespace Crt
 } // namespace Aws
+
+#if BYO_CRYPTO
+AWS_EXTERN_C_BEGIN
+
+bool aws_tls_is_alpn_available(void)
+{
+    const auto &callback = Aws::Crt::ApiHandle::GetBYOCryptoIsTlsAlpnSupportedCallback();
+    if (!callback)
+    {
+        AWS_LOGF_ERROR(
+            AWS_LS_IO_TLS, "Must call ApiHandle::SetBYOCryptoTlsContextCallbacks() before ALPN can be queried");
+        return false;
+    }
+    return callback();
+}
+
+struct aws_byte_buf aws_tls_handler_protocol(struct aws_channel_handler *handler)
+{
+    auto *channelHandler = reinterpret_cast<Aws::Crt::Io::ChannelHandler *>(handler->impl);
+    auto *tlsHandler = static_cast<Aws::Crt::Io::TlsChannelHandler *>(channelHandler);
+    Aws::Crt::String protocolString = const_cast<const Aws::Crt::Io::TlsChannelHandler *>(tlsHandler)->GetProtocol();
+
+    tlsHandler->m_protocolByteBuf.len = 0;
+    aws_byte_cursor protocolCursor = Aws::Crt::ByteCursorFromString(protocolString);
+    aws_byte_buf_append_dynamic(&tlsHandler->m_protocolByteBuf, &protocolCursor);
+    return tlsHandler->m_protocolByteBuf;
+}
+
+AWS_EXTERN_C_END
+#endif /* BYO_CRYPTO */
