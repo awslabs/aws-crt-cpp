@@ -11,6 +11,7 @@
 #include <aws/common/ref_count.h>
 #include <aws/http/http.h>
 #include <aws/mqtt/mqtt.h>
+#include <aws/s3/s3.h>
 
 namespace Aws
 {
@@ -34,9 +35,8 @@ namespace Aws
         {
             // sets up the StlAllocator for use.
             g_allocator = allocator;
-            aws_http_library_init(allocator);
             aws_mqtt_library_init(allocator);
-            aws_auth_library_init(allocator);
+            aws_s3_library_init(allocator);
 
             cJSON_Hooks hooks;
             hooks.malloc_fn = s_cJSONAlloc;
@@ -69,9 +69,8 @@ namespace Aws
             }
 
             g_allocator = nullptr;
-            aws_auth_library_clean_up();
+            aws_s3_library_clean_up();
             aws_mqtt_library_clean_up();
-            aws_http_library_clean_up();
 
             s_BYOCryptoNewMD5Callback = nullptr;
             s_BYOCryptoNewSHA256Callback = nullptr;
