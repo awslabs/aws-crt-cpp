@@ -88,10 +88,10 @@ if (ENABLE_PROXY_INTEGRATION_TESTS AND NOT BYO_CRYPTO)
     # direction connection proxy tests
     add_test_case(DirectConnectionTunnelingProxyHttp)
     add_test_case(DirectConnectionTunnelingProxyHttps)
+    add_test_case(DirectConnectionTunnelingProxyHttpsInvalidTlsOptions)
     add_test_case(DirectConnectionForwardingProxy)
     add_test_case(DirectConnectionTunnelingProxyBasicAuthDeprecated)
     add_test_case(DirectConnectionTunnelingProxyBasicAuth)
-    add_test_case(DirectConnectionProxyInvalidTlsOptions)
 
     # x509 provider proxy tests
     add_test_case(X509ProxyHttpGetCredentials)
