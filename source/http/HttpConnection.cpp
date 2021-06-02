@@ -99,7 +99,7 @@ namespace Aws
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_HTTP_GENERAL,
-                        "Cannot create connection: connection options contain invalid TLS options.");
+                        "Cannot create HttpClientConnection: connectionOptions contains invalid TlsOptions.");
                     aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
                     return false;
                 }
@@ -112,7 +112,8 @@ namespace Aws
                     {
                         AWS_LOGF_ERROR(
                             AWS_LS_HTTP_GENERAL,
-                            "Cannot create connection: Connection options contain invalid proxy TLS options.");
+                            "Cannot create HttpClientConnection: connectionOptions has ProxyOptions that contain "
+                            "invalid TlsOptions.");
                         aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
                         return false;
                     }
@@ -134,6 +135,7 @@ namespace Aws
 
                 if (connectionOptions.TlsOptions)
                 {
+                    /* This is verified earlier in this function. */
                     AWS_FATAL_ASSERT(*connectionOptions.TlsOptions);
 
                     options.tls_options =
@@ -155,6 +157,7 @@ namespace Aws
                 {
                     const auto &proxyOpts = connectionOptions.ProxyOptions.value();
 
+                    /* This is verified earlier in this function. */
                     AWS_FATAL_ASSERT(!proxyOpts.TlsOptions || *proxyOpts.TlsOptions);
 
                     proxyOpts.InitializeRawProxyOptions(proxyOptions);

@@ -44,7 +44,7 @@ namespace Aws
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_HTTP_GENERAL,
-                        "Cannot create HttpClientConnectionManager: connection options contain invalid TLS options.");
+                        "Cannot create HttpClientConnectionManager: ConnectionOptions contain invalid TLSOptions.");
                     aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
                     return nullptr;
                 }
@@ -56,9 +56,8 @@ namespace Aws
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_HTTP_GENERAL,
-                        "Cannot create HttpClientConnectionManager: proxy options has connection options that contain "
-                        "invalid TLS options"
-                        "options.");
+                        "Cannot create HttpClientConnectionManager: ProxyOptions has ConnectionOptions that contain "
+                        "invalid TLSOptions.");
                     aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
                     return nullptr;
                 }
@@ -106,6 +105,10 @@ namespace Aws
                 AWS_ZERO_STRUCT(proxyOptions);
                 if (connectionOptions.ProxyOptions)
                 {
+                    /* This is verified by HttpClientConnectionManager::NewClientConnectionManager */
+                    AWS_FATAL_ASSERT(
+                        !connectionOptions.ProxyOptions->TlsOptions || *connectionOptions.ProxyOptions->TlsOptions);
+
                     const auto &proxyOpts = connectionOptions.ProxyOptions.value();
                     proxyOpts.InitializeRawProxyOptions(proxyOptions);
 
@@ -114,6 +117,9 @@ namespace Aws
 
                 if (connectionOptions.TlsOptions)
                 {
+                    /* This is verified by HttpClientConnectionManager::NewClientConnectionManager */
+                    AWS_FATAL_ASSERT(*connectionOptions.TlsOptions);
+
                     managerOptions.tls_connection_options =
                         const_cast<aws_tls_connection_options *>(connectionOptions.TlsOptions->GetUnderlyingHandle());
                 }
