@@ -351,14 +351,24 @@ static int s_TestConnectionManagerTunnelingProxyHttpsInvalidTlsOptions(struct aw
 
         s_InitializeTlsToProxy(testState);
 
+        s_InitializeProxyTestSupport(testState);
+
+        s_InitializeProxiedConnectionOptions(testState, aws_byte_cursor_from_string(s_https_endpoint));
+
+        Http::HttpClientConnectionManagerOptions connectionManagerOptions;
+        connectionManagerOptions.ConnectionOptions = testState.m_connectionOptions;
+
         /* Reset TLS Options, making them invalid. */
-        Aws::Crt::Io::TlsConnectionOptions invalidTlsConnectionOptions;
-        ASSERT_FALSE(invalidTlsConnectionOptions);
-        testState.m_connectionOptions.ProxyOptions->TlsOptions = invalidTlsConnectionOptions;
+        auto &proxyOpts = connectionManagerOptions.ConnectionOptions.ProxyOptions;
+        ASSERT_TRUE(proxyOpts);
 
-        s_InitializeProxiedConnectionManager(testState, aws_byte_cursor_from_string(s_https_endpoint));
+        proxyOpts->TlsOptions = Aws::Crt::Io::TlsConnectionOptions();
+        ASSERT_FALSE(*proxyOpts->TlsOptions);
 
-        ASSERT_TRUE(testState.m_connectionManager == nullptr);
+        std::shared_ptr<Aws::Crt::Http::HttpClientConnectionManager> connManager =
+            Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
+
+        ASSERT_TRUE(connManager == nullptr);
         ASSERT_TRUE(aws_last_error() == AWS_ERROR_INVALID_ARGUMENT);
     }
 
@@ -594,14 +604,19 @@ static int s_TestDirectConnectionTunnelingProxyHttpsInvalidTlsOptions(struct aws
 
         s_InitializeTlsToProxy(testState);
 
+        s_InitializeProxyTestSupport(testState);
+
+        s_InitializeProxiedConnectionOptions(testState, aws_byte_cursor_from_string(s_https_endpoint));
+
         /* Reset TLS Options, making them invalid. */
-        Aws::Crt::Io::TlsConnectionOptions invalidTlsConnectionOptions;
-        ASSERT_FALSE(invalidTlsConnectionOptions);
-        testState.m_proxyOptions.TlsOptions = invalidTlsConnectionOptions;
+        testState.m_connectionOptions.TlsOptions = Aws::Crt::Io::TlsConnectionOptions();
+        ASSERT_FALSE(*testState.m_connectionOptions.TlsOptions);
 
-        s_InitializeProxiedRawConnection(testState, aws_byte_cursor_from_string(s_https_endpoint));
+        testState.m_connectionOptions.OnConnectionSetupCallback =
+            [](const std::shared_ptr<Http::HttpClientConnection> &, int) {};
+        testState.m_connectionOptions.OnConnectionShutdownCallback = [](Http::HttpClientConnection &, int) {};
 
-        ASSERT_TRUE(testState.m_connection == nullptr);
+        ASSERT_FALSE(HttpClientConnection::CreateConnection(testState.m_connectionOptions, allocator));
         ASSERT_TRUE(aws_last_error() == AWS_ERROR_INVALID_ARGUMENT);
     }
 
