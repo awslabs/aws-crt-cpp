@@ -624,6 +624,35 @@ static int s_TestDirectConnectionTunnelingProxyBasicAuth(struct aws_allocator *a
 
 AWS_TEST_CASE(DirectConnectionTunnelingProxyBasicAuth, s_TestDirectConnectionTunnelingProxyBasicAuth)
 
+static int s_TestDirectConnectionProxyInvalidTlsOptions(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        ProxyIntegrationTestState testState(allocator);
+        s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::Https);
+        testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
+
+        s_InitializeTlsToProxy(testState);
+
+        /* Reset TLS Options, making them invalid. */
+        testState.m_tlsContext = nullptr;
+        testState.m_proxyOptions.TlsOptions = TlsConnectionOptions();
+        ASSERT_FALSE(testState.m_proxyOptions.TlsOptions);
+
+        s_InitializeProxiedRawConnection(testState, aws_byte_cursor_from_string(s_https_endpoint));
+
+        ASSERT_TRUE(testState.m_connection == nullptr);
+        ASSERT_TRUE(aws_last_error() == AWS_ERROR_INVALID_ARGUMENT);
+    }
+
+    /* now let everything tear down and make sure we don't leak or deadlock.*/
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(DirectConnectionProxyInvalidTlsOptions, s_TestDirectConnectionProxyInvalidTlsOptions)
+
 AWS_STATIC_STRING_FROM_LITERAL(s_x509EndpointVariable, "AWS_TEST_X509_ENDPOINT");
 AWS_STATIC_STRING_FROM_LITERAL(s_x509RoleAliasVariable, "AWS_TEST_X509_ROLE_ALIAS");
 AWS_STATIC_STRING_FROM_LITERAL(s_x509ThingNameVariable, "AWS_TEST_X509_THING_NAME");
