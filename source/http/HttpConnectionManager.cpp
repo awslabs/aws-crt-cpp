@@ -37,6 +37,32 @@ namespace Aws
                 const HttpClientConnectionManagerOptions &connectionManagerOptions,
                 Allocator *allocator) noexcept
             {
+                const Optional<Io::TlsConnectionOptions> &tlsOptions =
+                    connectionManagerOptions.ConnectionOptions.TlsOptions;
+
+                if (tlsOptions && !*tlsOptions)
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_HTTP_GENERAL,
+                        "Cannot create HttpClientConnectionManager: connection options contain invalid TLS options.");
+                    aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
+                    return nullptr;
+                }
+
+                const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions =
+                    connectionManagerOptions.ConnectionOptions.ProxyOptions;
+
+                if (proxyOptions && proxyOptions->TlsOptions && !proxyOptions->TlsOptions)
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_HTTP_GENERAL,
+                        "Cannot create HttpClientConnectionManager: proxy options has connection options that contain "
+                        "invalid TLS options"
+                        "options.");
+                    aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
+                    return nullptr;
+                }
+
                 auto *toSeat = static_cast<HttpClientConnectionManager *>(
                     aws_mem_acquire(allocator, sizeof(HttpClientConnectionManager)));
                 if (toSeat)

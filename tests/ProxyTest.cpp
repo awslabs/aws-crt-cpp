@@ -339,6 +339,36 @@ static int s_TestConnectionManagerTunnelingProxyHttps(struct aws_allocator *allo
 
 AWS_TEST_CASE(ConnectionManagerTunnelingProxyHttps, s_TestConnectionManagerTunnelingProxyHttps)
 
+static int s_TestConnectionManagerTunnelingProxyHttpsInvalidTlsOptions(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        ProxyIntegrationTestState testState(allocator);
+        s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::Https);
+        testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
+
+        s_InitializeTlsToProxy(testState);
+
+        /* Reset TLS Options, making them invalid. */
+        testState.m_connectionOptions.ProxyOptions->TlsOptions = TlsConnectionOptions();
+        ASSERT_FALSE(testState.m_proxyOptions.TlsOptions);
+
+        s_InitializeProxiedConnectionManager(testState, aws_byte_cursor_from_string(s_https_endpoint));
+
+        ASSERT_TRUE(testState.m_connectionManager == nullptr);
+        ASSERT_TRUE(aws_last_error() == AWS_ERROR_INVALID_ARGUMENT);
+    }
+
+    /* now let everything tear down and make sure we don't leak or deadlock.*/
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(
+    ConnectionManagerTunnelingProxyHttpsInvalidTlsOptions,
+    s_TestConnectionManagerTunnelingProxyHttpsInvalidTlsOptions)
+
 static void s_MakeForwardingTestRequest(ProxyIntegrationTestState &testState)
 {
     struct aws_allocator *allocator = testState.m_allocator;
