@@ -40,7 +40,7 @@ namespace Aws
                 const Optional<Io::TlsConnectionOptions> &tlsOptions =
                     connectionManagerOptions.ConnectionOptions.TlsOptions;
 
-                if (tlsOptions && !*tlsOptions)
+                if (tlsOptions && !(*tlsOptions))
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_HTTP_GENERAL,
@@ -52,7 +52,7 @@ namespace Aws
                 const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions =
                     connectionManagerOptions.ConnectionOptions.ProxyOptions;
 
-                if (proxyOptions && proxyOptions->TlsOptions && !proxyOptions->TlsOptions)
+                if (proxyOptions && proxyOptions->TlsOptions && !(*proxyOptions->TlsOptions))
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_HTTP_GENERAL,
