@@ -134,6 +134,7 @@ static int s_TestHttpClientConnectionManagerInvalidTlsConnectionOptions(struct a
         Aws::Crt::ApiHandle apiHandle(allocator);
 
         Aws::Crt::Io::TlsConnectionOptions invalidTlsConnectionOptions;
+        ASSERT_FALSE(invalidTlsConnectionOptions);
 
         ByteCursor cursor = ByteCursorFromCString("https://s3.amazonaws.com");
         Io::Uri uri(cursor, allocator);
