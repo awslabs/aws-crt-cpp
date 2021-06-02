@@ -353,7 +353,7 @@ static int s_TestConnectionManagerTunnelingProxyHttpsInvalidTlsOptions(struct aw
 
         /* Reset TLS Options, making them invalid. */
         testState.m_connectionOptions.ProxyOptions->TlsOptions = TlsConnectionOptions();
-        ASSERT_FALSE(testState.m_proxyOptions.TlsOptions);
+        ASSERT_FALSE(*testState.m_proxyOptions.TlsOptions);
 
         s_InitializeProxiedConnectionManager(testState, aws_byte_cursor_from_string(s_https_endpoint));
 
@@ -595,7 +595,7 @@ static int s_TestDirectConnectionTunnelingProxyHttpsInvalidTlsOptions(struct aws
 
         /* Reset TLS Options, making them invalid. */
         testState.m_proxyOptions.TlsOptions = TlsConnectionOptions();
-        ASSERT_FALSE(testState.m_proxyOptions.TlsOptions);
+        ASSERT_FALSE(*testState.m_proxyOptions.TlsOptions);
 
         s_InitializeProxiedRawConnection(testState, aws_byte_cursor_from_string(s_https_endpoint));
 
