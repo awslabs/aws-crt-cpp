@@ -95,6 +95,30 @@ namespace Aws
                 AWS_FATAL_ASSERT(connectionOptions.OnConnectionSetupCallback);
                 AWS_FATAL_ASSERT(connectionOptions.OnConnectionShutdownCallback);
 
+                if (connectionOptions.TlsOptions && !(*connectionOptions.TlsOptions))
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_HTTP_GENERAL,
+                        "Cannot create HttpClientConnection: connectionOptions contains invalid TlsOptions.");
+                    aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
+                    return false;
+                }
+
+                if (connectionOptions.ProxyOptions)
+                {
+                    const auto &proxyOpts = connectionOptions.ProxyOptions.value();
+
+                    if (proxyOpts.TlsOptions && !(*proxyOpts.TlsOptions))
+                    {
+                        AWS_LOGF_ERROR(
+                            AWS_LS_HTTP_GENERAL,
+                            "Cannot create HttpClientConnection: connectionOptions has ProxyOptions that contain "
+                            "invalid TlsOptions.");
+                        aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
+                        return false;
+                    }
+                }
+
                 auto *callbackData = New<ConnectionCallbackData>(allocator, allocator);
 
                 if (!callbackData)
@@ -108,8 +132,12 @@ namespace Aws
                 AWS_ZERO_STRUCT(options);
                 options.self_size = sizeof(aws_http_client_connection_options);
                 options.bootstrap = connectionOptions.Bootstrap->GetUnderlyingHandle();
+
                 if (connectionOptions.TlsOptions)
                 {
+                    /* This is verified earlier in this function. */
+                    AWS_FATAL_ASSERT(*connectionOptions.TlsOptions);
+
                     options.tls_options =
                         const_cast<aws_tls_connection_options *>(connectionOptions.TlsOptions->GetUnderlyingHandle());
                 }
@@ -128,6 +156,10 @@ namespace Aws
                 if (connectionOptions.ProxyOptions)
                 {
                     const auto &proxyOpts = connectionOptions.ProxyOptions.value();
+
+                    /* This is verified earlier in this function. */
+                    AWS_FATAL_ASSERT(!proxyOpts.TlsOptions || *proxyOpts.TlsOptions);
+
                     proxyOpts.InitializeRawProxyOptions(proxyOptions);
 
                     options.proxy_options = &proxyOptions;
