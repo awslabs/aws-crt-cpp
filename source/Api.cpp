@@ -68,7 +68,6 @@ namespace Aws
                 aws_logger_clean_up(&m_logger);
             }
 
-
             g_allocator = nullptr;
             aws_s3_library_clean_up();
             aws_mqtt_library_clean_up();

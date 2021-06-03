@@ -127,12 +127,12 @@ namespace Aws
                 m_config.should_sign_header = shouldSignHeaderCb;
             }
 
-            void* AwsSigningConfig::GetShouldSignHeaderUserData() const noexcept
+            void *AwsSigningConfig::GetShouldSignHeaderUserData() const noexcept
             {
                 return m_config.should_sign_header_ud;
             }
 
-            void AwsSigningConfig::SetShouldSignHeaderUserData(void* userData) noexcept
+            void AwsSigningConfig::SetShouldSignHeaderUserData(void *userData) noexcept
             {
                 m_config.should_sign_header_ud = userData;
             }
