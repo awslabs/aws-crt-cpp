@@ -24,6 +24,7 @@ namespace Aws
             enum class SigningAlgorithm
             {
                 SigV4 = AWS_SIGNING_ALGORITHM_V4,
+                SigV4A = AWS_SIGNING_ALGORITHM_V4_ASYMMETRIC
             };
 
             enum class SignatureType
@@ -179,6 +180,16 @@ namespace Aws
                  * If you do not set this, all headers will be signed.
                  */
                 void SetShouldSignHeaderCallback(ShouldSignHeaderCb shouldSignHeaderCb) noexcept;
+
+                /**
+                 * Gets the should_sign_header_ud from the underlying config.
+                 */
+                void *GetShouldSignHeaderUserData() const noexcept;
+
+                /**
+                 * Sets the userData you could get from the ShouldSignHeaderCb callback function.
+                 */
+                void SetShouldSignHeaderUserData(void *userData) noexcept;
 
                 /**
                  * Gets the string used as the canonical request's body value.
