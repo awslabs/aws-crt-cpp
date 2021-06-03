@@ -237,6 +237,13 @@ namespace Aws
             {
                 if (this != &options)
                 {
+                    if (m_isInit)
+                    {
+                        aws_tls_connection_options_clean_up(&m_tls_connection_options);
+                    }
+
+                    m_isInit = false;
+
                     if (options.m_isInit)
                     {
                         m_tls_connection_options = options.m_tls_connection_options;

@@ -127,6 +127,57 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
 
 AWS_TEST_CASE(HttpClientConnectionManagerResourceSafety, s_TestHttpClientConnectionManagerResourceSafety)
 
+static int s_TestHttpClientConnectionManagerInvalidTlsConnectionOptions(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        Aws::Crt::Io::TlsConnectionOptions invalidTlsConnectionOptions;
+        ASSERT_FALSE(invalidTlsConnectionOptions);
+
+        ByteCursor cursor = ByteCursorFromCString("https://s3.amazonaws.com");
+        Io::Uri uri(cursor, allocator);
+        auto hostName = uri.GetHostName();
+
+        Aws::Crt::Io::SocketOptions socketOptions;
+        socketOptions.SetConnectTimeoutMs(10000);
+
+        Aws::Crt::Io::EventLoopGroup eventLoopGroup(1, allocator);
+        ASSERT_TRUE(eventLoopGroup);
+
+        Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+        ASSERT_TRUE(defaultHostResolver);
+
+        Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+        ASSERT_TRUE(clientBootstrap);
+        clientBootstrap.EnableBlockingShutdown();
+
+        Http::HttpClientConnectionOptions connectionOptions;
+        connectionOptions.Bootstrap = &clientBootstrap;
+        connectionOptions.SocketOptions = socketOptions;
+        connectionOptions.TlsOptions = invalidTlsConnectionOptions;
+        connectionOptions.HostName = String((const char *)hostName.ptr, hostName.len);
+        connectionOptions.Port = 443;
+
+        Http::HttpClientConnectionManagerOptions connectionManagerOptions;
+        connectionManagerOptions.ConnectionOptions = connectionOptions;
+
+        auto connectionManager =
+            Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
+
+        ASSERT_TRUE(connectionManager == nullptr);
+        ASSERT_TRUE(aws_last_error() == AWS_ERROR_INVALID_ARGUMENT);
+    }
+
+    /* now let everything tear down and make sure we don't leak or deadlock.*/
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(
+    HttpClientConnectionManagerInvalidTlsConnectionOptions,
+    s_TestHttpClientConnectionManagerInvalidTlsConnectionOptions)
+
 static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;

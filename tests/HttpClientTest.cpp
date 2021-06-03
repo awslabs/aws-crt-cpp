@@ -341,4 +341,48 @@ static int s_TestHttpStreamUnActivated(struct aws_allocator *allocator, void *ct
 
 AWS_TEST_CASE(HttpStreamUnActivated, s_TestHttpStreamUnActivated)
 
+static int s_TestHttpCreateConnectionInvalidTlsConnectionOptions(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        Aws::Crt::Io::TlsConnectionOptions invalidTlsConnectionOptions;
+        ASSERT_FALSE(invalidTlsConnectionOptions);
+
+        ByteCursor cursor = ByteCursorFromCString("https://aws-crt-test-stuff.s3.amazonaws.com/http_test_doc.txt");
+        Io::Uri uri(cursor, allocator);
+
+        auto hostName = uri.GetHostName();
+
+        Aws::Crt::Io::SocketOptions socketOptions;
+
+        Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+        ASSERT_TRUE(eventLoopGroup);
+
+        Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+        ASSERT_TRUE(defaultHostResolver);
+
+        Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+        ASSERT_TRUE(clientBootstrap);
+        clientBootstrap.EnableBlockingShutdown();
+
+        Http::HttpClientConnectionOptions httpClientConnectionOptions;
+        httpClientConnectionOptions.Bootstrap = &clientBootstrap;
+        httpClientConnectionOptions.OnConnectionSetupCallback = [](const std::shared_ptr<Http::HttpClientConnection> &,
+                                                                   int) {};
+        httpClientConnectionOptions.OnConnectionShutdownCallback = [](Http::HttpClientConnection &, int) {};
+        httpClientConnectionOptions.SocketOptions = socketOptions;
+        httpClientConnectionOptions.TlsOptions = invalidTlsConnectionOptions;
+        httpClientConnectionOptions.HostName = String((const char *)hostName.ptr, hostName.len);
+        httpClientConnectionOptions.Port = 443;
+
+        ASSERT_FALSE(Http::HttpClientConnection::CreateConnection(httpClientConnectionOptions, allocator));
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(HttpCreateConnectionInvalidTlsConnectionOptions, s_TestHttpCreateConnectionInvalidTlsConnectionOptions)
+
 #endif // !BYO_CRYPTO
