@@ -141,8 +141,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # TODO: bring back "android-armv7" when aws-lc builds on android
-        arch: [linux-armv6, linux-armv7, linux-arm64]
+        arch: [linux-armv6, linux-armv7, linux-arm64, android-armv7]
 
     steps:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers

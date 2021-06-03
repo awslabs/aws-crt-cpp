@@ -24,7 +24,8 @@ namespace Aws
             EventLoopGroup::EventLoopGroup(uint16_t cpuGroup, uint16_t threadCount, Allocator *allocator) noexcept
                 : m_eventLoopGroup(nullptr), m_lastError(AWS_ERROR_SUCCESS)
             {
-                m_eventLoopGroup = aws_event_loop_group_new_default_pinned_to_cpu_group(allocator, threadCount, cpuGroup, NULL);
+                m_eventLoopGroup =
+                    aws_event_loop_group_new_default_pinned_to_cpu_group(allocator, threadCount, cpuGroup, NULL);
                 if (m_eventLoopGroup == nullptr)
                 {
                     m_lastError = aws_last_error();

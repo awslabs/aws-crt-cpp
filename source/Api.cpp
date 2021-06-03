@@ -72,7 +72,6 @@ namespace Aws
             g_allocator = nullptr;
             aws_s3_library_clean_up();
             aws_mqtt_library_clean_up();
-            aws_http_library_clean_up();
 
             s_BYOCryptoNewMD5Callback = nullptr;
             s_BYOCryptoNewSHA256Callback = nullptr;

@@ -6,6 +6,7 @@ endif()
 project(aws-crt-cpp CXX C)
 option(BUILD_DEPS "Builds aws common runtime dependencies as part of build. Turn off if you want to control your dependency chain." ON)
 option(BYO_CRYPTO "Don't build a tls implementation or link against a crypto interface. This feature is only for unix builds currently" OFF)
+option(USE_OPENSSL "Set this if you want to use your system's OpenSSL 1.0.2/1.1.1 compatible libcrypto" OFF)
 
 # Proxy integration test control - In addition to this option, all proxy tests require the following environment variables set appropriately when running tests:
 #
@@ -102,7 +103,14 @@ if (BUILD_DEPS)
     add_subdirectory(crt/aws-c-common)
 
     if (UNIX AND NOT APPLE AND NOT BYO_CRYPTO)
-        include(crt/aws-c-cal/cmake/modules/aws-lc.cmake)
+        set(DISABLE_PERL ON CACHE BOOL "Disable Perl for AWS-LC.")
+        set(DISABLE_GO ON CACHE BOOL "Disable Go for AWS-LC.")
+        if (NOT USE_OPENSSL)
+            add_subdirectory(crt/aws-lc)
+            set(SEARCH_LIBCRYPTO OFF CACHE BOOL "Let S2N use libcrypto from AWS-LC.")
+        else()
+            set(SEARCH_LIBCRYPTO ON CACHE BOOL "Let S2N search libcrypto in the system.")
+        endif()
         add_subdirectory(crt/s2n)
     endif()
 
