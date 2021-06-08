@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/io/EventLoopGroup.h>
+#include <iostream>
 
 namespace Aws
 {
