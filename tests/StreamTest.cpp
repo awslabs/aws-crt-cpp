@@ -106,7 +106,7 @@ static int s_StreamTestReadEmpty(struct aws_allocator *allocator, void *ctx)
 
 AWS_TEST_CASE(StreamTestReadEmpty, s_StreamTestReadEmpty)
 
-static const aws_off_t BEGIN_SEEK_OFFSET = 4;
+static const int64_t BEGIN_SEEK_OFFSET = 4;
 
 static int s_StreamTestSeekBegin(struct aws_allocator *allocator, void *ctx)
 {
@@ -137,7 +137,7 @@ static int s_StreamTestSeekBegin(struct aws_allocator *allocator, void *ctx)
 
 AWS_TEST_CASE(StreamTestSeekBegin, s_StreamTestSeekBegin)
 
-static const aws_off_t END_SEEK_OFFSET = -4;
+static const int64_t END_SEEK_OFFSET = -4;
 
 static int s_StreamTestSeekEnd(struct aws_allocator *allocator, void *ctx)
 {
