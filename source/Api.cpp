@@ -9,6 +9,7 @@
 
 #include <aws/auth/auth.h>
 #include <aws/common/ref_count.h>
+#include <aws/event-stream/event_stream.h>
 #include <aws/http/http.h>
 #include <aws/mqtt/mqtt.h>
 #include <aws/s3/s3.h>
@@ -37,6 +38,7 @@ namespace Aws
             g_allocator = allocator;
             aws_mqtt_library_init(allocator);
             aws_s3_library_init(allocator);
+            aws_event_stream_library_init(allocator);
 
             cJSON_Hooks hooks;
             hooks.malloc_fn = s_cJSONAlloc;
@@ -71,6 +73,7 @@ namespace Aws
             g_allocator = nullptr;
             aws_s3_library_clean_up();
             aws_mqtt_library_clean_up();
+            aws_event_stream_library_clean_up();
 
             s_BYOCryptoNewMD5Callback = nullptr;
             s_BYOCryptoNewSHA256Callback = nullptr;
