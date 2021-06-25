@@ -20,13 +20,31 @@
   THE SOFTWARE.
 */
 
+/** MODIFICATIONS:
+ * valueInt was moved up to improve alignment.
+ * Wrap all symbols in the Aws namespace as a short-term collision resolution
+ * Replace strcpy() with strncpy()
+ *
+ * Modifications licensed under:
+ *
+ * Copyright 2010-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *  http://aws.amazon.com/apache2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
 #ifndef cJSON__h
 #define cJSON__h
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+namespace Aws {
 
 #if !defined(__WINDOWS__) && (defined(WIN32) || defined(WIN64) || defined(_MSC_VER) || defined(_WIN32))
 #define __WINDOWS__
@@ -111,10 +129,10 @@ typedef struct cJSON
     /* The type of the item, as above. */
     int type;
 
-    /* The item's string, if type==cJSON_String  and type == cJSON_Raw */
-    char *valuestring;
     /* writing to valueint is DEPRECATED, use cJSON_SetNumberValue instead */
     int valueint;
+    /* The item's string, if type==cJSON_String  and type == cJSON_Raw */
+    char *valuestring;
     /* The item's number, if type==cJSON_Number */
     double valuedouble;
 
@@ -286,8 +304,6 @@ CJSON_PUBLIC(char*) cJSON_SetValuestring(cJSON *object, const char *valuestring)
 CJSON_PUBLIC(void *) cJSON_malloc(size_t size);
 CJSON_PUBLIC(void) cJSON_free(void *object);
 
-#ifdef __cplusplus
 }
-#endif
 
 #endif

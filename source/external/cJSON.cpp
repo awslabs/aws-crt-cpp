@@ -20,6 +20,27 @@
   THE SOFTWARE.
 */
 
+/** MODIFICATIONS:
+ * valueInt was moved up to improve alignment.
+ * Wrap all symbols in the Aws namespace as a short-term collision resolution
+ * Replace strcpy() with strncpy()
+ *
+ * Modifications licensed under:
+ *
+ * Copyright 2010-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *  http://aws.amazon.com/apache2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
 /* cJSON */
 /* JSON parser in C. */
 
@@ -56,18 +77,18 @@
 #pragma GCC visibility pop
 #endif
 
-#include "cJSON.h"
+#include <aws/crt/external/cJSON.h>
 
 /* define our own boolean type */
-#ifdef true
-#undef true
-#endif
-#define true ((cJSON_bool)1)
+// #ifdef true
+// #undef true
+// #endif
+// #define true ((cJSON_bool)1)
 
-#ifdef false
-#undef false
-#endif
-#define false ((cJSON_bool)0)
+// #ifdef false
+// #undef false
+// #endif
+// #define false ((cJSON_bool)0)
 
 /* define isnan and isinf for ANSI C, if in C99 or above, isnan and isinf has been defined in math.h */
 #ifndef isinf
@@ -86,6 +107,8 @@ typedef struct {
     size_t position;
 } error;
 static error global_error = { NULL, 0 };
+
+namespace Aws {
 
 CJSON_PUBLIC(const char *) cJSON_GetErrorPtr(void)
 {
@@ -403,7 +426,7 @@ CJSON_PUBLIC(char*) cJSON_SetValuestring(cJSON *object, const char *valuestring)
     }
     if (strlen(valuestring) <= strlen(object->valuestring))
     {
-        strcpy(object->valuestring, valuestring);
+        strncpy(object->valuestring, valuestring, strlen(valuestring) + 1);
         return object->valuestring;
     }
     copy = (char*) cJSON_strdup((const unsigned char*)valuestring, &global_hooks);
@@ -915,7 +938,7 @@ static cJSON_bool print_string_ptr(const unsigned char * const input, printbuffe
         {
             return false;
         }
-        strcpy((char*)output, "\"\"");
+        strncpy((char*)output, "\"\"", strlen("\"\"") + 1);
 
         return true;
     }
@@ -1375,7 +1398,7 @@ static cJSON_bool print_value(const cJSON * const item, printbuffer * const outp
             {
                 return false;
             }
-            strcpy((char*)output, "null");
+            strncpy((char*)output, "null", strlen("null") + 1);
             return true;
 
         case cJSON_False:
@@ -1384,7 +1407,7 @@ static cJSON_bool print_value(const cJSON * const item, printbuffer * const outp
             {
                 return false;
             }
-            strcpy((char*)output, "false");
+            strncpy((char*)output, "false", strlen("false") + 1);
             return true;
 
         case cJSON_True:
@@ -1393,7 +1416,7 @@ static cJSON_bool print_value(const cJSON * const item, printbuffer * const outp
             {
                 return false;
             }
-            strcpy((char*)output, "true");
+            strncpy((char*)output, "true", strlen("true") + 1);
             return true;
 
         case cJSON_Number:
@@ -3092,4 +3115,6 @@ CJSON_PUBLIC(void *) cJSON_malloc(size_t size)
 CJSON_PUBLIC(void) cJSON_free(void *object)
 {
     global_hooks.deallocate(object);
+}
+
 }
