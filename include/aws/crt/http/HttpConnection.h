@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/http/connection.h>
+#include <aws/http/proxy.h>
 #include <aws/http/request_response.h>
 
 #include <aws/crt/Types.h>
@@ -29,6 +30,7 @@ namespace Aws
             class HttpStream;
             class HttpClientStream;
             class HttpRequest;
+            class HttpProxyStrategy;
             using HttpHeader = aws_http_header;
 
             /**
@@ -211,13 +213,42 @@ namespace Aws
             };
 
             /**
-             * Mirror of the aws_http_proxy_authentication_type C enum - designates what kind of
-             * authentication, if any, to use when connecting to a proxy server
+             * @deprecated enum that designates what kind of authentication, if any, to use when connecting to a
+             * proxy server.
+             *
+             * Here for backwards compatibility.  Has been superceded by proxy strategies.
              */
             enum class AwsHttpProxyAuthenticationType
             {
-                None = AWS_HPAT_NONE,
-                Basic = AWS_HPAT_BASIC,
+                None,
+                Basic,
+            };
+
+            /*
+             * Mirror of aws_http_proxy_connection_type enum
+             */
+            enum class AwsHttpProxyConnectionType
+            {
+                /**
+                 * Deprecated, but 0-valued for backwards compatibility
+                 *
+                 * If tls options are provided (for the main connection) then treat the proxy as a tunneling proxy
+                 * If tls options are not provided (for the main connection), then treate the proxy as a forwarding
+                 * proxy
+                 */
+                Legacy = AWS_HPCT_HTTP_LEGACY,
+
+                /**
+                 * Use the proxy to forward http requests.  Attempting to use both this mode and TLS to the destination
+                 * is a configuration error.
+                 */
+                Forwarding = AWS_HPCT_HTTP_FORWARD,
+
+                /**
+                 * Use the proxy to establish an http connection via a CONNECT request to the proxy.  Works for both
+                 * plaintext and tls connections.
+                 */
+                Tunneling = AWS_HPCT_HTTP_TUNNEL,
             };
 
             /**
@@ -236,6 +267,18 @@ namespace Aws
                 ~HttpClientConnectionProxyOptions() = default;
 
                 /**
+                 * Intended for internal use only.  Initializes the C proxy configuration structure,
+                 * aws_http_proxy_options, from an HttpClientConnectionProxyOptions instance.
+                 *
+                 * @param raw_options - output parameter containing low level proxy options to be passed to the C
+                 * interface
+                 *
+                 * If this object itself does not live to the C call that uses raw_options,
+                 * you will get a crash.
+                 */
+                void InitializeRawProxyOptions(struct aws_http_proxy_options &raw_options) const;
+
+                /**
                  * The name of the proxy server to connect through.
                  * Required.
                  */
@@ -248,23 +291,41 @@ namespace Aws
                 uint16_t Port;
 
                 /**
-                 * Sets the TLS options for the proxy connection.
+                 * Sets the TLS options for the connection to the proxy.
                  * Optional.
                  */
                 Optional<Io::TlsConnectionOptions> TlsOptions;
 
                 /**
-                 * What kind of authentication approach to use when connecting to the proxy
+                 * What kind of proxy connection to make
+                 */
+                AwsHttpProxyConnectionType ProxyConnectionType;
+
+                /**
+                 * Proxy strategy to use while negotiating the connection.  Use null for no additional
+                 * steps.
+                 */
+                std::shared_ptr<HttpProxyStrategy> ProxyStrategy;
+
+                /**
+                 * @deprecated What kind of authentication approach to use when connecting to the proxy
+                 * Replaced by proxy strategy
+                 *
+                 * Backwards compatibility achieved by invoking CreateBasicHttpProxyStrategy if
+                 *   (1) ProxyStrategy is null
+                 *   (2) AuthType is AwsHttpProxyAuthenticationType::Basic
                  */
                 AwsHttpProxyAuthenticationType AuthType;
 
                 /**
-                 * The username to use if connecting to the proxy via basic authentication
+                 * @deprecated The username to use if connecting to the proxy via basic authentication
+                 * Replaced by using the result of CreateBasicHttpProxyStrategy()
                  */
                 String BasicAuthUsername;
 
                 /**
-                 * The password to use if connecting to the proxy via basic authentication
+                 * @deprecated The password to use if connecting to the proxy via basic authentication
+                 * Replaced by using the result of CreateBasicHttpProxyStrategy()
                  */
                 String BasicAuthPassword;
             };

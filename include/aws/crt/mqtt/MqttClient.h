@@ -75,6 +75,25 @@ namespace Aws
 
             /**
              * Invoked upon receipt of a Publish message on a subscribed topic.
+             * @param connection    The connection object
+             * @param topic         The information channel to which the payload data was published.
+             * @param payload       The payload data.
+             * @param dup           DUP flag. If true, this might be re-delivery of an earlier
+             *                      attempt to send the message.
+             * @param qos           Quality of Service used to deliver the message.
+             * @param retain        Retain flag. If true, the message was sent as a result of
+             *                      a new subscription being made by the client.
+             */
+            using OnMessageReceivedHandler = std::function<void(
+                MqttConnection &connection,
+                const String &topic,
+                const ByteBuf &payload,
+                bool dup,
+                QOS qos,
+                bool retain)>;
+
+            /**
+             * @deprecated Use OnMessageReceivedHandler
              */
             using OnPublishReceivedHandler =
                 std::function<void(MqttConnection &connection, const String &topic, const ByteBuf &payload)>;
@@ -135,9 +154,16 @@ namespace Aws
                 bool SetLogin(const char *userName, const char *password) noexcept;
 
                 /**
-                 * Sets websocket proxy options. Proxies are only allowed for use with websockets.
+                 * @deprecated Sets websocket proxy options. Replaced by SetHttpProxyOptions.
                  */
                 bool SetWebsocketProxyOptions(const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
+
+                /**
+                 * Sets http proxy options. In order to use an http proxy with mqtt either
+                 *   (1) Websockets are used
+                 *   (2) Mqtt-over-tls is used and the ALPN list of the tls context contains a tag that resolves to mqtt
+                 */
+                bool SetHttpProxyOptions(const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
 
                 /**
                  * Customize time to wait between reconnect attempts.
@@ -155,7 +181,8 @@ namespace Aws
                     const char *clientId,
                     bool cleanSession,
                     uint16_t keepAliveTimeSecs = 0,
-                    uint32_t pingTimeoutMs = 0) noexcept;
+                    uint32_t pingTimeoutMs = 0,
+                    uint32_t protocolOperationTimeoutMs = 0) noexcept;
 
                 /**
                  * Initiates disconnect, OnDisconnectHandler will be invoked in an event-loop thread.
@@ -163,9 +190,23 @@ namespace Aws
                 bool Disconnect() noexcept;
 
                 /**
-                 * Subscribes to topicFilter. OnPublishReceivedHandler will be invoked from an event-loop
+                 * @return the pointer to the underlying mqtt connection
+                 */
+                aws_mqtt_client_connection *GetUnderlyingConnection() noexcept;
+
+                /**
+                 * Subscribes to topicFilter. OnMessageReceivedHandler will be invoked from an event-loop
                  * thread upon an incoming Publish message. OnSubAckHandler will be invoked
                  * upon receipt of a suback message.
+                 */
+                uint16_t Subscribe(
+                    const char *topicFilter,
+                    QOS qos,
+                    OnMessageReceivedHandler &&onMessage,
+                    OnSubAckHandler &&onSubAck) noexcept;
+
+                /**
+                 * @deprecated Use alternate Subscribe()
                  */
                 uint16_t Subscribe(
                     const char *topicFilter,
@@ -174,9 +215,17 @@ namespace Aws
                     OnSubAckHandler &&onSubAck) noexcept;
 
                 /**
-                 * Subscribes to multiple topicFilters. OnPublishReceivedHandler will be invoked from an event-loop
+                 * Subscribes to multiple topicFilters. OnMessageReceivedHandler will be invoked from an event-loop
                  * thread upon an incoming Publish message. OnMultiSubAckHandler will be invoked
                  * upon receipt of a suback message.
+                 */
+                uint16_t Subscribe(
+                    const Vector<std::pair<const char *, OnMessageReceivedHandler>> &topicFilters,
+                    QOS qos,
+                    OnMultiSubAckHandler &&onOpComplete) noexcept;
+
+                /**
+                 * @deprecated Use alternate Subscribe()
                  */
                 uint16_t Subscribe(
                     const Vector<std::pair<const char *, OnPublishReceivedHandler>> &topicFilters,
@@ -186,6 +235,11 @@ namespace Aws
                 /**
                  * Installs a handler for all incoming publish messages, regardless of if Subscribe has been
                  * called on the topic.
+                 */
+                bool SetOnMessageHandler(OnMessageReceivedHandler &&onMessage) noexcept;
+
+                /**
+                 * @deprecated Use alternate SetOnMessageHandler()
                  */
                 bool SetOnMessageHandler(OnPublishReceivedHandler &&onPublish) noexcept;
 
@@ -258,6 +312,9 @@ namespace Aws
                     aws_mqtt_client_connection *connection,
                     const aws_byte_cursor *topic,
                     const aws_byte_cursor *payload,
+                    bool dup,
+                    enum aws_mqtt_qos qos,
+                    bool retain,
                     void *user_data);
 
                 static void s_onSubAck(

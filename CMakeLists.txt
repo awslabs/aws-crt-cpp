@@ -1,6 +1,40 @@
 cmake_minimum_required(VERSION 3.1)
+if (POLICY CMP0077)
+    cmake_policy(SET CMP0077 NEW)
+endif()
+
 project(aws-crt-cpp CXX C)
-option(BUILD_DEPS "Builds aws common runtime dependencies as part of build, only do this if you don't want to control your dependency chain." OFF)
+option(BUILD_DEPS "Builds aws common runtime dependencies as part of build. Turn off if you want to control your dependency chain." ON)
+option(BYO_CRYPTO "Don't build a tls implementation or link against a crypto interface. This feature is only for unix builds currently" OFF)
+option(USE_OPENSSL "Set this if you want to use your system's OpenSSL 1.0.2/1.1.1 compatible libcrypto" OFF)
+
+# Proxy integration test control - In addition to this option, all proxy tests require the following environment variables set appropriately when running tests:
+#
+# AWS_TEST_HTTP_PROXY_HOST - host address of the proxy to use for tests that make open connections to the proxy
+# AWS_TEST_HTTP_PROXY_PORT - port to use for tests that make open connections to the proxy
+# AWS_TEST_HTTPS_PROXY_HOST - host address of the proxy to use for tests that make tls-protected connections to the proxy
+# AWS_TEST_HTTPS_PROXY_PORT - port to use for tests that make tls-protected connections to the proxy
+# AWS_TEST_HTTP_PROXY_BASIC_HOST - host address of the proxy to use for tests that make open connections to the proxy with basic authentication
+# AWS_TEST_HTTP_PROXY_BASIC_PORT - port to use for tests that make open connections to the proxy with basic authentication
+#
+# The x509 proxy tests also require:
+#
+# AWS_TEST_TLS_CERT_PATH - file path to certificate used to initialize the tls context of the x509 provider connection
+# AWS_TEST_TLS_KEY_PATH - file path to the key used to initialize the tls context of the x509 provider connection
+# AWS_TEST_TLS_ROOT_CERT_PATH - file path to the root CA used to initialize the tls context of the x509 provider connection
+# AWS_TEST_X509_ENDPOINT - AWS account-specific endpoint to source x509 credentials from
+# AWS_TEST_X509_THING_NAME - associated name of the x509 thing
+# AWS_TEST_X509_ROLE_ALIAS - associated role alias ...
+#
+# And the mqtt websocket tests require x509 sourced credentials with sufficient permission to
+# connect to IoT Core as well as:
+#
+# AWS_TEST_IOT_SIGNING_REGION - AWS region to make a websocket connection to
+# AWS_TEST_IOT_MQTT_ENDPOINT - AWS account-specific endpoint to connect to IoT core by
+#
+# ToDo: Scripts to populate environment variables via the CLI and IoT, SecretsManager calls
+#
+option(ENABLE_PROXY_INTEGRATION_TESTS "Whether or not to build and run the proxy integration tests that rely on a proxy server installed and running locally" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(AwsCheckHeadersCxx)
@@ -68,7 +102,16 @@ if (BUILD_DEPS)
     set(BUILD_TESTING OFF)
     add_subdirectory(crt/aws-c-common)
 
-    if (UNIX AND NOT APPLE)
+    if (UNIX AND NOT APPLE AND NOT BYO_CRYPTO)
+        if (NOT USE_OPENSSL)
+            set(DISABLE_PERL ON CACHE BOOL "Disable Perl for AWS-LC.")
+            set(DISABLE_GO ON CACHE BOOL "Disable Go for AWS-LC.")
+            add_subdirectory(crt/aws-lc)
+            set(SEARCH_LIBCRYPTO OFF CACHE BOOL "Let S2N use libcrypto from AWS-LC.")
+        else()
+            set(SEARCH_LIBCRYPTO ON CACHE BOOL "Let S2N search libcrypto in the system.")
+        endif()
+        set(UNSAFE_TREAT_WARNINGS_AS_ERRORS OFF CACHE BOOL "Disable warnings-as-errors when building S2N")
         add_subdirectory(crt/s2n)
     endif()
 
@@ -80,6 +123,7 @@ if (BUILD_DEPS)
     add_subdirectory(crt/aws-c-mqtt)
     add_subdirectory(crt/aws-checksums)
     add_subdirectory(crt/aws-c-event-stream)
+    add_subdirectory(crt/aws-c-s3)
     set(BUILD_TESTING ${BUILD_TESTING_PREV})
 else()
     include(AwsFindPackage)
@@ -217,20 +261,23 @@ set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDA
 
 aws_prepare_symbol_visibility_args(${PROJECT_NAME} "AWS_CRT_CPP")
 
-#set warnings and runtime library
+#set runtime library
 if (MSVC)
     if(STATIC_CRT)
         target_compile_options(${PROJECT_NAME} PRIVATE "/MT$<$<CONFIG:Debug>:d>")
     else()
         target_compile_options(${PROJECT_NAME} PRIVATE "/MD$<$<CONFIG:Debug>:d>")
     endif()
-    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
-else ()
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
 endif ()
 
 if (CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE MATCHES Debug)
     target_compile_definitions(${PROJECT_NAME} PRIVATE "-DDEBUG_BUILD")
+    #set extra warning flags for debug build
+    if (MSVC)
+        target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
+    else ()
+        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
+    endif ()
 endif ()
 
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -245,6 +292,7 @@ aws_use_package(aws-c-common)
 aws_use_package(aws-c-io)
 aws_use_package(aws-checksums)
 aws_use_package(aws-c-event-stream)
+aws_use_package(aws-c-s3)
 
 target_link_libraries(${PROJECT_NAME} ${DEP_AWS_LIBS})
 
@@ -286,6 +334,8 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
 if (NOT CMAKE_CROSSCOMPILING)
     if (BUILD_TESTING)
         add_subdirectory(tests)
-        add_subdirectory(bin/elasticurl_cpp)
+        if (NOT BYO_CRYPTO)
+            add_subdirectory(bin/elasticurl_cpp)
+        endif ()
     endif()
 endif()

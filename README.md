@@ -20,28 +20,19 @@ More protocols and utilities are coming soon, so stay tuned.
 
 ## Building
 
-The C99 libraries are already included for your convenience as submodules. If you would like to have us build them
-by default, be sure to either perform a recursive clone `git clone --recursive` or initialize the submodules via.
-`git submodule update --init`. Then, to build, specify the `-DBUILD_DEPS=ON` CMake argument.
+The C99 libraries are already included for your convenience as submodules.
+You should perform a recursive clone `git clone --recursive` or initialize the submodules via
+`git submodule update --init`. These dependencies are compiled by CMake as part of the build process.
 
-If you want to manage these dependencies manually (e.g. you're using them in other projects), simply specify
-`-DCMAKE_PREFIX_PATH` to point to the absolute path where you have them installed.
+If you want to manage these dependencies manually (e.g. you're using them in other projects), configure CMake with
+`-DBUILD_DEPS=OFF` and `-DCMAKE_PREFIX_PATH=<install>` pointing to the absolute path where you have them installed.
 
 ### MSVC
 If you want to use a statically linked MSVCRT (/MT, /MTd), you can add `-DSTATIC_CRT=ON` to your cmake configuration.
 
 ## Dependencies?
 
-### Windows and Apple
 There are no non-OS dependencies that AWS does not own, maintain, and ship.
-
-### Unix
-The most likely answer is: none that you should care about.
-
-We do depend on an openssl compatible libcrypto implementation being in your path if you are on a
-unix system. Note: we do not actually use libssl. The most likely scenario is that libcrypto is already installed on your system. However, since
-many linux distributions these days do not provide a 32-bit libcrypto package, if you're trying to perform a 32-bit build you will
-likely need to build and install libcrypto from source.
 
 ## Common Usage
 

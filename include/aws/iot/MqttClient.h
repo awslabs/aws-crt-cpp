@@ -3,9 +3,12 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include <aws/crt/Config.h>
 #include <aws/crt/Exports.h>
 #include <aws/crt/auth/Sigv4Signing.h>
 #include <aws/crt/mqtt/MqttClient.h>
+
+#if !BYO_CRYPTO
 
 namespace Aws
 {
@@ -60,15 +63,26 @@ namespace Aws
 
           private:
             MqttClientConnectionConfig(int lastError) noexcept;
+
+            MqttClientConnectionConfig(
+                const Crt::String &endpoint,
+                uint16_t port,
+                const Crt::Io::SocketOptions &socketOptions,
+                Crt::Io::TlsContext &&tlsContext,
+                const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions);
+
             Crt::String m_endpoint;
             uint16_t m_port;
             Crt::Io::TlsContext m_context;
             Crt::Io::SocketOptions m_socketOptions;
             Crt::Mqtt::OnWebSocketHandshakeIntercept m_webSocketInterceptor;
+            Crt::String m_username;
+            Crt::String m_password;
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
             int m_lastError;
 
             friend class MqttClient;
+            friend class MqttClientConnectionConfigBuilder;
         };
 
         using CreateSigningConfig = std::function<std::shared_ptr<Crt::Auth::ISigningConfig>(void)>;
@@ -112,7 +126,10 @@ namespace Aws
             CreateSigningConfig CreateSigningConfigCb;
 
             /**
-             * Specify ProxyOptions to use a proxy with your websocket connection.
+             * @deprecated Specify ProxyOptions to use a proxy with your websocket connection.
+             *
+             * If MqttClientConnectionConfigBuilder::m_proxyOptions is valid, then that will be used over
+             * this value.
              */
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> ProxyOptions;
             Crt::String SigningRegion;
@@ -207,6 +224,30 @@ namespace Aws
             MqttClientConnectionConfigBuilder &WithMinimumTlsVersion(aws_tls_versions minimumTlsVersion) noexcept;
 
             /**
+             * Sets http proxy options. In order to use an http proxy with mqtt either
+             *   (1) Websockets are used
+             *   (2) Mqtt-over-tls is used and the ALPN list of the tls context contains a tag that resolves to mqtt
+             */
+            MqttClientConnectionConfigBuilder &WithHttpProxyOptions(
+                const Crt::Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
+
+            /**
+             * Whether to send the SDK name and version number in the MQTT CONNECT packet.
+             * Default is True.
+             */
+            MqttClientConnectionConfigBuilder &WithMetricsCollection(bool enabled);
+
+            /**
+             * Overrides the default SDK Name to send as a metric in the MQTT CONNECT packet.
+             */
+            MqttClientConnectionConfigBuilder &WithSdkName(const Crt::String &sdkName);
+
+            /**
+             * Overrides the default SDK Version to send as a metric in the MQTT CONNECT packet.
+             */
+            MqttClientConnectionConfigBuilder &WithSdkVersion(const Crt::String &sdkVersion);
+
+            /**
              * Builds a client configuration object from the set options.
              */
             MqttClientConnectionConfig Build() noexcept;
@@ -226,6 +267,11 @@ namespace Aws
             Crt::Io::SocketOptions m_socketOptions;
             Crt::Io::TlsContextOptions m_contextOptions;
             Crt::Optional<WebsocketConfig> m_websocketConfig;
+            Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
+            bool m_enableMetricsCollection = true;
+            Crt::String m_sdkName = "CPPv2";
+            Crt::String m_sdkVersion = AWS_CRT_CPP_VERSION;
+
             bool m_isGood;
         };
 
@@ -255,3 +301,5 @@ namespace Aws
         };
     } // namespace Iot
 } // namespace Aws
+
+#endif // !BYO_CRYPTO

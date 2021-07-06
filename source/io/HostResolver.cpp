@@ -25,7 +25,12 @@ namespace Aws
             {
                 AWS_ZERO_STRUCT(m_config);
 
-                m_resolver = aws_host_resolver_new_default(allocator, maxHosts, elGroup.GetUnderlyingHandle(), NULL);
+                struct aws_host_resolver_default_options resolver_options;
+                AWS_ZERO_STRUCT(resolver_options);
+                resolver_options.max_entries = maxHosts;
+                resolver_options.el_group = elGroup.GetUnderlyingHandle();
+
+                m_resolver = aws_host_resolver_new_default(allocator, &resolver_options);
                 if (m_resolver != nullptr)
                 {
                     m_initialized = true;

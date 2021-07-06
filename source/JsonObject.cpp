@@ -24,7 +24,7 @@ namespace Aws
         JsonObject::JsonObject(const String &value) : m_wasParseSuccessful(true)
         {
             const char *return_parse_end;
-            m_value = cJSON_ParseWithOpts(value.c_str(), value.length(), &return_parse_end);
+            m_value = cJSON_ParseWithLengthOpts(value.c_str(), value.length(), &return_parse_end, 0);
 
             if (m_value == nullptr || cJSON_IsInvalid(m_value) == 1)
             {
@@ -378,7 +378,7 @@ namespace Aws
             AWS_ASSERT(m_value);
             auto item = cJSON_GetObjectItemCaseSensitive(m_value, key);
             AWS_ASSERT(item);
-            return item->valueint != 0;
+            return cJSON_IsTrue(item) != 0;
         }
 
         bool JsonView::AsBool() const

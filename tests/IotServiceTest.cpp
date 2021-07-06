@@ -6,17 +6,19 @@
 #include <aws/crt/Api.h>
 
 #include <aws/testing/aws_test_harness.h>
-#include <utility>
 
 #include <condition_variable>
 #include <fstream>
 #include <mutex>
+#include <utility>
 
 #include <aws/io/logging.h>
 
 #define TEST_CERTIFICATE "/tmp/certificate.pem"
 #define TEST_PRIVATEKEY "/tmp/privatekey.pem"
 #define TEST_ROOTCA "/tmp/AmazonRootCA1.pem"
+
+#if !BYO_CRYPTO
 
 static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
 {
@@ -149,9 +151,9 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
         }
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_ERROR_SUCCESS;
 }
 
 AWS_TEST_CASE(IotPublishSubscribe, s_TestIotPublishSubscribe)
+
+#endif // !BYO_CRYPTO

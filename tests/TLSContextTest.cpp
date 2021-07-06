@@ -6,7 +6,7 @@
 
 #include <aws/testing/aws_test_harness.h>
 #include <utility>
-
+#if !BYO_CRYPTO
 static int s_TestTLSContextResourceSafety(Aws::Crt::Allocator *allocator, void *ctx)
 {
     (void)ctx;
@@ -25,8 +25,6 @@ static int s_TestTLSContextResourceSafety(Aws::Crt::Allocator *allocator, void *
 
         auto tlsConnectionOptions = tlsContextPostMove.NewConnectionOptions();
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_ERROR_SUCCESS;
 }
@@ -48,9 +46,8 @@ static int s_TestTLSContextUninitializedNewConnectionOptions(Aws::Crt::Allocator
         ASSERT_TRUE(!options);
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_ERROR_SUCCESS;
 }
 
 AWS_TEST_CASE(TLSContextUninitializedNewConnectionOptions, s_TestTLSContextUninitializedNewConnectionOptions)
+#endif // !BYO_CRYPTO

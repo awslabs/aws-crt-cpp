@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/http/HttpConnection.h>
+#include <aws/crt/http/HttpProxyStrategy.h>
 #include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Bootstrap.h>
 
@@ -94,6 +95,30 @@ namespace Aws
                 AWS_FATAL_ASSERT(connectionOptions.OnConnectionSetupCallback);
                 AWS_FATAL_ASSERT(connectionOptions.OnConnectionShutdownCallback);
 
+                if (connectionOptions.TlsOptions && !(*connectionOptions.TlsOptions))
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_HTTP_GENERAL,
+                        "Cannot create HttpClientConnection: connectionOptions contains invalid TlsOptions.");
+                    aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
+                    return false;
+                }
+
+                if (connectionOptions.ProxyOptions)
+                {
+                    const auto &proxyOpts = connectionOptions.ProxyOptions.value();
+
+                    if (proxyOpts.TlsOptions && !(*proxyOpts.TlsOptions))
+                    {
+                        AWS_LOGF_ERROR(
+                            AWS_LS_HTTP_GENERAL,
+                            "Cannot create HttpClientConnection: connectionOptions has ProxyOptions that contain "
+                            "invalid TlsOptions.");
+                        aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
+                        return false;
+                    }
+                }
+
                 auto *callbackData = New<ConnectionCallbackData>(allocator, allocator);
 
                 if (!callbackData)
@@ -107,8 +132,12 @@ namespace Aws
                 AWS_ZERO_STRUCT(options);
                 options.self_size = sizeof(aws_http_client_connection_options);
                 options.bootstrap = connectionOptions.Bootstrap->GetUnderlyingHandle();
+
                 if (connectionOptions.TlsOptions)
                 {
+                    /* This is verified earlier in this function. */
+                    AWS_FATAL_ASSERT(*connectionOptions.TlsOptions);
+
                     options.tls_options =
                         const_cast<aws_tls_connection_options *>(connectionOptions.TlsOptions->GetUnderlyingHandle());
                 }
@@ -121,6 +150,20 @@ namespace Aws
                 options.on_setup = HttpClientConnection::s_onClientConnectionSetup;
                 options.on_shutdown = HttpClientConnection::s_onClientConnectionShutdown;
                 options.manual_window_management = connectionOptions.ManualWindowManagement;
+
+                aws_http_proxy_options proxyOptions;
+                AWS_ZERO_STRUCT(proxyOptions);
+                if (connectionOptions.ProxyOptions)
+                {
+                    const auto &proxyOpts = connectionOptions.ProxyOptions.value();
+
+                    /* This is verified earlier in this function. */
+                    AWS_FATAL_ASSERT(!proxyOpts.TlsOptions || *proxyOpts.TlsOptions);
+
+                    proxyOpts.InitializeRawProxyOptions(proxyOptions);
+
+                    options.proxy_options = &proxyOptions;
+                }
 
                 if (aws_http_client_connect(&options))
                 {
@@ -306,9 +349,35 @@ namespace Aws
             }
 
             HttpClientConnectionProxyOptions::HttpClientConnectionProxyOptions()
-                : HostName(), Port(0), TlsOptions(), AuthType(AwsHttpProxyAuthenticationType::None),
-                  BasicAuthUsername(), BasicAuthPassword()
+                : HostName(), Port(0), TlsOptions(), ProxyConnectionType(AwsHttpProxyConnectionType::Legacy),
+                  ProxyStrategy(), AuthType(AwsHttpProxyAuthenticationType::None)
             {
+            }
+
+            void HttpClientConnectionProxyOptions::InitializeRawProxyOptions(
+                struct aws_http_proxy_options &rawOptions) const
+            {
+                AWS_ZERO_STRUCT(rawOptions);
+                rawOptions.connection_type = (enum aws_http_proxy_connection_type)ProxyConnectionType;
+                rawOptions.host = aws_byte_cursor_from_c_str(HostName.c_str());
+                rawOptions.port = Port;
+
+                if (TlsOptions.has_value())
+                {
+                    rawOptions.tls_options = TlsOptions->GetUnderlyingHandle();
+                }
+
+                if (ProxyStrategy)
+                {
+                    rawOptions.proxy_strategy = ProxyStrategy->GetUnderlyingHandle();
+                }
+
+                if (AuthType == AwsHttpProxyAuthenticationType::Basic)
+                {
+                    rawOptions.auth_type = AWS_HPAT_BASIC;
+                    rawOptions.auth_username = ByteCursorFromCString(BasicAuthUsername.c_str());
+                    rawOptions.auth_password = ByteCursorFromCString(BasicAuthPassword.c_str());
+                }
             }
 
             HttpClientConnectionOptions::HttpClientConnectionOptions()

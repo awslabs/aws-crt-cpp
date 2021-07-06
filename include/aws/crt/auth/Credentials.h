@@ -93,6 +93,11 @@ namespace Aws
             using OnCredentialsResolved = std::function<void(std::shared_ptr<Credentials>, int errorCode)>;
 
             /**
+             * Invoked when the native delegate credentials provider needs to fetch a credential.
+             */
+            using GetCredentialsHandler = std::function<std::shared_ptr<Credentials>()>;
+
+            /**
              * Base interface for all credentials providers.  Credentials providers are objects that
              * retrieve AWS credentials from some source.
              */
@@ -125,7 +130,12 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API CredentialsProviderStaticConfig
             {
-                CredentialsProviderStaticConfig() : AccessKeyId{}, SecretAccessKey{}, SessionToken{} {}
+                CredentialsProviderStaticConfig()
+                {
+                    AWS_ZERO_STRUCT(AccessKeyId);
+                    AWS_ZERO_STRUCT(SecretAccessKey);
+                    AWS_ZERO_STRUCT(SessionToken);
+                }
 
                 /**
                  * The value of the access key component for the provider's static aws credentials
@@ -148,9 +158,11 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API CredentialsProviderProfileConfig
             {
-                CredentialsProviderProfileConfig()
-                    : ProfileNameOverride{}, ConfigFileNameOverride{}, CredentialsFileNameOverride{}
+                CredentialsProviderProfileConfig() : Bootstrap(nullptr), TlsContext(nullptr)
                 {
+                    AWS_ZERO_STRUCT(ProfileNameOverride);
+                    AWS_ZERO_STRUCT(ConfigFileNameOverride);
+                    AWS_ZERO_STRUCT(CredentialsFileNameOverride);
                 }
 
                 /**
@@ -169,6 +181,22 @@ namespace Aws
                  * credential sourcing
                  */
                 ByteCursor CredentialsFileNameOverride;
+
+                /**
+                 * Connection bootstrap to use for any network connections made while sourcing credentials.
+                 * (for example, a profile that uses assume-role will need to query STS).
+                 */
+                Io::ClientBootstrap *Bootstrap;
+
+                /**
+                 * Client TLS context to use for any secure network connections made while sourcing credentials
+                 * (for example, a profile that uses assume-role will need to query STS).
+                 *
+                 * If a TLS context is needed, and you did not pass one in, it will be created automatically.
+                 * However, you are encouraged to pass in a shared one since these are expensive objects.
+                 * If using BYO_CRYPTO, you must provide the TLS context since it cannot be created automatically.
+                 */
+                Io::TlsContext *TlsContext;
             };
 
             /**
@@ -226,13 +254,21 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API CredentialsProviderChainDefaultConfig
             {
-                CredentialsProviderChainDefaultConfig() : Bootstrap(nullptr) {}
+                CredentialsProviderChainDefaultConfig() : Bootstrap(nullptr), TlsContext(nullptr) {}
 
                 /**
-                 * Connection bootstrap to use to create the http connection required to
-                 * query credentials from the Ec2 instance metadata service
+                 * Connection bootstrap to use for any network connections made while sourcing credentials.
                  */
                 Io::ClientBootstrap *Bootstrap;
+
+                /**
+                 * Client TLS context to use for any secure network connections made while sourcing credentials.
+                 *
+                 * If not provided the default chain will construct a new one, but these
+                 * are expensive objects so you are encouraged to pass in a shared one.
+                 * Must be provided if using BYO_CRYPTO.
+                 */
+                Io::TlsContext *TlsContext;
             };
 
             /**
@@ -272,6 +308,15 @@ namespace Aws
                  * (Optional) Http proxy configuration for the http request that fetches credentials
                  */
                 Optional<Http::HttpClientConnectionProxyOptions> ProxyOptions;
+            };
+
+            /**
+             * Configuration options for the delegate credentials provider
+             */
+            struct AWS_CRT_CPP_API CredentialsProviderDelegateConfig
+            {
+                /* handler to provider credentials */
+                GetCredentialsHandler Handler;
             };
 
             /**
@@ -372,6 +417,14 @@ namespace Aws
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderX509(
                     const CredentialsProviderX509Config &config,
+                    Allocator *allocator = g_allocator);
+
+                /**
+                 * Creates a provider that sources credentials from the provided function.
+                 *
+                 */
+                static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderDelegate(
+                    const CredentialsProviderDelegateConfig &config,
                     Allocator *allocator = g_allocator);
 
               private:

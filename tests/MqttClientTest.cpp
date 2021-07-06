@@ -5,8 +5,9 @@
 #include <aws/crt/Api.h>
 
 #include <aws/testing/aws_test_harness.h>
-#include <utility>
 
+#include <utility>
+#if !BYO_CRYPTO
 static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator *allocator, void *ctx)
 {
     (void)ctx;
@@ -47,8 +48,6 @@ static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator *allocator, void *
         ASSERT_FALSE(mqttClient);
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_ERROR_SUCCESS;
 }
 
@@ -86,9 +85,8 @@ static int s_TestMqttClientNewConnectionUninitializedTlsContext(Aws::Crt::Alloca
         ASSERT_TRUE(aws_last_error() == AWS_ERROR_INVALID_ARGUMENT);
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_ERROR_SUCCESS;
 }
 
 AWS_TEST_CASE(MqttClientNewConnectionUninitializedTlsContext, s_TestMqttClientNewConnectionUninitializedTlsContext)
+#endif // !BYO_CRYPTO

@@ -103,7 +103,6 @@ static int s_TestCredentialsConstruction(struct aws_allocator *allocator, void *
         ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_session_token));
         ASSERT_UINT_EQUALS(expire, creds2.GetExpirationTimepointInSeconds());
     }
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
@@ -127,8 +126,6 @@ static int s_TestProviderStaticGet(struct aws_allocator *allocator, void *ctx)
         auto creds = waiter.GetCredentials();
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_OP_SUCCESS;
 }
 
@@ -145,8 +142,6 @@ static int s_TestProviderEnvironmentGet(struct aws_allocator *allocator, void *c
 
         auto creds = waiter.GetCredentials();
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
@@ -170,8 +165,6 @@ static int s_TestProviderProfileGet(struct aws_allocator *allocator, void *ctx)
             auto creds = waiter.GetCredentials();
         }
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
@@ -205,14 +198,12 @@ static int s_TestProviderImdsGet(struct aws_allocator *allocator, void *ctx)
         auto creds = waiter.GetCredentials();
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(TestProviderImdsGet, s_TestProviderImdsGet)
 
-static int s_TestProviderDefaultChainGet(struct aws_allocator *allocator, void *ctx)
+static int s_TestProviderDefaultChainGet(struct aws_allocator *allocator, void *ctx, bool manual_tls)
 {
     (void)ctx;
     {
@@ -228,8 +219,13 @@ static int s_TestProviderDefaultChainGet(struct aws_allocator *allocator, void *
         ASSERT_TRUE(clientBootstrap);
         clientBootstrap.EnableBlockingShutdown();
 
+        Aws::Crt::Io::TlsContextOptions tlsOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient(allocator);
+        Aws::Crt::Io::TlsContext tlsContext(tlsOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+
         CredentialsProviderChainDefaultConfig config;
         config.Bootstrap = &clientBootstrap;
+        /* TlsContext didn't used to be an option. So test with and without setting it. */
+        config.TlsContext = manual_tls ? &tlsContext : nullptr;
 
         auto provider = CredentialsProvider::CreateCredentialsProviderChainDefault(config, allocator);
         GetCredentialsWaiter waiter(provider);
@@ -237,9 +233,53 @@ static int s_TestProviderDefaultChainGet(struct aws_allocator *allocator, void *
         auto creds = waiter.GetCredentials();
     }
 
-    Aws::Crt::TestCleanupAndWait();
+    return AWS_OP_SUCCESS;
+}
+
+static int s_TestProviderDefaultChainAutoTlsContextGet(struct aws_allocator *allocator, void *ctx)
+{
+    return s_TestProviderDefaultChainGet(allocator, ctx, false /*manual_tls*/);
+}
+AWS_TEST_CASE(TestProviderDefaultChainGet, s_TestProviderDefaultChainAutoTlsContextGet)
+
+static int s_TestProviderDefaultChainManualTlsContextGet(struct aws_allocator *allocator, void *ctx)
+{
+    return s_TestProviderDefaultChainGet(allocator, ctx, true /*manual_tls*/);
+}
+AWS_TEST_CASE(TestProviderDefaultChainManualTlsContextGet, s_TestProviderDefaultChainManualTlsContextGet)
+
+static int s_TestProviderDelegateGet(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        ApiHandle apiHandle(allocator);
+
+        auto delegateGetCredentials = [&allocator]() -> std::shared_ptr<Credentials> {
+            Credentials credentials(
+                aws_byte_cursor_from_c_str(s_access_key_id),
+                aws_byte_cursor_from_c_str(s_secret_access_key),
+                aws_byte_cursor_from_c_str(s_session_token),
+                UINT32_MAX,
+                allocator);
+            return Aws::Crt::MakeShared<Auth::Credentials>(allocator, credentials.GetUnderlyingHandle());
+        };
+
+        CredentialsProviderDelegateConfig config;
+        config.Handler = delegateGetCredentials;
+        auto provider = CredentialsProvider::CreateCredentialsProviderDelegate(config, allocator);
+        GetCredentialsWaiter waiter(provider);
+
+        auto creds = waiter.GetCredentials();
+        auto cursor = creds->GetAccessKeyId();
+        // Don't use ASSERT_STR_EQUALS(), which could log actual credentials if test fails.
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_access_key_id));
+        cursor = creds->GetSecretAccessKey();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_secret_access_key));
+        cursor = creds->GetSessionToken();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_session_token));
+    }
 
     return AWS_OP_SUCCESS;
 }
 
-AWS_TEST_CASE(TestProviderDefaultChainGet, s_TestProviderDefaultChainGet)
+AWS_TEST_CASE(TestProviderDelegateGet, s_TestProviderDelegateGet)

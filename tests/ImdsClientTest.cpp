@@ -33,7 +33,6 @@ static int s_TestCreatingImdsClient(struct aws_allocator *allocator, void *ctx)
         config.Bootstrap = &clientBootstrap;
         ImdsClient client(config);
     }
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
@@ -85,7 +84,6 @@ static int s_TestImdsClientGetInstanceInfo(struct aws_allocator *allocator, void
             ASSERT_NOT_NULL(info.instanceId.data());
         }
     }
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
@@ -159,7 +157,6 @@ static int s_TestImdsClientGetCredentials(struct aws_allocator *allocator, void 
             ASSERT_NOT_NULL(creds->GetSessionToken().ptr);
         }
     }
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }

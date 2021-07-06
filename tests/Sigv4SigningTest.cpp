@@ -130,15 +130,17 @@ static int s_Sigv4SigningTestCreateDestroy(struct aws_allocator *allocator, void
         ASSERT_TRUE(clientBootstrap);
         clientBootstrap.EnableBlockingShutdown();
 
+        Aws::Crt::Io::TlsContextOptions tlsOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient(allocator);
+        Aws::Crt::Io::TlsContext tlsContext(tlsOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+
         CredentialsProviderChainDefaultConfig config;
         config.Bootstrap = &clientBootstrap;
+        config.TlsContext = &tlsContext;
 
         auto provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(config);
 
         auto signer = Aws::Crt::MakeShared<Sigv4HttpRequestSigner>(allocator, allocator);
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
@@ -161,8 +163,12 @@ static int s_Sigv4SigningTestSimple(struct aws_allocator *allocator, void *ctx)
         ASSERT_TRUE(clientBootstrap);
         clientBootstrap.EnableBlockingShutdown();
 
+        Aws::Crt::Io::TlsContextOptions tlsOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient(allocator);
+        Aws::Crt::Io::TlsContext tlsContext(tlsOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+
         CredentialsProviderChainDefaultConfig config;
         config.Bootstrap = &clientBootstrap;
+        config.TlsContext = &tlsContext;
 
         auto provider = s_MakeAsyncStaticProvider(allocator, clientBootstrap);
 
@@ -185,8 +191,6 @@ static int s_Sigv4SigningTestSimple(struct aws_allocator *allocator, void *ctx)
         waiter.Wait();
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_OP_SUCCESS;
 }
 
@@ -208,8 +212,12 @@ static int s_Sigv4SigningTestCredentials(struct aws_allocator *allocator, void *
         ASSERT_TRUE(clientBootstrap);
         clientBootstrap.EnableBlockingShutdown();
 
+        Aws::Crt::Io::TlsContextOptions tlsOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient(allocator);
+        Aws::Crt::Io::TlsContext tlsContext(tlsOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+
         CredentialsProviderChainDefaultConfig config;
         config.Bootstrap = &clientBootstrap;
+        config.TlsContext = &tlsContext;
 
         auto signer = Aws::Crt::MakeShared<Sigv4HttpRequestSigner>(allocator, allocator);
 
@@ -229,8 +237,6 @@ static int s_Sigv4SigningTestCredentials(struct aws_allocator *allocator, void *
             });
         waiter.Wait();
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
@@ -253,8 +259,12 @@ static int s_Sigv4SigningTestUnsignedPayload(struct aws_allocator *allocator, vo
         ASSERT_TRUE(clientBootstrap);
         clientBootstrap.EnableBlockingShutdown();
 
+        Aws::Crt::Io::TlsContextOptions tlsOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient(allocator);
+        Aws::Crt::Io::TlsContext tlsContext(tlsOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+
         CredentialsProviderChainDefaultConfig config;
         config.Bootstrap = &clientBootstrap;
+        config.TlsContext = &tlsContext;
 
         auto signer = Aws::Crt::MakeShared<Sigv4HttpRequestSigner>(allocator, allocator);
 
@@ -276,8 +286,6 @@ static int s_Sigv4SigningTestUnsignedPayload(struct aws_allocator *allocator, vo
             });
         waiter.Wait();
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }

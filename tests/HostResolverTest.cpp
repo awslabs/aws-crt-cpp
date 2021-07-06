@@ -46,8 +46,6 @@ static int s_TestDefaultResolution(struct aws_allocator *allocator, void *)
         }
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_OP_SUCCESS;
 }
 

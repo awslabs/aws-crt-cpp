@@ -5,10 +5,11 @@
 #include <aws/iot/MqttClient.h>
 
 #include <aws/crt/Api.h>
-#include <aws/crt/Config.h>
 #include <aws/crt/auth/Credentials.h>
 #include <aws/crt/auth/Sigv4Signing.h>
 #include <aws/crt/http/HttpRequestResponse.h>
+
+#if !BYO_CRYPTO
 
 namespace Aws
 {
@@ -109,6 +110,17 @@ namespace Aws
         {
         }
 
+        MqttClientConnectionConfig::MqttClientConnectionConfig(
+            const Crt::String &endpoint,
+            uint16_t port,
+            const Crt::Io::SocketOptions &socketOptions,
+            Crt::Io::TlsContext &&tlsContext,
+            const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions)
+            : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
+              m_proxyOptions(proxyOptions), m_lastError(0)
+        {
+        }
+
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder() : m_isGood(false) {}
 
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
@@ -163,6 +175,25 @@ namespace Aws
         MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithEndpoint(Crt::String &&endpoint)
         {
             m_endpoint = std::move(endpoint);
+            return *this;
+        }
+
+        MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithMetricsCollection(bool enabled)
+        {
+            m_enableMetricsCollection = enabled;
+            return *this;
+        }
+
+        MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithSdkName(const Crt::String &sdkName)
+        {
+            m_sdkName = sdkName;
+            return *this;
+        }
+
+        MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithSdkVersion(
+            const Crt::String &sdkVersion)
+        {
+            m_sdkVersion = sdkVersion;
             return *this;
         }
 
@@ -238,6 +269,13 @@ namespace Aws
             return *this;
         }
 
+        MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithHttpProxyOptions(
+            const Crt::Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept
+        {
+            m_proxyOptions = proxyOptions;
+            return *this;
+        }
+
         MqttClientConnectionConfig MqttClientConnectionConfigBuilder::Build() noexcept
         {
             if (!m_isGood)
@@ -267,13 +305,27 @@ namespace Aws
                 }
             }
 
+            // add metrics string to username (if metrics enabled)
+            // note: username isn't currently exposed to users via builder, so it's always empty
+            Crt::String username;
+            if (m_enableMetricsCollection)
+            {
+                username += "?SDK=";
+                username += m_sdkName;
+                username += "&Version=";
+                username += m_sdkVersion;
+            }
+
             if (!m_websocketConfig)
             {
-                return MqttClientConnectionConfig(
+                auto config = MqttClientConnectionConfig(
                     m_endpoint,
                     port,
                     m_socketOptions,
-                    Crt::Io::TlsContext(m_contextOptions, Crt::Io::TlsMode::CLIENT, m_allocator));
+                    Crt::Io::TlsContext(m_contextOptions, Crt::Io::TlsMode::CLIENT, m_allocator),
+                    m_proxyOptions);
+                config.m_username = username;
+                return config;
             }
 
             auto websocketConfig = m_websocketConfig.value();
@@ -292,13 +344,17 @@ namespace Aws
                 websocketConfig.Signer->SignRequest(req, *signerConfig, signingComplete);
             };
 
-            return MqttClientConnectionConfig(
+            bool useWebsocketProxyOptions = m_websocketConfig->ProxyOptions.has_value() && !m_proxyOptions.has_value();
+
+            auto config = MqttClientConnectionConfig(
                 m_endpoint,
                 port,
                 m_socketOptions,
                 Crt::Io::TlsContext(m_contextOptions, Crt::Io::TlsMode::CLIENT, m_allocator),
                 signerTransform,
-                m_websocketConfig->ProxyOptions);
+                useWebsocketProxyOptions ? m_websocketConfig->ProxyOptions : m_proxyOptions);
+            config.m_username = username;
+            return config;
         }
 
         MqttClient::MqttClient(Crt::Io::ClientBootstrap &bootstrap, Crt::Allocator *allocator) noexcept
@@ -329,23 +385,34 @@ namespace Aws
                 return nullptr;
             }
 
-            if (!(*newConnection) || !newConnection->SetLogin("?SDK=CPPv2&Version=" AWS_CRT_CPP_VERSION, nullptr))
+            if (!(*newConnection))
             {
                 m_lastError = newConnection->LastError();
                 return nullptr;
             }
 
+            if (!config.m_username.empty() || !config.m_password.empty())
+            {
+                if (!newConnection->SetLogin(config.m_username.c_str(), config.m_password.c_str()))
+                {
+                    m_lastError = newConnection->LastError();
+                    return nullptr;
+                }
+            }
+
             if (useWebsocket)
             {
                 newConnection->WebsocketInterceptor = config.m_webSocketInterceptor;
+            }
 
-                if (config.m_proxyOptions)
-                {
-                    newConnection->SetWebsocketProxyOptions(config.m_proxyOptions.value());
-                }
+            if (config.m_proxyOptions)
+            {
+                newConnection->SetHttpProxyOptions(config.m_proxyOptions.value());
             }
 
             return newConnection;
         }
     } // namespace Iot
 } // namespace Aws
+
+#endif // !BYO_CRYPTO

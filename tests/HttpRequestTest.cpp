@@ -42,8 +42,6 @@ static int s_HttpRequestTestCreateDestroy(struct aws_allocator *allocator, void 
         request.EraseHeader(2);
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_OP_SUCCESS;
 }
 

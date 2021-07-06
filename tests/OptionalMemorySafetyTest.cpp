@@ -26,8 +26,6 @@ static int s_OptionalCopySafety(struct aws_allocator *allocator, void *ctx)
         ASSERT_STR_EQUALS(s_test_str, strCpyConstructedValue->c_str());
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_OP_SUCCESS;
 }
 
@@ -52,8 +50,6 @@ static int s_OptionalMoveSafety(struct aws_allocator *allocator, void *ctx)
         Aws::Crt::Optional<Aws::Crt::String> strMoveValueConstructed(std::move(*strMoveConstructed));
         ASSERT_STR_EQUALS(s_test_str, strMoveValueConstructed->c_str());
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }
@@ -128,8 +124,6 @@ static int s_OptionalCopyAndMoveSemantics(struct aws_allocator *allocator, void 
         ASSERT_FALSE(moveAssignedOptional->m_copied);
         ASSERT_TRUE(moveAssignedOptional->m_moved);
     }
-
-    Aws::Crt::TestCleanupAndWait();
 
     return AWS_OP_SUCCESS;
 }

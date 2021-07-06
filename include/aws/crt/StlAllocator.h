@@ -8,6 +8,7 @@
 
 #include <aws/common/common.h>
 #include <aws/crt/Exports.h>
+#include <type_traits>
 
 namespace Aws
 {
@@ -41,14 +42,16 @@ namespace Aws
                 typedef StlAllocator<U> other;
             };
 
-            typename Base::pointer allocate(size_type n, const void *hint = nullptr)
+            using RawPointer = typename std::allocator_traits<std::allocator<T>>::pointer;
+
+            RawPointer allocate(size_type n, const void *hint = nullptr)
             {
                 (void)hint;
                 AWS_ASSERT(m_allocator);
-                return reinterpret_cast<typename Base::pointer>(aws_mem_acquire(m_allocator, n * sizeof(T)));
+                return static_cast<RawPointer>(aws_mem_acquire(m_allocator, n * sizeof(T)));
             }
 
-            void deallocate(typename Base::pointer p, size_type)
+            void deallocate(RawPointer p, size_type)
             {
                 AWS_ASSERT(m_allocator);
                 aws_mem_release(m_allocator, p);

@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/http/HttpConnectionManager.h>
+#include <aws/crt/http/HttpProxyStrategy.h>
 
 #include <algorithm>
 #include <aws/http/connection_manager.h>
@@ -36,6 +37,31 @@ namespace Aws
                 const HttpClientConnectionManagerOptions &connectionManagerOptions,
                 Allocator *allocator) noexcept
             {
+                const Optional<Io::TlsConnectionOptions> &tlsOptions =
+                    connectionManagerOptions.ConnectionOptions.TlsOptions;
+
+                if (tlsOptions && !(*tlsOptions))
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_HTTP_GENERAL,
+                        "Cannot create HttpClientConnectionManager: ConnectionOptions contain invalid TLSOptions.");
+                    aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
+                    return nullptr;
+                }
+
+                const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions =
+                    connectionManagerOptions.ConnectionOptions.ProxyOptions;
+
+                if (proxyOptions && proxyOptions->TlsOptions && !(*proxyOptions->TlsOptions))
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_HTTP_GENERAL,
+                        "Cannot create HttpClientConnectionManager: ProxyOptions has ConnectionOptions that contain "
+                        "invalid TLSOptions.");
+                    aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
+                    return nullptr;
+                }
+
                 auto *toSeat = static_cast<HttpClientConnectionManager *>(
                     aws_mem_acquire(allocator, sizeof(HttpClientConnectionManager)));
                 if (toSeat)
@@ -79,28 +105,21 @@ namespace Aws
                 AWS_ZERO_STRUCT(proxyOptions);
                 if (connectionOptions.ProxyOptions)
                 {
-                    const auto &proxyOpts = connectionOptions.ProxyOptions;
-                    proxyOptions.host = aws_byte_cursor_from_c_str(proxyOpts->HostName.c_str());
-                    proxyOptions.port = proxyOpts->Port;
-                    proxyOptions.auth_type = (enum aws_http_proxy_authentication_type)proxyOpts->AuthType;
+                    /* This is verified by HttpClientConnectionManager::NewClientConnectionManager */
+                    AWS_FATAL_ASSERT(
+                        !connectionOptions.ProxyOptions->TlsOptions || *connectionOptions.ProxyOptions->TlsOptions);
 
-                    if (proxyOpts->AuthType == AwsHttpProxyAuthenticationType::Basic)
-                    {
-                        proxyOptions.auth_username = aws_byte_cursor_from_c_str(proxyOpts->BasicAuthUsername.c_str());
-                        proxyOptions.auth_password = aws_byte_cursor_from_c_str(proxyOpts->BasicAuthPassword.c_str());
-                    }
-
-                    if (proxyOpts->TlsOptions)
-                    {
-                        proxyOptions.tls_options =
-                            const_cast<aws_tls_connection_options *>(proxyOpts->TlsOptions->GetUnderlyingHandle());
-                    }
+                    const auto &proxyOpts = connectionOptions.ProxyOptions.value();
+                    proxyOpts.InitializeRawProxyOptions(proxyOptions);
 
                     managerOptions.proxy_options = &proxyOptions;
                 }
 
                 if (connectionOptions.TlsOptions)
                 {
+                    /* This is verified by HttpClientConnectionManager::NewClientConnectionManager */
+                    AWS_FATAL_ASSERT(*connectionOptions.TlsOptions);
+
                     managerOptions.tls_connection_options =
                         const_cast<aws_tls_connection_options *>(connectionOptions.TlsOptions->GetUnderlyingHandle());
                 }

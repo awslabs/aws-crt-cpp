@@ -26,8 +26,6 @@ static int s_TestEventLoopResourceSafety(struct aws_allocator *allocator, void *
         ASSERT_FALSE(eventLoopGroup);
     }
 
-    Aws::Crt::TestCleanupAndWait();
-
     return AWS_ERROR_SUCCESS;
 }
 

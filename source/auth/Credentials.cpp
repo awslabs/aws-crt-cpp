@@ -6,7 +6,7 @@
 #include <aws/crt/auth/Credentials.h>
 
 #include <aws/crt/http/HttpConnection.h>
-#include <aws/crt/io/Bootstrap.h>
+#include <aws/crt/http/HttpProxyStrategy.h>
 
 #include <aws/auth/credentials.h>
 #include <aws/common/string.h>
@@ -204,6 +204,8 @@ namespace Aws
                 raw_config.config_file_name_override = config.ConfigFileNameOverride;
                 raw_config.credentials_file_name_override = config.CredentialsFileNameOverride;
                 raw_config.profile_name_override = config.ProfileNameOverride;
+                raw_config.bootstrap = config.Bootstrap ? config.Bootstrap->GetUnderlyingHandle() : nullptr;
+                raw_config.tls_ctx = config.TlsContext ? config.TlsContext->GetUnderlyingHandle() : nullptr;
 
                 return s_CreateWrappedProvider(aws_credentials_provider_new_profile(allocator, &raw_config), allocator);
             }
@@ -264,6 +266,7 @@ namespace Aws
                 AWS_ZERO_STRUCT(raw_config);
 
                 raw_config.bootstrap = config.Bootstrap->GetUnderlyingHandle();
+                raw_config.tls_ctx = config.TlsContext ? config.TlsContext->GetUnderlyingHandle() : nullptr;
 
                 return s_CreateWrappedProvider(
                     aws_credentials_provider_new_chain_default(allocator, &raw_config), allocator);
@@ -287,24 +290,58 @@ namespace Aws
                 if (config.ProxyOptions.has_value())
                 {
                     const Http::HttpClientConnectionProxyOptions &proxy_config = config.ProxyOptions.value();
-
-                    proxy_options.host = aws_byte_cursor_from_c_str(proxy_config.HostName.c_str());
-                    proxy_options.port = proxy_config.Port;
-                    proxy_options.tls_options = proxy_config.TlsOptions->GetUnderlyingHandle();
-                    proxy_options.auth_type = (enum aws_http_proxy_authentication_type)proxy_config.AuthType;
-                    proxy_options.auth_username = aws_byte_cursor_from_c_str(proxy_config.BasicAuthUsername.c_str());
-                    proxy_options.auth_password = aws_byte_cursor_from_c_str(proxy_config.BasicAuthPassword.c_str());
+                    proxy_config.InitializeRawProxyOptions(proxy_options);
 
                     raw_config.proxy_options = &proxy_options;
                 }
 
-                /**
-                 * Sets the TLS options for the proxy connection.
-                 * Optional.
-                 */
-                Optional<Io::TlsConnectionOptions> TlsOptions;
-
                 return s_CreateWrappedProvider(aws_credentials_provider_new_x509(allocator, &raw_config), allocator);
+            }
+
+            struct DelegateCredentialsProviderCallbackArgs
+            {
+                DelegateCredentialsProviderCallbackArgs() = default;
+
+                Allocator *allocator;
+                GetCredentialsHandler m_Handler;
+            };
+
+            static int s_onDelegateGetCredentials(
+                void *delegate_user_data,
+                aws_on_get_credentials_callback_fn callback,
+                void *callback_user_data)
+            {
+                auto args = static_cast<DelegateCredentialsProviderCallbackArgs *>(delegate_user_data);
+                auto creds = args->m_Handler();
+                struct aws_credentials *m_credentials = (struct aws_credentials *)(void *)creds->GetUnderlyingHandle();
+                callback(m_credentials, AWS_ERROR_SUCCESS, callback_user_data);
+                return AWS_OP_SUCCESS;
+            }
+
+            static void s_onDelegateShutdownComplete(void *user_data)
+            {
+                auto args = static_cast<DelegateCredentialsProviderCallbackArgs *>(user_data);
+                Aws::Crt::Delete(args, args->allocator);
+            }
+
+            std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderDelegate(
+                const CredentialsProviderDelegateConfig &config,
+                Allocator *allocator)
+            {
+                struct aws_credentials_provider_delegate_options raw_config;
+                AWS_ZERO_STRUCT(raw_config);
+
+                auto delegateCallbackArgs = Aws::Crt::New<DelegateCredentialsProviderCallbackArgs>(allocator);
+                delegateCallbackArgs->allocator = allocator;
+                delegateCallbackArgs->m_Handler = config.Handler;
+                raw_config.delegate_user_data = delegateCallbackArgs;
+                raw_config.get_credentials = s_onDelegateGetCredentials;
+                aws_credentials_provider_shutdown_options options;
+                options.shutdown_callback = s_onDelegateShutdownComplete;
+                options.shutdown_user_data = delegateCallbackArgs;
+                raw_config.shutdown_options = options;
+                return s_CreateWrappedProvider(
+                    aws_credentials_provider_new_delegate(allocator, &raw_config), allocator);
             }
 
         } // namespace Auth

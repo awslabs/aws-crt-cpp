@@ -5,6 +5,7 @@
 #include <aws/crt/mqtt/MqttClient.h>
 
 #include <aws/crt/StlAllocator.h>
+#include <aws/crt/http/HttpProxyStrategy.h>
 #include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Bootstrap.h>
 
@@ -66,7 +67,7 @@ namespace Aws
                 PubCallbackData() : connection(nullptr), allocator(nullptr) {}
 
                 MqttConnection *connection;
-                OnPublishReceivedHandler onPublishReceived;
+                OnMessageReceivedHandler onMessageReceived;
                 Allocator *allocator;
             };
 
@@ -80,15 +81,19 @@ namespace Aws
                 aws_mqtt_client_connection *,
                 const aws_byte_cursor *topic,
                 const aws_byte_cursor *payload,
+                bool dup,
+                enum aws_mqtt_qos qos,
+                bool retain,
                 void *userData)
             {
                 auto callbackData = reinterpret_cast<PubCallbackData *>(userData);
 
-                if (callbackData->onPublishReceived)
+                if (callbackData->onMessageReceived)
                 {
                     String topicStr(reinterpret_cast<char *>(topic->ptr), topic->len);
                     ByteBuf payloadBuf = aws_byte_buf_from_array(payload->ptr, payload->len);
-                    callbackData->onPublishReceived(*(callbackData->connection), topicStr, payloadBuf);
+                    callbackData->onMessageReceived(
+                        *(callbackData->connection), topicStr, payloadBuf, dup, qos, retain);
                 }
             }
 
@@ -330,6 +335,13 @@ namespace Aws
                 return true;
             }
 
+            bool MqttConnection::SetHttpProxyOptions(
+                const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept
+            {
+                m_proxyOptions = proxyOptions;
+                return true;
+            }
+
             bool MqttConnection::SetReconnectTimeout(uint64_t min_seconds, uint64_t max_seconds) noexcept
             {
                 return aws_mqtt_client_connection_set_reconnect_timeout(
@@ -340,7 +352,8 @@ namespace Aws
                 const char *clientId,
                 bool cleanSession,
                 uint16_t keepAliveTime,
-                uint32_t requestTimeoutMs) noexcept
+                uint32_t pingTimeoutMs,
+                uint32_t protocolOperationTimeoutMs) noexcept
             {
                 aws_mqtt_connection_options options;
                 AWS_ZERO_STRUCT(options);
@@ -353,7 +366,8 @@ namespace Aws
                 options.socket_options = &m_socketOptions.GetImpl();
                 options.clean_session = cleanSession;
                 options.keep_alive_time_secs = keepAliveTime;
-                options.ping_timeout_ms = requestTimeoutMs;
+                options.ping_timeout_ms = pingTimeoutMs;
+                options.protocol_operation_timeout_ms = protocolOperationTimeoutMs;
                 options.on_connection_complete = MqttConnection::s_onConnectionCompleted;
                 options.user_data = this;
 
@@ -375,40 +389,16 @@ namespace Aws
                             return false;
                         }
                     }
+                }
 
-                    if (m_proxyOptions)
+                if (m_proxyOptions)
+                {
+                    struct aws_http_proxy_options proxyOptions;
+                    m_proxyOptions->InitializeRawProxyOptions(proxyOptions);
+
+                    if (aws_mqtt_client_connection_set_http_proxy_options(m_underlyingConnection, &proxyOptions))
                     {
-                        struct aws_http_proxy_options proxyOptions;
-                        AWS_ZERO_STRUCT(proxyOptions);
-
-                        if (!m_proxyOptions->BasicAuthUsername.empty())
-                        {
-                            proxyOptions.auth_username =
-                                ByteCursorFromCString(m_proxyOptions->BasicAuthUsername.c_str());
-                        }
-
-                        if (!m_proxyOptions->BasicAuthPassword.empty())
-                        {
-                            proxyOptions.auth_password =
-                                ByteCursorFromCString(m_proxyOptions->BasicAuthPassword.c_str());
-                        }
-
-                        if (m_proxyOptions->TlsOptions)
-                        {
-                            proxyOptions.tls_options = const_cast<struct aws_tls_connection_options *>(
-                                m_proxyOptions->TlsOptions->GetUnderlyingHandle());
-                        }
-
-                        proxyOptions.auth_type =
-                            static_cast<enum aws_http_proxy_authentication_type>(m_proxyOptions->AuthType);
-                        proxyOptions.host = ByteCursorFromCString(m_proxyOptions->HostName.c_str());
-                        proxyOptions.port = m_proxyOptions->Port;
-
-                        if (aws_mqtt_client_connection_set_websocket_proxy_options(
-                                m_underlyingConnection, &proxyOptions))
-                        {
-                            return false;
-                        }
+                        return false;
                     }
                 }
 
@@ -421,7 +411,21 @@ namespace Aws
                            m_underlyingConnection, MqttConnection::s_onDisconnect, this) == AWS_OP_SUCCESS;
             }
 
+            aws_mqtt_client_connection *MqttConnection::GetUnderlyingConnection() noexcept
+            {
+                return m_underlyingConnection;
+            }
+
             bool MqttConnection::SetOnMessageHandler(OnPublishReceivedHandler &&onPublish) noexcept
+            {
+                return SetOnMessageHandler(
+                    [onPublish](
+                        MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
+                        onPublish(connection, topic, payload);
+                    });
+            }
+
+            bool MqttConnection::SetOnMessageHandler(OnMessageReceivedHandler &&onMessage) noexcept
             {
                 auto pubCallbackData = Aws::Crt::New<PubCallbackData>(m_owningClient->allocator);
 
@@ -431,7 +435,7 @@ namespace Aws
                 }
 
                 pubCallbackData->connection = this;
-                pubCallbackData->onPublishReceived = std::move(onPublish);
+                pubCallbackData->onMessageReceived = std::move(onMessage);
                 pubCallbackData->allocator = m_owningClient->allocator;
 
                 if (!aws_mqtt_client_connection_set_on_any_publish_handler(
@@ -451,7 +455,22 @@ namespace Aws
                 OnPublishReceivedHandler &&onPublish,
                 OnSubAckHandler &&onSubAck) noexcept
             {
+                return Subscribe(
+                    topicFilter,
+                    qos,
+                    [onPublish](
+                        MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
+                        onPublish(connection, topic, payload);
+                    },
+                    std::move(onSubAck));
+            }
 
+            uint16_t MqttConnection::Subscribe(
+                const char *topicFilter,
+                QOS qos,
+                OnMessageReceivedHandler &&onMessage,
+                OnSubAckHandler &&onSubAck) noexcept
+            {
                 auto pubCallbackData = Crt::New<PubCallbackData>(m_owningClient->allocator);
 
                 if (!pubCallbackData)
@@ -460,7 +479,7 @@ namespace Aws
                 }
 
                 pubCallbackData->connection = this;
-                pubCallbackData->onPublishReceived = std::move(onPublish);
+                pubCallbackData->onMessageReceived = std::move(onMessage);
                 pubCallbackData->allocator = m_owningClient->allocator;
 
                 auto subAckCallbackData = Crt::New<SubAckCallbackData>(m_owningClient->allocator);
@@ -504,6 +523,26 @@ namespace Aws
                 QOS qos,
                 OnMultiSubAckHandler &&onSubAck) noexcept
             {
+                Vector<std::pair<const char *, OnMessageReceivedHandler>> newTopicFilters;
+                newTopicFilters.reserve(topicFilters.size());
+                for (const auto &pair : topicFilters)
+                {
+                    const OnPublishReceivedHandler &pubHandler = pair.second;
+                    newTopicFilters.emplace_back(
+                        pair.first,
+                        [pubHandler](
+                            MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
+                            pubHandler(connection, topic, payload);
+                        });
+                }
+                return Subscribe(newTopicFilters, qos, std::move(onSubAck));
+            }
+
+            uint16_t MqttConnection::Subscribe(
+                const Vector<std::pair<const char *, OnMessageReceivedHandler>> &topicFilters,
+                QOS qos,
+                OnMultiSubAckHandler &&onSubAck) noexcept
+            {
                 uint16_t packetId = 0;
                 auto subAckCallbackData = Crt::New<MultiSubAckCallbackData>(m_owningClient->allocator);
 
@@ -532,7 +571,7 @@ namespace Aws
                     }
 
                     pubCallbackData->connection = this;
-                    pubCallbackData->onPublishReceived = topicFilter.second;
+                    pubCallbackData->onMessageReceived = topicFilter.second;
                     pubCallbackData->allocator = m_owningClient->allocator;
 
                     ByteBuf topicFilterBuf = aws_byte_buf_from_c_str(topicFilter.first);
