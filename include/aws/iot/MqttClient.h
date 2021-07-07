@@ -254,11 +254,11 @@ namespace Aws
             /**
              * @return true if the instance is in a valid state, false otherwise.
              */
-            explicit operator bool() const noexcept { return m_isGood; }
+            explicit operator bool() const noexcept { return m_lastError == 0; }
             /**
              * @return the value of the last aws error encountered by operations on this instance.
              */
-            int LastError() const noexcept { return aws_last_error(); }
+            int LastError() const noexcept { return m_lastError ? m_lastError : AWS_ERROR_UNKNOWN; }
 
           private:
             Crt::Allocator *m_allocator;
@@ -272,7 +272,7 @@ namespace Aws
             Crt::String m_sdkName = "CPPv2";
             Crt::String m_sdkVersion = AWS_CRT_CPP_VERSION;
 
-            bool m_isGood;
+            int m_lastError;
         };
 
         /**
