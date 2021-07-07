@@ -125,6 +125,8 @@ namespace Aws
             }
 #endif /* _WIN32 */
 
+            int TlsContextOptions::LastError() const noexcept { return LastErrorOrUnknown(); }
+
             bool TlsContextOptions::IsAlpnSupported() noexcept { return aws_tls_is_alpn_available(); }
 
             bool TlsContextOptions::SetAlpnList(const char *alpn_list) noexcept
