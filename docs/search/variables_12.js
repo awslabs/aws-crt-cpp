@@ -1,12 +1,18 @@
 var searchData=
 [
-  ['secretaccesskey_1235',['SecretAccessKey',['../structAws_1_1Crt_1_1Auth_1_1CredentialsProviderStaticConfig.html#a39dba407efd3b2eb76d46eb90131451b',1,'Aws::Crt::Auth::CredentialsProviderStaticConfig']]],
-  ['servicename_1236',['ServiceName',['../structAws_1_1Iot_1_1WebsocketConfig.html#a2a3f538f5ae05a41e4ad4f3f287c6d9e',1,'Aws::Iot::WebsocketConfig']]],
-  ['sessiontoken_1237',['SessionToken',['../structAws_1_1Crt_1_1Auth_1_1CredentialsProviderStaticConfig.html#af1192a68695ca27ea46016c2aee18938',1,'Aws::Crt::Auth::CredentialsProviderStaticConfig']]],
-  ['signable_1238',['Signable',['../structAws_1_1Crt_1_1Auth_1_1HttpSignerCallbackData.html#a52405e8bcfd9942c63d980210de2d815',1,'Aws::Crt::Auth::HttpSignerCallbackData']]],
-  ['signer_1239',['Signer',['../structAws_1_1Iot_1_1WebsocketConfig.html#a11e130fd6dac6864a4d41a756e4db27a',1,'Aws::Iot::WebsocketConfig']]],
-  ['signingregion_1240',['SigningRegion',['../structAws_1_1Iot_1_1WebsocketConfig.html#a37fbae74b51ef56bc47513fdea4325f0',1,'Aws::Iot::WebsocketConfig']]],
-  ['socketoptions_1241',['SocketOptions',['../classAws_1_1Crt_1_1Http_1_1HttpClientConnectionOptions.html#ac89157ac1bf551b431b293bf41dc9c49',1,'Aws::Crt::Http::HttpClientConnectionOptions']]],
-  ['stream_1242',['stream',['../structAws_1_1Crt_1_1Http_1_1ClientStreamCallbackData.html#a9f5950f7fb6c7c7ee6a544a8bf4b6e1c',1,'Aws::Crt::Http::ClientStreamCallbackData']]],
-  ['string_1243',['string',['../structAws_1_1cJSON.html#acdcd112331c9abfc94fb6ee0ea10ae38',1,'Aws::cJSON::string()'],['../namespaceAws.html#a46c66599c92a951c37cd08e1171e7fc7',1,'Aws::string()']]]
+  ['s_5fgatherstatistics_471',['s_GatherStatistics',['../structAws_1_1Crt_1_1Io_1_1ChannelHandler.html#a81aca729ba2ca1fdfa9bdcdbcd5d8b35',1,'Aws::Crt::Io::ChannelHandler']]],
+  ['s_5fincrementreadwindow_472',['s_IncrementReadWindow',['../structAws_1_1Crt_1_1Io_1_1ChannelHandler.html#ae4179b36a996d2b845786412e0da1161',1,'Aws::Crt::Io::ChannelHandler']]],
+  ['s_5finitialwindowsize_473',['s_InitialWindowSize',['../structAws_1_1Crt_1_1Io_1_1ChannelHandler.html#a632165184f52f4a2d753c180c641ec9a',1,'Aws::Crt::Io::ChannelHandler']]],
+  ['s_5fmessageoverhead_474',['s_MessageOverhead',['../structAws_1_1Crt_1_1Io_1_1ChannelHandler.html#a874b63ebb53dada8344ecab7145637eb',1,'Aws::Crt::Io::ChannelHandler']]],
+  ['s_5fprocessreadmessage_475',['s_ProcessReadMessage',['../structAws_1_1Crt_1_1Io_1_1ChannelHandler.html#ae8ac199659fb49d0cfaf1b20e68c1922',1,'Aws::Crt::Io::ChannelHandler']]],
+  ['s_5fprocessshutdown_476',['s_ProcessShutdown',['../structAws_1_1Crt_1_1Io_1_1ChannelHandler.html#a71220bf18c0249632404738e76d2c531',1,'Aws::Crt::Io::ChannelHandler']]],
+  ['s_5fprocesswritemessage_477',['s_ProcessWriteMessage',['../structAws_1_1Crt_1_1Io_1_1ChannelHandler.html#aa58be947f0956717079a1b5f303e1f28',1,'Aws::Crt::Io::ChannelHandler']]],
+  ['s_5fresetstatistics_478',['s_ResetStatistics',['../structAws_1_1Crt_1_1Io_1_1ChannelHandler.html#abdfc27c6ae5aa5fe05d1397a50263143',1,'Aws::Crt::Io::ChannelHandler']]],
+  ['servicename_479',['ServiceName',['../structAws_1_1Iot_1_1WebsocketConfig.html#a2a3f538f5ae05a41e4ad4f3f287c6d9e',1,'Aws::Iot::WebsocketConfig']]],
+  ['signable_480',['Signable',['../structAws_1_1Crt_1_1Auth_1_1HttpSignerCallbackData.html#a52405e8bcfd9942c63d980210de2d815',1,'Aws::Crt::Auth::HttpSignerCallbackData']]],
+  ['signer_481',['Signer',['../structAws_1_1Iot_1_1WebsocketConfig.html#a11e130fd6dac6864a4d41a756e4db27a',1,'Aws::Iot::WebsocketConfig']]],
+  ['signingregion_482',['SigningRegion',['../structAws_1_1Iot_1_1WebsocketConfig.html#a37fbae74b51ef56bc47513fdea4325f0',1,'Aws::Iot::WebsocketConfig']]],
+  ['streamingaws4hmacsha256events_483',['StreamingAws4HmacSha256Events',['../namespaceAws_1_1Crt_1_1Auth_1_1SignedBodyValue.html#a8b192e6cfcca23c3c04fb5eed098b7de',1,'Aws::Crt::Auth::SignedBodyValue']]],
+  ['streamingaws4hmacsha256payload_484',['StreamingAws4HmacSha256Payload',['../namespaceAws_1_1Crt_1_1Auth_1_1SignedBodyValue.html#ab453a14f9e0d7e704a00bcc9663a5914',1,'Aws::Crt::Auth::SignedBodyValue']]],
+  ['string_485',['string',['../namespaceAws.html#a46c66599c92a951c37cd08e1171e7fc7',1,'Aws']]]
 ];

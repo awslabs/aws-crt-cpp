@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['websocketinterceptor_1254',['WebsocketInterceptor',['../classAws_1_1Crt_1_1Mqtt_1_1MqttConnection.html#a18056c9c08905a5eaeba8555702eda75',1,'Aws::Crt::Mqtt::MqttConnection']]],
-  ['which_1255',['which',['../namespaceAws.html#a8114587345e82b4c7c6243e945bb93bb',1,'Aws']]]
+  ['which_497',['which',['../namespaceAws.html#a8114587345e82b4c7c6243e945bb93bb',1,'Aws']]],
+  ['wrappingfn_498',['wrappingFn',['../structAws_1_1Crt_1_1Io_1_1TaskWrapper.html#aabb36151821da621a1886a13a4b707c7',1,'Aws::Crt::Io::TaskWrapper']]]
 ];

@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['tlsconnectionoptions_725',['TlsConnectionOptions',['../classAws_1_1Crt_1_1Io_1_1TlsConnectionOptions.html',1,'Aws::Crt::Io']]],
-  ['tlscontext_726',['TlsContext',['../classAws_1_1Crt_1_1Io_1_1TlsContext.html',1,'Aws::Crt::Io']]],
-  ['tlscontextoptions_727',['TlsContextOptions',['../classAws_1_1Crt_1_1Io_1_1TlsContextOptions.html',1,'Aws::Crt::Io']]]
+  ['websocketconfig_273',['WebsocketConfig',['../structAws_1_1Iot_1_1WebsocketConfig.html',1,'Aws::Iot']]],
+  ['wrappedcallbackargs_274',['WrappedCallbackArgs',['../structAws_1_1Crt_1_1Imds_1_1WrappedCallbackArgs.html',1,'Aws::Crt::Imds']]]
 ];
