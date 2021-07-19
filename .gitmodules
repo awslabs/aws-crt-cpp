@@ -1,34 +1,34 @@
-[submodule "aws-common-runtime/aws-c-common"]
+[submodule "crt/aws-c-common"]
 	path = crt/aws-c-common
 	url = https://github.com/awslabs/aws-c-common.git
-[submodule "aws-common-runtime/aws-c-io"]
+[submodule "crt/aws-c-io"]
 	path = crt/aws-c-io
 	url = https://github.com/awslabs/aws-c-io.git
-[submodule "aws-common-runtime/aws-c-compression"]
+[submodule "crt/aws-c-compression"]
 	path = crt/aws-c-compression
 	url = https://github.com/awslabs/aws-c-compression.git
-[submodule "aws-common-runtime/aws-c-cal"]
+[submodule "crt/aws-c-cal"]
 	path = crt/aws-c-cal
 	url = https://github.com/awslabs/aws-c-cal.git
-[submodule "aws-common-runtime/aws-c-auth"]
+[submodule "crt/aws-c-auth"]
 	path = crt/aws-c-auth
 	url = https://github.com/awslabs/aws-c-auth.git
-[submodule "aws-common-runtime/aws-c-http"]
+[submodule "crt/aws-c-http"]
 	path = crt/aws-c-http
 	url = https://github.com/awslabs/aws-c-http.git
-[submodule "aws-common-runtime/aws-c-mqtt"]
+[submodule "crt/aws-c-mqtt"]
 	path = crt/aws-c-mqtt
 	url = https://github.com/awslabs/aws-c-mqtt.git
-[submodule "aws-common-runtime/s2n"]
+[submodule "crt/s2n"]
 	path = crt/s2n
 	url = https://github.com/awslabs/s2n.git
-[submodule "aws-common-runtime/aws-checksums"]
+[submodule "crt/aws-checksums"]
 	path = crt/aws-checksums
 	url = https://github.com/awslabs/aws-checksums.git
-[submodule "aws-common-runtime/aws-c-event-stream"]
+[submodule "crt/aws-c-event-stream"]
 	path = crt/aws-c-event-stream
 	url = https://github.com/awslabs/aws-c-event-stream.git
-[submodule "aws-common-runtime/aws-c-s3"]
+[submodule "crt/aws-c-s3"]
 	path = crt/aws-c-s3
 	url = https://github.com/awslabs/aws-c-s3.git
 [submodule "crt/aws-lc"]
