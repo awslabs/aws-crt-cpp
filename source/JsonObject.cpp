@@ -24,7 +24,7 @@ namespace Aws
         JsonObject::JsonObject(const String &value) : m_wasParseSuccessful(true)
         {
             const char *return_parse_end;
-            m_value = cJSON_ParseWithOpts(value.c_str(), value.length(), &return_parse_end);
+            m_value = cJSON_ParseWithLengthOpts(value.c_str(), value.length(), &return_parse_end, 0);
 
             if (m_value == nullptr || cJSON_IsInvalid(m_value) == 1)
             {

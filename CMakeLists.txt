@@ -103,14 +103,34 @@ if (BUILD_DEPS)
     add_subdirectory(crt/aws-c-common)
 
     if (UNIX AND NOT APPLE AND NOT BYO_CRYPTO)
-        set(DISABLE_PERL ON CACHE BOOL "Disable Perl for AWS-LC.")
-        set(DISABLE_GO ON CACHE BOOL "Disable Go for AWS-LC.")
         if (NOT USE_OPENSSL)
+            set(DISABLE_PERL ON CACHE BOOL "Disable Perl for AWS-LC.")
+            set(DISABLE_GO ON CACHE BOOL "Disable Go for AWS-LC.")
+
+            # temporarily disable certain warnings as errors for the aws-lc build
+            set(OLD_CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+            if (NOT MSVC)
+                check_c_compiler_flag(-Wno-stringop-overflow HAS_WNO_STRINGOP_OVERFLOW)
+                if (HAS_WNO_STRINGOP_OVERFLOW)
+                    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-stringop-overflow")
+                endif()
+
+                check_c_compiler_flag(-Wno-array-parameter HAS_WNO_ARRAY_PARAMETER)
+                if (HAS_WNO_ARRAY_PARAMETER)
+                    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-array-parameter")
+                endif()
+            endif()
+
             add_subdirectory(crt/aws-lc)
+
+            # restore previous build flags
+            set(CMAKE_C_FLAGS "${OLD_CMAKE_C_FLAGS}")
+
             set(SEARCH_LIBCRYPTO OFF CACHE BOOL "Let S2N use libcrypto from AWS-LC.")
         else()
             set(SEARCH_LIBCRYPTO ON CACHE BOOL "Let S2N search libcrypto in the system.")
         endif()
+        set(UNSAFE_TREAT_WARNINGS_AS_ERRORS OFF CACHE BOOL "Disable warnings-as-errors when building S2N")
         add_subdirectory(crt/s2n)
     endif()
 
