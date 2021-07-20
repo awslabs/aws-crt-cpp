@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['rebind_719',['rebind',['../structAws_1_1Crt_1_1StlAllocator_1_1rebind.html',1,'Aws::Crt::StlAllocator']]]
+  ['task_270',['task',['../structAws_1_1Crt_1_1Io_1_1TaskWrapper_1_1task.html',1,'Aws::Crt::Io::TaskWrapper']]],
+  ['taskwrapper_271',['TaskWrapper',['../structAws_1_1Crt_1_1Io_1_1TaskWrapper.html',1,'Aws::Crt::Io']]]
 ];
