@@ -10,7 +10,7 @@ namespace Aws
 {
     namespace Crt
     {
-        uint32_t crc_common(
+        uint32_t crcCommon(
             const uint8_t *input,
             size_t length,
             uint32_t prev,
@@ -18,8 +18,8 @@ namespace Aws
         {
             struct aws_byte_cursor cursor;
             cursor.len = length;
-            cursor.ptr = input;
-            uint32_t res = previous;
+            cursor.ptr = (uint8_t *)input;
+            uint32_t res = prev;
             while (cursor.len > INT_MAX)
             {
                 res = checksum_fn(cursor.ptr, INT_MAX, res);
@@ -27,11 +27,13 @@ namespace Aws
             }
             return checksum_fn(cursor.ptr, (int)cursor.len, res);
         }
-        uint32_t crc32(const uint8_t *input, size_t length, uint32_t prev){
-            return crc_common(input, length, prev, aws_checksums_crc32)} uint32_t
-            crc32c(const uint8_t *input, size_t length, uint32_t prev)
+        uint32_t crc32(const uint8_t *input, size_t length, uint32_t prev)
         {
-            return crc_common(input, length, prev, aws_checksums_crc32c)
+            return crcCommon(input, length, prev, aws_checksums_crc32);
+        }
+        uint32_t crc32c(const uint8_t *input, size_t length, uint32_t prev)
+        {
+            return crcCommon(input, length, prev, aws_checksums_crc32c);
         }
     } // namespace Crt
 } // namespace Aws

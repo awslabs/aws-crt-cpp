@@ -8,7 +8,7 @@ namespace Aws
 {
     namespace Crt
     {
-        uint32_t crc32(const uint8_t *input, size_t length, uint32_t prev);
-        uint32_t crc32c(const uint8_t *input, size_t length, uint32_t prev);
+        uint32_t AWS_CRT_CPP_API crc32(const uint8_t *input, size_t length, uint32_t prev);
+        uint32_t AWS_CRT_CPP_API crc32c(const uint8_t *input, size_t length, uint32_t prev);
     } // namespace Crt
 } // namespace Aws

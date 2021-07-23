@@ -250,6 +250,7 @@ file(GLOB AWS_CRT_CPP_SRC
         ${AWS_CRT_IOT_SRC}
         ${AWS_CRT_MQTT_SRC}
         ${AWS_CRT_HTTP_SRC}
+        ${AWS_CRT_CHECKSUMS_SRC}
         ${AWS_CRT_EXTERNAL_CRC}
 )
 

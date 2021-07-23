@@ -61,6 +61,7 @@ static int s_testCrc32LargeBuffer(struct aws_allocator *allocator, void *)
     uint32_t res = Aws::Crt::crc32(zeroes, 25 * (1 << 20), 0);
     uint32_t expected = 0x72103906;
     ASSERT_UINT_EQUALS(res, expected);
+    aws_mem_release(allocator, zeroes);
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(testCrc32LargeBuffer, s_testCrc32LargeBuffer)
@@ -121,6 +122,7 @@ static int s_testCrc32CLargeBuffer(struct aws_allocator *allocator, void *)
     uint32_t res = Aws::Crt::crc32c(zeroes, 25 * (1 << 20), 0);
     uint32_t expected = 0xfb5b991d;
     ASSERT_UINT_EQUALS(res, expected);
+    aws_mem_release(allocator, zeroes);
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(testCrc32CLargeBuffer, s_testCrc32CLargeBuffer)
