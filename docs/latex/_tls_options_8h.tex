@@ -1,0 +1,47 @@
+\hypertarget{_tls_options_8h}{}\doxysection{/\+Users/dengket/project/crts/aws-\/crt-\/cpp/include/aws/crt/io/\+Tls\+Options.h File Reference}
+\label{_tls_options_8h}\index{/Users/dengket/project/crts/aws-\/crt-\/cpp/include/aws/crt/io/TlsOptions.h@{/Users/dengket/project/crts/aws-\/crt-\/cpp/include/aws/crt/io/TlsOptions.h}}
+{\ttfamily \#include $<$aws/crt/\+Types.\+h$>$}\newline
+{\ttfamily \#include $<$aws/crt/io/\+Channel\+Handler.\+h$>$}\newline
+{\ttfamily \#include $<$aws/io/tls\+\_\+channel\+\_\+handler.\+h$>$}\newline
+{\ttfamily \#include $<$functional$>$}\newline
+{\ttfamily \#include $<$memory$>$}\newline
+\doxysubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_tls_context_options}{Aws\+::\+Crt\+::\+Io\+::\+Tls\+Context\+Options}}
+\item 
+class \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_tls_connection_options}{Aws\+::\+Crt\+::\+Io\+::\+Tls\+Connection\+Options}}
+\item 
+class \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_tls_context}{Aws\+::\+Crt\+::\+Io\+::\+Tls\+Context}}
+\item 
+class \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler}{Aws\+::\+Crt\+::\+Io\+::\+Tls\+Channel\+Handler}}
+\item 
+class \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_client_tls_channel_handler}{Aws\+::\+Crt\+::\+Io\+::\+Client\+Tls\+Channel\+Handler}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \mbox{\hyperlink{namespace_aws}{Aws}}
+\item 
+namespace \mbox{\hyperlink{namespace_aws_1_1_crt}{Aws\+::\+Crt}}
+\item 
+namespace \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io}{Aws\+::\+Crt\+::\+Io}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a0a62c795db526f1dae48cac634c9af02}{Aws\+::\+Crt\+::\+Io\+::\+New\+Tls\+Context\+Impl\+Callback}} = std\+::function$<$ void $\ast$(Tls\+Context\+Options \&, Tls\+Mode, Allocator $\ast$)$>$
+\item 
+using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_af21a50e456c2e9f276cab7fa5f5ad484}{Aws\+::\+Crt\+::\+Io\+::\+Delete\+Tls\+Context\+Impl\+Callback}} = std\+::function$<$ void(void $\ast$)$>$
+\item 
+using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a1caba873184fe5fcb1315873e94b4acc}{Aws\+::\+Crt\+::\+Io\+::\+Is\+Tls\+Alpn\+Supported\+Callback}} = std\+::function$<$ bool()$>$
+\item 
+using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_aa0e450401823c1e163680c9e185d33cb}{Aws\+::\+Crt\+::\+Io\+::\+New\+Client\+Tls\+Handler\+Callback}} = std\+::function$<$ std\+::shared\+\_\+ptr$<$ Client\+Tls\+Channel\+Handler $>$(struct aws\+\_\+channel\+\_\+slot $\ast$slot, const struct aws\+\_\+tls\+\_\+connection\+\_\+options \&options, Allocator $\ast$allocator)$>$
+\end{DoxyCompactItemize}
+\doxysubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum class \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a0e6e89d764e66080a9abd0513079d1b8}{Aws\+::\+Crt\+::\+Io\+::\+Tls\+Mode}} \{ \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a0e6e89d764e66080a9abd0513079d1b8aef10c650df47bffd6399e5e78da2a9b1}{Aws\+::\+Crt\+::\+Io\+::\+CLIENT}}
+, \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a0e6e89d764e66080a9abd0513079d1b8a3d27c95bfdbea691b250894d96852844}{Aws\+::\+Crt\+::\+Io\+::\+SERVER}}
+ \}
+\end{DoxyCompactItemize}

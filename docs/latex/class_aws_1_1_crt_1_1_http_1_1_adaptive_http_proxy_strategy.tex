@@ -1,0 +1,66 @@
+\hypertarget{class_aws_1_1_crt_1_1_http_1_1_adaptive_http_proxy_strategy}{}\doxysection{Aws\+::Crt\+::Http\+::Adaptive\+Http\+Proxy\+Strategy Class Reference}
+\label{class_aws_1_1_crt_1_1_http_1_1_adaptive_http_proxy_strategy}\index{Aws::Crt::Http::AdaptiveHttpProxyStrategy@{Aws::Crt::Http::AdaptiveHttpProxyStrategy}}
+Inheritance diagram for Aws\+::Crt\+::Http\+::Adaptive\+Http\+Proxy\+Strategy\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{class_aws_1_1_crt_1_1_http_1_1_adaptive_http_proxy_strategy}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{class_aws_1_1_crt_1_1_http_1_1_adaptive_http_proxy_strategy_aa26941958a07bdf54a1bde8485fa58ec}{Adaptive\+Http\+Proxy\+Strategy}} (\mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} $\ast$allocator, const \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_http_aae93e8c5831141991600b318b1df21d7}{Kerberos\+Get\+Token\+Function}} \&kerberos\+Get\+Token, const \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_http_aae93e8c5831141991600b318b1df21d7}{Kerberos\+Get\+Token\+Function}} \&ntlm\+Get\+Credential, const \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_http_ad6ff911d785539e09b5620ad25d32e0b}{Ntlm\+Get\+Token\+Function}} \&ntlm\+Get\+Token)
+\item 
+void \mbox{\hyperlink{class_aws_1_1_crt_1_1_http_1_1_adaptive_http_proxy_strategy_a852bd301949015fb93558bfb100fceb6}{Set\+Strategy}} (struct aws\+\_\+http\+\_\+proxy\+\_\+strategy $\ast$strategy)
+\end{DoxyCompactItemize}
+\doxysubsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+static struct aws\+\_\+string $\ast$ \mbox{\hyperlink{class_aws_1_1_crt_1_1_http_1_1_adaptive_http_proxy_strategy_a9fd1354e4ccf0c6897d7b25ff21f5782}{Ntlm\+Get\+Credential}} (void $\ast$user\+\_\+data, int $\ast$error\+\_\+code)
+\item 
+static struct aws\+\_\+string $\ast$ \mbox{\hyperlink{class_aws_1_1_crt_1_1_http_1_1_adaptive_http_proxy_strategy_a6225b4b90825d41d3317595903629902}{Kerberos\+Get\+Token}} (void $\ast$user\+\_\+data, int $\ast$error\+\_\+code)
+\item 
+static struct aws\+\_\+string $\ast$ \mbox{\hyperlink{class_aws_1_1_crt_1_1_http_1_1_adaptive_http_proxy_strategy_ae8460a60ce361ebf62fc186bba74af43}{Ntlm\+Get\+Token}} (void $\ast$user\+\_\+data, const struct aws\+\_\+byte\+\_\+cursor $\ast$challenge\+\_\+cursor, int $\ast$error\+\_\+code)
+\end{DoxyCompactItemize}
+\doxysubsection*{Additional Inherited Members}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{class_aws_1_1_crt_1_1_http_1_1_adaptive_http_proxy_strategy_aa26941958a07bdf54a1bde8485fa58ec}\label{class_aws_1_1_crt_1_1_http_1_1_adaptive_http_proxy_strategy_aa26941958a07bdf54a1bde8485fa58ec}} 
+\index{Aws::Crt::Http::AdaptiveHttpProxyStrategy@{Aws::Crt::Http::AdaptiveHttpProxyStrategy}!AdaptiveHttpProxyStrategy@{AdaptiveHttpProxyStrategy}}
+\index{AdaptiveHttpProxyStrategy@{AdaptiveHttpProxyStrategy}!Aws::Crt::Http::AdaptiveHttpProxyStrategy@{Aws::Crt::Http::AdaptiveHttpProxyStrategy}}
+\doxysubsubsection{\texorpdfstring{AdaptiveHttpProxyStrategy()}{AdaptiveHttpProxyStrategy()}}
+{\footnotesize\ttfamily Aws\+::\+Crt\+::\+Http\+::\+Adaptive\+Http\+Proxy\+Strategy\+::\+Adaptive\+Http\+Proxy\+Strategy (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} $\ast$}]{allocator,  }\item[{const \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_http_aae93e8c5831141991600b318b1df21d7}{Kerberos\+Get\+Token\+Function}} \&}]{kerberos\+Get\+Token,  }\item[{const \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_http_aae93e8c5831141991600b318b1df21d7}{Kerberos\+Get\+Token\+Function}} \&}]{ntlm\+Get\+Credential,  }\item[{const \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_http_ad6ff911d785539e09b5620ad25d32e0b}{Ntlm\+Get\+Token\+Function}} \&}]{ntlm\+Get\+Token }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{class_aws_1_1_crt_1_1_http_1_1_adaptive_http_proxy_strategy_a6225b4b90825d41d3317595903629902}\label{class_aws_1_1_crt_1_1_http_1_1_adaptive_http_proxy_strategy_a6225b4b90825d41d3317595903629902}} 
+\index{Aws::Crt::Http::AdaptiveHttpProxyStrategy@{Aws::Crt::Http::AdaptiveHttpProxyStrategy}!KerberosGetToken@{KerberosGetToken}}
+\index{KerberosGetToken@{KerberosGetToken}!Aws::Crt::Http::AdaptiveHttpProxyStrategy@{Aws::Crt::Http::AdaptiveHttpProxyStrategy}}
+\doxysubsubsection{\texorpdfstring{KerberosGetToken()}{KerberosGetToken()}}
+{\footnotesize\ttfamily static struct aws\+\_\+string $\ast$ Aws\+::\+Crt\+::\+Http\+::\+Adaptive\+Http\+Proxy\+Strategy\+::\+Kerberos\+Get\+Token (\begin{DoxyParamCaption}\item[{void $\ast$}]{user\+\_\+data,  }\item[{int $\ast$}]{error\+\_\+code }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+\mbox{\Hypertarget{class_aws_1_1_crt_1_1_http_1_1_adaptive_http_proxy_strategy_a9fd1354e4ccf0c6897d7b25ff21f5782}\label{class_aws_1_1_crt_1_1_http_1_1_adaptive_http_proxy_strategy_a9fd1354e4ccf0c6897d7b25ff21f5782}} 
+\index{Aws::Crt::Http::AdaptiveHttpProxyStrategy@{Aws::Crt::Http::AdaptiveHttpProxyStrategy}!NtlmGetCredential@{NtlmGetCredential}}
+\index{NtlmGetCredential@{NtlmGetCredential}!Aws::Crt::Http::AdaptiveHttpProxyStrategy@{Aws::Crt::Http::AdaptiveHttpProxyStrategy}}
+\doxysubsubsection{\texorpdfstring{NtlmGetCredential()}{NtlmGetCredential()}}
+{\footnotesize\ttfamily static struct aws\+\_\+string $\ast$ Aws\+::\+Crt\+::\+Http\+::\+Adaptive\+Http\+Proxy\+Strategy\+::\+Ntlm\+Get\+Credential (\begin{DoxyParamCaption}\item[{void $\ast$}]{user\+\_\+data,  }\item[{int $\ast$}]{error\+\_\+code }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+\mbox{\Hypertarget{class_aws_1_1_crt_1_1_http_1_1_adaptive_http_proxy_strategy_ae8460a60ce361ebf62fc186bba74af43}\label{class_aws_1_1_crt_1_1_http_1_1_adaptive_http_proxy_strategy_ae8460a60ce361ebf62fc186bba74af43}} 
+\index{Aws::Crt::Http::AdaptiveHttpProxyStrategy@{Aws::Crt::Http::AdaptiveHttpProxyStrategy}!NtlmGetToken@{NtlmGetToken}}
+\index{NtlmGetToken@{NtlmGetToken}!Aws::Crt::Http::AdaptiveHttpProxyStrategy@{Aws::Crt::Http::AdaptiveHttpProxyStrategy}}
+\doxysubsubsection{\texorpdfstring{NtlmGetToken()}{NtlmGetToken()}}
+{\footnotesize\ttfamily static struct aws\+\_\+string $\ast$ Aws\+::\+Crt\+::\+Http\+::\+Adaptive\+Http\+Proxy\+Strategy\+::\+Ntlm\+Get\+Token (\begin{DoxyParamCaption}\item[{void $\ast$}]{user\+\_\+data,  }\item[{const struct aws\+\_\+byte\+\_\+cursor $\ast$}]{challenge\+\_\+cursor,  }\item[{int $\ast$}]{error\+\_\+code }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+\mbox{\Hypertarget{class_aws_1_1_crt_1_1_http_1_1_adaptive_http_proxy_strategy_a852bd301949015fb93558bfb100fceb6}\label{class_aws_1_1_crt_1_1_http_1_1_adaptive_http_proxy_strategy_a852bd301949015fb93558bfb100fceb6}} 
+\index{Aws::Crt::Http::AdaptiveHttpProxyStrategy@{Aws::Crt::Http::AdaptiveHttpProxyStrategy}!SetStrategy@{SetStrategy}}
+\index{SetStrategy@{SetStrategy}!Aws::Crt::Http::AdaptiveHttpProxyStrategy@{Aws::Crt::Http::AdaptiveHttpProxyStrategy}}
+\doxysubsubsection{\texorpdfstring{SetStrategy()}{SetStrategy()}}
+{\footnotesize\ttfamily void Aws\+::\+Crt\+::\+Http\+::\+Adaptive\+Http\+Proxy\+Strategy\+::\+Set\+Strategy (\begin{DoxyParamCaption}\item[{struct aws\+\_\+http\+\_\+proxy\+\_\+strategy $\ast$}]{strategy }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+/\+Users/dengket/project/crts/aws-\/crt-\/cpp/source/http/\mbox{\hyperlink{_http_proxy_strategy_8cpp}{Http\+Proxy\+Strategy.\+cpp}}\end{DoxyCompactItemize}

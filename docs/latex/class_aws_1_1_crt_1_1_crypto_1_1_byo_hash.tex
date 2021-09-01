@@ -1,0 +1,61 @@
+\hypertarget{class_aws_1_1_crt_1_1_crypto_1_1_byo_hash}{}\doxysection{Aws\+::Crt\+::Crypto\+::Byo\+Hash Class Reference}
+\label{class_aws_1_1_crt_1_1_crypto_1_1_byo_hash}\index{Aws::Crt::Crypto::ByoHash@{Aws::Crt::Crypto::ByoHash}}
+
+
+{\ttfamily \#include $<$Hash.\+h$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+virtual \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_byo_hash_a183e85af868d760ec41a8a509cb6afdf}{$\sim$\+Byo\+Hash}} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Protected Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_byo_hash_a0e18c26a50dfea2f78a3ea2be0cc77d0}{Byo\+Hash}} (size\+\_\+t digest\+Size, \mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} $\ast$allocator=\mbox{\hyperlink{namespace_aws_1_1_crt_a7178ef65f261a8db52a624458331bbb2}{g\+\_\+allocator}})
+\item 
+virtual bool \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_byo_hash_ad125d50b6b2f31f4a656fe490271e6a3}{Update\+Internal}} (const \mbox{\hyperlink{namespace_aws_1_1_crt_a14ac076b0baa520bccb2b7236e4e78b7}{Byte\+Cursor}} \&to\+Hash) noexcept=0
+\item 
+virtual bool \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_byo_hash_a7f8ce190069dc03e510a07bda5e902e0}{Digest\+Internal}} (\mbox{\hyperlink{namespace_aws_1_1_crt_aa760a7d9714d6c28091c2b1cf7029876}{Byte\+Buf}} \&output, size\+\_\+t truncate\+To=0) noexcept=0
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+BYO\+\_\+\+CRYPTO\+: Base class for custom hash implementations.
+
+If using BYO\+\_\+\+CRYPTO, you must define concrete implementations for the required hash algorithms and set their creation callbacks via functions like \mbox{\hyperlink{class_aws_1_1_crt_1_1_api_handle_aa2557be126650e58c8b22cdb1d32b928}{Api\+Handle.\+Set\+BYOCrypto\+New\+MD5\+Callback()}}. 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{class_aws_1_1_crt_1_1_crypto_1_1_byo_hash_a183e85af868d760ec41a8a509cb6afdf}\label{class_aws_1_1_crt_1_1_crypto_1_1_byo_hash_a183e85af868d760ec41a8a509cb6afdf}} 
+\index{Aws::Crt::Crypto::ByoHash@{Aws::Crt::Crypto::ByoHash}!````~ByoHash@{$\sim$ByoHash}}
+\index{````~ByoHash@{$\sim$ByoHash}!Aws::Crt::Crypto::ByoHash@{Aws::Crt::Crypto::ByoHash}}
+\doxysubsubsection{\texorpdfstring{$\sim$ByoHash()}{~ByoHash()}}
+{\footnotesize\ttfamily Aws\+::\+Crt\+::\+Crypto\+::\+Byo\+Hash\+::$\sim$\+Byo\+Hash (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [virtual]}}
+
+\mbox{\Hypertarget{class_aws_1_1_crt_1_1_crypto_1_1_byo_hash_a0e18c26a50dfea2f78a3ea2be0cc77d0}\label{class_aws_1_1_crt_1_1_crypto_1_1_byo_hash_a0e18c26a50dfea2f78a3ea2be0cc77d0}} 
+\index{Aws::Crt::Crypto::ByoHash@{Aws::Crt::Crypto::ByoHash}!ByoHash@{ByoHash}}
+\index{ByoHash@{ByoHash}!Aws::Crt::Crypto::ByoHash@{Aws::Crt::Crypto::ByoHash}}
+\doxysubsubsection{\texorpdfstring{ByoHash()}{ByoHash()}}
+{\footnotesize\ttfamily Aws\+::\+Crt\+::\+Crypto\+::\+Byo\+Hash\+::\+Byo\+Hash (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{digest\+Size,  }\item[{\mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} $\ast$}]{allocator = {\ttfamily \mbox{\hyperlink{namespace_aws_1_1_crt_a7178ef65f261a8db52a624458331bbb2}{g\+\_\+allocator}}} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [protected]}}
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{class_aws_1_1_crt_1_1_crypto_1_1_byo_hash_a7f8ce190069dc03e510a07bda5e902e0}\label{class_aws_1_1_crt_1_1_crypto_1_1_byo_hash_a7f8ce190069dc03e510a07bda5e902e0}} 
+\index{Aws::Crt::Crypto::ByoHash@{Aws::Crt::Crypto::ByoHash}!DigestInternal@{DigestInternal}}
+\index{DigestInternal@{DigestInternal}!Aws::Crt::Crypto::ByoHash@{Aws::Crt::Crypto::ByoHash}}
+\doxysubsubsection{\texorpdfstring{DigestInternal()}{DigestInternal()}}
+{\footnotesize\ttfamily virtual bool Aws\+::\+Crt\+::\+Crypto\+::\+Byo\+Hash\+::\+Digest\+Internal (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{namespace_aws_1_1_crt_aa760a7d9714d6c28091c2b1cf7029876}{Byte\+Buf}} \&}]{output,  }\item[{size\+\_\+t}]{truncate\+To = {\ttfamily 0} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [protected]}, {\ttfamily [pure virtual]}, {\ttfamily [noexcept]}}
+
+Complete the hash computation and write the final digest to output. This cannote be called more than once. If truncate\+\_\+to is something other than 0, the output must be truncated to that number of bytes. Raise an AWS error and return false to indicate failure. \mbox{\Hypertarget{class_aws_1_1_crt_1_1_crypto_1_1_byo_hash_ad125d50b6b2f31f4a656fe490271e6a3}\label{class_aws_1_1_crt_1_1_crypto_1_1_byo_hash_ad125d50b6b2f31f4a656fe490271e6a3}} 
+\index{Aws::Crt::Crypto::ByoHash@{Aws::Crt::Crypto::ByoHash}!UpdateInternal@{UpdateInternal}}
+\index{UpdateInternal@{UpdateInternal}!Aws::Crt::Crypto::ByoHash@{Aws::Crt::Crypto::ByoHash}}
+\doxysubsubsection{\texorpdfstring{UpdateInternal()}{UpdateInternal()}}
+{\footnotesize\ttfamily virtual bool Aws\+::\+Crt\+::\+Crypto\+::\+Byo\+Hash\+::\+Update\+Internal (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{namespace_aws_1_1_crt_a14ac076b0baa520bccb2b7236e4e78b7}{Byte\+Cursor}} \&}]{to\+Hash }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [protected]}, {\ttfamily [pure virtual]}, {\ttfamily [noexcept]}}
+
+Update the running hash with to\+\_\+hash. This can be called multiple times. Raise an AWS error and return false to indicate failure. 
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+/\+Users/dengket/project/crts/aws-\/crt-\/cpp/include/aws/crt/crypto/\mbox{\hyperlink{_hash_8h}{Hash.\+h}}\item 
+/\+Users/dengket/project/crts/aws-\/crt-\/cpp/source/crypto/\mbox{\hyperlink{_hash_8cpp}{Hash.\+cpp}}\end{DoxyCompactItemize}

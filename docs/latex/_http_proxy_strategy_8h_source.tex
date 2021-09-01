@@ -1,0 +1,68 @@
+\hypertarget{_http_proxy_strategy_8h_source}{}\doxysection{Http\+Proxy\+Strategy.\+h}
+\label{_http_proxy_strategy_8h_source}\index{/Users/dengket/project/crts/aws-\/crt-\/cpp/include/aws/crt/http/HttpProxyStrategy.h@{/Users/dengket/project/crts/aws-\/crt-\/cpp/include/aws/crt/http/HttpProxyStrategy.h}}
+\mbox{\hyperlink{_http_proxy_strategy_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{7 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{_types_8h}{aws/crt/Types.h}}>}}
+\DoxyCodeLine{8 }
+\DoxyCodeLine{9 \textcolor{preprocessor}{\#include <memory>}}
+\DoxyCodeLine{10 }
+\DoxyCodeLine{11 \textcolor{keyword}{struct }aws\_http\_proxy\_strategy;}
+\DoxyCodeLine{12 }
+\DoxyCodeLine{13 \textcolor{keyword}{namespace }\mbox{\hyperlink{namespace_aws}{Aws}}}
+\DoxyCodeLine{14 \{}
+\DoxyCodeLine{15     \textcolor{keyword}{namespace }Crt}
+\DoxyCodeLine{16     \{}
+\DoxyCodeLine{17         \textcolor{keyword}{namespace }Http}
+\DoxyCodeLine{18         \{}
+\DoxyCodeLine{19             \textcolor{keyword}{enum class} \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_http_a3f13c5720d947936b72cee24545ea82a}{AwsHttpProxyConnectionType}};}
+\DoxyCodeLine{20 }
+\DoxyCodeLine{21             \textcolor{keyword}{struct }\mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \mbox{\hyperlink{struct_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy_basic_auth_config}{HttpProxyStrategyBasicAuthConfig}}}
+\DoxyCodeLine{22             \{}
+\DoxyCodeLine{23                 \mbox{\hyperlink{struct_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy_basic_auth_config}{HttpProxyStrategyBasicAuthConfig}}();}
+\DoxyCodeLine{24 }
+\DoxyCodeLine{25                 \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_http_a3f13c5720d947936b72cee24545ea82a}{AwsHttpProxyConnectionType}} \mbox{\hyperlink{struct_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy_basic_auth_config_a4c40d92babe5794d019693c7284d653f}{ConnectionType}};}
+\DoxyCodeLine{26 }
+\DoxyCodeLine{27                 \mbox{\hyperlink{namespace_aws_1_1_crt_a865381ab2bc5db45524fa6ce43c394c3}{String}} \mbox{\hyperlink{struct_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy_basic_auth_config_a2528ccd629d958bf29706df77c3cd8ad}{Username}};}
+\DoxyCodeLine{28 }
+\DoxyCodeLine{29                 \mbox{\hyperlink{namespace_aws_1_1_crt_a865381ab2bc5db45524fa6ce43c394c3}{String}} \mbox{\hyperlink{struct_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy_basic_auth_config_a69a15cf377ad2ab577d3ac67eb2d6894}{Password}};}
+\DoxyCodeLine{30             \};}
+\DoxyCodeLine{31 }
+\DoxyCodeLine{32             \textcolor{keyword}{using} \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_http_aae93e8c5831141991600b318b1df21d7}{KerberosGetTokenFunction}} = std::function<bool(\mbox{\hyperlink{namespace_aws_1_1_crt_a865381ab2bc5db45524fa6ce43c394c3}{String}} \&)>;}
+\DoxyCodeLine{33             \textcolor{keyword}{using} \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_http_ad6ff911d785539e09b5620ad25d32e0b}{NtlmGetTokenFunction}} = std::function<bool(\textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_1_1_crt_a865381ab2bc5db45524fa6ce43c394c3}{String}} \&, \mbox{\hyperlink{namespace_aws_1_1_crt_a865381ab2bc5db45524fa6ce43c394c3}{String}} \&)>;}
+\DoxyCodeLine{34 }
+\DoxyCodeLine{35             \textcolor{keyword}{struct }\mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \mbox{\hyperlink{struct_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy_adaptive_config}{HttpProxyStrategyAdaptiveConfig}}}
+\DoxyCodeLine{36             \{}
+\DoxyCodeLine{37                 \mbox{\hyperlink{struct_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy_adaptive_config_a46fe7ae274dfbd9b8c60e00ed1860717}{HttpProxyStrategyAdaptiveConfig}}() : KerberosGetToken(), NtlmGetCredential(), NtlmGetToken() \{\}}
+\DoxyCodeLine{38 }
+\DoxyCodeLine{39                 \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_http_aae93e8c5831141991600b318b1df21d7}{KerberosGetTokenFunction}} \mbox{\hyperlink{struct_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy_adaptive_config_ad638c2e0d3a55bca42ddb35908434bfa}{KerberosGetToken}};}
+\DoxyCodeLine{40 }
+\DoxyCodeLine{41                 \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_http_aae93e8c5831141991600b318b1df21d7}{KerberosGetTokenFunction}} \mbox{\hyperlink{struct_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy_adaptive_config_a412e322a88464aa867785ddd62ef6f64}{NtlmGetCredential}};}
+\DoxyCodeLine{42 }
+\DoxyCodeLine{43                 \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_http_ad6ff911d785539e09b5620ad25d32e0b}{NtlmGetTokenFunction}} \mbox{\hyperlink{struct_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy_adaptive_config_afef5445e6f5b5f13524e765435d3c272}{NtlmGetToken}};}
+\DoxyCodeLine{44             \};}
+\DoxyCodeLine{45 }
+\DoxyCodeLine{46             \textcolor{keyword}{class }\mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \mbox{\hyperlink{class_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy}{HttpProxyStrategy}}}
+\DoxyCodeLine{47             \{}
+\DoxyCodeLine{48               \textcolor{keyword}{public}:}
+\DoxyCodeLine{49                 \mbox{\hyperlink{class_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy}{HttpProxyStrategy}}(\textcolor{keyword}{struct} aws\_http\_proxy\_strategy *strategy);}
+\DoxyCodeLine{50                 \textcolor{keyword}{virtual} \mbox{\hyperlink{class_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy}{\string~HttpProxyStrategy}}();}
+\DoxyCodeLine{51 }
+\DoxyCodeLine{52                 \textcolor{keyword}{struct }aws\_http\_proxy\_strategy *\mbox{\hyperlink{class_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy_a6045193775e1a7b05db7bba6879ff4f1}{GetUnderlyingHandle}}() const noexcept \{ \textcolor{keywordflow}{return} m\_strategy; \}}
+\DoxyCodeLine{53 }
+\DoxyCodeLine{54                 \textcolor{keyword}{static} std::shared\_ptr<HttpProxyStrategy> CreateBasicHttpProxyStrategy(}
+\DoxyCodeLine{55                     \textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy_basic_auth_config}{HttpProxyStrategyBasicAuthConfig}} \&config,}
+\DoxyCodeLine{56                     \mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} *allocator = \mbox{\hyperlink{namespace_aws_1_1_crt_a7178ef65f261a8db52a624458331bbb2}{g\_allocator}});}
+\DoxyCodeLine{57 }
+\DoxyCodeLine{58                 \textcolor{keyword}{static} std::shared\_ptr<HttpProxyStrategy> CreateAdaptiveHttpProxyStrategy(}
+\DoxyCodeLine{59                     \textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy_adaptive_config}{HttpProxyStrategyAdaptiveConfig}} \&config,}
+\DoxyCodeLine{60                     \mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} *allocator = \mbox{\hyperlink{namespace_aws_1_1_crt_a7178ef65f261a8db52a624458331bbb2}{g\_allocator}});}
+\DoxyCodeLine{61 }
+\DoxyCodeLine{62               \textcolor{keyword}{protected}:}
+\DoxyCodeLine{63                 \textcolor{keyword}{struct }aws\_http\_proxy\_strategy *\mbox{\hyperlink{class_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy_a2325400312b35167c8b6a2b83ce5e0b3}{m\_strategy}};}
+\DoxyCodeLine{64             \};}
+\DoxyCodeLine{65         \} \textcolor{comment}{// namespace Http}}
+\DoxyCodeLine{66     \}     \textcolor{comment}{// namespace Crt}}
+\DoxyCodeLine{67 \} \textcolor{comment}{// namespace Aws}}
+
+\end{DoxyCode}

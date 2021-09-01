@@ -1,0 +1,158 @@
+\hypertarget{_types_8h_source}{}\doxysection{Types.\+h}
+\label{_types_8h_source}\index{/Users/dengket/project/crts/aws-\/crt-\/cpp/include/aws/crt/Types.h@{/Users/dengket/project/crts/aws-\/crt-\/cpp/include/aws/crt/Types.h}}
+\mbox{\hyperlink{_types_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{6 \textcolor{preprocessor}{\#include <aws/common/common.h>}}
+\DoxyCodeLine{7 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{_exports_8h}{aws/crt/Exports.h}}>}}
+\DoxyCodeLine{8 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{_optional_8h}{aws/crt/Optional.h}}>}}
+\DoxyCodeLine{9 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{_stl_allocator_8h}{aws/crt/StlAllocator.h}}>}}
+\DoxyCodeLine{10 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{_string_view_8h}{aws/crt/StringView.h}}>}}
+\DoxyCodeLine{11 \textcolor{preprocessor}{\#include <aws/io/socket.h>}}
+\DoxyCodeLine{12 \textcolor{preprocessor}{\#include <aws/mqtt/mqtt.h>}}
+\DoxyCodeLine{13 \textcolor{preprocessor}{\#include <functional>}}
+\DoxyCodeLine{14 \textcolor{preprocessor}{\#include <list>}}
+\DoxyCodeLine{15 \textcolor{preprocessor}{\#include <map>}}
+\DoxyCodeLine{16 \textcolor{preprocessor}{\#include <sstream>}}
+\DoxyCodeLine{17 \textcolor{preprocessor}{\#include <string>}}
+\DoxyCodeLine{18 \textcolor{preprocessor}{\#include <unordered\_map>}}
+\DoxyCodeLine{19 \textcolor{preprocessor}{\#include <utility>}}
+\DoxyCodeLine{20 \textcolor{preprocessor}{\#include <vector>}}
+\DoxyCodeLine{21 }
+\DoxyCodeLine{22 \textcolor{keyword}{struct }aws\_allocator;}
+\DoxyCodeLine{23 \textcolor{keyword}{struct }aws\_byte\_buf;}
+\DoxyCodeLine{24 \textcolor{keyword}{struct }aws\_byte\_cursor;}
+\DoxyCodeLine{25 \textcolor{keyword}{struct }aws\_socket\_options;}
+\DoxyCodeLine{26 }
+\DoxyCodeLine{27 \textcolor{keyword}{namespace }\mbox{\hyperlink{namespace_aws}{Aws}}}
+\DoxyCodeLine{28 \{}
+\DoxyCodeLine{29     \textcolor{keyword}{namespace }Crt}
+\DoxyCodeLine{30     \{}
+\DoxyCodeLine{31         \textcolor{keyword}{using} \mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} = aws\_allocator;}
+\DoxyCodeLine{32         \textcolor{keyword}{using} \mbox{\hyperlink{namespace_aws_1_1_crt_aa760a7d9714d6c28091c2b1cf7029876}{ByteBuf}} = aws\_byte\_buf;}
+\DoxyCodeLine{33         \textcolor{keyword}{using} \mbox{\hyperlink{namespace_aws_1_1_crt_a14ac076b0baa520bccb2b7236e4e78b7}{ByteCursor}} = aws\_byte\_cursor;}
+\DoxyCodeLine{34 }
+\DoxyCodeLine{35         \textcolor{keyword}{namespace }Io}
+\DoxyCodeLine{36         \{}
+\DoxyCodeLine{37             \textcolor{keyword}{using} \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a7e18a94cc1dada574dfe654349a94ec2}{IStream}} = std::basic\_istream<char, std::char\_traits<char>>;}
+\DoxyCodeLine{38         \} \textcolor{comment}{// namespace Io}}
+\DoxyCodeLine{39 }
+\DoxyCodeLine{40         \textcolor{keyword}{namespace }Mqtt}
+\DoxyCodeLine{41         \{}
+\DoxyCodeLine{42             \textcolor{keyword}{using} \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_mqtt_a73e44d9ab196e11a9732981690ac5423}{QOS}} = aws\_mqtt\_qos;}
+\DoxyCodeLine{43             \textcolor{keyword}{using} \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_mqtt_ac27f3ee931e088bb234da384b2a13617}{ReturnCode}} = aws\_mqtt\_connect\_return\_code;}
+\DoxyCodeLine{44         \} \textcolor{comment}{// namespace Mqtt}}
+\DoxyCodeLine{45 }
+\DoxyCodeLine{46         \textcolor{keyword}{template} <\textcolor{keyword}{typename} T> \textcolor{keyword}{class }\mbox{\hyperlink{class_aws_1_1_crt_1_1_stl_allocator}{StlAllocator}};}
+\DoxyCodeLine{47         \textcolor{keyword}{using} \mbox{\hyperlink{namespace_aws_1_1_crt_a865381ab2bc5db45524fa6ce43c394c3}{String}} = std::basic\_string<char, std::char\_traits<char>, \mbox{\hyperlink{class_aws_1_1_crt_1_1_stl_allocator}{StlAllocator<char>}}>;}
+\DoxyCodeLine{48         \textcolor{keyword}{using} \mbox{\hyperlink{namespace_aws_1_1_crt_a4ac3c138d617fcbeba85074f442a3cae}{StringStream}} = std::basic\_stringstream<char, std::char\_traits<char>, \mbox{\hyperlink{class_aws_1_1_crt_1_1_stl_allocator}{StlAllocator<char>}}>;}
+\DoxyCodeLine{49         \textcolor{keyword}{template} <\textcolor{keyword}{typename} K, \textcolor{keyword}{typename} V> \textcolor{keyword}{using} \mbox{\hyperlink{namespace_aws_1_1_crt_a1cf42e328e4553fa884d30468915df73}{Map}} = std::map<K, V, std::less<K>, \mbox{\hyperlink{class_aws_1_1_crt_1_1_stl_allocator}{StlAllocator<std::pair<const K, V>}}>>;}
+\DoxyCodeLine{50         \textcolor{keyword}{template} <\textcolor{keyword}{typename} K, \textcolor{keyword}{typename} V>}
+\DoxyCodeLine{51         \textcolor{keyword}{using} \mbox{\hyperlink{namespace_aws_1_1_crt_a5f9f20c733eb9d601dbc67b9dab81787}{UnorderedMap}} =}
+\DoxyCodeLine{52             std::unordered\_map<K, V, std::hash<K>, std::equal\_to<K>, \mbox{\hyperlink{class_aws_1_1_crt_1_1_stl_allocator}{StlAllocator<std::pair<const K, V>}}>>;}
+\DoxyCodeLine{53         \textcolor{keyword}{template} <\textcolor{keyword}{typename} K, \textcolor{keyword}{typename} V>}
+\DoxyCodeLine{54         \textcolor{keyword}{using} \mbox{\hyperlink{namespace_aws_1_1_crt_afa7b355655153ab380ab8e7a11e039aa}{MultiMap}} = std::multimap<K, V, std::less<K>, \mbox{\hyperlink{class_aws_1_1_crt_1_1_stl_allocator}{StlAllocator<std::pair<const K, V>}}>>;}
+\DoxyCodeLine{55         \textcolor{keyword}{template} <\textcolor{keyword}{typename} T> \textcolor{keyword}{using} \mbox{\hyperlink{namespace_aws_1_1_crt_ac975615d2a9140660077ef7b264d9b6c}{Vector}} = std::vector<T, StlAllocator<T>>;}
+\DoxyCodeLine{56         \textcolor{keyword}{template} <\textcolor{keyword}{typename} T> \textcolor{keyword}{using} \mbox{\hyperlink{namespace_aws_1_1_crt_a700a767e9c8e9c2564c37e379beb91a8}{List}} = std::list<T, StlAllocator<T>>;}
+\DoxyCodeLine{57 }
+\DoxyCodeLine{58         \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} *\mbox{\hyperlink{namespace_aws_1_1_crt_a70bd46137cf25dda46f2138ddbee9681}{DefaultAllocator}}() noexcept;}
+\DoxyCodeLine{59         \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \mbox{\hyperlink{namespace_aws_1_1_crt_aa760a7d9714d6c28091c2b1cf7029876}{ByteBuf}} \mbox{\hyperlink{namespace_aws_1_1_crt_ab4ec1fe5917d6a2b63846a55269e2f77}{ByteBufFromCString}}(const \textcolor{keywordtype}{char} *str) noexcept;}
+\DoxyCodeLine{60         \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \mbox{\hyperlink{namespace_aws_1_1_crt_aa760a7d9714d6c28091c2b1cf7029876}{ByteBuf}} \mbox{\hyperlink{namespace_aws_1_1_crt_a70f8e3b2683b6280d49d29dd3b95f6e4}{ByteBufFromEmptyArray}}(const uint8\_t *array, \textcolor{keywordtype}{size\_t} len) noexcept;}
+\DoxyCodeLine{61         \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \mbox{\hyperlink{namespace_aws_1_1_crt_aa760a7d9714d6c28091c2b1cf7029876}{ByteBuf}} \mbox{\hyperlink{namespace_aws_1_1_crt_af5947e810644fdc97d961ed6ab95fcaf}{ByteBufFromArray}}(const uint8\_t *array, \textcolor{keywordtype}{size\_t} capacity) noexcept;}
+\DoxyCodeLine{62         \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \mbox{\hyperlink{namespace_aws_1_1_crt_aa760a7d9714d6c28091c2b1cf7029876}{ByteBuf}} \mbox{\hyperlink{namespace_aws_1_1_crt_a1566d044dc5f9eddd4157198c1133653}{ByteBufNewCopy}}(\mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} *alloc, const uint8\_t *array, \textcolor{keywordtype}{size\_t} len);}
+\DoxyCodeLine{63         \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \textcolor{keywordtype}{void} \mbox{\hyperlink{namespace_aws_1_1_crt_ae01ece218af4b7f2b439b2fe81eaa972}{ByteBufDelete}}(\mbox{\hyperlink{namespace_aws_1_1_crt_aa760a7d9714d6c28091c2b1cf7029876}{ByteBuf}} \&);}
+\DoxyCodeLine{64 }
+\DoxyCodeLine{65         \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \mbox{\hyperlink{namespace_aws_1_1_crt_a14ac076b0baa520bccb2b7236e4e78b7}{ByteCursor}} \mbox{\hyperlink{namespace_aws_1_1_crt_a2f85138cf0101f40e9b22f52428b678a}{ByteCursorFromCString}}(const \textcolor{keywordtype}{char} *str) noexcept;}
+\DoxyCodeLine{66         \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \mbox{\hyperlink{namespace_aws_1_1_crt_a14ac076b0baa520bccb2b7236e4e78b7}{ByteCursor}} \mbox{\hyperlink{namespace_aws_1_1_crt_a9e5cf3dac33791d317a0d3503dc31c0e}{ByteCursorFromString}}(const Crt::\mbox{\hyperlink{namespace_aws_1_1_crt_a865381ab2bc5db45524fa6ce43c394c3}{String}} \&str) noexcept;}
+\DoxyCodeLine{67         \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \mbox{\hyperlink{namespace_aws_1_1_crt_a14ac076b0baa520bccb2b7236e4e78b7}{ByteCursor}} \mbox{\hyperlink{namespace_aws_1_1_crt_ae360efd16a3052b3ad45a9ce3d5549b2}{ByteCursorFromByteBuf}}(const \mbox{\hyperlink{namespace_aws_1_1_crt_aa760a7d9714d6c28091c2b1cf7029876}{ByteBuf}} \&) noexcept;}
+\DoxyCodeLine{68         \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \mbox{\hyperlink{namespace_aws_1_1_crt_a14ac076b0baa520bccb2b7236e4e78b7}{ByteCursor}} \mbox{\hyperlink{namespace_aws_1_1_crt_a5541ef985f06959cac261a1d97513fb4}{ByteCursorFromArray}}(const uint8\_t *array, \textcolor{keywordtype}{size\_t} len) noexcept;}
+\DoxyCodeLine{69 }
+\DoxyCodeLine{70         \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \mbox{\hyperlink{namespace_aws_1_1_crt_ac975615d2a9140660077ef7b264d9b6c}{Vector}}<uint8\_t> \mbox{\hyperlink{namespace_aws_1_1_crt_addde79a82884dd3374bfe47c1ec9e0ac}{Base64Decode}}(const \mbox{\hyperlink{namespace_aws_1_1_crt_a865381ab2bc5db45524fa6ce43c394c3}{String}} \&decode);}
+\DoxyCodeLine{71         \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \mbox{\hyperlink{namespace_aws_1_1_crt_a865381ab2bc5db45524fa6ce43c394c3}{String}} \mbox{\hyperlink{namespace_aws_1_1_crt_a56e54aa8447e593fbcfc0c3c303db8ca}{Base64Encode}}(const \mbox{\hyperlink{namespace_aws_1_1_crt_ac975615d2a9140660077ef7b264d9b6c}{Vector}}<uint8\_t> \&encode);}
+\DoxyCodeLine{72 }
+\DoxyCodeLine{73         template <typename RawType, typename TargetType> using \mbox{\hyperlink{namespace_aws_1_1_crt_a81cf162faa3b0ee76e7af11657efeaf7}{TypeConvertor}} = \mbox{\hyperlink{namespacestd}{std}}::function<TargetType(RawType)>;}
+\DoxyCodeLine{74 }
+\DoxyCodeLine{79         template <typename RawType, typename TargetType>}
+\DoxyCodeLine{80         \mbox{\hyperlink{namespace_aws_1_1_crt_ac975615d2a9140660077ef7b264d9b6c}{Vector}}<TargetType> \mbox{\hyperlink{namespace_aws_1_1_crt_a34b63a66045625987dc19777c20faa7b}{ArrayListToVector}}(const aws\_array\_list *array, \mbox{\hyperlink{namespace_aws_1_1_crt_a81cf162faa3b0ee76e7af11657efeaf7}{TypeConvertor}}<RawType, TargetType> conv)}
+\DoxyCodeLine{81         \{}
+\DoxyCodeLine{82             \mbox{\hyperlink{namespace_aws_1_1_crt_ac975615d2a9140660077ef7b264d9b6c}{Vector<TargetType>}} v;}
+\DoxyCodeLine{83             \textcolor{keywordtype}{size\_t} cnt = aws\_array\_list\_length(array);}
+\DoxyCodeLine{84             \textcolor{keywordflow}{for} (\textcolor{keywordtype}{size\_t} i = 0; i < cnt; i++)}
+\DoxyCodeLine{85             \{}
+\DoxyCodeLine{86                 RawType t;}
+\DoxyCodeLine{87                 aws\_array\_list\_get\_at(array, \&t, i);}
+\DoxyCodeLine{88                 v.emplace\_back(conv(t));}
+\DoxyCodeLine{89             \}}
+\DoxyCodeLine{90             \textcolor{keywordflow}{return} v;}
+\DoxyCodeLine{91         \}}
+\DoxyCodeLine{92 }
+\DoxyCodeLine{97         \textcolor{keyword}{template} <\textcolor{keyword}{typename} RawType, \textcolor{keyword}{typename} TargetType>}
+\DoxyCodeLine{98         \mbox{\hyperlink{namespace_aws_1_1_crt_ac975615d2a9140660077ef7b264d9b6c}{Vector<TargetType>}} \mbox{\hyperlink{namespace_aws_1_1_crt_a34b63a66045625987dc19777c20faa7b}{ArrayListToVector}}(\textcolor{keyword}{const} aws\_array\_list *array)}
+\DoxyCodeLine{99         \{}
+\DoxyCodeLine{100             \mbox{\hyperlink{namespace_aws_1_1_crt_ac975615d2a9140660077ef7b264d9b6c}{Vector<TargetType>}} v;}
+\DoxyCodeLine{101             \textcolor{keywordtype}{size\_t} cnt = aws\_array\_list\_length(array);}
+\DoxyCodeLine{102             \textcolor{keywordflow}{for} (\textcolor{keywordtype}{size\_t} i = 0; i < cnt; i++)}
+\DoxyCodeLine{103             \{}
+\DoxyCodeLine{104                 RawType t;}
+\DoxyCodeLine{105                 aws\_array\_list\_get\_at(array, \&t, i);}
+\DoxyCodeLine{106                 v.emplace\_back(TargetType(t));}
+\DoxyCodeLine{107             \}}
+\DoxyCodeLine{108             \textcolor{keywordflow}{return} v;}
+\DoxyCodeLine{109         \}}
+\DoxyCodeLine{110 }
+\DoxyCodeLine{114         \textcolor{keyword}{template} <\textcolor{keyword}{typename} Type> \mbox{\hyperlink{namespace_aws_1_1_crt_ac975615d2a9140660077ef7b264d9b6c}{Vector<Type>}} \mbox{\hyperlink{namespace_aws_1_1_crt_a34b63a66045625987dc19777c20faa7b}{ArrayListToVector}}(\textcolor{keyword}{const} aws\_array\_list *array)}
+\DoxyCodeLine{115         \{}
+\DoxyCodeLine{116             \mbox{\hyperlink{namespace_aws_1_1_crt_ac975615d2a9140660077ef7b264d9b6c}{Vector<Type>}} v;}
+\DoxyCodeLine{117             \textcolor{keywordtype}{size\_t} cnt = aws\_array\_list\_length(array);}
+\DoxyCodeLine{118             \textcolor{keywordflow}{for} (\textcolor{keywordtype}{size\_t} i = 0; i < cnt; i++)}
+\DoxyCodeLine{119             \{}
+\DoxyCodeLine{120                 Type t;}
+\DoxyCodeLine{121                 aws\_array\_list\_get\_at(array, \&t, i);}
+\DoxyCodeLine{122                 v.emplace\_back(t);}
+\DoxyCodeLine{123             \}}
+\DoxyCodeLine{124             \textcolor{keywordflow}{return} v;}
+\DoxyCodeLine{125         \}}
+\DoxyCodeLine{126 }
+\DoxyCodeLine{127         \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \textcolor{keyword}{inline} \mbox{\hyperlink{class_aws_1_1_crt_1_1basic__string__view}{StringView}} \mbox{\hyperlink{namespace_aws_1_1_crt_a8c4fd8ee9c0cc758444e92ae42b23aae}{ByteCursorToStringView}}(\textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_1_1_crt_a14ac076b0baa520bccb2b7236e4e78b7}{ByteCursor}} \&bc)}
+\DoxyCodeLine{128         \{}
+\DoxyCodeLine{129             \textcolor{keywordflow}{return} \mbox{\hyperlink{namespace_aws_1_1_crt_a97616772752d5faecef66dc230cdb7ab}{StringView}}(\textcolor{keyword}{reinterpret\_cast<}\textcolor{keywordtype}{char} *\textcolor{keyword}{>}(bc.ptr), bc.len);}
+\DoxyCodeLine{130         \}}
+\DoxyCodeLine{131 }
+\DoxyCodeLine{132         \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \textcolor{keyword}{inline} \mbox{\hyperlink{namespace_aws_1_1_crt_a14ac076b0baa520bccb2b7236e4e78b7}{ByteCursor}} \mbox{\hyperlink{namespace_aws_1_1_crt_a0dcffc9747fc48fb57adabd2d4c458a8}{StringViewToByteCursor}}(\textcolor{keyword}{const} \mbox{\hyperlink{class_aws_1_1_crt_1_1basic__string__view}{StringView}} \&sv)}
+\DoxyCodeLine{133         \{}
+\DoxyCodeLine{134             \mbox{\hyperlink{namespace_aws_1_1_crt_a14ac076b0baa520bccb2b7236e4e78b7}{ByteCursor}} bc;}
+\DoxyCodeLine{135             bc.ptr = (uint8\_t *)(sv.\mbox{\hyperlink{class_aws_1_1_crt_1_1basic__string__view_aef105c4ca0722207e83d520c3cbc78be}{data}}());}
+\DoxyCodeLine{136             bc.len = sv.\mbox{\hyperlink{class_aws_1_1_crt_1_1basic__string__view_a899be16af0ea64b19ffed9908c02591b}{size}}();}
+\DoxyCodeLine{137             \textcolor{keywordflow}{return} bc;}
+\DoxyCodeLine{138         \}}
+\DoxyCodeLine{139 }
+\DoxyCodeLine{140         \textcolor{keyword}{template} <\textcolor{keyword}{typename} T> \textcolor{keywordtype}{void} \mbox{\hyperlink{namespace_aws_1_1_crt_a5e912a3a4aa95134bbc477dde8e5ea5c}{Delete}}(T *t, \mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} *allocator)}
+\DoxyCodeLine{141         \{}
+\DoxyCodeLine{142             t-\/>\string~T();}
+\DoxyCodeLine{143             aws\_mem\_release(allocator, t);}
+\DoxyCodeLine{144         \}}
+\DoxyCodeLine{145 }
+\DoxyCodeLine{146         \textcolor{keyword}{template} <\textcolor{keyword}{typename} T, \textcolor{keyword}{typename}... Args> T *\mbox{\hyperlink{namespace_aws_1_1_crt_a44ac693ee426641a65ad423f656a53f4}{New}}(\mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} *allocator, Args \&\&... args)}
+\DoxyCodeLine{147         \{}
+\DoxyCodeLine{148             T *t = \textcolor{keyword}{reinterpret\_cast<}T *\textcolor{keyword}{>}(aws\_mem\_acquire(allocator, \textcolor{keyword}{sizeof}(T)));}
+\DoxyCodeLine{149             \textcolor{keywordflow}{if} (!t)}
+\DoxyCodeLine{150                 \textcolor{keywordflow}{return} \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{151             \textcolor{keywordflow}{return} \textcolor{keyword}{new} (t) T(std::forward<Args>(args)...);}
+\DoxyCodeLine{152         \}}
+\DoxyCodeLine{153 }
+\DoxyCodeLine{154         \textcolor{keyword}{template} <\textcolor{keyword}{typename} T, \textcolor{keyword}{typename}... Args> std::shared\_ptr<T> \mbox{\hyperlink{namespace_aws_1_1_crt_aab81007062e54665d841bfb7c27d8734}{MakeShared}}(\mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} *allocator, Args \&\&... args)}
+\DoxyCodeLine{155         \{}
+\DoxyCodeLine{156             T *t = \textcolor{keyword}{reinterpret\_cast<}T *\textcolor{keyword}{>}(aws\_mem\_acquire(allocator, \textcolor{keyword}{sizeof}(T)));}
+\DoxyCodeLine{157             \textcolor{keywordflow}{if} (!t)}
+\DoxyCodeLine{158                 \textcolor{keywordflow}{return} \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{159             \textcolor{keyword}{new} (t) T(std::forward<Args>(args)...);}
+\DoxyCodeLine{160 }
+\DoxyCodeLine{161             \textcolor{keywordflow}{return} std::shared\_ptr<T>(t, [allocator](T *obj) \{ \mbox{\hyperlink{namespace_aws_1_1_crt_a5e912a3a4aa95134bbc477dde8e5ea5c}{Delete}}(obj, allocator); \});}
+\DoxyCodeLine{162         \}}
+\DoxyCodeLine{163 }
+\DoxyCodeLine{164         \textcolor{keyword}{template} <\textcolor{keyword}{typename} T> \textcolor{keyword}{using} \mbox{\hyperlink{namespace_aws_1_1_crt_aa8f82604df3f410e862691561154627e}{ScopedResource}} = std::unique\_ptr<T, std::function<void(T *)>>;}
+\DoxyCodeLine{165 }
+\DoxyCodeLine{166     \} \textcolor{comment}{// namespace Crt}}
+\DoxyCodeLine{167 \} \textcolor{comment}{// namespace Aws}}
+
+\end{DoxyCode}

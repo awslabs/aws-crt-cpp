@@ -1,0 +1,92 @@
+\hypertarget{_h_m_a_c_8h_source}{}\doxysection{HMAC.\+h}
+\label{_h_m_a_c_8h_source}\index{/Users/dengket/project/crts/aws-\/crt-\/cpp/include/aws/crt/crypto/HMAC.h@{/Users/dengket/project/crts/aws-\/crt-\/cpp/include/aws/crt/crypto/HMAC.h}}
+\mbox{\hyperlink{_h_m_a_c_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{6 \textcolor{preprocessor}{\#include <aws/cal/hmac.h>}}
+\DoxyCodeLine{7 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{_exports_8h}{aws/crt/Exports.h}}>}}
+\DoxyCodeLine{8 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{_types_8h}{aws/crt/Types.h}}>}}
+\DoxyCodeLine{9 }
+\DoxyCodeLine{10 \textcolor{keyword}{struct }aws\_hmac;}
+\DoxyCodeLine{11 \textcolor{keyword}{namespace }\mbox{\hyperlink{namespace_aws}{Aws}}}
+\DoxyCodeLine{12 \{}
+\DoxyCodeLine{13     \textcolor{keyword}{namespace }Crt}
+\DoxyCodeLine{14     \{}
+\DoxyCodeLine{15         \textcolor{keyword}{namespace }Crypto}
+\DoxyCodeLine{16         \{}
+\DoxyCodeLine{17             \textcolor{keyword}{static} \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_crypto_a5a3cbbce1fec90bca7fc18db098ed1e4}{SHA256\_HMAC\_DIGEST\_SIZE}} = 32;}
+\DoxyCodeLine{18 }
+\DoxyCodeLine{25             \textcolor{keywordtype}{bool} \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_crypto_ab8d08b685154ffebfe4322e852e7237b}{ComputeSHA256HMAC}}(}
+\DoxyCodeLine{26                 \mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} *allocator,}
+\DoxyCodeLine{27                 \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_1_1_crt_a14ac076b0baa520bccb2b7236e4e78b7}{ByteCursor}} \&secret,}
+\DoxyCodeLine{28                 \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_1_1_crt_a14ac076b0baa520bccb2b7236e4e78b7}{ByteCursor}} \&input,}
+\DoxyCodeLine{29                 \mbox{\hyperlink{namespace_aws_1_1_crt_aa760a7d9714d6c28091c2b1cf7029876}{ByteBuf}} \&output,}
+\DoxyCodeLine{30                 \textcolor{keywordtype}{size\_t} truncateTo = 0) noexcept;}
+\DoxyCodeLine{31 }
+\DoxyCodeLine{38             \textcolor{keywordtype}{bool} \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_crypto_ab8d08b685154ffebfe4322e852e7237b}{ComputeSHA256HMAC}}(}
+\DoxyCodeLine{39                 const \mbox{\hyperlink{namespace_aws_1_1_crt_a14ac076b0baa520bccb2b7236e4e78b7}{ByteCursor}} \&secret,}
+\DoxyCodeLine{40                 const \mbox{\hyperlink{namespace_aws_1_1_crt_a14ac076b0baa520bccb2b7236e4e78b7}{ByteCursor}} \&input,}
+\DoxyCodeLine{41                 \mbox{\hyperlink{namespace_aws_1_1_crt_aa760a7d9714d6c28091c2b1cf7029876}{ByteBuf}} \&output,}
+\DoxyCodeLine{42                 \textcolor{keywordtype}{size\_t} truncateTo = 0) noexcept;}
+\DoxyCodeLine{48             class \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_h_m_a_c}{HMAC}} final}
+\DoxyCodeLine{49             \{}
+\DoxyCodeLine{50               \textcolor{keyword}{public}:}
+\DoxyCodeLine{51                 \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_h_m_a_c}{\string~HMAC}}();}
+\DoxyCodeLine{52                 \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_h_m_a_c_a3a39f3c2e4b4c99e1db442211107695c}{HMAC}}(\textcolor{keyword}{const} \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_h_m_a_c}{HMAC}} \&) = \textcolor{keyword}{delete};}
+\DoxyCodeLine{53                 \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_h_m_a_c}{HMAC}} \&\mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_h_m_a_c_aca168da8a4c0d82737fa6011cd189d44}{operator=}}(\textcolor{keyword}{const} \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_h_m_a_c}{HMAC}} \&) = \textcolor{keyword}{delete};}
+\DoxyCodeLine{54                 \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_h_m_a_c}{HMAC}}(\mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_h_m_a_c}{HMAC}} \&\&toMove);}
+\DoxyCodeLine{55                 \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_h_m_a_c}{HMAC}} \&operator=(\mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_h_m_a_c}{HMAC}} \&\&toMove);}
+\DoxyCodeLine{56 }
+\DoxyCodeLine{60                 \textcolor{keyword}{inline} \textcolor{keyword}{operator} bool() const noexcept \{ \textcolor{keywordflow}{return} m\_good; \}}
+\DoxyCodeLine{61 }
+\DoxyCodeLine{65                 \textcolor{keyword}{inline} \textcolor{keywordtype}{int} \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_h_m_a_c_a170e7fc71c13e00fe5f2bfceb1b5565c}{LastError}}() const noexcept \{ \textcolor{keywordflow}{return} m\_lastError; \}}
+\DoxyCodeLine{66 }
+\DoxyCodeLine{70                 \textcolor{keyword}{static} \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_h_m_a_c}{HMAC}} CreateSHA256HMAC(\mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} *allocator, \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_1_1_crt_a14ac076b0baa520bccb2b7236e4e78b7}{ByteCursor}} \&secret) \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{71 }
+\DoxyCodeLine{75                 \textcolor{keyword}{static} \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_h_m_a_c}{HMAC}} CreateSHA256HMAC(\textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_1_1_crt_a14ac076b0baa520bccb2b7236e4e78b7}{ByteCursor}} \&secret) \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{76 }
+\DoxyCodeLine{81                 \textcolor{keywordtype}{bool} Update(\textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_1_1_crt_a14ac076b0baa520bccb2b7236e4e78b7}{ByteCursor}} \&toHMAC) \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{82 }
+\DoxyCodeLine{89                 \textcolor{keywordtype}{bool} Digest(\mbox{\hyperlink{namespace_aws_1_1_crt_aa760a7d9714d6c28091c2b1cf7029876}{ByteBuf}} \&output, \textcolor{keywordtype}{size\_t} truncateTo = 0) noexcept;}
+\DoxyCodeLine{90 }
+\DoxyCodeLine{91               private:}
+\DoxyCodeLine{92                 \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_h_m_a_c}{HMAC}}(aws\_hmac *hmac) noexcept;}
+\DoxyCodeLine{93                 \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_h_m_a_c}{HMAC}}() = delete;}
+\DoxyCodeLine{94 }
+\DoxyCodeLine{95                 aws\_hmac *m\_hmac;}
+\DoxyCodeLine{96                 \textcolor{keywordtype}{bool} m\_good;}
+\DoxyCodeLine{97                 \textcolor{keywordtype}{int} m\_lastError;}
+\DoxyCodeLine{98             \};}
+\DoxyCodeLine{99 }
+\DoxyCodeLine{106             class \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_byo_h_m_a_c}{ByoHMAC}}}
+\DoxyCodeLine{107             \{}
+\DoxyCodeLine{108               \textcolor{keyword}{public}:}
+\DoxyCodeLine{109                 \textcolor{keyword}{virtual} \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_byo_h_m_a_c_a5891173970308d43d3dd1eee97989385}{\string~ByoHMAC}}() = \textcolor{keywordflow}{default};}
+\DoxyCodeLine{110 }
+\DoxyCodeLine{115                 aws\_hmac *SeatForCInterop(\textcolor{keyword}{const} std::shared\_ptr<ByoHMAC> \&selfRef);}
+\DoxyCodeLine{116 }
+\DoxyCodeLine{117               \textcolor{keyword}{protected}:}
+\DoxyCodeLine{118                 \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_byo_h_m_a_c}{ByoHMAC}}(\textcolor{keywordtype}{size\_t} digestSize, \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_1_1_crt_a14ac076b0baa520bccb2b7236e4e78b7}{ByteCursor}} \&secret, \mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} *allocator = \mbox{\hyperlink{namespace_aws_1_1_crt_a7178ef65f261a8db52a624458331bbb2}{g\_allocator}});}
+\DoxyCodeLine{119 }
+\DoxyCodeLine{125                 \textcolor{keyword}{virtual} \textcolor{keywordtype}{bool} \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_byo_h_m_a_c_afb04099fc1d29c99a7c1a718df5da973}{UpdateInternal}}(\textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_1_1_crt_a14ac076b0baa520bccb2b7236e4e78b7}{ByteCursor}} \&toHash) \textcolor{keyword}{noexcept} = 0;}
+\DoxyCodeLine{126 }
+\DoxyCodeLine{133                 \textcolor{keyword}{virtual} \textcolor{keywordtype}{bool} \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_byo_h_m_a_c_ac6fbe1fe4c8065762824d64205dbf383}{DigestInternal}}(\mbox{\hyperlink{namespace_aws_1_1_crt_aa760a7d9714d6c28091c2b1cf7029876}{ByteBuf}} \&output, \textcolor{keywordtype}{size\_t} truncateTo = 0) noexcept = 0;}
+\DoxyCodeLine{134 }
+\DoxyCodeLine{135               private:}
+\DoxyCodeLine{136                 static \textcolor{keywordtype}{void} s\_Destroy(struct aws\_hmac *hmac);}
+\DoxyCodeLine{137                 static \textcolor{keywordtype}{int} s\_Update(struct aws\_hmac *hmac, const struct aws\_byte\_cursor *buf);}
+\DoxyCodeLine{138                 static \textcolor{keywordtype}{int} s\_Finalize(struct aws\_hmac *hmac, struct aws\_byte\_buf *out);}
+\DoxyCodeLine{139 }
+\DoxyCodeLine{140                 static aws\_hmac\_vtable s\_Vtable;}
+\DoxyCodeLine{141                 aws\_hmac m\_hmacValue;}
+\DoxyCodeLine{142                 \mbox{\hyperlink{namespacestd}{std}}::shared\_ptr<\mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_byo_h_m_a_c}{ByoHMAC}}> m\_selfReference;}
+\DoxyCodeLine{143             \};}
+\DoxyCodeLine{144 }
+\DoxyCodeLine{145             using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_crypto_a071f1587abd466d4c473a72b22c68199}{CreateHMACCallback}} =}
+\DoxyCodeLine{146                 \mbox{\hyperlink{namespacestd}{std}}::function<\mbox{\hyperlink{namespacestd}{std}}::shared\_ptr<\mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_byo_h_m_a_c}{ByoHMAC}}>(\textcolor{keywordtype}{size\_t} digestSize, const \mbox{\hyperlink{namespace_aws_1_1_crt_a14ac076b0baa520bccb2b7236e4e78b7}{ByteCursor}} \&secret, \mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} *)>;}
+\DoxyCodeLine{147 }
+\DoxyCodeLine{148         \} \textcolor{comment}{// namespace Crypto}}
+\DoxyCodeLine{149     \}     \textcolor{comment}{// namespace Crt}}
+\DoxyCodeLine{150 \} \textcolor{comment}{// namespace Aws}}
+
+\end{DoxyCode}

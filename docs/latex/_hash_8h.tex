@@ -1,0 +1,44 @@
+\hypertarget{_hash_8h}{}\doxysection{/\+Users/dengket/project/crts/aws-\/crt-\/cpp/include/aws/crt/crypto/\+Hash.h File Reference}
+\label{_hash_8h}\index{/Users/dengket/project/crts/aws-\/crt-\/cpp/include/aws/crt/crypto/Hash.h@{/Users/dengket/project/crts/aws-\/crt-\/cpp/include/aws/crt/crypto/Hash.h}}
+{\ttfamily \#include $<$aws/crt/\+Exports.\+h$>$}\newline
+{\ttfamily \#include $<$aws/crt/\+Types.\+h$>$}\newline
+{\ttfamily \#include $<$aws/cal/hash.\+h$>$}\newline
+\doxysubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_hash}{Aws\+::\+Crt\+::\+Crypto\+::\+Hash}}
+\item 
+class \mbox{\hyperlink{class_aws_1_1_crt_1_1_crypto_1_1_byo_hash}{Aws\+::\+Crt\+::\+Crypto\+::\+Byo\+Hash}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \mbox{\hyperlink{namespace_aws}{Aws}}
+\item 
+namespace \mbox{\hyperlink{namespace_aws_1_1_crt}{Aws\+::\+Crt}}
+\item 
+namespace \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_crypto}{Aws\+::\+Crt\+::\+Crypto}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_crypto_a4cfbcef51ab56a99d294f7023714463d}{Aws\+::\+Crt\+::\+Crypto\+::\+Create\+Hash\+Callback}} = std\+::function$<$ std\+::shared\+\_\+ptr$<$ Byo\+Hash $>$(size\+\_\+t digest\+Size, Allocator $\ast$)$>$
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+bool \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\+\_\+\+CRT\+\_\+\+CPP\+\_\+\+API}} \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_crypto_ace5660b2d4f91d16987555f187d83ea9}{Aws\+::\+Crt\+::\+Crypto\+::\+Compute\+SHA256}} (Allocator $\ast$allocator, const Byte\+Cursor \&input, Byte\+Buf \&output, size\+\_\+t truncate\+To=0) noexcept
+\item 
+bool \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\+\_\+\+CRT\+\_\+\+CPP\+\_\+\+API}} \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_crypto_aca14b81c8278deaf493fedad14160e96}{Aws\+::\+Crt\+::\+Crypto\+::\+Compute\+SHA256}} (const Byte\+Cursor \&input, Byte\+Buf \&output, size\+\_\+t truncate\+To=0) noexcept
+\item 
+bool \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\+\_\+\+CRT\+\_\+\+CPP\+\_\+\+API}} \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_crypto_a3c06862c43cfc546119d4cb5071f281b}{Aws\+::\+Crt\+::\+Crypto\+::\+Compute\+MD5}} (Allocator $\ast$allocator, const Byte\+Cursor \&input, Byte\+Buf \&output, size\+\_\+t truncate\+To=0) noexcept
+\item 
+bool \mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\+\_\+\+CRT\+\_\+\+CPP\+\_\+\+API}} \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_crypto_a140bc453768153f6fdc05ceca2decea8}{Aws\+::\+Crt\+::\+Crypto\+::\+Compute\+MD5}} (const Byte\+Cursor \&input, Byte\+Buf \&output, size\+\_\+t truncate\+To=0) noexcept
+\end{DoxyCompactItemize}
+\doxysubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+static const size\+\_\+t \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_crypto_a5c6219beccfe8740236130d17e4fcb90}{Aws\+::\+Crt\+::\+Crypto\+::\+SHA256\+\_\+\+DIGEST\+\_\+\+SIZE}} = 32
+\item 
+static const size\+\_\+t \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_crypto_adaed69db7291f39296ea00ccf80329e9}{Aws\+::\+Crt\+::\+Crypto\+::\+MD5\+\_\+\+DIGEST\+\_\+\+SIZE}} = 16
+\end{DoxyCompactItemize}

@@ -1,0 +1,129 @@
+\hypertarget{_channel_handler_8h_source}{}\doxysection{Channel\+Handler.\+h}
+\label{_channel_handler_8h_source}\index{/Users/dengket/project/crts/aws-\/crt-\/cpp/include/aws/crt/io/ChannelHandler.h@{/Users/dengket/project/crts/aws-\/crt-\/cpp/include/aws/crt/io/ChannelHandler.h}}
+\mbox{\hyperlink{_channel_handler_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{7 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{_exports_8h}{aws/crt/Exports.h}}>}}
+\DoxyCodeLine{8 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{_types_8h}{aws/crt/Types.h}}>}}
+\DoxyCodeLine{9 \textcolor{preprocessor}{\#include <aws/io/channel.h>}}
+\DoxyCodeLine{10 }
+\DoxyCodeLine{11 \textcolor{preprocessor}{\#include <chrono>}}
+\DoxyCodeLine{12 \textcolor{preprocessor}{\#include <cstddef>}}
+\DoxyCodeLine{13 }
+\DoxyCodeLine{14 \textcolor{keyword}{struct }aws\_array\_list;}
+\DoxyCodeLine{15 \textcolor{keyword}{struct }aws\_io\_message;}
+\DoxyCodeLine{16 }
+\DoxyCodeLine{17 \textcolor{keyword}{namespace }\mbox{\hyperlink{namespace_aws}{Aws}}}
+\DoxyCodeLine{18 \{}
+\DoxyCodeLine{19     \textcolor{keyword}{namespace }Crt}
+\DoxyCodeLine{20     \{}
+\DoxyCodeLine{21         \textcolor{keyword}{namespace }Io}
+\DoxyCodeLine{22         \{}
+\DoxyCodeLine{23             \textcolor{keyword}{enum class} \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a26cb072017a059e42ff798325aff6e1f}{ChannelDirection}}}
+\DoxyCodeLine{24             \{}
+\DoxyCodeLine{25                 \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a26cb072017a059e42ff798325aff6e1fa7a1a5f3e79fdc91edf2f5ead9d66abb4}{Read}},}
+\DoxyCodeLine{26                 \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a26cb072017a059e42ff798325aff6e1fa1129c0e4d43f2d121652a7302712cff6}{Write}},}
+\DoxyCodeLine{27             \};}
+\DoxyCodeLine{28 }
+\DoxyCodeLine{29             \textcolor{keyword}{enum class} \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a892c9281932294af71d16fc1ba1b25ed}{MessageType}}}
+\DoxyCodeLine{30             \{}
+\DoxyCodeLine{31                 \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a892c9281932294af71d16fc1ba1b25eda321f08d4df04ad288e6e8f4bc371e664}{ApplicationData}},}
+\DoxyCodeLine{32             \};}
+\DoxyCodeLine{33 }
+\DoxyCodeLine{34             \textcolor{keyword}{enum class} \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_ab66ffc839b6b767e208a2f3bd40be0ad}{TaskStatus}}}
+\DoxyCodeLine{35             \{}
+\DoxyCodeLine{36                 \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_ab66ffc839b6b767e208a2f3bd40be0adaa3c06ac743416c5ccf42ce17ec11b31e}{RunReady}},}
+\DoxyCodeLine{37                 \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_ab66ffc839b6b767e208a2f3bd40be0ada0e22fe7d45f8e5632a4abf369b24e29c}{Canceled}},}
+\DoxyCodeLine{38             \};}
+\DoxyCodeLine{39 }
+\DoxyCodeLine{46             \textcolor{keyword}{class }\mbox{\hyperlink{_exports_8h_a0a3f6c46aee6b588ce99a142cdb22d1d}{AWS\_CRT\_CPP\_API}} \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_channel_handler}{ChannelHandler}}}
+\DoxyCodeLine{47             \{}
+\DoxyCodeLine{48               \textcolor{keyword}{public}:}
+\DoxyCodeLine{49                 \textcolor{keyword}{virtual} \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_channel_handler_ae7c526ff955aa6a1e06c71338c82bd93}{\string~ChannelHandler}}() = \textcolor{keywordflow}{default};}
+\DoxyCodeLine{50 }
+\DoxyCodeLine{51                 \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_channel_handler_a4220deb751400f309e619b96a18a4dde}{ChannelHandler}}(\textcolor{keyword}{const} \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_channel_handler}{ChannelHandler}} \&) = \textcolor{keyword}{delete};}
+\DoxyCodeLine{52                 \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_channel_handler}{ChannelHandler}} \&\mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_channel_handler_afaa1b691424496ed920ed957a2f7b5b9}{operator=}}(\textcolor{keyword}{const} \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_channel_handler}{ChannelHandler}} \&) = \textcolor{keyword}{delete};}
+\DoxyCodeLine{53 }
+\DoxyCodeLine{54               \textcolor{keyword}{protected}:}
+\DoxyCodeLine{68                 \textcolor{keyword}{virtual} \textcolor{keywordtype}{int} \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_channel_handler_a5cd524520d57dd4972fd1f2ef76f4542}{ProcessReadMessage}}(\textcolor{keyword}{struct} aws\_io\_message *message) = 0;}
+\DoxyCodeLine{69 }
+\DoxyCodeLine{79                 \textcolor{keyword}{virtual} \textcolor{keywordtype}{int} \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_channel_handler_a3056d7241980af565b1009164169d2b0}{ProcessWriteMessage}}(\textcolor{keyword}{struct} aws\_io\_message *message) = 0;}
+\DoxyCodeLine{80 }
+\DoxyCodeLine{89                 \textcolor{keyword}{virtual} \textcolor{keywordtype}{int} \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_channel_handler_ace5c87df62f71ecbc773f2b4dd59c3f6}{IncrementReadWindow}}(\textcolor{keywordtype}{size\_t} size) = 0;}
+\DoxyCodeLine{90 }
+\DoxyCodeLine{103                 \textcolor{keyword}{virtual} \textcolor{keywordtype}{void} \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_channel_handler_a13605ebe3f37b2023a1dd4331e595afa}{ProcessShutdown}}(}
+\DoxyCodeLine{104                     \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a26cb072017a059e42ff798325aff6e1f}{ChannelDirection}} dir,}
+\DoxyCodeLine{105                     \textcolor{keywordtype}{int} errorCode,}
+\DoxyCodeLine{106                     \textcolor{keywordtype}{bool} freeScarceResourcesImmediately) = 0;}
+\DoxyCodeLine{107 }
+\DoxyCodeLine{111                 \textcolor{keyword}{virtual} \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_channel_handler_afdd70d9ea5738d22c32af38e9719d0dc}{InitialWindowSize}}() = 0;}
+\DoxyCodeLine{112 }
+\DoxyCodeLine{117                 \textcolor{keyword}{virtual} \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_channel_handler_a306eeb20dd27389c7da0426731f0074e}{MessageOverhead}}() = 0;}
+\DoxyCodeLine{118 }
+\DoxyCodeLine{122                 \textcolor{keyword}{virtual} \textcolor{keywordtype}{void} \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_channel_handler_a7ee04704b2289d8946f7f4c18f7635eb}{ResetStatistics}}()\{\};}
+\DoxyCodeLine{123 }
+\DoxyCodeLine{128                 \textcolor{keyword}{virtual} \textcolor{keywordtype}{void} \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_channel_handler_a34d559dcc486f95b25c95a0903fa6b97}{GatherStatistics}}(\textcolor{keyword}{struct} aws\_array\_list *) \{\}}
+\DoxyCodeLine{129 }
+\DoxyCodeLine{130               \textcolor{keyword}{public}:}
+\DoxyCodeLine{132                 \textcolor{keyword}{struct }aws\_channel\_handler *SeatForCInterop(\textcolor{keyword}{const} std::shared\_ptr<ChannelHandler> \&selfRef);}
+\DoxyCodeLine{133 }
+\DoxyCodeLine{137                 \textcolor{keywordtype}{bool} ChannelsThreadIsCallersThread() \textcolor{keyword}{const};}
+\DoxyCodeLine{138 }
+\DoxyCodeLine{144                 \textcolor{keywordtype}{void} ShutDownChannel(\textcolor{keywordtype}{int} errorCode);}
+\DoxyCodeLine{145 }
+\DoxyCodeLine{150                 \textcolor{keywordtype}{void} ScheduleTask(std::function<\textcolor{keywordtype}{void}(\mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_ab66ffc839b6b767e208a2f3bd40be0ad}{TaskStatus}})> \&\&task);}
+\DoxyCodeLine{151 }
+\DoxyCodeLine{157                 \textcolor{keywordtype}{void} ScheduleTask(std::function<\textcolor{keywordtype}{void}(\mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_ab66ffc839b6b767e208a2f3bd40be0ad}{TaskStatus}})> \&\&task, std::chrono::nanoseconds run\_in);}
+\DoxyCodeLine{158 }
+\DoxyCodeLine{159               \textcolor{keyword}{protected}:}
+\DoxyCodeLine{160                 \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_channel_handler}{ChannelHandler}}(\mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} *allocator = \mbox{\hyperlink{namespace_aws_1_1_crt_a7178ef65f261a8db52a624458331bbb2}{g\_allocator}});}
+\DoxyCodeLine{161 }
+\DoxyCodeLine{165                 \textcolor{keyword}{struct }aws\_io\_message *AcquireMessageFromPool(\mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a892c9281932294af71d16fc1ba1b25ed}{MessageType}} messageType, \textcolor{keywordtype}{size\_t} sizeHint);}
+\DoxyCodeLine{166 }
+\DoxyCodeLine{172                 \textcolor{keyword}{struct }aws\_io\_message *AcquireMaxSizeMessageForWrite();}
+\DoxyCodeLine{173 }
+\DoxyCodeLine{179                 \textcolor{keywordtype}{bool} SendMessage(\textcolor{keyword}{struct} aws\_io\_message *message, \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a26cb072017a059e42ff798325aff6e1f}{ChannelDirection}} direction);}
+\DoxyCodeLine{180 }
+\DoxyCodeLine{185                 \textcolor{keywordtype}{bool} IncrementUpstreamReadWindow(\textcolor{keywordtype}{size\_t} windowUpdateSize);}
+\DoxyCodeLine{186 }
+\DoxyCodeLine{191                 \textcolor{keywordtype}{void} OnShutdownComplete(\mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a26cb072017a059e42ff798325aff6e1f}{ChannelDirection}} direction, \textcolor{keywordtype}{int} errorCode, \textcolor{keywordtype}{bool} freeScarceResourcesImmediately);}
+\DoxyCodeLine{192 }
+\DoxyCodeLine{198                 \textcolor{keywordtype}{size\_t} DownstreamReadWindow() \textcolor{keyword}{const};}
+\DoxyCodeLine{199 }
+\DoxyCodeLine{204                 \textcolor{keywordtype}{size\_t} UpstreamMessageOverhead() \textcolor{keyword}{const};}
+\DoxyCodeLine{205 }
+\DoxyCodeLine{206                 \textcolor{keyword}{struct }aws\_channel\_slot *GetSlot() \textcolor{keyword}{const};}
+\DoxyCodeLine{207 }
+\DoxyCodeLine{208                 \textcolor{keyword}{struct }aws\_channel\_handler m\_handler;}
+\DoxyCodeLine{209                 \mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} *\mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_channel_handler_a88b5b73cc4217c9cff0527e656e3d43d}{m\_allocator}};}
+\DoxyCodeLine{210 }
+\DoxyCodeLine{211               \textcolor{keyword}{private}:}
+\DoxyCodeLine{212                 std::shared\_ptr<ChannelHandler> m\_selfReference;}
+\DoxyCodeLine{213                 \textcolor{keyword}{static} \textcolor{keyword}{struct }aws\_channel\_handler\_vtable s\_vtable;}
+\DoxyCodeLine{214 }
+\DoxyCodeLine{215                 \textcolor{keyword}{static} \textcolor{keywordtype}{void} s\_Destroy(\textcolor{keyword}{struct} aws\_channel\_handler *handler);}
+\DoxyCodeLine{216                 \textcolor{keyword}{static} \textcolor{keywordtype}{int} s\_ProcessReadMessage(}
+\DoxyCodeLine{217                     \textcolor{keyword}{struct} aws\_channel\_handler *,}
+\DoxyCodeLine{218                     \textcolor{keyword}{struct} aws\_channel\_slot *,}
+\DoxyCodeLine{219                     \textcolor{keyword}{struct} aws\_io\_message *);}
+\DoxyCodeLine{220                 \textcolor{keyword}{static} \textcolor{keywordtype}{int} s\_ProcessWriteMessage(}
+\DoxyCodeLine{221                     \textcolor{keyword}{struct} aws\_channel\_handler *,}
+\DoxyCodeLine{222                     \textcolor{keyword}{struct} aws\_channel\_slot *,}
+\DoxyCodeLine{223                     \textcolor{keyword}{struct} aws\_io\_message *);}
+\DoxyCodeLine{224                 \textcolor{keyword}{static} \textcolor{keywordtype}{int} s\_IncrementReadWindow(\textcolor{keyword}{struct} aws\_channel\_handler *, \textcolor{keyword}{struct} aws\_channel\_slot *, \textcolor{keywordtype}{size\_t} size);}
+\DoxyCodeLine{225                 \textcolor{keyword}{static} \textcolor{keywordtype}{int} s\_ProcessShutdown(}
+\DoxyCodeLine{226                     \textcolor{keyword}{struct} aws\_channel\_handler *,}
+\DoxyCodeLine{227                     \textcolor{keyword}{struct} aws\_channel\_slot *,}
+\DoxyCodeLine{228                     \textcolor{keyword}{enum} aws\_channel\_direction,}
+\DoxyCodeLine{229                     \textcolor{keywordtype}{int} errorCode,}
+\DoxyCodeLine{230                     \textcolor{keywordtype}{bool} freeScarceResourcesImmediately);}
+\DoxyCodeLine{231                 \textcolor{keyword}{static} \textcolor{keywordtype}{size\_t} s\_InitialWindowSize(\textcolor{keyword}{struct} aws\_channel\_handler *);}
+\DoxyCodeLine{232                 \textcolor{keyword}{static} \textcolor{keywordtype}{size\_t} s\_MessageOverhead(\textcolor{keyword}{struct} aws\_channel\_handler *);}
+\DoxyCodeLine{233                 \textcolor{keyword}{static} \textcolor{keywordtype}{void} s\_ResetStatistics(\textcolor{keyword}{struct} aws\_channel\_handler *);}
+\DoxyCodeLine{234                 \textcolor{keyword}{static} \textcolor{keywordtype}{void} s\_GatherStatistics(\textcolor{keyword}{struct} aws\_channel\_handler *, \textcolor{keyword}{struct} aws\_array\_list *statsList);}
+\DoxyCodeLine{235             \};}
+\DoxyCodeLine{236         \} \textcolor{comment}{// namespace Io}}
+\DoxyCodeLine{237     \}     \textcolor{comment}{// namespace Crt}}
+\DoxyCodeLine{238 \} \textcolor{comment}{// namespace Aws}}
+
+\end{DoxyCode}

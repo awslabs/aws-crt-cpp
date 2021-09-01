@@ -1,0 +1,297 @@
+\hypertarget{namespace_aws_1_1_crt_1_1_io}{}\doxysection{Aws\+::Crt\+::Io Namespace Reference}
+\label{namespace_aws_1_1_crt_1_1_io}\index{Aws::Crt::Io@{Aws::Crt::Io}}
+\doxysubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_channel_handler}{Channel\+Handler}}
+\item 
+class \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_client_bootstrap}{Client\+Bootstrap}}
+\item 
+class \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_client_tls_channel_handler}{Client\+Tls\+Channel\+Handler}}
+\item 
+class \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_default_host_resolver}{Default\+Host\+Resolver}}
+\item 
+class \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_event_loop_group}{Event\+Loop\+Group}}
+\item 
+class \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_host_resolver}{Host\+Resolver}}
+\item 
+class \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_input_stream}{Input\+Stream}}
+\item 
+class \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_socket_options}{Socket\+Options}}
+\item 
+class \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_std_i_o_stream_input_stream}{Std\+IOStream\+Input\+Stream}}
+\item 
+struct \mbox{\hyperlink{struct_aws_1_1_crt_1_1_io_1_1_task_wrapper}{Task\+Wrapper}}
+\item 
+class \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler}{Tls\+Channel\+Handler}}
+\item 
+class \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_tls_connection_options}{Tls\+Connection\+Options}}
+\item 
+class \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_tls_context}{Tls\+Context}}
+\item 
+class \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_tls_context_options}{Tls\+Context\+Options}}
+\item 
+class \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_uri}{Uri}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a3284b8b9a955c2b24fd3d095350f22e1}{On\+Client\+Bootstrap\+Shutdown\+Complete}} = std\+::function$<$ void()$>$
+\item 
+using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a74f2659525c59a6d43f579af6586a1ce}{Host\+Address}} = aws\+\_\+host\+\_\+address
+\item 
+using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_acbf0e730c9b86819e74f33f7b5eed73d}{On\+Host\+Resolved}} = std\+::function$<$ void(\mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_host_resolver}{Host\+Resolver}} \&resolver, const \mbox{\hyperlink{namespace_aws_1_1_crt_ac975615d2a9140660077ef7b264d9b6c}{Vector}}$<$ \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a74f2659525c59a6d43f579af6586a1ce}{Host\+Address}} $>$ \&addresses, int error\+Code)$>$
+\item 
+using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a610cfe7a844d9e8b9ea7e319bc1ed1ea}{Stream\+Status}} = aws\+\_\+stream\+\_\+status
+\item 
+using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_af399239ad685d64f2f5b88a0906a232c}{Offset\+Type}} = aws\+\_\+off\+\_\+t
+\item 
+using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a0a62c795db526f1dae48cac634c9af02}{New\+Tls\+Context\+Impl\+Callback}} = std\+::function$<$ void $\ast$(\mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_tls_context_options}{Tls\+Context\+Options}} \&, \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a0e6e89d764e66080a9abd0513079d1b8}{Tls\+Mode}}, \mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} $\ast$)$>$
+\item 
+using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_af21a50e456c2e9f276cab7fa5f5ad484}{Delete\+Tls\+Context\+Impl\+Callback}} = std\+::function$<$ void(void $\ast$)$>$
+\item 
+using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a1caba873184fe5fcb1315873e94b4acc}{Is\+Tls\+Alpn\+Supported\+Callback}} = std\+::function$<$ bool()$>$
+\item 
+using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_aa0e450401823c1e163680c9e185d33cb}{New\+Client\+Tls\+Handler\+Callback}} = std\+::function$<$ std\+::shared\+\_\+ptr$<$ \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_client_tls_channel_handler}{Client\+Tls\+Channel\+Handler}} $>$(struct aws\+\_\+channel\+\_\+slot $\ast$slot, const struct aws\+\_\+tls\+\_\+connection\+\_\+options \&options, \mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} $\ast$allocator)$>$
+\item 
+using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a7e18a94cc1dada574dfe654349a94ec2}{IStream}} = std\+::basic\+\_\+istream$<$ char, std\+::char\+\_\+traits$<$ char $>$ $>$
+\end{DoxyCompactItemize}
+\doxysubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum class \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a26cb072017a059e42ff798325aff6e1f}{Channel\+Direction}} \{ \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a26cb072017a059e42ff798325aff6e1fa7a1a5f3e79fdc91edf2f5ead9d66abb4}{Read}}
+, \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a26cb072017a059e42ff798325aff6e1fa1129c0e4d43f2d121652a7302712cff6}{Write}}
+ \}
+\item 
+enum class \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a892c9281932294af71d16fc1ba1b25ed}{Message\+Type}} \{ \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a892c9281932294af71d16fc1ba1b25eda321f08d4df04ad288e6e8f4bc371e664}{Application\+Data}}
+ \}
+\item 
+enum class \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_ab66ffc839b6b767e208a2f3bd40be0ad}{Task\+Status}} \{ \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_ab66ffc839b6b767e208a2f3bd40be0adaa3c06ac743416c5ccf42ce17ec11b31e}{Run\+Ready}}
+, \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_ab66ffc839b6b767e208a2f3bd40be0ada0e22fe7d45f8e5632a4abf369b24e29c}{Canceled}}
+ \}
+\item 
+enum class \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_ae5f9aa2fd04a14dfa0cd50a8b56e6b8e}{Socket\+Type}} \{ \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_ae5f9aa2fd04a14dfa0cd50a8b56e6b8eaeae835e83c0494a376229f254f7d3392}{Stream}} = AWS\+\_\+\+SOCKET\+\_\+\+STREAM
+, \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_ae5f9aa2fd04a14dfa0cd50a8b56e6b8eac3177658ef36637801bea6fd4f1a1e92}{Dgram}} = AWS\+\_\+\+SOCKET\+\_\+\+DGRAM
+ \}
+\item 
+enum class \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a12c31e83beb297296621c8a361b58f8e}{Socket\+Domain}} \{ \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a12c31e83beb297296621c8a361b58f8ea42a9137a05a60eb752dcdf982e717626}{IPv4}} = AWS\+\_\+\+SOCKET\+\_\+\+IPV4
+, \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a12c31e83beb297296621c8a361b58f8eafdb7cb8f657426e7c409bfd6d1a36ce4}{IPv6}} = AWS\+\_\+\+SOCKET\+\_\+\+IPV6
+, \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a12c31e83beb297296621c8a361b58f8ea509820290d57f333403f490dde7316f4}{Local}} = AWS\+\_\+\+SOCKET\+\_\+\+LOCAL
+ \}
+\item 
+enum class \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_adf764940aea50b061f1ac67366cf41d0}{Stream\+Seek\+Basis}} \{ \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_adf764940aea50b061f1ac67366cf41d0a1a06729125544cab7cee73195fc044f0}{Begin}} = AWS\+\_\+\+SSB\+\_\+\+BEGIN
+, \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_adf764940aea50b061f1ac67366cf41d0a87557f11575c0ad78e4e28abedc13b6e}{End}} = AWS\+\_\+\+SSB\+\_\+\+END
+ \}
+\item 
+enum class \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a0e6e89d764e66080a9abd0513079d1b8}{Tls\+Mode}} \{ \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a0e6e89d764e66080a9abd0513079d1b8aef10c650df47bffd6399e5e78da2a9b1}{CLIENT}}
+, \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a0e6e89d764e66080a9abd0513079d1b8a3d27c95bfdbea691b250894d96852844}{SERVER}}
+ \}
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+static void \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a06e315620600ba9bae9946b5fbb535fa}{s\+\_\+\+Channel\+Task\+Callback}} (struct aws\+\_\+channel\+\_\+task $\ast$, void $\ast$arg, enum aws\+\_\+task\+\_\+status status)
+\end{DoxyCompactItemize}
+\doxysubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+static const uint32\+\_\+t \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a3c79025f57dddde3dca69724cdf1a8f8}{DEFAULT\+\_\+\+SOCKET\+\_\+\+TIME\+\_\+\+MSEC}} = 3000
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Typedef Documentation}
+\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_af21a50e456c2e9f276cab7fa5f5ad484}\label{namespace_aws_1_1_crt_1_1_io_af21a50e456c2e9f276cab7fa5f5ad484}} 
+\index{Aws::Crt::Io@{Aws::Crt::Io}!DeleteTlsContextImplCallback@{DeleteTlsContextImplCallback}}
+\index{DeleteTlsContextImplCallback@{DeleteTlsContextImplCallback}!Aws::Crt::Io@{Aws::Crt::Io}}
+\doxysubsubsection{\texorpdfstring{DeleteTlsContextImplCallback}{DeleteTlsContextImplCallback}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_af21a50e456c2e9f276cab7fa5f5ad484}{Aws\+::\+Crt\+::\+Io\+::\+Delete\+Tls\+Context\+Impl\+Callback}} = typedef std\+::function$<$void(void $\ast$)$>$}
+
+\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_a74f2659525c59a6d43f579af6586a1ce}\label{namespace_aws_1_1_crt_1_1_io_a74f2659525c59a6d43f579af6586a1ce}} 
+\index{Aws::Crt::Io@{Aws::Crt::Io}!HostAddress@{HostAddress}}
+\index{HostAddress@{HostAddress}!Aws::Crt::Io@{Aws::Crt::Io}}
+\doxysubsubsection{\texorpdfstring{HostAddress}{HostAddress}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a74f2659525c59a6d43f579af6586a1ce}{Aws\+::\+Crt\+::\+Io\+::\+Host\+Address}} = typedef aws\+\_\+host\+\_\+address}
+
+\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_a1caba873184fe5fcb1315873e94b4acc}\label{namespace_aws_1_1_crt_1_1_io_a1caba873184fe5fcb1315873e94b4acc}} 
+\index{Aws::Crt::Io@{Aws::Crt::Io}!IsTlsAlpnSupportedCallback@{IsTlsAlpnSupportedCallback}}
+\index{IsTlsAlpnSupportedCallback@{IsTlsAlpnSupportedCallback}!Aws::Crt::Io@{Aws::Crt::Io}}
+\doxysubsubsection{\texorpdfstring{IsTlsAlpnSupportedCallback}{IsTlsAlpnSupportedCallback}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a1caba873184fe5fcb1315873e94b4acc}{Aws\+::\+Crt\+::\+Io\+::\+Is\+Tls\+Alpn\+Supported\+Callback}} = typedef std\+::function$<$bool()$>$}
+
+\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_a7e18a94cc1dada574dfe654349a94ec2}\label{namespace_aws_1_1_crt_1_1_io_a7e18a94cc1dada574dfe654349a94ec2}} 
+\index{Aws::Crt::Io@{Aws::Crt::Io}!IStream@{IStream}}
+\index{IStream@{IStream}!Aws::Crt::Io@{Aws::Crt::Io}}
+\doxysubsubsection{\texorpdfstring{IStream}{IStream}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a7e18a94cc1dada574dfe654349a94ec2}{Aws\+::\+Crt\+::\+Io\+::\+IStream}} = typedef std\+::basic\+\_\+istream$<$char, std\+::char\+\_\+traits$<$char$>$ $>$}
+
+\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_aa0e450401823c1e163680c9e185d33cb}\label{namespace_aws_1_1_crt_1_1_io_aa0e450401823c1e163680c9e185d33cb}} 
+\index{Aws::Crt::Io@{Aws::Crt::Io}!NewClientTlsHandlerCallback@{NewClientTlsHandlerCallback}}
+\index{NewClientTlsHandlerCallback@{NewClientTlsHandlerCallback}!Aws::Crt::Io@{Aws::Crt::Io}}
+\doxysubsubsection{\texorpdfstring{NewClientTlsHandlerCallback}{NewClientTlsHandlerCallback}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_aa0e450401823c1e163680c9e185d33cb}{Aws\+::\+Crt\+::\+Io\+::\+New\+Client\+Tls\+Handler\+Callback}} = typedef std\+::function$<$std\+::shared\+\_\+ptr$<$\mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_client_tls_channel_handler}{Client\+Tls\+Channel\+Handler}}$>$( struct aws\+\_\+channel\+\_\+slot $\ast$slot, const struct aws\+\_\+tls\+\_\+connection\+\_\+options \&options, \mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} $\ast$allocator)$>$}
+
+\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_a0a62c795db526f1dae48cac634c9af02}\label{namespace_aws_1_1_crt_1_1_io_a0a62c795db526f1dae48cac634c9af02}} 
+\index{Aws::Crt::Io@{Aws::Crt::Io}!NewTlsContextImplCallback@{NewTlsContextImplCallback}}
+\index{NewTlsContextImplCallback@{NewTlsContextImplCallback}!Aws::Crt::Io@{Aws::Crt::Io}}
+\doxysubsubsection{\texorpdfstring{NewTlsContextImplCallback}{NewTlsContextImplCallback}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a0a62c795db526f1dae48cac634c9af02}{Aws\+::\+Crt\+::\+Io\+::\+New\+Tls\+Context\+Impl\+Callback}} = typedef std\+::function$<$void $\ast$(\mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_tls_context_options}{Tls\+Context\+Options}} \&, \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a0e6e89d764e66080a9abd0513079d1b8}{Tls\+Mode}}, \mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} $\ast$)$>$}
+
+\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_af399239ad685d64f2f5b88a0906a232c}\label{namespace_aws_1_1_crt_1_1_io_af399239ad685d64f2f5b88a0906a232c}} 
+\index{Aws::Crt::Io@{Aws::Crt::Io}!OffsetType@{OffsetType}}
+\index{OffsetType@{OffsetType}!Aws::Crt::Io@{Aws::Crt::Io}}
+\doxysubsubsection{\texorpdfstring{OffsetType}{OffsetType}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_af399239ad685d64f2f5b88a0906a232c}{Aws\+::\+Crt\+::\+Io\+::\+Offset\+Type}} = typedef aws\+\_\+off\+\_\+t}
+
+\begin{DoxyRefDesc}{Deprecated}
+\item[\mbox{\hyperlink{deprecated__deprecated000005}{Deprecated}}]Use int64\+\_\+t instead for offsets in public APIs. \end{DoxyRefDesc}
+\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_a3284b8b9a955c2b24fd3d095350f22e1}\label{namespace_aws_1_1_crt_1_1_io_a3284b8b9a955c2b24fd3d095350f22e1}} 
+\index{Aws::Crt::Io@{Aws::Crt::Io}!OnClientBootstrapShutdownComplete@{OnClientBootstrapShutdownComplete}}
+\index{OnClientBootstrapShutdownComplete@{OnClientBootstrapShutdownComplete}!Aws::Crt::Io@{Aws::Crt::Io}}
+\doxysubsubsection{\texorpdfstring{OnClientBootstrapShutdownComplete}{OnClientBootstrapShutdownComplete}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a3284b8b9a955c2b24fd3d095350f22e1}{Aws\+::\+Crt\+::\+Io\+::\+On\+Client\+Bootstrap\+Shutdown\+Complete}} = typedef std\+::function$<$void()$>$}
+
+\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_acbf0e730c9b86819e74f33f7b5eed73d}\label{namespace_aws_1_1_crt_1_1_io_acbf0e730c9b86819e74f33f7b5eed73d}} 
+\index{Aws::Crt::Io@{Aws::Crt::Io}!OnHostResolved@{OnHostResolved}}
+\index{OnHostResolved@{OnHostResolved}!Aws::Crt::Io@{Aws::Crt::Io}}
+\doxysubsubsection{\texorpdfstring{OnHostResolved}{OnHostResolved}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_acbf0e730c9b86819e74f33f7b5eed73d}{Aws\+::\+Crt\+::\+Io\+::\+On\+Host\+Resolved}} = typedef std\+::function$<$void(\mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_host_resolver}{Host\+Resolver}} \&resolver, const \mbox{\hyperlink{namespace_aws_1_1_crt_ac975615d2a9140660077ef7b264d9b6c}{Vector}}$<$\mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a74f2659525c59a6d43f579af6586a1ce}{Host\+Address}}$>$ \&addresses, int error\+Code)$>$}
+
+Invoked upon resolution of an address. You do not own the memory pointed to in addresses, if you persist the data, copy it first. If error\+Code is AWS\+\_\+\+ERROR\+\_\+\+SUCCESS, the operation succeeded. Otherwise, the operation failed. \mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_a610cfe7a844d9e8b9ea7e319bc1ed1ea}\label{namespace_aws_1_1_crt_1_1_io_a610cfe7a844d9e8b9ea7e319bc1ed1ea}} 
+\index{Aws::Crt::Io@{Aws::Crt::Io}!StreamStatus@{StreamStatus}}
+\index{StreamStatus@{StreamStatus}!Aws::Crt::Io@{Aws::Crt::Io}}
+\doxysubsubsection{\texorpdfstring{StreamStatus}{StreamStatus}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a610cfe7a844d9e8b9ea7e319bc1ed1ea}{Aws\+::\+Crt\+::\+Io\+::\+Stream\+Status}} = typedef aws\+\_\+stream\+\_\+status}
+
+
+
+\doxysubsection{Enumeration Type Documentation}
+\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_a26cb072017a059e42ff798325aff6e1f}\label{namespace_aws_1_1_crt_1_1_io_a26cb072017a059e42ff798325aff6e1f}} 
+\index{Aws::Crt::Io@{Aws::Crt::Io}!ChannelDirection@{ChannelDirection}}
+\index{ChannelDirection@{ChannelDirection}!Aws::Crt::Io@{Aws::Crt::Io}}
+\doxysubsubsection{\texorpdfstring{ChannelDirection}{ChannelDirection}}
+{\footnotesize\ttfamily enum class \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a26cb072017a059e42ff798325aff6e1f}{Aws\+::\+Crt\+::\+Io\+::\+Channel\+Direction}}\hspace{0.3cm}{\ttfamily [strong]}}
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Read@{Read}!Aws::Crt::Io@{Aws::Crt::Io}}\index{Aws::Crt::Io@{Aws::Crt::Io}!Read@{Read}}}\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_a26cb072017a059e42ff798325aff6e1fa7a1a5f3e79fdc91edf2f5ead9d66abb4}\label{namespace_aws_1_1_crt_1_1_io_a26cb072017a059e42ff798325aff6e1fa7a1a5f3e79fdc91edf2f5ead9d66abb4}} 
+Read&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Write@{Write}!Aws::Crt::Io@{Aws::Crt::Io}}\index{Aws::Crt::Io@{Aws::Crt::Io}!Write@{Write}}}\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_a26cb072017a059e42ff798325aff6e1fa1129c0e4d43f2d121652a7302712cff6}\label{namespace_aws_1_1_crt_1_1_io_a26cb072017a059e42ff798325aff6e1fa1129c0e4d43f2d121652a7302712cff6}} 
+Write&\\
+\hline
+
+\end{DoxyEnumFields}
+\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_a892c9281932294af71d16fc1ba1b25ed}\label{namespace_aws_1_1_crt_1_1_io_a892c9281932294af71d16fc1ba1b25ed}} 
+\index{Aws::Crt::Io@{Aws::Crt::Io}!MessageType@{MessageType}}
+\index{MessageType@{MessageType}!Aws::Crt::Io@{Aws::Crt::Io}}
+\doxysubsubsection{\texorpdfstring{MessageType}{MessageType}}
+{\footnotesize\ttfamily enum class \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a892c9281932294af71d16fc1ba1b25ed}{Aws\+::\+Crt\+::\+Io\+::\+Message\+Type}}\hspace{0.3cm}{\ttfamily [strong]}}
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{ApplicationData@{ApplicationData}!Aws::Crt::Io@{Aws::Crt::Io}}\index{Aws::Crt::Io@{Aws::Crt::Io}!ApplicationData@{ApplicationData}}}\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_a892c9281932294af71d16fc1ba1b25eda321f08d4df04ad288e6e8f4bc371e664}\label{namespace_aws_1_1_crt_1_1_io_a892c9281932294af71d16fc1ba1b25eda321f08d4df04ad288e6e8f4bc371e664}} 
+Application\+Data&\\
+\hline
+
+\end{DoxyEnumFields}
+\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_a12c31e83beb297296621c8a361b58f8e}\label{namespace_aws_1_1_crt_1_1_io_a12c31e83beb297296621c8a361b58f8e}} 
+\index{Aws::Crt::Io@{Aws::Crt::Io}!SocketDomain@{SocketDomain}}
+\index{SocketDomain@{SocketDomain}!Aws::Crt::Io@{Aws::Crt::Io}}
+\doxysubsubsection{\texorpdfstring{SocketDomain}{SocketDomain}}
+{\footnotesize\ttfamily enum class \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a12c31e83beb297296621c8a361b58f8e}{Aws\+::\+Crt\+::\+Io\+::\+Socket\+Domain}}\hspace{0.3cm}{\ttfamily [strong]}}
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{IPv4@{IPv4}!Aws::Crt::Io@{Aws::Crt::Io}}\index{Aws::Crt::Io@{Aws::Crt::Io}!IPv4@{IPv4}}}\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_a12c31e83beb297296621c8a361b58f8ea42a9137a05a60eb752dcdf982e717626}\label{namespace_aws_1_1_crt_1_1_io_a12c31e83beb297296621c8a361b58f8ea42a9137a05a60eb752dcdf982e717626}} 
+IPv4&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{IPv6@{IPv6}!Aws::Crt::Io@{Aws::Crt::Io}}\index{Aws::Crt::Io@{Aws::Crt::Io}!IPv6@{IPv6}}}\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_a12c31e83beb297296621c8a361b58f8eafdb7cb8f657426e7c409bfd6d1a36ce4}\label{namespace_aws_1_1_crt_1_1_io_a12c31e83beb297296621c8a361b58f8eafdb7cb8f657426e7c409bfd6d1a36ce4}} 
+IPv6&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Local@{Local}!Aws::Crt::Io@{Aws::Crt::Io}}\index{Aws::Crt::Io@{Aws::Crt::Io}!Local@{Local}}}\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_a12c31e83beb297296621c8a361b58f8ea509820290d57f333403f490dde7316f4}\label{namespace_aws_1_1_crt_1_1_io_a12c31e83beb297296621c8a361b58f8ea509820290d57f333403f490dde7316f4}} 
+Local&Unix domain sockets (or at least something like them) \\
+\hline
+
+\end{DoxyEnumFields}
+\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_ae5f9aa2fd04a14dfa0cd50a8b56e6b8e}\label{namespace_aws_1_1_crt_1_1_io_ae5f9aa2fd04a14dfa0cd50a8b56e6b8e}} 
+\index{Aws::Crt::Io@{Aws::Crt::Io}!SocketType@{SocketType}}
+\index{SocketType@{SocketType}!Aws::Crt::Io@{Aws::Crt::Io}}
+\doxysubsubsection{\texorpdfstring{SocketType}{SocketType}}
+{\footnotesize\ttfamily enum class \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_ae5f9aa2fd04a14dfa0cd50a8b56e6b8e}{Aws\+::\+Crt\+::\+Io\+::\+Socket\+Type}}\hspace{0.3cm}{\ttfamily [strong]}}
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Stream@{Stream}!Aws::Crt::Io@{Aws::Crt::Io}}\index{Aws::Crt::Io@{Aws::Crt::Io}!Stream@{Stream}}}\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_ae5f9aa2fd04a14dfa0cd50a8b56e6b8eaeae835e83c0494a376229f254f7d3392}\label{namespace_aws_1_1_crt_1_1_io_ae5f9aa2fd04a14dfa0cd50a8b56e6b8eaeae835e83c0494a376229f254f7d3392}} 
+Stream&A streaming socket sends reliable messages over a two-\/way connection. This means TCP when used with IPV4/6, and Unix domain sockets, when used with AWS\+\_\+\+SOCKET\+\_\+\+LOCAL \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Dgram@{Dgram}!Aws::Crt::Io@{Aws::Crt::Io}}\index{Aws::Crt::Io@{Aws::Crt::Io}!Dgram@{Dgram}}}\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_ae5f9aa2fd04a14dfa0cd50a8b56e6b8eac3177658ef36637801bea6fd4f1a1e92}\label{namespace_aws_1_1_crt_1_1_io_ae5f9aa2fd04a14dfa0cd50a8b56e6b8eac3177658ef36637801bea6fd4f1a1e92}} 
+Dgram&A datagram socket is connectionless and sends unreliable messages. This means UDP when used with IPV4/6. LOCAL sockets are not compatible with DGRAM. \\
+\hline
+
+\end{DoxyEnumFields}
+\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_adf764940aea50b061f1ac67366cf41d0}\label{namespace_aws_1_1_crt_1_1_io_adf764940aea50b061f1ac67366cf41d0}} 
+\index{Aws::Crt::Io@{Aws::Crt::Io}!StreamSeekBasis@{StreamSeekBasis}}
+\index{StreamSeekBasis@{StreamSeekBasis}!Aws::Crt::Io@{Aws::Crt::Io}}
+\doxysubsubsection{\texorpdfstring{StreamSeekBasis}{StreamSeekBasis}}
+{\footnotesize\ttfamily enum class \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_adf764940aea50b061f1ac67366cf41d0}{Aws\+::\+Crt\+::\+Io\+::\+Stream\+Seek\+Basis}}\hspace{0.3cm}{\ttfamily [strong]}}
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Begin@{Begin}!Aws::Crt::Io@{Aws::Crt::Io}}\index{Aws::Crt::Io@{Aws::Crt::Io}!Begin@{Begin}}}\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_adf764940aea50b061f1ac67366cf41d0a1a06729125544cab7cee73195fc044f0}\label{namespace_aws_1_1_crt_1_1_io_adf764940aea50b061f1ac67366cf41d0a1a06729125544cab7cee73195fc044f0}} 
+Begin&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{End@{End}!Aws::Crt::Io@{Aws::Crt::Io}}\index{Aws::Crt::Io@{Aws::Crt::Io}!End@{End}}}\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_adf764940aea50b061f1ac67366cf41d0a87557f11575c0ad78e4e28abedc13b6e}\label{namespace_aws_1_1_crt_1_1_io_adf764940aea50b061f1ac67366cf41d0a87557f11575c0ad78e4e28abedc13b6e}} 
+End&\\
+\hline
+
+\end{DoxyEnumFields}
+\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_ab66ffc839b6b767e208a2f3bd40be0ad}\label{namespace_aws_1_1_crt_1_1_io_ab66ffc839b6b767e208a2f3bd40be0ad}} 
+\index{Aws::Crt::Io@{Aws::Crt::Io}!TaskStatus@{TaskStatus}}
+\index{TaskStatus@{TaskStatus}!Aws::Crt::Io@{Aws::Crt::Io}}
+\doxysubsubsection{\texorpdfstring{TaskStatus}{TaskStatus}}
+{\footnotesize\ttfamily enum class \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_ab66ffc839b6b767e208a2f3bd40be0ad}{Aws\+::\+Crt\+::\+Io\+::\+Task\+Status}}\hspace{0.3cm}{\ttfamily [strong]}}
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{RunReady@{RunReady}!Aws::Crt::Io@{Aws::Crt::Io}}\index{Aws::Crt::Io@{Aws::Crt::Io}!RunReady@{RunReady}}}\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_ab66ffc839b6b767e208a2f3bd40be0adaa3c06ac743416c5ccf42ce17ec11b31e}\label{namespace_aws_1_1_crt_1_1_io_ab66ffc839b6b767e208a2f3bd40be0adaa3c06ac743416c5ccf42ce17ec11b31e}} 
+Run\+Ready&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Canceled@{Canceled}!Aws::Crt::Io@{Aws::Crt::Io}}\index{Aws::Crt::Io@{Aws::Crt::Io}!Canceled@{Canceled}}}\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_ab66ffc839b6b767e208a2f3bd40be0ada0e22fe7d45f8e5632a4abf369b24e29c}\label{namespace_aws_1_1_crt_1_1_io_ab66ffc839b6b767e208a2f3bd40be0ada0e22fe7d45f8e5632a4abf369b24e29c}} 
+Canceled&\\
+\hline
+
+\end{DoxyEnumFields}
+\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_a0e6e89d764e66080a9abd0513079d1b8}\label{namespace_aws_1_1_crt_1_1_io_a0e6e89d764e66080a9abd0513079d1b8}} 
+\index{Aws::Crt::Io@{Aws::Crt::Io}!TlsMode@{TlsMode}}
+\index{TlsMode@{TlsMode}!Aws::Crt::Io@{Aws::Crt::Io}}
+\doxysubsubsection{\texorpdfstring{TlsMode}{TlsMode}}
+{\footnotesize\ttfamily enum class \mbox{\hyperlink{namespace_aws_1_1_crt_1_1_io_a0e6e89d764e66080a9abd0513079d1b8}{Aws\+::\+Crt\+::\+Io\+::\+Tls\+Mode}}\hspace{0.3cm}{\ttfamily [strong]}}
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{CLIENT@{CLIENT}!Aws::Crt::Io@{Aws::Crt::Io}}\index{Aws::Crt::Io@{Aws::Crt::Io}!CLIENT@{CLIENT}}}\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_a0e6e89d764e66080a9abd0513079d1b8aef10c650df47bffd6399e5e78da2a9b1}\label{namespace_aws_1_1_crt_1_1_io_a0e6e89d764e66080a9abd0513079d1b8aef10c650df47bffd6399e5e78da2a9b1}} 
+CLIENT&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{SERVER@{SERVER}!Aws::Crt::Io@{Aws::Crt::Io}}\index{Aws::Crt::Io@{Aws::Crt::Io}!SERVER@{SERVER}}}\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_a0e6e89d764e66080a9abd0513079d1b8a3d27c95bfdbea691b250894d96852844}\label{namespace_aws_1_1_crt_1_1_io_a0e6e89d764e66080a9abd0513079d1b8a3d27c95bfdbea691b250894d96852844}} 
+SERVER&\\
+\hline
+
+\end{DoxyEnumFields}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_a06e315620600ba9bae9946b5fbb535fa}\label{namespace_aws_1_1_crt_1_1_io_a06e315620600ba9bae9946b5fbb535fa}} 
+\index{Aws::Crt::Io@{Aws::Crt::Io}!s\_ChannelTaskCallback@{s\_ChannelTaskCallback}}
+\index{s\_ChannelTaskCallback@{s\_ChannelTaskCallback}!Aws::Crt::Io@{Aws::Crt::Io}}
+\doxysubsubsection{\texorpdfstring{s\_ChannelTaskCallback()}{s\_ChannelTaskCallback()}}
+{\footnotesize\ttfamily static void Aws\+::\+Crt\+::\+Io\+::s\+\_\+\+Channel\+Task\+Callback (\begin{DoxyParamCaption}\item[{struct aws\+\_\+channel\+\_\+task $\ast$}]{,  }\item[{void $\ast$}]{arg,  }\item[{enum aws\+\_\+task\+\_\+status}]{status }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+\doxysubsection{Variable Documentation}
+\mbox{\Hypertarget{namespace_aws_1_1_crt_1_1_io_a3c79025f57dddde3dca69724cdf1a8f8}\label{namespace_aws_1_1_crt_1_1_io_a3c79025f57dddde3dca69724cdf1a8f8}} 
+\index{Aws::Crt::Io@{Aws::Crt::Io}!DEFAULT\_SOCKET\_TIME\_MSEC@{DEFAULT\_SOCKET\_TIME\_MSEC}}
+\index{DEFAULT\_SOCKET\_TIME\_MSEC@{DEFAULT\_SOCKET\_TIME\_MSEC}!Aws::Crt::Io@{Aws::Crt::Io}}
+\doxysubsubsection{\texorpdfstring{DEFAULT\_SOCKET\_TIME\_MSEC}{DEFAULT\_SOCKET\_TIME\_MSEC}}
+{\footnotesize\ttfamily const uint32\+\_\+t Aws\+::\+Crt\+::\+Io\+::\+DEFAULT\+\_\+\+SOCKET\+\_\+\+TIME\+\_\+\+MSEC = 3000\hspace{0.3cm}{\ttfamily [static]}}
+

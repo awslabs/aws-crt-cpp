@@ -1,0 +1,80 @@
+\hypertarget{class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler}{}\doxysection{Aws\+::Crt\+::Io\+::Tls\+Channel\+Handler Class Reference}
+\label{class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler}\index{Aws::Crt::Io::TlsChannelHandler@{Aws::Crt::Io::TlsChannelHandler}}
+
+
+{\ttfamily \#include $<$Tls\+Options.\+h$>$}
+
+Inheritance diagram for Aws\+::Crt\+::Io\+::Tls\+Channel\+Handler\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=4.000000cm]{class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+virtual \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler_afac1c40efd298b3a2ad9f6f66b699584}{$\sim$\+Tls\+Channel\+Handler}} ()
+\item 
+virtual \mbox{\hyperlink{namespace_aws_1_1_crt_a865381ab2bc5db45524fa6ce43c394c3}{String}} \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler_aeb37325993f270b82d2769caa24e54c6}{Get\+Protocol}} () const =0
+\end{DoxyCompactItemize}
+\doxysubsection*{Protected Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler_ad7dfcc609b233081b47b47e73a763f36}{Tls\+Channel\+Handler}} (struct aws\+\_\+channel\+\_\+slot $\ast$slot, const struct aws\+\_\+tls\+\_\+connection\+\_\+options \&options, \mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} $\ast$allocator=\mbox{\hyperlink{namespace_aws_1_1_crt_a7178ef65f261a8db52a624458331bbb2}{g\+\_\+allocator}})
+\item 
+void \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler_a9ae75c6953615f8bc763670db230ad49}{Complete\+Tls\+Negotiation}} (int error\+Code)
+\end{DoxyCompactItemize}
+\doxysubsection*{Friends}
+\begin{DoxyCompactItemize}
+\item 
+aws\+\_\+byte\+\_\+buf() \mbox{\hyperlink{class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler_a8a79bc262c7feecad054fb8582f0ba09}{aws\+\_\+tls\+\_\+handler\+\_\+protocol}} (aws\+\_\+channel\+\_\+handler $\ast$)
+\end{DoxyCompactItemize}
+\doxysubsection*{Additional Inherited Members}
+
+
+\doxysubsection{Detailed Description}
+BYO\+\_\+\+CRYPTO\+: TLS channel-\/handler base class. 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler_afac1c40efd298b3a2ad9f6f66b699584}\label{class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler_afac1c40efd298b3a2ad9f6f66b699584}} 
+\index{Aws::Crt::Io::TlsChannelHandler@{Aws::Crt::Io::TlsChannelHandler}!````~TlsChannelHandler@{$\sim$TlsChannelHandler}}
+\index{````~TlsChannelHandler@{$\sim$TlsChannelHandler}!Aws::Crt::Io::TlsChannelHandler@{Aws::Crt::Io::TlsChannelHandler}}
+\doxysubsubsection{\texorpdfstring{$\sim$TlsChannelHandler()}{~TlsChannelHandler()}}
+{\footnotesize\ttfamily Aws\+::\+Crt\+::\+Io\+::\+Tls\+Channel\+Handler\+::$\sim$\+Tls\+Channel\+Handler (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [virtual]}}
+
+\mbox{\Hypertarget{class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler_ad7dfcc609b233081b47b47e73a763f36}\label{class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler_ad7dfcc609b233081b47b47e73a763f36}} 
+\index{Aws::Crt::Io::TlsChannelHandler@{Aws::Crt::Io::TlsChannelHandler}!TlsChannelHandler@{TlsChannelHandler}}
+\index{TlsChannelHandler@{TlsChannelHandler}!Aws::Crt::Io::TlsChannelHandler@{Aws::Crt::Io::TlsChannelHandler}}
+\doxysubsubsection{\texorpdfstring{TlsChannelHandler()}{TlsChannelHandler()}}
+{\footnotesize\ttfamily Aws\+::\+Crt\+::\+Io\+::\+Tls\+Channel\+Handler\+::\+Tls\+Channel\+Handler (\begin{DoxyParamCaption}\item[{struct aws\+\_\+channel\+\_\+slot $\ast$}]{slot,  }\item[{const struct aws\+\_\+tls\+\_\+connection\+\_\+options \&}]{options,  }\item[{\mbox{\hyperlink{namespace_aws_1_1_crt_a3c9efb213e2de565038afcfd4f8afcda}{Allocator}} $\ast$}]{allocator = {\ttfamily \mbox{\hyperlink{namespace_aws_1_1_crt_a7178ef65f261a8db52a624458331bbb2}{g\+\_\+allocator}}} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [protected]}}
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler_a9ae75c6953615f8bc763670db230ad49}\label{class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler_a9ae75c6953615f8bc763670db230ad49}} 
+\index{Aws::Crt::Io::TlsChannelHandler@{Aws::Crt::Io::TlsChannelHandler}!CompleteTlsNegotiation@{CompleteTlsNegotiation}}
+\index{CompleteTlsNegotiation@{CompleteTlsNegotiation}!Aws::Crt::Io::TlsChannelHandler@{Aws::Crt::Io::TlsChannelHandler}}
+\doxysubsubsection{\texorpdfstring{CompleteTlsNegotiation()}{CompleteTlsNegotiation()}}
+{\footnotesize\ttfamily void Aws\+::\+Crt\+::\+Io\+::\+Tls\+Channel\+Handler\+::\+Complete\+Tls\+Negotiation (\begin{DoxyParamCaption}\item[{int}]{error\+Code }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [protected]}}
+
+Invoke this function from inside your handler after TLS negotiation completes. error\+Code == AWS\+\_\+\+ERROR\+\_\+\+SUCCESS or 0 means the session was successfully established and the connection should continue on. \mbox{\Hypertarget{class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler_aeb37325993f270b82d2769caa24e54c6}\label{class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler_aeb37325993f270b82d2769caa24e54c6}} 
+\index{Aws::Crt::Io::TlsChannelHandler@{Aws::Crt::Io::TlsChannelHandler}!GetProtocol@{GetProtocol}}
+\index{GetProtocol@{GetProtocol}!Aws::Crt::Io::TlsChannelHandler@{Aws::Crt::Io::TlsChannelHandler}}
+\doxysubsubsection{\texorpdfstring{GetProtocol()}{GetProtocol()}}
+{\footnotesize\ttfamily virtual \mbox{\hyperlink{namespace_aws_1_1_crt_a865381ab2bc5db45524fa6ce43c394c3}{String}} Aws\+::\+Crt\+::\+Io\+::\+Tls\+Channel\+Handler\+::\+Get\+Protocol (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+Return negotiated protocol (or empty string if no agreed upon protocol) 
+
+\doxysubsection{Friends And Related Function Documentation}
+\mbox{\Hypertarget{class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler_a8a79bc262c7feecad054fb8582f0ba09}\label{class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler_a8a79bc262c7feecad054fb8582f0ba09}} 
+\index{Aws::Crt::Io::TlsChannelHandler@{Aws::Crt::Io::TlsChannelHandler}!aws\_tls\_handler\_protocol@{aws\_tls\_handler\_protocol}}
+\index{aws\_tls\_handler\_protocol@{aws\_tls\_handler\_protocol}!Aws::Crt::Io::TlsChannelHandler@{Aws::Crt::Io::TlsChannelHandler}}
+\doxysubsubsection{\texorpdfstring{aws\_tls\_handler\_protocol}{aws\_tls\_handler\_protocol}}
+{\footnotesize\ttfamily aws\+\_\+byte\+\_\+buf() aws\+\_\+tls\+\_\+handler\+\_\+protocol (\begin{DoxyParamCaption}\item[{aws\+\_\+channel\+\_\+handler $\ast$}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [friend]}}
+
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+/\+Users/dengket/project/crts/aws-\/crt-\/cpp/include/aws/crt/io/\mbox{\hyperlink{_tls_options_8h}{Tls\+Options.\+h}}\item 
+/\+Users/dengket/project/crts/aws-\/crt-\/cpp/source/io/\mbox{\hyperlink{_tls_options_8cpp}{Tls\+Options.\+cpp}}\end{DoxyCompactItemize}

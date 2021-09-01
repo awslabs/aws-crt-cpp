@@ -1,0 +1,294 @@
+\hypertarget{c_j_s_o_n_8h_source}{}\doxysection{c\+JSON.\+h}
+\label{c_j_s_o_n_8h_source}\index{/Users/dengket/project/crts/aws-\/crt-\/cpp/include/aws/crt/external/cJSON.h@{/Users/dengket/project/crts/aws-\/crt-\/cpp/include/aws/crt/external/cJSON.h}}
+\mbox{\hyperlink{c_j_s_o_n_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{comment}{/*}}
+\DoxyCodeLine{2 \textcolor{comment}{  Copyright (c) 2009-\/2017 Dave Gamble and cJSON contributors}}
+\DoxyCodeLine{3 \textcolor{comment}{}}
+\DoxyCodeLine{4 \textcolor{comment}{  Permission is hereby granted, free of charge, to any person obtaining a copy}}
+\DoxyCodeLine{5 \textcolor{comment}{  of this software and associated documentation files (the "{}Software"{}), to deal}}
+\DoxyCodeLine{6 \textcolor{comment}{  in the Software without restriction, including without limitation the rights}}
+\DoxyCodeLine{7 \textcolor{comment}{  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell}}
+\DoxyCodeLine{8 \textcolor{comment}{  copies of the Software, and to permit persons to whom the Software is}}
+\DoxyCodeLine{9 \textcolor{comment}{  furnished to do so, subject to the following conditions:}}
+\DoxyCodeLine{10 \textcolor{comment}{}}
+\DoxyCodeLine{11 \textcolor{comment}{  The above copyright notice and this permission notice shall be included in}}
+\DoxyCodeLine{12 \textcolor{comment}{  all copies or substantial portions of the Software.}}
+\DoxyCodeLine{13 \textcolor{comment}{}}
+\DoxyCodeLine{14 \textcolor{comment}{  THE SOFTWARE IS PROVIDED "{}AS IS"{}, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR}}
+\DoxyCodeLine{15 \textcolor{comment}{  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,}}
+\DoxyCodeLine{16 \textcolor{comment}{  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE}}
+\DoxyCodeLine{17 \textcolor{comment}{  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER}}
+\DoxyCodeLine{18 \textcolor{comment}{  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,}}
+\DoxyCodeLine{19 \textcolor{comment}{  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN}}
+\DoxyCodeLine{20 \textcolor{comment}{  THE SOFTWARE.}}
+\DoxyCodeLine{21 \textcolor{comment}{*/}}
+\DoxyCodeLine{22 }
+\DoxyCodeLine{44 \textcolor{preprocessor}{\#ifndef cJSON\_\_h}}
+\DoxyCodeLine{45 \textcolor{preprocessor}{\#define cJSON\_\_h}}
+\DoxyCodeLine{46 }
+\DoxyCodeLine{47 \textcolor{keyword}{namespace }\mbox{\hyperlink{namespace_aws}{Aws}} \{}
+\DoxyCodeLine{48 }
+\DoxyCodeLine{49 \textcolor{preprocessor}{\#if !defined(\_\_WINDOWS\_\_) \&\& (defined(WIN32) || defined(WIN64) || defined(\_MSC\_VER) || defined(\_WIN32))}}
+\DoxyCodeLine{50 \textcolor{preprocessor}{\#define \_\_WINDOWS\_\_}}
+\DoxyCodeLine{51 \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{52 }
+\DoxyCodeLine{53 \textcolor{preprocessor}{\#ifdef \_\_WINDOWS\_\_}}
+\DoxyCodeLine{54 }
+\DoxyCodeLine{55 \textcolor{comment}{/* When compiling for windows, we specify a specific calling convention to avoid issues where we are being called from a project with a different default calling convention.  For windows you have 3 define options:}}
+\DoxyCodeLine{56 \textcolor{comment}{}}
+\DoxyCodeLine{57 \textcolor{comment}{CJSON\_HIDE\_SYMBOLS -\/ Define this in the case where you don't want to ever dllexport symbols}}
+\DoxyCodeLine{58 \textcolor{comment}{CJSON\_EXPORT\_SYMBOLS -\/ Define this on library build when you want to dllexport symbols (default)}}
+\DoxyCodeLine{59 \textcolor{comment}{CJSON\_IMPORT\_SYMBOLS -\/ Define this if you want to dllimport symbol}}
+\DoxyCodeLine{60 \textcolor{comment}{}}
+\DoxyCodeLine{61 \textcolor{comment}{For *nix builds that support visibility attribute, you can define similar behavior by}}
+\DoxyCodeLine{62 \textcolor{comment}{}}
+\DoxyCodeLine{63 \textcolor{comment}{setting default visibility to hidden by adding}}
+\DoxyCodeLine{64 \textcolor{comment}{-\/fvisibility=hidden (for gcc)}}
+\DoxyCodeLine{65 \textcolor{comment}{or}}
+\DoxyCodeLine{66 \textcolor{comment}{-\/xldscope=hidden (for sun cc)}}
+\DoxyCodeLine{67 \textcolor{comment}{to CFLAGS}}
+\DoxyCodeLine{68 \textcolor{comment}{}}
+\DoxyCodeLine{69 \textcolor{comment}{then using the CJSON\_API\_VISIBILITY flag to "{}export"{} the same symbols the way CJSON\_EXPORT\_SYMBOLS does}}
+\DoxyCodeLine{70 \textcolor{comment}{}}
+\DoxyCodeLine{71 \textcolor{comment}{*/}}
+\DoxyCodeLine{72 }
+\DoxyCodeLine{73 \textcolor{preprocessor}{\#define CJSON\_CDECL \_\_cdecl}}
+\DoxyCodeLine{74 \textcolor{preprocessor}{\#define CJSON\_STDCALL \_\_stdcall}}
+\DoxyCodeLine{75 }
+\DoxyCodeLine{76 \textcolor{comment}{/* export symbols by default, this is necessary for copy pasting the C and header file */}}
+\DoxyCodeLine{77 \textcolor{preprocessor}{\#if !defined(CJSON\_HIDE\_SYMBOLS) \&\& !defined(CJSON\_IMPORT\_SYMBOLS) \&\& !defined(CJSON\_EXPORT\_SYMBOLS)}}
+\DoxyCodeLine{78 \textcolor{preprocessor}{\#define CJSON\_EXPORT\_SYMBOLS}}
+\DoxyCodeLine{79 \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{80 }
+\DoxyCodeLine{81 \textcolor{preprocessor}{\#if defined(CJSON\_HIDE\_SYMBOLS)}}
+\DoxyCodeLine{82 \textcolor{preprocessor}{\#define CJSON\_PUBLIC(type)   type CJSON\_STDCALL}}
+\DoxyCodeLine{83 \textcolor{preprocessor}{\#elif defined(CJSON\_EXPORT\_SYMBOLS)}}
+\DoxyCodeLine{84 \textcolor{preprocessor}{\#define CJSON\_PUBLIC(type)   \_\_declspec(dllexport) type CJSON\_STDCALL}}
+\DoxyCodeLine{85 \textcolor{preprocessor}{\#elif defined(CJSON\_IMPORT\_SYMBOLS)}}
+\DoxyCodeLine{86 \textcolor{preprocessor}{\#define CJSON\_PUBLIC(type)   \_\_declspec(dllimport) type CJSON\_STDCALL}}
+\DoxyCodeLine{87 \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{88 \textcolor{preprocessor}{\#else }\textcolor{comment}{/* !\_\_WINDOWS\_\_ */}\textcolor{preprocessor}{}}
+\DoxyCodeLine{89 \textcolor{preprocessor}{\#define CJSON\_CDECL}}
+\DoxyCodeLine{90 \textcolor{preprocessor}{\#define CJSON\_STDCALL}}
+\DoxyCodeLine{91 }
+\DoxyCodeLine{92 \textcolor{preprocessor}{\#if (defined(\_\_GNUC\_\_) || defined(\_\_SUNPRO\_CC) || defined (\_\_SUNPRO\_C)) \&\& defined(CJSON\_API\_VISIBILITY)}}
+\DoxyCodeLine{93 \textcolor{preprocessor}{\#define CJSON\_PUBLIC(type)   \_\_attribute\_\_((visibility("{}default"{}}))) type}
+\DoxyCodeLine{94 \textcolor{preprocessor}{\#else}}
+\DoxyCodeLine{95 \textcolor{preprocessor}{\#define CJSON\_PUBLIC(type) type}}
+\DoxyCodeLine{96 \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{97 \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{98 }
+\DoxyCodeLine{99 \textcolor{comment}{/* project version */}}
+\DoxyCodeLine{100 \textcolor{preprocessor}{\#define CJSON\_VERSION\_MAJOR 1}}
+\DoxyCodeLine{101 \textcolor{preprocessor}{\#define CJSON\_VERSION\_MINOR 7}}
+\DoxyCodeLine{102 \textcolor{preprocessor}{\#define CJSON\_VERSION\_PATCH 14}}
+\DoxyCodeLine{103 }
+\DoxyCodeLine{104 \textcolor{preprocessor}{\#include <stddef.h>}}
+\DoxyCodeLine{105 }
+\DoxyCodeLine{106 \textcolor{comment}{/* cJSON Types: */}}
+\DoxyCodeLine{107 \textcolor{preprocessor}{\#define cJSON\_Invalid (0)}}
+\DoxyCodeLine{108 \textcolor{preprocessor}{\#define cJSON\_False  (1 << 0)}}
+\DoxyCodeLine{109 \textcolor{preprocessor}{\#define cJSON\_True   (1 << 1)}}
+\DoxyCodeLine{110 \textcolor{preprocessor}{\#define cJSON\_NULL   (1 << 2)}}
+\DoxyCodeLine{111 \textcolor{preprocessor}{\#define cJSON\_Number (1 << 3)}}
+\DoxyCodeLine{112 \textcolor{preprocessor}{\#define cJSON\_String (1 << 4)}}
+\DoxyCodeLine{113 \textcolor{preprocessor}{\#define cJSON\_Array  (1 << 5)}}
+\DoxyCodeLine{114 \textcolor{preprocessor}{\#define cJSON\_Object (1 << 6)}}
+\DoxyCodeLine{115 \textcolor{preprocessor}{\#define cJSON\_Raw    (1 << 7) }\textcolor{comment}{/* raw json */}\textcolor{preprocessor}{}}
+\DoxyCodeLine{116 }
+\DoxyCodeLine{117 \textcolor{preprocessor}{\#define cJSON\_IsReference 256}}
+\DoxyCodeLine{118 \textcolor{preprocessor}{\#define cJSON\_StringIsConst 512}}
+\DoxyCodeLine{119 }
+\DoxyCodeLine{120 \textcolor{comment}{/* The cJSON structure: */}}
+\DoxyCodeLine{121 \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}}}
+\DoxyCodeLine{122 \{}
+\DoxyCodeLine{123     \textcolor{comment}{/* next/prev allow you to walk array/object chains. Alternatively, use GetArraySize/GetArrayItem/GetObjectItem */}}
+\DoxyCodeLine{124     \textcolor{keyword}{struct }\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n_ae356b22f436d1175ab37a8a73eb81323}{next}};}
+\DoxyCodeLine{125     \textcolor{keyword}{struct }\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n_a1a055300b1bd4091488febe57edf0b06}{prev}};}
+\DoxyCodeLine{126     \textcolor{comment}{/* An array or object item will have a child pointer pointing to a chain of the items in the array/object. */}}
+\DoxyCodeLine{127     \textcolor{keyword}{struct }\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n_afd47ae2f768d031da97dbc6dcee0a359}{child}};}
+\DoxyCodeLine{128 }
+\DoxyCodeLine{129     \textcolor{comment}{/* The type of the item, as above. */}}
+\DoxyCodeLine{130     \textcolor{keywordtype}{int} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n_a5af30017d7f9c5e85cfb0da245ed76ce}{type}};}
+\DoxyCodeLine{131 }
+\DoxyCodeLine{132     \textcolor{comment}{/* writing to valueint is DEPRECATED, use cJSON\_SetNumberValue instead */}}
+\DoxyCodeLine{133     \textcolor{keywordtype}{int} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n_a3a0b1bfb504c04eb42b53952c5d9e633}{valueint}};}
+\DoxyCodeLine{134     \textcolor{comment}{/* The item's string, if type==cJSON\_String  and type == cJSON\_Raw */}}
+\DoxyCodeLine{135     \textcolor{keywordtype}{char} *\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n_ad63404ba7b8929e579a87a91c7338002}{valuestring}};}
+\DoxyCodeLine{136     \textcolor{comment}{/* The item's number, if type==cJSON\_Number */}}
+\DoxyCodeLine{137     \textcolor{keywordtype}{double} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n_adb2925ca5a03f2a84b36893a7cdec7c3}{valuedouble}};}
+\DoxyCodeLine{138 }
+\DoxyCodeLine{139     \textcolor{comment}{/* The item's name string, if this item is the child of, or is in the list of subitems of an object. */}}
+\DoxyCodeLine{140     \textcolor{keywordtype}{char} *\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n_acdcd112331c9abfc94fb6ee0ea10ae38}{string}};}
+\DoxyCodeLine{141 \} \mbox{\hyperlink{namespace_aws_abe25c440448d4d9d5667369353012a2f}{cJSON}};}
+\DoxyCodeLine{142 }
+\DoxyCodeLine{143 \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n___hooks}{cJSON\_Hooks}}}
+\DoxyCodeLine{144 \{}
+\DoxyCodeLine{145       \textcolor{comment}{/* malloc/free are CDECL on Windows regardless of the default calling convention of the compiler, so ensure the hooks allow passing those functions directly. */}}
+\DoxyCodeLine{146       \textcolor{keywordtype}{void} *(\mbox{\hyperlink{c_j_s_o_n_8h_a79203c3ba406ffd5736627cc1e082e38}{CJSON\_CDECL}} *\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n___hooks_a16a6011cc208ac9a833d3794190bf305}{malloc\_fn}})(\textcolor{keywordtype}{size\_t} sz);}
+\DoxyCodeLine{147       \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n___hooks_a1a9414de5e4136bd03a743c899af7fdd}{void}} (\mbox{\hyperlink{c_j_s_o_n_8h_a79203c3ba406ffd5736627cc1e082e38}{CJSON\_CDECL}} *free\_fn)(\textcolor{keywordtype}{void} *ptr);}
+\DoxyCodeLine{148 \} \mbox{\hyperlink{namespace_aws_ab262be12efeb871483adaeb4557c07f1}{cJSON\_Hooks}};}
+\DoxyCodeLine{149 }
+\DoxyCodeLine{150 \textcolor{keyword}{typedef} \textcolor{keywordtype}{int} \mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}};}
+\DoxyCodeLine{151 }
+\DoxyCodeLine{152 \textcolor{comment}{/* Limits how deeply nested arrays/objects can be before cJSON rejects to parse them.}}
+\DoxyCodeLine{153 \textcolor{comment}{ * This is to prevent stack overflows. */}}
+\DoxyCodeLine{154 \textcolor{preprocessor}{\#ifndef CJSON\_NESTING\_LIMIT}}
+\DoxyCodeLine{155 \textcolor{preprocessor}{\#define CJSON\_NESTING\_LIMIT 1000}}
+\DoxyCodeLine{156 \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{157 }
+\DoxyCodeLine{158 \textcolor{comment}{/* returns the version of cJSON as a string */}}
+\DoxyCodeLine{159 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\textcolor{keyword}{const} \textcolor{keywordtype}{char}*) cJSON\_Version(\textcolor{keywordtype}{void});}
+\DoxyCodeLine{160 }
+\DoxyCodeLine{161 \textcolor{comment}{/* Supply malloc, realloc and free functions to cJSON */}}
+\DoxyCodeLine{162 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\textcolor{keywordtype}{void}) cJSON\_InitHooks(\mbox{\hyperlink{namespace_aws_ab262be12efeb871483adaeb4557c07f1}{cJSON\_Hooks}}* \mbox{\hyperlink{namespace_aws_a57ce4f2b5c9bd06f9c6e1f6c00e31315}{hooks}});}
+\DoxyCodeLine{163 }
+\DoxyCodeLine{164 \textcolor{comment}{/* Memory Management: the caller is always responsible to free the results from all variants of cJSON\_Parse (with cJSON\_Delete) and cJSON\_Print (with stdlib free, cJSON\_Hooks.free\_fn, or cJSON\_free as appropriate). The exception is cJSON\_PrintPreallocated, where the caller has full responsibility of the buffer. */}}
+\DoxyCodeLine{165 \textcolor{comment}{/* Supply a block of JSON, and this returns a cJSON object you can interrogate. */}}
+\DoxyCodeLine{166 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_abe25c440448d4d9d5667369353012a2f}{cJSON}} *) cJSON\_Parse(\textcolor{keyword}{const} \textcolor{keywordtype}{char} *value);}
+\DoxyCodeLine{167 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_ParseWithLength(\textcolor{keyword}{const} \textcolor{keywordtype}{char} *value, \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{namespace_aws_a77feb2c4a610f5f5fc718dc3b2c1fbc0}{buffer\_length}});}
+\DoxyCodeLine{168 \textcolor{comment}{/* ParseWithOpts allows you to require (and check) that the JSON is null terminated, and to retrieve the pointer to the final byte parsed. */}}
+\DoxyCodeLine{169 \textcolor{comment}{/* If you supply a ptr in return\_parse\_end and parsing fails, then return\_parse\_end will contain a pointer to the error so will match cJSON\_GetErrorPtr(). */}}
+\DoxyCodeLine{170 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_ParseWithOpts(\textcolor{keyword}{const} \textcolor{keywordtype}{char} *value, \textcolor{keyword}{const} \textcolor{keywordtype}{char} **\mbox{\hyperlink{namespace_aws_a6aa1ba4d23552e6f67db375f5dddf8bc}{return\_parse\_end}}, \mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}} \mbox{\hyperlink{namespace_aws_a9afe5f5cf642833b63455d0b9df93c5f}{require\_null\_terminated}});}
+\DoxyCodeLine{171 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) \mbox{\hyperlink{namespace_aws_ac32486334211783315d0ed93dc02b287}{cJSON\_ParseWithLengthOpts}}(\textcolor{keyword}{const} \textcolor{keywordtype}{char} *value, \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{namespace_aws_a77feb2c4a610f5f5fc718dc3b2c1fbc0}{buffer\_length}}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} **\mbox{\hyperlink{namespace_aws_a6aa1ba4d23552e6f67db375f5dddf8bc}{return\_parse\_end}}, \mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}} \mbox{\hyperlink{namespace_aws_a9afe5f5cf642833b63455d0b9df93c5f}{require\_null\_terminated}});}
+\DoxyCodeLine{172 }
+\DoxyCodeLine{173 \textcolor{comment}{/* Render a cJSON entity to text for transfer/storage. */}}
+\DoxyCodeLine{174 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\textcolor{keywordtype}{char} *) cJSON\_Print(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}});}
+\DoxyCodeLine{175 \textcolor{comment}{/* Render a cJSON entity to text for transfer/storage without any formatting. */}}
+\DoxyCodeLine{176 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\textcolor{keywordtype}{char} *) cJSON\_PrintUnformatted(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}});}
+\DoxyCodeLine{177 \textcolor{comment}{/* Render a cJSON entity to text using a buffered strategy. prebuffer is a guess at the final size. guessing well reduces reallocation. fmt=0 gives unformatted, =1 gives formatted */}}
+\DoxyCodeLine{178 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\textcolor{keywordtype}{char} *) cJSON\_PrintBuffered(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}}, \textcolor{keywordtype}{int} \mbox{\hyperlink{namespace_aws_aee7bc1146e5a66fe1fa538dc65c793e0}{prebuffer}}, \mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}} \mbox{\hyperlink{namespace_aws_ace4cbe73ab5ca5237e5a3c12e8836960}{fmt}});}
+\DoxyCodeLine{179 \textcolor{comment}{/* Render a cJSON entity to text using a buffer already allocated in memory with given length. Returns 1 on success and 0 on failure. */}}
+\DoxyCodeLine{180 \textcolor{comment}{/* NOTE: cJSON is not always 100\% accurate in estimating how much memory it will use, so to be safe allocate 5 bytes more than you actually need */}}
+\DoxyCodeLine{181 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_PrintPreallocated(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}}, \textcolor{keywordtype}{char} *\mbox{\hyperlink{namespace_aws_ab680d00d3625d576b9160710e643da63}{buffer}}, \textcolor{keyword}{const} \textcolor{keywordtype}{int} \mbox{\hyperlink{namespace_aws_a52c438299b08516e5d87b48ded603a6e}{length}}, \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}} \mbox{\hyperlink{namespace_aws_a5b080fcf4aed7e14fb25c2638948af06}{format}});}
+\DoxyCodeLine{182 \textcolor{comment}{/* Delete a cJSON entity and all subentities. */}}
+\DoxyCodeLine{183 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\textcolor{keywordtype}{void}) \mbox{\hyperlink{namespace_aws_acbbc253873ffe75541192ab169dee5f6}{cJSON\_Delete}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}});}
+\DoxyCodeLine{184 }
+\DoxyCodeLine{185 \textcolor{comment}{/* Returns the number of items in an array (or object). */}}
+\DoxyCodeLine{186 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\textcolor{keywordtype}{int}) cJSON\_GetArraySize(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *array);}
+\DoxyCodeLine{187 \textcolor{comment}{/* Retrieve item number "{}index"{} from array "{}array"{}. Returns NULL if unsuccessful. */}}
+\DoxyCodeLine{188 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_GetArrayItem(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *array, \textcolor{keywordtype}{int} \mbox{\hyperlink{namespace_aws_ac452980f2f77477ec3f0bd9e57f9123d}{index}});}
+\DoxyCodeLine{189 \textcolor{comment}{/* Get item "{}string"{} from object. Case insensitive. */}}
+\DoxyCodeLine{190 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_GetObjectItem(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \textcolor{keywordtype}{object}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * \textcolor{keyword}{const} \textcolor{keywordtype}{string});}
+\DoxyCodeLine{191 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_GetObjectItemCaseSensitive(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \textcolor{keywordtype}{object}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * \textcolor{keyword}{const} \textcolor{keywordtype}{string});}
+\DoxyCodeLine{192 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_HasObjectItem(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\textcolor{keywordtype}{object}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} *\textcolor{keywordtype}{string});}
+\DoxyCodeLine{193 \textcolor{comment}{/* For analysing failed parses. This returns a pointer to the parse error. You'll probably need to look a few chars back to make sense of it. Defined when cJSON\_Parse() returns 0. 0 when cJSON\_Parse() succeeds. */}}
+\DoxyCodeLine{194 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\textcolor{keyword}{const} \textcolor{keywordtype}{char} *) cJSON\_GetErrorPtr(\textcolor{keywordtype}{void});}
+\DoxyCodeLine{195 }
+\DoxyCodeLine{196 \textcolor{comment}{/* Check item type and return its value */}}
+\DoxyCodeLine{197 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\textcolor{keywordtype}{char} *) cJSON\_GetStringValue(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}});}
+\DoxyCodeLine{198 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\textcolor{keywordtype}{double}) cJSON\_GetNumberValue(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}});}
+\DoxyCodeLine{199 }
+\DoxyCodeLine{200 \textcolor{comment}{/* These functions check the type of an item */}}
+\DoxyCodeLine{201 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_IsInvalid(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}});}
+\DoxyCodeLine{202 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_IsFalse(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}});}
+\DoxyCodeLine{203 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_IsTrue(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}});}
+\DoxyCodeLine{204 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_IsBool(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}});}
+\DoxyCodeLine{205 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_IsNull(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}});}
+\DoxyCodeLine{206 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_IsNumber(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}});}
+\DoxyCodeLine{207 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_IsString(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}});}
+\DoxyCodeLine{208 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_IsArray(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}});}
+\DoxyCodeLine{209 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_IsObject(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}});}
+\DoxyCodeLine{210 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_IsRaw(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}});}
+\DoxyCodeLine{211 }
+\DoxyCodeLine{212 \textcolor{comment}{/* These calls create a cJSON item of the appropriate type. */}}
+\DoxyCodeLine{213 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_CreateNull(\textcolor{keywordtype}{void});}
+\DoxyCodeLine{214 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_CreateTrue(\textcolor{keywordtype}{void});}
+\DoxyCodeLine{215 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_CreateFalse(\textcolor{keywordtype}{void});}
+\DoxyCodeLine{216 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_CreateBool(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}} \textcolor{keywordtype}{boolean});}
+\DoxyCodeLine{217 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_CreateNumber(\textcolor{keywordtype}{double} num);}
+\DoxyCodeLine{218 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_CreateString(\textcolor{keyword}{const} \textcolor{keywordtype}{char} *\textcolor{keywordtype}{string});}
+\DoxyCodeLine{219 \textcolor{comment}{/* raw json */}}
+\DoxyCodeLine{220 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_CreateRaw(\textcolor{keyword}{const} \textcolor{keywordtype}{char} *\mbox{\hyperlink{namespace_aws_ac0a622163df04341adbb9f93830970b3}{raw}});}
+\DoxyCodeLine{221 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_CreateArray(\textcolor{keywordtype}{void});}
+\DoxyCodeLine{222 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_CreateObject(\textcolor{keywordtype}{void});}
+\DoxyCodeLine{223 }
+\DoxyCodeLine{224 \textcolor{comment}{/* Create a string where valuestring references a string so}}
+\DoxyCodeLine{225 \textcolor{comment}{ * it will not be freed by cJSON\_Delete */}}
+\DoxyCodeLine{226 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_CreateStringReference(\textcolor{keyword}{const} \textcolor{keywordtype}{char} *\textcolor{keywordtype}{string});}
+\DoxyCodeLine{227 \textcolor{comment}{/* Create an object/array that only references it's elements so}}
+\DoxyCodeLine{228 \textcolor{comment}{ * they will not be freed by cJSON\_Delete */}}
+\DoxyCodeLine{229 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_CreateObjectReference(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\mbox{\hyperlink{namespace_aws_a75e78b6c6a14c9cb782d5e53a1487879}{child}});}
+\DoxyCodeLine{230 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_CreateArrayReference(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\mbox{\hyperlink{namespace_aws_a75e78b6c6a14c9cb782d5e53a1487879}{child}});}
+\DoxyCodeLine{231 }
+\DoxyCodeLine{232 \textcolor{comment}{/* These utilities create an Array of count items.}}
+\DoxyCodeLine{233 \textcolor{comment}{ * The parameter count cannot be greater than the number of elements in the number array, otherwise array access will be out of bounds.*/}}
+\DoxyCodeLine{234 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_CreateIntArray(\textcolor{keyword}{const} \textcolor{keywordtype}{int} *numbers, \textcolor{keywordtype}{int} \mbox{\hyperlink{namespace_aws_a900adc5403a6cc755153d6bc8aa71220}{count}});}
+\DoxyCodeLine{235 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_CreateFloatArray(\textcolor{keyword}{const} \textcolor{keywordtype}{float} *numbers, \textcolor{keywordtype}{int} \mbox{\hyperlink{namespace_aws_a900adc5403a6cc755153d6bc8aa71220}{count}});}
+\DoxyCodeLine{236 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_CreateDoubleArray(\textcolor{keyword}{const} \textcolor{keywordtype}{double} *numbers, \textcolor{keywordtype}{int} \mbox{\hyperlink{namespace_aws_a900adc5403a6cc755153d6bc8aa71220}{count}});}
+\DoxyCodeLine{237 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_CreateStringArray(\textcolor{keyword}{const} \textcolor{keywordtype}{char} *\textcolor{keyword}{const} *strings, \textcolor{keywordtype}{int} \mbox{\hyperlink{namespace_aws_a900adc5403a6cc755153d6bc8aa71220}{count}});}
+\DoxyCodeLine{238 }
+\DoxyCodeLine{239 \textcolor{comment}{/* Append item to the specified array/object. */}}
+\DoxyCodeLine{240 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_AddItemToArray(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *array, \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}});}
+\DoxyCodeLine{241 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_AddItemToObject(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\textcolor{keywordtype}{object}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} *\textcolor{keywordtype}{string}, \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}});}
+\DoxyCodeLine{242 \textcolor{comment}{/* Use this when string is definitely const (i.e. a literal, or as good as), and will definitely survive the cJSON object.}}
+\DoxyCodeLine{243 \textcolor{comment}{ * WARNING: When this function was used, make sure to always check that (item-\/>type \& cJSON\_StringIsConst) is zero before}}
+\DoxyCodeLine{244 \textcolor{comment}{ * writing to `item-\/>string` */}}
+\DoxyCodeLine{245 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_AddItemToObjectCS(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\textcolor{keywordtype}{object}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} *\textcolor{keywordtype}{string}, \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}});}
+\DoxyCodeLine{246 \textcolor{comment}{/* Append reference to item to the specified array/object. Use this when you want to add an existing cJSON to a new cJSON, but don't want to corrupt your existing cJSON. */}}
+\DoxyCodeLine{247 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_AddItemReferenceToArray(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *array, \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}});}
+\DoxyCodeLine{248 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_AddItemReferenceToObject(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\textcolor{keywordtype}{object}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} *\textcolor{keywordtype}{string}, \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}});}
+\DoxyCodeLine{249 }
+\DoxyCodeLine{250 \textcolor{comment}{/* Remove/Detach items from Arrays/Objects. */}}
+\DoxyCodeLine{251 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) \mbox{\hyperlink{namespace_aws_a35e623f42b0cd6bf7d8c50f78d41eca9}{cJSON\_DetachItemViaPointer}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *parent, \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}});}
+\DoxyCodeLine{252 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_DetachItemFromArray(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *array, \textcolor{keywordtype}{int} \mbox{\hyperlink{namespace_aws_a8114587345e82b4c7c6243e945bb93bb}{which}});}
+\DoxyCodeLine{253 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\textcolor{keywordtype}{void}) cJSON\_DeleteItemFromArray(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *array, \textcolor{keywordtype}{int} \mbox{\hyperlink{namespace_aws_a8114587345e82b4c7c6243e945bb93bb}{which}});}
+\DoxyCodeLine{254 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_DetachItemFromObject(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\textcolor{keywordtype}{object}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} *\textcolor{keywordtype}{string});}
+\DoxyCodeLine{255 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_DetachItemFromObjectCaseSensitive(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\textcolor{keywordtype}{object}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} *\textcolor{keywordtype}{string});}
+\DoxyCodeLine{256 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\textcolor{keywordtype}{void}) cJSON\_DeleteItemFromObject(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\textcolor{keywordtype}{object}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} *\textcolor{keywordtype}{string});}
+\DoxyCodeLine{257 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\textcolor{keywordtype}{void}) cJSON\_DeleteItemFromObjectCaseSensitive(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\textcolor{keywordtype}{object}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} *\textcolor{keywordtype}{string});}
+\DoxyCodeLine{258 }
+\DoxyCodeLine{259 \textcolor{comment}{/* Update array items. */}}
+\DoxyCodeLine{260 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_InsertItemInArray(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *array, \textcolor{keywordtype}{int} \mbox{\hyperlink{namespace_aws_a8114587345e82b4c7c6243e945bb93bb}{which}}, \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\mbox{\hyperlink{namespace_aws_aba4985a42b3b659ae878b3badd2f9ea9}{newitem}}); \textcolor{comment}{/* Shifts pre-\/existing items to the right. */}}
+\DoxyCodeLine{261 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_ReplaceItemViaPointer(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} parent, \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}}, \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \mbox{\hyperlink{namespace_aws_aba484a7c9042d40bf7fafb0aeb660c8f}{replacement}});}
+\DoxyCodeLine{262 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_ReplaceItemInArray(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *array, \textcolor{keywordtype}{int} \mbox{\hyperlink{namespace_aws_a8114587345e82b4c7c6243e945bb93bb}{which}}, \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\mbox{\hyperlink{namespace_aws_aba4985a42b3b659ae878b3badd2f9ea9}{newitem}});}
+\DoxyCodeLine{263 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_ReplaceItemInObject(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\textcolor{keywordtype}{object},\textcolor{keyword}{const} \textcolor{keywordtype}{char} *\textcolor{keywordtype}{string},\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\mbox{\hyperlink{namespace_aws_aba4985a42b3b659ae878b3badd2f9ea9}{newitem}});}
+\DoxyCodeLine{264 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_ReplaceItemInObjectCaseSensitive(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\textcolor{keywordtype}{object},\textcolor{keyword}{const} \textcolor{keywordtype}{char} *\textcolor{keywordtype}{string},\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\mbox{\hyperlink{namespace_aws_aba4985a42b3b659ae878b3badd2f9ea9}{newitem}});}
+\DoxyCodeLine{265 }
+\DoxyCodeLine{266 \textcolor{comment}{/* Duplicate a cJSON item */}}
+\DoxyCodeLine{267 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *) cJSON\_Duplicate(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\mbox{\hyperlink{namespace_aws_a5770241d8828b8149af630ea3a1b3e94}{item}}, \mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}} \mbox{\hyperlink{namespace_aws_a936be87f05f76d9b95713b650c72c46c}{recurse}});}
+\DoxyCodeLine{268 \textcolor{comment}{/* Duplicate will create a new, identical cJSON item to the one you pass, in new memory that will}}
+\DoxyCodeLine{269 \textcolor{comment}{ * need to be released. With recurse!=0, it will duplicate any children connected to the item.}}
+\DoxyCodeLine{270 \textcolor{comment}{ * The item-\/>next and -\/>prev pointers are always zero on return from Duplicate. */}}
+\DoxyCodeLine{271 \textcolor{comment}{/* Recursively compare two cJSON items for equality. If either a or b is NULL or invalid, they will be considered unequal.}}
+\DoxyCodeLine{272 \textcolor{comment}{ * case\_sensitive determines if object keys are treated case sensitive (1) or case insensitive (0) */}}
+\DoxyCodeLine{273 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}}) cJSON\_Compare(\textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a63d22a0af7bbcae8152004baa4756a4d}{a}}, \textcolor{keyword}{const} \mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_ac5075b2ffccd87ab18c6a1151e3d7492}{b}}, \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}} \mbox{\hyperlink{namespace_aws_a0f7c77e8516309d57648237de18f5bc9}{case\_sensitive}});}
+\DoxyCodeLine{274 }
+\DoxyCodeLine{275 \textcolor{comment}{/* Minify a strings, remove blank characters(such as ' ', '\(\backslash\)t', '\(\backslash\)r', '\(\backslash\)n') from strings.}}
+\DoxyCodeLine{276 \textcolor{comment}{ * The input pointer json cannot point to a read-\/only address area, such as a string constant,}}
+\DoxyCodeLine{277 \textcolor{comment}{ * but should point to a readable and writable adress area. */}}
+\DoxyCodeLine{278 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\textcolor{keywordtype}{void}) cJSON\_Minify(\textcolor{keywordtype}{char} *\mbox{\hyperlink{namespace_aws_a3076bc67e26c850c1674abaecce578f4}{json}});}
+\DoxyCodeLine{279 }
+\DoxyCodeLine{280 \textcolor{comment}{/* Helper functions for creating and adding items to an object at the same time.}}
+\DoxyCodeLine{281 \textcolor{comment}{ * They return the added item or NULL on failure. */}}
+\DoxyCodeLine{282 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}}*) cJSON\_AddNullToObject(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \textcolor{keywordtype}{object}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a1b58e72d45c3d99eed5764f31b6e4141}{name}});}
+\DoxyCodeLine{283 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}}*) cJSON\_AddTrueToObject(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \textcolor{keywordtype}{object}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a1b58e72d45c3d99eed5764f31b6e4141}{name}});}
+\DoxyCodeLine{284 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}}*) cJSON\_AddFalseToObject(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \textcolor{keywordtype}{object}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a1b58e72d45c3d99eed5764f31b6e4141}{name}});}
+\DoxyCodeLine{285 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}}*) cJSON\_AddBoolToObject(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \textcolor{keywordtype}{object}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a1b58e72d45c3d99eed5764f31b6e4141}{name}}, \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_ae25be287ff4c494546ce21e78d16a660}{cJSON\_bool}} \textcolor{keywordtype}{boolean});}
+\DoxyCodeLine{286 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}}*) cJSON\_AddNumberToObject(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \textcolor{keywordtype}{object}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a1b58e72d45c3d99eed5764f31b6e4141}{name}}, \textcolor{keyword}{const} \textcolor{keywordtype}{double} \mbox{\hyperlink{namespace_aws_ad776c308b32b45d621462ea18bf9beff}{number}});}
+\DoxyCodeLine{287 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}}*) cJSON\_AddStringToObject(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \textcolor{keywordtype}{object}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a1b58e72d45c3d99eed5764f31b6e4141}{name}}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * \textcolor{keyword}{const} \textcolor{keywordtype}{string});}
+\DoxyCodeLine{288 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}}*) cJSON\_AddRawToObject(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \textcolor{keywordtype}{object}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a1b58e72d45c3d99eed5764f31b6e4141}{name}}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_ac0a622163df04341adbb9f93830970b3}{raw}});}
+\DoxyCodeLine{289 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}}*) cJSON\_AddObjectToObject(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \textcolor{keywordtype}{object}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a1b58e72d45c3d99eed5764f31b6e4141}{name}});}
+\DoxyCodeLine{290 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}}*) cJSON\_AddArrayToObject(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} * \textcolor{keyword}{const} \textcolor{keywordtype}{object}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * \textcolor{keyword}{const} \mbox{\hyperlink{namespace_aws_a1b58e72d45c3d99eed5764f31b6e4141}{name}});}
+\DoxyCodeLine{291 }
+\DoxyCodeLine{292 \textcolor{comment}{/* When assigning an integer value, it needs to be propagated to valuedouble too. */}}
+\DoxyCodeLine{293 \textcolor{preprocessor}{\#define cJSON\_SetIntValue(object, number) ((object) ? (object)-\/>valueint = (object)-\/>valuedouble = (number) : (number))}}
+\DoxyCodeLine{294 \textcolor{comment}{/* helper for the cJSON\_SetNumberValue macro */}}
+\DoxyCodeLine{295 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\textcolor{keywordtype}{double}) cJSON\_SetNumberHelper(\mbox{\hyperlink{namespace_aws_abe25c440448d4d9d5667369353012a2f}{cJSON}} *\textcolor{keywordtype}{object}, \textcolor{keywordtype}{double} \mbox{\hyperlink{namespace_aws_ad776c308b32b45d621462ea18bf9beff}{number}});}
+\DoxyCodeLine{296 \textcolor{preprocessor}{\#define cJSON\_SetNumberValue(object, number) ((object != NULL) ? cJSON\_SetNumberHelper(object, (double)number) : (number))}}
+\DoxyCodeLine{297 \textcolor{comment}{/* Change the valuestring of a cJSON\_String object, only takes effect when type of object is cJSON\_String */}}
+\DoxyCodeLine{298 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\textcolor{keywordtype}{char}*) cJSON\_SetValuestring(\mbox{\hyperlink{struct_aws_1_1c_j_s_o_n}{cJSON}} *\textcolor{keywordtype}{object}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} *\mbox{\hyperlink{namespace_aws_abf172d38b065484323926b01e35e9931}{valuestring}});}
+\DoxyCodeLine{299 }
+\DoxyCodeLine{300 \textcolor{comment}{/* Macro for iterating over an array or object */}}
+\DoxyCodeLine{301 \textcolor{preprocessor}{\#define cJSON\_ArrayForEach(element, array) for(element = (array != NULL) ? (array)-\/>child : NULL; element != NULL; element = element-\/>next)}}
+\DoxyCodeLine{302 }
+\DoxyCodeLine{303 \textcolor{comment}{/* malloc/free objects using the malloc/free functions that have been set with cJSON\_InitHooks */}}
+\DoxyCodeLine{304 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\textcolor{keywordtype}{void} *) cJSON\_malloc(\textcolor{keywordtype}{size\_t} size);}
+\DoxyCodeLine{305 \mbox{\hyperlink{namespace_aws_a93f7115ea681591a5ff4e16967115ea0}{CJSON\_PUBLIC}}(\textcolor{keywordtype}{void}) cJSON\_free(\textcolor{keywordtype}{void} *\textcolor{keywordtype}{object});}
+\DoxyCodeLine{306 }
+\DoxyCodeLine{307 \}}
+\DoxyCodeLine{308 }
+\DoxyCodeLine{309 \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}
