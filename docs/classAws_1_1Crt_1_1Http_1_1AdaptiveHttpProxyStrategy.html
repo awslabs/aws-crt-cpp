@@ -82,27 +82,212 @@ Inheritance diagram for Aws::Crt::Http::AdaptiveHttpProxyStrategy:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:aa26941958a07bdf54a1bde8485fa58ec"><td class="memItemLeft" align="right" valign="top"><a id="aa26941958a07bdf54a1bde8485fa58ec" name="aa26941958a07bdf54a1bde8485fa58ec"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>AdaptiveHttpProxyStrategy</b> (Allocator *allocator, const KerberosGetTokenFunction &amp;kerberosGetToken, const KerberosGetTokenFunction &amp;ntlmGetCredential, const NtlmGetTokenFunction &amp;ntlmGetToken)</td></tr>
+<tr class="memitem:aa26941958a07bdf54a1bde8485fa58ec"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classAws_1_1Crt_1_1Http_1_1AdaptiveHttpProxyStrategy.html#aa26941958a07bdf54a1bde8485fa58ec">AdaptiveHttpProxyStrategy</a> (Allocator *allocator, const KerberosGetTokenFunction &amp;kerberosGetToken, const KerberosGetTokenFunction &amp;ntlmGetCredential, const NtlmGetTokenFunction &amp;ntlmGetToken)</td></tr>
 <tr class="separator:aa26941958a07bdf54a1bde8485fa58ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a852bd301949015fb93558bfb100fceb6"><td class="memItemLeft" align="right" valign="top"><a id="a852bd301949015fb93558bfb100fceb6" name="a852bd301949015fb93558bfb100fceb6"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>SetStrategy</b> (struct aws_http_proxy_strategy *strategy)</td></tr>
+<tr class="memitem:a852bd301949015fb93558bfb100fceb6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classAws_1_1Crt_1_1Http_1_1AdaptiveHttpProxyStrategy.html#a852bd301949015fb93558bfb100fceb6">SetStrategy</a> (struct aws_http_proxy_strategy *strategy)</td></tr>
 <tr class="separator:a852bd301949015fb93558bfb100fceb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:a8cd2180262d6c4b5adfd2513414a0b02"><td class="memItemLeft" align="right" valign="top"><a id="a8cd2180262d6c4b5adfd2513414a0b02" name="a8cd2180262d6c4b5adfd2513414a0b02"></a>
-static struct aws_string *&#160;</td><td class="memItemRight" valign="bottom"><b>NtlmGetCredential</b> (void *user_data, int *error_code)</td></tr>
-<tr class="separator:a8cd2180262d6c4b5adfd2513414a0b02"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acacae3d2906623c14b82d9429ee3eb71"><td class="memItemLeft" align="right" valign="top"><a id="acacae3d2906623c14b82d9429ee3eb71" name="acacae3d2906623c14b82d9429ee3eb71"></a>
-static struct aws_string *&#160;</td><td class="memItemRight" valign="bottom"><b>KerberosGetToken</b> (void *user_data, int *error_code)</td></tr>
-<tr class="separator:acacae3d2906623c14b82d9429ee3eb71"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4bb460e57c8134bccd889cf81a4077f9"><td class="memItemLeft" align="right" valign="top"><a id="a4bb460e57c8134bccd889cf81a4077f9" name="a4bb460e57c8134bccd889cf81a4077f9"></a>
-static struct aws_string *&#160;</td><td class="memItemRight" valign="bottom"><b>NtlmGetToken</b> (void *user_data, const struct aws_byte_cursor *challenge_cursor, int *error_code)</td></tr>
-<tr class="separator:a4bb460e57c8134bccd889cf81a4077f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9fd1354e4ccf0c6897d7b25ff21f5782"><td class="memItemLeft" align="right" valign="top">static struct aws_string *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classAws_1_1Crt_1_1Http_1_1AdaptiveHttpProxyStrategy.html#a9fd1354e4ccf0c6897d7b25ff21f5782">NtlmGetCredential</a> (void *user_data, int *error_code)</td></tr>
+<tr class="separator:a9fd1354e4ccf0c6897d7b25ff21f5782"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6225b4b90825d41d3317595903629902"><td class="memItemLeft" align="right" valign="top">static struct aws_string *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classAws_1_1Crt_1_1Http_1_1AdaptiveHttpProxyStrategy.html#a6225b4b90825d41d3317595903629902">KerberosGetToken</a> (void *user_data, int *error_code)</td></tr>
+<tr class="separator:a6225b4b90825d41d3317595903629902"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae8460a60ce361ebf62fc186bba74af43"><td class="memItemLeft" align="right" valign="top">static struct aws_string *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classAws_1_1Crt_1_1Http_1_1AdaptiveHttpProxyStrategy.html#ae8460a60ce361ebf62fc186bba74af43">NtlmGetToken</a> (void *user_data, const struct aws_byte_cursor *challenge_cursor, int *error_code)</td></tr>
+<tr class="separator:ae8460a60ce361ebf62fc186bba74af43"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="aa26941958a07bdf54a1bde8485fa58ec" name="aa26941958a07bdf54a1bde8485fa58ec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa26941958a07bdf54a1bde8485fa58ec">&#9670;&nbsp;</a></span>AdaptiveHttpProxyStrategy()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Aws::Crt::Http::AdaptiveHttpProxyStrategy::AdaptiveHttpProxyStrategy </td>
+          <td>(</td>
+          <td class="paramtype">Allocator *&#160;</td>
+          <td class="paramname"><em>allocator</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const KerberosGetTokenFunction &amp;&#160;</td>
+          <td class="paramname"><em>kerberosGetToken</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const KerberosGetTokenFunction &amp;&#160;</td>
+          <td class="paramname"><em>ntlmGetCredential</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const NtlmGetTokenFunction &amp;&#160;</td>
+          <td class="paramname"><em>ntlmGetToken</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a6225b4b90825d41d3317595903629902" name="a6225b4b90825d41d3317595903629902"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6225b4b90825d41d3317595903629902">&#9670;&nbsp;</a></span>KerberosGetToken()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static struct aws_string * Aws::Crt::Http::AdaptiveHttpProxyStrategy::KerberosGetToken </td>
+          <td>(</td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>user_data</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int *&#160;</td>
+          <td class="paramname"><em>error_code</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9fd1354e4ccf0c6897d7b25ff21f5782" name="a9fd1354e4ccf0c6897d7b25ff21f5782"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9fd1354e4ccf0c6897d7b25ff21f5782">&#9670;&nbsp;</a></span>NtlmGetCredential()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static struct aws_string * Aws::Crt::Http::AdaptiveHttpProxyStrategy::NtlmGetCredential </td>
+          <td>(</td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>user_data</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int *&#160;</td>
+          <td class="paramname"><em>error_code</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae8460a60ce361ebf62fc186bba74af43" name="ae8460a60ce361ebf62fc186bba74af43"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae8460a60ce361ebf62fc186bba74af43">&#9670;&nbsp;</a></span>NtlmGetToken()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static struct aws_string * Aws::Crt::Http::AdaptiveHttpProxyStrategy::NtlmGetToken </td>
+          <td>(</td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>user_data</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const struct aws_byte_cursor *&#160;</td>
+          <td class="paramname"><em>challenge_cursor</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int *&#160;</td>
+          <td class="paramname"><em>error_code</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a852bd301949015fb93558bfb100fceb6" name="a852bd301949015fb93558bfb100fceb6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a852bd301949015fb93558bfb100fceb6">&#9670;&nbsp;</a></span>SetStrategy()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Aws::Crt::Http::AdaptiveHttpProxyStrategy::SetStrategy </td>
+          <td>(</td>
+          <td class="paramtype">struct aws_http_proxy_strategy *&#160;</td>
+          <td class="paramname"><em>strategy</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>/local/home/ilevyor/dev/aws-crt-cpp/source/http/<a class="el" href="HttpProxyStrategy_8cpp.html">HttpProxyStrategy.cpp</a></li>
+<li>/Users/dengket/project/crts/aws-crt-cpp/source/http/<a class="el" href="HttpProxyStrategy_8cpp.html">HttpProxyStrategy.cpp</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
