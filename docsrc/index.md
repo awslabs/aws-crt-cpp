@@ -2,4 +2,15 @@
 
 C++ bindings for the AWS Common Runtime.
 
-Github: https://github.com/awslabs/aws-crt-cpp 
+Github: https://github.com/awslabs/aws-crt-cpp
+
+### Usage
+
+- Pre-request: Make sure you have doxygen and python installed.
+
+- Steps:
+  - Delete docs/ folder first.
+  - Change directory to docsrc/
+  - run commands `python ./docs_gen_script.py`. The docs will be generated to docs/
+
+Note: Check your doxygen version, if you have a different version with the one in docsrc/Doxyfile (First line in the file), please update the Doxyfile as well. Also, check the generate html files from browser as a sanity check before you publish the documentation.
