@@ -1,5 +1,5 @@
-C++ wrapper around the aws-\/c-\/$\ast$ libraries. Provides Cross-\/\+Platform Transport Protocols and SSL/\+TLS implementations for C++.\hypertarget{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md10}{}\doxysubsection{Documentation}\label{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md10}
-\href{https://awslabs.github.io/aws-crt-cpp/}{\texttt{ https\+://awslabs.\+github.\+io/aws-\/crt-\/cpp/}}\hypertarget{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md11}{}\doxysubsection{Currently Included\+:}\label{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md11}
+C++ wrapper around the aws-\/c-\/$\ast$ libraries. Provides Cross-\/\+Platform Transport Protocols and SSL/\+TLS implementations for C++.\hypertarget{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md11}{}\doxysubsection{Documentation}\label{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md11}
+\href{https://awslabs.github.io/aws-crt-cpp/}{\texttt{ https\+://awslabs.\+github.\+io/aws-\/crt-\/cpp/}}\hypertarget{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md12}{}\doxysubsection{Currently Included\+:}\label{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md12}
 
 \begin{DoxyItemize}
 \item aws-\/c-\/common\+: Cross-\/platform primitives and data structures.
@@ -11,12 +11,12 @@ C++ wrapper around the aws-\/c-\/$\ast$ libraries. Provides Cross-\/\+Platform T
 \item aws-\/c-\/event-\/stream\+: C99 implementation of the vnd.\+amazon.\+event-\/stream content-\/type.
 \end{DoxyItemize}
 
-More protocols and utilities are coming soon, so stay tuned.\hypertarget{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md12}{}\doxysection{Building}\label{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md12}
+More protocols and utilities are coming soon, so stay tuned.\hypertarget{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md13}{}\doxysection{Building}\label{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md13}
 The C99 libraries are already included for your convenience as submodules. You should perform a recursive clone {\ttfamily git clone -\/-\/recursive} or initialize the submodules via {\ttfamily git submodule update -\/-\/init}. These dependencies are compiled by CMake as part of the build process.
 
-If you want to manage these dependencies manually (e.\+g. you\textquotesingle{}re using them in other projects), configure CMake with {\ttfamily -\/DBUILD\+\_\+\+DEPS=OFF} and {\ttfamily -\/DCMAKE\+\_\+\+PREFIX\+\_\+\+PATH=\texorpdfstring{$<$}{<}install\texorpdfstring{$>$}{>}} pointing to the absolute path where you have them installed.\hypertarget{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md13}{}\doxysubsection{MSVC}\label{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md13}
-If you want to use a statically linked MSVCRT (/\+MT, /\+MTd), you can add {\ttfamily -\/DSTATIC\+\_\+\+CRT=ON} to your cmake configuration.\hypertarget{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md14}{}\doxysection{Dependencies?}\label{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md14}
-There are no non-\/\+OS dependencies that AWS does not own, maintain, and ship.\hypertarget{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md15}{}\doxysection{Common Usage}\label{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md15}
+If you want to manage these dependencies manually (e.\+g. you\textquotesingle{}re using them in other projects), configure CMake with {\ttfamily -\/DBUILD\+\_\+\+DEPS=OFF} and {\ttfamily -\/DCMAKE\+\_\+\+PREFIX\+\_\+\+PATH=\texorpdfstring{$<$}{<}install\texorpdfstring{$>$}{>}} pointing to the absolute path where you have them installed.\hypertarget{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md14}{}\doxysubsection{MSVC}\label{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md14}
+If you want to use a statically linked MSVCRT (/\+MT, /\+MTd), you can add {\ttfamily -\/DSTATIC\+\_\+\+CRT=ON} to your cmake configuration.\hypertarget{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md15}{}\doxysection{Dependencies?}\label{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md15}
+There are no non-\/\+OS dependencies that AWS does not own, maintain, and ship.\hypertarget{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md16}{}\doxysection{Common Usage}\label{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md16}
 To do anything with IO, you\textquotesingle{}ll need to create a few objects that will be used by the rest of the library.
 
 For example\+:
@@ -81,7 +81,7 @@ If you plan on using TLS, you will need a Tls\+Context. These are NOT CHEAP, so 
 \end{DoxyCode}
 
 
-Lastly, you will need a client or server bootstrap to use a client or server protocol implementation. Since everything is non-\/blocking and event driven, this handles most of the \char`\"{}callback hell\char`\"{} inherent in the design. Assuming you aren\textquotesingle{}t partitioning threads for particular use-\/cases, you can have a single instance of this that you pass to multiple clients.\hypertarget{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md16}{}\doxysection{Mac-\/\+Only TLS Behavior}\label{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md16}
+Lastly, you will need a client or server bootstrap to use a client or server protocol implementation. Since everything is non-\/blocking and event driven, this handles most of the \char`\"{}callback hell\char`\"{} inherent in the design. Assuming you aren\textquotesingle{}t partitioning threads for particular use-\/cases, you can have a single instance of this that you pass to multiple clients.\hypertarget{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md17}{}\doxysection{Mac-\/\+Only TLS Behavior}\label{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md17}
 Please note that on Mac, once a private key is used with a certificate, that certificate-\/key pair is imported into the Mac Keychain. All subsequent uses of that certificate will use the stored private key and ignore anything passed in programmatically. Beginning in v0.\+8.\+10, when a stored private key from the Keychain is used, the following will be logged at the \char`\"{}info\char`\"{} log level\+:
 
 
@@ -89,5 +89,5 @@ Please note that on Mac, once a private key is used with a certificate, that cer
 \DoxyCodeLine{static: certificate has an existing certificate-\/key pair that was previously imported into the Keychain.  Using key from Keychain instead of the one provided.}
 
 \end{DoxyCode}
-\hypertarget{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md17}{}\doxysection{License}\label{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md17}
+\hypertarget{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md18}{}\doxysection{License}\label{md___users_dengket_project_crts_aws_crt_cpp__r_e_a_d_m_e_autotoc_md18}
 This library is licensed under the Apache 2.\+0 License. 

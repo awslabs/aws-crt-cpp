@@ -18,10 +18,11 @@ var searchData=
   ['uri_15',['Uri',['../class_aws_1_1_crt_1_1_io_1_1_uri.html#a259f158b302b994a0de035170d340351',1,'Aws::Crt::Io::Uri']]],
   ['uri_2ecpp_16',['Uri.cpp',['../_uri_8cpp.html',1,'']]],
   ['uri_2eh_17',['Uri.h',['../_uri_8h.html',1,'']]],
-  ['userdata_18',['userData',['../struct_aws_1_1_crt_1_1_imds_1_1_wrapped_callback_args.html#a6ba7e398f894cd87c73387375cbe238b',1,'Aws::Crt::Imds::WrappedCallbackArgs']]],
-  ['username_19',['Username',['../struct_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy_basic_auth_config.html#a2528ccd629d958bf29706df77c3cd8ad',1,'Aws::Crt::Http::HttpProxyStrategyBasicAuthConfig']]],
-  ['utf16_5fliteral_5fto_5futf8_20',['utf16_literal_to_utf8',['../namespace_aws.html#a1ed81e199cb5cb3b7fa6efe7c3c435c8',1,'Aws']]],
-  ['uuid_21',['UUID',['../class_aws_1_1_crt_1_1_u_u_i_d.html',1,'Aws::Crt::UUID'],['../class_aws_1_1_crt_1_1_u_u_i_d.html#a31c6cbf56c2886b724b09b4832855412',1,'Aws::Crt::UUID::UUID() noexcept'],['../class_aws_1_1_crt_1_1_u_u_i_d.html#ac6b63d29092594d332d1239477398421',1,'Aws::Crt::UUID::UUID(const String &amp;str) noexcept']]],
-  ['uuid_2ecpp_22',['UUID.cpp',['../_u_u_i_d_8cpp.html',1,'']]],
-  ['uuid_2eh_23',['UUID.h',['../_u_u_i_d_8h.html',1,'']]]
+  ['usage_18',['Usage',['../md__r_e_a_d_m_e.html',1,'']]],
+  ['userdata_19',['userData',['../struct_aws_1_1_crt_1_1_imds_1_1_wrapped_callback_args.html#a6ba7e398f894cd87c73387375cbe238b',1,'Aws::Crt::Imds::WrappedCallbackArgs']]],
+  ['username_20',['Username',['../struct_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy_basic_auth_config.html#a2528ccd629d958bf29706df77c3cd8ad',1,'Aws::Crt::Http::HttpProxyStrategyBasicAuthConfig']]],
+  ['utf16_5fliteral_5fto_5futf8_21',['utf16_literal_to_utf8',['../namespace_aws.html#a1ed81e199cb5cb3b7fa6efe7c3c435c8',1,'Aws']]],
+  ['uuid_22',['UUID',['../class_aws_1_1_crt_1_1_u_u_i_d.html',1,'Aws::Crt::UUID'],['../class_aws_1_1_crt_1_1_u_u_i_d.html#a31c6cbf56c2886b724b09b4832855412',1,'Aws::Crt::UUID::UUID() noexcept'],['../class_aws_1_1_crt_1_1_u_u_i_d.html#ac6b63d29092594d332d1239477398421',1,'Aws::Crt::UUID::UUID(const String &amp;str) noexcept']]],
+  ['uuid_2ecpp_23',['UUID.cpp',['../_u_u_i_d_8cpp.html',1,'']]],
+  ['uuid_2eh_24',['UUID.h',['../_u_u_i_d_8h.html',1,'']]]
 ];

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['welcome_20to_20awscrt_27s_20documentation_21_0',['Welcome to awscrt&apos;s documentation!',['../index.html',1,'']]]
+  ['usage_0',['Usage',['../md__r_e_a_d_m_e.html',1,'']]]
 ];
