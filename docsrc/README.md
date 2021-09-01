@@ -3,7 +3,6 @@
 - Pre-request: Make sure you have doxygen and python installed.
 
 - Steps:
-  - Delete docs/ folder first.
   - Change directory to docsrc/
   - run commands `python ./docs_gen_script.py`. The docs will be generated to docs/
 
