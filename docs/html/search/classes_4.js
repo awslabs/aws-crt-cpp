@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['elasticurlctx_0',['ElasticurlCtx',['../struct_elasticurl_ctx.html',1,'']]],
-  ['error_1',['error',['../structerror.html',1,'']]],
-  ['eventloopgroup_2',['EventLoopGroup',['../class_aws_1_1_crt_1_1_io_1_1_event_loop_group.html',1,'Aws::Crt::Io']]]
+  ['error_0',['error',['../structerror.html',1,'']]],
+  ['eventloopgroup_1',['EventLoopGroup',['../class_aws_1_1_crt_1_1_io_1_1_event_loop_group.html',1,'Aws::Crt::Io']]]
 ];

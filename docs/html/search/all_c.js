@@ -7,5 +7,5 @@ var searchData=
   ['length_4',['length',['../struct_aws_1_1parse__buffer.html#a6a110eec55151780daadb7cbfbe77791',1,'Aws::parse_buffer::length()'],['../struct_aws_1_1printbuffer.html#a99f3f5fe5ee07cdfe501b5192ef5f868',1,'Aws::printbuffer::length()'],['../class_aws_1_1_crt_1_1basic__string__view.html#af6e611d7026be436ea41468e158304f4',1,'Aws::Crt::basic_string_view::length()'],['../namespace_aws.html#a52c438299b08516e5d87b48ded603a6e',1,'Aws::length()']]],
   ['list_5',['List',['../namespace_aws_1_1_crt.html#a700a767e9c8e9c2564c37e379beb91a8',1,'Aws::Crt']]],
   ['local_6',['Local',['../namespace_aws_1_1_crt_1_1_io.html#a12c31e83beb297296621c8a361b58f8ea509820290d57f333403f490dde7316f4',1,'Aws::Crt::Io']]],
-  ['loglevel_7',['LogLevel',['../struct_elasticurl_ctx.html#afbd47f5a93ff60e8a01f8fcc66fd748e',1,'ElasticurlCtx::LogLevel()'],['../namespace_aws_1_1_crt.html#a38935c4922a7101640006354d741ffeb',1,'Aws::Crt::LogLevel()']]]
+  ['loglevel_7',['LogLevel',['../namespace_aws_1_1_crt.html#a38935c4922a7101640006354d741ffeb',1,'Aws::Crt']]]
 ];
