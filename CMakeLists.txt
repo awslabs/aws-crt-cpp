@@ -36,6 +36,8 @@ option(USE_OPENSSL "Set this if you want to use your system's OpenSSL 1.0.2/1.1.
 #
 option(ENABLE_PROXY_INTEGRATION_TESTS "Whether or not to build and run the proxy integration tests that rely on a proxy server installed and running locally" OFF)
 
+option(ENABLE_S3_CLIENT "Set the S3 client to be built" ON)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(AwsCheckHeadersCxx)
 include(CTest)
@@ -142,7 +144,10 @@ if (BUILD_DEPS)
     add_subdirectory(crt/aws-c-mqtt)
     add_subdirectory(crt/aws-checksums)
     add_subdirectory(crt/aws-c-event-stream)
-    add_subdirectory(crt/aws-c-s3)
+    if (ENABLE_S3_CLIENT)
+        set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -DENABLE_S3)
+        add_subdirectory(crt/aws-c-s3)
+    endif()
     set(BUILD_TESTING ${BUILD_TESTING_PREV})
 else()
     include(AwsFindPackage)
@@ -311,7 +316,9 @@ aws_use_package(aws-c-common)
 aws_use_package(aws-c-io)
 aws_use_package(aws-checksums)
 aws_use_package(aws-c-event-stream)
-aws_use_package(aws-c-s3)
+if (ENABLE_S3_CLIENT)
+    aws_use_package(aws-c-s3)
+endif()
 
 target_link_libraries(${PROJECT_NAME} ${DEP_AWS_LIBS})
 
