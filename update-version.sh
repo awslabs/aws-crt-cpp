@@ -22,8 +22,18 @@ else
     git add CMakeLists.txt
     git commit -m "Updated version to ${version}"
 
+    # awkward - we need to snip the old tag message and then force overwrite the tag with the new commit but
+    # preserving the old message
+    tag_message=$(git tag -l -n20 ${version} | sed -n "s/${version} \(.*\)/\1/p")
+    echo "Old tag message is: ${tag_message}"
+
+    # delete the old tag on github
     git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" :refs/tags/${version}
-    git tag -fa ${version}
+
+    # create new tag on latest commit with old message
+    git tag -f ${version} -m "${tag_message}"
+
+    # push new tag and commit to github
     git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" main --force --tags
 fi
 
