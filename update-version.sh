@@ -10,7 +10,7 @@ GITHUB_TOKEN=$1
 
 pushd $(dirname $0) > /dev/null
 
-version=$(git describe --tags --abbrev=0)
+version=$(git tag --sort=-creatordate | head -n1)
 sed --in-place -r -e "s/set\\(AWS_CRT_CPP_VERSION \".+\"\\)/set(AWS_CRT_CPP_VERSION \"${version}\")/" CMakeLists.txt
 echo "Updating AWS_CRT_CPP_VERSION default to ${version}"
 
@@ -21,8 +21,10 @@ else
     git config --local user.name "GitHub Actions"
     git add CMakeLists.txt
     git commit -m "Updated version to ${version}"
-    git tag -f ${version}
-    git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" --force --tags
+
+    git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" :refs/tags/${version}
+    git tag -fa ${version}
+    git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" main --force --tags
 fi
 
 popd > /dev/null
