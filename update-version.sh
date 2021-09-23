@@ -10,6 +10,7 @@ GITHUB_TOKEN=$1
 
 pushd $(dirname $0) > /dev/null
 
+git checkout main
 version=$(git tag --sort=-creatordate | head -n1)
 sed --in-place -r -e "s/set\\(AWS_CRT_CPP_VERSION \".+\"\\)/set(AWS_CRT_CPP_VERSION \"${version}\")/" CMakeLists.txt
 echo "Updating AWS_CRT_CPP_VERSION default to ${version}"
@@ -27,14 +28,17 @@ else
     tag_message=$(git tag -l -n20 ${version} | sed -n "s/${version} \(.*\)/\1/p")
     echo "Old tag message is: ${tag_message}"
 
+    # push the commit
+    git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" --force main
+
     # delete the old tag on github
     #git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" :refs/tags/${version}
 
     # create new tag on latest commit with old message
     git tag -f ${version} -m "${tag_message}"
 
-    # push new tag and commit to github
-    git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" --force --tags
+    # push new tag to github
+    git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" --tags
 fi
 
 popd > /dev/null
