@@ -36,10 +36,12 @@ else
     # preserving the old message
     # the release message seems to be best retrievable by grabbing the last lines of the release view from the
     # github cli
+    # so far, this hasn't been very precise.  If you're seeing '--' or missing lines from the release notes
+    # then there's probably a bug here in the clip logic, but it's not going to be as simple as just a numeric
+    # adjustment on the line count unfortunately.
     release_line_count=$(gh release view ${version} | wc -l)
-    let release_message_lines=release_line_count-7
+    let release_message_lines=release_line_count-8
     tag_message=$(gh release view ${version} | tail -n ${release_message_lines})
-    #tag_message=$(git tag -l -n20 ${version} | sed -n "s/${version} \(.*\)/\1/p")
     echo "Old release message is: ${tag_message}"
 
     # push the commit
