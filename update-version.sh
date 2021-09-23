@@ -8,6 +8,9 @@ exec 1>&2
 GITHUB_TOKEN=$1
 [ -n "$GITHUB_TOKEN" ]
 
+TAG_PR_TOKEN=$2
+[ -n "$TAG_PR_TOKEN" ]
+
 pushd $(dirname $0) > /dev/null
 
 git checkout main
