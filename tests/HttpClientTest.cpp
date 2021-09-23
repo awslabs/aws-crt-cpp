@@ -84,7 +84,7 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, Byt
         }
 
         Aws::Crt::Io::SocketOptions socketOptions;
-        socketOptions.SetConnectTimeoutMs(1000);
+        socketOptions.SetConnectTimeoutMs(5000);
 
         Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
         ASSERT_TRUE(eventLoopGroup);
