@@ -60,6 +60,10 @@ else
 
     # push new tag to github
     git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" --tags
+
+    gh release delete -y ${version}
+    gh release delete -y ${version}
+    gh release create ${version} --title "${version}" -p -n "${tag_message}"
 fi
 
 popd > /dev/null
