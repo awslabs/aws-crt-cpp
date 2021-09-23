@@ -30,15 +30,21 @@ else
     git add CMakeLists.txt
     git commit -m "Updated version to ${version}"
 
-    # awkward - we need to snip the old tag message and then force overwrite the tag with the new commit but
+    echo $TAG_PR_TOKEN | gh auth login --with-token
+
+    # awkward - we need to snip the old release message and then force overwrite the tag with the new commit but
     # preserving the old message
-    tag_message=$(git tag -l -n20 ${version} | sed -n "s/${version} \(.*\)/\1/p")
-    echo "Old tag message is: ${tag_message}"
+    # the release message seems to be best retrievable by grabbing the last lines of the release view from the
+    # github cli
+    release_line_count=$(gh release view ${version} | wc -l)
+    let release_message_lines=release_line_count-7
+    tag_message=$(gh release view ${version} | tail -n ${release_message_lines})
+    #tag_message=$(git tag -l -n20 ${version} | sed -n "s/${version} \(.*\)/\1/p")
+    echo "Old release message is: ${tag_message}"
 
     # push the commit
     git push -u "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" ${version_branch}
 
-    echo $TAG_PR_TOKEN | gh auth login --with-token
     gh pr create --title "AutoTag PR for ${version}" --body "AutoTag PR for ${version}" --head ${version_branch}
     gh pr merge --admin --squash
 
