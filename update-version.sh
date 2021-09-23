@@ -36,11 +36,11 @@ else
     git push -u "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" ${version_branch}
 
     echo $GITHUB_TOKEN | gh auth login --with-token
-    gh pr create --title "AutoTag PR for ${version}" --body "AutoTag PR for ${version}" --head
+    gh pr create --title "AutoTag PR for ${version}" --body "AutoTag PR for ${version}" --head ${version_branch}
     gh pr merge --admin --squash
 
     git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" --delete ${version_branch}
-    
+
     git fetch
     git checkout main
     git pull "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" main
