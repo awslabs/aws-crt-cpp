@@ -34,7 +34,7 @@ else
     git tag -f ${version} -m "${tag_message}"
 
     # push new tag and commit to github
-    git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" main --force --tags
+    git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" --force --tags
 fi
 
 popd > /dev/null
