@@ -28,13 +28,13 @@ else
     echo "Old tag message is: ${tag_message}"
 
     # delete the old tag on github
-    git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" :refs/tags/${version}
+    #git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" :refs/tags/${version}
 
     # create new tag on latest commit with old message
     git tag -f ${version} -m "${tag_message}"
 
     # push new tag and commit to github
-    git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" main --force --tags
+    git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" --force --tags
 fi
 
 popd > /dev/null
