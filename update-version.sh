@@ -53,6 +53,7 @@ else
     gh pr create --title "AutoTag PR for ${version}" --body "AutoTag PR for ${version}" --head ${version_branch}
     gh pr merge --admin --squash
 
+    # not sure if this is necessary but it works so
     git fetch
     git checkout main
     git pull "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" main
@@ -66,6 +67,7 @@ else
     # push new tag to github
     git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" --tags
 
+    # now delete and recreate the release on the updated tag
     gh release delete -y ${version}
     gh release create ${version} --title "${title_value}" -p -n "${tag_message}"
 fi
