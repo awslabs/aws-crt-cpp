@@ -50,7 +50,6 @@ else
     gh pr create --title "AutoTag PR for ${version}" --body "AutoTag PR for ${version}" --head ${version_branch}
 
     # this requires more permissions than the bot token currently has
-    # todo: can we update the bot token so that my pat isn't necessary?
     gh pr merge --admin --squash
 
     # update local state with the merged pr
