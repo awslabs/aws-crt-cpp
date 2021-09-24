@@ -89,6 +89,7 @@ namespace Aws
                     const char *pkcs12_pwd,
                     Allocator *allocator = g_allocator) noexcept;
 
+#if !defined(AWS_OS_IOS)
                 /**
                  * By default the certificates and private keys are stored in the default keychain
                  * of the account of the process. If you instead wish to provide your own keychain
@@ -96,6 +97,8 @@ namespace Aws
                  * NOTE: The password of your keychain must be empty.
                  */
                 bool SetKeychainPath(ByteCursor &keychain_path) noexcept;
+#endif /* !AWS_OS_IOS */
+
 #endif
 
 #ifdef _WIN32
