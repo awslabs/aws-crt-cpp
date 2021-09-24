@@ -13,7 +13,10 @@ TAG_PR_TOKEN=$2
 
 pushd $(dirname $0) > /dev/null
 
+git fetch --tags
 git checkout main
+git pull "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" main
+git log -n 5
 
 version=$(git tag --sort=-creatordate | head -n1)
 sed --in-place -r -e "s/set\\(AWS_CRT_CPP_VERSION \".+\"\\)/set(AWS_CRT_CPP_VERSION \"${version}\")/" CMakeLists.txt
@@ -53,12 +56,19 @@ else
     gh pr create --title "AutoTag PR for ${version}" --body "AutoTag PR for ${version}" --head ${version_branch}
     gh pr merge --admin --squash
 
-    # not sure if this is necessary but it works so
+    # not sure if this is necessary
     git fetch
     git checkout main
     git pull "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" main
 
-    # delete the old tag on github
+    echo "Current state:"
+    git log -n 5
+
+    # delete old release
+    gh release delete -y ${version}
+
+    # delete the old tag
+    git tag -d ${version}
     git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" :refs/tags/${version}
 
     # create new tag on latest commit with old message
@@ -67,8 +77,7 @@ else
     # push new tag to github
     git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" --tags
 
-    # now delete and recreate the release on the updated tag
-    gh release delete -y ${version}
+    # now recreate the release on the updated tag
     gh release create ${version} --title "${title_value}" -p -n "${tag_message}"
 fi
 
