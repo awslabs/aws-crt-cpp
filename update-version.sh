@@ -42,6 +42,9 @@ else
     release_line_count=$(gh release view ${version} | wc -l)
     let release_message_lines=release_line_count-8
     tag_message=$(gh release view ${version} | tail -n ${release_message_lines})
+    title_line=$(gh release view ${version} | head -n 1)
+    title_value=$(echo $title_line | sed -n "s/title: \(.*\)/\1/p")
+    echo "Old release title is: ${title_value}"
     echo "Old release message is: ${tag_message}"
 
     # push the commit
@@ -64,7 +67,7 @@ else
     git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" --tags
 
     gh release delete -y ${version}
-    gh release create ${version} --title "${version}" -p -n "${tag_message}"
+    gh release create ${version} --title "${title_value}" -p -n "${tag_message}"
 fi
 
 popd > /dev/null
