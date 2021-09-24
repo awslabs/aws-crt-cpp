@@ -13,16 +13,14 @@ TAG_PR_TOKEN=$2
 
 pushd $(dirname $0) > /dev/null
 
-if git fetch --tags ; then
-    echo "Pulled tags"
-else
-    echo "Failed to pull tags, this action was triggered by release recreation and can be ignored"
-    exit 0
-fi
+#if git fetch --tags ; then
+#    echo "Pulled tags"
+#else
+#    echo "Failed to pull tags, this action was triggered by release recreation and can be ignored"
+#    exit 0
+#fi
 
 git checkout main
-git pull "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" main
-git log -n 5
 
 version=$(git describe --tags --abbrev=0)
 sed --in-place -r -e "s/set\\(AWS_CRT_CPP_VERSION \".+\"\\)/set(AWS_CRT_CPP_VERSION \"${version}\")/" CMakeLists.txt
@@ -60,15 +58,15 @@ else
     git push -u "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" ${version_branch}
 
     gh pr create --title "AutoTag PR for ${version}" --body "AutoTag PR for ${version}" --head ${version_branch}
+
+    # this requires more permissions than the bot token currently has
+    # todo: can we update the bot token so that my pat isn't necessary?
     gh pr merge --admin --squash
 
-    # not sure if this is necessary
+    # update local state with the merged pr
     git fetch
     git checkout main
     git pull "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" main
-
-    echo "Current state:"
-    git log -n 5
 
     # delete old release
     gh release delete -y ${version}
@@ -85,10 +83,6 @@ else
 
     # now recreate the release on the updated tag
     gh release create ${version} --title "${title_value}" -p -n "${tag_message}"
-
-    git fetch
-    git pull origin main
-    git log -n 5
 fi
 
 popd > /dev/null
