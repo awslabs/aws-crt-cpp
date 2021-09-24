@@ -24,7 +24,7 @@ git checkout main
 git pull "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" main
 git log -n 5
 
-version=$(git tag --sort=-creatordate | head -n1)
+version=$(git describe --tags --abbrev=0)
 sed --in-place -r -e "s/set\\(AWS_CRT_CPP_VERSION \".+\"\\)/set(AWS_CRT_CPP_VERSION \"${version}\")/" CMakeLists.txt
 echo "Updating AWS_CRT_CPP_VERSION default to ${version}"
 
