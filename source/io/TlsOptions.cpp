@@ -111,7 +111,7 @@ namespace Aws
                 AWS_ASSERT(m_isInit);
                 return aws_tls_ctx_options_set_keychain_path(&m_options, &keychain_path) == 0;
             }
-#endif /* AWS_OS_APPLE */
+#endif /* AWS_OS_MACOS */
 
 #ifdef _WIN32
             TlsContextOptions TlsContextOptions::InitClientWithMtlsSystemPath(
