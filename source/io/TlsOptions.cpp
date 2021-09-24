@@ -90,7 +90,7 @@ namespace Aws
                 return ctxOptions;
             }
 #endif /* !AWS_OS_IOS */
-#if defined(AWS_OS_APPLE)
+#if defined(AWS_OS_MACOS)
             TlsContextOptions TlsContextOptions::InitClientWithMtlsPkcs12(
                 const char *pkcs12Path,
                 const char *pkcs12Pwd,
