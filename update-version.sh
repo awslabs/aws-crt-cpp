@@ -13,13 +13,6 @@ TAG_PR_TOKEN=$2
 
 pushd $(dirname $0) > /dev/null
 
-#if git fetch --tags ; then
-#    echo "Pulled tags"
-#else
-#    echo "Failed to pull tags, this action was triggered by release recreation and can be ignored"
-#    exit 0
-#fi
-
 git checkout main
 
 version=$(git describe --tags --abbrev=0)
@@ -43,9 +36,6 @@ else
     # preserving the old message
     # the release message seems to be best retrievable by grabbing the last lines of the release view from the
     # github cli
-    # so far, this hasn't been very precise.  If you're seeing '--' or missing lines from the release notes
-    # then there's probably a bug here in the clip logic, but it's not going to be as simple as just a numeric
-    # adjustment on the line count unfortunately.
     release_line_count=$(gh release view ${version} | wc -l)
     let release_message_lines=release_line_count-8
     tag_message=$(gh release view ${version} | tail -n ${release_message_lines})
