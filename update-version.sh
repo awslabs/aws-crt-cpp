@@ -13,6 +13,13 @@ TAG_PR_TOKEN=$2
 
 pushd $(dirname $0) > /dev/null
 
+if git fetch --tags ; then
+    echo "Pulled tags"
+else
+    echo "Failed to pull tags, this action was triggered by release recreation and can be ignored"
+    exit 0
+fi
+
 git checkout main
 git pull "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" main
 git log -n 5
