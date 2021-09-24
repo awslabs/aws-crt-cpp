@@ -13,7 +13,6 @@ TAG_PR_TOKEN=$2
 
 pushd $(dirname $0) > /dev/null
 
-git fetch --tags
 git checkout main
 git pull "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/awslabs/aws-crt-cpp.git" main
 git log -n 5
@@ -79,6 +78,10 @@ else
 
     # now recreate the release on the updated tag
     gh release create ${version} --title "${title_value}" -p -n "${tag_message}"
+
+    git fetch
+    git pull origin main
+    git log -n 5
 fi
 
 popd > /dev/null
