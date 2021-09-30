@@ -99,6 +99,7 @@ jobs:
         docker run --env GITHUB_REF $DOCKER_IMAGE --version=${BUILDER_VERSION} build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBYO_CRYPTO=ON
 
   linux-shared-libs:
+    runs-on: ubuntu-latest
     steps:
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
     - name: Build ${{ env.PACKAGE_NAME }}
@@ -109,6 +110,7 @@ jobs:
         docker run --env GITHUB_REF $DOCKER_IMAGE --version=${BUILDER_VERSION} build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBUILD_SHARED_LIBS=ON
 
   linux-no-cpu-extensions:
+    runs-on: ubuntu-latest
     steps:
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
     - name: Build ${{ env.PACKAGE_NAME }}
