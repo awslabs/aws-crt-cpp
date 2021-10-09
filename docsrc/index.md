@@ -2,4 +2,4 @@
 
 C++ bindings for the AWS Common Runtime.
 
-Github: https://github.com/awslabs/aws-crt-cpp 
+Github: https://github.com/awslabs/aws-crt-cpp

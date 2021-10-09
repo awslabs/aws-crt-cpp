@@ -10,9 +10,9 @@ jobs:
 
     steps:
     - name: Checkout Sources
-      uses: actions/checkout@v1
+      uses: actions/checkout@v2
       with:
         fetch-depth: 0
 
     - name: Update Version
-      run: ./update-version.sh ${{ secrets.GITHUB_TOKEN }}
+      run: ./update-version.sh ${{ secrets.GITHUB_TOKEN }} ${{ secrets.TAG_PR_TOKEN }}

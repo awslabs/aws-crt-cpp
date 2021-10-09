@@ -43,7 +43,7 @@ namespace Aws
                 /**
                  * @return the value of the last aws error encountered by operations on this instance.
                  */
-                int LastError() const noexcept { return aws_last_error(); }
+                int LastError() const noexcept;
 
                 /**
                  * Initializes TlsContextOptions with secure by default options, with

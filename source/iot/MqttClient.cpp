@@ -121,19 +121,20 @@ namespace Aws
         {
         }
 
-        MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder() : m_isGood(false) {}
+        MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder() : m_lastError(AWS_ERROR_INVALID_STATE) {}
 
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
             const char *certPath,
             const char *pkeyPath,
             Crt::Allocator *allocator) noexcept
-            : m_allocator(allocator), m_portOverride(0), m_isGood(true)
+            : m_allocator(allocator), m_portOverride(0), m_lastError(0)
         {
             m_socketOptions.SetConnectTimeoutMs(3000);
             m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(certPath, pkeyPath, allocator);
             if (!m_contextOptions)
             {
-                m_isGood = false;
+                m_lastError = m_contextOptions.LastError();
+                return;
             }
         }
 
@@ -141,26 +142,28 @@ namespace Aws
             const Crt::ByteCursor &cert,
             const Crt::ByteCursor &pkey,
             Crt::Allocator *allocator) noexcept
-            : m_allocator(allocator), m_portOverride(0), m_isGood(true)
+            : m_allocator(allocator), m_portOverride(0), m_lastError(0)
         {
             m_socketOptions.SetConnectTimeoutMs(3000);
             m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(cert, pkey, allocator);
             if (!m_contextOptions)
             {
-                m_isGood = false;
+                m_lastError = m_contextOptions.LastError();
+                return;
             }
         }
 
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
             const WebsocketConfig &config,
             Crt::Allocator *allocator) noexcept
-            : m_allocator(allocator), m_portOverride(0), m_isGood(true)
+            : m_allocator(allocator), m_portOverride(0), m_lastError(0)
         {
             m_socketOptions.SetConnectTimeoutMs(3000);
             m_contextOptions = Crt::Io::TlsContextOptions::InitDefaultClient(allocator);
             if (!m_contextOptions)
             {
-                m_isGood = false;
+                m_lastError = m_contextOptions.LastError();
+                return;
             }
 
             m_websocketConfig = config;
@@ -210,7 +213,7 @@ namespace Aws
             {
                 if (!m_contextOptions.OverrideDefaultTrustStore(nullptr, caPath))
                 {
-                    m_isGood = false;
+                    m_lastError = m_contextOptions.LastError();
                 }
             }
             return *this;
@@ -223,7 +226,7 @@ namespace Aws
             {
                 if (!m_contextOptions.OverrideDefaultTrustStore(cert))
                 {
-                    m_isGood = false;
+                    m_lastError = m_contextOptions.LastError();
                 }
             }
             return *this;
@@ -278,9 +281,9 @@ namespace Aws
 
         MqttClientConnectionConfig MqttClientConnectionConfigBuilder::Build() noexcept
         {
-            if (!m_isGood)
+            if (m_lastError != 0)
             {
-                return MqttClientConnectionConfig::CreateInvalid(aws_last_error());
+                return MqttClientConnectionConfig::CreateInvalid(m_lastError);
             }
 
             uint16_t port = m_portOverride;
@@ -301,7 +304,7 @@ namespace Aws
             {
                 if (!m_contextOptions.SetAlpnList("x-amzn-mqtt-ca"))
                 {
-                    return MqttClientConnectionConfig::CreateInvalid(Aws::Crt::LastErrorOrUnknown());
+                    return MqttClientConnectionConfig::CreateInvalid(m_contextOptions.LastError());
                 }
             }
 
@@ -316,14 +319,16 @@ namespace Aws
                 username += m_sdkVersion;
             }
 
+            auto tlsContext = Crt::Io::TlsContext(m_contextOptions, Crt::Io::TlsMode::CLIENT, m_allocator);
+            if (!tlsContext)
+            {
+                return MqttClientConnectionConfig::CreateInvalid(tlsContext.GetInitializationError());
+            }
+
             if (!m_websocketConfig)
             {
                 auto config = MqttClientConnectionConfig(
-                    m_endpoint,
-                    port,
-                    m_socketOptions,
-                    Crt::Io::TlsContext(m_contextOptions, Crt::Io::TlsMode::CLIENT, m_allocator),
-                    m_proxyOptions);
+                    m_endpoint, port, m_socketOptions, std::move(tlsContext), m_proxyOptions);
                 config.m_username = username;
                 return config;
             }
@@ -350,7 +355,7 @@ namespace Aws
                 m_endpoint,
                 port,
                 m_socketOptions,
-                Crt::Io::TlsContext(m_contextOptions, Crt::Io::TlsMode::CLIENT, m_allocator),
+                std::move(tlsContext),
                 signerTransform,
                 useWebsocketProxyOptions ? m_websocketConfig->ProxyOptions : m_proxyOptions);
             config.m_username = username;
