@@ -90,11 +90,6 @@ namespace Aws
                 return ctxOptions;
             }
             
-            bool TlsContextOptions::SetKeychainPath(ByteCursor &keychain_path) noexcept
-            {
-                AWS_ASSERT(m_isInit);
-                return aws_tls_ctx_options_set_keychain_path(&m_options, &keychain_path) == 0;
-            }
 #endif /* !AWS_OS_IOS */
 #if defined(AWS_OS_APPLE)
             TlsContextOptions TlsContextOptions::InitClientWithMtlsPkcs12(
@@ -111,6 +106,13 @@ namespace Aws
                 }
                 return ctxOptions;
             }
+#if !defined(AWS_OS_IOS)
+            bool TlsContextOptions::SetKeychainPath(ByteCursor &keychain_path) noexcept
+            {
+                AWS_ASSERT(m_isInit);
+                return aws_tls_ctx_options_set_keychain_path(&m_options, &keychain_path) == 0;
+            }
+#endif /* !AWS_OS_IOS */
 #endif /* AWS_OS_APPLE */
 
 #ifdef _WIN32
