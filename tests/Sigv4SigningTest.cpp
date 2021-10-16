@@ -16,8 +16,6 @@
 #include <condition_variable>
 #include <mutex>
 
-#include <aws/testing/aws_test_allocators.h>
-
 using namespace Aws::Crt;
 using namespace Aws::Crt::Auth;
 using namespace Aws::Crt::Http;
