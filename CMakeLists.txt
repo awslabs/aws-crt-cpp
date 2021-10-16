@@ -134,6 +134,7 @@ if (BUILD_DEPS)
         add_subdirectory(crt/s2n)
     endif()
 
+    add_subdirectory(crt/aws-c-sdkutils)
     add_subdirectory(crt/aws-c-io)
     add_subdirectory(crt/aws-c-cal)
     add_subdirectory(crt/aws-c-compression)
