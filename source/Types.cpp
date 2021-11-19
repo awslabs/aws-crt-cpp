@@ -41,6 +41,11 @@ namespace Aws
             return aws_byte_cursor_from_array((const void *)str.data(), str.length());
         }
 
+        ByteCursor ByteCursorFromString(const Crt::StringView &str) noexcept
+        {
+            return aws_byte_cursor_from_array((const void *)str.data(), str.length());
+        }
+
         ByteCursor ByteCursorFromByteBuf(const ByteBuf &buf) noexcept { return aws_byte_cursor_from_buf(&buf); }
 
         ByteCursor ByteCursorFromArray(const uint8_t *array, size_t len) noexcept
