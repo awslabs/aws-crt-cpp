@@ -13,13 +13,13 @@ namespace Aws
     {
         namespace Io
         {
-            std::shared_ptr<Pkcs11Lib> Pkcs11Lib::Create(StringView filename, Allocator *allocator)
+            std::shared_ptr<Pkcs11Lib> Pkcs11Lib::Create(const String &filename, Allocator *allocator)
             {
                 return Create(filename, InitializeFinalizeBehavior::Default, allocator);
             }
 
             std::shared_ptr<Pkcs11Lib> Pkcs11Lib::Create(
-                StringView filename,
+                const String &filename,
                 InitializeFinalizeBehavior initializeFinalizeBehavior,
                 Allocator *allocator)
             {
@@ -28,7 +28,7 @@ namespace Aws
 
                 if (!filename.empty())
                 {
-                    options.filename = ByteCursorFromStringView(filename);
+                    options.filename = ByteCursorFromString(filename);
                 }
 
                 switch (initializeFinalizeBehavior)

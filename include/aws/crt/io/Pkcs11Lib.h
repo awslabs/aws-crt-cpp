@@ -72,7 +72,7 @@ namespace Aws
                  *         If unsuccessful the `shared_ptr` will be empty, and Aws::Crt::LastError()
                  *         will contain the error that occurred.
                  */
-                static std::shared_ptr<Pkcs11Lib> Create(StringView filename, Allocator *allocator = g_allocator);
+                static std::shared_ptr<Pkcs11Lib> Create(const String &filename, Allocator *allocator = g_allocator);
 
                 /**
                  * Load a PKCS#11 library, specifying how `C_Initialize()` and `C_Finalize()` will be called.
@@ -90,7 +90,7 @@ namespace Aws
                  *         will contain the error that occurred.
                  */
                 static std::shared_ptr<Pkcs11Lib> Create(
-                    StringView filename,
+                    const String &filename,
                     InitializeFinalizeBehavior initializeFinalizeBehavior,
                     Allocator *allocator = g_allocator);
 
