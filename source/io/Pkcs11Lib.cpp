@@ -46,7 +46,7 @@ namespace Aws
                         AWS_LOGF_ERROR(
                             AWS_LS_IO_PKCS11,
                             "Cannot create Pkcs11Lib. Invalid InitializeFinalizeBehavior %d",
-                            initializeFinalizeBehavior);
+                            (int)initializeFinalizeBehavior);
                         aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
                         return nullptr;
                 }
