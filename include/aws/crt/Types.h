@@ -64,6 +64,7 @@ namespace Aws
 
         AWS_CRT_CPP_API ByteCursor ByteCursorFromCString(const char *str) noexcept;
         AWS_CRT_CPP_API ByteCursor ByteCursorFromString(const Crt::String &str) noexcept;
+        AWS_CRT_CPP_API ByteCursor ByteCursorFromStringView(const Crt::StringView &str) noexcept;
         AWS_CRT_CPP_API ByteCursor ByteCursorFromByteBuf(const ByteBuf &) noexcept;
         AWS_CRT_CPP_API ByteCursor ByteCursorFromArray(const uint8_t *array, size_t len) noexcept;
 
