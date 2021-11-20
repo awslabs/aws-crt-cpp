@@ -97,7 +97,7 @@ namespace Aws
                 ~Pkcs11Lib();
 
                 /// @private
-                aws_pkcs11_lib *GetImpl() { return impl; }
+                aws_pkcs11_lib *GetNativeHandle() { return impl; }
 
                 /// @private Use Create(...), this constructor is for internal use only
                 explicit Pkcs11Lib(aws_pkcs11_lib &impl);
