@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
-#include <aws/crt/io/Pkcs11Lib.h>
+#include <aws/crt/io/Pkcs11.h>
 
 #include <aws/io/logging.h>
 #include <aws/io/pkcs11.h>
