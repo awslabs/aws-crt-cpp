@@ -191,6 +191,7 @@ namespace Aws
               public:
                 /**
                  * @param pkcs11Lib use this PKCS#11 library
+                 * @param allocator Memory allocator to use.
                  */
                 TlsContextPkcs11Options(
                     const std::shared_ptr<Pkcs11Lib> &pkcs11Lib,
