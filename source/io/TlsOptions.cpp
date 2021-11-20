@@ -4,7 +4,7 @@
  */
 #include <aws/crt/io/TlsOptions.h>
 
-#include <aws/crt/io/Pkcs11Lib.h> /* TODO: rename this just Pkcs11.h */
+#include <aws/crt/io/Pkcs11.h>
 
 #include <aws/crt/Api.h>
 #include <aws/io/logging.h>
