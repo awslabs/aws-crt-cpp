@@ -434,7 +434,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 <p >Called by the channel when a downstream handler has issued a window increment. You'll want to update your internal state and likely propagate a window increment message of your own by calling <a class="el" href="class_aws_1_1_crt_1_1_io_1_1_channel_handler.html#a37faa407a07406224d1c43e1ef429e3b">IncrementUpstreamReadWindow()</a></p>
-<p >Return AWS_OP_SUCCESS if successful. Otherwise, raise an error and return AWS_OP_ERR. </p>
+<dl class="section return"><dt>Returns</dt><dd>AWS_OP_SUCCESS if successful. Otherwise, raise an error and return AWS_OP_ERR. </dd></dl>
 
 </div>
 </div>
@@ -611,7 +611,7 @@ Protected Attributes</h2></td></tr>
 </div><div class="memdoc">
 <p >Called by the channel when a message is available for processing in the read direction. It is your responsibility to call aws_mem_release(message-&gt;allocator, message); on message when you are finished with it.</p>
 <p >Also keep in mind that your slot's internal window has been decremented. You'll want to call aws_channel_slot_increment_read_window() at some point in the future if you want to keep receiving data.</p>
-<p >Return AWS_OP_SUCCESS if the message is being processed. If the message cannot be processed raise an error and return AWS_OP_ERR and do NOT release the message, it will be released by the caller. </p>
+<dl class="section return"><dt>Returns</dt><dd>AWS_OP_SUCCESS if the message is being processed. If the message cannot be processed raise an error and return AWS_OP_ERR and do NOT release the message, it will be released by the caller. </dd></dl>
 
 </div>
 </div>
@@ -683,7 +683,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 <p >Called by the channel when a message is available for processing in the write direction. It is your responsibility to call aws_mem_release(message-&gt;allocator, message); on message when you are finished with it.</p>
-<p >Return AWS_OP_SUCCESS if the message is being processed. If the message cannot be processed raise an error and return AWS_OP_ERR and do NOT release the message, it will be released by the caller. </p>
+<dl class="section return"><dt>Returns</dt><dd>AWS_OP_SUCCESS if the message is being processed. If the message cannot be processed raise an error and return AWS_OP_ERR and do NOT release the message, it will be released by the caller. </dd></dl>
 
 </div>
 </div>
