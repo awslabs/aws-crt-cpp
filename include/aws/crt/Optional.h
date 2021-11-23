@@ -9,6 +9,10 @@ namespace Aws
 {
     namespace Crt
     {
+        /**
+         * Custom implementation of an Option type.  std::optional requires C++17
+         * @tparam T type of the optional value
+         */
         template <typename T> class Optional
         {
           public:

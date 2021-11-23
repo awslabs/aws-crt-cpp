@@ -103,8 +103,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a1d367e40fb699edfbc586f1da8d359c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a103064353d7d3d35ecaca566e48febe3"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_aws_1_1_crt_1_1_io_1_1_input_stream.html#a103064353d7d3d35ecaca566e48febe3">IsValid</a> () const noexcept=0</td></tr>
 <tr class="separator:a103064353d7d3d35ecaca566e48febe3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa70ca0069a74a9a7030ecc3fbda3e6d0"><td class="memItemLeft" align="right" valign="top">aws_input_stream *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_aws_1_1_crt_1_1_io_1_1_input_stream.html#aa70ca0069a74a9a7030ecc3fbda3e6d0">GetUnderlyingStream</a> () noexcept</td></tr>
-<tr class="separator:aa70ca0069a74a9a7030ecc3fbda3e6d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a63148e32fbcb9b8c607e3b0b038f2e88"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_aws_1_1_crt_1_1_io_1_1_input_stream.html#a63148e32fbcb9b8c607e3b0b038f2e88">Read</a> (<a class="el" href="namespace_aws_1_1_crt.html#aa760a7d9714d6c28091c2b1cf7029876">ByteBuf</a> &amp;dest)</td></tr>
 <tr class="separator:a63148e32fbcb9b8c607e3b0b038f2e88"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5419f9c8da23c11c58f93ee878b945d6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_aws_1_1_crt_1_1_io_1_1_input_stream.html#a5419f9c8da23c11c58f93ee878b945d6">Seek</a> (int64_t <a class="el" href="namespace_aws.html#a4b36e73e20878ce98336cfdea0494281">offset</a>, <a class="el" href="namespace_aws_1_1_crt_1_1_io.html#adf764940aea50b061f1ac67366cf41d0">StreamSeekBasis</a> seekBasis)</td></tr>
@@ -262,6 +260,13 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+<p >Gets the stream's length. Some streams may not be able to answer this. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">length</td><td>output parameter for the length of the stream </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>success/failure </dd></dl>
 
 </div>
 </div>
@@ -318,6 +323,13 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+<p >Gets the stream's current status </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">status</td><td>output parameter for the stream's status </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>success/failure </dd></dl>
 
 </div>
 </div>
@@ -349,31 +361,6 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="aa70ca0069a74a9a7030ecc3fbda3e6d0" name="aa70ca0069a74a9a7030ecc3fbda3e6d0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa70ca0069a74a9a7030ecc3fbda3e6d0">&#9670;&nbsp;</a></span>GetUnderlyingStream()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">aws_input_stream * Aws::Crt::Io::InputStream::GetUnderlyingStream </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <a id="a103064353d7d3d35ecaca566e48febe3" name="a103064353d7d3d35ecaca566e48febe3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a103064353d7d3d35ecaca566e48febe3">&#9670;&nbsp;</a></span>IsValid()</h2>
 
@@ -396,6 +383,7 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>true/false if this object is in a valid state </dd></dl>
 
 <p>Implemented in <a class="el" href="class_aws_1_1_crt_1_1_io_1_1_std_i_o_stream_input_stream.html#a9d0fbe590021fde16ce2f81d32a04748">Aws::Crt::Io::StdIOStreamInputStream</a>.</p>
 
@@ -501,6 +489,13 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+<p >Reads data from the stream into a buffer </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">dest</td><td>buffer to add the read data into </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>success/failure </dd></dl>
 
 </div>
 </div>
@@ -565,6 +560,14 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+<p >Moves the head of the stream to a new location </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">offset</td><td>how far to move, in bytes </td></tr>
+    <tr><td class="paramname">seekBasis</td><td>what direction to move the head of stream </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>success/failure </dd></dl>
 
 </div>
 </div>

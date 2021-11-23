@@ -22,6 +22,10 @@ namespace Aws
 
         namespace Auth
         {
+            /**
+             * RTTI indicator for signing configuration.  We currently only support a single type (AWS), but
+             * we could expand to others in the future if needed.
+             */
             enum class SigningConfigType
             {
                 Aws = AWS_SIGNING_CONFIG_AWS
@@ -51,12 +55,13 @@ namespace Aws
 
                 /**
                  * RTTI query for the SigningConfig hierarchy
+                 * @return the type of signing configuration
                  */
                 virtual SigningConfigType GetType(void) const = 0;
             };
 
             /**
-             * Abstract base for all http request signers.  Synchronous interface.  Intended to
+             * Abstract base for all http request signers.  Asynchronous interface.  Intended to
              * be a tight wrapper around aws-c-* signer implementations.
              */
             class AWS_CRT_CPP_API IHttpRequestSigner
@@ -70,13 +75,21 @@ namespace Aws
 
                 virtual ~IHttpRequestSigner() = default;
 
+                /**
+                 * Signs an http request based on the signing implementation and supplied configuration
+                 * @param request http request to sign
+                 * @param config base signing configuration.  Actual type should match the configuration expected
+                 * by the signer implementation
+                 * @param completionCallback completion function to invoke when signing has completed or failed
+                 * @return true if the signing process was kicked off, false if there was a synchronous failure.
+                 */
                 virtual bool SignRequest(
                     const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request,
                     const ISigningConfig &config,
                     const OnHttpRequestSigningComplete &completionCallback) = 0;
 
                 /**
-                 * Whether or not the signer is in a valid state
+                 * @return Whether or not the signer is in a valid state
                  */
                 virtual bool IsValid() const = 0;
             };

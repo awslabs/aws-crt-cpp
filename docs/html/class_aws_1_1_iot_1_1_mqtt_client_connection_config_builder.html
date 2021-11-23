@@ -182,7 +182,14 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p >Sets the builder up for MTLS using certPath and pkeyPath. These are files on disk and must be in the PEM format. </p>
+<p >Sets the builder up for MTLS using certPath and pkeyPath. These are files on disk and must be in the PEM format.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">certPath</td><td>path to the X509 certificate (pem file) to use </td></tr>
+    <tr><td class="paramname">pkeyPath</td><td>path to the private key (pem file) to use </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -225,7 +232,14 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p >Sets the builder up for MTLS using cert and pkey. These are in-memory buffers and must be in the PEM format. </p>
+<p >Sets the builder up for MTLS using cert and pkey. These are in-memory buffers and must be in the PEM format.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">cert</td><td>buffer containing the X509 certificate in a PEM format </td></tr>
+    <tr><td class="paramname">pkey</td><td>buffer containing the private key in a PEM format </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -262,7 +276,13 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p >Sets the builder up for Websocket connection. </p>
+<p >Sets the builder up for Websocket connection.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">config</td><td>websocket configuration information </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -289,7 +309,8 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p >Builds a client configuration object from the set options. </p>
+<p >Builds a client configuration object from the set options.</p>
+<dl class="section return"><dt>Returns</dt><dd>a new client connection config instance </dd></dl>
 
 </div>
 </div>
@@ -368,7 +389,14 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p >Sets the certificate authority for the endpoint you're connecting to. This is a path to a file on disk and must be in PEM format. </p>
+<p >Sets the certificate authority for the endpoint you're connecting to. This is a path to a file on disk and must be in PEM format.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">caPath</td><td>path to the CA file in PEM format</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>this builder object </dd></dl>
 
 </div>
 </div>
@@ -395,7 +423,14 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p >Sets the certificate authority for the endpoint you're connecting to. This is an in-memory buffer and must be in PEM format. </p>
+<p >Sets the certificate authority for the endpoint you're connecting to. This is an in-memory buffer and must be in PEM format.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">cert</td><td>buffer containing the CA certificate in a PEM format</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>this builder object </dd></dl>
 
 </div>
 </div>
@@ -414,7 +449,14 @@ Public Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p >Sets endpoint to connect to. </p>
+<p >Sets endpoint to connect to.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">endpoint</td><td>endpoint to connect to</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>this builder object </dd></dl>
 
 </div>
 </div>
@@ -433,7 +475,14 @@ Public Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p >Sets endpoint to connect to. </p>
+<p >Sets endpoint to connect to.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">endpoint</td><td>endpoint to connect to</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>this builder object </dd></dl>
 
 </div>
 </div>
@@ -460,7 +509,14 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p >Sets http proxy options. In order to use an http proxy with mqtt either (1) Websockets are used (2) Mqtt-over-tls is used and the ALPN list of the tls context contains a tag that resolves to mqtt </p>
+<p >Sets http proxy options.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">proxyOptions</td><td>proxy configuration options for connection establishment</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>this builder object </dd></dl>
 
 </div>
 </div>
@@ -479,7 +535,14 @@ Public Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p >Whether to send the SDK name and version number in the MQTT CONNECT packet. Default is True. </p>
+<p >Whether to send the SDK name and version number in the MQTT CONNECT packet. Default is True.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">enabled</td><td>true to send SDK version/name in the connect for metrics gathering purposes</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>this builder object </dd></dl>
 
 </div>
 </div>
@@ -506,6 +569,14 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+<p >Sets the minimum tls version that is acceptable for connection establishment</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">minimumTlsVersion</td><td>minimum tls version allowed in client connections</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>this builder object </dd></dl>
 
 </div>
 </div>
@@ -532,7 +603,14 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p >Overrides the default port. By default, if ALPN is supported, 443 will be used. Otherwise 8883 will be used. If you specify 443 and ALPN is not supported, we will still attempt to connect over 443 without ALPN. </p>
+<p >Overrides the default port. By default, if ALPN is supported, 443 will be used. Otherwise 8883 will be used. If you specify 443 and ALPN is not supported, we will still attempt to connect over 443 without ALPN.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">port</td><td>port to connect to</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>this builder object </dd></dl>
 
 </div>
 </div>
@@ -551,7 +629,14 @@ Public Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p >Overrides the default SDK Name to send as a metric in the MQTT CONNECT packet. </p>
+<p >Overrides the default SDK Name to send as a metric in the MQTT CONNECT packet.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">sdkName</td><td>string to use as the SDK name parameter in the connection string</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>this builder object </dd></dl>
 
 </div>
 </div>
@@ -570,7 +655,14 @@ Public Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p >Overrides the default SDK Version to send as a metric in the MQTT CONNECT packet. </p>
+<p >Overrides the default SDK Version to send as a metric in the MQTT CONNECT packet.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">sdkVersion</td><td>string to use as the SDK version parameter in the connection string</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>this builder object </dd></dl>
 
 </div>
 </div>
@@ -597,7 +689,14 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p >TCP option: Sets the connect timeout. Defaults to 3 seconds. </p>
+<p >TCP option: Sets the connect timeout. Defaults to 3 seconds.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">connectTimeoutMs</td><td>socket connection timeout</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>this builder object </dd></dl>
 
 </div>
 </div>
@@ -623,7 +722,8 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p >TCP option: Enables TCP keep alive. Defaults to off. </p>
+<p >TCP option: Enables TCP keep alive. Defaults to off.</p>
+<dl class="section return"><dt>Returns</dt><dd>this builder object </dd></dl>
 
 </div>
 </div>
@@ -650,7 +750,14 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p >TCP option: Sets the frequency of sending keep alive probes in seconds once the keep alive timeout expires. Defaults to kernel defaults. </p>
+<p >TCP option: Sets the frequency of sending keep alive probes in seconds once the keep alive timeout expires. Defaults to kernel defaults.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">keepAliveIntervalSecs</td><td>the frequency of sending keep alive probes in seconds once the keep alive timeout expires</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>this builder object </dd></dl>
 
 </div>
 </div>
@@ -677,7 +784,14 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p >TCP option: Sets the amount of keep alive probes allowed to fail before the connection is terminated. Defaults to kernel defaults. </p>
+<p >TCP option: Sets the amount of keep alive probes allowed to fail before the connection is terminated. Defaults to kernel defaults.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">maxProbes</td><td>the amount of keep alive probes allowed to fail before the connection is terminated</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>this builder object </dd></dl>
 
 </div>
 </div>
@@ -704,7 +818,14 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p >TCP option: Sets time before keep alive probes are sent. Defaults to kernel defaults </p>
+<p >TCP option: Sets time before keep alive probes are sent. Defaults to kernel defaults</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">keepAliveTimeoutSecs</td><td>time interval of no activity, in seconds, before keep alive probes get sent</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>this builder object </dd></dl>
 
 </div>
 </div>

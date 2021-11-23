@@ -23,6 +23,11 @@ namespace Aws
 {
     namespace Crt
     {
+        /**
+         * Custom string view implementation in order to meet C++11 baseline
+         * @tparam CharT
+         * @tparam Traits
+         */
         template <typename CharT, typename Traits = std::char_traits<CharT>> class basic_string_view
         {
           public:

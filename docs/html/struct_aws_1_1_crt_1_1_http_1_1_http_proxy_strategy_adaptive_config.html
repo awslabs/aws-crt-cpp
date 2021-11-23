@@ -91,7 +91,10 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:afef5445e6f5b5f13524e765435d3c272"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespace_aws_1_1_crt_1_1_http.html#ad6ff911d785539e09b5620ad25d32e0b">NtlmGetTokenFunction</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy_adaptive_config.html#afef5445e6f5b5f13524e765435d3c272">NtlmGetToken</a></td></tr>
 <tr class="separator:afef5445e6f5b5f13524e765435d3c272"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p >Configuration for a proxy strategy that attempts to use kerberos and ntlm, based on authentication failure feedback from the proxy's responses to CONNECT attempts. The kerberos/ntlm callbacks are currently synchronous but invoked potentially from within event loop threads. This is not optimal but transitioning to fully async hasn't been a need yet.</p>
+<p >The adapative strategy will skip an authentication method whose callbacks are not supplied, so you can use this for purely kerberos or ntlm as well. </p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a46fe7ae274dfbd9b8c60e00ed1860717" name="a46fe7ae274dfbd9b8c60e00ed1860717"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a46fe7ae274dfbd9b8c60e00ed1860717">&#9670;&nbsp;</a></span>HttpProxyStrategyAdaptiveConfig()</h2>
 
@@ -129,6 +132,7 @@ Public Attributes</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p >User-supplied callback for fetching kerberos tokens </p>
 
 </div>
 </div>
@@ -143,6 +147,7 @@ Public Attributes</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p >User-supplied callback for fetching an ntlm credential </p>
 
 </div>
 </div>
@@ -157,6 +162,7 @@ Public Attributes</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p >User-supplied callback for fetching an ntlm token </p>
 
 </div>
 </div>

@@ -93,8 +93,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ab6e1a5a4eeea234518108d2cda5cb203"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac4637dfb7243dc745df8760d9d8e3195"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy.html#ac4637dfb7243dc745df8760d9d8e3195">~HttpProxyStrategy</a> ()</td></tr>
 <tr class="separator:ac4637dfb7243dc745df8760d9d8e3195"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6045193775e1a7b05db7bba6879ff4f1"><td class="memItemLeft" align="right" valign="top">struct aws_http_proxy_strategy *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy.html#a6045193775e1a7b05db7bba6879ff4f1">GetUnderlyingHandle</a> () const noexcept</td></tr>
-<tr class="separator:a6045193775e1a7b05db7bba6879ff4f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -108,7 +106,9 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:a2325400312b35167c8b6a2b83ce5e0b3"><td class="memItemLeft" align="right" valign="top">struct aws_http_proxy_strategy *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_aws_1_1_crt_1_1_http_1_1_http_proxy_strategy.html#a2325400312b35167c8b6a2b83ce5e0b3">m_strategy</a></td></tr>
 <tr class="separator:a2325400312b35167c8b6a2b83ce5e0b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p >Wrapper class for a C-level proxy strategy - an object that allows the user to transform or modify the authentication logic when connecting to a proxy. </p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ab6e1a5a4eeea234518108d2cda5cb203" name="ab6e1a5a4eeea234518108d2cda5cb203"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab6e1a5a4eeea234518108d2cda5cb203">&#9670;&nbsp;</a></span>HttpProxyStrategy()</h2>
 
@@ -186,6 +186,14 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+<p >Creates a proxy strategy that, depending on configuration, can attempt kerberos and/or ntlm authentication when connecting to the proxy </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">config</td><td>the adaptive strategy configuration options </td></tr>
+    <tr><td class="paramname">allocator</td><td>allocator to use </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>a new adaptive proxy strategy </dd></dl>
 
 </div>
 </div>
@@ -222,31 +230,14 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-</div>
-</div>
-<a id="a6045193775e1a7b05db7bba6879ff4f1" name="a6045193775e1a7b05db7bba6879ff4f1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6045193775e1a7b05db7bba6879ff4f1">&#9670;&nbsp;</a></span>GetUnderlyingHandle()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct aws_http_proxy_strategy * Aws::Crt::Http::HttpProxyStrategy::GetUnderlyingHandle </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
+<p >Creates a proxy strategy that performs basic authentication </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">config</td><td>basic authentication configuration options </td></tr>
+    <tr><td class="paramname">allocator</td><td>allocator to use </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>a new basic authentication proxy strategy </dd></dl>
 
 </div>
 </div>
