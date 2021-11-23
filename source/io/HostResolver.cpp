@@ -47,7 +47,9 @@ namespace Aws
                 m_initialized = false;
             }
 
-            /// @private
+            /**
+             * @private
+             */
             struct DefaultHostResolveArgs
             {
                 Allocator *allocator;

@@ -12,10 +12,10 @@ namespace Aws
         {
 
             /**
+             * @private
              * Holds the bootstrap's shutdown promise.
              * Lives until the bootstrap's shutdown-complete callback fires.
              */
-            /// @private
             class ClientBootstrapCallbackData
             {
               private:
