@@ -165,6 +165,13 @@ namespace Aws
                 Crt::Allocator *allocator = Crt::g_allocator) noexcept;
 
             /**
+             * Sets the builder up for MTLS, using a PKCS#11 library for private key operations.
+             */
+            MqttClientConnectionConfigBuilder(
+                const Crt::Io::TlsContextPkcs11Options &pkcs11Options,
+                Crt::Allocator *allocator = Crt::g_allocator) noexcept;
+
+            /**
              * Sets the builder up for Websocket connection.
              */
             MqttClientConnectionConfigBuilder(
@@ -261,6 +268,9 @@ namespace Aws
             int LastError() const noexcept { return m_lastError ? m_lastError : AWS_ERROR_UNKNOWN; }
 
           private:
+            // Common setup shared by all valid constructors
+            MqttClientConnectionConfigBuilder(Crt::Allocator *allocator) noexcept;
+
             Crt::Allocator *m_allocator;
             Crt::String m_endpoint;
             uint16_t m_portOverride;

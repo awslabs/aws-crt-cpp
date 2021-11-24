@@ -123,11 +123,18 @@ namespace Aws
 
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder() : m_lastError(AWS_ERROR_INVALID_STATE) {}
 
+        // Common setup shared by all valid constructors
+        MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(Crt::Allocator *allocator) noexcept
+            : m_allocator(allocator), m_portOverride(0), m_lastError(0)
+        {
+            m_socketOptions.SetConnectTimeoutMs(3000);
+        }
+
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
             const char *certPath,
             const char *pkeyPath,
             Crt::Allocator *allocator) noexcept
-            : m_allocator(allocator), m_portOverride(0), m_lastError(0)
+            : MqttClientConnectionConfigBuilder(allocator)
         {
             m_socketOptions.SetConnectTimeoutMs(3000);
             m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(certPath, pkeyPath, allocator);
@@ -142,10 +149,22 @@ namespace Aws
             const Crt::ByteCursor &cert,
             const Crt::ByteCursor &pkey,
             Crt::Allocator *allocator) noexcept
-            : m_allocator(allocator), m_portOverride(0), m_lastError(0)
+            : MqttClientConnectionConfigBuilder(allocator)
         {
-            m_socketOptions.SetConnectTimeoutMs(3000);
             m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(cert, pkey, allocator);
+            if (!m_contextOptions)
+            {
+                m_lastError = m_contextOptions.LastError();
+                return;
+            }
+        }
+
+        MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
+            const Crt::Io::TlsContextPkcs11Options &pkcs11Options,
+            Crt::Allocator *allocator) noexcept
+            : MqttClientConnectionConfigBuilder(allocator)
+        {
+            m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtlsPkcs11(pkcs11Options, allocator);
             if (!m_contextOptions)
             {
                 m_lastError = m_contextOptions.LastError();
@@ -156,9 +175,8 @@ namespace Aws
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
             const WebsocketConfig &config,
             Crt::Allocator *allocator) noexcept
-            : m_allocator(allocator), m_portOverride(0), m_lastError(0)
+            : MqttClientConnectionConfigBuilder(allocator)
         {
-            m_socketOptions.SetConnectTimeoutMs(3000);
             m_contextOptions = Crt::Io::TlsContextOptions::InitDefaultClient(allocator);
             if (!m_contextOptions)
             {
