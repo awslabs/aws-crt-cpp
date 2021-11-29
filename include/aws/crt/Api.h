@@ -17,6 +17,9 @@ namespace Aws
 {
     namespace Crt
     {
+        /**
+         * Detail level control for logging output
+         */
         enum class LogLevel
         {
             None = AWS_LL_NONE,
@@ -30,12 +33,19 @@ namespace Aws
             Count
         };
 
+        /**
+         * Should the API Handle destructor block on all shutdown/thread completion logic or not?
+         */
         enum class ApiHandleShutdownBehavior
         {
             Blocking,
             NonBlocking
         };
 
+        /**
+         * A singleton object representing the init/cleanup state of the entire CRT.  It's invalid to have more than one
+         * active simultaneously and it's also invalid to use CRT functionality without one active.
+         */
         class AWS_CRT_CPP_API ApiHandle
         {
           public:
@@ -46,6 +56,7 @@ namespace Aws
             ApiHandle(ApiHandle &&) = delete;
             ApiHandle &operator=(const ApiHandle &) = delete;
             ApiHandle &operator=(ApiHandle &&) = delete;
+
             /**
              * Initialize logging in awscrt.
              * @param level: Display messages of this importance and higher. LogLevel.NoLogs will disable
@@ -53,6 +64,7 @@ namespace Aws
              * @param filename: Logging destination, a file path from the disk.
              */
             void InitializeLogging(LogLevel level, const char *filename);
+
             /**
              * Initialize logging in awscrt.
              * @param level: Display messages of this importance and higher. LogLevel.NoLogs will disable
@@ -121,11 +133,18 @@ namespace Aws
             ApiHandleShutdownBehavior m_shutdownBehavior;
         };
 
+        /**
+         * Gets a string description of a CRT error code
+         * @param error error code to get a descriptive string for
+         * @return a string description of the error code
+         */
         AWS_CRT_CPP_API const char *ErrorDebugString(int error) noexcept;
+
         /**
          * @return the value of the last aws error on the current thread. Return 0 if no aws-error raised before.
          */
         AWS_CRT_CPP_API int LastError() noexcept;
+
         /**
          * @return the value of the last aws error on the current thread. Return AWS_ERROR_UNKNOWN, if no aws-error
          * raised before.

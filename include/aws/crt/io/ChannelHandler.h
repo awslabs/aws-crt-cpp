@@ -61,7 +61,7 @@ namespace Aws
                  * aws_channel_slot_increment_read_window() at some point in the future if you want to keep receiving
                  * data.
                  *
-                 * Return AWS_OP_SUCCESS if the message is being processed.
+                 * @return AWS_OP_SUCCESS if the message is being processed.
                  * If the message cannot be processed raise an error and return AWS_OP_ERR
                  * and do NOT release the message, it will be released by the caller.
                  */
@@ -72,7 +72,7 @@ namespace Aws
                  * responsibility to call aws_mem_release(message->allocator, message); on message when you are finished
                  * with it.
                  *
-                 * Return AWS_OP_SUCCESS if the message is being processed.
+                 * @return AWS_OP_SUCCESS if the message is being processed.
                  * If the message cannot be processed raise an error and return AWS_OP_ERR
                  * and do NOT release the message, it will be released by the caller.
                  */
@@ -83,7 +83,7 @@ namespace Aws
                  * your internal state and likely propagate a window increment message of your own by calling
                  * IncrementUpstreamReadWindow()
                  *
-                 * Return AWS_OP_SUCCESS if successful.
+                 * @return AWS_OP_SUCCESS if successful.
                  * Otherwise, raise an error and return AWS_OP_ERR.
                  */
                 virtual int IncrementReadWindow(size_t size) = 0;

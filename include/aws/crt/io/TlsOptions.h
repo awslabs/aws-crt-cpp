@@ -25,6 +25,10 @@ namespace Aws
                 SERVER,
             };
 
+            /**
+             * Top-level tls configuration options.  These options are used to create a context from which
+             * per-connection TLS contexts can be created.
+             */
             class AWS_CRT_CPP_API TlsContextOptions
             {
                 friend class TlsContext;
@@ -36,10 +40,12 @@ namespace Aws
                 TlsContextOptions &operator=(const TlsContextOptions &) noexcept = delete;
                 TlsContextOptions(TlsContextOptions &&) noexcept;
                 TlsContextOptions &operator=(TlsContextOptions &&) noexcept;
+
                 /**
                  * @return true if the instance is in a valid state, false otherwise.
                  */
                 explicit operator bool() const noexcept { return m_isInit; }
+
                 /**
                  * @return the value of the last aws error encountered by operations on this instance.
                  */
@@ -50,6 +56,7 @@ namespace Aws
                  * no client certificates.
                  */
                 static TlsContextOptions InitDefaultClient(Allocator *allocator = g_allocator) noexcept;
+
                 /**
                  * Initializes TlsContextOptions with secure by default options, with
                  * client certificate and private key. These are paths to a file on disk. These files
@@ -148,6 +155,7 @@ namespace Aws
                  * string must remain in memory for the lifetime of this object.
                  */
                 bool OverrideDefaultTrustStore(const char *caPath, const char *caFile) noexcept;
+
                 /**
                  * Overrides the default system trust store.
                  * @param ca: PEM armored chain of trusted CA certificates.
@@ -189,14 +197,17 @@ namespace Aws
                  * @return true if the copy succeeded, or false otherwise.
                  */
                 bool SetAlpnList(const char *alpnList) noexcept;
+
                 /**
                  * @return true if the instance is in a valid state, false otherwise.
                  */
                 explicit operator bool() const noexcept { return isValid(); }
+
                 /**
                  * @return the value of the last aws error encountered by operations on this instance.
                  */
                 int LastError() const noexcept { return m_lastError; }
+
                 /// @private
                 const aws_tls_connection_options *GetUnderlyingHandle() const noexcept
                 {
@@ -215,6 +226,10 @@ namespace Aws
                 friend class TlsContext;
             };
 
+            /**
+             * Stateful context for TLS with a given configuration.  Per-connection TLS "contexts"
+             * (TlsConnectionOptions) are instantiated from this as needed.
+             */
             class AWS_CRT_CPP_API TlsContext final
             {
               public:
@@ -226,16 +241,23 @@ namespace Aws
                 TlsContext(TlsContext &&) noexcept = default;
                 TlsContext &operator=(TlsContext &&) noexcept = default;
 
+                /**
+                 * @return a new connection-specific TLS context that can be configured with per-connection options
+                 * (server name, peer verification, etc...)
+                 */
                 TlsConnectionOptions NewConnectionOptions() const noexcept;
+
                 /**
                  * @return true if the instance is in a valid state, false otherwise.
                  */
                 explicit operator bool() const noexcept { return isValid(); }
+
                 /**
                  * @return the value of the last aws error encountered by operations on this instance.
                  */
                 int GetInitializationError() const noexcept { return m_initializationError; }
 
+                /// @private
                 aws_tls_ctx *GetUnderlyingHandle() noexcept { return m_ctx.get(); }
 
               private:
@@ -258,7 +280,7 @@ namespace Aws
                 virtual ~TlsChannelHandler();
 
                 /**
-                 * Return negotiated protocol (or empty string if no agreed upon protocol)
+                 * @return negotiated protocol (or empty string if no agreed upon protocol)
                  */
                 virtual String GetProtocol() const = 0;
 

@@ -98,10 +98,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aaec6953cf4499ebe15cf0bbaa9c4c0c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a79dbd7c5a40df71d8d16bc3deed52841"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_aws_1_1_crt_1_1_io_1_1_tls_context.html#a79dbd7c5a40df71d8d16bc3deed52841">GetInitializationError</a> () const noexcept</td></tr>
 <tr class="separator:a79dbd7c5a40df71d8d16bc3deed52841"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaba89fb767b2240182c7c649aa1a62d6"><td class="memItemLeft" align="right" valign="top">aws_tls_ctx *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_aws_1_1_crt_1_1_io_1_1_tls_context.html#aaba89fb767b2240182c7c649aa1a62d6">GetUnderlyingHandle</a> () noexcept</td></tr>
-<tr class="separator:aaba89fb767b2240182c7c649aa1a62d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p >Stateful context for TLS with a given configuration. Per-connection TLS "contexts" (<a class="el" href="class_aws_1_1_crt_1_1_io_1_1_tls_connection_options.html">TlsConnectionOptions</a>) are instantiated from this as needed. </p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ac859c06e8c99e5eb3fca620d1b6b6c58" name="ac859c06e8c99e5eb3fca620d1b6b6c58"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac859c06e8c99e5eb3fca620d1b6b6c58">&#9670;&nbsp;</a></span>TlsContext() <span class="overload">[1/4]</span></h2>
 
@@ -273,31 +273,6 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="aaba89fb767b2240182c7c649aa1a62d6" name="aaba89fb767b2240182c7c649aa1a62d6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaba89fb767b2240182c7c649aa1a62d6">&#9670;&nbsp;</a></span>GetUnderlyingHandle()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">aws_tls_ctx * Aws::Crt::Io::TlsContext::GetUnderlyingHandle </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <a id="a23c38bfd7c9c2fc94aa269ae66d18387" name="a23c38bfd7c9c2fc94aa269ae66d18387"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a23c38bfd7c9c2fc94aa269ae66d18387">&#9670;&nbsp;</a></span>NewConnectionOptions()</h2>
 
@@ -320,6 +295,7 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>a new connection-specific TLS context that can be configured with per-connection options (server name, peer verification, etc...) </dd></dl>
 
 </div>
 </div>

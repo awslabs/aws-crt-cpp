@@ -73,6 +73,10 @@ namespace Aws
                  * connection. Returns true if the connection request was successfully queued, returns false if it
                  * failed. On failure, onClientConnectionAvailable will not be invoked. After receiving a connection, it
                  * will automatically be cleaned up when your last reference to the shared_ptr is released.
+                 *
+                 * @param onClientConnectionAvailable callback to invoke when a connection becomes available or the
+                 * acquisition attempt terminates
+                 * @return true if the acquisition was successfully kicked off, false otherwise (no callback)
                  */
                 bool AcquireConnection(const OnClientConnectionAvailable &onClientConnectionAvailable) noexcept;
 
@@ -81,11 +85,16 @@ namespace Aws
                  * process. If EnableBlockingDestruct was enabled on the connection manager options, calling get() on
                  * the returned future will block until the last connection is released. If the option is not set, get()
                  * will immediately return.
+                 * @return future which will complete when shutdown has completed
                  */
                 std::future<void> InitiateShutdown() noexcept;
 
                 /**
                  * Factory function for connection managers
+                 *
+                 * @param connectionManagerOptions connection manager configuration data
+                 * @param allocator allocator to use
+                 * @return a new connection manager instance
                  */
                 static std::shared_ptr<HttpClientConnectionManager> NewClientConnectionManager(
                     const HttpClientConnectionManagerOptions &connectionManagerOptions,

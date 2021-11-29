@@ -21,24 +21,29 @@ namespace Aws
               public:
                 Uri() noexcept;
                 ~Uri();
+
                 /**
                  * Parses `cursor` as a URI. Upon failure the bool() operator will return false and LastError()
                  * will contain the errorCode.
                  */
                 Uri(const ByteCursor &cursor, Allocator *allocator = g_allocator) noexcept;
+
                 /**
                  * Builds a URI from `builderOptions`. Upon failure the bool() operator will return false and
                  * LastError() will contain the errorCode.
                  */
                 Uri(aws_uri_builder_options &builderOptions, Allocator *allocator = g_allocator) noexcept;
+
                 Uri(const Uri &);
                 Uri &operator=(const Uri &);
                 Uri(Uri &&uri) noexcept;
                 Uri &operator=(Uri &&) noexcept;
+
                 /**
                  * @return true if the instance is in a valid state, false otherwise.
                  */
                 operator bool() const noexcept { return m_isInit; }
+
                 /**
                  * @return the value of the last aws error encountered by operations on this instance.
                  */

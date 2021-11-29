@@ -28,6 +28,9 @@ namespace Aws
             using OnHostResolved =
                 std::function<void(HostResolver &resolver, const Vector<HostAddress> &addresses, int errorCode)>;
 
+            /**
+             * Simple interface for DNS name lookup implementations
+             */
             class AWS_CRT_CPP_API HostResolver
             {
               public:
@@ -40,6 +43,10 @@ namespace Aws
                 virtual aws_host_resolution_config *GetConfig() noexcept = 0;
             };
 
+            /**
+             * A wrapper around the CRT default host resolution system that uses getaddrinfo() farmed off
+             * to separate threads in order to resolve names.
+             */
             class AWS_CRT_CPP_API DefaultHostResolver final : public HostResolver
             {
               public:
@@ -64,6 +71,7 @@ namespace Aws
                  * @return true if the instance is in a valid state, false otherwise.
                  */
                 operator bool() const noexcept { return m_initialized; }
+
                 /**
                  * @return the value of the last aws error encountered by operations on this instance.
                  */

@@ -354,8 +354,6 @@ namespace Aws
 
                 /*
                  * Factory methods for all of the basic credentials provider types
-                 *
-                 * NYI: X509, ECS
                  */
 
                 /**

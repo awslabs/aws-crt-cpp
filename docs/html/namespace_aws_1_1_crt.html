@@ -634,6 +634,7 @@ template&lt;typename T &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
+<p >Should the API Handle destructor block on all shutdown/thread completion logic or not? </p>
 <table class="fieldtable">
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a0cecd61d589e187a29d31942db459442abd0ca6be53b0f3d2886fd53fcb52574e" name="a0cecd61d589e187a29d31942db459442abd0ca6be53b0f3d2886fd53fcb52574e"></a>Blocking&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a0cecd61d589e187a29d31942db459442a20a6cf714cbf179298b4d850849847b8" name="a0cecd61d589e187a29d31942db459442a20a6cf714cbf179298b4d850849847b8"></a>NonBlocking&#160;</td><td class="fielddoc"></td></tr>
@@ -718,6 +719,7 @@ template&lt;typename T &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
+<p >Detail level control for logging output </p>
 <table class="fieldtable">
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a38935c4922a7101640006354d741ffeba6adf97f83acf6453d4a6a4b1070f3754" name="a38935c4922a7101640006354d741ffeba6adf97f83acf6453d4a6a4b1070f3754"></a>None&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a38935c4922a7101640006354d741ffeba882384ec38ce8d9582b57e70861730e4" name="a38935c4922a7101640006354d741ffeba882384ec38ce8d9582b57e70861730e4"></a>Fatal&#160;</td><td class="fielddoc"></td></tr>
@@ -1287,6 +1289,13 @@ template&lt;typename T &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
+<p >Gets a string description of a CRT error code </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">error</td><td>error code to get a descriptive string for </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>a string description of the error code </dd></dl>
 
 </div>
 </div>
@@ -1313,6 +1322,13 @@ template&lt;typename T &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
+<p >C-string hash function </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">str</td><td>string to hash </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>hash code of the string </dd></dl>
 
 </div>
 </div>
