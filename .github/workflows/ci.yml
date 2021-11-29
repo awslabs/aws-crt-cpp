@@ -7,7 +7,7 @@ on:
       - '!main'
 
 env:
-  BUILDER_VERSION: v0.8.31
+  BUILDER_VERSION: v0.9.3
   BUILDER_SOURCE: releases
   BUILDER_HOST: https://d19elf31gohf1l.cloudfront.net
   PACKAGE_NAME: aws-crt-cpp
@@ -26,6 +26,9 @@ jobs:
           - manylinux2014-x64
           - manylinux2014-x86
           - al2-x64
+          - fedora-34-x64
+          - opensuse-leap
+          - rhel8-x64
     steps:
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
     - name: Build ${{ env.PACKAGE_NAME }}
