@@ -5,5 +5,6 @@ var searchData=
   ['tlschannelhandler_2',['TlsChannelHandler',['../class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler.html',1,'Aws::Crt::Io']]],
   ['tlsconnectionoptions_3',['TlsConnectionOptions',['../class_aws_1_1_crt_1_1_io_1_1_tls_connection_options.html',1,'Aws::Crt::Io']]],
   ['tlscontext_4',['TlsContext',['../class_aws_1_1_crt_1_1_io_1_1_tls_context.html',1,'Aws::Crt::Io']]],
-  ['tlscontextoptions_5',['TlsContextOptions',['../class_aws_1_1_crt_1_1_io_1_1_tls_context_options.html',1,'Aws::Crt::Io']]]
+  ['tlscontextoptions_5',['TlsContextOptions',['../class_aws_1_1_crt_1_1_io_1_1_tls_context_options.html',1,'Aws::Crt::Io']]],
+  ['tlscontextpkcs11options_6',['TlsContextPkcs11Options',['../class_aws_1_1_crt_1_1_io_1_1_tls_context_pkcs11_options.html',1,'Aws::Crt::Io']]]
 ];
