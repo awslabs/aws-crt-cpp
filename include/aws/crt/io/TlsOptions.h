@@ -19,6 +19,9 @@ namespace Aws
     {
         namespace Io
         {
+            class Pkcs11Lib;
+            class TlsContextPkcs11Options;
+
             enum class TlsMode
             {
                 CLIENT,
@@ -63,6 +66,7 @@ namespace Aws
                  * must be in the PEM format.
                  * @param cert_path: Path to certificate file.
                  * @param pkey_path: Path to private key file.
+                 * @param allocator Memory allocator to use.
                  */
                 static TlsContextOptions InitClientWithMtls(
                     const char *cert_path,
@@ -75,10 +79,24 @@ namespace Aws
                  * must be in the PEM format.
                  * @param cert: Certificate contents in memory.
                  * @param pkey: Private key contents in memory.
+                 * @param allocator Memory allocator to use.
                  */
                 static TlsContextOptions InitClientWithMtls(
                     const ByteCursor &cert,
                     const ByteCursor &pkey,
+                    Allocator *allocator = g_allocator) noexcept;
+
+                /**
+                 * Initializes TlsContextOptions with secure by default options,
+                 * using a PKCS#11 library for private key operations.
+                 *
+                 * NOTE: This configuration only works on Unix devices.
+                 *
+                 * @param pkcs11Options PKCS#11 options
+                 * @param allocator Memory allocator to use.
+                 */
+                static TlsContextOptions InitClientWithMtlsPkcs11(
+                    const TlsContextPkcs11Options &pkcs11Options,
                     Allocator *allocator = g_allocator) noexcept;
 
 #ifdef __APPLE__
@@ -90,6 +108,7 @@ namespace Aws
                  * must remain in memory for the lifetime of the returned object.
                  * @param pkcs12_pwd: Password to PKCS #12 file. It must remain in memory for the lifetime of the
                  * returned object.
+                 * @param allocator Memory allocator to use.
                  */
                 static TlsContextOptions InitClientWithMtlsPkcs12(
                     const char *pkcs12_path,
@@ -168,6 +187,84 @@ namespace Aws
               private:
                 aws_tls_ctx_options m_options;
                 bool m_isInit;
+            };
+
+            /**
+             * Options for TLS, when using a PKCS#11 library for private key operations.
+             *
+             * @see TlsContextOptions::InitClientWithMtlsPkcs11()
+             */
+            class AWS_CRT_CPP_API TlsContextPkcs11Options final
+            {
+              public:
+                /**
+                 * @param pkcs11Lib use this PKCS#11 library
+                 * @param allocator Memory allocator to use.
+                 */
+                TlsContextPkcs11Options(
+                    const std::shared_ptr<Pkcs11Lib> &pkcs11Lib,
+                    Allocator *allocator = g_allocator) noexcept;
+
+                /**
+                 * Use this PIN to log the user into the PKCS#11 token.
+                 * Leave unspecified to log into a token with a "protected authentication path".
+                 *
+                 * @param pin PIN
+                 */
+                void SetUserPin(const String &pin) noexcept;
+
+                /**
+                 * Specify the slot ID containing a PKCS#11 token.
+                 * If not specified, the token will be chosen based on other criteria (such as token label).
+                 *
+                 * @param id slot ID
+                 */
+                void SetSlotId(const uint64_t id) noexcept;
+
+                /**
+                 * Specify the label of the PKCS#11 token to use.
+                 * If not specified, the token will be chosen based on other criteria (such as slot ID).
+                 *
+                 * @param label label of token
+                 */
+                void SetTokenLabel(const String &label) noexcept;
+
+                /**
+                 * Specify the label of the private key object on the PKCS#11 token.
+                 * If not specified, the key will be chosen based on other criteria
+                 * (such as being the only available private key on the token).
+                 *
+                 * @param label label of private key object
+                 */
+                void SetPrivateKeyObjectLabel(const String &label) noexcept;
+
+                /**
+                 * Use this X.509 certificate (file on disk).
+                 * The certificate may be specified by other means instead (ex: SetCertificateFileContents())
+                 *
+                 * @param path path to PEM-formatted certificate file on disk.
+                 */
+                void SetCertificateFilePath(const String &path) noexcept;
+
+                /**
+                 * Use this X.509 certificate (contents in memory).
+                 * The certificate may be specified by other means instead (ex: SetCertificateFilePath())
+                 *
+                 * @param contents contents of PEM-formatted certificate file.
+                 */
+                void SetCertificateFileContents(const String &contents) noexcept;
+
+                /// @private
+                aws_tls_ctx_pkcs11_options GetUnderlyingHandle() const noexcept;
+
+              private:
+                std::shared_ptr<Pkcs11Lib> m_pkcs11Lib;
+                Optional<uint64_t> m_slotId;
+                Optional<String> m_userPin;
+                Optional<String> m_tokenLabel;
+                Optional<String> m_privateKeyObjectLabel;
+                Optional<String> m_certificateFilePath;
+                Optional<String> m_certificateFileContents;
             };
 
             /**
