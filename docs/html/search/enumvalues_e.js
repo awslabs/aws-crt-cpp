@@ -6,6 +6,5 @@ var searchData=
   ['sigv4_3',['SigV4',['../namespace_aws_1_1_crt_1_1_auth.html#a0bb6cb21cf640b39af9e036cfeecdca5a49dac73a0f86fb857db177b4324a8e71',1,'Aws::Crt::Auth']]],
   ['sigv4a_4',['SigV4A',['../namespace_aws_1_1_crt_1_1_auth.html#a0bb6cb21cf640b39af9e036cfeecdca5a34294474e9d0640cc9e43eddaedacff0',1,'Aws::Crt::Auth']]],
   ['stream_5',['Stream',['../namespace_aws_1_1_crt_1_1_io.html#ae5f9aa2fd04a14dfa0cd50a8b56e6b8eaeae835e83c0494a376229f254f7d3392',1,'Aws::Crt::Io']]],
-  ['strict_6',['Strict',['../class_aws_1_1_crt_1_1_io_1_1_pkcs11_lib.html#a952ea389c22b244fa0da3f490e2d4b1ba2e979835dd62324f5bfe217449ba4974',1,'Aws::Crt::Io::Pkcs11Lib']]],
-  ['sunday_7',['Sunday',['../namespace_aws_1_1_crt.html#aceed5cb5b58c971ed0503442659e895fa9d1a0949c39e66a0cd65240bc0ac9177',1,'Aws::Crt']]]
+  ['sunday_6',['Sunday',['../namespace_aws_1_1_crt.html#aceed5cb5b58c971ed0503442659e895fa9d1a0949c39e66a0cd65240bc0ac9177',1,'Aws::Crt']]]
 ];
