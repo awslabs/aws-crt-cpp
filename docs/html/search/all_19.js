@@ -31,12 +31,13 @@ var searchData=
   ['_7emqttclient_28',['~MqttClient',['../class_aws_1_1_crt_1_1_mqtt_1_1_mqtt_client.html#a09dfbd45e2e63e934b02d739bba16eca',1,'Aws::Crt::Mqtt::MqttClient']]],
   ['_7emqttconnection_29',['~MqttConnection',['../class_aws_1_1_crt_1_1_mqtt_1_1_mqtt_connection.html#abc4c0fcd811a22f0ed1ae00e54e74e21',1,'Aws::Crt::Mqtt::MqttConnection']]],
   ['_7eoptional_30',['~Optional',['../class_aws_1_1_crt_1_1_optional.html#af354cd9f9c26684d2bf0c273695dae32',1,'Aws::Crt::Optional']]],
-  ['_7esigv4httprequestsigner_31',['~Sigv4HttpRequestSigner',['../class_aws_1_1_crt_1_1_auth_1_1_sigv4_http_request_signer.html#afa436c35e981ac6ef75cc8820cc24ffe',1,'Aws::Crt::Auth::Sigv4HttpRequestSigner']]],
-  ['_7estlallocator_32',['~StlAllocator',['../class_aws_1_1_crt_1_1_stl_allocator.html#acb81e21dc53ebebe6a5a8d6cb447fdcd',1,'Aws::Crt::StlAllocator']]],
-  ['_7etlschannelhandler_33',['~TlsChannelHandler',['../class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler.html#afac1c40efd298b3a2ad9f6f66b699584',1,'Aws::Crt::Io::TlsChannelHandler']]],
-  ['_7etlsconnectionoptions_34',['~TlsConnectionOptions',['../class_aws_1_1_crt_1_1_io_1_1_tls_connection_options.html#abe9bee9467b0dc55df37903301892f40',1,'Aws::Crt::Io::TlsConnectionOptions']]],
-  ['_7etlscontext_35',['~TlsContext',['../class_aws_1_1_crt_1_1_io_1_1_tls_context.html#a78edf7b804187cc05a594db4a577050b',1,'Aws::Crt::Io::TlsContext']]],
-  ['_7etlscontextoptions_36',['~TlsContextOptions',['../class_aws_1_1_crt_1_1_io_1_1_tls_context_options.html#a3033d9406f80f5fd93372cd7c52007c5',1,'Aws::Crt::Io::TlsContextOptions']]],
-  ['_7eunmanagedconnection_37',['~UnmanagedConnection',['../class_aws_1_1_crt_1_1_http_1_1_unmanaged_connection.html#a07c2fa54147f38de138d4103fcf2595a',1,'Aws::Crt::Http::UnmanagedConnection']]],
-  ['_7euri_38',['~Uri',['../class_aws_1_1_crt_1_1_io_1_1_uri.html#a282a67fbc4ea7b8729bfc0ddfd4ee1bd',1,'Aws::Crt::Io::Uri']]]
+  ['_7epkcs11lib_31',['~Pkcs11Lib',['../class_aws_1_1_crt_1_1_io_1_1_pkcs11_lib.html#a0698b146eb56c567116784adee3d1e11',1,'Aws::Crt::Io::Pkcs11Lib']]],
+  ['_7esigv4httprequestsigner_32',['~Sigv4HttpRequestSigner',['../class_aws_1_1_crt_1_1_auth_1_1_sigv4_http_request_signer.html#afa436c35e981ac6ef75cc8820cc24ffe',1,'Aws::Crt::Auth::Sigv4HttpRequestSigner']]],
+  ['_7estlallocator_33',['~StlAllocator',['../class_aws_1_1_crt_1_1_stl_allocator.html#acb81e21dc53ebebe6a5a8d6cb447fdcd',1,'Aws::Crt::StlAllocator']]],
+  ['_7etlschannelhandler_34',['~TlsChannelHandler',['../class_aws_1_1_crt_1_1_io_1_1_tls_channel_handler.html#afac1c40efd298b3a2ad9f6f66b699584',1,'Aws::Crt::Io::TlsChannelHandler']]],
+  ['_7etlsconnectionoptions_35',['~TlsConnectionOptions',['../class_aws_1_1_crt_1_1_io_1_1_tls_connection_options.html#abe9bee9467b0dc55df37903301892f40',1,'Aws::Crt::Io::TlsConnectionOptions']]],
+  ['_7etlscontext_36',['~TlsContext',['../class_aws_1_1_crt_1_1_io_1_1_tls_context.html#a78edf7b804187cc05a594db4a577050b',1,'Aws::Crt::Io::TlsContext']]],
+  ['_7etlscontextoptions_37',['~TlsContextOptions',['../class_aws_1_1_crt_1_1_io_1_1_tls_context_options.html#a3033d9406f80f5fd93372cd7c52007c5',1,'Aws::Crt::Io::TlsContextOptions']]],
+  ['_7eunmanagedconnection_38',['~UnmanagedConnection',['../class_aws_1_1_crt_1_1_http_1_1_unmanaged_connection.html#a07c2fa54147f38de138d4103fcf2595a',1,'Aws::Crt::Http::UnmanagedConnection']]],
+  ['_7euri_39',['~Uri',['../class_aws_1_1_crt_1_1_io_1_1_uri.html#a282a67fbc4ea7b8729bfc0ddfd4ee1bd',1,'Aws::Crt::Io::Uri']]]
 ];

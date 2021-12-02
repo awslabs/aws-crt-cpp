@@ -12,7 +12,7 @@ var searchData=
   ['print_5fobject_9',['print_object',['../namespace_aws.html#a196fca4ad89d0a1a1e3173ee08c5d953',1,'Aws']]],
   ['print_5fstring_10',['print_string',['../namespace_aws.html#a0e16fac4ca4b9eb5885b68d71d0348f1',1,'Aws']]],
   ['print_5fstring_5fptr_11',['print_string_ptr',['../namespace_aws.html#a941accd5431eceaa2291ec1d42b18b4a',1,'Aws']]],
-  ['print_5fvalue_12',['print_value',['../namespace_aws.html#a3779cfcea23823f873837663e1c615ba',1,'Aws::print_value(item, &amp;p)'],['../namespace_aws.html#a423495e0400d5578e829f0e45a90ef5b',1,'Aws::print_value(const cJSON *const item, printbuffer *const output_buffer)']]],
+  ['print_5fvalue_12',['print_value',['../namespace_aws.html#a423495e0400d5578e829f0e45a90ef5b',1,'Aws::print_value(const cJSON *const item, printbuffer *const output_buffer)'],['../namespace_aws.html#a3779cfcea23823f873837663e1c615ba',1,'Aws::print_value(item, &amp;p)']]],
   ['processreadmessage_13',['ProcessReadMessage',['../class_aws_1_1_crt_1_1_io_1_1_channel_handler.html#a5cd524520d57dd4972fd1f2ef76f4542',1,'Aws::Crt::Io::ChannelHandler']]],
   ['processshutdown_14',['ProcessShutdown',['../class_aws_1_1_crt_1_1_io_1_1_channel_handler.html#a13605ebe3f37b2023a1dd4331e595afa',1,'Aws::Crt::Io::ChannelHandler']]],
   ['processwritemessage_15',['ProcessWriteMessage',['../class_aws_1_1_crt_1_1_io_1_1_channel_handler.html#a3056d7241980af565b1009164169d2b0',1,'Aws::Crt::Io::ChannelHandler']]],
