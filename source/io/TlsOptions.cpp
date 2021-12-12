@@ -216,7 +216,7 @@ namespace Aws
 
                 if (m_slotId)
                 {
-                    options.slot_id = &(*m_slotId);
+                    options.slot_id = const_cast<uint64_t*>(&(*m_slotId));
                 }
 
                 if (m_userPin)
