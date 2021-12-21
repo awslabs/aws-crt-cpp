@@ -60,6 +60,8 @@ namespace Aws
                  */
                 static TlsContextOptions InitDefaultClient(Allocator *allocator = g_allocator) noexcept;
 
+#if !defined(AWS_OS_IOS)
+
                 /**
                  * Initializes TlsContextOptions with secure by default options, with
                  * client certificate and private key. These are paths to a file on disk. These files
@@ -86,18 +88,29 @@ namespace Aws
                     const ByteCursor &pkey,
                     Allocator *allocator = g_allocator) noexcept;
 
+#    ifdef __APPLE__
                 /**
-                 * Initializes TlsContextOptions with secure by default options,
-                 * using a PKCS#11 library for private key operations.
-                 *
-                 * NOTE: This configuration only works on Unix devices.
-                 *
-                 * @param pkcs11Options PKCS#11 options
-                 * @param allocator Memory allocator to use.
+                 * By default the certificates and private keys are stored in the default keychain
+                 * of the account of the process. If you instead wish to provide your own keychain
+                 * for storing them, this makes the TlsContext to use that instead.
+                 * NOTE: The password of your keychain must be empty.
                  */
-                static TlsContextOptions InitClientWithMtlsPkcs11(
-                    const TlsContextPkcs11Options &pkcs11Options,
+                bool SetKeychainPath(ByteCursor &keychain_path) noexcept;
+#    endif /* __APPLE__ */
+
+#endif /* !AWS_OS_IOS */
+
+#ifdef _WIN32
+                /**
+                 * Initializes options for use with mutual tls in client mode.
+                 * This function is only available on windows.
+                 * @param registryPath Path to a system installed certficate/private key pair.
+                 * Example: "CurrentUser\\MY\\<thumprint>"
+                 */
+                static TlsContextOptions InitClientWithMtlsSystemPath(
+                    const char *registryPath,
                     Allocator *allocator = g_allocator) noexcept;
+#endif /* _WIN32 */
 
 #ifdef __APPLE__
                 /**
@@ -114,27 +127,20 @@ namespace Aws
                     const char *pkcs12_path,
                     const char *pkcs12_pwd,
                     Allocator *allocator = g_allocator) noexcept;
+#endif /* __APPLE__ */
 
                 /**
-                 * By default the certificates and private keys are stored in the default keychain
-                 * of the account of the process. If you instead wish to provide your own keychain
-                 * for storing them, this makes the TlsContext to use that instead.
-                 * NOTE: The password of your keychain must be empty.
+                 * Initializes TlsContextOptions with secure by default options,
+                 * using a PKCS#11 library for private key operations.
+                 *
+                 * NOTE: This configuration only works on Unix devices.
+                 *
+                 * @param pkcs11Options PKCS#11 options
+                 * @param allocator Memory allocator to use.
                  */
-                bool SetKeychainPath(ByteCursor &keychain_path) noexcept;
-#endif
-
-#ifdef _WIN32
-                /**
-                 * Initializes options for use with mutual tls in client mode.
-                 * This function is only available on windows.
-                 * @param registryPath Path to a system installed certficate/private key pair.
-                 * Example: "CurrentUser\\MY\\<thumprint>"
-                 */
-                static TlsContextOptions InitClientWithMtlsSystemPath(
-                    const char *registryPath,
+                static TlsContextOptions InitClientWithMtlsPkcs11(
+                    const TlsContextPkcs11Options &pkcs11Options,
                     Allocator *allocator = g_allocator) noexcept;
-#endif /* _WIN32 */
 
                 /**
                  * @return true if alpn is supported by the underlying security provider, false

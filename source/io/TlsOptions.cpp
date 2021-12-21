@@ -61,6 +61,7 @@ namespace Aws
             }
 
 #if !defined(AWS_OS_IOS)
+
             TlsContextOptions TlsContextOptions::InitClientWithMtls(
                 const char *certPath,
                 const char *pKeyPath,
@@ -92,22 +93,29 @@ namespace Aws
                 return ctxOptions;
             }
 
-            TlsContextOptions TlsContextOptions::InitClientWithMtlsPkcs11(
-                const TlsContextPkcs11Options &pkcs11Options,
+#    if defined(__APPLE__)
+            bool TlsContextOptions::SetKeychainPath(ByteCursor &keychain_path) noexcept
+            {
+                AWS_ASSERT(m_isInit);
+                return aws_tls_ctx_options_set_keychain_path(&m_options, &keychain_path) == 0;
+            }
+#    endif /* __APPLE__ */
+
+#endif /* !AWS_OS_IOS */
+
+#ifdef _WIN32
+            TlsContextOptions TlsContextOptions::InitClientWithMtlsSystemPath(
+                const char *registryPath,
                 Allocator *allocator) noexcept
             {
                 TlsContextOptions ctxOptions;
-                aws_tls_ctx_pkcs11_options nativePkcs11Options = pkcs11Options.GetUnderlyingHandle();
-                if (!aws_tls_ctx_options_init_client_mtls_with_pkcs11(
-                        &ctxOptions.m_options, allocator, &nativePkcs11Options))
-                {
-                    ctxOptions.m_isInit = true;
-                }
+                aws_tls_ctx_options_init_client_mtls_from_system_path(&ctxOptions.m_options, allocator, registryPath);
+                ctxOptions.m_isInit = true;
                 return ctxOptions;
             }
+#endif /* _WIN32 */
 
-#endif /* !AWS_OS_IOS */
-#if defined(AWS_OS_APPLE)
+#if defined(__APPLE__)
             TlsContextOptions TlsContextOptions::InitClientWithMtlsPkcs12(
                 const char *pkcs12Path,
                 const char *pkcs12Pwd,
@@ -123,24 +131,21 @@ namespace Aws
                 return ctxOptions;
             }
 
-            bool TlsContextOptions::SetKeychainPath(ByteCursor &keychain_path) noexcept
-            {
-                AWS_ASSERT(m_isInit);
-                return aws_tls_ctx_options_set_keychain_path(&m_options, &keychain_path) == 0;
-            }
-#endif /* AWS_OS_APPLE */
+#endif /* __APPLE__ */
 
-#ifdef _WIN32
-            TlsContextOptions TlsContextOptions::InitClientWithMtlsSystemPath(
-                const char *registryPath,
+            TlsContextOptions TlsContextOptions::InitClientWithMtlsPkcs11(
+                const TlsContextPkcs11Options &pkcs11Options,
                 Allocator *allocator) noexcept
             {
                 TlsContextOptions ctxOptions;
-                aws_tls_ctx_options_init_client_mtls_from_system_path(&ctxOptions.m_options, allocator, registryPath);
-                ctxOptions.m_isInit = true;
+                aws_tls_ctx_pkcs11_options nativePkcs11Options = pkcs11Options.GetUnderlyingHandle();
+                if (!aws_tls_ctx_options_init_client_mtls_with_pkcs11(
+                        &ctxOptions.m_options, allocator, &nativePkcs11Options))
+                {
+                    ctxOptions.m_isInit = true;
+                }
                 return ctxOptions;
             }
-#endif /* _WIN32 */
 
             int TlsContextOptions::LastError() const noexcept { return LastErrorOrUnknown(); }
 
