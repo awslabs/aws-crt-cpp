@@ -202,6 +202,8 @@ namespace Aws
 
             /**
              * Sets the builder up for MTLS, using a PKCS#11 library for private key operations.
+             *
+             * NOTE: This only works on Unix devices.
              */
             MqttClientConnectionConfigBuilder(
                 const Crt::Io::TlsContextPkcs11Options &pkcs11Options,
