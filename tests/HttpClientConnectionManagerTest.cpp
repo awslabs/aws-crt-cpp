@@ -11,6 +11,11 @@
 #include <aws/crt/io/Uri.h>
 
 #include <aws/testing/aws_test_harness.h>
+#if defined(_WIN32)
+// aws_test_harness.h includes Windows.h, which is an abomination.
+// undef macros with clashing names...
+#    undef InitiateShutdown
+#endif
 
 #include <condition_variable>
 #include <mutex>

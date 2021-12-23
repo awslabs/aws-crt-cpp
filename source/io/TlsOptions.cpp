@@ -4,6 +4,8 @@
  */
 #include <aws/crt/io/TlsOptions.h>
 
+#include <aws/crt/io/Pkcs11.h>
+
 #include <aws/crt/Api.h>
 #include <aws/io/logging.h>
 #include <aws/io/tls_channel_handler.h>
@@ -89,7 +91,21 @@ namespace Aws
                 }
                 return ctxOptions;
             }
-            
+
+            TlsContextOptions TlsContextOptions::InitClientWithMtlsPkcs11(
+                const TlsContextPkcs11Options &pkcs11Options,
+                Allocator *allocator) noexcept
+            {
+                TlsContextOptions ctxOptions;
+                aws_tls_ctx_pkcs11_options nativePkcs11Options = pkcs11Options.GetUnderlyingHandle();
+                if (!aws_tls_ctx_options_init_client_mtls_with_pkcs11(
+                        &ctxOptions.m_options, allocator, &nativePkcs11Options))
+                {
+                    ctxOptions.m_isInit = true;
+                }
+                return ctxOptions;
+            }
+
 #endif /* !AWS_OS_IOS */
 #if defined(AWS_OS_APPLE)
             TlsContextOptions TlsContextOptions::InitClientWithMtlsPkcs12(
@@ -159,6 +175,77 @@ namespace Aws
             {
                 AWS_ASSERT(m_isInit);
                 return aws_tls_ctx_options_override_default_trust_store(&m_options, const_cast<ByteCursor *>(&ca)) == 0;
+            }
+
+            TlsContextPkcs11Options::TlsContextPkcs11Options(
+                const std::shared_ptr<Pkcs11Lib> &pkcs11Lib,
+                Allocator *) noexcept
+                : m_pkcs11Lib{pkcs11Lib}
+            {
+            }
+
+            void TlsContextPkcs11Options::SetUserPin(const String &pin) noexcept { m_userPin = pin; }
+
+            void TlsContextPkcs11Options::SetSlotId(const uint64_t id) noexcept { m_slotId = id; }
+
+            void TlsContextPkcs11Options::SetTokenLabel(const String &label) noexcept { m_tokenLabel = label; }
+
+            void TlsContextPkcs11Options::SetPrivateKeyObjectLabel(const String &label) noexcept
+            {
+                m_privateKeyObjectLabel = label;
+            }
+
+            void TlsContextPkcs11Options::SetCertificateFilePath(const String &path) noexcept
+            {
+                m_certificateFilePath = path;
+            }
+
+            void TlsContextPkcs11Options::SetCertificateFileContents(const String &contents) noexcept
+            {
+                m_certificateFileContents = contents;
+            }
+
+            aws_tls_ctx_pkcs11_options TlsContextPkcs11Options::GetUnderlyingHandle() const noexcept
+            {
+                aws_tls_ctx_pkcs11_options options;
+                AWS_ZERO_STRUCT(options);
+
+                if (m_pkcs11Lib)
+                {
+                    options.pkcs11_lib = m_pkcs11Lib->GetNativeHandle();
+                }
+
+                if (m_slotId)
+                {
+                    options.slot_id = &(*m_slotId);
+                }
+
+                if (m_userPin)
+                {
+                    options.user_pin = ByteCursorFromString(*m_userPin);
+                }
+
+                if (m_tokenLabel)
+                {
+                    options.token_label = ByteCursorFromString(*m_tokenLabel);
+                }
+
+                if (m_privateKeyObjectLabel)
+                {
+                    options.private_key_object_label = ByteCursorFromString(*m_privateKeyObjectLabel);
+                }
+
+                if (m_certificateFilePath)
+                {
+                    options.cert_file_path = ByteCursorFromString(*m_certificateFilePath);
+                }
+
+                if (m_certificateFileContents)
+                {
+                    options.cert_file_contents = ByteCursorFromString(*m_certificateFileContents);
+                }
+
+                return options;
             }
 
             TlsConnectionOptions::TlsConnectionOptions() noexcept : m_lastError(AWS_ERROR_SUCCESS), m_isInit(false) {}

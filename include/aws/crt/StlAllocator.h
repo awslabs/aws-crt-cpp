@@ -17,6 +17,10 @@ namespace Aws
         using Allocator = aws_allocator;
         extern AWS_CRT_CPP_API Allocator *g_allocator;
 
+        /**
+         * Stateful allocator variant that uses an underlying CRT allocator
+         * @tparam T type that allocator can allocate
+         */
         template <typename T> class StlAllocator : public std::allocator<T>
         {
           public:

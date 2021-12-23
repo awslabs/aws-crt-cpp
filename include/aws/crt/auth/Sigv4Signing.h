@@ -21,20 +21,58 @@ namespace Aws
             class Credentials;
             class ICredentialsProvider;
 
+            /**
+             * Enumeration indicating what version of the AWS signing process we should use.
+             */
             enum class SigningAlgorithm
             {
+                /**
+                 * Standard AWS Sigv4 signing using a symmetric secret, per
+                 * https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html
+                 */
                 SigV4 = AWS_SIGNING_ALGORITHM_V4,
-                SigV4A = AWS_SIGNING_ALGORITHM_V4_ASYMMETRIC
+
+                /**
+                 * A variant of AWS Sigv4 signing that uses ecdsa signatures based on an ECC key, rather than relying on
+                 * a shared secret.
+                 */
+                SigV4A = AWS_SIGNING_ALGORITHM_V4_ASYMMETRIC,
             };
 
+            /**
+             * What kind of AWS signature should be computed?
+             */
             enum class SignatureType
             {
+                /**
+                 * A signature for a full http request should be computed, with header updates applied to the signing
+                 * result.
+                 */
                 HttpRequestViaHeaders = AWS_ST_HTTP_REQUEST_HEADERS,
+
+                /**
+                 * A signature for a full http request should be computed, with query param updates applied to the
+                 * signing result.
+                 */
                 HttpRequestViaQueryParams = AWS_ST_HTTP_REQUEST_QUERY_PARAMS,
+
+                /**
+                 * Compute a signature for a payload chunk.
+                 */
                 HttpRequestChunk = AWS_ST_HTTP_REQUEST_CHUNK,
+
+                /**
+                 * Compute a signature for an event stream event.
+                 *
+                 * This option is not yet supported.
+                 */
                 HttpRequestEvent = AWS_ST_HTTP_REQUEST_EVENT,
             };
 
+            /**
+             * A collection of signed body constants.  Some are specific to certain
+             * signature types, while others are just there to save time (empty sha, for example).
+             */
             namespace SignedBodyValue
             {
                 /**
@@ -60,9 +98,19 @@ namespace Aws
                 AWS_CRT_CPP_API extern const char *StreamingAws4HmacSha256Events;
             } // namespace SignedBodyValue
 
+            /**
+             * Controls if signing adds a header containing the canonical request's body value
+             */
             enum class SignedBodyHeaderType
             {
+                /**
+                 * Do not add a header
+                 */
                 None = AWS_SBHT_NONE,
+
+                /**
+                 * Add the "x-amz-content-sha256" header with the canonical request's body value
+                 */
                 XAmzContentSha256 = AWS_SBHT_X_AMZ_CONTENT_SHA256,
             };
 
@@ -81,7 +129,7 @@ namespace Aws
                 virtual SigningConfigType GetType() const noexcept override { return SigningConfigType::Aws; }
 
                 /**
-                 * Gets the signing process we want to invoke
+                 * @return the signing process we want to invoke
                  */
                 SigningAlgorithm GetSigningAlgorithm() const noexcept;
 
@@ -91,7 +139,7 @@ namespace Aws
                 void SetSigningAlgorithm(SigningAlgorithm algorithm) noexcept;
 
                 /**
-                 * Gets the type of signature we want to calculate
+                 * @return the type of signature we want to calculate
                  */
                 SignatureType GetSignatureType() const noexcept;
 
@@ -101,7 +149,7 @@ namespace Aws
                 void SetSignatureType(SignatureType signatureType) noexcept;
 
                 /**
-                 * Gets the AWS region to sign against
+                 * @return the AWS region to sign against
                  */
                 const Crt::String &GetRegion() const noexcept;
 
@@ -111,7 +159,7 @@ namespace Aws
                 void SetRegion(const Crt::String &region) noexcept;
 
                 /**
-                 * Gets the (signing) name of the AWS service to sign a request for
+                 * @return the (signing) name of the AWS service to sign a request for
                  */
                 const Crt::String &GetService() const noexcept;
 
@@ -121,7 +169,7 @@ namespace Aws
                 void SetService(const Crt::String &service) noexcept;
 
                 /**
-                 * Gets the timestamp to use during the signing process.
+                 * @return the timestamp to use during the signing process.
                  */
                 DateTime GetSigningTimepoint() const noexcept;
 
@@ -137,7 +185,7 @@ namespace Aws
                  */
 
                 /**
-                 * Gets whether or not the signing process should perform a uri encode step before creating the
+                 * @return whether or not the signing process should perform a uri encode step before creating the
                  * canonical request.
                  */
                 bool GetUseDoubleUriEncode() const noexcept;
@@ -149,7 +197,7 @@ namespace Aws
                 void SetUseDoubleUriEncode(bool useDoubleUriEncode) noexcept;
 
                 /**
-                 * Gets whether or not the uri paths should be normalized when building the canonical request
+                 * @return whether or not the uri paths should be normalized when building the canonical request
                  */
                 bool GetShouldNormalizeUriPath() const noexcept;
 
@@ -159,7 +207,7 @@ namespace Aws
                 void SetShouldNormalizeUriPath(bool shouldNormalizeUriPath) noexcept;
 
                 /**
-                 * Gets whether or not to omit the session token during signing.  Only set to true when performing
+                 * @return whether or not to omit the session token during signing.  Only set to true when performing
                  * a websocket handshake with IoT Core.
                  */
                 bool GetOmitSessionToken() const noexcept;
@@ -171,7 +219,7 @@ namespace Aws
                 void SetOmitSessionToken(bool omitSessionToken) noexcept;
 
                 /**
-                 * Gets the ShouldSignHeadersCb from the underlying config.
+                 * @return the ShouldSignHeadersCb from the underlying config.
                  */
                 ShouldSignHeaderCb GetShouldSignHeaderCallback() const noexcept;
 
@@ -182,7 +230,7 @@ namespace Aws
                 void SetShouldSignHeaderCallback(ShouldSignHeaderCb shouldSignHeaderCb) noexcept;
 
                 /**
-                 * Gets the should_sign_header_ud from the underlying config.
+                 * @return the should_sign_header_ud from the underlying config.
                  */
                 void *GetShouldSignHeaderUserData() const noexcept;
 
@@ -192,7 +240,7 @@ namespace Aws
                 void SetShouldSignHeaderUserData(void *userData) noexcept;
 
                 /**
-                 * Gets the string used as the canonical request's body value.
+                 * @return the string used as the canonical request's body value.
                  * If string is empty, a value is be calculated from the payload during signing.
                  */
                 const Crt::String &GetSignedBodyValue() const noexcept;
@@ -207,7 +255,7 @@ namespace Aws
                 void SetSignedBodyValue(const Crt::String &signedBodyValue) noexcept;
 
                 /**
-                 * Gets the name of the header to add that stores the signed body value
+                 * @return the name of the header to add that stores the signed body value
                  */
                 SignedBodyHeaderType GetSignedBodyHeader() const noexcept;
 
@@ -217,7 +265,8 @@ namespace Aws
                 void SetSignedBodyHeader(SignedBodyHeaderType signedBodyHeader) noexcept;
 
                 /**
-                 * (Query param signing only) Gets the amount of time, in seconds, the (pre)signed URI will be good for
+                 * @return (Query param signing only) Gets the amount of time, in seconds, the (pre)signed URI will be
+                 * good for
                  */
                 uint64_t GetExpirationInSeconds() const noexcept;
 
@@ -232,7 +281,7 @@ namespace Aws
                  */
 
                 /**
-                 *  Get the credentials provider to use for signing.
+                 *  @return the credentials provider to use for signing.
                  */
                 const std::shared_ptr<ICredentialsProvider> &GetCredentialsProvider() const noexcept;
 
@@ -242,7 +291,7 @@ namespace Aws
                 void SetCredentialsProvider(const std::shared_ptr<ICredentialsProvider> &credsProvider) noexcept;
 
                 /**
-                 *  Get the credentials to use for signing.
+                 *  @return the credentials to use for signing.
                  */
                 const std::shared_ptr<Credentials> &GetCredentials() const noexcept;
 
@@ -265,7 +314,8 @@ namespace Aws
             };
 
             /**
-             * Http request signer that performs Aws Sigv4 signing
+             * Http request signer that performs Aws Sigv4 signing.  Expects the signing configuration to be and
+             * instance of AwsSigningConfig
              */
             class AWS_CRT_CPP_API Sigv4HttpRequestSigner : public IHttpRequestSigner
             {
@@ -274,6 +324,7 @@ namespace Aws
                 virtual ~Sigv4HttpRequestSigner() = default;
 
                 bool IsValid() const override { return true; }
+
                 /**
                  * Signs an http request with AWS-auth sigv4. OnCompletionCallback will be invoked upon completion.
                  */

@@ -116,8 +116,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a6283f07bc66cc433c7cbb391438d08b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3d241c4d4931aa06bf1bf90fb11795e0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_aws_1_1_crt_1_1_http_1_1_http_message.html#a3d241c4d4931aa06bf1bf90fb11795e0">operator bool</a> () const noexcept</td></tr>
 <tr class="separator:a3d241c4d4931aa06bf1bf90fb11795e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3f908eec9b403dc6c29de2ddc0185beb"><td class="memItemLeft" align="right" valign="top">struct aws_http_message *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_aws_1_1_crt_1_1_http_1_1_http_message.html#a3f908eec9b403dc6c29de2ddc0185beb">GetUnderlyingMessage</a> () const noexcept</td></tr>
-<tr class="separator:a3f908eec9b403dc6c29de2ddc0185beb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -273,6 +271,13 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+<p >Adds a header to the request </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">header</td><td>header to add </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>success/failure </dd></dl>
 
 </div>
 </div>
@@ -299,6 +304,13 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+<p >Removes a header from the request </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">index</td><td>index of the header to remove </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>success/failure </dd></dl>
 
 </div>
 </div>
@@ -351,6 +363,13 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+<p >Gets a particular header in the request </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">index</td><td>index of the header to fetch </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>an option containing the requested header if the index is in bounds </dd></dl>
 
 </div>
 </div>
@@ -376,31 +395,7 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-</div>
-</div>
-<a id="a3f908eec9b403dc6c29de2ddc0185beb" name="a3f908eec9b403dc6c29de2ddc0185beb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3f908eec9b403dc6c29de2ddc0185beb">&#9670;&nbsp;</a></span>GetUnderlyingMessage()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct aws_http_message * Aws::Crt::Http::HttpMessage::GetUnderlyingMessage </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
+<p >Gets the number of headers contained in this request </p><dl class="section return"><dt>Returns</dt><dd>the number of headers contained in this request </dd></dl>
 
 </div>
 </div>
@@ -426,6 +421,7 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>true/false if the underlying object is valid </dd></dl>
 
 </div>
 </div>
@@ -504,6 +500,13 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+<p >Sets the input stream representing the message body </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">body</td><td>the input stream representing the message body </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>success/failure </dd></dl>
 
 </div>
 </div>
@@ -530,7 +533,13 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p >Sets the input stream representing the message body </p>
+<p >Sets the input stream representing the message body </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">body</td><td>the input stream representing the message body </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>success/failure </dd></dl>
 
 </div>
 </div>

@@ -35,5 +35,6 @@ var searchData=
   ['bytecursorfrombytebuf_32',['ByteCursorFromByteBuf',['../namespace_aws_1_1_crt.html#ae360efd16a3052b3ad45a9ce3d5549b2',1,'Aws::Crt']]],
   ['bytecursorfromcstring_33',['ByteCursorFromCString',['../namespace_aws_1_1_crt.html#a2f85138cf0101f40e9b22f52428b678a',1,'Aws::Crt']]],
   ['bytecursorfromstring_34',['ByteCursorFromString',['../namespace_aws_1_1_crt.html#a9e5cf3dac33791d317a0d3503dc31c0e',1,'Aws::Crt']]],
-  ['bytecursortostringview_35',['ByteCursorToStringView',['../namespace_aws_1_1_crt.html#a8c4fd8ee9c0cc758444e92ae42b23aae',1,'Aws::Crt']]]
+  ['bytecursorfromstringview_35',['ByteCursorFromStringView',['../namespace_aws_1_1_crt.html#a0d57b5d7fca8af0487f166bfd989d6d9',1,'Aws::Crt']]],
+  ['bytecursortostringview_36',['ByteCursorToStringView',['../namespace_aws_1_1_crt.html#a8c4fd8ee9c0cc758444e92ae42b23aae',1,'Aws::Crt']]]
 ];

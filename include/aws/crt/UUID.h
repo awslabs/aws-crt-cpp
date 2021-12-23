@@ -12,6 +12,9 @@ namespace Aws
 {
     namespace Crt
     {
+        /**
+         * Utility class for creating UUIDs and serializing them to a string
+         */
         class AWS_CRT_CPP_API UUID final
         {
           public:

@@ -79,6 +79,7 @@ namespace Aws
                  * know when shutdown is complete.
                  */
                 void EnableBlockingShutdown() noexcept;
+
                 /// @private
                 aws_client_bootstrap *GetUnderlyingHandle() const noexcept;
 

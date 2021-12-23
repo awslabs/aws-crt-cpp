@@ -43,14 +43,17 @@ namespace Aws
                 EventLoopGroup(EventLoopGroup &&) noexcept;
                 EventLoopGroup &operator=(const EventLoopGroup &) = delete;
                 EventLoopGroup &operator=(EventLoopGroup &&) noexcept;
+
                 /**
                  * @return true if the instance is in a valid state, false otherwise.
                  */
                 operator bool() const;
+
                 /**
                  * @return the value of the last aws error encountered by operations on this instance.
                  */
                 int LastError() const;
+
                 /// @private
                 aws_event_loop_group *GetUnderlyingHandle() noexcept;
 
