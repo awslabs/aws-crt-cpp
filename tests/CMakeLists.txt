@@ -8,7 +8,8 @@ file(GLOB TESTS ${TEST_HDRS} ${TEST_SRC})
 
 set(TEST_BINARY_NAME ${PROJECT_NAME}-tests)
 
-# TODO: Fix underlying issue so we can always run these tests.
+# TODO: Always run these tests once the following PR is merged/released:
+# https://github.com/awslabs/aws-c-io/pull/461
 # Currently, the MultiCreateDestroy tests fail due to leaks in s2n.
 # These leaks are only detected when using address-sanitizer.
 if (NOT ENABLE_SANITIZERS)
