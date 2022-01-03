@@ -64,6 +64,9 @@ namespace Aws
                  * Initializes TlsContextOptions with secure by default options, with
                  * client certificate and private key. These are paths to a file on disk. These files
                  * must be in the PEM format.
+                 *
+                 * NOTE: This is unsupported on iOS.
+                 *
                  * @param cert_path: Path to certificate file.
                  * @param pkey_path: Path to private key file.
                  * @param allocator Memory allocator to use.
@@ -77,6 +80,9 @@ namespace Aws
                  * Initializes TlsContextOptions with secure by default options, with
                  * client certificate and private key. These are in memory buffers. These buffers
                  * must be in the PEM format.
+                 *
+                 * NOTE: This is unsupported on iOS.
+                 *
                  * @param cert: Certificate contents in memory.
                  * @param pkey: Private key contents in memory.
                  * @param allocator Memory allocator to use.
@@ -90,7 +96,7 @@ namespace Aws
                  * Initializes TlsContextOptions with secure by default options,
                  * using a PKCS#11 library for private key operations.
                  *
-                 * NOTE: This configuration only works on Unix devices.
+                 * NOTE: This only works on Unix devices.
                  *
                  * @param pkcs11Options PKCS#11 options
                  * @param allocator Memory allocator to use.
@@ -99,11 +105,12 @@ namespace Aws
                     const TlsContextPkcs11Options &pkcs11Options,
                     Allocator *allocator = g_allocator) noexcept;
 
-#ifdef __APPLE__
                 /**
                  * Initializes TlsContextOptions with secure by default options, with
                  * client certificateand private key in the PKCS#12 format.
-                 * NOTE: This configuration only works on Apple devices.
+                 *
+                 * NOTE: This only works on Apple devices.
+                 *
                  * @param pkcs12_path: Path to PKCS #12 file. The file is loaded from disk and stored internally. It
                  * must remain in memory for the lifetime of the returned object.
                  * @param pkcs12_pwd: Password to PKCS #12 file. It must remain in memory for the lifetime of the
@@ -120,21 +127,22 @@ namespace Aws
                  * of the account of the process. If you instead wish to provide your own keychain
                  * for storing them, this makes the TlsContext to use that instead.
                  * NOTE: The password of your keychain must be empty.
+                 *
+                 * NOTE: This only works on MacOS.
                  */
                 bool SetKeychainPath(ByteCursor &keychain_path) noexcept;
-#endif
 
-#ifdef _WIN32
                 /**
                  * Initializes options for use with mutual tls in client mode.
-                 * This function is only available on windows.
+                 *
+                 * NOTE: This only works on Windows.
+                 *
                  * @param registryPath Path to a system installed certficate/private key pair.
                  * Example: "CurrentUser\\MY\\<thumprint>"
                  */
                 static TlsContextOptions InitClientWithMtlsSystemPath(
                     const char *registryPath,
                     Allocator *allocator = g_allocator) noexcept;
-#endif /* _WIN32 */
 
                 /**
                  * @return true if alpn is supported by the underlying security provider, false

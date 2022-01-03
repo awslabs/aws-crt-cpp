@@ -116,6 +116,10 @@ namespace Aws
                         m_isInit = true;
                         m_lastError = AWS_ERROR_SUCCESS;
                     }
+                    else
+                    {
+                        m_lastError = uri.m_lastError;
+                    }
                 }
 
                 return *this;
