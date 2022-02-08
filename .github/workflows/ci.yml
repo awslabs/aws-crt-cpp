@@ -19,7 +19,7 @@ env:
 
 jobs:
   linux-compat:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # latest
     strategy:
       matrix:
         image:
@@ -37,7 +37,7 @@ jobs:
         ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ matrix.image }} build -p ${{ env.PACKAGE_NAME }}
 
   linux-compiler-compat:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # latest
     strategy:
       matrix:
         compiler:
@@ -60,7 +60,7 @@ jobs:
           ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }}
 
   std-compat:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # latest
     strategy:
       matrix:
         compiler: [gcc-8, clang-9]
@@ -74,7 +74,7 @@ jobs:
         ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }}
 
   byo-crypto:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # latest
     steps:
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
     - name: Build ${{ env.PACKAGE_NAME }}
@@ -83,7 +83,7 @@ jobs:
         ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} -cmake-extra=-DBYO_CRYPTO=ON
 
   linux-shared-libs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # latest
     steps:
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
     - name: Build ${{ env.PACKAGE_NAME }}
@@ -92,7 +92,7 @@ jobs:
         ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBUILD_SHARED_LIBS=ON
 
   linux-no-cpu-extensions:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # latest
     steps:
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
     - name: Build ${{ env.PACKAGE_NAME }}
@@ -101,7 +101,7 @@ jobs:
         ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DUSE_CPU_EXTENSIONS=OFF
 
   windows:
-    runs-on: windows-latest
+    runs-on: windows-2022 # latest
     steps:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
@@ -111,7 +111,7 @@ jobs:
         python builder.pyz build -p ${{ env.PACKAGE_NAME }}
 
   windows-vs14:
-    runs-on: windows-latest
+    runs-on: windows-2019 # windows-2019 is last env with Visual Studio 2015 (v14.0)
     strategy:
       matrix:
         arch: [Win32, x64]
@@ -124,7 +124,7 @@ jobs:
         python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-Tv140 --cmake-extra=-A${{ matrix.arch }}
 
   windows-shared-libs:
-    runs-on: windows-latest
+    runs-on: windows-2022 # latest
     steps:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
@@ -134,7 +134,7 @@ jobs:
         python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBUILD_SHARED_LIBS=ON
 
   windows-no-cpu-extensions:
-    runs-on: windows-latest
+    runs-on: windows-2022 # latest
     steps:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
@@ -144,7 +144,7 @@ jobs:
         python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DUSE_CPU_EXTENSIONS=OFF
 
   osx:
-    runs-on: macos-latest
+    runs-on: macos-11 # latest
     steps:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
@@ -153,7 +153,7 @@ jobs:
         ./builder build -p ${{ env.PACKAGE_NAME }} --spec=downstream
 
   ios-cross-compile:
-    runs-on: macos-latest
+    runs-on: macos-11 # latest
     steps:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
@@ -163,7 +163,7 @@ jobs:
 
   cross_compile:
     name: Cross Compile ${{matrix.arch}}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # latest
     strategy:
       matrix:
         arch: [linux-armv6, linux-armv7, linux-arm64, android-armv7]
@@ -176,7 +176,7 @@ jobs:
         ./builder build -p aws-crt-cpp --spec=downstream --target=${{matrix.arch}} run_tests=false
 
   check-submodules:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # latest
     steps:
     - name: Checkout Source
       uses: actions/checkout@v2
