@@ -264,10 +264,12 @@ namespace Aws
             TlsConnectionOptions::TlsConnectionOptions(const TlsConnectionOptions &options) noexcept
             {
                 m_isInit = false;
+                AWS_ZERO_STRUCT(m_tls_connection_options);
 
                 if (options.m_isInit)
                 {
                     m_allocator = options.m_allocator;
+
                     if (!aws_tls_connection_options_copy(&m_tls_connection_options, &options.m_tls_connection_options))
                     {
                         m_isInit = true;
@@ -289,6 +291,7 @@ namespace Aws
                     }
 
                     m_isInit = false;
+                    AWS_ZERO_STRUCT(m_tls_connection_options);
 
                     if (options.m_isInit)
                     {
