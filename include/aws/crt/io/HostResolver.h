@@ -92,7 +92,7 @@ namespace Aws
 
                 /**
                  * Releases the static default DefaultHostResolver.
-                 * 
+                 *
                  * This should only be called when you are disconnected and finished using
                  * the static default DefaultHostResolver.
                  */
@@ -100,14 +100,14 @@ namespace Aws
 
                 /**
                  * Gets the static default DefaultHostResolver, creating it if necessary.
-                 * 
+                 *
                  * You will need to free the static default DefaultHostResolver by calling
                  * ReleaseStaticDefault when you are finished using the DefaultHostResolver
                  * to free it from memory.
-                 * 
+                 *
                  * @return DefaultHostResolver& The static default DefaultHostResolver
                  */
-                static DefaultHostResolver& GetOrCreateStaticDefault();
+                static DefaultHostResolver &GetOrCreateStaticDefault();
 
               private:
                 aws_host_resolver *m_resolver;
@@ -115,7 +115,7 @@ namespace Aws
                 Allocator *m_allocator;
                 bool m_initialized;
                 static int s_host_resolver_default_max_entires;
-                static DefaultHostResolver* s_static_host_resolver;
+                static DefaultHostResolver *s_static_host_resolver;
 
                 static void s_onHostResolved(
                     struct aws_host_resolver *resolver,

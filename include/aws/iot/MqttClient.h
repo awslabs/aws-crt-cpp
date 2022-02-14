@@ -127,13 +127,11 @@ namespace Aws
              * You will need to free the static default ClientBootstrap by calling
              * ReleaseStaticDefault when you are finished using the ClientBootstrap
              * to free it from memory.
-             * 
+             *
              * @param signingRegion Aws region that is being connected to.  Required in order to properly sign the
              * handshake upgrade request
              */
-            WebsocketConfig(
-                const Crt::String &signingRegion,
-                Crt::Allocator *allocator = Crt::g_allocator) noexcept;
+            WebsocketConfig(const Crt::String &signingRegion, Crt::Allocator *allocator = Crt::g_allocator) noexcept;
 
             /**
              * Create a websocket configuration for use with a custom credentials provider. Signing region will be used
@@ -423,7 +421,7 @@ namespace Aws
 
             /**
              * Constructs a new Mqtt Client object using the static default ClientBootstrap.
-             * 
+             *
              * You will need to free the static default ClientBootstrap by calling
              * ReleaseStaticDefault when you are finished using the ClientBootstrap
              * to free it from memory.

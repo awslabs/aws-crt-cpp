@@ -86,7 +86,7 @@ namespace Aws
                 /**
                  * Releases the static default ClientBootstrap and the static default
                  * DefaultHostResolver and EventLoopGroup.
-                 * 
+                 *
                  * Should only be called when the program is disconnected and the code
                  * is finished and no longer needs to use any of the static defaults.
                  */
@@ -95,14 +95,14 @@ namespace Aws
                 /**
                  * Gets the static default ClientBoostrap, creating it if necessary.
                  * Will also get/create the static default DefaultHostResolver and EventLoopGroup.
-                 * 
+                 *
                  * You will need to free the static default ClientBootstrap by calling
                  * ReleaseStaticDefault when you are finished using the ClientBootstrap
                  * to free it from memory.
-                 * 
+                 *
                  * @return ClientBootstrap& The static default ClientBootstrap
                  */
-                static ClientBootstrap& GetOrCreateStaticDefault();
+                static ClientBootstrap &GetOrCreateStaticDefault();
 
               private:
                 aws_client_bootstrap *m_bootstrap;
@@ -110,7 +110,7 @@ namespace Aws
                 std::unique_ptr<class ClientBootstrapCallbackData> m_callbackData;
                 std::future<void> m_shutdownFuture;
                 bool m_enableBlockingShutdown;
-                static ClientBootstrap* s_static_bootstrap;
+                static ClientBootstrap *s_static_bootstrap;
             };
         } // namespace Io
     }     // namespace Crt
