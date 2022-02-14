@@ -10,6 +10,8 @@ namespace Aws
     {
         namespace Io
         {
+            // Static variables
+            ClientBootstrap* ClientBootstrap::s_static_bootstrap = nullptr;
 
             /**
              * @private
@@ -86,6 +88,24 @@ namespace Aws
                         m_shutdownFuture.wait();
                     }
                 }
+            }
+
+            void ClientBootstrap::ReleaseStaticDefault() {
+                if (s_static_bootstrap != nullptr) {
+                    delete(s_static_bootstrap);
+                    s_static_bootstrap = nullptr;
+
+                    // Clean the static default event loop group and host resolver as well
+                    EventLoopGroup::ReleaseStaticDefault();
+                    DefaultHostResolver::ReleaseStaticDefault();
+                }
+            }
+            ClientBootstrap& ClientBootstrap::GetOrCreateStaticDefault()
+            {
+                if (s_static_bootstrap == nullptr) {
+                    s_static_bootstrap = new ClientBootstrap(EventLoopGroup::GetOrCreateStaticDefault(), DefaultHostResolver::GetOrCreateStaticDefault());
+                }
+                return *s_static_bootstrap;
             }
 
             ClientBootstrap::operator bool() const noexcept { return m_lastError == AWS_ERROR_SUCCESS; }

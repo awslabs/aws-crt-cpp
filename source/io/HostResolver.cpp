@@ -14,6 +14,10 @@ namespace Aws
     {
         namespace Io
         {
+            // Static variables
+            int DefaultHostResolver::s_host_resolver_default_max_entires = 8;
+            DefaultHostResolver* DefaultHostResolver::s_static_host_resolver = nullptr;
+
             HostResolver::~HostResolver() {}
 
             DefaultHostResolver::DefaultHostResolver(
@@ -106,6 +110,21 @@ namespace Aws
 
                 return true;
             }
+
+            void DefaultHostResolver::ReleaseStaticDefault() {
+                if (s_static_host_resolver != nullptr) {
+                    delete(s_static_host_resolver);
+                    s_static_host_resolver = nullptr;
+                }
+            }
+            DefaultHostResolver& DefaultHostResolver::GetOrCreateStaticDefault()
+            {
+                if (s_static_host_resolver == nullptr) {
+                    s_static_host_resolver = new DefaultHostResolver(EventLoopGroup::GetOrCreateStaticDefault(), 1, s_host_resolver_default_max_entires);
+                }
+                return *s_static_host_resolver;
+            }
+
         } // namespace Io
     }     // namespace Crt
 } // namespace Aws

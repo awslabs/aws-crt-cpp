@@ -5,12 +5,24 @@
 #include <aws/crt/io/EventLoopGroup.h>
 #include <iostream>
 
+#if __cplusplus >= 201103L // If using C++ 11
+#include <thread>
+#endif
+
 namespace Aws
 {
     namespace Crt
     {
         namespace Io
         {
+            // Static variables
+            EventLoopGroup* EventLoopGroup::s_static_event_loop_group = nullptr;
+#if __cplusplus >= 201103L // If using C++ 11
+            int EventLoopGroup::s_static_event_loop_group_threads = std::thread::hardware_concurrency();
+#else // If not using C++ 11, default to 1
+            int EventLoopGroup::s_static_event_loop_group_threads = 1;
+#endif
+
             EventLoopGroup::EventLoopGroup(uint16_t threadCount, Allocator *allocator) noexcept
                 : m_eventLoopGroup(nullptr), m_lastError(AWS_ERROR_SUCCESS)
             {
@@ -63,6 +75,20 @@ namespace Aws
                 }
 
                 return nullptr;
+            }
+
+            void EventLoopGroup::ReleaseStaticDefault() {
+                if (s_static_event_loop_group != nullptr) {
+                    delete(s_static_event_loop_group);
+                    s_static_event_loop_group = nullptr;
+                }
+            }
+            EventLoopGroup& EventLoopGroup::GetOrCreateStaticDefault()
+            {
+                if (s_static_event_loop_group == nullptr) {
+                    s_static_event_loop_group = new EventLoopGroup(s_static_event_loop_group_threads);
+                }
+                return *s_static_event_loop_group;
             }
 
         } // namespace Io

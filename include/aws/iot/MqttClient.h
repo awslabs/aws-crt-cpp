@@ -121,6 +121,21 @@ namespace Aws
                 Crt::Allocator *allocator = Crt::g_allocator) noexcept;
 
             /**
+             * Create a websocket configuration for use with the default credentials provider chain and default
+             * ClientBootstrap. Signing region will be used for Sigv4 signature calculations.
+             *
+             * You will need to free the static default ClientBootstrap by calling
+             * ReleaseStaticDefault when you are finished using the ClientBootstrap
+             * to free it from memory.
+             * 
+             * @param signingRegion Aws region that is being connected to.  Required in order to properly sign the
+             * handshake upgrade request
+             */
+            WebsocketConfig(
+                const Crt::String &signingRegion,
+                Crt::Allocator *allocator = Crt::g_allocator) noexcept;
+
+            /**
              * Create a websocket configuration for use with a custom credentials provider. Signing region will be used
              * for Sigv4 signature calculations.
              *
@@ -405,6 +420,15 @@ namespace Aws
         {
           public:
             MqttClient(Crt::Io::ClientBootstrap &bootstrap, Crt::Allocator *allocator = Crt::g_allocator) noexcept;
+
+            /**
+             * Constructs a new Mqtt Client object using the static default ClientBootstrap.
+             * 
+             * You will need to free the static default ClientBootstrap by calling
+             * ReleaseStaticDefault when you are finished using the ClientBootstrap
+             * to free it from memory.
+             */
+            MqttClient(Crt::Allocator *allocator = Crt::g_allocator) noexcept;
 
             /**
              * Creates a new mqtt connection from a connection configuration object

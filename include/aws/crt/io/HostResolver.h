@@ -90,11 +90,32 @@ namespace Aws
                 /// @private
                 aws_host_resolution_config *GetConfig() noexcept override { return &m_config; }
 
+                /**
+                 * Releases the static default DefaultHostResolver.
+                 * 
+                 * This should only be called when you are disconnected and finished using
+                 * the static default DefaultHostResolver.
+                 */
+                static void ReleaseStaticDefault();
+
+                /**
+                 * Gets the static default DefaultHostResolver, creating it if necessary.
+                 * 
+                 * You will need to free the static default DefaultHostResolver by calling
+                 * ReleaseStaticDefault when you are finished using the DefaultHostResolver
+                 * to free it from memory.
+                 * 
+                 * @return DefaultHostResolver& The static default DefaultHostResolver
+                 */
+                static DefaultHostResolver& GetOrCreateStaticDefault();
+
               private:
                 aws_host_resolver *m_resolver;
                 aws_host_resolution_config m_config;
                 Allocator *m_allocator;
                 bool m_initialized;
+                static int s_host_resolver_default_max_entires;
+                static DefaultHostResolver* s_static_host_resolver;
 
                 static void s_onHostResolved(
                     struct aws_host_resolver *resolver,

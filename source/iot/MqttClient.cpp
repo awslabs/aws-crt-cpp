@@ -47,6 +47,35 @@ namespace Aws
 
         WebsocketConfig::WebsocketConfig(
             const Crt::String &signingRegion,
+            Crt::Allocator *allocator) noexcept
+            : SigningRegion(signingRegion), ServiceName("iotdevicegateway")
+        {
+            Crt::Auth::CredentialsProviderChainDefaultConfig config;
+            config.Bootstrap = &Crt::Io::ClientBootstrap::GetOrCreateStaticDefault();
+
+            CredentialsProvider =
+                Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(config, allocator);
+
+            Signer = Aws::Crt::MakeShared<Crt::Auth::Sigv4HttpRequestSigner>(allocator, allocator);
+
+            auto credsProviderRef = CredentialsProvider;
+            auto signingRegionCopy = SigningRegion;
+            auto serviceNameCopy = ServiceName;
+            CreateSigningConfigCb = [allocator, credsProviderRef, signingRegionCopy, serviceNameCopy]() {
+                auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
+                signerConfig->SetRegion(signingRegionCopy);
+                signerConfig->SetService(serviceNameCopy);
+                signerConfig->SetSigningAlgorithm(Crt::Auth::SigningAlgorithm::SigV4);
+                signerConfig->SetSignatureType(Crt::Auth::SignatureType::HttpRequestViaQueryParams);
+                signerConfig->SetOmitSessionToken(true);
+                signerConfig->SetCredentialsProvider(credsProviderRef);
+
+                return signerConfig;
+            };
+        }
+
+        WebsocketConfig::WebsocketConfig(
+            const Crt::String &signingRegion,
             const std::shared_ptr<Crt::Auth::ICredentialsProvider> &credentialsProvider,
             Crt::Allocator *allocator) noexcept
             : CredentialsProvider(credentialsProvider),
@@ -382,6 +411,15 @@ namespace Aws
 
         MqttClient::MqttClient(Crt::Io::ClientBootstrap &bootstrap, Crt::Allocator *allocator) noexcept
             : m_client(bootstrap, allocator), m_lastError(0)
+        {
+            if (!m_client)
+            {
+                m_lastError = m_client.LastError();
+            }
+        }
+
+        MqttClient::MqttClient(Crt::Allocator *allocator) noexcept
+            : m_client(Crt::Io::ClientBootstrap::GetOrCreateStaticDefault(), allocator), m_lastError(0)
         {
             if (!m_client)
             {
