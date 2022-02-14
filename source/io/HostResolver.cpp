@@ -115,6 +115,8 @@ namespace Aws
                 if (s_static_host_resolver != nullptr) {
                     delete(s_static_host_resolver);
                     s_static_host_resolver = nullptr;
+
+                    EventLoopGroup::ReleaseStaticDefault();
                 }
             }
             DefaultHostResolver& DefaultHostResolver::GetOrCreateStaticDefault()
