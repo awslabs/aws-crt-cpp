@@ -82,6 +82,10 @@ namespace Aws
             s_BYOCryptoNewTlsContextImplCallback = nullptr;
             s_BYOCryptoDeleteTlsContextImplCallback = nullptr;
             s_BYOCryptoIsTlsAlpnSupportedCallback = nullptr;
+
+            Io::ClientBootstrap::ReleaseStaticDefault();
+            Io::EventLoopGroup::ReleaseStaticDefault();
+            Io::DefaultHostResolver::ReleaseStaticDefault();
         }
 
         void ApiHandle::InitializeLogging(Aws::Crt::LogLevel level, const char *filename)

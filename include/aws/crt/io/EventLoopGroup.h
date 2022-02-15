@@ -60,17 +60,12 @@ namespace Aws
                 /**
                  * Releases the static default EventLoopGroup.
                  *
-                 * This should only be called when you are disconnected and finished using
-                 * the static default EventLoopGroup.
+                 * This is automatically called by ApiHandle
                  */
                 static void ReleaseStaticDefault();
 
                 /**
                  * Gets the static default EventLoopGroup, creating it if necessary.
-                 *
-                 * You will need to free the static default EventLoopGroup by calling
-                 * ReleaseStaticDefault when you are finished using the EventLoopGroup
-                 * to free it from memory.
                  *
                  * @return EventLoopGroup& The static default EventLoopGroup
                  */
@@ -81,6 +76,7 @@ namespace Aws
                 int m_lastError;
                 static int s_static_event_loop_group_threads;
                 static EventLoopGroup *s_static_event_loop_group;
+                static std::mutex s_lock;
             };
         } // namespace Io
 

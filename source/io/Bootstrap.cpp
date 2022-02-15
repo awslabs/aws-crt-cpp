@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/io/Bootstrap.h>
+#include <aws/crt/Types.h>
 
 namespace Aws
 {
@@ -12,6 +13,7 @@ namespace Aws
         {
             // Static variables
             ClientBootstrap* ClientBootstrap::s_static_bootstrap = nullptr;
+            std::mutex ClientBootstrap::s_lock;
 
             /**
              * @private
@@ -91,19 +93,17 @@ namespace Aws
             }
 
             void ClientBootstrap::ReleaseStaticDefault() {
+                std::lock_guard<std::mutex> lock(s_lock);
                 if (s_static_bootstrap != nullptr) {
-                    delete(s_static_bootstrap);
+                    Aws::Crt::Delete(s_static_bootstrap, g_allocator);
                     s_static_bootstrap = nullptr;
-
-                    // Clean the static default event loop group and host resolver as well
-                    EventLoopGroup::ReleaseStaticDefault();
-                    DefaultHostResolver::ReleaseStaticDefault();
                 }
             }
             ClientBootstrap& ClientBootstrap::GetOrCreateStaticDefault()
             {
+                std::lock_guard<std::mutex> lock(s_lock);
                 if (s_static_bootstrap == nullptr) {
-                    s_static_bootstrap = new ClientBootstrap(EventLoopGroup::GetOrCreateStaticDefault(), DefaultHostResolver::GetOrCreateStaticDefault());
+                    s_static_bootstrap = Aws::Crt::New<ClientBootstrap>(g_allocator, EventLoopGroup::GetOrCreateStaticDefault(), DefaultHostResolver::GetOrCreateStaticDefault());
                 }
                 return *s_static_bootstrap;
             }

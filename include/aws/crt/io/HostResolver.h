@@ -93,17 +93,12 @@ namespace Aws
                 /**
                  * Releases the static default DefaultHostResolver.
                  *
-                 * This should only be called when you are disconnected and finished using
-                 * the static default DefaultHostResolver.
+                 * This is automatically called by ApiHandle
                  */
                 static void ReleaseStaticDefault();
 
                 /**
                  * Gets the static default DefaultHostResolver, creating it if necessary.
-                 *
-                 * You will need to free the static default DefaultHostResolver by calling
-                 * ReleaseStaticDefault when you are finished using the DefaultHostResolver
-                 * to free it from memory.
                  *
                  * @return DefaultHostResolver& The static default DefaultHostResolver
                  */
@@ -116,6 +111,7 @@ namespace Aws
                 bool m_initialized;
                 static int s_host_resolver_default_max_entires;
                 static DefaultHostResolver *s_static_host_resolver;
+                static std::mutex s_lock;
 
                 static void s_onHostResolved(
                     struct aws_host_resolver *resolver,

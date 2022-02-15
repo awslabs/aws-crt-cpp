@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/io/EventLoopGroup.h>
+#include <aws/crt/Types.h>
 #include <iostream>
 
 #if __cplusplus >= 201103L // If using C++ 11
@@ -17,6 +18,7 @@ namespace Aws
         {
             // Static variables
             EventLoopGroup* EventLoopGroup::s_static_event_loop_group = nullptr;
+            std::mutex EventLoopGroup::s_lock;
 #if __cplusplus >= 201103L // If using C++ 11
             int EventLoopGroup::s_static_event_loop_group_threads = std::thread::hardware_concurrency();
 #else // If not using C++ 11, default to 1
@@ -78,15 +80,17 @@ namespace Aws
             }
 
             void EventLoopGroup::ReleaseStaticDefault() {
+                std::lock_guard<std::mutex> lock(s_lock);
                 if (s_static_event_loop_group != nullptr) {
-                    delete(s_static_event_loop_group);
+                    Aws::Crt::Delete(s_static_event_loop_group, g_allocator);
                     s_static_event_loop_group = nullptr;
                 }
             }
             EventLoopGroup& EventLoopGroup::GetOrCreateStaticDefault()
             {
+                std::lock_guard<std::mutex> lock(s_lock);
                 if (s_static_event_loop_group == nullptr) {
-                    s_static_event_loop_group = new EventLoopGroup(s_static_event_loop_group_threads);
+                    s_static_event_loop_group = Aws::Crt::New<EventLoopGroup>(g_allocator, s_static_event_loop_group_threads);
                 }
                 return *s_static_event_loop_group;
             }
