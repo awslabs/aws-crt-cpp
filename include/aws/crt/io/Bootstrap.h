@@ -13,6 +13,7 @@
 #include <aws/io/host_resolver.h>
 
 #include <future>
+#include <mutex>
 
 namespace Aws
 {

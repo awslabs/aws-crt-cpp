@@ -4,6 +4,7 @@
  */
 #include <aws/crt/io/Bootstrap.h>
 #include <aws/crt/Types.h>
+#include <mutex>
 
 namespace Aws
 {

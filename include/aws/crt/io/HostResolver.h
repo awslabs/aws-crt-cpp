@@ -8,6 +8,7 @@
 #include <aws/io/host_resolver.h>
 
 #include <functional>
+#include <mutex>
 
 namespace Aws
 {

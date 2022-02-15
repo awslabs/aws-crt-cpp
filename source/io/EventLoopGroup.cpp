@@ -2,12 +2,13 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
-#include <aws/crt/io/EventLoopGroup.h>
 #include <aws/crt/Types.h>
+#include <aws/crt/io/EventLoopGroup.h>
 #include <iostream>
+#include <mutex>
 
 #if __cplusplus >= 201103L // If using C++ 11
-#include <thread>
+#    include <thread>
 #endif
 
 namespace Aws
@@ -17,7 +18,7 @@ namespace Aws
         namespace Io
         {
             // Static variables
-            EventLoopGroup* EventLoopGroup::s_static_event_loop_group = nullptr;
+            EventLoopGroup *EventLoopGroup::s_static_event_loop_group = nullptr;
             std::mutex EventLoopGroup::s_lock;
 #if __cplusplus >= 201103L // If using C++ 11
             int EventLoopGroup::s_static_event_loop_group_threads = std::thread::hardware_concurrency();
@@ -79,18 +80,22 @@ namespace Aws
                 return nullptr;
             }
 
-            void EventLoopGroup::ReleaseStaticDefault() {
+            void EventLoopGroup::ReleaseStaticDefault()
+            {
                 std::lock_guard<std::mutex> lock(s_lock);
-                if (s_static_event_loop_group != nullptr) {
+                if (s_static_event_loop_group != nullptr)
+                {
                     Aws::Crt::Delete(s_static_event_loop_group, g_allocator);
                     s_static_event_loop_group = nullptr;
                 }
             }
-            EventLoopGroup& EventLoopGroup::GetOrCreateStaticDefault()
+            EventLoopGroup &EventLoopGroup::GetOrCreateStaticDefault()
             {
                 std::lock_guard<std::mutex> lock(s_lock);
-                if (s_static_event_loop_group == nullptr) {
-                    s_static_event_loop_group = Aws::Crt::New<EventLoopGroup>(g_allocator, s_static_event_loop_group_threads);
+                if (s_static_event_loop_group == nullptr)
+                {
+                    s_static_event_loop_group =
+                        Aws::Crt::New<EventLoopGroup>(g_allocator, s_static_event_loop_group_threads);
                 }
                 return *s_static_event_loop_group;
             }

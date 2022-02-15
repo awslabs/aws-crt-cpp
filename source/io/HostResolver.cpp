@@ -2,11 +2,13 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
-#include <aws/crt/io/HostResolver.h>
 #include <aws/crt/Types.h>
 #include <aws/crt/io/EventLoopGroup.h>
+#include <aws/crt/io/HostResolver.h>
 
 #include <aws/common/string.h>
+
+#include <mutex>
 
 namespace Aws
 {
@@ -16,7 +18,7 @@ namespace Aws
         {
             // Static variables
             int DefaultHostResolver::s_host_resolver_default_max_entires = 8;
-            DefaultHostResolver* DefaultHostResolver::s_static_host_resolver = nullptr;
+            DefaultHostResolver *DefaultHostResolver::s_static_host_resolver = nullptr;
             std::mutex DefaultHostResolver::s_lock;
 
             HostResolver::~HostResolver() {}
@@ -112,18 +114,25 @@ namespace Aws
                 return true;
             }
 
-            void DefaultHostResolver::ReleaseStaticDefault() {
+            void DefaultHostResolver::ReleaseStaticDefault()
+            {
                 std::lock_guard<std::mutex> lock(s_lock);
-                if (s_static_host_resolver != nullptr) {
+                if (s_static_host_resolver != nullptr)
+                {
                     Aws::Crt::Delete(s_static_host_resolver, g_allocator);
                     s_static_host_resolver = nullptr;
                 }
             }
-            DefaultHostResolver& DefaultHostResolver::GetOrCreateStaticDefault()
+            DefaultHostResolver &DefaultHostResolver::GetOrCreateStaticDefault()
             {
                 std::lock_guard<std::mutex> lock(s_lock);
-                if (s_static_host_resolver == nullptr) {
-                    s_static_host_resolver = Aws::Crt::New<DefaultHostResolver>(g_allocator, EventLoopGroup::GetOrCreateStaticDefault(), 1, s_host_resolver_default_max_entires);
+                if (s_static_host_resolver == nullptr)
+                {
+                    s_static_host_resolver = Aws::Crt::New<DefaultHostResolver>(
+                        g_allocator,
+                        EventLoopGroup::GetOrCreateStaticDefault(),
+                        1,
+                        s_host_resolver_default_max_entires);
                 }
                 return *s_static_host_resolver;
             }

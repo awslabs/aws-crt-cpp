@@ -6,6 +6,7 @@
 #include <aws/crt/Types.h>
 
 #include <aws/io/event_loop.h>
+#include <mutex>
 
 namespace Aws
 {
