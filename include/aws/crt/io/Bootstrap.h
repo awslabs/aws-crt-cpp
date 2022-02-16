@@ -13,7 +13,6 @@
 #include <aws/io/host_resolver.h>
 
 #include <future>
-#include <mutex>
 
 namespace Aws
 {
@@ -84,30 +83,12 @@ namespace Aws
                 /// @private
                 aws_client_bootstrap *GetUnderlyingHandle() const noexcept;
 
-                /**
-                 * Releases the static default ClientBootstrap and the static default
-                 * DefaultHostResolver and EventLoopGroup.
-                 *
-                 * This is automatically called by ApiHandle
-                 */
-                static void ReleaseStaticDefault();
-
-                /**
-                 * Gets the static default ClientBoostrap, creating it if necessary.
-                 * Will also get/create the static default DefaultHostResolver and EventLoopGroup.
-                 *
-                 * @return ClientBootstrap& The static default ClientBootstrap
-                 */
-                static ClientBootstrap &GetOrCreateStaticDefault();
-
               private:
                 aws_client_bootstrap *m_bootstrap;
                 int m_lastError;
                 std::unique_ptr<class ClientBootstrapCallbackData> m_callbackData;
                 std::future<void> m_shutdownFuture;
                 bool m_enableBlockingShutdown;
-                static ClientBootstrap *s_static_bootstrap;
-                static std::mutex s_lock;
             };
         } // namespace Io
     }     // namespace Crt

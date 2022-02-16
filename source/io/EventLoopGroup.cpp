@@ -6,10 +6,7 @@
 #include <aws/crt/io/EventLoopGroup.h>
 #include <iostream>
 #include <mutex>
-
-#if __cplusplus >= 201103L // If using C++ 11
-#    include <thread>
-#endif
+#include <thread>
 
 namespace Aws
 {
@@ -17,15 +14,6 @@ namespace Aws
     {
         namespace Io
         {
-            // Static variables
-            EventLoopGroup *EventLoopGroup::s_static_event_loop_group = nullptr;
-            std::mutex EventLoopGroup::s_lock;
-#if __cplusplus >= 201103L // If using C++ 11
-            int EventLoopGroup::s_static_event_loop_group_threads = std::thread::hardware_concurrency();
-#else // If not using C++ 11, default to 1
-            int EventLoopGroup::s_static_event_loop_group_threads = 1;
-#endif
-
             EventLoopGroup::EventLoopGroup(uint16_t threadCount, Allocator *allocator) noexcept
                 : m_eventLoopGroup(nullptr), m_lastError(AWS_ERROR_SUCCESS)
             {
@@ -79,28 +67,6 @@ namespace Aws
 
                 return nullptr;
             }
-
-            void EventLoopGroup::ReleaseStaticDefault()
-            {
-                std::lock_guard<std::mutex> lock(s_lock);
-                if (s_static_event_loop_group != nullptr)
-                {
-                    Aws::Crt::Delete(s_static_event_loop_group, g_allocator);
-                    s_static_event_loop_group = nullptr;
-                }
-            }
-            EventLoopGroup &EventLoopGroup::GetOrCreateStaticDefault()
-            {
-                std::lock_guard<std::mutex> lock(s_lock);
-                if (s_static_event_loop_group == nullptr)
-                {
-                    s_static_event_loop_group =
-                        Aws::Crt::New<EventLoopGroup>(g_allocator, s_static_event_loop_group_threads);
-                }
-                return *s_static_event_loop_group;
-            }
-
         } // namespace Io
-
-    } // namespace Crt
+    }     // namespace Crt
 } // namespace Aws

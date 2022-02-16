@@ -8,7 +8,6 @@
 #include <aws/io/host_resolver.h>
 
 #include <functional>
-#include <mutex>
 
 namespace Aws
 {
@@ -91,28 +90,11 @@ namespace Aws
                 /// @private
                 aws_host_resolution_config *GetConfig() noexcept override { return &m_config; }
 
-                /**
-                 * Releases the static default DefaultHostResolver.
-                 *
-                 * This is automatically called by ApiHandle
-                 */
-                static void ReleaseStaticDefault();
-
-                /**
-                 * Gets the static default DefaultHostResolver, creating it if necessary.
-                 *
-                 * @return DefaultHostResolver& The static default DefaultHostResolver
-                 */
-                static DefaultHostResolver &GetOrCreateStaticDefault();
-
               private:
                 aws_host_resolver *m_resolver;
                 aws_host_resolution_config m_config;
                 Allocator *m_allocator;
                 bool m_initialized;
-                static int s_host_resolver_default_max_entires;
-                static DefaultHostResolver *s_static_host_resolver;
-                static std::mutex s_lock;
 
                 static void s_onHostResolved(
                     struct aws_host_resolver *resolver,

@@ -6,7 +6,6 @@
 #include <aws/crt/Types.h>
 
 #include <aws/io/event_loop.h>
-#include <mutex>
 
 namespace Aws
 {
@@ -58,26 +57,9 @@ namespace Aws
                 /// @private
                 aws_event_loop_group *GetUnderlyingHandle() noexcept;
 
-                /**
-                 * Releases the static default EventLoopGroup.
-                 *
-                 * This is automatically called by ApiHandle
-                 */
-                static void ReleaseStaticDefault();
-
-                /**
-                 * Gets the static default EventLoopGroup, creating it if necessary.
-                 *
-                 * @return EventLoopGroup& The static default EventLoopGroup
-                 */
-                static EventLoopGroup &GetOrCreateStaticDefault();
-
               private:
                 aws_event_loop_group *m_eventLoopGroup;
                 int m_lastError;
-                static int s_static_event_loop_group_threads;
-                static EventLoopGroup *s_static_event_loop_group;
-                static std::mutex s_lock;
             };
         } // namespace Io
 

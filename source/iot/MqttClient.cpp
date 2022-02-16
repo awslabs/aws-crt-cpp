@@ -32,7 +32,8 @@ namespace Aws
             auto credsProviderRef = CredentialsProvider;
             auto signingRegionCopy = SigningRegion;
             auto serviceNameCopy = ServiceName;
-            CreateSigningConfigCb = [allocator, credsProviderRef, signingRegionCopy, serviceNameCopy]() {
+            CreateSigningConfigCb = [allocator, credsProviderRef, signingRegionCopy, serviceNameCopy]()
+            {
                 auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
                 signerConfig->SetRegion(signingRegionCopy);
                 signerConfig->SetService(serviceNameCopy);
@@ -45,13 +46,11 @@ namespace Aws
             };
         }
 
-        WebsocketConfig::WebsocketConfig(
-            const Crt::String &signingRegion,
-            Crt::Allocator *allocator) noexcept
+        WebsocketConfig::WebsocketConfig(const Crt::String &signingRegion, Crt::Allocator *allocator) noexcept
             : SigningRegion(signingRegion), ServiceName("iotdevicegateway")
         {
             Crt::Auth::CredentialsProviderChainDefaultConfig config;
-            config.Bootstrap = &Crt::Io::ClientBootstrap::GetOrCreateStaticDefault();
+            config.Bootstrap = Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap();
 
             CredentialsProvider =
                 Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(config, allocator);
@@ -61,7 +60,8 @@ namespace Aws
             auto credsProviderRef = CredentialsProvider;
             auto signingRegionCopy = SigningRegion;
             auto serviceNameCopy = ServiceName;
-            CreateSigningConfigCb = [allocator, credsProviderRef, signingRegionCopy, serviceNameCopy]() {
+            CreateSigningConfigCb = [allocator, credsProviderRef, signingRegionCopy, serviceNameCopy]()
+            {
                 auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
                 signerConfig->SetRegion(signingRegionCopy);
                 signerConfig->SetService(serviceNameCopy);
@@ -85,7 +85,8 @@ namespace Aws
             auto credsProviderRef = CredentialsProvider;
             auto signingRegionCopy = SigningRegion;
             auto serviceNameCopy = ServiceName;
-            CreateSigningConfigCb = [allocator, credsProviderRef, signingRegionCopy, serviceNameCopy]() {
+            CreateSigningConfigCb = [allocator, credsProviderRef, signingRegionCopy, serviceNameCopy]()
+            {
                 auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
                 signerConfig->SetRegion(signingRegionCopy);
                 signerConfig->SetService(serviceNameCopy);
@@ -383,13 +384,13 @@ namespace Aws
             auto websocketConfig = m_websocketConfig.value();
             auto signerTransform = [websocketConfig](
                                        std::shared_ptr<Crt::Http::HttpRequest> req,
-                                       const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete) {
+                                       const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete)
+            {
                 // it is only a very happy coincidence that these function signatures match. This is the callback
                 // for signing to be complete. It invokes the callback for websocket handshake to be complete.
                 auto signingComplete =
-                    [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
-                        onComplete(req1, errorCode);
-                    };
+                    [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode)
+                { onComplete(req1, errorCode); };
 
                 auto signerConfig = websocketConfig.CreateSigningConfigCb();
 
@@ -419,7 +420,7 @@ namespace Aws
         }
 
         MqttClient::MqttClient(Crt::Allocator *allocator) noexcept
-            : m_client(Crt::Io::ClientBootstrap::GetOrCreateStaticDefault(), allocator), m_lastError(0)
+            : m_client(*Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap(), allocator), m_lastError(0)
         {
             if (!m_client)
             {

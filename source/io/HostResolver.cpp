@@ -16,11 +16,6 @@ namespace Aws
     {
         namespace Io
         {
-            // Static variables
-            int DefaultHostResolver::s_host_resolver_default_max_entires = 8;
-            DefaultHostResolver *DefaultHostResolver::s_static_host_resolver = nullptr;
-            std::mutex DefaultHostResolver::s_lock;
-
             HostResolver::~HostResolver() {}
 
             DefaultHostResolver::DefaultHostResolver(
@@ -113,30 +108,6 @@ namespace Aws
 
                 return true;
             }
-
-            void DefaultHostResolver::ReleaseStaticDefault()
-            {
-                std::lock_guard<std::mutex> lock(s_lock);
-                if (s_static_host_resolver != nullptr)
-                {
-                    Aws::Crt::Delete(s_static_host_resolver, g_allocator);
-                    s_static_host_resolver = nullptr;
-                }
-            }
-            DefaultHostResolver &DefaultHostResolver::GetOrCreateStaticDefault()
-            {
-                std::lock_guard<std::mutex> lock(s_lock);
-                if (s_static_host_resolver == nullptr)
-                {
-                    s_static_host_resolver = Aws::Crt::New<DefaultHostResolver>(
-                        g_allocator,
-                        EventLoopGroup::GetOrCreateStaticDefault(),
-                        1,
-                        s_host_resolver_default_max_entires);
-                }
-                return *s_static_host_resolver;
-            }
-
         } // namespace Io
     }     // namespace Crt
 } // namespace Aws

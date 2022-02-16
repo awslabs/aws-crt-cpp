@@ -2,9 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
-#include <aws/crt/io/Bootstrap.h>
 #include <aws/crt/Types.h>
-#include <mutex>
+#include <aws/crt/io/Bootstrap.h>
 
 namespace Aws
 {
@@ -12,9 +11,6 @@ namespace Aws
     {
         namespace Io
         {
-            // Static variables
-            ClientBootstrap* ClientBootstrap::s_static_bootstrap = nullptr;
-            std::mutex ClientBootstrap::s_lock;
 
             /**
              * @private
@@ -91,22 +87,6 @@ namespace Aws
                         m_shutdownFuture.wait();
                     }
                 }
-            }
-
-            void ClientBootstrap::ReleaseStaticDefault() {
-                std::lock_guard<std::mutex> lock(s_lock);
-                if (s_static_bootstrap != nullptr) {
-                    Aws::Crt::Delete(s_static_bootstrap, g_allocator);
-                    s_static_bootstrap = nullptr;
-                }
-            }
-            ClientBootstrap& ClientBootstrap::GetOrCreateStaticDefault()
-            {
-                std::lock_guard<std::mutex> lock(s_lock);
-                if (s_static_bootstrap == nullptr) {
-                    s_static_bootstrap = Aws::Crt::New<ClientBootstrap>(g_allocator, EventLoopGroup::GetOrCreateStaticDefault(), DefaultHostResolver::GetOrCreateStaticDefault());
-                }
-                return *s_static_bootstrap;
             }
 
             ClientBootstrap::operator bool() const noexcept { return m_lastError == AWS_ERROR_SUCCESS; }

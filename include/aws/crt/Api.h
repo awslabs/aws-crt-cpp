@@ -125,12 +125,46 @@ namespace Aws
             /// @private
             static const Io::IsTlsAlpnSupportedCallback &GetBYOCryptoIsTlsAlpnSupportedCallback();
 
+            /**
+             * Gets the static default EventLoopGroup, creating it if necessary.
+             *
+             * @return EventLoopGroup* A pointer to the static default EventLoopGroup
+             */
+            static Io::ClientBootstrap *GetOrCreateStaticDefaultClientBootstrap();
+
+            /**
+             * Gets the static default EventLoopGroup, creating it if necessary.
+             *
+             * @return EventLoopGroup* A pointer to the static default EventLoopGroup
+             */
+            static Io::EventLoopGroup *GetOrCreateStaticDefaultEventLoopGroup();
+
+            /**
+             * Gets the static default EventLoopGroup, creating it if necessary.
+             *
+             * @return EventLoopGroup* A pointer to the static default EventLoopGroup
+             */
+            static Io::DefaultHostResolver *GetOrCreateStaticDefaultHostResolver();
+
           private:
             void InitializeLoggingCommon(struct aws_logger_standard_options &options);
 
             aws_logger m_logger;
 
             ApiHandleShutdownBehavior m_shutdownBehavior;
+
+            static Io::ClientBootstrap *s_static_bootstrap;
+            static int s_static_event_loop_group_threads;
+            static Io::EventLoopGroup *s_static_event_loop_group;
+            static int s_host_resolver_default_max_entires;
+            static Io::DefaultHostResolver *s_static_default_host_resolver;
+            static std::mutex s_lock_client_bootstrap;
+            static std::mutex s_lock_event_loop_group;
+            static std::mutex s_lock_default_host_resolver;
+
+            static void ReleaseStaticDefaultClientBootstrap();
+            static void ReleaseStaticDefaultEventLoopGroup();
+            static void ReleaseStaticDefaultHostResolver();
         };
 
         /**
