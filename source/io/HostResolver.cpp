@@ -5,9 +5,7 @@
 #include <aws/crt/Types.h>
 #include <aws/crt/io/EventLoopGroup.h>
 #include <aws/crt/io/HostResolver.h>
-
 #include <aws/common/string.h>
-
 #include <mutex>
 
 namespace Aws
