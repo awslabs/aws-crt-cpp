@@ -119,7 +119,8 @@ static void s_ParseOptions(int argc, char **argv, ElasticurlCtx &ctx)
             case 2:
                 /* getopt_long() returns 0x02 (START_OF_TEXT) if a positional arg was encountered */
                 ctx.uri = Io::Uri(aws_byte_cursor_from_c_str(aws_cli_positional_arg), ctx.allocator);
-                if (!ctx.uri) {
+                if (!ctx.uri)
+                {
                     std::cerr << "Failed to parse uri \"" << aws_cli_positional_arg << "\" with error "
                               << aws_error_debug_str(ctx.uri.LastError()) << std::endl;
                     s_Usage(1);
@@ -373,26 +374,27 @@ int main(int argc, char **argv)
     std::promise<std::shared_ptr<Http::HttpClientConnection>> connectionPromise;
     std::promise<void> shutdownPromise;
 
-    auto onConnectionSetup = [&appCtx, &connectionPromise](const std::shared_ptr<Http::HttpClientConnection> &newConnection, int errorCode) {
-        if (!errorCode)
-        {
-            if (appCtx.RequiredHttpVersion != Http::HttpVersion::Unknown)
+    auto onConnectionSetup =
+        [&appCtx, &connectionPromise](const std::shared_ptr<Http::HttpClientConnection> &newConnection, int errorCode) {
+            if (!errorCode)
             {
-                if (newConnection->GetVersion() != appCtx.RequiredHttpVersion)
+                if (appCtx.RequiredHttpVersion != Http::HttpVersion::Unknown)
                 {
-                    std::cerr << "Error. The requested HTTP version, " << appCtx.Alpn
-                              << ", is not supported by the peer." << std::endl;
-                    exit(1);
+                    if (newConnection->GetVersion() != appCtx.RequiredHttpVersion)
+                    {
+                        std::cerr << "Error. The requested HTTP version, " << appCtx.Alpn
+                                  << ", is not supported by the peer." << std::endl;
+                        exit(1);
+                    }
                 }
             }
-        }
-        else
-        {
-            std::cerr << "Connection failed with error " << aws_error_debug_str(errorCode) << std::endl;
-            exit(1);
-        }
-        connectionPromise.set_value(newConnection);
-    };
+            else
+            {
+                std::cerr << "Connection failed with error " << aws_error_debug_str(errorCode) << std::endl;
+                exit(1);
+            }
+            connectionPromise.set_value(newConnection);
+        };
 
     auto onConnectionShutdown = [&shutdownPromise](Http::HttpClientConnection &newConnection, int errorCode) {
         (void)newConnection;
@@ -480,10 +482,20 @@ int main(int argc, char **argv)
     request.SetMethod(ByteCursorFromCString(appCtx.verb));
     request.SetPath(appCtx.uri.GetPathAndQuery());
 
-    Http::HttpHeader hostHeader;
-    hostHeader.name = ByteCursorFromCString("host");
-    hostHeader.value = appCtx.uri.GetHostName();
-    request.AddHeader(hostHeader);
+    if (connection->GetVersion() == Http::HttpVersion::Http2)
+    {
+        Http::HttpHeader authHeader;
+        authHeader.name = ByteCursorFromCString(":authority");
+        authHeader.value = appCtx.uri.GetHostName();
+        request.AddHeader(authHeader);
+    }
+    else
+    {
+        Http::HttpHeader hostHeader;
+        hostHeader.name = ByteCursorFromCString("host");
+        hostHeader.value = appCtx.uri.GetHostName();
+        request.AddHeader(hostHeader);
+    }
 
     Http::HttpHeader userAgentHeader;
     userAgentHeader.name = ByteCursorFromCString("user-agent");
