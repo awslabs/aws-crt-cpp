@@ -31,10 +31,17 @@ namespace Aws
             }
 
             Credentials::Credentials(
-                ByteCursor access_key_id, ByteCursor secret_access_key, ByteCursor session_token,
-                uint64_t expiration_timepoint_in_seconds, Allocator *allocator) noexcept
+                ByteCursor access_key_id,
+                ByteCursor secret_access_key,
+                ByteCursor session_token,
+                uint64_t expiration_timepoint_in_seconds,
+                Allocator *allocator) noexcept
                 : m_credentials(aws_credentials_new(
-                      allocator, access_key_id, secret_access_key, session_token, expiration_timepoint_in_seconds))
+                      allocator,
+                      access_key_id,
+                      secret_access_key,
+                      session_token,
+                      expiration_timepoint_in_seconds))
             {
             }
 
@@ -117,7 +124,9 @@ namespace Aws
             };
 
             void CredentialsProvider::s_onCredentialsResolved(
-                aws_credentials *credentials, int error_code, void *user_data)
+                aws_credentials *credentials,
+                int error_code,
+                void *user_data)
             {
                 CredentialsProviderCallbackArgs *callbackArgs =
                     static_cast<CredentialsProviderCallbackArgs *>(user_data);
@@ -152,7 +161,8 @@ namespace Aws
             }
 
             static std::shared_ptr<ICredentialsProvider> s_CreateWrappedProvider(
-                struct aws_credentials_provider *raw_provider, Allocator *allocator)
+                struct aws_credentials_provider *raw_provider,
+                Allocator *allocator)
             {
                 if (raw_provider == nullptr)
                 {
@@ -165,7 +175,8 @@ namespace Aws
             }
 
             std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderStatic(
-                const CredentialsProviderStaticConfig &config, Allocator *allocator)
+                const CredentialsProviderStaticConfig &config,
+                Allocator *allocator)
             {
                 aws_credentials_provider_static_options staticOptions;
                 AWS_ZERO_STRUCT(staticOptions);
@@ -186,7 +197,8 @@ namespace Aws
             }
 
             std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderProfile(
-                const CredentialsProviderProfileConfig &config, Allocator *allocator)
+                const CredentialsProviderProfileConfig &config,
+                Allocator *allocator)
             {
                 struct aws_credentials_provider_profile_options raw_config;
                 AWS_ZERO_STRUCT(raw_config);
@@ -201,7 +213,8 @@ namespace Aws
             }
 
             std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderImds(
-                const CredentialsProviderImdsConfig &config, Allocator *allocator)
+                const CredentialsProviderImdsConfig &config,
+                Allocator *allocator)
             {
                 struct aws_credentials_provider_imds_options raw_config;
                 AWS_ZERO_STRUCT(raw_config);
@@ -212,16 +225,17 @@ namespace Aws
             }
 
             std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderChain(
-                const CredentialsProviderChainConfig &config, Allocator *allocator)
+                const CredentialsProviderChainConfig &config,
+                Allocator *allocator)
             {
                 Vector<aws_credentials_provider *> providers;
                 providers.reserve(config.Providers.size());
 
                 std::for_each(
-                    config.Providers.begin(), config.Providers.end(),
-                    [&](const std::shared_ptr<ICredentialsProvider> &provider) {
-                        providers.push_back(provider->GetUnderlyingHandle());
-                    });
+                    config.Providers.begin(),
+                    config.Providers.end(),
+                    [&](const std::shared_ptr<ICredentialsProvider> &provider)
+                    { providers.push_back(provider->GetUnderlyingHandle()); });
 
                 struct aws_credentials_provider_chain_options raw_config;
                 AWS_ZERO_STRUCT(raw_config);
@@ -233,7 +247,8 @@ namespace Aws
             }
 
             std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderCached(
-                const CredentialsProviderCachedConfig &config, Allocator *allocator)
+                const CredentialsProviderCachedConfig &config,
+                Allocator *allocator)
             {
                 struct aws_credentials_provider_cached_options raw_config;
                 AWS_ZERO_STRUCT(raw_config);
@@ -245,7 +260,8 @@ namespace Aws
             }
 
             std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderChainDefault(
-                const CredentialsProviderChainDefaultConfig &config, Allocator *allocator)
+                const CredentialsProviderChainDefaultConfig &config,
+                Allocator *allocator)
             {
                 struct aws_credentials_provider_chain_default_options raw_config;
                 AWS_ZERO_STRUCT(raw_config);
@@ -260,7 +276,8 @@ namespace Aws
             }
 
             std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderX509(
-                const CredentialsProviderX509Config &config, Allocator *allocator)
+                const CredentialsProviderX509Config &config,
+                Allocator *allocator)
             {
                 struct aws_credentials_provider_x509_options raw_config;
                 AWS_ZERO_STRUCT(raw_config);
@@ -295,7 +312,9 @@ namespace Aws
             };
 
             static int s_onDelegateGetCredentials(
-                void *delegate_user_data, aws_on_get_credentials_callback_fn callback, void *callback_user_data)
+                void *delegate_user_data,
+                aws_on_get_credentials_callback_fn callback,
+                void *callback_user_data)
             {
                 auto args = static_cast<DelegateCredentialsProviderCallbackArgs *>(delegate_user_data);
                 auto creds = args->m_Handler();
@@ -311,7 +330,8 @@ namespace Aws
             }
 
             std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderDelegate(
-                const CredentialsProviderDelegateConfig &config, Allocator *allocator)
+                const CredentialsProviderDelegateConfig &config,
+                Allocator *allocator)
             {
                 struct aws_credentials_provider_delegate_options raw_config;
                 AWS_ZERO_STRUCT(raw_config);

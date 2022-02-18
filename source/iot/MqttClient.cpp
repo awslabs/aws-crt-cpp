@@ -16,7 +16,9 @@ namespace Aws
     namespace Iot
     {
         WebsocketConfig::WebsocketConfig(
-            const Crt::String &signingRegion, Crt::Io::ClientBootstrap *bootstrap, Crt::Allocator *allocator) noexcept
+            const Crt::String &signingRegion,
+            Crt::Io::ClientBootstrap *bootstrap,
+            Crt::Allocator *allocator) noexcept
             : SigningRegion(signingRegion), ServiceName("iotdevicegateway")
         {
             Crt::Auth::CredentialsProviderChainDefaultConfig config;
@@ -30,7 +32,8 @@ namespace Aws
             auto credsProviderRef = CredentialsProvider;
             auto signingRegionCopy = SigningRegion;
             auto serviceNameCopy = ServiceName;
-            CreateSigningConfigCb = [allocator, credsProviderRef, signingRegionCopy, serviceNameCopy]() {
+            CreateSigningConfigCb = [allocator, credsProviderRef, signingRegionCopy, serviceNameCopy]()
+            {
                 auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
                 signerConfig->SetRegion(signingRegionCopy);
                 signerConfig->SetService(serviceNameCopy);
@@ -57,7 +60,8 @@ namespace Aws
             auto credsProviderRef = CredentialsProvider;
             auto signingRegionCopy = SigningRegion;
             auto serviceNameCopy = ServiceName;
-            CreateSigningConfigCb = [allocator, credsProviderRef, signingRegionCopy, serviceNameCopy]() {
+            CreateSigningConfigCb = [allocator, credsProviderRef, signingRegionCopy, serviceNameCopy]()
+            {
                 auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
                 signerConfig->SetRegion(signingRegionCopy);
                 signerConfig->SetService(serviceNameCopy);
@@ -81,7 +85,8 @@ namespace Aws
             auto credsProviderRef = CredentialsProvider;
             auto signingRegionCopy = SigningRegion;
             auto serviceNameCopy = ServiceName;
-            CreateSigningConfigCb = [allocator, credsProviderRef, signingRegionCopy, serviceNameCopy]() {
+            CreateSigningConfigCb = [allocator, credsProviderRef, signingRegionCopy, serviceNameCopy]()
+            {
                 auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
                 signerConfig->SetRegion(signingRegionCopy);
                 signerConfig->SetService(serviceNameCopy);
@@ -114,7 +119,9 @@ namespace Aws
         }
 
         MqttClientConnectionConfig::MqttClientConnectionConfig(
-            const Crt::String &endpoint, uint16_t port, const Crt::Io::SocketOptions &socketOptions,
+            const Crt::String &endpoint,
+            uint16_t port,
+            const Crt::Io::SocketOptions &socketOptions,
             Crt::Io::TlsContext &&tlsContext)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
               m_lastError(0)
@@ -122,8 +129,11 @@ namespace Aws
         }
 
         MqttClientConnectionConfig::MqttClientConnectionConfig(
-            const Crt::String &endpoint, uint16_t port, const Crt::Io::SocketOptions &socketOptions,
-            Crt::Io::TlsContext &&tlsContext, Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
+            const Crt::String &endpoint,
+            uint16_t port,
+            const Crt::Io::SocketOptions &socketOptions,
+            Crt::Io::TlsContext &&tlsContext,
+            Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
             const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
               m_webSocketInterceptor(std::move(interceptor)), m_proxyOptions(proxyOptions), m_lastError(0)
@@ -131,7 +141,9 @@ namespace Aws
         }
 
         MqttClientConnectionConfig::MqttClientConnectionConfig(
-            const Crt::String &endpoint, uint16_t port, const Crt::Io::SocketOptions &socketOptions,
+            const Crt::String &endpoint,
+            uint16_t port,
+            const Crt::Io::SocketOptions &socketOptions,
             Crt::Io::TlsContext &&tlsContext,
             const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
@@ -149,7 +161,9 @@ namespace Aws
         }
 
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
-            const char *certPath, const char *pkeyPath, Crt::Allocator *allocator) noexcept
+            const char *certPath,
+            const char *pkeyPath,
+            Crt::Allocator *allocator) noexcept
             : MqttClientConnectionConfigBuilder(allocator)
         {
             m_socketOptions.SetConnectTimeoutMs(3000);
@@ -162,7 +176,9 @@ namespace Aws
         }
 
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
-            const Crt::ByteCursor &cert, const Crt::ByteCursor &pkey, Crt::Allocator *allocator) noexcept
+            const Crt::ByteCursor &cert,
+            const Crt::ByteCursor &pkey,
+            Crt::Allocator *allocator) noexcept
             : MqttClientConnectionConfigBuilder(allocator)
         {
             m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(cert, pkey, allocator);
@@ -174,7 +190,8 @@ namespace Aws
         }
 
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
-            const Crt::Io::TlsContextPkcs11Options &pkcs11Options, Crt::Allocator *allocator) noexcept
+            const Crt::Io::TlsContextPkcs11Options &pkcs11Options,
+            Crt::Allocator *allocator) noexcept
             : MqttClientConnectionConfigBuilder(allocator)
         {
             m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtlsPkcs11(pkcs11Options, allocator);
@@ -186,7 +203,8 @@ namespace Aws
         }
 
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
-            const WebsocketConfig &config, Crt::Allocator *allocator) noexcept
+            const WebsocketConfig &config,
+            Crt::Allocator *allocator) noexcept
             : MqttClientConnectionConfigBuilder(allocator)
         {
             m_contextOptions = Crt::Io::TlsContextOptions::InitDefaultClient(allocator);
@@ -366,13 +384,13 @@ namespace Aws
             auto websocketConfig = m_websocketConfig.value();
             auto signerTransform = [websocketConfig](
                                        std::shared_ptr<Crt::Http::HttpRequest> req,
-                                       const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete) {
+                                       const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete)
+            {
                 // it is only a very happy coincidence that these function signatures match. This is the callback
                 // for signing to be complete. It invokes the callback for websocket handshake to be complete.
                 auto signingComplete =
-                    [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
-                        onComplete(req1, errorCode);
-                    };
+                    [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode)
+                { onComplete(req1, errorCode); };
 
                 auto signerConfig = websocketConfig.CreateSigningConfigCb();
 
@@ -382,7 +400,11 @@ namespace Aws
             bool useWebsocketProxyOptions = m_websocketConfig->ProxyOptions.has_value() && !m_proxyOptions.has_value();
 
             auto config = MqttClientConnectionConfig(
-                m_endpoint, port, m_socketOptions, std::move(tlsContext), signerTransform,
+                m_endpoint,
+                port,
+                m_socketOptions,
+                std::move(tlsContext),
+                signerTransform,
                 useWebsocketProxyOptions ? m_websocketConfig->ProxyOptions : m_proxyOptions);
             config.m_username = username;
             return config;
