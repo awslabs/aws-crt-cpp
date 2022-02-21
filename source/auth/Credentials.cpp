@@ -234,8 +234,9 @@ namespace Aws
                 std::for_each(
                     config.Providers.begin(),
                     config.Providers.end(),
-                    [&](const std::shared_ptr<ICredentialsProvider> &provider)
-                    { providers.push_back(provider->GetUnderlyingHandle()); });
+                    [&](const std::shared_ptr<ICredentialsProvider> &provider) {
+                        providers.push_back(provider->GetUnderlyingHandle());
+                    });
 
                 struct aws_credentials_provider_chain_options raw_config;
                 AWS_ZERO_STRUCT(raw_config);
