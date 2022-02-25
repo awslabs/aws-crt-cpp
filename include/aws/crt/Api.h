@@ -125,6 +125,13 @@ namespace Aws
             /**
              * Gets the static default ClientBootstrap, creating it if necessary.
              *
+             * This default will be used when a ClientBootstrap is not explicitly passed but is needed
+             * to allow the process to function. An example of this would be in the MQTT connection creation workflow.
+             * The default ClientBootstrap will use the default EventLoopGroup and HostResolver, creating them if necessary.
+             *
+             * The default ClientBootstrap will be automatically managed and released by the API handle when it's
+             * resources are being freed, not requiring any manual memory management.
+             *
              * @return ClientBootstrap* A pointer to the static default ClientBootstrap
              */
             static Io::ClientBootstrap *GetOrCreateDefaultClientBootstrap();
@@ -136,6 +143,16 @@ namespace Aws
 
             /**
              * Gets the static default EventLoopGroup, creating it if necessary.
+             *
+             * This default will be used when a EventLoopGroup is not explicitly passed but is needed
+             * to allow the process to function. An example of this would be in the MQTT connection creation workflow.
+             *
+             * The EventLoopGroup will automatically pick a default number of threads based on the system. You can
+             * manually adjust the number of threads being used by creating a EventLoopGroup and passing it through
+             * the SetDefaultEventLoopGroup function.
+             *
+             * The default EventLoopGroup will be automatically managed and released by the API handle when it's
+             * resources are being freed, not requiring any manual memory management.
              *
              * @return EventLoopGroup* A pointer to the static default EventLoopGroup
              */
@@ -149,7 +166,17 @@ namespace Aws
             /**
              * Gets the static default HostResolver, creating it if necessary.
              *
-             * @return EventLoopGroup* A pointer to the static default HostResolver
+             * This default will be used when a HostResolver is not explicitly passed but is needed
+             * to allow the process to function. An example of this would be in the MQTT connection creation workflow.
+             *
+             * The HostResolver will be set to have a maximum of 8 entries by default. You can
+             * manually adjust the maximum number of entries being used by creating a HostResolver and passing it through
+             * the SetDefaultEventLoopGroup function.
+             *
+             * The default HostResolver will be automatically managed and released by the API handle when it's
+             * resources are being freed, not requiring any manual memory management.
+             *
+             * @return HostResolver* A pointer to the static default HostResolver
              */
             static Io::HostResolver *GetOrCreateDefaultHostResolver();
 

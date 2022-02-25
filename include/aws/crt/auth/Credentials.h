@@ -251,6 +251,9 @@ namespace Aws
              * based on the AWS SDK defaults:
              *
              *   Cache-Of(Environment -> Profile -> IMDS)
+             *
+             * Note: If a ClientBootstrap is not passed in Bootstrap, then the default ClientBootstrap in Api will
+             * be used automatically.
              */
             struct AWS_CRT_CPP_API CredentialsProviderChainDefaultConfig
             {
@@ -258,6 +261,9 @@ namespace Aws
 
                 /**
                  * Connection bootstrap to use for any network connections made while sourcing credentials.
+                 *
+                 * Note: If a ClientBootstrap is not passed in Bootstrap, then the default ClientBootstrap in Api will
+                 * be used automatically.
                  */
                 Io::ClientBootstrap *Bootstrap;
 
@@ -273,6 +279,9 @@ namespace Aws
 
             /**
              * Configuration options for the X509 credentials provider
+             *
+             * Note: If a ClientBootstrap is not passed in Bootstrap, then the default ClientBootstrap in Api will
+             * be used automatically.
              */
             struct AWS_CRT_CPP_API CredentialsProviderX509Config
             {
@@ -284,6 +293,9 @@ namespace Aws
                 /**
                  * Connection bootstrap to use to create the http connection required to
                  * query credentials from the x509 provider
+                 *
+                 * Note: If a ClientBootstrap is not passed in Bootstrap, then the default ClientBootstrap in Api will
+                 * be used automatically.
                  */
                 Io::ClientBootstrap *Bootstrap;
 
