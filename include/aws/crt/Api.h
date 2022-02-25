@@ -186,7 +186,7 @@ namespace Aws
             static std::mutex s_lock_event_loop_group;
             static void ReleaseStaticDefaultEventLoopGroup();
 
-            static int s_host_resolver_default_max_entries;
+            static int s_host_resolver_default_max_hosts;
             static Io::HostResolver *s_static_default_host_resolver;
             static std::mutex s_lock_default_host_resolver;
             static void ReleaseStaticDefaultHostResolver();

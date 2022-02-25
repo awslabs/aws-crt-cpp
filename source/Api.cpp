@@ -32,7 +32,7 @@ namespace Aws
 
         Io::ClientBootstrap *ApiHandle::s_static_bootstrap = nullptr;
         Io::EventLoopGroup *ApiHandle::s_static_event_loop_group = nullptr;
-        int ApiHandle::s_host_resolver_default_max_entries = 8;
+        int ApiHandle::s_host_resolver_default_max_hosts = 8;
         Io::HostResolver *ApiHandle::s_static_default_host_resolver = nullptr;
         std::mutex ApiHandle::s_lock_client_bootstrap;
         std::mutex ApiHandle::s_lock_event_loop_group;
@@ -336,7 +336,7 @@ namespace Aws
             if (s_static_default_host_resolver == nullptr)
             {
                 s_static_default_host_resolver = Aws::Crt::New<Io::DefaultHostResolver>(
-                    g_allocator, *GetOrCreateStaticDefaultEventLoopGroup(), 1, s_host_resolver_default_max_entries);
+                    g_allocator, *GetOrCreateStaticDefaultEventLoopGroup(), 1, s_host_resolver_default_max_hosts);
             }
             return s_static_default_host_resolver;
         }
