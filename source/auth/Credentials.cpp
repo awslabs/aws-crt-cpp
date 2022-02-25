@@ -267,9 +267,9 @@ namespace Aws
                 struct aws_credentials_provider_chain_default_options raw_config;
                 AWS_ZERO_STRUCT(raw_config);
 
-                raw_config.bootstrap =
-                    config.Bootstrap ? config.Bootstrap->GetUnderlyingHandle()
-                                     : ApiHandle::GetOrCreateDefaultClientBootstrap()->GetUnderlyingHandle();
+                raw_config.bootstrap = config.Bootstrap
+                                           ? config.Bootstrap->GetUnderlyingHandle()
+                                           : ApiHandle::GetOrCreateDefaultClientBootstrap()->GetUnderlyingHandle();
                 raw_config.tls_ctx = config.TlsContext ? config.TlsContext->GetUnderlyingHandle() : nullptr;
 
                 return s_CreateWrappedProvider(
@@ -283,9 +283,9 @@ namespace Aws
                 struct aws_credentials_provider_x509_options raw_config;
                 AWS_ZERO_STRUCT(raw_config);
 
-                raw_config.bootstrap =
-                    config.Bootstrap ? config.Bootstrap->GetUnderlyingHandle()
-                                     : ApiHandle::GetOrCreateDefaultClientBootstrap()->GetUnderlyingHandle();
+                raw_config.bootstrap = config.Bootstrap
+                                           ? config.Bootstrap->GetUnderlyingHandle()
+                                           : ApiHandle::GetOrCreateDefaultClientBootstrap()->GetUnderlyingHandle();
                 raw_config.tls_connection_options = config.TlsOptions.GetUnderlyingHandle();
                 raw_config.thing_name = aws_byte_cursor_from_c_str(config.ThingName.c_str());
                 raw_config.role_alias = aws_byte_cursor_from_c_str(config.RoleAlias.c_str());

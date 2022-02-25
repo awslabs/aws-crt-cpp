@@ -47,7 +47,8 @@ namespace Aws
 
         WebsocketConfig::WebsocketConfig(const Crt::String &signingRegion, Crt::Allocator *allocator) noexcept
             : WebsocketConfig(signingRegion, Crt::ApiHandle::GetOrCreateDefaultClientBootstrap(), allocator)
-        {}
+        {
+        }
 
         WebsocketConfig::WebsocketConfig(
             const Crt::String &signingRegion,
@@ -395,7 +396,8 @@ namespace Aws
 
         MqttClient::MqttClient(Crt::Allocator *allocator) noexcept
             : MqttClient(*Crt::ApiHandle::GetOrCreateDefaultClientBootstrap(), allocator)
-        {}
+        {
+        }
 
         std::shared_ptr<Crt::Mqtt::MqttConnection> MqttClient::NewConnection(
             const MqttClientConnectionConfig &config) noexcept
