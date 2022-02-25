@@ -2,11 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
-#include <aws/crt/Types.h>
 #include <aws/crt/io/EventLoopGroup.h>
 #include <iostream>
-#include <mutex>
-#include <thread>
 
 namespace Aws
 {
@@ -67,6 +64,8 @@ namespace Aws
 
                 return nullptr;
             }
+
         } // namespace Io
-    }     // namespace Crt
+
+    } // namespace Crt
 } // namespace Aws

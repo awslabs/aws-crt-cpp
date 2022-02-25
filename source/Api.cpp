@@ -31,9 +31,8 @@ namespace Aws
         static Io::IsTlsAlpnSupportedCallback s_BYOCryptoIsTlsAlpnSupportedCallback;
 
         Io::ClientBootstrap *ApiHandle::s_static_bootstrap = nullptr;
-        int ApiHandle::s_static_event_loop_group_threads = std::thread::hardware_concurrency();
         Io::EventLoopGroup *ApiHandle::s_static_event_loop_group = nullptr;
-        int ApiHandle::s_host_resolver_default_max_entires = 8;
+        int ApiHandle::s_host_resolver_default_max_entries = 8;
         Io::DefaultHostResolver *ApiHandle::s_static_default_host_resolver = nullptr;
         std::mutex ApiHandle::s_lock_client_bootstrap;
         std::mutex ApiHandle::s_lock_event_loop_group;
@@ -310,37 +309,61 @@ namespace Aws
         }
 #endif // BYO_CRYPTO
 
-        Io::ClientBootstrap *ApiHandle::GetOrCreateStaticDefaultClientBootstrap()
+        Io::ClientBootstrap *ApiHandle::GetOrCreateDefaultClientBootstrap()
         {
             std::lock_guard<std::mutex> lock(s_lock_client_bootstrap);
             if (s_static_bootstrap == nullptr)
             {
                 s_static_bootstrap = Aws::Crt::New<Io::ClientBootstrap>(
-                    g_allocator, *GetOrCreateStaticDefaultEventLoopGroup(), *GetOrCreateStaticDefaultHostResolver());
+                    g_allocator, *GetOrCreateDefaultEventLoopGroup(), *GetOrCreateDefaultHostResolver());
             }
             return s_static_bootstrap;
         }
 
-        Io::EventLoopGroup *ApiHandle::GetOrCreateStaticDefaultEventLoopGroup()
+        void ApiHandle::SetDefaultClientBootstrap(Io::ClientBootstrap *clientBootstrap)
+        {
+            if (s_static_bootstrap == nullptr)
+            {
+                s_static_bootstrap = clientBootstrap;
+            }
+        }
+
+        Io::EventLoopGroup *ApiHandle::GetOrCreateDefaultEventLoopGroup()
         {
             std::lock_guard<std::mutex> lock(s_lock_event_loop_group);
             if (s_static_event_loop_group == nullptr)
             {
                 s_static_event_loop_group =
-                    Aws::Crt::New<Io::EventLoopGroup>(g_allocator, s_static_event_loop_group_threads);
+                    Aws::Crt::New<Io::EventLoopGroup>(g_allocator, 0);
             }
             return s_static_event_loop_group;
         }
 
-        Io::DefaultHostResolver *ApiHandle::GetOrCreateStaticDefaultHostResolver()
+        void ApiHandle::SetDefaultEventLoopGroup(Io::EventLoopGroup *eventLoopGroup)
+        {
+            if (s_static_event_loop_group == nullptr)
+            {
+                s_static_event_loop_group = eventLoopGroup;
+            }
+        }
+
+        Io::HostResolver *ApiHandle::GetOrCreateDefaultHostResolver()
         {
             std::lock_guard<std::mutex> lock(s_lock_default_host_resolver);
             if (s_static_default_host_resolver == nullptr)
             {
                 s_static_default_host_resolver = Aws::Crt::New<Io::DefaultHostResolver>(
-                    g_allocator, *GetOrCreateStaticDefaultEventLoopGroup(), 1, s_host_resolver_default_max_entires);
+                    g_allocator, *GetOrCreateDefaultEventLoopGroup(), 1, s_host_resolver_default_max_entries);
             }
             return s_static_default_host_resolver;
+        }
+
+        void ApiHandle::SetDefaultHostResolver(Io::HostResolver *hostResolver)
+        {
+            if (s_static_default_host_resolver == nullptr)
+            {
+                s_static_default_host_resolver = hostResolver;
+            }
         }
 
         void ApiHandle::ReleaseStaticDefaultClientBootstrap()

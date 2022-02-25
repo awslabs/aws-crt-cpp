@@ -2,11 +2,11 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
-#include <aws/common/string.h>
-#include <aws/crt/Types.h>
-#include <aws/crt/io/EventLoopGroup.h>
 #include <aws/crt/io/HostResolver.h>
-#include <mutex>
+
+#include <aws/crt/io/EventLoopGroup.h>
+
+#include <aws/common/string.h>
 
 namespace Aws
 {

@@ -6,9 +6,6 @@
 #include <aws/crt/Types.h>
 #include <aws/crt/crypto/HMAC.h>
 #include <aws/crt/crypto/Hash.h>
-#include <aws/crt/io/Bootstrap.h>
-#include <aws/crt/io/EventLoopGroup.h>
-#include <aws/crt/io/TlsOptions.h>
 #include <aws/crt/mqtt/MqttClient.h>
 
 #include <aws/common/logging.h>
@@ -126,25 +123,40 @@ namespace Aws
             static const Io::IsTlsAlpnSupportedCallback &GetBYOCryptoIsTlsAlpnSupportedCallback();
 
             /**
-             * Gets the static default EventLoopGroup, creating it if necessary.
+             * Gets the static default ClientBootstrap, creating it if necessary.
              *
-             * @return EventLoopGroup* A pointer to the static default EventLoopGroup
+             * @return ClientBootstrap* A pointer to the static default ClientBootstrap
              */
-            static Io::ClientBootstrap *GetOrCreateStaticDefaultClientBootstrap();
+            static Io::ClientBootstrap *GetOrCreateDefaultClientBootstrap();
+
+            /**
+             * Sets the static default ClientBootstrap, if it has not been created already.
+             */
+            static void SetDefaultClientBootstrap(Io::ClientBootstrap *clientBootstrap);
 
             /**
              * Gets the static default EventLoopGroup, creating it if necessary.
              *
              * @return EventLoopGroup* A pointer to the static default EventLoopGroup
              */
-            static Io::EventLoopGroup *GetOrCreateStaticDefaultEventLoopGroup();
+            static Io::EventLoopGroup *GetOrCreateDefaultEventLoopGroup();
 
             /**
-             * Gets the static default EventLoopGroup, creating it if necessary.
-             *
-             * @return EventLoopGroup* A pointer to the static default EventLoopGroup
+             * Sets the static default EventLoopGroup, if it has not been created already.
              */
-            static Io::DefaultHostResolver *GetOrCreateStaticDefaultHostResolver();
+            static void SetDefaultEventLoopGroup(Io::EventLoopGroup *eventLoopGroup);
+
+            /**
+             * Gets the static default HostResolver, creating it if necessary.
+             *
+             * @return EventLoopGroup* A pointer to the static default HostResolver
+             */
+            static Io::HostResolver *GetOrCreateDefaultHostResolver();
+
+            /**
+             * Sets the static default HostResolver, if it has not been created already.
+             */
+            static void SetDefaultHostResolver(Io::HostResolver *hostResolver);
 
           private:
             void InitializeLoggingCommon(struct aws_logger_standard_options &options);
@@ -154,16 +166,16 @@ namespace Aws
             ApiHandleShutdownBehavior m_shutdownBehavior;
 
             static Io::ClientBootstrap *s_static_bootstrap;
-            static int s_static_event_loop_group_threads;
-            static Io::EventLoopGroup *s_static_event_loop_group;
-            static int s_host_resolver_default_max_entires;
-            static Io::DefaultHostResolver *s_static_default_host_resolver;
             static std::mutex s_lock_client_bootstrap;
-            static std::mutex s_lock_event_loop_group;
-            static std::mutex s_lock_default_host_resolver;
-
             static void ReleaseStaticDefaultClientBootstrap();
+
+            static Io::EventLoopGroup *s_static_event_loop_group;
+            static std::mutex s_lock_event_loop_group;
             static void ReleaseStaticDefaultEventLoopGroup();
+
+            static int s_host_resolver_default_max_entries;
+            static Io::HostResolver *s_static_default_host_resolver;
+            static std::mutex s_lock_default_host_resolver;
             static void ReleaseStaticDefaultHostResolver();
         };
 
