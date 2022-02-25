@@ -6,8 +6,8 @@
 
 #include <aws/crt/io/EventLoopGroup.h>
 
-#include <aws/crt/Api.h>
 #include <aws/common/string.h>
+#include <aws/crt/Api.h>
 
 namespace Aws
 {
