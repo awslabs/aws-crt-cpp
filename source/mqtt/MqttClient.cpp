@@ -704,7 +704,7 @@ namespace Aws
             MqttClient::MqttClient(Allocator *allocator) noexcept
                 : m_client(aws_mqtt_client_new(
                       allocator,
-                      Crt::ApiHandle::GetOrCreateDefaultClientBootstrap()->GetUnderlyingHandle()))
+                      Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap()->GetUnderlyingHandle()))
             {
             }
 

@@ -309,26 +309,18 @@ namespace Aws
         }
 #endif // BYO_CRYPTO
 
-        Io::ClientBootstrap *ApiHandle::GetOrCreateDefaultClientBootstrap()
+        Io::ClientBootstrap *ApiHandle::GetOrCreateStaticDefaultClientBootstrap()
         {
             std::lock_guard<std::mutex> lock(s_lock_client_bootstrap);
             if (s_static_bootstrap == nullptr)
             {
                 s_static_bootstrap = Aws::Crt::New<Io::ClientBootstrap>(
-                    g_allocator, *GetOrCreateDefaultEventLoopGroup(), *GetOrCreateDefaultHostResolver());
+                    g_allocator, *GetOrCreateStaticDefaultEventLoopGroup(), *GetOrCreateStaticDefaultHostResolver());
             }
             return s_static_bootstrap;
         }
 
-        void ApiHandle::SetDefaultClientBootstrap(Io::ClientBootstrap *clientBootstrap)
-        {
-            if (s_static_bootstrap == nullptr)
-            {
-                s_static_bootstrap = clientBootstrap;
-            }
-        }
-
-        Io::EventLoopGroup *ApiHandle::GetOrCreateDefaultEventLoopGroup()
+        Io::EventLoopGroup *ApiHandle::GetOrCreateStaticDefaultEventLoopGroup()
         {
             std::lock_guard<std::mutex> lock(s_lock_event_loop_group);
             if (s_static_event_loop_group == nullptr)
@@ -338,31 +330,15 @@ namespace Aws
             return s_static_event_loop_group;
         }
 
-        void ApiHandle::SetDefaultEventLoopGroup(Io::EventLoopGroup *eventLoopGroup)
-        {
-            if (s_static_event_loop_group == nullptr)
-            {
-                s_static_event_loop_group = eventLoopGroup;
-            }
-        }
-
-        Io::HostResolver *ApiHandle::GetOrCreateDefaultHostResolver()
+        Io::HostResolver *ApiHandle::GetOrCreateStaticDefaultHostResolver()
         {
             std::lock_guard<std::mutex> lock(s_lock_default_host_resolver);
             if (s_static_default_host_resolver == nullptr)
             {
                 s_static_default_host_resolver = Aws::Crt::New<Io::DefaultHostResolver>(
-                    g_allocator, *GetOrCreateDefaultEventLoopGroup(), 1, s_host_resolver_default_max_entries);
+                    g_allocator, *GetOrCreateStaticDefaultEventLoopGroup(), 1, s_host_resolver_default_max_entries);
             }
             return s_static_default_host_resolver;
-        }
-
-        void ApiHandle::SetDefaultHostResolver(Io::HostResolver *hostResolver)
-        {
-            if (s_static_default_host_resolver == nullptr)
-            {
-                s_static_default_host_resolver = hostResolver;
-            }
         }
 
         void ApiHandle::ReleaseStaticDefaultClientBootstrap()

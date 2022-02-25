@@ -46,7 +46,7 @@ namespace Aws
         }
 
         WebsocketConfig::WebsocketConfig(const Crt::String &signingRegion, Crt::Allocator *allocator) noexcept
-            : WebsocketConfig(signingRegion, Crt::ApiHandle::GetOrCreateDefaultClientBootstrap(), allocator)
+            : WebsocketConfig(signingRegion, Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap(), allocator)
         {
         }
 
@@ -395,7 +395,7 @@ namespace Aws
         }
 
         MqttClient::MqttClient(Crt::Allocator *allocator) noexcept
-            : MqttClient(*Crt::ApiHandle::GetOrCreateDefaultClientBootstrap(), allocator)
+            : MqttClient(*Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap(), allocator)
         {
         }
 

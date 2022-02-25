@@ -43,7 +43,7 @@ namespace Aws
             }
 
             DefaultHostResolver::DefaultHostResolver(size_t maxHosts, size_t maxTTL, Allocator *allocator) noexcept
-                : DefaultHostResolver(*Crt::ApiHandle::GetOrCreateDefaultEventLoopGroup(), maxHosts, maxTTL, allocator)
+                : DefaultHostResolver(*Crt::ApiHandle::GetOrCreateStaticDefaultEventLoopGroup(), maxHosts, maxTTL, allocator)
             {
             }
 

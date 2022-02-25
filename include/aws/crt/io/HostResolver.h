@@ -66,7 +66,7 @@ namespace Aws
                  * Resolves DNS addresses using the default EventLoopGroup.
                  *
                  * For more information on the default EventLoopGroup see
-                 * Aws::Crt::ApiHandle::GetOrCreateDefaultEventLoopGroup
+                 * Aws::Crt::ApiHandle::GetOrCreateStaticDefaultEventLoopGroup
                  *
                  * @param maxHosts: the number of unique hosts to maintain in the cache.
                  * @param maxTTL: how long to keep an address in the cache before evicting it.

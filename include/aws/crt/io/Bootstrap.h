@@ -45,8 +45,8 @@ namespace Aws
 
                 /**
                  * Uses the default EventLoopGroup and HostResolver.
-                 * See Aws::Crt::ApiHandle::GetOrCreateDefaultEventLoopGroup
-                 * and Aws::Crt::ApiHandle::GetOrCreateDefaultHostResolver
+                 * See Aws::Crt::ApiHandle::GetOrCreateStaticDefaultEventLoopGroup
+                 * and Aws::Crt::ApiHandle::GetOrCreateStaticDefaultHostResolver
                  */
                 ClientBootstrap(Allocator *allocator = g_allocator) noexcept;
 

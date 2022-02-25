@@ -135,12 +135,7 @@ namespace Aws
              *
              * @return ClientBootstrap* A pointer to the static default ClientBootstrap
              */
-            static Io::ClientBootstrap *GetOrCreateDefaultClientBootstrap();
-
-            /**
-             * Sets the static default ClientBootstrap, if it has not been created already.
-             */
-            static void SetDefaultClientBootstrap(Io::ClientBootstrap *clientBootstrap);
+            static Io::ClientBootstrap *GetOrCreateStaticDefaultClientBootstrap();
 
             /**
              * Gets the static default EventLoopGroup, creating it if necessary.
@@ -157,12 +152,7 @@ namespace Aws
              *
              * @return EventLoopGroup* A pointer to the static default EventLoopGroup
              */
-            static Io::EventLoopGroup *GetOrCreateDefaultEventLoopGroup();
-
-            /**
-             * Sets the static default EventLoopGroup, if it has not been created already.
-             */
-            static void SetDefaultEventLoopGroup(Io::EventLoopGroup *eventLoopGroup);
+            static Io::EventLoopGroup *GetOrCreateStaticDefaultEventLoopGroup();
 
             /**
              * Gets the static default HostResolver, creating it if necessary.
@@ -179,12 +169,7 @@ namespace Aws
              *
              * @return HostResolver* A pointer to the static default HostResolver
              */
-            static Io::HostResolver *GetOrCreateDefaultHostResolver();
-
-            /**
-             * Sets the static default HostResolver, if it has not been created already.
-             */
-            static void SetDefaultHostResolver(Io::HostResolver *hostResolver);
+            static Io::HostResolver *GetOrCreateStaticDefaultHostResolver();
 
           private:
             void InitializeLoggingCommon(struct aws_logger_standard_options &options);

@@ -431,7 +431,7 @@ namespace Aws
                  * Initialize an MqttClient using a allocator and the default ClientBootstrap
                  *
                  * For more information on the default ClientBootstrap see
-                 * Aws::Crt::ApiHandle::GetOrCreateDefaultClientBootstrap
+                 * Aws::Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap
                  */
                 MqttClient(Allocator *allocator = g_allocator) noexcept;
 

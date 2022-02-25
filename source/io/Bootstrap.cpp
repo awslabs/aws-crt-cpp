@@ -75,8 +75,8 @@ namespace Aws
 
             ClientBootstrap::ClientBootstrap(Allocator *allocator) noexcept
                 : ClientBootstrap(
-                      *Crt::ApiHandle::GetOrCreateDefaultEventLoopGroup(),
-                      *Crt::ApiHandle::GetOrCreateDefaultHostResolver(),
+                      *Crt::ApiHandle::GetOrCreateStaticDefaultEventLoopGroup(),
+                      *Crt::ApiHandle::GetOrCreateStaticDefaultHostResolver(),
                       allocator)
             {
             }
