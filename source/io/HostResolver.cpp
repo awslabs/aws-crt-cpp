@@ -6,6 +6,7 @@
 
 #include <aws/crt/io/EventLoopGroup.h>
 
+#include <aws/crt/Api.h>
 #include <aws/common/string.h>
 
 namespace Aws
@@ -39,6 +40,11 @@ namespace Aws
                 m_config.impl = aws_default_dns_resolve;
                 m_config.impl_data = nullptr;
                 m_config.max_ttl = maxTTL;
+            }
+
+            DefaultHostResolver::DefaultHostResolver(size_t maxHosts, size_t maxTTL, Allocator *allocator) noexcept
+                : DefaultHostResolver(*Crt::ApiHandle::GetOrCreateDefaultEventLoopGroup(), maxHosts, maxTTL, allocator)
+            {
             }
 
             DefaultHostResolver::~DefaultHostResolver()

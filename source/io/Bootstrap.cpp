@@ -2,6 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include <aws/crt/Api.h>
 #include <aws/crt/io/Bootstrap.h>
 
 namespace Aws
@@ -70,6 +71,14 @@ namespace Aws
                 {
                     m_lastError = aws_last_error();
                 }
+            }
+
+            ClientBootstrap::ClientBootstrap(Allocator *allocator) noexcept
+                : ClientBootstrap(
+                      *Crt::ApiHandle::GetOrCreateDefaultEventLoopGroup(),
+                      *Crt::ApiHandle::GetOrCreateDefaultHostResolver(),
+                      allocator)
+            {
             }
 
             ClientBootstrap::~ClientBootstrap()
