@@ -127,7 +127,8 @@ namespace Aws
              *
              * This default will be used when a ClientBootstrap is not explicitly passed but is needed
              * to allow the process to function. An example of this would be in the MQTT connection creation workflow.
-             * The default ClientBootstrap will use the default EventLoopGroup and HostResolver, creating them if necessary.
+             * The default ClientBootstrap will use the default EventLoopGroup and HostResolver, creating them if
+             * necessary.
              *
              * The default ClientBootstrap will be automatically managed and released by the API handle when it's
              * resources are being freed, not requiring any manual memory management.
@@ -170,8 +171,8 @@ namespace Aws
              * to allow the process to function. An example of this would be in the MQTT connection creation workflow.
              *
              * The HostResolver will be set to have a maximum of 8 entries by default. You can
-             * manually adjust the maximum number of entries being used by creating a HostResolver and passing it through
-             * the SetDefaultEventLoopGroup function.
+             * manually adjust the maximum number of entries being used by creating a HostResolver and passing it
+             * through the SetDefaultEventLoopGroup function.
              *
              * The default HostResolver will be automatically managed and released by the API handle when it's
              * resources are being freed, not requiring any manual memory management.

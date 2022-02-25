@@ -124,7 +124,8 @@ namespace Aws
              * Create a websocket configuration for use with the default credentials provider chain and default
              * ClientBootstrap. Signing region will be used for Sigv4 signature calculations.
              *
-             * For more information on the default ClientBootstrap see Aws::Crt::ApiHandle::GetOrCreateDefaultClientBootstrap
+             * For more information on the default ClientBootstrap see
+             * Aws::Crt::ApiHandle::GetOrCreateDefaultClientBootstrap
              *
              * @param signingRegion Aws region that is being connected to.  Required in order to properly sign the
              * handshake upgrade request
@@ -420,7 +421,8 @@ namespace Aws
             /**
              * Constructs a new Mqtt Client object using the static default ClientBootstrap.
              *
-             * For more information on the default ClientBootstrap see Aws::Crt::ApiHandle::GetOrCreateDefaultClientBootstrap
+             * For more information on the default ClientBootstrap see
+             * Aws::Crt::ApiHandle::GetOrCreateDefaultClientBootstrap
              */
             MqttClient(Crt::Allocator *allocator = Crt::g_allocator) noexcept;
 
