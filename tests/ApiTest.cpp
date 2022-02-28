@@ -38,7 +38,7 @@ static int s_TestApiMultiDefaultCreateDestroy(struct aws_allocator *allocator, v
 
 AWS_TEST_CASE(ApiMultiDefaultCreateDestroy, s_TestApiMultiDefaultCreateDestroy)
 
-static int s_TestApiDefaultCreateDestroy(struct aws_allocator *allocator, void *)
+static int s_TestApiStaticDefaultCreateDestroy(struct aws_allocator *allocator, void *)
 {
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
@@ -53,4 +53,4 @@ static int s_TestApiDefaultCreateDestroy(struct aws_allocator *allocator, void *
     return AWS_ERROR_SUCCESS;
 }
 
-AWS_TEST_CASE(s_TestApiDefaultCreateDestroy, s_TestApiMultiCreateDestroy)
+AWS_TEST_CASE(ApiStaticDefaultCreateDestroy, s_TestApiStaticDefaultCreateDestroy)

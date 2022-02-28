@@ -15,6 +15,7 @@ set(TEST_BINARY_NAME ${PROJECT_NAME}-tests)
 if (NOT ENABLE_SANITIZERS)
     add_test_case(ApiMultiCreateDestroy)
     add_test_case(ApiMultiDefaultCreateDestroy)
+    add_test_case(ApiStaticDefaultCreateDestroy)
 endif()
 
 add_test_case(EventLoopResourceSafety)
