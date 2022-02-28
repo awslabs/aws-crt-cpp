@@ -2,6 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include <aws/crt/Api.h>
 #include <aws/crt/http/HttpConnectionManager.h>
 #include <aws/crt/http/HttpProxyStrategy.h>
 
@@ -85,7 +86,17 @@ namespace Aws
 
                 aws_http_connection_manager_options managerOptions;
                 AWS_ZERO_STRUCT(managerOptions);
-                managerOptions.bootstrap = connectionOptions.Bootstrap->GetUnderlyingHandle();
+
+                if (connectionOptions.Bootstrap != nullptr)
+                {
+                    managerOptions.bootstrap = connectionOptions.Bootstrap->GetUnderlyingHandle();
+                }
+                else
+                {
+                    managerOptions.bootstrap =
+                        ApiHandle::GetOrCreateStaticDefaultClientBootstrap()->GetUnderlyingHandle();
+                }
+
                 managerOptions.port = connectionOptions.Port;
                 managerOptions.max_connections = m_options.MaxConnections;
                 managerOptions.socket_options = &connectionOptions.SocketOptions.GetImpl();

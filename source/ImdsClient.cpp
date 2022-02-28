@@ -5,6 +5,7 @@
 
 #include <aws/auth/aws_imds_client.h>
 #include <aws/auth/credentials.h>
+#include <aws/crt/Api.h>
 #include <aws/crt/ImdsClient.h>
 #include <aws/crt/auth/Credentials.h>
 #include <aws/crt/http/HttpConnection.h>
@@ -84,11 +85,17 @@ namespace Aws
 
             ImdsClient::ImdsClient(const ImdsClientConfig &config, Allocator *allocator) noexcept
             {
-                AWS_FATAL_ASSERT(config.Bootstrap != nullptr);
-
                 struct aws_imds_client_options raw_config;
                 AWS_ZERO_STRUCT(raw_config);
-                raw_config.bootstrap = config.Bootstrap->GetUnderlyingHandle();
+                if (config.Bootstrap != nullptr)
+                {
+                    raw_config.bootstrap = config.Bootstrap->GetUnderlyingHandle();
+                }
+                else
+                {
+                    raw_config.bootstrap = ApiHandle::GetOrCreateStaticDefaultClientBootstrap()->GetUnderlyingHandle();
+                }
+
                 m_client = aws_imds_client_new(allocator, &raw_config);
                 m_allocator = allocator;
             }
