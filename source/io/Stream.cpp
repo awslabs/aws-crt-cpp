@@ -82,6 +82,7 @@ namespace Aws
 
                 m_underlying_stream.impl = this;
                 m_underlying_stream.vtable = &s_vtable;
+                /* C++ will handle refcount and detroy */
             }
 
             StdIOStreamInputStream::StdIOStreamInputStream(
