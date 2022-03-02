@@ -136,7 +136,6 @@ namespace Aws
                 static int s_Read(aws_input_stream *stream, aws_byte_buf *dest);
                 static int s_GetStatus(aws_input_stream *stream, aws_stream_status *status);
                 static int s_GetLength(struct aws_input_stream *stream, int64_t *out_length);
-                static void s_Destroy(void *stream);
 
                 static aws_input_stream_vtable s_vtable;
             };
