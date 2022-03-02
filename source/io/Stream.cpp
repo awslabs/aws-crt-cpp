@@ -16,8 +16,9 @@ namespace Aws
         {
             InputStream::~InputStream()
             {
-                // DO NOTHING: for now. But keep this here because it has to be virtual, and we may have
-                // resources to clean up in the future.
+                // It's not needed for as C++ will clean the recourse up, but add it in case we have real resource to be
+                // cleaned up in the future.
+                aws_input_stream_release(&m_underlying_stream);
             }
 
             int InputStream::s_Seek(aws_input_stream *stream, int64_t offset, enum aws_stream_seek_basis basis)
@@ -68,6 +69,12 @@ namespace Aws
                 return AWS_OP_ERR;
             }
 
+            void InputStream::s_Destroy(void *stream)
+            {
+                (void)stream;
+                // DO NOTHING, let the C++ destructor handle it.
+            }
+
             aws_input_stream_vtable InputStream::s_vtable = {
                 InputStream::s_Seek,
                 InputStream::s_Read,
@@ -82,7 +89,7 @@ namespace Aws
 
                 m_underlying_stream.impl = this;
                 m_underlying_stream.vtable = &s_vtable;
-                /* C++ will handle refcount and detroy */
+                aws_ref_count_init(&m_underlying_stream.ref_count, &m_underlying_stream, InputStream::s_Destroy);
             }
 
             StdIOStreamInputStream::StdIOStreamInputStream(
