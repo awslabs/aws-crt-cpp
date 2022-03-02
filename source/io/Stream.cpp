@@ -68,12 +68,6 @@ namespace Aws
                 return AWS_OP_ERR;
             }
 
-            void InputStream::s_Destroy(void *stream)
-            {
-                (void)stream;
-                // DO NOTHING, let the C++ destructor handle it.
-            }
-
             aws_input_stream_vtable InputStream::s_vtable = {
                 InputStream::s_Seek,
                 InputStream::s_Read,
@@ -88,7 +82,6 @@ namespace Aws
 
                 m_underlying_stream.impl = this;
                 m_underlying_stream.vtable = &s_vtable;
-                aws_ref_count_init(&m_underlying_stream.ref_count, &m_underlying_stream, InputStream::s_Destroy);
             }
 
             StdIOStreamInputStream::StdIOStreamInputStream(
