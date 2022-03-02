@@ -16,9 +16,8 @@ namespace Aws
         {
             InputStream::~InputStream()
             {
-                // It's not needed as C++ will clean the recourse up, but add it in case we have real resource to be
-                // cleaned up in the future.
-                aws_input_stream_release(&m_underlying_stream);
+                // DO NOTHING: for now. But keep this here because it has to be virtual, and we may have
+                // resources to clean up in the future.
             }
 
             int InputStream::s_Seek(aws_input_stream *stream, int64_t offset, enum aws_stream_seek_basis basis)
