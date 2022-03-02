@@ -16,7 +16,7 @@ namespace Aws
         {
             InputStream::~InputStream()
             {
-                // It's not needed for as C++ will clean the recourse up, but add it in case we have real resource to be
+                // It's not needed as C++ will clean the recourse up, but add it in case we have real resource to be
                 // cleaned up in the future.
                 aws_input_stream_release(&m_underlying_stream);
             }
