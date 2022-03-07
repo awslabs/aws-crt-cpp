@@ -45,6 +45,11 @@ namespace Aws
             };
         }
 
+        WebsocketConfig::WebsocketConfig(const Crt::String &signingRegion, Crt::Allocator *allocator) noexcept
+            : WebsocketConfig(signingRegion, Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap(), allocator)
+        {
+        }
+
         WebsocketConfig::WebsocketConfig(
             const Crt::String &signingRegion,
             const std::shared_ptr<Crt::Auth::ICredentialsProvider> &credentialsProvider,
@@ -387,6 +392,11 @@ namespace Aws
             {
                 m_lastError = m_client.LastError();
             }
+        }
+
+        MqttClient::MqttClient(Crt::Allocator *allocator) noexcept
+            : MqttClient(*Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap(), allocator)
+        {
         }
 
         std::shared_ptr<Crt::Mqtt::MqttConnection> MqttClient::NewConnection(

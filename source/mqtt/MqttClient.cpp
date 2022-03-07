@@ -4,6 +4,7 @@
  */
 #include <aws/crt/mqtt/MqttClient.h>
 
+#include <aws/crt/Api.h>
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/http/HttpProxyStrategy.h>
 #include <aws/crt/http/HttpRequestResponse.h>
@@ -697,6 +698,13 @@ namespace Aws
 
             MqttClient::MqttClient(Io::ClientBootstrap &bootstrap, Allocator *allocator) noexcept
                 : m_client(aws_mqtt_client_new(allocator, bootstrap.GetUnderlyingHandle()))
+            {
+            }
+
+            MqttClient::MqttClient(Allocator *allocator) noexcept
+                : m_client(aws_mqtt_client_new(
+                      allocator,
+                      Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap()->GetUnderlyingHandle()))
             {
             }
 

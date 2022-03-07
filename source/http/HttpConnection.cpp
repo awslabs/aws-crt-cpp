@@ -2,6 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include <aws/crt/Api.h>
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/http/HttpProxyStrategy.h>
 #include <aws/crt/http/HttpRequestResponse.h>
@@ -131,7 +132,15 @@ namespace Aws
                 aws_http_client_connection_options options;
                 AWS_ZERO_STRUCT(options);
                 options.self_size = sizeof(aws_http_client_connection_options);
-                options.bootstrap = connectionOptions.Bootstrap->GetUnderlyingHandle();
+
+                if (options.bootstrap != nullptr)
+                {
+                    options.bootstrap = connectionOptions.Bootstrap->GetUnderlyingHandle();
+                }
+                else
+                {
+                    options.bootstrap = ApiHandle::GetOrCreateStaticDefaultClientBootstrap()->GetUnderlyingHandle();
+                }
 
                 if (connectionOptions.TlsOptions)
                 {

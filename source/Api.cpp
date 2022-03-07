@@ -14,6 +14,8 @@
 #include <aws/mqtt/mqtt.h>
 #include <aws/s3/s3.h>
 
+#include <thread>
+
 namespace Aws
 {
     namespace Crt
@@ -27,6 +29,14 @@ namespace Aws
         static Io::NewTlsContextImplCallback s_BYOCryptoNewTlsContextImplCallback;
         static Io::DeleteTlsContextImplCallback s_BYOCryptoDeleteTlsContextImplCallback;
         static Io::IsTlsAlpnSupportedCallback s_BYOCryptoIsTlsAlpnSupportedCallback;
+
+        Io::ClientBootstrap *ApiHandle::s_static_bootstrap = nullptr;
+        Io::EventLoopGroup *ApiHandle::s_static_event_loop_group = nullptr;
+        int ApiHandle::s_host_resolver_default_max_hosts = 8;
+        Io::HostResolver *ApiHandle::s_static_default_host_resolver = nullptr;
+        std::mutex ApiHandle::s_lock_client_bootstrap;
+        std::mutex ApiHandle::s_lock_event_loop_group;
+        std::mutex ApiHandle::s_lock_default_host_resolver;
 
         static void *s_cJSONAlloc(size_t sz) { return aws_mem_acquire(g_allocator, sz); }
 
@@ -59,6 +69,10 @@ namespace Aws
 
         ApiHandle::~ApiHandle()
         {
+            ReleaseStaticDefaultClientBootstrap();
+            ReleaseStaticDefaultEventLoopGroup();
+            ReleaseStaticDefaultHostResolver();
+
             if (m_shutdownBehavior == ApiHandleShutdownBehavior::Blocking)
             {
                 aws_thread_join_all_managed();
@@ -294,6 +308,68 @@ namespace Aws
                 AWS_LS_IO_TLS, "SetBYOCryptoClientTlsCallback() has no effect unless compiled with BYO_CRYPTO");
         }
 #endif // BYO_CRYPTO
+
+        Io::ClientBootstrap *ApiHandle::GetOrCreateStaticDefaultClientBootstrap()
+        {
+            std::lock_guard<std::mutex> lock(s_lock_client_bootstrap);
+            if (s_static_bootstrap == nullptr)
+            {
+                s_static_bootstrap = Aws::Crt::New<Io::ClientBootstrap>(
+                    g_allocator, *GetOrCreateStaticDefaultEventLoopGroup(), *GetOrCreateStaticDefaultHostResolver());
+            }
+            return s_static_bootstrap;
+        }
+
+        Io::EventLoopGroup *ApiHandle::GetOrCreateStaticDefaultEventLoopGroup()
+        {
+            std::lock_guard<std::mutex> lock(s_lock_event_loop_group);
+            if (s_static_event_loop_group == nullptr)
+            {
+                s_static_event_loop_group = Aws::Crt::New<Io::EventLoopGroup>(g_allocator, 0);
+            }
+            return s_static_event_loop_group;
+        }
+
+        Io::HostResolver *ApiHandle::GetOrCreateStaticDefaultHostResolver()
+        {
+            std::lock_guard<std::mutex> lock(s_lock_default_host_resolver);
+            if (s_static_default_host_resolver == nullptr)
+            {
+                s_static_default_host_resolver = Aws::Crt::New<Io::DefaultHostResolver>(
+                    g_allocator, *GetOrCreateStaticDefaultEventLoopGroup(), 1, s_host_resolver_default_max_hosts);
+            }
+            return s_static_default_host_resolver;
+        }
+
+        void ApiHandle::ReleaseStaticDefaultClientBootstrap()
+        {
+            std::lock_guard<std::mutex> lock(s_lock_client_bootstrap);
+            if (s_static_bootstrap != nullptr)
+            {
+                Aws::Crt::Delete(s_static_bootstrap, g_allocator);
+                s_static_bootstrap = nullptr;
+            }
+        }
+
+        void ApiHandle::ReleaseStaticDefaultEventLoopGroup()
+        {
+            std::lock_guard<std::mutex> lock(s_lock_event_loop_group);
+            if (s_static_event_loop_group != nullptr)
+            {
+                Aws::Crt::Delete(s_static_event_loop_group, g_allocator);
+                s_static_event_loop_group = nullptr;
+            }
+        }
+
+        void ApiHandle::ReleaseStaticDefaultHostResolver()
+        {
+            std::lock_guard<std::mutex> lock(s_lock_default_host_resolver);
+            if (s_static_default_host_resolver != nullptr)
+            {
+                Aws::Crt::Delete(s_static_default_host_resolver, g_allocator);
+                s_static_default_host_resolver = nullptr;
+            }
+        }
 
         const Io::NewTlsContextImplCallback &ApiHandle::GetBYOCryptoNewTlsContextImplCallback()
         {
