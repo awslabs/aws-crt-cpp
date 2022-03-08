@@ -20,9 +20,6 @@
                         "libssl-dev"
                     ]
                 }
-            },
-            "targets": {
-                "linux": {}
             }
         }
     },
