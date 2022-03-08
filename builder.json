@@ -12,6 +12,26 @@
     "build_steps": [
         "build-crt"
     ],
+    "variants": {
+        "openssl": {
+            "hosts": {
+                "ubuntu": {
+                    "packages": [
+                        "libssl-dev"
+                    ]
+                }
+            },
+            "targets": {
+                "linux": {
+                    "!upstream": [
+                        {
+                            "name": "aws-c-common"
+                        }
+                    ]
+                }
+            }
+        }
+    },
     "test_steps": [
         "test",
         "elasticurl-tests"
