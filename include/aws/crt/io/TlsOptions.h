@@ -123,6 +123,8 @@ namespace Aws
                     Allocator *allocator = g_allocator) noexcept;
 
                 /**
+                 * @deprecated Custom keychain management is deprecated.
+                 *
                  * By default the certificates and private keys are stored in the default keychain
                  * of the account of the process. If you instead wish to provide your own keychain
                  * for storing them, this makes the TlsContext to use that instead.
