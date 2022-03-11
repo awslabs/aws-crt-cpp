@@ -98,17 +98,22 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API HttpRequestOptions
             {
-
+                /**
+                 * The actual http request
+                 */
                 HttpRequest *request;
+
                 /**
                  * See `OnIncomingHeaders` for more info. This value must be set.
                  */
                 OnIncomingHeaders onIncomingHeaders;
                 OnIncomingHeadersBlockDone onIncomingHeadersBlockDone;
+
                 /**
                  * See `OnIncomingBody` for more info. This value can be empty if you will not be receiving a body.
                  */
                 OnIncomingBody onIncomingBody;
+
                 /**
                  * See `OnStreamComplete` for more info. This value can be empty.
                  */
@@ -133,6 +138,9 @@ namespace Aws
                  */
                 HttpClientConnection &GetConnection() const noexcept;
 
+                /**
+                 * @return request's Http Response Code.  Requires response headers to have been processed first. *
+                 */
                 virtual int GetResponseStatusCode() const noexcept = 0;
 
                 /**
@@ -183,6 +191,9 @@ namespace Aws
                 std::shared_ptr<HttpStream> stream;
             };
 
+            /**
+             * Subclass that represents an http client's view of an HttpStream.
+             */
             class AWS_CRT_CPP_API HttpClientStream final : public HttpStream
             {
               public:
@@ -224,8 +235,9 @@ namespace Aws
                 Basic,
             };
 
-            /*
-             * Mirror of aws_http_proxy_connection_type enum
+            /**
+             * Mirror of aws_http_proxy_connection_type enum. Indicates the basic http proxy behavior of the
+             * proxy we're connecting to.
              */
             enum class AwsHttpProxyConnectionType
             {
@@ -233,7 +245,7 @@ namespace Aws
                  * Deprecated, but 0-valued for backwards compatibility
                  *
                  * If tls options are provided (for the main connection) then treat the proxy as a tunneling proxy
-                 * If tls options are not provided (for the main connection), then treate the proxy as a forwarding
+                 * If tls options are not provided (for the main connection), then treat the proxy as a forwarding
                  * proxy
                  */
                 Legacy = AWS_HPCT_HTTP_LEGACY,
@@ -273,8 +285,6 @@ namespace Aws
                  * @param raw_options - output parameter containing low level proxy options to be passed to the C
                  * interface
                  *
-                 * If this object itself does not live to the C call that uses raw_options,
-                 * you will get a crash.
                  */
                 void InitializeRawProxyOptions(struct aws_http_proxy_options &raw_options) const;
 
@@ -347,7 +357,8 @@ namespace Aws
 
                 /**
                  * The client bootstrap to use for setting up and tearing down connections.
-                 * Required.
+                 * Note: If null, then the default ClientBootstrap is used
+                 * (see Aws::Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap)
                  */
                 Io::ClientBootstrap *Bootstrap;
 
@@ -409,6 +420,7 @@ namespace Aws
                  */
                 bool ManualWindowManagement;
             };
+
             enum class HttpVersion
             {
                 Unknown = AWS_HTTP_VERSION_UNKNOWN,
@@ -416,6 +428,7 @@ namespace Aws
                 Http1_1 = AWS_HTTP_VERSION_1_1,
                 Http2 = AWS_HTTP_VERSION_2,
             };
+
             /**
              * Represents a connection from a Http Client to a Server.
              */
@@ -460,6 +473,7 @@ namespace Aws
                  * @return protocol version the connection used
                  */
                 HttpVersion GetVersion() noexcept;
+
                 /**
                  * @return the value of the last aws error encountered by operations on this instance.
                  */

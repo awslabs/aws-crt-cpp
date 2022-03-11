@@ -209,6 +209,9 @@ namespace Aws
                 /**
                  * Connection bootstrap to use to create the http connection required to
                  * query credentials from the Ec2 instance metadata service
+                 *
+                 * Note: If null, then the default ClientBootstrap is used
+                 * (see Aws::Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap)
                  */
                 Io::ClientBootstrap *Bootstrap;
             };
@@ -258,6 +261,9 @@ namespace Aws
 
                 /**
                  * Connection bootstrap to use for any network connections made while sourcing credentials.
+                 *
+                 * Note: If null, then the default ClientBootstrap is used
+                 * (see Aws::Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap)
                  */
                 Io::ClientBootstrap *Bootstrap;
 
@@ -284,6 +290,9 @@ namespace Aws
                 /**
                  * Connection bootstrap to use to create the http connection required to
                  * query credentials from the x509 provider
+                 *
+                 * Note: If null, then the default ClientBootstrap is used
+                 * (see Aws::Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap)
                  */
                 Io::ClientBootstrap *Bootstrap;
 
@@ -354,8 +363,6 @@ namespace Aws
 
                 /*
                  * Factory methods for all of the basic credentials provider types
-                 *
-                 * NYI: X509, ECS
                  */
 
                 /**

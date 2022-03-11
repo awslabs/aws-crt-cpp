@@ -40,6 +40,9 @@ namespace Aws
                 /**
                  * Connection bootstrap to use to create the http connection required to
                  * query resource from the Ec2 instance metadata service
+                 *
+                 * Note: If null, then the default ClientBootstrap is used
+                 * (see Aws::Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap)
                  */
                 Io::ClientBootstrap *Bootstrap;
 

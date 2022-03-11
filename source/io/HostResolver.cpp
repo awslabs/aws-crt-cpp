@@ -7,6 +7,7 @@
 #include <aws/crt/io/EventLoopGroup.h>
 
 #include <aws/common/string.h>
+#include <aws/crt/Api.h>
 
 namespace Aws
 {
@@ -41,13 +42,24 @@ namespace Aws
                 m_config.max_ttl = maxTTL;
             }
 
+            DefaultHostResolver::DefaultHostResolver(size_t maxHosts, size_t maxTTL, Allocator *allocator) noexcept
+                : DefaultHostResolver(
+                      *Crt::ApiHandle::GetOrCreateStaticDefaultEventLoopGroup(),
+                      maxHosts,
+                      maxTTL,
+                      allocator)
+            {
+            }
+
             DefaultHostResolver::~DefaultHostResolver()
             {
                 aws_host_resolver_release(m_resolver);
                 m_initialized = false;
             }
 
-            /// @private
+            /**
+             * @private
+             */
             struct DefaultHostResolveArgs
             {
                 Allocator *allocator;

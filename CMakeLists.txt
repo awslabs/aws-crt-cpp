@@ -6,6 +6,7 @@ endif()
 project(aws-crt-cpp CXX C)
 option(BUILD_DEPS "Builds aws common runtime dependencies as part of build. Turn off if you want to control your dependency chain." ON)
 option(BYO_CRYPTO "Don't build a tls implementation or link against a crypto interface. This feature is only for unix builds currently" OFF)
+option(USE_OPENSSL "Set this if you want to use your system's OpenSSL 1.0.2/1.1.1 compatible libcrypto" OFF)
 
 # Proxy integration test control - In addition to this option, all proxy tests require the following environment variables set appropriately when running tests:
 #
@@ -69,7 +70,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 if (NOT DEFINED AWS_CRT_CPP_VERSION)
-    set(AWS_CRT_CPP_VERSION "v1.0.0-dev")
+    set(AWS_CRT_CPP_VERSION "v0.17.18")
     # Try to determine the current git tag and use that as the version
     execute_process(COMMAND git describe --tags
         RESULT_VARIABLE GIT_EXIT_CODE
@@ -102,10 +103,38 @@ if (BUILD_DEPS)
     add_subdirectory(crt/aws-c-common)
 
     if (UNIX AND NOT APPLE AND NOT BYO_CRYPTO)
-        include(crt/aws-c-cal/cmake/modules/aws-lc.cmake)
+        if (NOT USE_OPENSSL)
+            set(DISABLE_PERL ON CACHE BOOL "Disable Perl for AWS-LC.")
+            set(DISABLE_GO ON CACHE BOOL "Disable Go for AWS-LC.")
+
+            # temporarily disable certain warnings as errors for the aws-lc build
+            set(OLD_CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+            if (NOT MSVC)
+                check_c_compiler_flag(-Wno-stringop-overflow HAS_WNO_STRINGOP_OVERFLOW)
+                if (HAS_WNO_STRINGOP_OVERFLOW)
+                    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-stringop-overflow")
+                endif()
+
+                check_c_compiler_flag(-Wno-array-parameter HAS_WNO_ARRAY_PARAMETER)
+                if (HAS_WNO_ARRAY_PARAMETER)
+                    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-array-parameter")
+                endif()
+            endif()
+
+            add_subdirectory(crt/aws-lc)
+
+            # restore previous build flags
+            set(CMAKE_C_FLAGS "${OLD_CMAKE_C_FLAGS}")
+
+            set(SEARCH_LIBCRYPTO OFF CACHE BOOL "Let S2N use libcrypto from AWS-LC.")
+        else()
+            set(SEARCH_LIBCRYPTO ON CACHE BOOL "Let S2N search libcrypto in the system.")
+        endif()
+        set(UNSAFE_TREAT_WARNINGS_AS_ERRORS OFF CACHE BOOL "Disable warnings-as-errors when building S2N")
         add_subdirectory(crt/s2n)
     endif()
 
+    add_subdirectory(crt/aws-c-sdkutils)
     add_subdirectory(crt/aws-c-io)
     add_subdirectory(crt/aws-c-cal)
     add_subdirectory(crt/aws-c-compression)
@@ -114,6 +143,7 @@ if (BUILD_DEPS)
     add_subdirectory(crt/aws-c-mqtt)
     add_subdirectory(crt/aws-checksums)
     add_subdirectory(crt/aws-c-event-stream)
+    add_subdirectory(crt/aws-c-s3)
     set(BUILD_TESTING ${BUILD_TESTING_PREV})
 else()
     include(AwsFindPackage)
@@ -251,20 +281,23 @@ set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDA
 
 aws_prepare_symbol_visibility_args(${PROJECT_NAME} "AWS_CRT_CPP")
 
-#set warnings and runtime library
+#set runtime library
 if (MSVC)
     if(STATIC_CRT)
         target_compile_options(${PROJECT_NAME} PRIVATE "/MT$<$<CONFIG:Debug>:d>")
     else()
         target_compile_options(${PROJECT_NAME} PRIVATE "/MD$<$<CONFIG:Debug>:d>")
     endif()
-    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
-else ()
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
 endif ()
 
 if (CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE MATCHES Debug)
     target_compile_definitions(${PROJECT_NAME} PRIVATE "-DDEBUG_BUILD")
+    #set extra warning flags for debug build
+    if (MSVC)
+        target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
+    else ()
+        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
+    endif ()
 endif ()
 
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -279,6 +312,7 @@ aws_use_package(aws-c-common)
 aws_use_package(aws-c-io)
 aws_use_package(aws-checksums)
 aws_use_package(aws-c-event-stream)
+aws_use_package(aws-c-s3)
 
 target_link_libraries(${PROJECT_NAME} ${DEP_AWS_LIBS})
 

@@ -4,6 +4,8 @@
  */
 #include <aws/crt/io/TlsOptions.h>
 
+#include <aws/crt/io/Pkcs11.h>
+
 #include <aws/crt/Api.h>
 #include <aws/io/logging.h>
 #include <aws/io/tls_channel_handler.h>
@@ -58,7 +60,6 @@ namespace Aws
                 return ctxOptions;
             }
 
-#if !defined(AWS_OS_IOS)
             TlsContextOptions TlsContextOptions::InitClientWithMtls(
                 const char *certPath,
                 const char *pKeyPath,
@@ -89,8 +90,21 @@ namespace Aws
                 }
                 return ctxOptions;
             }
-#endif /* !AWS_OS_IOS */
-#if defined(AWS_OS_APPLE)
+
+            TlsContextOptions TlsContextOptions::InitClientWithMtlsPkcs11(
+                const TlsContextPkcs11Options &pkcs11Options,
+                Allocator *allocator) noexcept
+            {
+                TlsContextOptions ctxOptions;
+                aws_tls_ctx_pkcs11_options nativePkcs11Options = pkcs11Options.GetUnderlyingHandle();
+                if (!aws_tls_ctx_options_init_client_mtls_with_pkcs11(
+                        &ctxOptions.m_options, allocator, &nativePkcs11Options))
+                {
+                    ctxOptions.m_isInit = true;
+                }
+                return ctxOptions;
+            }
+
             TlsContextOptions TlsContextOptions::InitClientWithMtlsPkcs12(
                 const char *pkcs12Path,
                 const char *pkcs12Pwd,
@@ -105,19 +119,27 @@ namespace Aws
                 }
                 return ctxOptions;
             }
-#endif /* AWS_OS_APPLE */
 
-#ifdef _WIN32
+            bool TlsContextOptions::SetKeychainPath(ByteCursor &keychain_path) noexcept
+            {
+                AWS_ASSERT(m_isInit);
+                return aws_tls_ctx_options_set_keychain_path(&m_options, &keychain_path) == 0;
+            }
+
             TlsContextOptions TlsContextOptions::InitClientWithMtlsSystemPath(
                 const char *registryPath,
                 Allocator *allocator) noexcept
             {
                 TlsContextOptions ctxOptions;
-                aws_tls_ctx_options_init_client_mtls_from_system_path(&ctxOptions.m_options, allocator, registryPath);
-                ctxOptions.m_isInit = true;
+                if (!aws_tls_ctx_options_init_client_mtls_from_system_path(
+                        &ctxOptions.m_options, allocator, registryPath))
+                {
+                    ctxOptions.m_isInit = true;
+                }
                 return ctxOptions;
             }
-#endif /* _WIN32 */
+
+            int TlsContextOptions::LastError() const noexcept { return LastErrorOrUnknown(); }
 
             bool TlsContextOptions::IsAlpnSupported() noexcept { return aws_tls_is_alpn_available(); }
 
@@ -151,6 +173,77 @@ namespace Aws
                 return aws_tls_ctx_options_override_default_trust_store(&m_options, const_cast<ByteCursor *>(&ca)) == 0;
             }
 
+            TlsContextPkcs11Options::TlsContextPkcs11Options(
+                const std::shared_ptr<Pkcs11Lib> &pkcs11Lib,
+                Allocator *) noexcept
+                : m_pkcs11Lib{pkcs11Lib}
+            {
+            }
+
+            void TlsContextPkcs11Options::SetUserPin(const String &pin) noexcept { m_userPin = pin; }
+
+            void TlsContextPkcs11Options::SetSlotId(const uint64_t id) noexcept { m_slotId = id; }
+
+            void TlsContextPkcs11Options::SetTokenLabel(const String &label) noexcept { m_tokenLabel = label; }
+
+            void TlsContextPkcs11Options::SetPrivateKeyObjectLabel(const String &label) noexcept
+            {
+                m_privateKeyObjectLabel = label;
+            }
+
+            void TlsContextPkcs11Options::SetCertificateFilePath(const String &path) noexcept
+            {
+                m_certificateFilePath = path;
+            }
+
+            void TlsContextPkcs11Options::SetCertificateFileContents(const String &contents) noexcept
+            {
+                m_certificateFileContents = contents;
+            }
+
+            aws_tls_ctx_pkcs11_options TlsContextPkcs11Options::GetUnderlyingHandle() const noexcept
+            {
+                aws_tls_ctx_pkcs11_options options;
+                AWS_ZERO_STRUCT(options);
+
+                if (m_pkcs11Lib)
+                {
+                    options.pkcs11_lib = m_pkcs11Lib->GetNativeHandle();
+                }
+
+                if (m_slotId)
+                {
+                    options.slot_id = &(*m_slotId);
+                }
+
+                if (m_userPin)
+                {
+                    options.user_pin = ByteCursorFromString(*m_userPin);
+                }
+
+                if (m_tokenLabel)
+                {
+                    options.token_label = ByteCursorFromString(*m_tokenLabel);
+                }
+
+                if (m_privateKeyObjectLabel)
+                {
+                    options.private_key_object_label = ByteCursorFromString(*m_privateKeyObjectLabel);
+                }
+
+                if (m_certificateFilePath)
+                {
+                    options.cert_file_path = ByteCursorFromString(*m_certificateFilePath);
+                }
+
+                if (m_certificateFileContents)
+                {
+                    options.cert_file_contents = ByteCursorFromString(*m_certificateFileContents);
+                }
+
+                return options;
+            }
+
             TlsConnectionOptions::TlsConnectionOptions() noexcept : m_lastError(AWS_ERROR_SUCCESS), m_isInit(false) {}
 
             TlsConnectionOptions::TlsConnectionOptions(aws_tls_ctx *ctx, Allocator *allocator) noexcept
@@ -171,10 +264,12 @@ namespace Aws
             TlsConnectionOptions::TlsConnectionOptions(const TlsConnectionOptions &options) noexcept
             {
                 m_isInit = false;
+                AWS_ZERO_STRUCT(m_tls_connection_options);
 
                 if (options.m_isInit)
                 {
                     m_allocator = options.m_allocator;
+
                     if (!aws_tls_connection_options_copy(&m_tls_connection_options, &options.m_tls_connection_options))
                     {
                         m_isInit = true;
@@ -196,6 +291,7 @@ namespace Aws
                     }
 
                     m_isInit = false;
+                    AWS_ZERO_STRUCT(m_tls_connection_options);
 
                     if (options.m_isInit)
                     {
@@ -231,6 +327,13 @@ namespace Aws
             {
                 if (this != &options)
                 {
+                    if (m_isInit)
+                    {
+                        aws_tls_connection_options_clean_up(&m_tls_connection_options);
+                    }
+
+                    m_isInit = false;
+
                     if (options.m_isInit)
                     {
                         m_tls_connection_options = options.m_tls_connection_options;

@@ -9,7 +9,6 @@
 #include <aws/crt/io/Uri.h>
 
 #include <aws/common/command_line_parser.h>
-
 #include <condition_variable>
 #include <fstream>
 #include <future>
@@ -117,6 +116,16 @@ static void s_ParseOptions(int argc, char **argv, ElasticurlCtx &ctx)
             case 0:
                 /* getopt_long() returns 0 if an option.flag is non-null */
                 break;
+            case 2:
+                /* getopt_long() returns 0x02 (START_OF_TEXT) if a positional arg was encountered */
+                ctx.uri = Io::Uri(aws_byte_cursor_from_c_str(aws_cli_positional_arg), ctx.allocator);
+                if (!ctx.uri)
+                {
+                    std::cerr << "Failed to parse uri \"" << aws_cli_positional_arg << "\" with error "
+                              << aws_error_debug_str(ctx.uri.LastError()) << std::endl;
+                    s_Usage(1);
+                }
+                break;
             case 'a':
                 ctx.CaCert = aws_cli_optarg;
                 break;
@@ -222,19 +231,7 @@ static void s_ParseOptions(int argc, char **argv, ElasticurlCtx &ctx)
         ctx.InputBody = std::make_shared<std::stringstream>("");
     }
 
-    if (aws_cli_optind < argc)
-    {
-        struct aws_byte_cursor uri_cursor = aws_byte_cursor_from_c_str(argv[aws_cli_optind++]);
-
-        ctx.uri = Io::Uri(uri_cursor, ctx.allocator);
-        if (!ctx.uri)
-        {
-            std::cerr << "Failed to parse uri" << (char *)uri_cursor.ptr << "with error "
-                      << aws_error_debug_str(ctx.uri.LastError()) << std::endl;
-            s_Usage(1);
-        };
-    }
-    else
+    if (!ctx.uri)
     {
         std::cerr << "A URI for the request must be supplied.\n";
         s_Usage(1);
@@ -244,12 +241,12 @@ static void s_ParseOptions(int argc, char **argv, ElasticurlCtx &ctx)
 int main(int argc, char **argv)
 {
     struct aws_allocator *allocator = aws_default_allocator();
+    ApiHandle apiHandle(allocator);
 
     struct ElasticurlCtx appCtx;
     appCtx.allocator = allocator;
 
     s_ParseOptions(argc, argv, appCtx);
-    ApiHandle apiHandle(allocator);
     if (appCtx.TraceFile)
     {
         apiHandle.InitializeLogging(appCtx.LogLevel, appCtx.TraceFile);
@@ -377,26 +374,27 @@ int main(int argc, char **argv)
     std::promise<std::shared_ptr<Http::HttpClientConnection>> connectionPromise;
     std::promise<void> shutdownPromise;
 
-    auto onConnectionSetup = [&appCtx, &connectionPromise](const std::shared_ptr<Http::HttpClientConnection> &newConnection, int errorCode) {
-        if (!errorCode)
-        {
-            if (appCtx.RequiredHttpVersion != Http::HttpVersion::Unknown)
+    auto onConnectionSetup =
+        [&appCtx, &connectionPromise](const std::shared_ptr<Http::HttpClientConnection> &newConnection, int errorCode) {
+            if (!errorCode)
             {
-                if (newConnection->GetVersion() != appCtx.RequiredHttpVersion)
+                if (appCtx.RequiredHttpVersion != Http::HttpVersion::Unknown)
                 {
-                    std::cerr << "Error. The requested HTTP version, " << appCtx.Alpn
-                              << ", is not supported by the peer." << std::endl;
-                    exit(1);
+                    if (newConnection->GetVersion() != appCtx.RequiredHttpVersion)
+                    {
+                        std::cerr << "Error. The requested HTTP version, " << appCtx.Alpn
+                                  << ", is not supported by the peer." << std::endl;
+                        exit(1);
+                    }
                 }
             }
-        }
-        else
-        {
-            std::cerr << "Connection failed with error " << aws_error_debug_str(errorCode) << std::endl;
-            exit(1);
-        }
-        connectionPromise.set_value(newConnection);
-    };
+            else
+            {
+                std::cerr << "Connection failed with error " << aws_error_debug_str(errorCode) << std::endl;
+                exit(1);
+            }
+            connectionPromise.set_value(newConnection);
+        };
 
     auto onConnectionShutdown = [&shutdownPromise](Http::HttpClientConnection &newConnection, int errorCode) {
         (void)newConnection;
@@ -484,10 +482,20 @@ int main(int argc, char **argv)
     request.SetMethod(ByteCursorFromCString(appCtx.verb));
     request.SetPath(appCtx.uri.GetPathAndQuery());
 
-    Http::HttpHeader hostHeader;
-    hostHeader.name = ByteCursorFromCString("host");
-    hostHeader.value = appCtx.uri.GetHostName();
-    request.AddHeader(hostHeader);
+    if (connection->GetVersion() == Http::HttpVersion::Http2)
+    {
+        Http::HttpHeader authHeader;
+        authHeader.name = ByteCursorFromCString(":authority");
+        authHeader.value = appCtx.uri.GetHostName();
+        request.AddHeader(authHeader);
+    }
+    else
+    {
+        Http::HttpHeader hostHeader;
+        hostHeader.name = ByteCursorFromCString("host");
+        hostHeader.value = appCtx.uri.GetHostName();
+        request.AddHeader(hostHeader);
+    }
 
     Http::HttpHeader userAgentHeader;
     userAgentHeader.name = ByteCursorFromCString("user-agent");

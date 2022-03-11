@@ -3,6 +3,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include <aws/crt/Config.h>
 #include <aws/crt/Exports.h>
 #include <aws/crt/auth/Sigv4Signing.h>
 #include <aws/crt/mqtt/MqttClient.h>
@@ -16,8 +17,9 @@ namespace Aws
         class MqttClient;
 
         /**
-         * Represents a unique configuration for connecting to a single endpoint. You can use a single instance of this
-         * class PER endpoint you want to connect to. This object must live through the lifetime of your connection.
+         * Represents a unique configuration for connecting to a single AWS IoT endpoint. You can use a single instance
+         * of this class PER endpoint you want to connect to. This object must live through the lifetime of your
+         * connection.
          */
         class AWS_CRT_CPP_API MqttClientConnectionConfig final
         {
@@ -26,6 +28,11 @@ namespace Aws
 
             /**
              * Creates a client configuration for use with making new AWS Iot specific MQTT Connections with MTLS.
+             *
+             * @param endpoint endpoint to connect to
+             * @param port port to connect to
+             * @param socketOptions socket options to use when establishing the connection
+             * @param tlsContext tls context that should be used for all connections sourced from this config
              */
             MqttClientConnectionConfig(
                 const Crt::String &endpoint,
@@ -42,6 +49,13 @@ namespace Aws
              *
              * If proxy options are used, the tlsContext is applied to the connection to the remote endpoint, NOT the
              * proxy. To make a tls connection to the proxy itself, you'll want to specify tls options in proxyOptions.
+             *
+             * @param endpoint endpoint to connect to
+             * @param port port to connect to
+             * @param socketOptions socket options to use when establishing the connection
+             * @param tlsContext tls context that should be used for all connections sourced from this config
+             * @param interceptor websocket upgrade handshake transformation function
+             * @param proxyOptions proxy configuration options
              */
             MqttClientConnectionConfig(
                 const Crt::String &endpoint,
@@ -55,6 +69,7 @@ namespace Aws
              * @return true if the instance is in a valid state, false otherwise.
              */
             explicit operator bool() const noexcept { return m_context ? true : false; }
+
             /**
              * @return the value of the last aws error encountered by operations on this instance.
              */
@@ -75,6 +90,8 @@ namespace Aws
             Crt::Io::TlsContext m_context;
             Crt::Io::SocketOptions m_socketOptions;
             Crt::Mqtt::OnWebSocketHandshakeIntercept m_webSocketInterceptor;
+            Crt::String m_username;
+            Crt::String m_password;
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
             int m_lastError;
 
@@ -84,11 +101,19 @@ namespace Aws
 
         using CreateSigningConfig = std::function<std::shared_ptr<Crt::Auth::ISigningConfig>(void)>;
 
+        /**
+         * Class encapsulating configuration for establishing an Aws IoT mqtt connection via websockets
+         */
         struct AWS_CRT_CPP_API WebsocketConfig
         {
             /**
              * Create a websocket configuration for use with the default credentials provider chain. Signing region
              * will be used for Sigv4 signature calculations.
+             *
+             * @param signingRegion Aws region that is being connected to.  Required in order to properly sign the
+             * handshake upgrade request
+             * @param bootstrap client bootstrap to establish any connections needed by the default credentials
+             * provider chain which will get built for the user
              */
             WebsocketConfig(
                 const Crt::String &signingRegion,
@@ -96,8 +121,24 @@ namespace Aws
                 Crt::Allocator *allocator = Crt::g_allocator) noexcept;
 
             /**
-             * Create a websocket configuration for use with a custom credentials provider. Signing region will be use
+             * Create a websocket configuration for use with the default credentials provider chain and default
+             * ClientBootstrap. Signing region will be used for Sigv4 signature calculations.
+             *
+             * For more information on the default ClientBootstrap see
+             * Aws::Crt::ApiHandle::GetOrCreateDefaultClientBootstrap
+             *
+             * @param signingRegion Aws region that is being connected to.  Required in order to properly sign the
+             * handshake upgrade request
+             */
+            WebsocketConfig(const Crt::String &signingRegion, Crt::Allocator *allocator = Crt::g_allocator) noexcept;
+
+            /**
+             * Create a websocket configuration for use with a custom credentials provider. Signing region will be used
              * for Sigv4 signature calculations.
+             *
+             * @param signingRegion Aws region that is being connected to.  Required in order to properly sign the
+             * handshake upgrade request
+             * @param credentialsProvider credentials provider to source AWS credentials from
              */
             WebsocketConfig(
                 const Crt::String &signingRegion,
@@ -112,6 +153,10 @@ namespace Aws
              *
              * This is useful for cases use with:
              * https://docs.aws.amazon.com/iot/latest/developerguide/custom-auth.html
+             *
+             * @param credentialsProvider
+             * @param signer
+             * @param createSigningConfig
              */
             WebsocketConfig(
                 const std::shared_ptr<Crt::Auth::ICredentialsProvider> &credentialsProvider,
@@ -162,6 +207,9 @@ namespace Aws
             /**
              * Sets the builder up for MTLS using certPath and pkeyPath. These are files on disk and must be in the PEM
              * format.
+             *
+             * @param certPath path to the X509 certificate (pem file) to use
+             * @param pkeyPath path to the private key (pem file) to use
              */
             MqttClientConnectionConfigBuilder(
                 const char *certPath,
@@ -171,6 +219,9 @@ namespace Aws
             /**
              * Sets the builder up for MTLS using cert and pkey. These are in-memory buffers and must be in the PEM
              * format.
+             *
+             * @param cert buffer containing the X509 certificate in a PEM format
+             * @param pkey buffer containing the private key in a PEM format
              */
             MqttClientConnectionConfigBuilder(
                 const Crt::ByteCursor &cert,
@@ -178,7 +229,18 @@ namespace Aws
                 Crt::Allocator *allocator = Crt::g_allocator) noexcept;
 
             /**
+             * Sets the builder up for MTLS, using a PKCS#11 library for private key operations.
+             *
+             * NOTE: This only works on Unix devices.
+             */
+            MqttClientConnectionConfigBuilder(
+                const Crt::Io::TlsContextPkcs11Options &pkcs11Options,
+                Crt::Allocator *allocator = Crt::g_allocator) noexcept;
+
+            /**
              * Sets the builder up for Websocket connection.
+             *
+             * @param config websocket configuration information
              */
             MqttClientConnectionConfigBuilder(
                 const WebsocketConfig &config,
@@ -186,11 +248,19 @@ namespace Aws
 
             /**
              * Sets endpoint to connect to.
+             *
+             * @param endpoint endpoint to connect to
+             *
+             * @return this builder object
              */
             MqttClientConnectionConfigBuilder &WithEndpoint(const Crt::String &endpoint);
 
             /**
              * Sets endpoint to connect to.
+             *
+             * @param endpoint endpoint to connect to
+             *
+             * @return this builder object
              */
             MqttClientConnectionConfigBuilder &WithEndpoint(Crt::String &&endpoint);
 
@@ -198,66 +268,148 @@ namespace Aws
              * Overrides the default port. By default, if ALPN is supported, 443 will be used. Otherwise 8883 will be
              * used. If you specify 443 and ALPN is not supported, we will still attempt to connect over 443 without
              * ALPN.
+             *
+             * @param port port to connect to
+             *
+             * @return this builder object
              */
             MqttClientConnectionConfigBuilder &WithPortOverride(uint16_t port) noexcept;
 
             /**
              * Sets the certificate authority for the endpoint you're connecting to. This is a path to a file on disk
              * and must be in PEM format.
+             *
+             * @param caPath path to the CA file in PEM format
+             *
+             * @return this builder object
              */
             MqttClientConnectionConfigBuilder &WithCertificateAuthority(const char *caPath) noexcept;
 
             /**
              * Sets the certificate authority for the endpoint you're connecting to. This is an in-memory buffer and
              * must be in PEM format.
+             *
+             * @param cert buffer containing the CA certificate in a PEM format
+             *
+             * @return this builder object
              */
             MqttClientConnectionConfigBuilder &WithCertificateAuthority(const Crt::ByteCursor &cert) noexcept;
 
-            /** TCP option: Enables TCP keep alive. Defaults to off. */
+            /**
+             * TCP option: Enables TCP keep alive. Defaults to off.
+             *
+             * @return this builder object
+             */
             MqttClientConnectionConfigBuilder &WithTcpKeepAlive() noexcept;
 
-            /** TCP option: Sets the connect timeout. Defaults to 3 seconds. */
+            /**
+             * TCP option: Sets the connect timeout. Defaults to 3 seconds.
+             *
+             * @param connectTimeoutMs socket connection timeout
+             *
+             * @return this builder object
+             */
             MqttClientConnectionConfigBuilder &WithTcpConnectTimeout(uint32_t connectTimeoutMs) noexcept;
 
-            /** TCP option: Sets time before keep alive probes are sent. Defaults to kernel defaults */
+            /**
+             * TCP option: Sets time before keep alive probes are sent. Defaults to kernel defaults
+             *
+             * @param keepAliveTimeoutSecs time interval of no activity, in seconds, before keep alive probes
+             * get sent
+             *
+             * @return this builder object
+             */
             MqttClientConnectionConfigBuilder &WithTcpKeepAliveTimeout(uint16_t keepAliveTimeoutSecs) noexcept;
 
             /**
              * TCP option: Sets the frequency of sending keep alive probes in seconds once the keep alive timeout
              * expires. Defaults to kernel defaults.
+             *
+             * @param keepAliveIntervalSecs the frequency of sending keep alive probes in seconds once the keep alive
+             * timeout expires
+             *
+             * @return this builder object
              */
             MqttClientConnectionConfigBuilder &WithTcpKeepAliveInterval(uint16_t keepAliveIntervalSecs) noexcept;
 
             /**
              * TCP option: Sets the amount of keep alive probes allowed to fail before the connection is terminated.
              * Defaults to kernel defaults.
+             *
+             * @param maxProbes the amount of keep alive probes allowed to fail before the connection is terminated
+             *
+             * @return this builder object
              */
             MqttClientConnectionConfigBuilder &WithTcpKeepAliveMaxProbes(uint16_t maxProbes) noexcept;
 
+            /**
+             * Sets the minimum tls version that is acceptable for connection establishment
+             *
+             * @param minimumTlsVersion minimum tls version allowed in client connections
+             *
+             * @return this builder object
+             */
             MqttClientConnectionConfigBuilder &WithMinimumTlsVersion(aws_tls_versions minimumTlsVersion) noexcept;
 
             /**
-             * Sets http proxy options. In order to use an http proxy with mqtt either
-             *   (1) Websockets are used
-             *   (2) Mqtt-over-tls is used and the ALPN list of the tls context contains a tag that resolves to mqtt
+             * Sets http proxy options.
+             *
+             * @param proxyOptions proxy configuration options for connection establishment
+             *
+             * @return this builder object
              */
             MqttClientConnectionConfigBuilder &WithHttpProxyOptions(
                 const Crt::Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
 
             /**
+             * Whether to send the SDK name and version number in the MQTT CONNECT packet.
+             * Default is True.
+             *
+             * @param enabled true to send SDK version/name in the connect for metrics gathering purposes
+             *
+             * @return this builder object
+             */
+            MqttClientConnectionConfigBuilder &WithMetricsCollection(bool enabled);
+
+            /**
+             * Overrides the default SDK Name to send as a metric in the MQTT CONNECT packet.
+             *
+             * @param sdkName string to use as the SDK name parameter in the connection string
+             *
+             * @return this builder object
+             */
+            MqttClientConnectionConfigBuilder &WithSdkName(const Crt::String &sdkName);
+
+            /**
+             * Overrides the default SDK Version to send as a metric in the MQTT CONNECT packet.
+             *
+             * @param sdkVersion string to use as the SDK version parameter in the connection string
+             *
+             * @return this builder object
+             */
+            MqttClientConnectionConfigBuilder &WithSdkVersion(const Crt::String &sdkVersion);
+
+            /**
              * Builds a client configuration object from the set options.
+             *
+             * @return a new client connection config instance
              */
             MqttClientConnectionConfig Build() noexcept;
+
             /**
              * @return true if the instance is in a valid state, false otherwise.
              */
-            explicit operator bool() const noexcept { return m_isGood; }
+            explicit operator bool() const noexcept { return m_lastError == 0; }
+
             /**
              * @return the value of the last aws error encountered by operations on this instance.
              */
-            int LastError() const noexcept { return aws_last_error(); }
+            int LastError() const noexcept { return m_lastError ? m_lastError : AWS_ERROR_UNKNOWN; }
 
           private:
+            // Common setup shared by all valid constructors
+            MqttClientConnectionConfigBuilder(Crt::Allocator *allocator) noexcept;
+
             Crt::Allocator *m_allocator;
             Crt::String m_endpoint;
             uint16_t m_portOverride;
@@ -265,8 +417,11 @@ namespace Aws
             Crt::Io::TlsContextOptions m_contextOptions;
             Crt::Optional<WebsocketConfig> m_websocketConfig;
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
+            bool m_enableMetricsCollection = true;
+            Crt::String m_sdkName = "CPPv2";
+            Crt::String m_sdkVersion = AWS_CRT_CPP_VERSION;
 
-            bool m_isGood;
+            int m_lastError;
         };
 
         /**
@@ -279,11 +434,26 @@ namespace Aws
           public:
             MqttClient(Crt::Io::ClientBootstrap &bootstrap, Crt::Allocator *allocator = Crt::g_allocator) noexcept;
 
+            /**
+             * Constructs a new Mqtt Client object using the static default ClientBootstrap.
+             *
+             * For more information on the default ClientBootstrap see
+             * Aws::Crt::ApiHandle::GetOrCreateDefaultClientBootstrap
+             */
+            MqttClient(Crt::Allocator *allocator = Crt::g_allocator) noexcept;
+
+            /**
+             * Creates a new mqtt connection from a connection configuration object
+             * @param config mqtt connection configuration
+             * @return a new mqtt connection
+             */
             std::shared_ptr<Crt::Mqtt::MqttConnection> NewConnection(const MqttClientConnectionConfig &config) noexcept;
+
             /**
              * @return the value of the last aws error encountered by operations on this instance.
              */
             int LastError() const noexcept { return m_client.LastError(); }
+
             /**
              * @return true if the instance is in a valid state, false otherwise.
              */

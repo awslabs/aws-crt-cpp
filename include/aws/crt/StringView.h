@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cassert>
 #include <iterator>
+#include <limits>
 #include <stddef.h>
 #include <type_traits>
 
@@ -22,6 +23,11 @@ namespace Aws
 {
     namespace Crt
     {
+        /**
+         * Custom string view implementation in order to meet C++11 baseline
+         * @tparam CharT
+         * @tparam Traits
+         */
         template <typename CharT, typename Traits = std::char_traits<CharT>> class basic_string_view
         {
           public:
@@ -48,7 +54,7 @@ namespace Aws
 
             constexpr basic_string_view(const CharT *s) noexcept : m_size{traits_type::length(s)}, m_data{s} {}
 
-            constexpr basic_string_view(const CharT *s, size_type length) noexcept : m_size{length}, m_data{s} {}
+            constexpr basic_string_view(const CharT *s, size_type count) noexcept : m_size{count}, m_data{s} {}
 
             basic_string_view &operator=(const basic_string_view &) noexcept = default;
 
@@ -85,7 +91,7 @@ namespace Aws
 
             constexpr size_type size() const noexcept { return this->m_size; }
 
-            constexpr size_type length() const noexcept { return m_size; }
+            constexpr size_type length() const noexcept { return this->m_size; }
 
             constexpr size_type max_size() const noexcept { return (std::numeric_limits<size_type>::max)(); }
 

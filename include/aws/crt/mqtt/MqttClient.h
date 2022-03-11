@@ -98,6 +98,10 @@ namespace Aws
             using OnPublishReceivedHandler =
                 std::function<void(MqttConnection &connection, const String &topic, const ByteBuf &payload)>;
 
+            /**
+             * Invoked when an operation completes.  For QoS 0, this is when the packet is passed to the tls
+             * layer.  For QoS 1 (and 2, in theory) this is when the final ack packet is received from the server.
+             */
             using OnOperationCompleteHandler =
                 std::function<void(MqttConnection &connection, uint16_t packetId, int errorCode)>;
 
@@ -133,23 +137,33 @@ namespace Aws
                 MqttConnection(MqttConnection &&) = delete;
                 MqttConnection &operator=(const MqttConnection &) = delete;
                 MqttConnection &operator=(MqttConnection &&) = delete;
+
                 /**
                  * @return true if the instance is in a valid state, false otherwise.
                  */
                 operator bool() const noexcept;
+
                 /**
                  * @return the value of the last aws error encountered by operations on this instance.
                  */
                 int LastError() const noexcept;
 
                 /**
-                 * Sets LastWill for the connection. The memory backing payload must outlive the connection.
+                 * Sets LastWill for the connection.
+                 * @param topic topic the will message should be published to
+                 * @param qos QOS the will message should be published with
+                 * @param retain true if the will publish should be treated as a retained publish
+                 * @param payload payload of the will message
+                 * @return success/failure in setting the will
                  */
                 bool SetWill(const char *topic, QOS qos, bool retain, const ByteBuf &payload) noexcept;
 
                 /**
                  * Sets login credentials for the connection. The must get set before the Connect call
                  * if it is to be used.
+                 * @param userName user name to add to the MQTT CONNECT packet
+                 * @param password password to add to the MQTT CONNECT packet
+                 * @return success/failure
                  */
                 bool SetLogin(const char *userName, const char *password) noexcept;
 
@@ -162,6 +176,10 @@ namespace Aws
                  * Sets http proxy options. In order to use an http proxy with mqtt either
                  *   (1) Websockets are used
                  *   (2) Mqtt-over-tls is used and the ALPN list of the tls context contains a tag that resolves to mqtt
+                 *
+                 * @param proxyOptions proxy configuration for making the mqtt connection
+                 *
+                 * @return success/failure
                  */
                 bool SetHttpProxyOptions(const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
 
@@ -170,12 +188,29 @@ namespace Aws
                  * The time will start at min and multiply by 2 until max is reached.
                  * The time resets back to min after a successful connection.
                  * This function should only be called before Connect().
+                 *
+                 * @param min_seconds minimum time to wait before attempting a reconnect
+                 * @param max_seconds maximum time to wait before attempting a reconnect
+                 *
+                 * @return success/failure
                  */
                 bool SetReconnectTimeout(uint64_t min_seconds, uint64_t max_seconds) noexcept;
 
                 /**
                  * Initiates the connection, OnConnectionCompleted will
                  * be invoked in an event-loop thread.
+                 *
+                 * @param clientId client identifier to use when establishing the mqtt connection
+                 * @param cleanSession false to attempt to rejoin an existing session for the client id, true to skip
+                 * and start with a new session
+                 * @param keepAliveTimeSecs time interval to space mqtt pings apart by
+                 * @param pingTimeoutMs timeout in milliseconds before the keep alive ping is considered to have failed
+                 * @param protocolOperationTimeoutMs timeout in milliseconds to give up waiting for a response packet
+                 * for an operation.  Necessary due to throttling properties on certain server implementations that do
+                 * not return an ACK for throttled operations.
+                 *
+                 * @return true if the connection attempt was successfully started (implying a callback will be invoked
+                 * with the eventual result), false if it could not be started (no callback will happen)
                  */
                 bool Connect(
                     const char *clientId,
@@ -186,18 +221,24 @@ namespace Aws
 
                 /**
                  * Initiates disconnect, OnDisconnectHandler will be invoked in an event-loop thread.
+                 * @return success/failure in initiating disconnect
                  */
                 bool Disconnect() noexcept;
 
-                /**
-                 * @return the pointer to the underlying mqtt connection
-                 */
+                /// @private
                 aws_mqtt_client_connection *GetUnderlyingConnection() noexcept;
 
                 /**
                  * Subscribes to topicFilter. OnMessageReceivedHandler will be invoked from an event-loop
                  * thread upon an incoming Publish message. OnSubAckHandler will be invoked
                  * upon receipt of a suback message.
+                 *
+                 * @param topicFilter topic filter to subscribe to
+                 * @param qos maximum qos client is willing to receive matching messages on
+                 * @param onMessage callback to invoke when a message is received based on matching this filter
+                 * @param onSubAck callback to invoke with the server's response to the subscribe request
+                 *
+                 * @return packet id of the subscribe request, or 0 if the attempt failed synchronously
                  */
                 uint16_t Subscribe(
                     const char *topicFilter,
@@ -218,6 +259,13 @@ namespace Aws
                  * Subscribes to multiple topicFilters. OnMessageReceivedHandler will be invoked from an event-loop
                  * thread upon an incoming Publish message. OnMultiSubAckHandler will be invoked
                  * upon receipt of a suback message.
+                 *
+                 * @param topicFilters list of pairs of topic filters and message callbacks to invoke on a matching
+                 * publish
+                 * @param qos maximum qos client is willing to receive matching messages on
+                 * @param onOpComplete callback to invoke with the server's response to the subscribe request
+                 *
+                 * @return packet id of the subscribe request, or 0 if the attempt failed synchronously
                  */
                 uint16_t Subscribe(
                     const Vector<std::pair<const char *, OnMessageReceivedHandler>> &topicFilters,
@@ -235,6 +283,9 @@ namespace Aws
                 /**
                  * Installs a handler for all incoming publish messages, regardless of if Subscribe has been
                  * called on the topic.
+                 *
+                 * @param onMessage callback to invoke for all received messages
+                 * @return success/failure
                  */
                 bool SetOnMessageHandler(OnMessageReceivedHandler &&onMessage) noexcept;
 
@@ -246,12 +297,26 @@ namespace Aws
                 /**
                  * Unsubscribes from topicFilter. OnOperationCompleteHandler will be invoked upon receipt of
                  * an unsuback message.
+                 *
+                 * @param topicFilter topic filter to unsubscribe the session from
+                 * @param onOpComplete callback to invoke on receipt of the server's UNSUBACK message
+                 *
+                 * @return packet id of the unsubscribe request, or 0 if the attempt failed synchronously
                  */
                 uint16_t Unsubscribe(const char *topicFilter, OnOperationCompleteHandler &&onOpComplete) noexcept;
 
                 /**
-                 * Publishes to topic. The backing memory for payload must stay available until the
-                 * OnOperationCompleteHandler has been invoked.
+                 * Publishes to a topic.
+                 *
+                 * @param topic topic to publish to
+                 * @param qos QOS to publish the message with
+                 * @param retain should this message replace the current retained message of the topic?
+                 * @param payload payload of the message
+                 * @param onOpComplete completion callback to invoke when the operation is complete.  If QoS is 0, then
+                 * the callback is invoked when the message is passed to the tls handler, otherwise it's invoked
+                 * on receipt of the final response from the server.
+                 *
+                 * @return packet id of the publish request, or 0 if the attempt failed synchronously
                  */
                 uint16_t Publish(
                     const char *topic,
@@ -362,15 +427,25 @@ namespace Aws
                  */
                 MqttClient(Io::ClientBootstrap &bootstrap, Allocator *allocator = g_allocator) noexcept;
 
+                /**
+                 * Initialize an MqttClient using a allocator and the default ClientBootstrap
+                 *
+                 * For more information on the default ClientBootstrap see
+                 * Aws::Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap
+                 */
+                MqttClient(Allocator *allocator = g_allocator) noexcept;
+
                 ~MqttClient();
                 MqttClient(const MqttClient &) = delete;
                 MqttClient(MqttClient &&) noexcept;
                 MqttClient &operator=(const MqttClient &) = delete;
                 MqttClient &operator=(MqttClient &&) noexcept;
+
                 /**
                  * @return true if the instance is in a valid state, false otherwise.
                  */
                 operator bool() const noexcept;
+
                 /**
                  * @return the value of the last aws error encountered by operations on this instance.
                  */
@@ -379,6 +454,15 @@ namespace Aws
                 /**
                  * Create a new connection object using TLS from the client. The client must outlive
                  * all of its connection instances.
+                 *
+                 * @param hostName endpoint to connect to
+                 * @param port port to connect to
+                 * @param socketOptions socket options to use when establishing the connection
+                 * @param tlsContext tls context to use with the connection
+                 * @param useWebsocket should the connection use websockets or should it use direct mqtt?
+                 *
+                 * @return a new connection object.  Connect() will still need to be called after all further
+                 * configuration is finished.
                  */
                 std::shared_ptr<MqttConnection> NewConnection(
                     const char *hostName,
@@ -386,9 +470,17 @@ namespace Aws
                     const Io::SocketOptions &socketOptions,
                     const Crt::Io::TlsContext &tlsContext,
                     bool useWebsocket = false) noexcept;
+
                 /**
                  * Create a new connection object over plain text from the client. The client must outlive
                  * all of its connection instances.
+                 * @param hostName endpoint to connect to
+                 * @param port port to connect to
+                 * @param socketOptions socket options to use when establishing the connection
+                 * @param useWebsocket should the connection use websockets or should it use direct mqtt?
+                 *
+                 * @return a new connection object.  Connect() will still need to be called after all further
+                 * configuration is finished.
                  */
                 std::shared_ptr<MqttConnection> NewConnection(
                     const char *hostName,

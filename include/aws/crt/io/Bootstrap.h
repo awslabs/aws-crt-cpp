@@ -42,6 +42,14 @@ namespace Aws
                     EventLoopGroup &elGroup,
                     HostResolver &resolver,
                     Allocator *allocator = g_allocator) noexcept;
+
+                /**
+                 * Uses the default EventLoopGroup and HostResolver.
+                 * See Aws::Crt::ApiHandle::GetOrCreateStaticDefaultEventLoopGroup
+                 * and Aws::Crt::ApiHandle::GetOrCreateStaticDefaultHostResolver
+                 */
+                ClientBootstrap(Allocator *allocator = g_allocator) noexcept;
+
                 ~ClientBootstrap();
                 ClientBootstrap(const ClientBootstrap &) = delete;
                 ClientBootstrap &operator=(const ClientBootstrap &) = delete;
@@ -79,6 +87,7 @@ namespace Aws
                  * know when shutdown is complete.
                  */
                 void EnableBlockingShutdown() noexcept;
+
                 /// @private
                 aws_client_bootstrap *GetUnderlyingHandle() const noexcept;
 

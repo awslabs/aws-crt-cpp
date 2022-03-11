@@ -28,6 +28,9 @@ namespace Aws
             using OnHostResolved =
                 std::function<void(HostResolver &resolver, const Vector<HostAddress> &addresses, int errorCode)>;
 
+            /**
+             * Simple interface for DNS name lookup implementations
+             */
             class AWS_CRT_CPP_API HostResolver
             {
               public:
@@ -40,6 +43,10 @@ namespace Aws
                 virtual aws_host_resolution_config *GetConfig() noexcept = 0;
             };
 
+            /**
+             * A wrapper around the CRT default host resolution system that uses getaddrinfo() farmed off
+             * to separate threads in order to resolve names.
+             */
             class AWS_CRT_CPP_API DefaultHostResolver final : public HostResolver
             {
               public:
@@ -54,6 +61,18 @@ namespace Aws
                     size_t maxHosts,
                     size_t maxTTL,
                     Allocator *allocator = g_allocator) noexcept;
+
+                /**
+                 * Resolves DNS addresses using the default EventLoopGroup.
+                 *
+                 * For more information on the default EventLoopGroup see
+                 * Aws::Crt::ApiHandle::GetOrCreateStaticDefaultEventLoopGroup
+                 *
+                 * @param maxHosts: the number of unique hosts to maintain in the cache.
+                 * @param maxTTL: how long to keep an address in the cache before evicting it.
+                 */
+                DefaultHostResolver(size_t maxHosts, size_t maxTTL, Allocator *allocator = g_allocator) noexcept;
+
                 ~DefaultHostResolver();
                 DefaultHostResolver(const DefaultHostResolver &) = delete;
                 DefaultHostResolver &operator=(const DefaultHostResolver &) = delete;
@@ -64,6 +83,7 @@ namespace Aws
                  * @return true if the instance is in a valid state, false otherwise.
                  */
                 operator bool() const noexcept { return m_initialized; }
+
                 /**
                  * @return the value of the last aws error encountered by operations on this instance.
                  */

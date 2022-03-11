@@ -2,6 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include <aws/crt/Api.h>
 #include <aws/crt/http/HttpConnectionManager.h>
 #include <aws/crt/http/HttpProxyStrategy.h>
 
@@ -37,6 +38,31 @@ namespace Aws
                 const HttpClientConnectionManagerOptions &connectionManagerOptions,
                 Allocator *allocator) noexcept
             {
+                const Optional<Io::TlsConnectionOptions> &tlsOptions =
+                    connectionManagerOptions.ConnectionOptions.TlsOptions;
+
+                if (tlsOptions && !(*tlsOptions))
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_HTTP_GENERAL,
+                        "Cannot create HttpClientConnectionManager: ConnectionOptions contain invalid TLSOptions.");
+                    aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
+                    return nullptr;
+                }
+
+                const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions =
+                    connectionManagerOptions.ConnectionOptions.ProxyOptions;
+
+                if (proxyOptions && proxyOptions->TlsOptions && !(*proxyOptions->TlsOptions))
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_HTTP_GENERAL,
+                        "Cannot create HttpClientConnectionManager: ProxyOptions has ConnectionOptions that contain "
+                        "invalid TLSOptions.");
+                    aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
+                    return nullptr;
+                }
+
                 auto *toSeat = static_cast<HttpClientConnectionManager *>(
                     aws_mem_acquire(allocator, sizeof(HttpClientConnectionManager)));
                 if (toSeat)
@@ -60,7 +86,17 @@ namespace Aws
 
                 aws_http_connection_manager_options managerOptions;
                 AWS_ZERO_STRUCT(managerOptions);
-                managerOptions.bootstrap = connectionOptions.Bootstrap->GetUnderlyingHandle();
+
+                if (connectionOptions.Bootstrap != nullptr)
+                {
+                    managerOptions.bootstrap = connectionOptions.Bootstrap->GetUnderlyingHandle();
+                }
+                else
+                {
+                    managerOptions.bootstrap =
+                        ApiHandle::GetOrCreateStaticDefaultClientBootstrap()->GetUnderlyingHandle();
+                }
+
                 managerOptions.port = connectionOptions.Port;
                 managerOptions.max_connections = m_options.MaxConnections;
                 managerOptions.socket_options = &connectionOptions.SocketOptions.GetImpl();
@@ -80,6 +116,10 @@ namespace Aws
                 AWS_ZERO_STRUCT(proxyOptions);
                 if (connectionOptions.ProxyOptions)
                 {
+                    /* This is verified by HttpClientConnectionManager::NewClientConnectionManager */
+                    AWS_FATAL_ASSERT(
+                        !connectionOptions.ProxyOptions->TlsOptions || *connectionOptions.ProxyOptions->TlsOptions);
+
                     const auto &proxyOpts = connectionOptions.ProxyOptions.value();
                     proxyOpts.InitializeRawProxyOptions(proxyOptions);
 
@@ -88,6 +128,9 @@ namespace Aws
 
                 if (connectionOptions.TlsOptions)
                 {
+                    /* This is verified by HttpClientConnectionManager::NewClientConnectionManager */
+                    AWS_FATAL_ASSERT(*connectionOptions.TlsOptions);
+
                     managerOptions.tls_connection_options =
                         const_cast<aws_tls_connection_options *>(connectionOptions.TlsOptions->GetUnderlyingHandle());
                 }

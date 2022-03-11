@@ -1,14 +1,24 @@
 {
     "name": "aws-crt-cpp",
-    "!cmake_args": [
-        "-DPERFORM_HEADER_CHECK_CXX=ON",
-        "-DS2N_NO_PQ_ASM=ON"
-    ],
     "hosts": {
         "manylinux": {
             "architectures": {
                 "x86": {
                     "!yum_compiler_packages": []
+                }
+            }
+        }
+    },
+    "build_steps": [
+        "build-crt"
+    ],
+    "variants": {
+        "openssl": {
+            "hosts": {
+                "ubuntu": {
+                    "packages": [
+                        "libssl-dev"
+                    ]
                 }
             }
         }
