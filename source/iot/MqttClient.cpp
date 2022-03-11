@@ -135,32 +135,12 @@ namespace Aws
             m_socketOptions.SetConnectTimeoutMs(3000);
         }
 
-#    ifdef _WIN32
-        /**
-         * Sets the builder up for MTLS using system certificate path. These are certitficates managed by
-         * WindowsCertStoreMgr
-         */
-        MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
-            const char *registryPath,
-            Crt::Allocator *allocator) noexcept
-            : m_allocator(allocator), m_portOverride(0), m_isGood(true)
-        {
-            m_socketOptions.SetConnectTimeoutMs(3000);
-            m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtlsSystemPath(registryPath, allocator);
-            if (!m_contextOptions)
-            {
-                m_isGood = false;
-            }
-        }
-#    endif
-
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
             const char *certPath,
             const char *pkeyPath,
             Crt::Allocator *allocator) noexcept
             : MqttClientConnectionConfigBuilder(allocator)
         {
-            m_socketOptions.SetConnectTimeoutMs(3000);
             m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(certPath, pkeyPath, allocator);
             if (!m_contextOptions)
             {
@@ -189,6 +169,19 @@ namespace Aws
             : MqttClientConnectionConfigBuilder(allocator)
         {
             m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtlsPkcs11(pkcs11Options, allocator);
+            if (!m_contextOptions)
+            {
+                m_lastError = m_contextOptions.LastError();
+                return;
+            }
+        }
+
+        MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
+            const char *certSystemPath,
+            Crt::Allocator *allocator) noexcept
+            : MqttClientConnectionConfigBuilder(allocator)
+        {
+            m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtlsSystemPath(certSystemPath, allocator);
             if (!m_contextOptions)
             {
                 m_lastError = m_contextOptions.LastError();

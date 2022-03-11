@@ -188,22 +188,6 @@ namespace Aws
           public:
             MqttClientConnectionConfigBuilder();
 
-#    ifdef _WIN32
-            /**
-             * Sets the builder up for MTLS using system certificate path. These are certitficates managed by
-             * WindowsCertStoreMgr
-             *
-             * Example system path value for an installed user certificate:
-             *   "CurrentUser\My\6ac133ac58f0a88b83e9c794eba156a98da39b4c"
-             *
-             * If the certificate is protected by a PIN/password, an application will open up a dialog box during TLS
-             * handshake
-             */
-            MqttClientConnectionConfigBuilder(
-                const char *certSystemPath,
-                Crt::Allocator *allocator = Crt::g_allocator) noexcept;
-#    endif
-
             /**
              * Sets the builder up for MTLS using certPath and pkeyPath. These are files on disk and must be in the PEM
              * format.
@@ -235,6 +219,22 @@ namespace Aws
              */
             MqttClientConnectionConfigBuilder(
                 const Crt::Io::TlsContextPkcs11Options &pkcs11Options,
+                Crt::Allocator *allocator = Crt::g_allocator) noexcept;
+
+            /**
+             * Sets the builder up for MTLS using system certificate path.
+             * These are certificates managed by WindowsCertStoreMgr.
+             *
+             * Example system path value for an installed user certificate:
+             *   "CurrentUser\My\6ac133ac58f0a88b83e9c794eba156a98da39b4c"
+             *
+             * If the certificate is protected by a PIN/password, an application will open up a dialog box during TLS
+             * handshake
+             *
+             * NOTE: This only works on Windows.
+             */
+            MqttClientConnectionConfigBuilder(
+                const char *certSystemPath,
                 Crt::Allocator *allocator = Crt::g_allocator) noexcept;
 
             /**
