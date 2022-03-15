@@ -325,7 +325,7 @@ namespace Aws
             std::lock_guard<std::mutex> lock(s_lock_event_loop_group);
             if (s_static_event_loop_group == nullptr)
             {
-                s_static_event_loop_group = Aws::Crt::New<Io::EventLoopGroup>(g_allocator, 0);
+                s_static_event_loop_group = Aws::Crt::New<Io::EventLoopGroup>(g_allocator, (uint16_t) 0);
             }
             return s_static_event_loop_group;
         }
