@@ -226,7 +226,7 @@ namespace Aws
              * These are certificates managed by WindowsCertStoreMgr.
              *
              * Example system path value for an installed user certificate:
-             *   "CurrentUser\My\6ac133ac58f0a88b83e9c794eba156a98da39b4c"
+             *   "CurrentUser\MY\6ac133ac58f0a88b83e9c794eba156a98da39b4c"
              *
              * If the certificate is protected by a PIN/password, an application will open up a dialog box during TLS
              * handshake
