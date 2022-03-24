@@ -222,19 +222,17 @@ namespace Aws
                 Crt::Allocator *allocator = Crt::g_allocator) noexcept;
 
             /**
-             * Sets the builder up for MTLS using system certificate path.
-             * These are certificates managed by WindowsCertStoreMgr.
+             * Sets the builder up for MTLS, using a certificate in a Windows certificate store.
              *
-             * Example system path value for an installed user certificate:
-             *   "CurrentUser\MY\6ac133ac58f0a88b83e9c794eba156a98da39b4c"
+             * NOTE: This only works on Windows.
              *
-             * If the certificate is protected by a PIN/password, an application will open up a dialog box during TLS
-             * handshake
-             *
+             * @param windowsCertStorePath Path to certificate in a Windows certificate store.
+             *    The path must use backslashes and end with the certificate's thumbprint.
+             *    Example: `CurrentUser\MY\A11F8A9B5DF5B98BA3508FBCA575D09570E0D2C6`
              * NOTE: This only works on Windows.
              */
             MqttClientConnectionConfigBuilder(
-                const char *certSystemPath,
+                const char *windowsCertStorePath,
                 Crt::Allocator *allocator = Crt::g_allocator) noexcept;
 
             /**

@@ -177,11 +177,12 @@ namespace Aws
         }
 
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
-            const char *certSystemPath,
+            const char *windowsCertStorePath,
             Crt::Allocator *allocator) noexcept
             : MqttClientConnectionConfigBuilder(allocator)
         {
-            m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtlsSystemPath(certSystemPath, allocator);
+            m_contextOptions =
+                Crt::Io::TlsContextOptions::InitClientWithMtlsSystemPath(windowsCertStorePath, allocator);
             if (!m_contextOptions)
             {
                 m_lastError = m_contextOptions.LastError();
