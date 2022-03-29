@@ -5,6 +5,7 @@
  */
 
 #include <aws/crt/Exports.h>
+#include <aws/crt/RefCounted.h>
 #include <aws/crt/Types.h>
 #include <aws/io/stream.h>
 
@@ -35,7 +36,8 @@ namespace Aws
              * aws_input_stream interface. To use, create a subclass of InputStream and define the abstract
              * functions.
              */
-            class AWS_CRT_CPP_API InputStream
+            class AWS_CRT_CPP_API InputStream : public std::enable_shared_from_this<InputStream>,
+                                                public RefCounted<InputStream>
             {
               public:
                 virtual ~InputStream();
@@ -136,7 +138,8 @@ namespace Aws
                 static int s_Read(aws_input_stream *stream, aws_byte_buf *dest);
                 static int s_GetStatus(aws_input_stream *stream, aws_stream_status *status);
                 static int s_GetLength(struct aws_input_stream *stream, int64_t *out_length);
-                static void s_Destroy(void *stream);
+                static aws_input_stream *s_Acquire(aws_input_stream *stream);
+                static aws_input_stream *s_Release(aws_input_stream *stream);
 
                 static aws_input_stream_vtable s_vtable;
             };
