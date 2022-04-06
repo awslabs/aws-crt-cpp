@@ -141,7 +141,6 @@ namespace Aws
             Crt::Allocator *allocator) noexcept
             : MqttClientConnectionConfigBuilder(allocator)
         {
-            m_socketOptions.SetConnectTimeoutMs(3000);
             m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(certPath, pkeyPath, allocator);
             if (!m_contextOptions)
             {
@@ -170,6 +169,20 @@ namespace Aws
             : MqttClientConnectionConfigBuilder(allocator)
         {
             m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtlsPkcs11(pkcs11Options, allocator);
+            if (!m_contextOptions)
+            {
+                m_lastError = m_contextOptions.LastError();
+                return;
+            }
+        }
+
+        MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
+            const char *windowsCertStorePath,
+            Crt::Allocator *allocator) noexcept
+            : MqttClientConnectionConfigBuilder(allocator)
+        {
+            m_contextOptions =
+                Crt::Io::TlsContextOptions::InitClientWithMtlsSystemPath(windowsCertStorePath, allocator);
             if (!m_contextOptions)
             {
                 m_lastError = m_contextOptions.LastError();

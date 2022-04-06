@@ -127,12 +127,12 @@ namespace Aws
             }
 
             TlsContextOptions TlsContextOptions::InitClientWithMtlsSystemPath(
-                const char *registryPath,
+                const char *windowsCertStorePath,
                 Allocator *allocator) noexcept
             {
                 TlsContextOptions ctxOptions;
                 if (!aws_tls_ctx_options_init_client_mtls_from_system_path(
-                        &ctxOptions.m_options, allocator, registryPath))
+                        &ctxOptions.m_options, allocator, windowsCertStorePath))
                 {
                     ctxOptions.m_isInit = true;
                 }

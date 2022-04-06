@@ -61,7 +61,7 @@ namespace Aws
                 static TlsContextOptions InitDefaultClient(Allocator *allocator = g_allocator) noexcept;
 
                 /**
-                 * Initializes TlsContextOptions with secure by default options, with
+                 * Initializes TlsContextOptions for mutual TLS (mTLS), with
                  * client certificate and private key. These are paths to a file on disk. These files
                  * must be in the PEM format.
                  *
@@ -77,7 +77,7 @@ namespace Aws
                     Allocator *allocator = g_allocator) noexcept;
 
                 /**
-                 * Initializes TlsContextOptions with secure by default options, with
+                 * Initializes TlsContextOptions for mutual TLS (mTLS), with
                  * client certificate and private key. These are in memory buffers. These buffers
                  * must be in the PEM format.
                  *
@@ -93,7 +93,7 @@ namespace Aws
                     Allocator *allocator = g_allocator) noexcept;
 
                 /**
-                 * Initializes TlsContextOptions with secure by default options,
+                 * Initializes TlsContextOptions for mutual TLS (mTLS),
                  * using a PKCS#11 library for private key operations.
                  *
                  * NOTE: This only works on Unix devices.
@@ -106,8 +106,8 @@ namespace Aws
                     Allocator *allocator = g_allocator) noexcept;
 
                 /**
-                 * Initializes TlsContextOptions with secure by default options, with
-                 * client certificateand private key in the PKCS#12 format.
+                 * Initializes TlsContextOptions for mutual TLS (mTLS), with
+                 * client certificate and private key in the PKCS#12 format.
                  *
                  * NOTE: This only works on Apple devices.
                  *
@@ -135,15 +135,17 @@ namespace Aws
                 bool SetKeychainPath(ByteCursor &keychain_path) noexcept;
 
                 /**
-                 * Initializes options for use with mutual tls in client mode.
+                 * Initializes TlsContextOptions for mutual TLS (mTLS),
+                 * using a client certificate in a Windows certificate store.
                  *
                  * NOTE: This only works on Windows.
                  *
-                 * @param registryPath Path to a system installed certficate/private key pair.
-                 * Example: "CurrentUser\\MY\\<thumprint>"
+                 * @param windowsCertStorePath Path to certificate in a Windows certificate store.
+                 *    The path must use backslashes and end with the certificate's thumbprint.
+                 *    Example: `CurrentUser\MY\A11F8A9B5DF5B98BA3508FBCA575D09570E0D2C6`
                  */
                 static TlsContextOptions InitClientWithMtlsSystemPath(
-                    const char *registryPath,
+                    const char *windowsCertStorePath,
                     Allocator *allocator = g_allocator) noexcept;
 
                 /**
