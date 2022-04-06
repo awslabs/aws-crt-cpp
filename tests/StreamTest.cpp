@@ -168,3 +168,46 @@ static int s_StreamTestSeekEnd(struct aws_allocator *allocator, void *ctx)
 }
 
 AWS_TEST_CASE(StreamTestSeekEnd, s_StreamTestSeekEnd)
+
+/* Test that C/C++ has the refcount on the stream will keep the object alive */
+static int s_StreamTestRefcount(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+        aws_input_stream *c_stream = NULL;
+        if (true)
+        {
+            auto stringStream = Aws::Crt::MakeShared<Aws::Crt::StringStream>(allocator, STREAM_CONTENTS);
+            /* Make a shared pointer for stream as the C side will ONLY interact with the shared pointer initialed
+             * stream */
+            std::shared_ptr<Aws::Crt::Io::StdIOStreamInputStream> wrappedStream =
+                Aws::Crt::MakeShared<Aws::Crt::Io::StdIOStreamInputStream>(allocator, stringStream, allocator);
+
+            /* C side keep a reference on it. */
+            aws_input_stream_acquire(wrappedStream->GetUnderlyingStream());
+            /* C side release a reference on it. So that it drops to zero from the C point of view, but as C++ still
+             * holding it, it's still valid to be used */
+            aws_input_stream_release(wrappedStream->GetUnderlyingStream());
+            /* Test that you can still use it correctly */
+            int64_t length = 0;
+            ASSERT_SUCCESS(aws_input_stream_get_length(wrappedStream->GetUnderlyingStream(), &length));
+            ASSERT_TRUE(length == strlen(STREAM_CONTENTS));
+
+            /* C side keep a reference on it. */
+            aws_input_stream_acquire(wrappedStream->GetUnderlyingStream());
+            c_stream = wrappedStream->GetUnderlyingStream();
+        }
+        /* C++ object is now out of scope, but as C side still holding the reference to it, it still avaliable to be
+         * invoked from C */
+        int64_t length = 0;
+        ASSERT_SUCCESS(aws_input_stream_get_length(c_stream, &length));
+        ASSERT_TRUE(length == strlen(STREAM_CONTENTS));
+        /* Release the refcount from C to clean up resource without leak */
+        aws_input_stream_release(c_stream);
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(StreamTestRefcount, s_StreamTestRefcount)
