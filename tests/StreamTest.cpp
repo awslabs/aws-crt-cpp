@@ -176,7 +176,6 @@ static int s_StreamTestRefcount(struct aws_allocator *allocator, void *ctx)
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
         aws_input_stream *c_stream = NULL;
-        if (true)
         {
             auto stringStream = Aws::Crt::MakeShared<Aws::Crt::StringStream>(allocator, STREAM_CONTENTS);
             /* Make a shared pointer for stream as the C side will ONLY interact with the shared pointer initialed
