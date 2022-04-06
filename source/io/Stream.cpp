@@ -68,24 +68,16 @@ namespace Aws
                 return AWS_OP_ERR;
             }
 
-            aws_input_stream *InputStream::s_Acquire(aws_input_stream *stream)
+            void InputStream::s_Acquire(aws_input_stream *stream)
             {
-                if (stream)
-                {
-                    auto impl = static_cast<InputStream *>(stream->impl);
-                    impl->AcquireRef();
-                }
-                return stream;
+                auto impl = static_cast<InputStream *>(stream->impl);
+                impl->AcquireRef();
             }
 
-            aws_input_stream *InputStream::s_Release(aws_input_stream *stream)
+            void InputStream::s_Release(aws_input_stream *stream)
             {
-                if (stream)
-                {
-                    auto impl = static_cast<InputStream *>(stream->impl);
-                    impl->ReleaseRef();
-                }
-                return stream;
+                auto impl = static_cast<InputStream *>(stream->impl);
+                impl->ReleaseRef();
             }
 
             aws_input_stream_vtable InputStream::s_vtable = {

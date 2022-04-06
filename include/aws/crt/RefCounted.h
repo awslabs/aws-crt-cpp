@@ -15,7 +15,7 @@ namespace Aws
          * Inherit from RefCounted to allow reference-counting from C code,
          * which will keep your C++ object alive as long as the count is non-zero.
          *
-         * A class must inherit from RefCounted and enable_shared_from_this.
+         * A class must inherit from RefCounted and std::enable_shared_from_this.
          * Your class must always be placed inside a shared_ptr (do not create on
          * the stack, or keep on the heap as a raw pointer).
          *
