@@ -78,8 +78,8 @@ namespace Aws
             const std::shared_ptr<Crt::Auth::ICredentialsProvider> &credentialsProvider,
             const std::shared_ptr<Crt::Auth::IHttpRequestSigner> &signer,
             Iot::CreateSigningConfig createSigningConfig) noexcept
-            : CredentialsProvider(credentialsProvider), Signer(signer), CreateSigningConfigCb(std::move(createSigningConfig)),
-              ServiceName("iotdevicegateway")
+            : CredentialsProvider(credentialsProvider), Signer(signer),
+              CreateSigningConfigCb(std::move(createSigningConfig)), ServiceName("iotdevicegateway")
         {
         }
 
