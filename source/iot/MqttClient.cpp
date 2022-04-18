@@ -77,9 +77,9 @@ namespace Aws
         WebsocketConfig::WebsocketConfig(
             const std::shared_ptr<Crt::Auth::ICredentialsProvider> &credentialsProvider,
             const std::shared_ptr<Crt::Auth::IHttpRequestSigner> &signer,
-            Iot::CreateSigningConfig createConfig) noexcept
-            : CredentialsProvider(credentialsProvider), Signer(signer), CreateSigningConfigCb(std::move(createConfig)),
-              ServiceName("iotdevicegateway")
+            Iot::CreateSigningConfig createSigningConfig) noexcept
+            : CredentialsProvider(credentialsProvider), Signer(signer),
+              CreateSigningConfigCb(std::move(createSigningConfig)), ServiceName("iotdevicegateway")
         {
         }
 

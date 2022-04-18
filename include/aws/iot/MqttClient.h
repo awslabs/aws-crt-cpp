@@ -114,6 +114,7 @@ namespace Aws
              * handshake upgrade request
              * @param bootstrap client bootstrap to establish any connections needed by the default credentials
              * provider chain which will get built for the user
+             * @param allocator memory allocator to use
              */
             WebsocketConfig(
                 const Crt::String &signingRegion,
@@ -129,6 +130,7 @@ namespace Aws
              *
              * @param signingRegion Aws region that is being connected to.  Required in order to properly sign the
              * handshake upgrade request
+             * @param allocator memory allocator to use
              */
             WebsocketConfig(const Crt::String &signingRegion, Crt::Allocator *allocator = Crt::g_allocator) noexcept;
 
@@ -139,6 +141,7 @@ namespace Aws
              * @param signingRegion Aws region that is being connected to.  Required in order to properly sign the
              * handshake upgrade request
              * @param credentialsProvider credentials provider to source AWS credentials from
+             * @param allocator memory allocator to use
              */
             WebsocketConfig(
                 const Crt::String &signingRegion,
@@ -154,9 +157,9 @@ namespace Aws
              * This is useful for cases use with:
              * https://docs.aws.amazon.com/iot/latest/developerguide/custom-auth.html
              *
-             * @param credentialsProvider
-             * @param signer
-             * @param createSigningConfig
+             * @param credentialsProvider credentials provider
+             * @param signer HTTP request signer
+             * @param createSigningConfig function that creates a signing config
              */
             WebsocketConfig(
                 const std::shared_ptr<Crt::Auth::ICredentialsProvider> &credentialsProvider,
@@ -194,6 +197,7 @@ namespace Aws
              *
              * @param certPath path to the X509 certificate (pem file) to use
              * @param pkeyPath path to the private key (pem file) to use
+             * @param allocator memory allocator to use
              */
             MqttClientConnectionConfigBuilder(
                 const char *certPath,
@@ -206,6 +210,7 @@ namespace Aws
              *
              * @param cert buffer containing the X509 certificate in a PEM format
              * @param pkey buffer containing the private key in a PEM format
+             * @param allocator memory allocator to use
              */
             MqttClientConnectionConfigBuilder(
                 const Crt::ByteCursor &cert,
@@ -216,6 +221,9 @@ namespace Aws
              * Sets the builder up for MTLS, using a PKCS#11 library for private key operations.
              *
              * NOTE: This only works on Unix devices.
+             *
+             * @param pkcs11Options PKCS#11 options
+             * @param allocator memory allocator to use
              */
             MqttClientConnectionConfigBuilder(
                 const Crt::Io::TlsContextPkcs11Options &pkcs11Options,
@@ -229,7 +237,7 @@ namespace Aws
              * @param windowsCertStorePath Path to certificate in a Windows certificate store.
              *    The path must use backslashes and end with the certificate's thumbprint.
              *    Example: `CurrentUser\MY\A11F8A9B5DF5B98BA3508FBCA575D09570E0D2C6`
-             * NOTE: This only works on Windows.
+             * @param allocator memory allocator to use
              */
             MqttClientConnectionConfigBuilder(
                 const char *windowsCertStorePath,
@@ -239,6 +247,7 @@ namespace Aws
              * Sets the builder up for Websocket connection.
              *
              * @param config websocket configuration information
+             * @param allocator memory allocator to use
              */
             MqttClientConnectionConfigBuilder(
                 const WebsocketConfig &config,

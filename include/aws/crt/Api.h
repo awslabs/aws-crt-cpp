@@ -72,7 +72,7 @@ namespace Aws
 
             /**
              * Configures the shutdown behavior of the api handle instance
-             * @param shutdownBehavior desired shutdown behavior
+             * @param behavior desired shutdown behavior
              */
             void SetShutdownBehavior(ApiHandleShutdownBehavior behavior);
 
