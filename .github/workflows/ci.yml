@@ -196,6 +196,9 @@ jobs:
   check-docs:
     runs-on: ubuntu-20.04 # latest
     steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
       - name: Check docs
         run: |
           sudo apt-get install -y doxygen
