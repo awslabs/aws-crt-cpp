@@ -16,5 +16,5 @@ jobs:
       with:
         # List of extensions to check
         extensions: cpp,h
-        include: './include,./source,./tests'
+        source: './include,./source,./tests'
         exclude: './include/aws/crt/external,./source/external'
