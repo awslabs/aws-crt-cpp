@@ -843,7 +843,9 @@ WARN_NO_PARAMDOC       = NO
 # Possible values are: NO, YES and FAIL_ON_WARNINGS.
 # The default value is: NO.
 
-WARN_AS_ERROR          = FAIL_ON_WARNINGS
+# FAIL_ON_WARNINGS (introduced in 1.9) is better than YES, but using YES because
+# the ubuntu-20.04 image currently used to generate docs only has doxygen 1.8.
+WARN_AS_ERROR          = YES
 
 # The WARN_FORMAT tag determines the format of the warning messages that doxygen
 # can produce. The string should contain the $file, $line, and $text tags, which
