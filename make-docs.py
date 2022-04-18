@@ -12,6 +12,5 @@ if os.path.exists('docs'):
     shutil.rmtree('docs')
 
 # build
-os.chdir('docsrc')
-if os.system('doxygen Doxyfile') != 0:
+if os.system('doxygen docsrc/Doxyfile') != 0:
     exit(1)
