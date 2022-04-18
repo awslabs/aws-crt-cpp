@@ -198,7 +198,7 @@ jobs:
     steps:
       - name: Check docs
         run: |
-          apt install -y doxygen
+          sudo apt-get install -y doxygen
           ./make-docs.py
 
   check-submodules:
