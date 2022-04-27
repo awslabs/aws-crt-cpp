@@ -35,8 +35,15 @@ namespace Aws
                 /**
                  * @param threadCount: The number of event-loops to create, default will be 0, which will create one for
                  * each processor on the machine.
+                 * @param allocator memory allocator to use.
                  */
                 EventLoopGroup(uint16_t threadCount = 0, Allocator *allocator = g_allocator) noexcept;
+                /**
+                 * @param cpuGroup: The CPU group (e.g. NUMA nodes) that all hardware threads are pinned to.
+                 * @param threadCount: The number of event-loops to create, default will be 0, which will create one for
+                 * each processor on the machine.
+                 * @param allocator memory allocator to use.
+                 */
                 EventLoopGroup(uint16_t cpuGroup, uint16_t threadCount, Allocator *allocator = g_allocator) noexcept;
                 ~EventLoopGroup();
                 EventLoopGroup(const EventLoopGroup &) = delete;

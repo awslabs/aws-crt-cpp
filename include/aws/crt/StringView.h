@@ -15,7 +15,7 @@
 #include <stddef.h>
 #include <type_traits>
 
-#if __cplusplus >= 201703L || (defined(_MSC_LANG) && _MSC_LANG >= 201703L)
+#if __cplusplus >= 201703L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L)
 #    include <string_view>
 #endif
 
@@ -58,7 +58,7 @@ namespace Aws
 
             basic_string_view &operator=(const basic_string_view &) noexcept = default;
 
-#if __cplusplus >= 201703L || (defined(_MSC_LANG) && _MSC_LANG >= 201703L)
+#if __cplusplus >= 201703L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L)
             constexpr basic_string_view(const std::basic_string_view<CharT, Traits> &other) noexcept
                 : m_size(other.size()), m_data(other.data())
             {
