@@ -68,10 +68,16 @@ namespace Aws
                 return AWS_OP_ERR;
             }
 
-            void InputStream::s_Destroy(struct aws_input_stream *stream)
+            void InputStream::s_Acquire(aws_input_stream *stream)
             {
-                (void)stream;
-                // DO NOTHING, let the C++ destructor handle it.
+                auto impl = static_cast<InputStream *>(stream->impl);
+                impl->AcquireRef();
+            }
+
+            void InputStream::s_Release(aws_input_stream *stream)
+            {
+                auto impl = static_cast<InputStream *>(stream->impl);
+                impl->ReleaseRef();
             }
 
             aws_input_stream_vtable InputStream::s_vtable = {
@@ -79,7 +85,8 @@ namespace Aws
                 InputStream::s_Read,
                 InputStream::s_GetStatus,
                 InputStream::s_GetLength,
-                InputStream::s_Destroy,
+                InputStream::s_Acquire,
+                InputStream::s_Release,
             };
 
             InputStream::InputStream(Aws::Crt::Allocator *allocator)
@@ -88,7 +95,6 @@ namespace Aws
                 AWS_ZERO_STRUCT(m_underlying_stream);
 
                 m_underlying_stream.impl = this;
-                m_underlying_stream.allocator = m_allocator;
                 m_underlying_stream.vtable = &s_vtable;
             }
 
