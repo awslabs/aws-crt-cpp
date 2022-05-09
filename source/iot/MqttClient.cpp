@@ -205,6 +205,14 @@ namespace Aws
             m_websocketConfig = config;
         }
 
+        MqttClientConnectionConfigBuilder MqttClientConnectionConfigBuilder::newDefaultBuilder() noexcept
+        {
+            MqttClientConnectionConfigBuilder return_value =
+                MqttClientConnectionConfigBuilder(Aws::Crt::DefaultAllocator());
+            return_value.m_contextOptions = Crt::Io::TlsContextOptions::InitDefaultClient();
+            return return_value;
+        }
+
         MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithEndpoint(const Crt::String &endpoint)
         {
             m_endpoint = endpoint;
@@ -315,6 +323,98 @@ namespace Aws
             return *this;
         }
 
+        Crt::String MqttClientConnectionConfigBuilder::AddUsernameParameter(
+            Crt::String InputString,
+            Crt::String ParameterValue,
+            Crt::String ParameterPreText,
+            bool AddedStringToUsername)
+        {
+            Crt::String ReturnString = InputString;
+            if (AddedStringToUsername == false)
+            {
+                ReturnString += "?";
+            }
+            else
+            {
+                ReturnString += "&";
+            }
+
+            if (ParameterValue.find(ParameterPreText) != Crt::String::npos)
+            {
+                return ReturnString + ParameterValue;
+            }
+            else
+            {
+                return ReturnString + ParameterPreText + ParameterValue;
+            }
+        }
+
+        MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithCustomAuthorizer(
+            const Crt::String &username,
+            const Crt::String &authorizerName,
+            const Crt::String &authorizerSignature,
+            const Crt::String &password) noexcept
+        {
+            if (!m_contextOptions.IsAlpnSupported())
+            {
+                m_lastError = AWS_ERROR_INVALID_STATE;
+                return *this;
+            }
+
+            m_isUsingCustomAuthorizer = true;
+            Crt::String usernameString = "";
+            bool addedStringToUsername = false;
+
+            if (username.empty())
+            {
+                if (!m_username.empty())
+                {
+                    usernameString += m_username;
+                }
+            }
+            else
+            {
+                usernameString += username;
+            }
+
+            if (!authorizerName.empty())
+            {
+                usernameString = AddUsernameParameter(
+                    usernameString, authorizerName, "x-amz-customauthorizer-name=", addedStringToUsername);
+                addedStringToUsername = true;
+            }
+            if (!authorizerSignature.empty())
+            {
+                usernameString = AddUsernameParameter(
+                    usernameString, authorizerSignature, "x-amz-customauthorizer-signature=", addedStringToUsername);
+            }
+
+            m_username = usernameString;
+            m_password = password;
+
+            if (!m_contextOptions.SetAlpnList("mqtt"))
+            {
+                m_lastError = m_contextOptions.LastError();
+            }
+
+            m_portOverride = 443;
+            return *this;
+        }
+
+        MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithUsername(
+            const Crt::String &username) noexcept
+        {
+            m_username = username;
+            return *this;
+        }
+
+        MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithPassword(
+            const Crt::String &password) noexcept
+        {
+            m_password = password;
+            return *this;
+        }
+
         MqttClientConnectionConfig MqttClientConnectionConfigBuilder::Build() noexcept
         {
             if (m_lastError != 0)
@@ -336,7 +436,8 @@ namespace Aws
                 }
             }
 
-            if (port == 443 && !m_websocketConfig && Crt::Io::TlsContextOptions::IsAlpnSupported())
+            if (port == 443 && !m_websocketConfig && Crt::Io::TlsContextOptions::IsAlpnSupported() &&
+                !m_isUsingCustomAuthorizer)
             {
                 if (!m_contextOptions.SetAlpnList("x-amzn-mqtt-ca"))
                 {
@@ -344,12 +445,48 @@ namespace Aws
                 }
             }
 
+            Crt::String username = m_username;
+            Crt::String password = m_password;
+
+            // Check to see if a custom authorizer is being used but not through the builder
+            if (!m_isUsingCustomAuthorizer)
+            {
+                if (!m_username.empty())
+                {
+                    if (m_username.find_first_of("x-amz-customauthorizer-name=") != Crt::String::npos ||
+                        m_username.find_first_of("x-amz-customauthorizer-signature=") != Crt::String::npos)
+                    {
+                        m_isUsingCustomAuthorizer = true;
+                    }
+                }
+            }
+            // Is the user trying to connect using a custom authorizer?
+            if (m_isUsingCustomAuthorizer)
+            {
+                if (port != 443)
+                {
+                    AWS_LOGF_WARN(
+                        AWS_LS_MQTT_GENERAL,
+                        "Attempting to connect to authorizer with unsupported port. Port is not 443...");
+                }
+                if (!m_contextOptions.SetAlpnList("mqtt"))
+                {
+                    return MqttClientConnectionConfig::CreateInvalid(m_contextOptions.LastError());
+                }
+            }
+
             // add metrics string to username (if metrics enabled)
-            // note: username isn't currently exposed to users via builder, so it's always empty
-            Crt::String username;
             if (m_enableMetricsCollection)
             {
-                username += "?SDK=";
+                if (username.find('?') != Crt::String::npos)
+                {
+                    username += "&";
+                }
+                else
+                {
+                    username += "?";
+                }
+                username += "SDK=";
                 username += m_sdkName;
                 username += "&Version=";
                 username += m_sdkVersion;
@@ -366,6 +503,7 @@ namespace Aws
                 auto config = MqttClientConnectionConfig(
                     m_endpoint, port, m_socketOptions, std::move(tlsContext), m_proxyOptions);
                 config.m_username = username;
+                config.m_password = password;
                 return config;
             }
 
@@ -395,6 +533,7 @@ namespace Aws
                 signerTransform,
                 useWebsocketProxyOptions ? m_websocketConfig->ProxyOptions : m_proxyOptions);
             config.m_username = username;
+            config.m_password = password;
             return config;
         }
 

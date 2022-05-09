@@ -254,6 +254,13 @@ namespace Aws
                 Crt::Allocator *allocator = Crt::g_allocator) noexcept;
 
             /**
+             * Creates a new builder with default Tls options. This requires setting the connection details manually.
+             *
+             * @return a new builder with default Tls options
+             */
+            static MqttClientConnectionConfigBuilder newDefaultBuilder() noexcept;
+
+            /**
              * Sets endpoint to connect to.
              *
              * @param endpoint endpoint to connect to
@@ -397,6 +404,45 @@ namespace Aws
             MqttClientConnectionConfigBuilder &WithSdkVersion(const Crt::String &sdkVersion);
 
             /**
+             * Sets the custom authorizer settings. This function will modify the username, port, and TLS options.
+             *
+             * @param username The username to use with the custom authorizer. If an empty string is passed, it will
+             *                 check to see if a username has already been set (via WithUsername function). If no
+             *                 username is set then no username will be passed with the MQTT connection.
+             * @param authorizerName The name of the custom authorizer. If an empty string is passed, then
+             *                       'x-amz-customauthorizer-name' will not be added with the MQTT connection.
+             * @param authorizerSignature The signature of the custom authorizer. If an empty string is passed, then
+             *                            'x-amz-customauthorizer-signature' will not be added with the MQTT connection.
+             * @param password The password to use with the custom authorizer. If null is passed, then no password will
+             *                 be set.
+             *
+             * @return this builder object
+             */
+            MqttClientConnectionConfigBuilder &WithCustomAuthorizer(
+                const Crt::String &username,
+                const Crt::String &authorizerName,
+                const Crt::String &authorizerSignature,
+                const Crt::String &password) noexcept;
+
+            /**
+             * Sets username for the connection
+             *
+             * @param username the username that will be passed with the MQTT connection
+             *
+             * @return this builder object
+             */
+            MqttClientConnectionConfigBuilder &WithUsername(const Crt::String &username) noexcept;
+
+            /**
+             * Sets password for the connection
+             *
+             * @param password the password that will be passed with the MQTT connection
+             *
+             * @return this builder object
+             */
+            MqttClientConnectionConfigBuilder &WithPassword(const Crt::String &password) noexcept;
+
+            /**
              * Builds a client configuration object from the set options.
              *
              * @return a new client connection config instance
@@ -417,6 +463,13 @@ namespace Aws
             // Common setup shared by all valid constructors
             MqttClientConnectionConfigBuilder(Crt::Allocator *allocator) noexcept;
 
+            // Helper function to add parameters to the username in the WithCustomAuthorizer function
+            Crt::String AddUsernameParameter(
+                Crt::String InputString,
+                Crt::String ParameterValue,
+                Crt::String ParameterPreText,
+                bool AddedStringToUsername);
+
             Crt::Allocator *m_allocator;
             Crt::String m_endpoint;
             uint16_t m_portOverride;
@@ -427,6 +480,9 @@ namespace Aws
             bool m_enableMetricsCollection = true;
             Crt::String m_sdkName = "CPPv2";
             Crt::String m_sdkVersion = AWS_CRT_CPP_VERSION;
+            Crt::String m_username = "";
+            Crt::String m_password = "";
+            bool m_isUsingCustomAuthorizer = false;
 
             int m_lastError;
         };
