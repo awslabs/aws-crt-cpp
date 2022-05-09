@@ -258,7 +258,7 @@ namespace Aws
              *
              * @return a new builder with default Tls options
              */
-            static MqttClientConnectionConfigBuilder newDefaultBuilder() noexcept;
+            static MqttClientConnectionConfigBuilder NewDefaultBuilder() noexcept;
 
             /**
              * Sets endpoint to connect to.

@@ -205,7 +205,7 @@ namespace Aws
             m_websocketConfig = config;
         }
 
-        MqttClientConnectionConfigBuilder MqttClientConnectionConfigBuilder::newDefaultBuilder() noexcept
+        MqttClientConnectionConfigBuilder MqttClientConnectionConfigBuilder::NewDefaultBuilder() noexcept
         {
             MqttClientConnectionConfigBuilder return_value =
                 MqttClientConnectionConfigBuilder(Aws::Crt::DefaultAllocator());
@@ -436,15 +436,6 @@ namespace Aws
                 }
             }
 
-            if (port == 443 && !m_websocketConfig && Crt::Io::TlsContextOptions::IsAlpnSupported() &&
-                !m_isUsingCustomAuthorizer)
-            {
-                if (!m_contextOptions.SetAlpnList("x-amzn-mqtt-ca"))
-                {
-                    return MqttClientConnectionConfig::CreateInvalid(m_contextOptions.LastError());
-                }
-            }
-
             Crt::String username = m_username;
             Crt::String password = m_password;
 
@@ -460,6 +451,16 @@ namespace Aws
                     }
                 }
             }
+
+            if (port == 443 && !m_websocketConfig && Crt::Io::TlsContextOptions::IsAlpnSupported() &&
+                !m_isUsingCustomAuthorizer)
+            {
+                if (!m_contextOptions.SetAlpnList("x-amzn-mqtt-ca"))
+                {
+                    return MqttClientConnectionConfig::CreateInvalid(m_contextOptions.LastError());
+                }
+            }
+
             // Is the user trying to connect using a custom authorizer?
             if (m_isUsingCustomAuthorizer)
             {
