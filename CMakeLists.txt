@@ -284,9 +284,9 @@ aws_prepare_symbol_visibility_args(${PROJECT_NAME} "AWS_CRT_CPP")
 #set runtime library
 if (MSVC)
     if(STATIC_CRT)
-        target_compile_options(${PROJECT_NAME} PRIVATE "/MT$<$<CONFIG:Debug>:d>")
+        target_compile_options(${PROJECT_NAME} PUBLIC "/MT$<$<CONFIG:Debug>:d>")
     else()
-        target_compile_options(${PROJECT_NAME} PRIVATE "/MD$<$<CONFIG:Debug>:d>")
+        target_compile_options(${PROJECT_NAME} PUBLIC "/MD$<$<CONFIG:Debug>:d>")
     endif()
 endif ()
 
