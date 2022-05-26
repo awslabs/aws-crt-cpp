@@ -377,13 +377,12 @@ namespace Aws
 
             if (!authorizerName.empty())
             {
-                usernameString = AddToUsernameParameter(
-                    usernameString, authorizerName, "x-amz-customauthorizer-name=");
+                usernameString = AddToUsernameParameter(usernameString, authorizerName, "x-amz-customauthorizer-name=");
             }
             if (!authorizerSignature.empty())
             {
-                usernameString = AddToUsernameParameter(
-                    usernameString, authorizerSignature, "x-amz-customauthorizer-signature=");
+                usernameString =
+                    AddToUsernameParameter(usernameString, authorizerSignature, "x-amz-customauthorizer-signature=");
             }
 
             m_username = usernameString;
