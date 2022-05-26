@@ -323,29 +323,28 @@ namespace Aws
             return *this;
         }
 
-        Crt::String MqttClientConnectionConfigBuilder::AddUsernameParameter(
-            Crt::String InputString,
-            Crt::String ParameterValue,
-            Crt::String ParameterPreText,
-            bool AddedStringToUsername)
+        Crt::String MqttClientConnectionConfigBuilder::AddToUsernameParameter(
+            Crt::String current_username,
+            Crt::String parameter_value,
+            Crt::String parameter_pre_text)
         {
-            Crt::String ReturnString = InputString;
-            if (AddedStringToUsername == false)
+            Crt::String return_string = current_username;
+            if (return_string.find("?") != Crt::String::npos)
             {
-                ReturnString += "?";
+                return_string += "&";
             }
             else
             {
-                ReturnString += "&";
+                return_string += "?";
             }
 
-            if (ParameterValue.find(ParameterPreText) != Crt::String::npos)
+            if (parameter_value.find(parameter_pre_text) != Crt::String::npos)
             {
-                return ReturnString + ParameterValue;
+                return return_string + parameter_value;
             }
             else
             {
-                return ReturnString + ParameterPreText + ParameterValue;
+                return return_string + parameter_pre_text + parameter_value;
             }
         }
 
@@ -363,7 +362,6 @@ namespace Aws
 
             m_isUsingCustomAuthorizer = true;
             Crt::String usernameString = "";
-            bool addedStringToUsername = false;
 
             if (username.empty())
             {
@@ -379,14 +377,13 @@ namespace Aws
 
             if (!authorizerName.empty())
             {
-                usernameString = AddUsernameParameter(
-                    usernameString, authorizerName, "x-amz-customauthorizer-name=", addedStringToUsername);
-                addedStringToUsername = true;
+                usernameString = AddToUsernameParameter(
+                    usernameString, authorizerName, "x-amz-customauthorizer-name=");
             }
             if (!authorizerSignature.empty())
             {
-                usernameString = AddUsernameParameter(
-                    usernameString, authorizerSignature, "x-amz-customauthorizer-signature=", addedStringToUsername);
+                usernameString = AddToUsernameParameter(
+                    usernameString, authorizerSignature, "x-amz-customauthorizer-signature=");
             }
 
             m_username = usernameString;

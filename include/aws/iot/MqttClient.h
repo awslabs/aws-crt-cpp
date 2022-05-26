@@ -464,11 +464,10 @@ namespace Aws
             MqttClientConnectionConfigBuilder(Crt::Allocator *allocator) noexcept;
 
             // Helper function to add parameters to the username in the WithCustomAuthorizer function
-            Crt::String AddUsernameParameter(
-                Crt::String InputString,
-                Crt::String ParameterValue,
-                Crt::String ParameterPreText,
-                bool AddedStringToUsername);
+            Crt::String AddToUsernameParameter(
+                Crt::String current_username,
+                Crt::String parameter_value,
+                Crt::String parameter_pre_text);
 
             Crt::Allocator *m_allocator;
             Crt::String m_endpoint;
