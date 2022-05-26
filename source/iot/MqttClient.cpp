@@ -324,11 +324,11 @@ namespace Aws
         }
 
         Crt::String MqttClientConnectionConfigBuilder::AddToUsernameParameter(
-            Crt::String current_username,
-            Crt::String parameter_value,
-            Crt::String parameter_pre_text)
+            Crt::String currentUsername,
+            Crt::String parameterValue,
+            Crt::String parameterPreText)
         {
-            Crt::String return_string = current_username;
+            Crt::String return_string = currentUsername;
             if (return_string.find("?") != Crt::String::npos)
             {
                 return_string += "&";
@@ -338,13 +338,13 @@ namespace Aws
                 return_string += "?";
             }
 
-            if (parameter_value.find(parameter_pre_text) != Crt::String::npos)
+            if (parameterValue.find(parameterPreText) != Crt::String::npos)
             {
-                return return_string + parameter_value;
+                return return_string + parameterValue;
             }
             else
             {
-                return return_string + parameter_pre_text + parameter_value;
+                return return_string + parameterPreText + parameterValue;
             }
         }
 

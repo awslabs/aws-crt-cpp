@@ -465,9 +465,9 @@ namespace Aws
 
             // Helper function to add parameters to the username in the WithCustomAuthorizer function
             Crt::String AddToUsernameParameter(
-                Crt::String current_username,
-                Crt::String parameter_value,
-                Crt::String parameter_pre_text);
+                Crt::String currentUsername,
+                Crt::String parameterValue,
+                Crt::String parameterPreText);
 
             Crt::Allocator *m_allocator;
             Crt::String m_endpoint;
