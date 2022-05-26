@@ -30,6 +30,20 @@ If you want to manage these dependencies manually (e.g. you're using them in oth
 ### MSVC
 If you want to use a statically linked MSVCRT (/MT, /MTd), you can add `-DSTATIC_CRT=ON` to your cmake configuration.
 
+### Apple Silicon (aka M1) and Universal Binaries
+
+aws-crt-cpp supports both `arm64` and `x86_64` architectures.
+Configure cmake with `-DCMAKE_OSX_ARCHITECTURES=arm64` to target Apple silicon,
+or `-DCMAKE_OSX_ARCHITECTURES=x86_64` to target Intel.
+If you wish to create a [universal binary](https://developer.apple.com/documentation/apple-silicon/building-a-universal-macos-binary),
+you should use `lipo` to combine the `x86_64` and `arm64` binaries.
+For example: `lipo -create -output universal_app x86_app arm_app`
+
+You SHOULD NOT build for both architectures simultaneously via `-DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"`.
+aws-crt-cpp has not been tested in this configuration.
+aws-crt-cpp's cmake configuration scripts are known to get confused by this,
+and will not enable optimizations that would benefit an independent `arm64` or `x86_64` build.
+
 ## Dependencies?
 
 There are no non-OS dependencies that AWS does not own, maintain, and ship.
