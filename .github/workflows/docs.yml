@@ -11,8 +11,7 @@ jobs:
   update-docs-branch:
     runs-on: ubuntu-20.04 # latest
     permissions:
-      contents: write
-      contents-reason: to push changes
+      contents: write # allow push
     steps:
       - name: Checkout
         uses: actions/checkout@v3
