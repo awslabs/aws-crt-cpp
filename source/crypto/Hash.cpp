@@ -23,7 +23,7 @@ namespace Aws
 
             bool ComputeSHA256(const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
             {
-                return aws_sha256_compute(DefaultAllocator(), &input, &output, truncateTo) == AWS_OP_SUCCESS;
+                return aws_sha256_compute(ApiAllocator(), &input, &output, truncateTo) == AWS_OP_SUCCESS;
             }
 
             bool ComputeMD5(Allocator *allocator, const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
@@ -33,7 +33,7 @@ namespace Aws
 
             bool ComputeMD5(const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
             {
-                return aws_md5_compute(DefaultAllocator(), &input, &output, truncateTo) == AWS_OP_SUCCESS;
+                return aws_md5_compute(ApiAllocator(), &input, &output, truncateTo) == AWS_OP_SUCCESS;
             }
 
             Hash::Hash(aws_hash *hash) noexcept : m_hash(hash), m_good(false), m_lastError(0)

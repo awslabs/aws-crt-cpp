@@ -123,7 +123,7 @@ namespace Aws
             class AWS_CRT_CPP_API AwsSigningConfig : public ISigningConfig
             {
               public:
-                AwsSigningConfig(Allocator *allocator = g_allocator);
+                AwsSigningConfig(Allocator *allocator = ApiAllocator());
                 virtual ~AwsSigningConfig();
 
                 virtual SigningConfigType GetType() const noexcept override { return SigningConfigType::Aws; }
@@ -320,7 +320,7 @@ namespace Aws
             class AWS_CRT_CPP_API Sigv4HttpRequestSigner : public IHttpRequestSigner
             {
               public:
-                Sigv4HttpRequestSigner(Allocator *allocator = g_allocator);
+                Sigv4HttpRequestSigner(Allocator *allocator = ApiAllocator());
                 virtual ~Sigv4HttpRequestSigner() = default;
 
                 bool IsValid() const override { return true; }

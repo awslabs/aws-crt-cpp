@@ -425,7 +425,7 @@ namespace Aws
                 /**
                  * Initialize an MqttClient using bootstrap and allocator
                  */
-                MqttClient(Io::ClientBootstrap &bootstrap, Allocator *allocator = g_allocator) noexcept;
+                MqttClient(Io::ClientBootstrap &bootstrap, Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
                  * Initialize an MqttClient using a allocator and the default ClientBootstrap
@@ -433,7 +433,7 @@ namespace Aws
                  * For more information on the default ClientBootstrap see
                  * Aws::Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap
                  */
-                MqttClient(Allocator *allocator = g_allocator) noexcept;
+                MqttClient(Allocator *allocator = ApiAllocator()) noexcept;
 
                 ~MqttClient();
                 MqttClient(const MqttClient &) = delete;

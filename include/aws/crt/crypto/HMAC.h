@@ -115,7 +115,7 @@ namespace Aws
                 aws_hmac *SeatForCInterop(const std::shared_ptr<ByoHMAC> &selfRef);
 
               protected:
-                ByoHMAC(size_t digestSize, const ByteCursor &secret, Allocator *allocator = g_allocator);
+                ByoHMAC(size_t digestSize, const ByteCursor &secret, Allocator *allocator = ApiAllocator());
 
                 /**
                  * Updates the running HMAC with to_hash.

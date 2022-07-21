@@ -19,7 +19,6 @@
 #include <utility>
 #include <vector>
 
-struct aws_allocator;
 struct aws_byte_buf;
 struct aws_byte_cursor;
 struct aws_socket_options;
@@ -28,7 +27,6 @@ namespace Aws
 {
     namespace Crt
     {
-        using Allocator = aws_allocator;
         using ByteBuf = aws_byte_buf;
         using ByteCursor = aws_byte_cursor;
 
@@ -55,7 +53,6 @@ namespace Aws
         template <typename T> using Vector = std::vector<T, StlAllocator<T>>;
         template <typename T> using List = std::list<T, StlAllocator<T>>;
 
-        AWS_CRT_CPP_API Allocator *DefaultAllocator() noexcept;
         AWS_CRT_CPP_API ByteBuf ByteBufFromCString(const char *str) noexcept;
         AWS_CRT_CPP_API ByteBuf ByteBufFromEmptyArray(const uint8_t *array, size_t len) noexcept;
         AWS_CRT_CPP_API ByteBuf ByteBufFromArray(const uint8_t *array, size_t capacity) noexcept;

@@ -119,7 +119,7 @@ namespace Aws
             WebsocketConfig(
                 const Crt::String &signingRegion,
                 Crt::Io::ClientBootstrap *bootstrap,
-                Crt::Allocator *allocator = Crt::g_allocator) noexcept;
+                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
              * Create a websocket configuration for use with the default credentials provider chain and default
@@ -132,7 +132,7 @@ namespace Aws
              * handshake upgrade request
              * @param allocator memory allocator to use
              */
-            WebsocketConfig(const Crt::String &signingRegion, Crt::Allocator *allocator = Crt::g_allocator) noexcept;
+            WebsocketConfig(const Crt::String &signingRegion, Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
              * Create a websocket configuration for use with a custom credentials provider. Signing region will be used
@@ -146,7 +146,7 @@ namespace Aws
             WebsocketConfig(
                 const Crt::String &signingRegion,
                 const std::shared_ptr<Crt::Auth::ICredentialsProvider> &credentialsProvider,
-                Crt::Allocator *allocator = Crt::g_allocator) noexcept;
+                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
              * Create a websocket configuration for use with a custom credentials provider, and a custom signer.
@@ -202,7 +202,7 @@ namespace Aws
             MqttClientConnectionConfigBuilder(
                 const char *certPath,
                 const char *pkeyPath,
-                Crt::Allocator *allocator = Crt::g_allocator) noexcept;
+                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
              * Sets the builder up for MTLS using cert and pkey. These are in-memory buffers and must be in the PEM
@@ -215,7 +215,7 @@ namespace Aws
             MqttClientConnectionConfigBuilder(
                 const Crt::ByteCursor &cert,
                 const Crt::ByteCursor &pkey,
-                Crt::Allocator *allocator = Crt::g_allocator) noexcept;
+                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
              * Sets the builder up for MTLS, using a PKCS#11 library for private key operations.
@@ -227,7 +227,7 @@ namespace Aws
              */
             MqttClientConnectionConfigBuilder(
                 const Crt::Io::TlsContextPkcs11Options &pkcs11Options,
-                Crt::Allocator *allocator = Crt::g_allocator) noexcept;
+                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
              * Sets the builder up for MTLS, using a certificate in a Windows certificate store.
@@ -241,7 +241,7 @@ namespace Aws
              */
             MqttClientConnectionConfigBuilder(
                 const char *windowsCertStorePath,
-                Crt::Allocator *allocator = Crt::g_allocator) noexcept;
+                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
              * Sets the builder up for Websocket connection.
@@ -251,7 +251,7 @@ namespace Aws
              */
             MqttClientConnectionConfigBuilder(
                 const WebsocketConfig &config,
-                Crt::Allocator *allocator = Crt::g_allocator) noexcept;
+                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
              * Creates a new builder with default Tls options. This requires setting the connection details manually.
@@ -494,7 +494,7 @@ namespace Aws
         class AWS_CRT_CPP_API MqttClient final
         {
           public:
-            MqttClient(Crt::Io::ClientBootstrap &bootstrap, Crt::Allocator *allocator = Crt::g_allocator) noexcept;
+            MqttClient(Crt::Io::ClientBootstrap &bootstrap, Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
              * Constructs a new Mqtt Client object using the static default ClientBootstrap.
@@ -502,7 +502,7 @@ namespace Aws
              * For more information on the default ClientBootstrap see
              * Aws::Crt::ApiHandle::GetOrCreateDefaultClientBootstrap
              */
-            MqttClient(Crt::Allocator *allocator = Crt::g_allocator) noexcept;
+            MqttClient(Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
              * Creates a new mqtt connection from a connection configuration object

@@ -208,7 +208,7 @@ namespace Aws
         MqttClientConnectionConfigBuilder MqttClientConnectionConfigBuilder::NewDefaultBuilder() noexcept
         {
             MqttClientConnectionConfigBuilder return_value =
-                MqttClientConnectionConfigBuilder(Aws::Crt::DefaultAllocator());
+                MqttClientConnectionConfigBuilder(Aws::Crt::ApiAllocator());
             return_value.m_contextOptions = Crt::Io::TlsContextOptions::InitDefaultClient();
             return return_value;
         }

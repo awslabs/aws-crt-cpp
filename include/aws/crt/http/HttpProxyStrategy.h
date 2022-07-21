@@ -95,7 +95,7 @@ namespace Aws
                  */
                 static std::shared_ptr<HttpProxyStrategy> CreateBasicHttpProxyStrategy(
                     const HttpProxyStrategyBasicAuthConfig &config,
-                    Allocator *allocator = g_allocator);
+                    Allocator *allocator = ApiAllocator());
 
                 /**
                  * Creates a proxy strategy that, depending on configuration, can attempt kerberos and/or ntlm
@@ -106,7 +106,7 @@ namespace Aws
                  */
                 static std::shared_ptr<HttpProxyStrategy> CreateAdaptiveHttpProxyStrategy(
                     const HttpProxyStrategyAdaptiveConfig &config,
-                    Allocator *allocator = g_allocator);
+                    Allocator *allocator = ApiAllocator());
 
               protected:
                 struct aws_http_proxy_strategy *m_strategy;

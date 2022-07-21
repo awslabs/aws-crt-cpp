@@ -43,7 +43,7 @@ namespace Aws
                     ByteCursor secret_access_key,
                     ByteCursor session_token,
                     uint64_t expiration_timepoint_in_seconds,
-                    Allocator *allocator = g_allocator) noexcept;
+                    Allocator *allocator = ApiAllocator()) noexcept;
 
                 ~Credentials();
 
@@ -337,7 +337,7 @@ namespace Aws
             class AWS_CRT_CPP_API CredentialsProvider : public ICredentialsProvider
             {
               public:
-                CredentialsProvider(aws_credentials_provider *provider, Allocator *allocator = g_allocator) noexcept;
+                CredentialsProvider(aws_credentials_provider *provider, Allocator *allocator = ApiAllocator()) noexcept;
 
                 virtual ~CredentialsProvider();
 
@@ -370,27 +370,27 @@ namespace Aws
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderStatic(
                     const CredentialsProviderStaticConfig &config,
-                    Allocator *allocator = g_allocator);
+                    Allocator *allocator = ApiAllocator());
 
                 /**
                  * Creates a provider that returns credentials sourced from environment variables
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderEnvironment(
-                    Allocator *allocator = g_allocator);
+                    Allocator *allocator = ApiAllocator());
 
                 /**
                  * Creates a provider that returns credentials sourced from config files
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderProfile(
                     const CredentialsProviderProfileConfig &config,
-                    Allocator *allocator = g_allocator);
+                    Allocator *allocator = ApiAllocator());
 
                 /**
                  * Creates a provider that returns credentials sourced from Ec2 instance metadata service
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderImds(
                     const CredentialsProviderImdsConfig &config,
-                    Allocator *allocator = g_allocator);
+                    Allocator *allocator = ApiAllocator());
 
                 /**
                  * Creates a provider that sources credentials by querying a series of providers and
@@ -398,7 +398,7 @@ namespace Aws
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderChain(
                     const CredentialsProviderChainConfig &config,
-                    Allocator *allocator = g_allocator);
+                    Allocator *allocator = ApiAllocator());
 
                 /*
                  * Creates a provider that puts a simple time-based cache in front of its queries
@@ -406,7 +406,7 @@ namespace Aws
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderCached(
                     const CredentialsProviderCachedConfig &config,
-                    Allocator *allocator = g_allocator);
+                    Allocator *allocator = ApiAllocator());
 
                 /**
                  * Creates the SDK-standard default credentials provider which is a cache-fronted chain of:
@@ -416,7 +416,7 @@ namespace Aws
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderChainDefault(
                     const CredentialsProviderChainDefaultConfig &config,
-                    Allocator *allocator = g_allocator);
+                    Allocator *allocator = ApiAllocator());
 
                 /**
                  * Creates a provider that sources credentials from the IoT X509 provider service
@@ -424,7 +424,7 @@ namespace Aws
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderX509(
                     const CredentialsProviderX509Config &config,
-                    Allocator *allocator = g_allocator);
+                    Allocator *allocator = ApiAllocator());
 
                 /**
                  * Creates a provider that sources credentials from the provided function.
@@ -432,7 +432,7 @@ namespace Aws
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderDelegate(
                     const CredentialsProviderDelegateConfig &config,
-                    Allocator *allocator = g_allocator);
+                    Allocator *allocator = ApiAllocator());
 
               private:
                 static void s_onCredentialsResolved(aws_credentials *credentials, int error_code, void *user_data);

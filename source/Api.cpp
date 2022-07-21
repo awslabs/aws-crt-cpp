@@ -20,8 +20,6 @@ namespace Aws
 {
     namespace Crt
     {
-        Allocator *g_allocator = Aws::Crt::DefaultAllocator();
-
         static Crypto::CreateHashCallback s_BYOCryptoNewMD5Callback;
         static Crypto::CreateHashCallback s_BYOCryptoNewSHA256Callback;
         static Crypto::CreateHMACCallback s_BYOCryptoNewSHA256HMACCallback;
@@ -38,9 +36,9 @@ namespace Aws
         std::mutex ApiHandle::s_lock_event_loop_group;
         std::mutex ApiHandle::s_lock_default_host_resolver;
 
-        static void *s_cJSONAlloc(size_t sz) { return aws_mem_acquire(g_allocator, sz); }
+        static void *s_cJSONAlloc(size_t sz) { return aws_mem_acquire(ApiAllocator(), sz); }
 
-        static void s_cJSONFree(void *ptr) { return aws_mem_release(g_allocator, ptr); }
+        static void s_cJSONFree(void *ptr) { return aws_mem_release(ApiAllocator(), ptr); }
 
         static void s_initApi(Allocator *allocator)
         {
@@ -133,7 +131,7 @@ namespace Aws
                 }
             }
 
-            if (aws_logger_init_standard(&m_logger, g_allocator, &options))
+            if (aws_logger_init_standard(&m_logger, ApiAllocator(), &options))
             {
                 return;
             }
@@ -315,7 +313,7 @@ namespace Aws
             if (s_static_bootstrap == nullptr)
             {
                 s_static_bootstrap = Aws::Crt::New<Io::ClientBootstrap>(
-                    g_allocator, *GetOrCreateStaticDefaultEventLoopGroup(), *GetOrCreateStaticDefaultHostResolver());
+                    ApiAllocator(), *GetOrCreateStaticDefaultEventLoopGroup(), *GetOrCreateStaticDefaultHostResolver());
             }
             return s_static_bootstrap;
         }
@@ -325,7 +323,7 @@ namespace Aws
             std::lock_guard<std::mutex> lock(s_lock_event_loop_group);
             if (s_static_event_loop_group == nullptr)
             {
-                s_static_event_loop_group = Aws::Crt::New<Io::EventLoopGroup>(g_allocator, (uint16_t)0);
+                s_static_event_loop_group = Aws::Crt::New<Io::EventLoopGroup>(ApiAllocator(), (uint16_t)0);
             }
             return s_static_event_loop_group;
         }
@@ -336,7 +334,7 @@ namespace Aws
             if (s_static_default_host_resolver == nullptr)
             {
                 s_static_default_host_resolver = Aws::Crt::New<Io::DefaultHostResolver>(
-                    g_allocator, *GetOrCreateStaticDefaultEventLoopGroup(), 1, s_host_resolver_default_max_hosts);
+                    ApiAllocator(), *GetOrCreateStaticDefaultEventLoopGroup(), 1, s_host_resolver_default_max_hosts);
             }
             return s_static_default_host_resolver;
         }
@@ -346,7 +344,7 @@ namespace Aws
             std::lock_guard<std::mutex> lock(s_lock_client_bootstrap);
             if (s_static_bootstrap != nullptr)
             {
-                Aws::Crt::Delete(s_static_bootstrap, g_allocator);
+                Aws::Crt::Delete(s_static_bootstrap, ApiAllocator());
                 s_static_bootstrap = nullptr;
             }
         }
@@ -356,7 +354,7 @@ namespace Aws
             std::lock_guard<std::mutex> lock(s_lock_event_loop_group);
             if (s_static_event_loop_group != nullptr)
             {
-                Aws::Crt::Delete(s_static_event_loop_group, g_allocator);
+                Aws::Crt::Delete(s_static_event_loop_group, ApiAllocator());
                 s_static_event_loop_group = nullptr;
             }
         }
@@ -366,7 +364,7 @@ namespace Aws
             std::lock_guard<std::mutex> lock(s_lock_default_host_resolver);
             if (s_static_default_host_resolver != nullptr)
             {
-                Aws::Crt::Delete(s_static_default_host_resolver, g_allocator);
+                Aws::Crt::Delete(s_static_default_host_resolver, ApiAllocator());
                 s_static_default_host_resolver = nullptr;
             }
         }

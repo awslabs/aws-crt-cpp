@@ -157,7 +157,7 @@ namespace Aws
                 void ScheduleTask(std::function<void(TaskStatus)> &&task, std::chrono::nanoseconds run_in);
 
               protected:
-                ChannelHandler(Allocator *allocator = g_allocator);
+                ChannelHandler(Allocator *allocator = ApiAllocator());
 
                 /**
                  * Acquire an aws_io_message from the channel's pool.

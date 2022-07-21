@@ -58,7 +58,7 @@ namespace Aws
                  * Initializes TlsContextOptions with secure by default options, with
                  * no client certificates.
                  */
-                static TlsContextOptions InitDefaultClient(Allocator *allocator = g_allocator) noexcept;
+                static TlsContextOptions InitDefaultClient(Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
                  * Initializes TlsContextOptions for mutual TLS (mTLS), with
@@ -74,7 +74,7 @@ namespace Aws
                 static TlsContextOptions InitClientWithMtls(
                     const char *cert_path,
                     const char *pkey_path,
-                    Allocator *allocator = g_allocator) noexcept;
+                    Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
                  * Initializes TlsContextOptions for mutual TLS (mTLS), with
@@ -90,7 +90,7 @@ namespace Aws
                 static TlsContextOptions InitClientWithMtls(
                     const ByteCursor &cert,
                     const ByteCursor &pkey,
-                    Allocator *allocator = g_allocator) noexcept;
+                    Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
                  * Initializes TlsContextOptions for mutual TLS (mTLS),
@@ -103,7 +103,7 @@ namespace Aws
                  */
                 static TlsContextOptions InitClientWithMtlsPkcs11(
                     const TlsContextPkcs11Options &pkcs11Options,
-                    Allocator *allocator = g_allocator) noexcept;
+                    Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
                  * Initializes TlsContextOptions for mutual TLS (mTLS), with
@@ -120,7 +120,7 @@ namespace Aws
                 static TlsContextOptions InitClientWithMtlsPkcs12(
                     const char *pkcs12_path,
                     const char *pkcs12_pwd,
-                    Allocator *allocator = g_allocator) noexcept;
+                    Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
                  * @deprecated Custom keychain management is deprecated.
@@ -147,7 +147,7 @@ namespace Aws
                  */
                 static TlsContextOptions InitClientWithMtlsSystemPath(
                     const char *windowsCertStorePath,
-                    Allocator *allocator = g_allocator) noexcept;
+                    Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
                  * @return true if alpn is supported by the underlying security provider, false
@@ -216,7 +216,7 @@ namespace Aws
                  */
                 TlsContextPkcs11Options(
                     const std::shared_ptr<Pkcs11Lib> &pkcs11Lib,
-                    Allocator *allocator = g_allocator) noexcept;
+                    Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
                  * Use this PIN to log the user into the PKCS#11 token.
@@ -344,7 +344,7 @@ namespace Aws
             {
               public:
                 TlsContext() noexcept;
-                TlsContext(TlsContextOptions &options, TlsMode mode, Allocator *allocator = g_allocator) noexcept;
+                TlsContext(TlsContextOptions &options, TlsMode mode, Allocator *allocator = ApiAllocator()) noexcept;
                 ~TlsContext() = default;
                 TlsContext(const TlsContext &) noexcept = default;
                 TlsContext &operator=(const TlsContext &) noexcept = default;
@@ -398,7 +398,7 @@ namespace Aws
                 TlsChannelHandler(
                     struct aws_channel_slot *slot,
                     const struct aws_tls_connection_options &options,
-                    Allocator *allocator = g_allocator);
+                    Allocator *allocator = ApiAllocator());
 
                 /**
                  * Invoke this function from inside your handler after TLS negotiation completes. errorCode ==
@@ -434,7 +434,7 @@ namespace Aws
                 ClientTlsChannelHandler(
                     struct aws_channel_slot *slot,
                     const struct aws_tls_connection_options &options,
-                    Allocator *allocator = g_allocator);
+                    Allocator *allocator = ApiAllocator());
             };
 
             using NewClientTlsHandlerCallback = std::function<std::shared_ptr<ClientTlsChannelHandler>(
