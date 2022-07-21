@@ -151,20 +151,22 @@ jobs:
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
         python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBUILD_SHARED_LIBS=ON
 
-  # Ensure users can link with /DELAYLOAD:aws-crt-cpp.dll.
+  # Ensure users can link with /DELAYLOAD:aws-crt-cpp.dll
   # We test by building everything using those linker flags.
   # This will cause linker errors when compiling tests if an API is built wrong (assuming the API is tested).
   # Typically these errors are caused by extern global variables,
   # and we've fixed them by offering getter functions instead.
   windows-delayload-dll:
     runs-on: windows-2022 # latest
+    env:
+      LDFLAGS: /DELAYLOAD:aws-crt-cpp.dll
     steps:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
         md D:\a\work
         cd D:\a\work
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
-        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBUILD_SHARED_LIBS=ON +build_env=LDFLAGS=/DELAYLOAD:aws-crt-cpp.dll
+        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBUILD_SHARED_LIBS=ON
 
   windows-no-cpu-extensions:
     runs-on: windows-2022 # latest
