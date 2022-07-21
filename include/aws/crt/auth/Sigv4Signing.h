@@ -80,21 +80,32 @@ namespace Aws
                  * 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
                  * For use with `Aws::Crt::Auth::AwsSigningConfig.SetSignedBodyValue()`.
                  */
-                AWS_CRT_CPP_API extern const char *EmptySha256;
+                AWS_CRT_CPP_API const char *EmptySha256Str();
+
                 /**
                  * 'UNSIGNED-PAYLOAD'
                  * For use with `Aws::Crt::Auth::AwsSigningConfig.SetSignedBodyValue()`.
                  */
-                AWS_CRT_CPP_API extern const char *UnsignedPayload;
+                AWS_CRT_CPP_API const char *UnsignedPayloadStr();
+
                 /**
                  * 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD'
                  * For use with `Aws::Crt::Auth::AwsSigningConfig.SetSignedBodyValue()`.
                  */
-                AWS_CRT_CPP_API extern const char *StreamingAws4HmacSha256Payload;
+                AWS_CRT_CPP_API const char *StreamingAws4HmacSha256PayloadStr();
                 /**
                  * 'STREAMING-AWS4-HMAC-SHA256-EVENTS'
                  * For use with `Aws::Crt::Auth::AwsSigningConfig.SetSignedBodyValue()`.
                  */
+                AWS_CRT_CPP_API const char *StreamingAws4HmacSha256EventsStr();
+
+                /** @deprecated to avoid issues with /DELAYLOAD on Windows. */
+                AWS_CRT_CPP_API extern const char *UnsignedPayload;
+                /** @deprecated to avoid issues with /DELAYLOAD on Windows. */
+                AWS_CRT_CPP_API extern const char *EmptySha256;
+                /** @deprecated to avoid issues with /DELAYLOAD on Windows. */
+                AWS_CRT_CPP_API extern const char *StreamingAws4HmacSha256Payload;
+                /** @deprecated to avoid issues with /DELAYLOAD on Windows. */
                 AWS_CRT_CPP_API extern const char *StreamingAws4HmacSha256Events;
             } // namespace SignedBodyValue
 
@@ -123,7 +134,7 @@ namespace Aws
             class AWS_CRT_CPP_API AwsSigningConfig : public ISigningConfig
             {
               public:
-                AwsSigningConfig(Allocator *allocator = g_allocator);
+                AwsSigningConfig(Allocator *allocator = ApiAllocator());
                 virtual ~AwsSigningConfig();
 
                 virtual SigningConfigType GetType() const noexcept override { return SigningConfigType::Aws; }
@@ -320,7 +331,7 @@ namespace Aws
             class AWS_CRT_CPP_API Sigv4HttpRequestSigner : public IHttpRequestSigner
             {
               public:
-                Sigv4HttpRequestSigner(Allocator *allocator = g_allocator);
+                Sigv4HttpRequestSigner(Allocator *allocator = ApiAllocator());
                 virtual ~Sigv4HttpRequestSigner() = default;
 
                 bool IsValid() const override { return true; }

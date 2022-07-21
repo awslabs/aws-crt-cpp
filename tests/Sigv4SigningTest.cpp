@@ -273,7 +273,7 @@ static int s_Sigv4SigningTestUnsignedPayload(struct aws_allocator *allocator, vo
         signingConfig.SetRegion("test");
         signingConfig.SetService("service");
         signingConfig.SetCredentials(s_MakeDummyCredentials(allocator));
-        signingConfig.SetSignedBodyValue(Aws::Crt::Auth::SignedBodyValue::UnsignedPayload);
+        signingConfig.SetSignedBodyValue(Aws::Crt::Auth::SignedBodyValue::UnsignedPayloadStr());
         signingConfig.SetSignedBodyHeader(Aws::Crt::Auth::SignedBodyHeaderType::XAmzContentSha256);
 
         SignWaiter waiter;

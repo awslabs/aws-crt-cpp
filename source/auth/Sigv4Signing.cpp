@@ -21,9 +21,16 @@ namespace Aws
             namespace SignedBodyValue
             {
                 const char *EmptySha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+                const char *EmptySha256Str() { return EmptySha256; }
+
                 const char *UnsignedPayload = "UNSIGNED-PAYLOAD";
+                const char *UnsignedPayloadStr() { return UnsignedPayload; }
+
                 const char *StreamingAws4HmacSha256Payload = "STREAMING-AWS4-HMAC-SHA256-PAYLOAD";
+                const char *StreamingAws4HmacSha256PayloadStr() { return StreamingAws4HmacSha256Payload; }
+
                 const char *StreamingAws4HmacSha256Events = "STREAMING-AWS4-HMAC-SHA256-EVENTS";
+                const char *StreamingAws4HmacSha256EventsStr() { return StreamingAws4HmacSha256Events; }
             } // namespace SignedBodyValue
 
             AwsSigningConfig::AwsSigningConfig(Allocator *allocator)

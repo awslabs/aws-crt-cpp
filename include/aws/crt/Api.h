@@ -46,6 +46,10 @@ namespace Aws
         class AWS_CRT_CPP_API ApiHandle
         {
           public:
+            /**
+             * Customize the ApiAllocator(), which is be used by any objects
+             * constructed without an explicit allocator.
+             */
             ApiHandle(Allocator *allocator) noexcept;
             ApiHandle() noexcept;
             ~ApiHandle();

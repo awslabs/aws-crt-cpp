@@ -28,7 +28,7 @@ namespace Aws
                 ByteBuf &output,
                 size_t truncateTo) noexcept
             {
-                return aws_sha256_hmac_compute(g_allocator, &secret, &input, &output, truncateTo) == AWS_OP_SUCCESS;
+                return aws_sha256_hmac_compute(ApiAllocator(), &secret, &input, &output, truncateTo) == AWS_OP_SUCCESS;
             }
 
             HMAC::HMAC(aws_hmac *hmac) noexcept : m_hmac(hmac), m_good(false), m_lastError(0)
@@ -75,7 +75,7 @@ namespace Aws
 
             HMAC HMAC::CreateSHA256HMAC(const ByteCursor &secret) noexcept
             {
-                return HMAC(aws_sha256_hmac_new(g_allocator, &secret));
+                return HMAC(aws_sha256_hmac_new(ApiAllocator(), &secret));
             }
 
             bool HMAC::Update(const ByteCursor &toHMAC) noexcept

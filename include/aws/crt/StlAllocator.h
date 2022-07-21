@@ -4,19 +4,15 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 
-#include <memory>
+#include <aws/crt/Allocator.h>
 
-#include <aws/common/common.h>
-#include <aws/crt/Exports.h>
+#include <memory>
 #include <type_traits>
 
 namespace Aws
 {
     namespace Crt
     {
-        using Allocator = aws_allocator;
-        extern AWS_CRT_CPP_API Allocator *g_allocator;
-
         /**
          * Stateful allocator variant that uses an underlying CRT allocator
          * @tparam T type that allocator can allocate
@@ -26,7 +22,7 @@ namespace Aws
           public:
             using Base = std::allocator<T>;
 
-            StlAllocator() noexcept : Base() { m_allocator = g_allocator; }
+            StlAllocator() noexcept : Base() { m_allocator = ApiAllocator(); }
 
             StlAllocator(Allocator *allocator) noexcept : Base() { m_allocator = allocator; }
 

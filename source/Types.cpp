@@ -10,8 +10,6 @@ namespace Aws
 {
     namespace Crt
     {
-        Allocator *DefaultAllocator() noexcept { return aws_default_allocator(); }
-
         ByteBuf ByteBufFromCString(const char *str) noexcept { return aws_byte_buf_from_c_str(str); }
 
         ByteBuf ByteBufFromEmptyArray(const uint8_t *array, size_t len) noexcept

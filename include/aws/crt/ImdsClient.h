@@ -140,7 +140,7 @@ namespace Aws
             class AWS_CRT_CPP_API ImdsClient
             {
               public:
-                ImdsClient(const ImdsClientConfig &config, Allocator *allocator = g_allocator) noexcept;
+                ImdsClient(const ImdsClientConfig &config, Allocator *allocator = ApiAllocator()) noexcept;
 
                 ~ImdsClient();
 

@@ -86,12 +86,12 @@ namespace Aws
                 /**
                  * Creates an instance of a Streaming SHA256 Hash.
                  */
-                static Hash CreateSHA256(Allocator *allocator = g_allocator) noexcept;
+                static Hash CreateSHA256(Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
                  * Creates an instance of a Streaming MD5 Hash.
                  */
-                static Hash CreateMD5(Allocator *allocator = g_allocator) noexcept;
+                static Hash CreateMD5(Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
                  * Updates the running hash object with data in toHash. Returns true on success. Call
@@ -134,7 +134,7 @@ namespace Aws
                 aws_hash *SeatForCInterop(const std::shared_ptr<ByoHash> &selfRef);
 
               protected:
-                ByoHash(size_t digestSize, Allocator *allocator = g_allocator);
+                ByoHash(size_t digestSize, Allocator *allocator = ApiAllocator());
 
                 /**
                  * Update the running hash with to_hash.

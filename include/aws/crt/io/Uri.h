@@ -26,13 +26,13 @@ namespace Aws
                  * Parses `cursor` as a URI. Upon failure the bool() operator will return false and LastError()
                  * will contain the errorCode.
                  */
-                Uri(const ByteCursor &cursor, Allocator *allocator = g_allocator) noexcept;
+                Uri(const ByteCursor &cursor, Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
                  * Builds a URI from `builderOptions`. Upon failure the bool() operator will return false and
                  * LastError() will contain the errorCode.
                  */
-                Uri(aws_uri_builder_options &builderOptions, Allocator *allocator = g_allocator) noexcept;
+                Uri(aws_uri_builder_options &builderOptions, Allocator *allocator = ApiAllocator()) noexcept;
 
                 Uri(const Uri &);
                 Uri &operator=(const Uri &);

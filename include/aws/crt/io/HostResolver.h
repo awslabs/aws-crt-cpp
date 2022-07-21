@@ -62,7 +62,7 @@ namespace Aws
                     EventLoopGroup &elGroup,
                     size_t maxHosts,
                     size_t maxTTL,
-                    Allocator *allocator = g_allocator) noexcept;
+                    Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
                  * Resolves DNS addresses using the default EventLoopGroup.
@@ -74,7 +74,7 @@ namespace Aws
                  * @param maxTTL: how long to keep an address in the cache before evicting it.
                  * @param allocator memory allocator to use.
                  */
-                DefaultHostResolver(size_t maxHosts, size_t maxTTL, Allocator *allocator = g_allocator) noexcept;
+                DefaultHostResolver(size_t maxHosts, size_t maxTTL, Allocator *allocator = ApiAllocator()) noexcept;
 
                 ~DefaultHostResolver();
                 DefaultHostResolver(const DefaultHostResolver &) = delete;
