@@ -80,21 +80,32 @@ namespace Aws
                  * 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
                  * For use with `Aws::Crt::Auth::AwsSigningConfig.SetSignedBodyValue()`.
                  */
-                AWS_CRT_CPP_API extern const char *EmptySha256;
+                AWS_CRT_CPP_API const char *EmptySha256Str();
+
                 /**
                  * 'UNSIGNED-PAYLOAD'
                  * For use with `Aws::Crt::Auth::AwsSigningConfig.SetSignedBodyValue()`.
                  */
-                AWS_CRT_CPP_API extern const char *UnsignedPayload;
+                AWS_CRT_CPP_API const char *UnsignedPayloadStr();
+
                 /**
                  * 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD'
                  * For use with `Aws::Crt::Auth::AwsSigningConfig.SetSignedBodyValue()`.
                  */
-                AWS_CRT_CPP_API extern const char *StreamingAws4HmacSha256Payload;
+                AWS_CRT_CPP_API const char *StreamingAws4HmacSha256PayloadStr();
                 /**
                  * 'STREAMING-AWS4-HMAC-SHA256-EVENTS'
                  * For use with `Aws::Crt::Auth::AwsSigningConfig.SetSignedBodyValue()`.
                  */
+                AWS_CRT_CPP_API const char *StreamingAws4HmacSha256EventsStr();
+
+                /** @deprecated to avoid issues with /DELAYLOAD on Windows. */
+                AWS_CRT_CPP_API extern const char *UnsignedPayload;
+                /** @deprecated to avoid issues with /DELAYLOAD on Windows. */
+                AWS_CRT_CPP_API extern const char *EmptySha256;
+                /** @deprecated to avoid issues with /DELAYLOAD on Windows. */
+                AWS_CRT_CPP_API extern const char *StreamingAws4HmacSha256Payload;
+                /** @deprecated to avoid issues with /DELAYLOAD on Windows. */
                 AWS_CRT_CPP_API extern const char *StreamingAws4HmacSha256Events;
             } // namespace SignedBodyValue
 
