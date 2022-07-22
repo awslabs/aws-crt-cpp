@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 
+#include <aws/common/condition_variable.h>
+#include <aws/common/mutex.h>
+
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
 #include <aws/crt/io/EventLoopGroup.h>
@@ -20,6 +23,16 @@ namespace Aws
     {
         namespace Io
         {
+            /**
+             * Tracks event-loop/host-resolver/bootstrap shutdowns.
+             * The client bootstrap shutdown sequence is complete when shutdown_count == 3.
+             */
+            struct shutdown_user_data {
+                struct aws_mutex mtx;
+                struct aws_condition_variable cv;
+                int shutdown_count = 0;
+            };
+
             using OnClientBootstrapShutdownComplete = std::function<void()>;
 
             /**
@@ -37,20 +50,11 @@ namespace Aws
                 /**
                  * @param elGroup: EventLoopGroup to use.
                  * @param resolver: DNS host resolver to use.
-                 * @param allocator memory allocator to use
                  */
                 ClientBootstrap(
                     EventLoopGroup &elGroup,
                     HostResolver &resolver,
-                    Allocator *allocator = ApiAllocator()) noexcept;
-
-                /**
-                 * Uses the default EventLoopGroup and HostResolver.
-                 * See Aws::Crt::ApiHandle::GetOrCreateStaticDefaultEventLoopGroup
-                 * and Aws::Crt::ApiHandle::GetOrCreateStaticDefaultHostResolver
-                 */
-                ClientBootstrap(Allocator *allocator = ApiAllocator()) noexcept;
-
+                    Allocator *allocator = g_allocator) noexcept;
                 ~ClientBootstrap();
                 ClientBootstrap(const ClientBootstrap &) = delete;
                 ClientBootstrap &operator=(const ClientBootstrap &) = delete;
@@ -75,19 +79,8 @@ namespace Aws
                  */
                 void SetShutdownCompleteCallback(OnClientBootstrapShutdownComplete callback);
 
-                /**
-                 * Force the ClientBootstrap's destructor to block until all
-                 * behind-the-scenes resources finish shutting down.
-                 *
-                 * This isn't necessary during the normal flow of an application,
-                 * but it is useful for scenarios, such as tests, that need deterministic
-                 * shutdown ordering. Be aware, if you use this anywhere other
-                 * than the main thread, YOU WILL MOST LIKELY CAUSE A DEADLOCK.
-                 *
-                 * Use SetShutdownCompleteCallback() for a thread-safe way to
-                 * know when shutdown is complete.
-                 */
-                void EnableBlockingShutdown() noexcept;
+                /* Only kept for backward/API compatibility (see #388). */
+                void EnableBlockingShutdown() noexcept {}
 
                 /// @private
                 aws_client_bootstrap *GetUnderlyingHandle() const noexcept;
@@ -95,9 +88,8 @@ namespace Aws
               private:
                 aws_client_bootstrap *m_bootstrap;
                 int m_lastError;
-                std::unique_ptr<class ClientBootstrapCallbackData> m_callbackData;
-                std::future<void> m_shutdownFuture;
-                bool m_enableBlockingShutdown;
+                struct shutdown_user_data m_shutdown_cb_user_data;
+                OnClientBootstrapShutdownComplete m_shutdownCallback;
             };
         } // namespace Io
     }     // namespace Crt
