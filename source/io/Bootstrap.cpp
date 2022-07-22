@@ -86,6 +86,14 @@ namespace Aws
                 }
             }
 
+            ClientBootstrap::ClientBootstrap(Allocator *allocator) noexcept
+                : ClientBootstrap(
+                      *Crt::ApiHandle::GetOrCreateStaticDefaultEventLoopGroup(),
+                      *Crt::ApiHandle::GetOrCreateStaticDefaultHostResolver(),
+                      allocator)
+            {
+            }
+
             ClientBootstrap::~ClientBootstrap()
             {
                 if (m_bootstrap)

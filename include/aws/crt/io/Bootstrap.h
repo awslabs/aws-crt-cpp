@@ -50,11 +50,20 @@ namespace Aws
                 /**
                  * @param elGroup: EventLoopGroup to use.
                  * @param resolver: DNS host resolver to use.
+                 * @param allocator memory allocator to use
                  */
                 ClientBootstrap(
                     EventLoopGroup &elGroup,
                     HostResolver &resolver,
-                    Allocator *allocator = g_allocator) noexcept;
+                    Allocator *allocator = ApiAllocator()) noexcept;
+
+                /**
+                 * Uses the default EventLoopGroup and HostResolver.
+                 * See Aws::Crt::ApiHandle::GetOrCreateStaticDefaultEventLoopGroup
+                 * and Aws::Crt::ApiHandle::GetOrCreateStaticDefaultHostResolver
+                 */
+                ClientBootstrap(Allocator *allocator = ApiAllocator()) noexcept;
+
                 ~ClientBootstrap();
                 ClientBootstrap(const ClientBootstrap &) = delete;
                 ClientBootstrap &operator=(const ClientBootstrap &) = delete;
