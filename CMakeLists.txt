@@ -347,9 +347,24 @@ configure_file("cmake/${PROJECT_NAME}-config.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
         @ONLY)
 
+include(CMakePackageConfigHelpers)
+
+STRING(REPLACE "v" "" AWS_CRT_CPP_VERSION_WITHOUT_V ${AWS_CRT_CPP_VERSION})
+
+write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
+        VERSION ${AWS_CRT_CPP_VERSION_WITHOUT_V}
+        COMPATIBILITY ExactVersion
+)
+
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}/cmake/"
         COMPONENT Development)
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}/cmake/"
+        COMPONENT Development)
+
 
 if (NOT CMAKE_CROSSCOMPILING)
     if (BUILD_TESTING)
