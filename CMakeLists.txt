@@ -301,12 +301,6 @@ if (CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE MATCHES Debug)
     endif ()
 endif ()
 
-if (UNIX AND NOT APPLE)
-    # Hide symbols from libcrypto.a
-    # This avoids problems when an application ends up using both libcrypto.a and libcrypto.so.
-    target_link_options(${PROJECT_NAME} PUBLIC -Wl,--exclude-libs,libcrypto.a)
-endif()
-
 target_include_directories(${PROJECT_NAME} PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>)
