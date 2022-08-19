@@ -106,6 +106,7 @@ if (BUILD_DEPS)
         if (NOT USE_OPENSSL)
             set(DISABLE_PERL ON CACHE BOOL "Disable Perl for AWS-LC.")
             set(DISABLE_GO ON CACHE BOOL "Disable Go for AWS-LC.")
+            set(BUILD_LIBSSL OFF CACHE BOOL "Build libssl for AWS-LC.")
 
             # temporarily disable certain warnings as errors for the aws-lc build
             set(OLD_CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
@@ -127,10 +128,6 @@ if (BUILD_DEPS)
             set(CMAKE_C_FLAGS "${OLD_CMAKE_C_FLAGS}")
 
             set(SEARCH_LIBCRYPTO OFF CACHE BOOL "Let S2N use libcrypto from AWS-LC.")
-
-            # Hide symbols from libcrypto.a
-            # This avoids problems when an application ends up using both libcrypto.a and libcrypto.so.
-            target_link_options(${PROJECT_NAME} PUBLIC -Wl,--exclude-libs,libcrypto.a)
         else()
             set(SEARCH_LIBCRYPTO ON CACHE BOOL "Let S2N search libcrypto in the system.")
         endif()
@@ -303,6 +300,12 @@ if (CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE MATCHES Debug)
         target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
     endif ()
 endif ()
+
+if (UNIX AND NOT APPLE)
+    # Hide symbols from libcrypto.a
+    # This avoids problems when an application ends up using both libcrypto.a and libcrypto.so.
+    target_link_options(${PROJECT_NAME} PUBLIC -Wl,--exclude-libs,libcrypto.a)
+endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
