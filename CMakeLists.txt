@@ -127,6 +127,10 @@ if (BUILD_DEPS)
             set(CMAKE_C_FLAGS "${OLD_CMAKE_C_FLAGS}")
 
             set(SEARCH_LIBCRYPTO OFF CACHE BOOL "Let S2N use libcrypto from AWS-LC.")
+
+            # Hide symbols from libcrypto.a
+            # This avoids problems when an application ends up using both libcrypto.a and libcrypto.so.
+            target_link_options(${PROJECT_NAME} PUBLIC -Wl,--exclude-libs,libcrypto.a)
         else()
             set(SEARCH_LIBCRYPTO ON CACHE BOOL "Let S2N search libcrypto in the system.")
         endif()
