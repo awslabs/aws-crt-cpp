@@ -45,6 +45,16 @@ namespace Aws
             {
             }
 
+            /**
+             * Create new anonymous Credentials.
+             * Use anonymous Credentials when you want to skip signing.
+             * @param allocator
+             */
+            Credentials::Credentials(Allocator *allocator) noexcept
+                : m_credentials(aws_credentials_new_anonymous(allocator))
+            {
+            }
+
             Credentials::~Credentials()
             {
                 aws_credentials_release(m_credentials);

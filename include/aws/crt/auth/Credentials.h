@@ -45,6 +45,8 @@ namespace Aws
                     uint64_t expiration_timepoint_in_seconds,
                     Allocator *allocator = ApiAllocator()) noexcept;
 
+                Credentials(Allocator *allocator = ApiAllocator()) noexcept;
+
                 ~Credentials();
 
                 Credentials(const Credentials &) = delete;
