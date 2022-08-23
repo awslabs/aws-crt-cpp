@@ -375,6 +375,13 @@ namespace Aws
                     Allocator *allocator = ApiAllocator());
 
                 /**
+                 * Creates an anonymous provider that have anonymous credentials
+                 * Use anonymous credentials when you want to skip signing
+                 */
+                static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderAnonymous(
+                    Allocator *allocator = ApiAllocator());
+
+                /**
                  * Creates a provider that returns credentials sourced from environment variables
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderEnvironment(

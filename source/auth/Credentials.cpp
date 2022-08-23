@@ -197,6 +197,16 @@ namespace Aws
                     aws_credentials_provider_new_static(allocator, &staticOptions), allocator);
             }
 
+            std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderAnonymous(
+                Allocator *allocator)
+            {
+                aws_credentials_provider_shutdown_options shutdown_options;
+                AWS_ZERO_STRUCT(shutdown_options);
+
+                return s_CreateWrappedProvider(
+                    aws_credentials_provider_new_anonymous(allocator, &shutdown_options), allocator);
+            }
+
             std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderEnvironment(
                 Allocator *allocator)
             {
