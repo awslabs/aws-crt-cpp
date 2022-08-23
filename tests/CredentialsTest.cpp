@@ -109,6 +109,34 @@ static int s_TestCredentialsConstruction(struct aws_allocator *allocator, void *
 
 AWS_TEST_CASE(TestCredentialsConstruction, s_TestCredentialsConstruction)
 
+static int s_TestAnonymousCredentialsConstruction(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        ApiHandle apiHandle(allocator);
+        aws_credentials *raw_creds = aws_credentials_new_anonymous(allocator);
+
+        const char *empty_str = "";
+
+        ASSERT_NOT_NULL(raw_creds);
+        Credentials creds(raw_creds);
+        ASSERT_PTR_EQUALS(raw_creds, creds.GetUnderlyingHandle());
+        auto cursor = creds.GetAccessKeyId();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, empty_str));
+        cursor = creds.GetSecretAccessKey();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, empty_str));
+        cursor = creds.GetSessionToken();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, empty_str));
+        ASSERT_UINT_EQUALS(UINT64_MAX, creds.GetExpirationTimepointInSeconds());
+
+        aws_credentials_release(raw_creds);
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(TestAnonymousCredentialsConstruction, s_TestAnonymousCredentialsConstruction)
+
 static int s_TestProviderStaticGet(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
@@ -130,6 +158,23 @@ static int s_TestProviderStaticGet(struct aws_allocator *allocator, void *ctx)
 }
 
 AWS_TEST_CASE(TestProviderStaticGet, s_TestProviderStaticGet)
+
+static int s_TestProviderAnonymousGet(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        ApiHandle apiHandle(allocator);
+
+        auto provider = CredentialsProvider::CreateCredentialsProviderAnonymous(allocator);
+        GetCredentialsWaiter waiter(provider);
+
+        auto creds = waiter.GetCredentials();
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(TestProviderAnonymousGet, s_TestProviderAnonymousGet)
 
 static int s_TestProviderEnvironmentGet(struct aws_allocator *allocator, void *ctx)
 {
