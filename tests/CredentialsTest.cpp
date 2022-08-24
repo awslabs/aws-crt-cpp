@@ -328,3 +328,35 @@ static int s_TestProviderDelegateGet(struct aws_allocator *allocator, void *ctx)
 }
 
 AWS_TEST_CASE(TestProviderDelegateGet, s_TestProviderDelegateGet)
+
+static int s_TestProviderDelegateGetAnonymous(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        ApiHandle apiHandle(allocator);
+
+        auto delegateGetCredentials = [&allocator]() -> std::shared_ptr<Credentials> {
+            Credentials credentials(allocator);
+            return Aws::Crt::MakeShared<Auth::Credentials>(allocator, credentials.GetUnderlyingHandle());
+        };
+
+        CredentialsProviderDelegateConfig config;
+        config.Handler = delegateGetCredentials;
+        auto provider = CredentialsProvider::CreateCredentialsProviderDelegate(config, allocator);
+        GetCredentialsWaiter waiter(provider);
+
+        auto creds = waiter.GetCredentials();
+        ASSERT_NOT_NULL(creds.get());
+        auto emptyStr = "";
+        auto cursor = creds->GetAccessKeyId();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, emptyStr));
+        cursor = creds->GetSecretAccessKey();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, emptyStr));
+        cursor = creds->GetSessionToken();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, emptyStr));
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(TestProviderDelegateGetAnonymous, s_TestProviderDelegateGetAnonymous)
