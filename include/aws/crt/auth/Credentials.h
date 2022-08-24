@@ -45,6 +45,11 @@ namespace Aws
                     uint64_t expiration_timepoint_in_seconds,
                     Allocator *allocator = ApiAllocator()) noexcept;
 
+                /**
+                 * Create new anonymous Credentials.
+                 * Use anonymous Credentials when you want to skip signing.
+                 * @param allocator
+                 */
                 Credentials(Allocator *allocator = ApiAllocator()) noexcept;
 
                 ~Credentials();
