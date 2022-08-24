@@ -106,6 +106,7 @@ if (BUILD_DEPS)
         if (NOT USE_OPENSSL)
             set(DISABLE_PERL ON CACHE BOOL "Disable Perl for AWS-LC.")
             set(DISABLE_GO ON CACHE BOOL "Disable Go for AWS-LC.")
+            set(BUILD_LIBSSL OFF CACHE BOOL "Build libssl for AWS-LC.")
 
             # temporarily disable certain warnings as errors for the aws-lc build
             set(OLD_CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
