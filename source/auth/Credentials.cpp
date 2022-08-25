@@ -45,6 +45,11 @@ namespace Aws
             {
             }
 
+            Credentials::Credentials(Allocator *allocator) noexcept
+                : m_credentials(aws_credentials_new_anonymous(allocator))
+            {
+            }
+
             Credentials::~Credentials()
             {
                 aws_credentials_release(m_credentials);
@@ -185,6 +190,16 @@ namespace Aws
                 staticOptions.session_token = config.SessionToken;
                 return s_CreateWrappedProvider(
                     aws_credentials_provider_new_static(allocator, &staticOptions), allocator);
+            }
+
+            std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderAnonymous(
+                Allocator *allocator)
+            {
+                aws_credentials_provider_shutdown_options shutdown_options;
+                AWS_ZERO_STRUCT(shutdown_options);
+
+                return s_CreateWrappedProvider(
+                    aws_credentials_provider_new_anonymous(allocator, &shutdown_options), allocator);
             }
 
             std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderEnvironment(
