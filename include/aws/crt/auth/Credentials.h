@@ -45,6 +45,13 @@ namespace Aws
                     uint64_t expiration_timepoint_in_seconds,
                     Allocator *allocator = ApiAllocator()) noexcept;
 
+                /**
+                 * Create new anonymous Credentials.
+                 * Use anonymous Credentials when you want to skip signing.
+                 * @param allocator
+                 */
+                Credentials(Allocator *allocator = ApiAllocator()) noexcept;
+
                 ~Credentials();
 
                 Credentials(const Credentials &) = delete;
@@ -370,6 +377,13 @@ namespace Aws
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderStatic(
                     const CredentialsProviderStaticConfig &config,
+                    Allocator *allocator = ApiAllocator());
+
+                /**
+                 * Creates an anonymous provider that have anonymous credentials
+                 * Use anonymous credentials when you want to skip signing
+                 */
+                static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderAnonymous(
                     Allocator *allocator = ApiAllocator());
 
                 /**
