@@ -84,7 +84,7 @@ namespace Aws
         DateTime DateTime::operator-(const std::chrono::milliseconds &a) const noexcept
         {
             auto currentTime = aws_date_time_as_millis(&m_date_time);
-            currentTime += a.count();
+            currentTime -= a.count();
             return {currentTime};
         }
 
