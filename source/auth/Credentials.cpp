@@ -372,6 +372,8 @@ namespace Aws
                     aws_credentials_provider_new_delegate(allocator, &raw_config), allocator);
             }
 
+            CredentialsProviderCognitoConfig::CredentialsProviderCognitoConfig() : Bootstrap(nullptr) {}
+
             std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderCognito(
                 const CredentialsProviderCognitoConfig &config,
                 Allocator *allocator)
@@ -428,6 +430,39 @@ namespace Aws
 
                 return s_CreateWrappedProvider(
                     aws_credentials_provider_new_cognito_caching(allocator, &raw_config), allocator);
+            }
+
+            CredentialsProviderSTSConfig::CredentialsProviderSTSConfig() : Bootstrap(nullptr) {}
+
+            std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderSTS(
+                const CredentialsProviderSTSConfig &config,
+                Allocator *allocator)
+            {
+                struct aws_credentials_provider_sts_options raw_config;
+                AWS_ZERO_STRUCT(raw_config);
+
+                raw_config.creds_provider = config.Provider->GetUnderlyingHandle();
+                raw_config.role_arn = aws_byte_cursor_from_c_str(config.RoleArn.c_str());
+                raw_config.session_name = aws_byte_cursor_from_c_str(config.SessionName.c_str());
+                raw_config.duration_seconds = config.DurationSeconds;
+
+                raw_config.bootstrap =
+                    config.Bootstrap ? config.Bootstrap->GetUnderlyingHandle()
+                                     : ApiHandle::GetOrCreateStaticDefaultClientBootstrap()->GetUnderlyingHandle();
+
+                raw_config.tls_ctx = config.TlsCtx.GetUnderlyingHandle();
+
+                struct aws_http_proxy_options proxy_options;
+                AWS_ZERO_STRUCT(proxy_options);
+                if (config.ProxyOptions.has_value())
+                {
+                    const Http::HttpClientConnectionProxyOptions &proxy_config = config.ProxyOptions.value();
+                    proxy_config.InitializeRawProxyOptions(proxy_options);
+
+                    raw_config.http_proxy_options = &proxy_options;
+                }
+
+                return s_CreateWrappedProvider(aws_credentials_provider_new_sts(allocator, &raw_config), allocator);
             }
         } // namespace Auth
     }     // namespace Crt

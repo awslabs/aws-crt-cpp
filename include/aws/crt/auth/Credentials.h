@@ -401,6 +401,53 @@ namespace Aws
             };
 
             /**
+             * Configuration options for the STS credentials provider
+             */
+            struct AWS_CRT_CPP_API CredentialsProviderSTSConfig
+            {
+                CredentialsProviderSTSConfig();
+
+                /**
+                 * Credentials provider to be used to sign the requests made to STS to fetch credentials.
+                 */
+                std::shared_ptr<ICredentialsProvider> Provider;
+
+                /**
+                 * Arn of the role to assume by fetching credentials for
+                 */
+                String RoleArn;
+
+                /**
+                 * Assumed role session identifier to be associated with the sourced credentials
+                 */
+                String SessionName;
+
+                /**
+                 * How long sourced credentials should remain valid for, in seconds.  900 is the minimum allowed value.
+                 */
+                uint16_t DurationSeconds;
+
+                /**
+                 * Connection bootstrap to use to create the http connection required to
+                 * query credentials from the STS provider
+                 *
+                 * Note: If null, then the default ClientBootstrap is used
+                 * (see Aws::Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap)
+                 */
+                Io::ClientBootstrap *Bootstrap;
+
+                /**
+                 * TLS configuration for secure socket connections.
+                 */
+                Io::TlsContext TlsCtx;
+
+                /**
+                 * (Optional) Http proxy configuration for the http request that fetches credentials
+                 */
+                Optional<Http::HttpClientConnectionProxyOptions> ProxyOptions;
+            };
+
+            /**
              * Simple credentials provider implementation that wraps one of the internal C-based implementations.
              *
              * Contains a set of static factory methods for building each supported provider, as well as one for the
@@ -518,6 +565,13 @@ namespace Aws
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderCognito(
                     const CredentialsProviderCognitoConfig &config,
+                    Allocator *allocator = ApiAllocator());
+
+                /**
+                 * Creates a provider that sources credentials from STS
+                 */
+                static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderSTS(
+                    const CredentialsProviderSTSConfig &config,
                     Allocator *allocator = ApiAllocator());
 
               private:
