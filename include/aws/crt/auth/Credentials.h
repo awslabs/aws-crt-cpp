@@ -336,6 +336,71 @@ namespace Aws
             };
 
             /**
+             * A pair defining an identity provider and a valid login token sourced from it.
+             */
+            struct AWS_CRT_CPP_API CognitoLoginPair
+            {
+
+                /**
+                 * Name of an identity provider
+                 */
+                String IdentityProviderName;
+
+                /**
+                 * Valid login token source from the identity provider
+                 */
+                String IdentityProviderToken;
+            };
+
+            /**
+             * Configuration options for the Cognito credentials provider
+             */
+            struct AWS_CRT_CPP_API CredentialsProviderCognitoConfig
+            {
+                CredentialsProviderCognitoConfig();
+
+                /**
+                 * Cognito service regional endpoint to source credentials from.
+                 */
+                String Endpoint;
+
+                /**
+                 * Cognito identity to fetch credentials relative to.
+                 */
+                String Identity;
+
+                /**
+                 * Optional set of identity provider token pairs to allow for authenticated identity access.
+                 */
+                Optional<Vector<CognitoLoginPair>> Logins;
+
+                /**
+                 * Optional ARN of the role to be assumed when multiple roles were received in the token from the
+                 * identity provider.
+                 */
+                Optional<String> CustomRoleArn;
+
+                /**
+                 * Connection bootstrap to use to create the http connection required to
+                 * query credentials from the cognito provider
+                 *
+                 * Note: If null, then the default ClientBootstrap is used
+                 * (see Aws::Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap)
+                 */
+                Io::ClientBootstrap *Bootstrap;
+
+                /**
+                 * TLS configuration for secure socket connections.
+                 */
+                Io::TlsContext TlsCtx;
+
+                /**
+                 * (Optional) Http proxy configuration for the http request that fetches credentials
+                 */
+                Optional<Http::HttpClientConnectionProxyOptions> ProxyOptions;
+            };
+
+            /**
              * Simple credentials provider implementation that wraps one of the internal C-based implementations.
              *
              * Contains a set of static factory methods for building each supported provider, as well as one for the
@@ -446,6 +511,13 @@ namespace Aws
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderDelegate(
                     const CredentialsProviderDelegateConfig &config,
+                    Allocator *allocator = ApiAllocator());
+
+                /**
+                 * Creates a provider that sources credentials from the Cognito Identity service
+                 */
+                static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderCognito(
+                    const CredentialsProviderCognitoConfig &config,
                     Allocator *allocator = ApiAllocator());
 
               private:

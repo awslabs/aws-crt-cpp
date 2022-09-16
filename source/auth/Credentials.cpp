@@ -372,6 +372,63 @@ namespace Aws
                     aws_credentials_provider_new_delegate(allocator, &raw_config), allocator);
             }
 
+            std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderCognito(
+                const CredentialsProviderCognitoConfig &config,
+                Allocator *allocator)
+            {
+                struct aws_credentials_provider_cognito_options raw_config;
+                AWS_ZERO_STRUCT(raw_config);
+
+                raw_config.endpoint = aws_byte_cursor_from_c_str(config.Endpoint.c_str());
+                raw_config.identity = aws_byte_cursor_from_c_str(config.Identity.c_str());
+
+                struct aws_byte_cursor custom_role_arn_cursor;
+                AWS_ZERO_STRUCT(custom_role_arn_cursor);
+                if (config.CustomRoleArn.has_value())
+                {
+                    custom_role_arn_cursor = aws_byte_cursor_from_c_str(config.CustomRoleArn.value().c_str());
+                    raw_config.custom_role_arn = &custom_role_arn_cursor;
+                }
+
+                Vector<struct aws_cognito_identity_provider_token_pair> logins;
+                if (config.Logins.has_value())
+                {
+                    for (const auto &login_pair : config.Logins.value())
+                    {
+                        struct aws_cognito_identity_provider_token_pair cursor_login_pair;
+                        AWS_ZERO_STRUCT(cursor_login_pair);
+
+                        cursor_login_pair.identity_provider_name =
+                            aws_byte_cursor_from_c_str(login_pair.IdentityProviderName.c_str());
+                        cursor_login_pair.identity_provider_token =
+                            aws_byte_cursor_from_c_str(login_pair.IdentityProviderToken.c_str());
+
+                        logins.push_back(cursor_login_pair);
+                    }
+
+                    raw_config.login_count = logins.size();
+                    raw_config.logins = logins.data();
+                }
+
+                raw_config.bootstrap =
+                    config.Bootstrap ? config.Bootstrap->GetUnderlyingHandle()
+                                     : ApiHandle::GetOrCreateStaticDefaultClientBootstrap()->GetUnderlyingHandle();
+
+                raw_config.tls_ctx = config.TlsCtx.GetUnderlyingHandle();
+
+                struct aws_http_proxy_options proxy_options;
+                AWS_ZERO_STRUCT(proxy_options);
+                if (config.ProxyOptions.has_value())
+                {
+                    const Http::HttpClientConnectionProxyOptions &proxy_config = config.ProxyOptions.value();
+                    proxy_config.InitializeRawProxyOptions(proxy_options);
+
+                    raw_config.http_proxy_options = &proxy_options;
+                }
+
+                return s_CreateWrappedProvider(
+                    aws_credentials_provider_new_cognito_caching(allocator, &raw_config), allocator);
+            }
         } // namespace Auth
     }     // namespace Crt
 } // namespace Aws
