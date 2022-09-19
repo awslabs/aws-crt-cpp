@@ -24,6 +24,7 @@
         }
     },
     "test_steps": [
+        "crt-ci-prep",
         "test",
         "elasticurl-tests"
     ]

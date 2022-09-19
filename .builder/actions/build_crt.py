@@ -23,4 +23,5 @@ class BuildCrt(Builder.Action):
 
             new_args.append(arg)
 
+        new_args.append("-DAWS_HAS_CI_ENVIRONMENT=ON")
         return new_args
