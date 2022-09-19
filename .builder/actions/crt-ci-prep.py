@@ -27,6 +27,7 @@ class CrtCiPrep(Builder.Action):
 
     def run(self, env):
         env.shell.setenv("AWS_TESTING_COGNITO_IDENTITY", self._get_secret(env, "aws-c-auth-testing/cognito-identity"))
+        env.shell.setenv("AWS_TESTING_STS_ROLE_ARN", self._get_secret(env, "aws-c-auth-testing/sts-role-arn"))
 
         actions = []
 
