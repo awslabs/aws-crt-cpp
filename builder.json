@@ -23,6 +23,9 @@
             }
         }
     },
+    "+cmake_args": [
+        "-DAWS_HAS_CI_ENVIRONMENT=ON"
+    ],
     "test_steps": [
         "crt-ci-prep",
         "test",
