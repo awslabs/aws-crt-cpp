@@ -13,10 +13,10 @@ TAG_PR_TOKEN=$2
 
 pushd $(dirname $0) > /dev/null
 
-git checkout main
+# git checkout main
 
 version=$(git describe --tags --abbrev=0)
-echo "${version}" > VERSION
+echo -n "${version}" > VERSION
 
 if git diff --exit-code VERSION > /dev/null; then
     echo "No version change"
@@ -26,7 +26,7 @@ else
 
     git config --local user.email "aws-sdk-common-runtime@amazon.com"
     git config --local user.name "GitHub Actions"
-    git add CMakeLists.txt
+    git add VERSION
     git commit -m "Updated version to ${version}"
 
     echo $TAG_PR_TOKEN | gh auth login --with-token

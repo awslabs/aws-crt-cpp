@@ -47,10 +47,6 @@ option(BUILD_DEPS "Builds aws common runtime dependencies as part of build. Turn
 option(BYO_CRYPTO "Don't build a tls implementation or link against a crypto interface. This feature is only for unix builds currently" OFF)
 option(USE_OPENSSL "Set this if you want to use your system's OpenSSL 1.0.2/1.1.1 compatible libcrypto" OFF)
 
-message(STATUS "${aws-crt-cpp_VERSION_MAJOR}")
-message(STATUS "${aws-crt-cpp_VERSION_MINOR}")
-message(STATUS "${aws-crt-cpp_VERSION_PATCH}")
-
 include(CTest)
 
 if (DEFINED CMAKE_PREFIX_PATH)
