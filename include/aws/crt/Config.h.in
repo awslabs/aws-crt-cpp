@@ -3,4 +3,9 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
-#cmakedefine AWS_CRT_CPP_VERSION "@AWS_CRT_CPP_VERSION@"
+
+#define AWS_CRT_CPP_VERSION "@AWS_CRT_CPP_VERSION@"
+#define AWS_CRT_CPP_VERSION_MAJOR @aws-crt-cpp_VERSION_MAJOR@
+#define AWS_CRT_CPP_VERSION_MINOR @aws-crt-cpp_VERSION_MINOR@
+#define AWS_CRT_CPP_VERSION_PATCH @aws-crt-cpp_VERSION_PATCH@
+#define AWS_CRT_CPP_GIT_HASH "@aws-crt-cpp_GIT_HASH@"

@@ -16,10 +16,9 @@ pushd $(dirname $0) > /dev/null
 git checkout main
 
 version=$(git describe --tags --abbrev=0)
-sed --in-place -r -e "s/set\\(AWS_CRT_CPP_VERSION \".+\"\\)/set(AWS_CRT_CPP_VERSION \"${version}\")/" CMakeLists.txt
-echo "Updating AWS_CRT_CPP_VERSION default to ${version}"
+echo "${version}" > VERSION
 
-if git diff --exit-code CMakeLists.txt > /dev/null; then
+if git diff --exit-code VERSION > /dev/null; then
     echo "No version change"
 else
     version_branch=AutoTag-${version}
