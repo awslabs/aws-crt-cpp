@@ -13,7 +13,7 @@ TAG_PR_TOKEN=$2
 
 pushd $(dirname $0) > /dev/null
 
-# git checkout main
+git checkout main
 
 version=$(git describe --tags --abbrev=0)
 echo -n "${version}" > VERSION
