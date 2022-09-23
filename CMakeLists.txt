@@ -30,6 +30,9 @@ endif()
 # ToDo: Scripts to populate environment variables via the CLI and IoT, SecretsManager calls
 #
 option(ENABLE_PROXY_INTEGRATION_TESTS "Whether or not to build and run the proxy integration tests that rely on a proxy server installed and running locally" OFF)
+option(BUILD_DEPS "Builds aws common runtime dependencies as part of build. Turn off if you want to control your dependency chain." ON)
+option(BYO_CRYPTO "Don't build a tls implementation or link against a crypto interface. This feature is only for unix builds currently" OFF)
+option(USE_OPENSSL "Set this if you want to use your system's OpenSSL 1.0.2/1.1.1 compatible libcrypto" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(AwsCheckHeadersCxx)
@@ -43,9 +46,6 @@ message(STATUS "AWS CRT C++ ${AWS_CRT_CPP_VERSION}")
 project("aws-crt-cpp"
     LANGUAGES CXX C
     VERSION ${AWS_CRT_CPP_VERSION_WITHOUT_V})
-option(BUILD_DEPS "Builds aws common runtime dependencies as part of build. Turn off if you want to control your dependency chain." ON)
-option(BYO_CRYPTO "Don't build a tls implementation or link against a crypto interface. This feature is only for unix builds currently" OFF)
-option(USE_OPENSSL "Set this if you want to use your system's OpenSSL 1.0.2/1.1.1 compatible libcrypto" OFF)
 
 include(CTest)
 
