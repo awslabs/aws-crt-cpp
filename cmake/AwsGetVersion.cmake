@@ -1,6 +1,3 @@
-include_guard()
-
-
 find_package(Git QUIET) # Adding development helper tools as git_hash built when available.
 
 function(obtain_project_version resultVarVersion resultVarGitHash)
