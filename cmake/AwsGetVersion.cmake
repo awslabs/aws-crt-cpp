@@ -6,10 +6,6 @@ function(aws_get_version var_version_simple var_version_full var_git_hash)
     string(STRIP ${version_simple} version_simple)
     set(${var_version_simple} ${version_simple} PARENT_SCOPE)
 
-    # Full version is same as simple by default
-    # But we'll tack on more data later if we're not at the exact tagged commit
-    set(${var_version_full} ${version_simple} PARENT_SCOPE)
-
     # Get git hash
     aws_git_try("rev-parse HEAD" git_hash git_success)
     if (git_success)
@@ -23,12 +19,16 @@ function(aws_get_version var_version_simple var_version_full var_git_hash)
                     set(is_exact_version TRUE)
                 endif()
             endforeach()
-            if (NOT is_exact_version)
-                string(SUBSTRING ${git_hash} 0 7 git_hash_short)
-                # Be compliant with https://semver.org
-                set(${var_version_full} "${version_simple}-dev+${git_hash_short}" PARENT_SCOPE)
-            endif()
         endif()
+    endif()
+
+    # Full version should indicate when we're not at the exact tagged commit.
+    # Be compliant with https://semver.org
+    if (is_exact_version)
+        set(${var_version_full} ${version_simple} PARENT_SCOPE)
+    else()
+        string(SUBSTRING ${git_hash} 0 7 git_hash_short)
+        set(${var_version_full} "${version_simple}-dev+${git_hash_short}" PARENT_SCOPE)
     endif()
 endfunction()
 

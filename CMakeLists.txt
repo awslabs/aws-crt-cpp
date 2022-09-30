@@ -36,7 +36,6 @@ option(USE_OPENSSL "Set this if you want to use your system's OpenSSL 1.0.2/1.1.
 option(ENABLE_PROXY_INTEGRATION_TESTS "Whether or not to build and run the proxy integration tests that rely on a proxy server installed and running locally" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-include(AwsCheckHeadersCxx)
 include(AwsGetVersion)
 
 aws_get_version(SIMPLE_VERSION FULL_VERSION GIT_HASH)
@@ -46,6 +45,7 @@ project("aws-crt-cpp"
     LANGUAGES CXX C
     VERSION ${SIMPLE_VERSION})
 
+include(AwsCheckHeadersCxx)
 include(CTest)
 
 if (DEFINED CMAKE_PREFIX_PATH)
@@ -79,10 +79,10 @@ endif()
 
 
 # Support the deprecated AWS_CRT_CPP_VERSION.
-# This mistakenly reports the git tag of the *PARENT* project
-# when aws-crt-cpp is built via CMake's add_subdirectory().
-# But aws-iot-device-sdk-cpp-v2 relies on this incorrect behavior to report
-# its own version in the MqttClientConnectionConfigBuilder metrics string.
+# This mistakenly reports the git tag of the *PARENT* project when aws-crt-cpp
+# is built via CMake's add_subdirectory(). But don't fix it,
+# aws-iot-device-sdk-cpp-v2 relies on this incorrect# behavior to report its
+# own version in the MqttClientConnectionConfigBuilder metrics string.
 execute_process(COMMAND git describe --tags
     RESULT_VARIABLE GIT_EXIT_CODE
     OUTPUT_VARIABLE LEGACY_VERSION
