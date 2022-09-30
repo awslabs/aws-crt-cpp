@@ -16,7 +16,8 @@ pushd $(dirname $0) > /dev/null
 git checkout main
 
 version=$(git describe --tags --abbrev=0)
-echo -n "${version}" > VERSION
+version_without_v=$(echo ${version} | cut -f2 -dv)
+echo "${version_without_v}" > VERSION
 
 if git diff --exit-code VERSION > /dev/null; then
     echo "No version change"
