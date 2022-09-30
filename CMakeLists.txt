@@ -39,14 +39,12 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(AwsCheckHeadersCxx)
 include(AwsGetVersion)
 
-obtain_project_version(AWS_CRT_CPP_VERSION aws-crt-cpp_GIT_HASH)
-STRING(REPLACE "v" "" AWS_CRT_CPP_VERSION_WITHOUT_V ${AWS_CRT_CPP_VERSION})
-
-message(STATUS "AWS CRT C++ ${AWS_CRT_CPP_VERSION}")
+aws_get_version(SIMPLE_VERSION FULL_VERSION GIT_HASH)
+message(STATUS "AWS CRT C++ ${FULL_VERSION}")
 
 project("aws-crt-cpp"
     LANGUAGES CXX C
-    VERSION ${AWS_CRT_CPP_VERSION_WITHOUT_V})
+    VERSION ${SIMPLE_VERSION})
 
 include(CTest)
 
@@ -77,6 +75,21 @@ if (NOT CMAKE_BUILD_TYPE)
     if (NOT WIN32)
         set(CMAKE_BUILD_TYPE "RelWithDebInfo")
     endif()
+endif()
+
+
+# Support the deprecated AWS_CRT_CPP_VERSION.
+# This mistakenly reports the git tag of the *PARENT* project
+# when aws-crt-cpp is built via CMake's add_subdirectory().
+# But aws-iot-device-sdk-cpp-v2 relies on this incorrect behavior to report
+# its own version in the MqttClientConnectionConfigBuilder metrics string.
+execute_process(COMMAND git describe --tags
+    RESULT_VARIABLE GIT_EXIT_CODE
+    OUTPUT_VARIABLE LEGACY_VERSION
+    ERROR_QUIET
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+if (NOT GIT_EXIT_CODE EQUAL 0)
+    set(LEGACY_VERSION "v${PROJECT_VERSION}")
 endif()
 
 configure_file(include/aws/crt/Config.h.in ${CMAKE_CURRENT_LIST_DIR}/include/aws/crt/Config.h @ONLY)
@@ -348,7 +361,6 @@ include(CMakePackageConfigHelpers)
 
 write_basic_package_version_file(
         "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
-        VERSION ${AWS_CRT_CPP_VERSION_WITHOUT_V}
         COMPATIBILITY ExactVersion
 )
 

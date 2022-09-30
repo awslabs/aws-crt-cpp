@@ -13,5 +13,3 @@ include/aws/crt/Config.h
 
 # docs are updated automatically by .github/workflows/docs.yml
 docs/
-
-VERSION

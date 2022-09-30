@@ -4,8 +4,15 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 
-#define AWS_CRT_CPP_VERSION "@AWS_CRT_CPP_VERSION@"
-#define AWS_CRT_CPP_VERSION_MAJOR @aws-crt-cpp_VERSION_MAJOR@
-#define AWS_CRT_CPP_VERSION_MINOR @aws-crt-cpp_VERSION_MINOR@
-#define AWS_CRT_CPP_VERSION_PATCH @aws-crt-cpp_VERSION_PATCH@
-#define AWS_CRT_CPP_GIT_HASH "@aws-crt-cpp_GIT_HASH@"
+#define AWS_CRT_CPP_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define AWS_CRT_CPP_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define AWS_CRT_CPP_VERSION_PATCH @PROJECT_VERSION_PATCH@
+#define AWS_CRT_CPP_VERSION_STRING "@FULL_VERSION@"
+#define AWS_CRT_CPP_GIT_HASH "@GIT_HASH@"
+
+/**
+ * @deprecated Use AWS_CRT_CPP_VERSION_STRING instead.
+ * This mistakenly reports the git tag of the *PARENT* project
+ * when aws-crt-cpp is built via CMake's add_subdirectory().
+ */
+#define AWS_CRT_CPP_VERSION "@LEGACY_VERSION@"
