@@ -120,6 +120,15 @@ if (ENABLE_PROXY_INTEGRATION_TESTS AND NOT BYO_CRYPTO)
 
 endif()
 
+if (AWS_HAS_CI_ENVIRONMENT AND NOT BYO_CRYPTO)
+    add_test_case(CognitoCredentialsProviderGetSuccess)
+    add_test_case(STSCredentialsProviderGetSuccess)
+    if (ENABLE_PROXY_INTEGRATION_TESTS)
+        add_test_case(CognitoCredentialsProviderGetSuccessProxy)
+        add_test_case(STSCredentialsProviderGetSuccessProxy)
+    endif()
+endif()
+
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 
 add_custom_command(TARGET ${TEST_BINARY_NAME} PRE_BUILD
