@@ -438,6 +438,15 @@ namespace Aws
                 const CredentialsProviderSTSConfig &config,
                 Allocator *allocator)
             {
+                if (config.Provider == nullptr)
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_AUTH_CREDENTIALS_PROVIDER,
+                        "Failed to build STS credentials provider - missing required 'Provider' configuration "
+                        "parameter");
+                    return nullptr;
+                }
+
                 struct aws_credentials_provider_sts_options raw_config;
                 AWS_ZERO_STRUCT(raw_config);
 
