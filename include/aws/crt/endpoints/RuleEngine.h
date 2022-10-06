@@ -59,11 +59,11 @@ namespace Aws
                 bool IsEndpoint() const noexcept;
                 bool IsError() const noexcept;
 
-                Optional<ByteCursor> getUrl() const noexcept;
-                Optional<ByteCursor> getProperties() const noexcept;
+                Optional<StringView> getUrl() const noexcept;
+                Optional<StringView> getProperties() const noexcept;
                 Optional<UnorderedMap<StringView, Vector<StringView>>> getHeaders() const noexcept;
 
-                Optional<ByteCursor> getError() const noexcept;
+                Optional<StringView> getError() const noexcept;
 
                 /**
                  * @return true if the instance is in a valid state, false otherwise.

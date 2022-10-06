@@ -2,8 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
-
 #include <aws/common/string.h>
+#include <aws/crt/Api.h>
 #include <aws/crt/endpoints/RuleEngine.h>
 #include <aws/sdkutils/endpoints_rule_engine.h>
 
@@ -59,15 +59,15 @@ namespace Aws
                 return AWS_ENDPOINTS_RESOLVED_ERROR == aws_endpoints_resolved_endpoint_get_type(m_resolvedEndpoint);
             }
 
-            Optional<ByteCursor> ResolutionOutcome::getUrl() const noexcept
+            Optional<StringView> ResolutionOutcome::getUrl() const noexcept
             {
                 ByteCursor url;
                 if (aws_endpoints_resolved_endpoint_get_url(m_resolvedEndpoint, &url))
                 {
-                    return Optional<ByteCursor>();
+                    return Optional<StringView>();
                 }
 
-                return Optional<ByteCursor>(url);
+                return Optional<StringView>(ByteCursorToStringView(url));
             }
 
             inline StringView CrtStringToStringView(const aws_string *s)
@@ -99,26 +99,26 @@ namespace Aws
                 return Optional<UnorderedMap<StringView, Vector<StringView>>>(headers);
             }
 
-            Optional<ByteCursor> ResolutionOutcome::getProperties() const noexcept
+            Optional<StringView> ResolutionOutcome::getProperties() const noexcept
             {
                 ByteCursor properties;
                 if (aws_endpoints_resolved_endpoint_get_properties(m_resolvedEndpoint, &properties))
                 {
-                    return Optional<ByteCursor>();
+                    return Optional<StringView>();
                 }
 
-                return Optional<ByteCursor>(properties);
+                return Optional<StringView>(ByteCursorToStringView(properties));
             }
 
-            Optional<ByteCursor> ResolutionOutcome::getError() const noexcept
+            Optional<StringView> ResolutionOutcome::getError() const noexcept
             {
                 ByteCursor error;
                 if (aws_endpoints_resolved_endpoint_get_error(m_resolvedEndpoint, &error))
                 {
-                    return Optional<ByteCursor>();
+                    return Optional<StringView>();
                 }
 
-                return Optional<ByteCursor>(error);
+                return Optional<StringView>(ByteCursorToStringView(error));
             }
 
             RuleEngine::RuleEngine(const ByteCursor &rulesetCursor, Allocator *allocator) noexcept
@@ -128,6 +128,7 @@ namespace Aws
                 if (ruleset)
                 {
                     m_ruleEngine = aws_endpoints_rule_engine_new(allocator, ruleset);
+                    aws_endpoints_ruleset_release(ruleset);
                 }
             };
 

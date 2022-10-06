@@ -2,6 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include <aws/crt/Api.h>
+#include <aws/crt/Types.h>
 #include <aws/crt/endpoints/RuleEngine.h>
 #include <aws/testing/aws_test_harness.h>
 
@@ -72,8 +74,19 @@ static int s_TestRuleEngine(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
 
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
     ByteCursor cur = ByteCursorFromCString(sample_ruleset);
     Aws::Crt::Endpoints::RuleEngine engine(cur, allocator);
+
+    Aws::Crt::Endpoints::RequestContext context(allocator);
+    context.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
+
+    auto resolved = engine.resolve(context);
+    ASSERT_TRUE(resolved.has_value());
+    ASSERT_TRUE(resolved->IsEndpoint());
+
+    ASSERT_TRUE(resolved->getUrl()->compare("https://example.us-west-2.amazonaws.com") == 0);
 
     return AWS_OP_SUCCESS;
 }

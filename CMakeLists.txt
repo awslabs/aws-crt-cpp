@@ -273,6 +273,7 @@ if(WIN32)
         source_group("Header Files\\aws\\iot" FILES ${AWS_CRT_IOT_HEADERS})
         source_group("Header Files\\aws\\crt\\mqtt" FILES ${AWS_CRT_MQTT_HEADERS})
         source_group("Header Files\\aws\\crt\\http" FILES ${AWS_CRT_HTTP_HEADERS})
+        source_group("Header Files\\aws\\crt\\endpoints" FILES ${AWS_CRT_ENDPOINTS_HEADERS})
         source_group("Header Files\\aws\\crt\\external" FILES ${AWS_CRT_EXTERNAL_HEADERS})
 
         source_group("Source Files" FILES ${AWS_CRT_SRC})
@@ -282,6 +283,7 @@ if(WIN32)
         source_group("Source Files\\iot" FILES ${AWS_CRT_IOT_SRC})
         source_group("Source Files\\mqtt" FILES ${AWS_CRT_MQTT_SRC})
         source_group("Source Files\\http" FILES ${AWS_CRT_HTTP_SRC})
+        source_group("Source Files\\endpoints" FILES ${AWS_CRT_ENDPOINTS_SRC})
         source_group("Source Files\\external" FILES ${AWS_CRT_EXTERNAL_SRC})
     endif()
 endif()
@@ -343,6 +345,7 @@ install(FILES ${AWS_CRT_IO_HEADERS} DESTINATION "include/aws/crt/io" COMPONENT D
 install(FILES ${AWS_CRT_IOT_HEADERS} DESTINATION "include/aws/iot" COMPONENT Development)
 install(FILES ${AWS_CRT_MQTT_HEADERS} DESTINATION "include/aws/crt/mqtt" COMPONENT Development)
 install(FILES ${AWS_CRT_HTTP_HEADERS} DESTINATION "include/aws/crt/http" COMPONENT Development)
+install(FILES ${AWS_CRT_ENDPOINTS_HEADERS} DESTINATION "include/aws/crt/endpoints" COMPONENT Development)
 
 install(
     TARGETS ${PROJECT_NAME}
