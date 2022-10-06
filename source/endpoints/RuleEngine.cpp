@@ -38,6 +38,12 @@ namespace Aws
             {
             }
 
+            ResolutionOutcome::ResolutionOutcome(ResolutionOutcome &&toMove) noexcept
+                : m_resolvedEndpoint(toMove.m_resolvedEndpoint)
+            {
+                toMove.m_resolvedEndpoint = nullptr;
+            }
+
             ResolutionOutcome::~ResolutionOutcome()
             {
                 aws_endpoints_resolved_endpoint_release(m_resolvedEndpoint);
@@ -128,6 +134,16 @@ namespace Aws
             RuleEngine::~RuleEngine()
             {
                 m_ruleEngine = aws_endpoints_rule_engine_release(m_ruleEngine);
+            }
+
+            Optional<ResolutionOutcome> RuleEngine::resolve(const RequestContext &context)
+            {
+                aws_endpoints_resolved_endpoint *resolved = NULL;
+                if (aws_endpoints_rule_engine_resolve(m_ruleEngine, context.GetNativeHandle(), &resolved))
+                {
+                    return Optional<ResolutionOutcome>();
+                }
+                return Optional<ResolutionOutcome>(ResolutionOutcome(resolved, m_allocator));
             }
         } // namespace Endpoints
     }     // namespace Crt

@@ -18,6 +18,7 @@ namespace Aws
         {
             class AWS_CRT_CPP_API RequestContext final
             {
+              public:
                 RequestContext(Allocator *allocator = ApiAllocator()) noexcept;
                 ~RequestContext();
 
@@ -36,6 +37,9 @@ namespace Aws
 
                 int AddBoolean(const ByteCursor &name, bool value);
 
+                /// @private
+                aws_endpoints_request_context *GetNativeHandle() const noexcept { return m_requestContext; }
+
               private:
                 Allocator *m_allocator;
                 aws_endpoints_request_context *m_requestContext;
@@ -49,7 +53,7 @@ namespace Aws
                 /* TODO: move/copy semantics */
                 ResolutionOutcome(const ResolutionOutcome &) = delete;
                 ResolutionOutcome &operator=(const ResolutionOutcome &) = delete;
-                ResolutionOutcome(ResolutionOutcome &&) = delete;
+                ResolutionOutcome(ResolutionOutcome &&toMove) noexcept;
                 ResolutionOutcome &operator=(ResolutionOutcome &&) = delete;
 
                 bool IsEndpoint() const noexcept;
@@ -93,6 +97,8 @@ namespace Aws
                  * @return true if the instance is in a valid state, false otherwise.
                  */
                 operator bool() const noexcept { return m_ruleEngine != nullptr; }
+
+                Optional<ResolutionOutcome> resolve(const RequestContext &context);
 
               private:
                 Allocator *m_allocator;
