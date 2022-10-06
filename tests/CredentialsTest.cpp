@@ -4,6 +4,7 @@
  */
 
 #include <aws/auth/credentials.h>
+#include <aws/common/environment.h>
 #include <aws/crt/Api.h>
 #include <aws/crt/DateTime.h>
 #include <aws/crt/auth/Credentials.h>
@@ -360,3 +361,200 @@ static int s_TestProviderDelegateGetAnonymous(struct aws_allocator *allocator, v
 }
 
 AWS_TEST_CASE(TestProviderDelegateGetAnonymous, s_TestProviderDelegateGetAnonymous)
+
+AWS_STATIC_STRING_FROM_LITERAL(s_httpProxyHostEnvVariable, "AWS_TEST_HTTP_PROXY_HOST");
+AWS_STATIC_STRING_FROM_LITERAL(s_httpProxyPortEnvVariable, "AWS_TEST_HTTP_PROXY_PORT");
+
+static int s_InitializeProxyOptions(
+    Http::HttpClientConnectionProxyOptions &proxyOptions,
+    struct aws_allocator *allocator)
+{
+    struct aws_string *proxy_host_name = NULL;
+    struct aws_string *proxy_port = NULL;
+
+    ASSERT_SUCCESS(aws_get_environment_value(allocator, s_httpProxyHostEnvVariable, &proxy_host_name));
+    ASSERT_SUCCESS(aws_get_environment_value(allocator, s_httpProxyPortEnvVariable, &proxy_port));
+
+    proxyOptions.HostName = Aws::Crt::String((const char *)proxy_host_name->bytes);
+    proxyOptions.Port = atoi((const char *)proxy_port->bytes);
+
+    aws_string_destroy(proxy_host_name);
+    aws_string_destroy(proxy_port);
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_STATIC_STRING_FROM_LITERAL(s_CognitoIdentityEnvVariable, "AWS_TESTING_COGNITO_IDENTITY");
+
+static int s_GetCognitoIdentityFromEnvironment(String &identity, struct aws_allocator *allocator)
+{
+    struct aws_string *id = NULL;
+
+    ASSERT_SUCCESS(aws_get_environment_value(allocator, s_CognitoIdentityEnvVariable, &id));
+
+    identity = Aws::Crt::String((const char *)id->bytes);
+
+    aws_string_destroy(id);
+
+    return AWS_OP_SUCCESS;
+}
+
+static int s_DoCognitoCredentialsProviderSuccessTest(struct aws_allocator *allocator, bool useProxy)
+{
+    {
+        ApiHandle apiHandle(allocator);
+        apiHandle.InitializeLogging(Aws::Crt::LogLevel::Trace, stderr);
+
+        Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+        ASSERT_TRUE(eventLoopGroup);
+
+        Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+        ASSERT_TRUE(defaultHostResolver);
+
+        Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+        ASSERT_TRUE(clientBootstrap);
+        clientBootstrap.EnableBlockingShutdown();
+
+        Aws::Crt::Io::TlsContextOptions tlsOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient(allocator);
+        Aws::Crt::Io::TlsContext tlsContext(tlsOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+
+        CredentialsProviderCognitoConfig config;
+        config.Bootstrap = &clientBootstrap;
+        config.Endpoint = "cognito-identity.us-east-1.amazonaws.com";
+        ASSERT_SUCCESS(s_GetCognitoIdentityFromEnvironment(config.Identity, allocator));
+        config.TlsCtx = tlsContext;
+        if (useProxy)
+        {
+            Http::HttpClientConnectionProxyOptions proxyOptions;
+            proxyOptions.ProxyConnectionType = Http::AwsHttpProxyConnectionType::Tunneling;
+
+            ASSERT_SUCCESS(s_InitializeProxyOptions(proxyOptions, allocator));
+
+            config.ProxyOptions = proxyOptions;
+        }
+
+        auto provider = CredentialsProvider::CreateCredentialsProviderCognito(config, allocator);
+        ASSERT_NOT_NULL(provider.get());
+
+        GetCredentialsWaiter waiter(provider);
+
+        auto creds = waiter.GetCredentials();
+        ASSERT_NOT_NULL(creds.get());
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+static int s_CognitoCredentialsProviderGetSuccess(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+
+    ASSERT_SUCCESS(s_DoCognitoCredentialsProviderSuccessTest(allocator, false));
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(CognitoCredentialsProviderGetSuccess, s_CognitoCredentialsProviderGetSuccess)
+
+static int s_CognitoCredentialsProviderGetSuccessProxy(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+
+    ASSERT_SUCCESS(s_DoCognitoCredentialsProviderSuccessTest(allocator, true));
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(CognitoCredentialsProviderGetSuccessProxy, s_CognitoCredentialsProviderGetSuccessProxy)
+
+AWS_STATIC_STRING_FROM_LITERAL(s_STSRoleArnEnvVariable, "AWS_TESTING_STS_ROLE_ARN");
+
+static int s_GetSTSRoleFromEnvironment(String &roleArn, struct aws_allocator *allocator)
+{
+    struct aws_string *role = NULL;
+
+    ASSERT_SUCCESS(aws_get_environment_value(allocator, s_STSRoleArnEnvVariable, &role));
+
+    roleArn = Aws::Crt::String((const char *)role->bytes);
+
+    aws_string_destroy(role);
+
+    return AWS_OP_SUCCESS;
+}
+
+static int s_DoSTSCredentialsProviderSuccessTest(struct aws_allocator *allocator, bool useProxy)
+{
+    {
+        ApiHandle apiHandle(allocator);
+        apiHandle.InitializeLogging(Aws::Crt::LogLevel::Trace, stderr);
+
+        Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+        ASSERT_TRUE(eventLoopGroup);
+
+        Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+        ASSERT_TRUE(defaultHostResolver);
+
+        Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+        ASSERT_TRUE(clientBootstrap);
+        clientBootstrap.EnableBlockingShutdown();
+
+        Aws::Crt::Io::TlsContextOptions tlsOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient(allocator);
+        Aws::Crt::Io::TlsContext tlsContext(tlsOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+
+        CredentialsProviderChainDefaultConfig defaultConfig;
+        defaultConfig.Bootstrap = &clientBootstrap;
+        defaultConfig.TlsContext = &tlsContext;
+
+        auto defaultProvider = CredentialsProvider::CreateCredentialsProviderChainDefault(defaultConfig, allocator);
+
+        CredentialsProviderSTSConfig config;
+        config.Provider = defaultProvider;
+        config.Bootstrap = &clientBootstrap;
+        ASSERT_SUCCESS(s_GetSTSRoleFromEnvironment(config.RoleArn, allocator));
+        config.SessionName = "TestingSession";
+        config.DurationSeconds = 900;
+
+        config.TlsCtx = tlsContext;
+        if (useProxy)
+        {
+            Http::HttpClientConnectionProxyOptions proxyOptions;
+            proxyOptions.ProxyConnectionType = Http::AwsHttpProxyConnectionType::Tunneling;
+
+            ASSERT_SUCCESS(s_InitializeProxyOptions(proxyOptions, allocator));
+
+            config.ProxyOptions = proxyOptions;
+        }
+
+        auto provider = CredentialsProvider::CreateCredentialsProviderSTS(config, allocator);
+        ASSERT_NOT_NULL(provider.get());
+
+        GetCredentialsWaiter waiter(provider);
+
+        auto creds = waiter.GetCredentials();
+        ASSERT_NOT_NULL(creds.get());
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+static int s_STSCredentialsProviderGetSuccess(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+
+    ASSERT_SUCCESS(s_DoSTSCredentialsProviderSuccessTest(allocator, false));
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(STSCredentialsProviderGetSuccess, s_STSCredentialsProviderGetSuccess)
+
+static int s_STSCredentialsProviderGetSuccessProxy(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+
+    ASSERT_SUCCESS(s_DoSTSCredentialsProviderSuccessTest(allocator, true));
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(STSCredentialsProviderGetSuccessProxy, s_STSCredentialsProviderGetSuccessProxy)

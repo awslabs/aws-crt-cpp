@@ -77,7 +77,6 @@ if (NOT CMAKE_BUILD_TYPE)
     endif()
 endif()
 
-
 # Support the deprecated AWS_CRT_CPP_VERSION.
 # This mistakenly reports the git tag of the *PARENT* project when aws-crt-cpp
 # is built via CMake's add_subdirectory(). But don't fix it,
