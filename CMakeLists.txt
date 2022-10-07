@@ -7,6 +7,9 @@ option(BUILD_DEPS "Builds aws common runtime dependencies as part of build. Turn
 option(BYO_CRYPTO "Don't build a tls implementation or link against a crypto interface. This feature is only for unix builds currently" OFF)
 option(USE_OPENSSL "Set this if you want to use your system's OpenSSL 1.0.2/1.1.1 compatible libcrypto" OFF)
 
+# Let aws-iot-device-sdk-cpp-v2 report its own version in MQTT connections (instead of reporting aws-crt-cpp's version).
+option(AWS_IOT_SDK_VERSION "Set the version reported by Aws::Iot::MqttClientConnectionConfigBuilder")
+
 # Proxy integration test control - In addition to this option, all proxy tests require the following environment variables set appropriately when running tests:
 #
 # AWS_TEST_HTTP_PROXY_HOST - host address of the proxy to use for tests that make open connections to the proxy
@@ -36,8 +39,8 @@ option(USE_OPENSSL "Set this if you want to use your system's OpenSSL 1.0.2/1.1.
 option(ENABLE_PROXY_INTEGRATION_TESTS "Whether or not to build and run the proxy integration tests that rely on a proxy server installed and running locally" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-include(AwsGetVersion)
 
+include(AwsGetVersion)
 aws_get_version(SIMPLE_VERSION FULL_VERSION GIT_HASH)
 message(STATUS "AWS CRT C++ ${FULL_VERSION}")
 
@@ -75,20 +78,6 @@ if (NOT CMAKE_BUILD_TYPE)
     if (NOT WIN32)
         set(CMAKE_BUILD_TYPE "RelWithDebInfo")
     endif()
-endif()
-
-# Support the deprecated AWS_CRT_CPP_VERSION.
-# This mistakenly reports the git tag of the *PARENT* project when aws-crt-cpp
-# is built via CMake's add_subdirectory(). But don't fix it,
-# aws-iot-device-sdk-cpp-v2 relies on this incorrect# behavior to report its
-# own version in the MqttClientConnectionConfigBuilder metrics string.
-execute_process(COMMAND git describe --tags
-    RESULT_VARIABLE GIT_EXIT_CODE
-    OUTPUT_VARIABLE LEGACY_VERSION
-    ERROR_QUIET
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-if (NOT GIT_EXIT_CODE EQUAL 0)
-    set(LEGACY_VERSION "v${PROJECT_VERSION}")
 endif()
 
 configure_file(include/aws/crt/Config.h.in ${CMAKE_CURRENT_LIST_DIR}/include/aws/crt/Config.h @ONLY)
@@ -278,6 +267,10 @@ endif()
 add_library(${PROJECT_NAME} ${AWS_CRT_CPP_HEADERS} ${AWS_CRT_CPP_SRC})
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DCJSON_HIDE_SYMBOLS)
+
+if (AWS_IOT_SDK_VERSION)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE "-DAWS_IOT_SDK_VERSION=\"${AWS_IOT_SDK_VERSION}\"")
+endif()
 
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(${PROJECT_NAME} PUBLIC -DAWS_CRT_CPP_USE_IMPORT_EXPORT)
