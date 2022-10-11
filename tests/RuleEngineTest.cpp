@@ -70,14 +70,58 @@ const char sample_ruleset[] = R"({
           ]
         })";
 
+const char sample_partitions[] = R"({
+    "version": "1.1",
+    "partitions": [
+      {
+        "id": "aws",
+        "regionRegex": "^(us|eu|ap|sa|ca|me|af)-\\w+-\\d+$",
+        "regions": {
+          "af-south-1": {
+          },
+          "af-east-1": {},
+          "ap-northeast-1": {},
+          "ap-northeast-2": {},
+          "ap-northeast-3": {},
+          "ap-south-1": {},
+          "ap-southeast-1": {},
+          "ap-southeast-2": {},
+          "ap-southeast-3": {},
+          "ca-central-1": {},
+          "eu-central-1": {},
+          "eu-north-1": {},
+          "eu-south-1": {},
+          "eu-west-1": {},
+          "eu-west-2": {},
+          "eu-west-3": {},
+          "me-south-1": {},
+          "sa-east-1": {},
+          "us-east-1": {},
+          "us-east-2": {},
+          "us-west-1": {},
+          "us-west-2": {},
+          "aws-global": {}
+        },
+        "outputs": {
+          "name": "aws",
+          "dnsSuffix": "amazonaws.com",
+          "dualStackDnsSuffix": "api.aws",
+          "supportsFIPS": true,
+          "supportsDualStack": true
+        }
+      }
+    ]
+  })";
+
 static int s_TestRuleEngine(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
 
     Aws::Crt::ApiHandle apiHandle(allocator);
 
-    ByteCursor cur = ByteCursorFromCString(sample_ruleset);
-    Aws::Crt::Endpoints::RuleEngine engine(cur, allocator);
+    ByteCursor ruleset_cur = ByteCursorFromCString(sample_ruleset);
+    ByteCursor partitions_cur = ByteCursorFromCString(sample_partitions);
+    Aws::Crt::Endpoints::RuleEngine engine(ruleset_cur, partitions_cur, allocator);
 
     Aws::Crt::Endpoints::RequestContext context(allocator);
     context.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));

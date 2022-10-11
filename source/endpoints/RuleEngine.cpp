@@ -6,6 +6,7 @@
 #include <aws/crt/Api.h>
 #include <aws/crt/endpoints/RuleEngine.h>
 #include <aws/sdkutils/endpoints_rule_engine.h>
+#include <aws/sdkutils/partitions.h>
 
 namespace Aws
 {
@@ -121,14 +122,27 @@ namespace Aws
                 return Optional<StringView>(ByteCursorToStringView(error));
             }
 
-            RuleEngine::RuleEngine(const ByteCursor &rulesetCursor, Allocator *allocator) noexcept
+            RuleEngine::RuleEngine(
+                const ByteCursor &rulesetCursor,
+                const ByteCursor &partitionsCursor,
+                Allocator *allocator) noexcept
                 : m_allocator(allocator), m_ruleEngine(nullptr)
             {
                 auto ruleset = aws_endpoints_ruleset_new_from_string(allocator, rulesetCursor);
+                auto partitions = aws_partitions_config_new_from_string(allocator, partitionsCursor);
+                if (ruleset && partitions)
+                {
+                    m_ruleEngine = aws_endpoints_rule_engine_new(allocator, ruleset, partitions);
+                }
+
                 if (ruleset)
                 {
-                    m_ruleEngine = aws_endpoints_rule_engine_new(allocator, ruleset);
                     aws_endpoints_ruleset_release(ruleset);
+                }
+
+                if (partitions)
+                {
+                    aws_partitions_config_release(partitions);
                 }
             };
 

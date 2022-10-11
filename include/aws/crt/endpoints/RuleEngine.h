@@ -84,7 +84,10 @@ namespace Aws
             class AWS_CRT_CPP_API RuleEngine final
             {
               public:
-                RuleEngine(const ByteCursor &rulesetCursor, Allocator *allocator = ApiAllocator()) noexcept;
+                RuleEngine(
+                    const ByteCursor &rulesetCursor,
+                    const ByteCursor &partitionsCursor,
+                    Allocator *allocator = ApiAllocator()) noexcept;
                 ~RuleEngine();
 
                 /* TODO: move/copy semantics */
