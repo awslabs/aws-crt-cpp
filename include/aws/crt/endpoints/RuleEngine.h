@@ -101,7 +101,7 @@ namespace Aws
                  */
                 operator bool() const noexcept { return m_ruleEngine != nullptr; }
 
-                Optional<ResolutionOutcome> resolve(const RequestContext &context);
+                Optional<ResolutionOutcome> resolve(const RequestContext &context) const;
 
               private:
                 Allocator *m_allocator;

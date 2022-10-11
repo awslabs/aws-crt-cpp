@@ -35,7 +35,7 @@ namespace Aws
             }
 
             ResolutionOutcome::ResolutionOutcome(aws_endpoints_resolved_endpoint *impl, Allocator *allocator)
-                : m_resolvedEndpoint(impl), m_allocator(allocator)
+                : m_allocator(allocator), m_resolvedEndpoint(impl)
             {
             }
 
@@ -151,7 +151,7 @@ namespace Aws
                 m_ruleEngine = aws_endpoints_rule_engine_release(m_ruleEngine);
             }
 
-            Optional<ResolutionOutcome> RuleEngine::resolve(const RequestContext &context)
+            Optional<ResolutionOutcome> RuleEngine::resolve(const RequestContext &context) const
             {
                 aws_endpoints_resolved_endpoint *resolved = NULL;
                 if (aws_endpoints_rule_engine_resolve(m_ruleEngine, context.GetNativeHandle(), &resolved))
