@@ -48,7 +48,25 @@ const char sample_ruleset[] = R"({
                     }
                   ],
                   "endpoint": {
-                    "url": "https://example.{Region}.{partitionResult#dnsSuffix}"
+                    "url": "https://example.{Region}.{partitionResult#dnsSuffix}",
+                    "headers": {
+                      "x-amz-region": [
+                        "{Region}"
+                      ],
+                      "x-amz-multi": [
+                        "*",
+                        "{Region}"
+                      ]
+                    },
+                    "properties": {
+                      "authSchemes": [
+                        {
+                          "name": "sigv4",
+                          "signingName": "serviceName",
+                          "signingRegion": "{Region}"
+                        }
+                      ]
+                    }
                   }
                 },
                 {
@@ -131,6 +149,8 @@ static int s_TestRuleEngine(struct aws_allocator *allocator, void *ctx)
     ASSERT_TRUE(resolved->IsEndpoint());
 
     ASSERT_TRUE(resolved->getUrl()->compare("https://example.us-west-2.amazonaws.com") == 0);
+
+    ASSERT_TRUE(resolved->getHeaders()->at("x-amz-region")[0].compare("us-west-2") == 0);
 
     return AWS_OP_SUCCESS;
 }
