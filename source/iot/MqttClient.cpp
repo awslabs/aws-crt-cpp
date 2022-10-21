@@ -126,11 +126,21 @@ namespace Aws
         {
         }
 
-        MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder() : m_lastError(AWS_ERROR_INVALID_STATE) {}
+        MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder()
+            : MqttClientConnectionConfigBuilder(Crt::ApiAllocator())
+        {
+            m_lastError = AWS_ERROR_INVALID_STATE;
+        }
 
         // Common setup shared by all valid constructors
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(Crt::Allocator *allocator) noexcept
-            : m_allocator(allocator), m_portOverride(0), m_lastError(0)
+            : m_allocator(allocator), m_portOverride(0),
+#    ifdef AWS_IOT_SDK_VERSION
+              m_sdkVersion(AWS_IOT_SDK_VERSION),
+#    else
+              m_sdkVersion(AWS_CRT_CPP_VERSION),
+#    endif
+              m_lastError(0)
         {
             m_socketOptions.SetConnectTimeoutMs(3000);
         }
