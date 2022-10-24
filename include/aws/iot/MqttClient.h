@@ -478,7 +478,7 @@ namespace Aws
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
             bool m_enableMetricsCollection = true;
             Crt::String m_sdkName = "CPPv2";
-            Crt::String m_sdkVersion = AWS_CRT_CPP_VERSION;
+            Crt::String m_sdkVersion;
             Crt::String m_username = "";
             Crt::String m_password = "";
             bool m_isUsingCustomAuthorizer = false;
