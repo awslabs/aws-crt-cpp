@@ -398,7 +398,8 @@ namespace Aws
             m_username = usernameString;
             m_password = password;
 
-            if (m_websocketConfig.has_value() == false) {
+            if (!m_websocketConfig)
+            {
                 if (!m_contextOptions.SetAlpnList("mqtt"))
                 {
                     m_lastError = m_contextOptions.LastError();
