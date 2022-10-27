@@ -19,9 +19,9 @@ namespace Aws
                 m_requestContext = aws_endpoints_request_context_new(allocator);
             }
 
-            RequestContext::~RequestContext()
+            ResolutionOutcome::~ResolutionOutcome()
             {
-                m_requestContext = aws_endpoints_request_context_release(m_requestContext);
+                aws_endpoints_resolved_endpoint_release(m_resolvedEndpoint);
             }
 
             bool RequestContext::AddString(const ByteCursor &name, const ByteCursor &value)
