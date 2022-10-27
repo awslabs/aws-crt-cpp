@@ -67,7 +67,7 @@ namespace Aws
                  * @param index index of the header to fetch
                  * @return an option containing the requested header if the index is in bounds
                  */
-                Optional<HttpHeader> GetHeader(size_t index) const;
+                Optional<HttpHeader> GetHeader(size_t index) const noexcept;
 
                 /**
                  * Adds a header to the request
@@ -112,7 +112,7 @@ namespace Aws
                 /**
                  * @return the value of the Http method associated with this request
                  */
-                Optional<ByteCursor> GetMethod() const;
+                Optional<ByteCursor> GetMethod() const noexcept;
 
                 /**
                  * Sets the value of the Http method associated with this request
@@ -122,7 +122,7 @@ namespace Aws
                 /**
                  * @return the value of the URI-path associated with this request
                  */
-                Optional<ByteCursor> GetPath() const;
+                Optional<ByteCursor> GetPath() const noexcept;
 
                 /**
                  * Sets the value of the URI-path associated with this request
@@ -144,7 +144,7 @@ namespace Aws
                 /**
                  * @return the integral Http response code associated with this response
                  */
-                Optional<int> GetResponseCode() const;
+                Optional<int> GetResponseCode() const noexcept;
 
                 /**
                  * Sets the integral Http response code associated with this response

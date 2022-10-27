@@ -14,6 +14,7 @@ namespace Aws
     {
         namespace Endpoints
         {
+            
             RequestContext::RequestContext(Allocator *allocator) noexcept : m_allocator(allocator)
             {
                 m_requestContext = aws_endpoints_request_context_new(allocator);
@@ -101,8 +102,9 @@ namespace Aws
                 {
                     ByteCursor key = aws_byte_cursor_from_string((const aws_string *)iter.element.key);
                     const aws_array_list *array = (const aws_array_list *)iter.element.value;
-                    headers.emplace(std::make_pair(ByteCursorToStringView(key),
-                         ArrayListToVector<aws_string *, StringView>(array, CrtStringToStringView)));
+                    headers.emplace(std::make_pair(
+                        ByteCursorToStringView(key),
+                        ArrayListToVector<aws_string *, StringView>(array, CrtStringToStringView)));
                 }
 
                 return Optional<UnorderedMap<StringView, Vector<StringView>>>(headers);
@@ -154,10 +156,7 @@ namespace Aws
                 }
             }
 
-            RuleEngine::~RuleEngine()
-            {
-                m_ruleEngine = aws_endpoints_rule_engine_release(m_ruleEngine);
-            }
+            RuleEngine::~RuleEngine() { m_ruleEngine = aws_endpoints_rule_engine_release(m_ruleEngine); }
 
             Optional<ResolutionOutcome> RuleEngine::Resolve(const RequestContext &context) const
             {
