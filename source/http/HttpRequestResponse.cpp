@@ -73,7 +73,7 @@ namespace Aws
 
             size_t HttpMessage::GetHeaderCount() const noexcept { return aws_http_message_get_header_count(m_message); }
 
-            Optional<HttpHeader> HttpMessage::GetHeader(size_t index) const noexcept
+            Optional<HttpHeader> HttpMessage::GetHeader(size_t index) const
             {
                 HttpHeader header;
                 if (aws_http_message_get_header(m_message, &header, index) != AWS_OP_SUCCESS)
@@ -106,7 +106,7 @@ namespace Aws
             {
             }
 
-            Optional<ByteCursor> HttpRequest::GetMethod() const noexcept
+            Optional<ByteCursor> HttpRequest::GetMethod() const
             {
                 ByteCursor method;
                 if (aws_http_message_get_request_method(m_message, &method) != AWS_OP_SUCCESS)
@@ -122,7 +122,7 @@ namespace Aws
                 return aws_http_message_set_request_method(m_message, method) == AWS_OP_SUCCESS;
             }
 
-            Optional<ByteCursor> HttpRequest::GetPath() const noexcept
+            Optional<ByteCursor> HttpRequest::GetPath() const
             {
                 ByteCursor path;
                 if (aws_http_message_get_request_path(m_message, &path) != AWS_OP_SUCCESS)
@@ -145,7 +145,7 @@ namespace Aws
                 aws_http_message_release(this->m_message);
             }
 
-            Optional<int> HttpResponse::GetResponseCode() const noexcept
+            Optional<int> HttpResponse::GetResponseCode() const
             {
                 int response = 0;
                 if (aws_http_message_get_response_status(m_message, &response) != AWS_OP_SUCCESS)

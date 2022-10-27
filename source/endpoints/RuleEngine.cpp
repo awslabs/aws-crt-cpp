@@ -18,6 +18,11 @@ namespace Aws
             {
                 m_requestContext = aws_endpoints_request_context_new(allocator);
             }
+            
+            RequestContext::~RequestContext()
+            {
+                m_requestContext = aws_endpoints_request_context_release(m_requestContext);
+            }
 
             bool RequestContext::AddString(const ByteCursor &name, const ByteCursor &value)
             {
@@ -64,7 +69,7 @@ namespace Aws
                 return AWS_ENDPOINTS_RESOLVED_ERROR == aws_endpoints_resolved_endpoint_get_type(m_resolvedEndpoint);
             }
 
-            Optional<StringView> ResolutionOutcome::GetUrl() const noexcept
+            Optional<StringView> ResolutionOutcome::GetUrl() const
             {
                 ByteCursor url;
                 if (aws_endpoints_resolved_endpoint_get_url(m_resolvedEndpoint, &url))
@@ -81,7 +86,7 @@ namespace Aws
                 return ByteCursorToStringView(key);
             }
 
-            Optional<UnorderedMap<StringView, Vector<StringView>>> ResolutionOutcome::GetHeaders() const noexcept
+            Optional<UnorderedMap<StringView, Vector<StringView>>> ResolutionOutcome::GetHeaders() const
             {
                 const aws_hash_table *resolved_headers = nullptr;
 
@@ -96,14 +101,14 @@ namespace Aws
                 {
                     ByteCursor key = aws_byte_cursor_from_string((const aws_string *)iter.element.key);
                     const aws_array_list *array = (const aws_array_list *)iter.element.value;
-                    headers.insert({ByteCursorToStringView(key),
-                         ArrayListToVector<aws_string *, StringView>(array, CrtStringToStringView)});
+                    headers.emplace(std::make_pair(ByteCursorToStringView(key),
+                         ArrayListToVector<aws_string *, StringView>(array, CrtStringToStringView)));
                 }
 
                 return Optional<UnorderedMap<StringView, Vector<StringView>>>(headers);
             }
 
-            Optional<StringView> ResolutionOutcome::GetProperties() const noexcept
+            Optional<StringView> ResolutionOutcome::GetProperties() const
             {
                 ByteCursor properties;
                 if (aws_endpoints_resolved_endpoint_get_properties(m_resolvedEndpoint, &properties))
@@ -114,7 +119,7 @@ namespace Aws
                 return Optional<StringView>(ByteCursorToStringView(properties));
             }
 
-            Optional<StringView> ResolutionOutcome::GetError() const noexcept
+            Optional<StringView> ResolutionOutcome::GetError() const
             {
                 ByteCursor error;
                 if (aws_endpoints_resolved_endpoint_get_error(m_resolvedEndpoint, &error))
@@ -147,7 +152,7 @@ namespace Aws
                 {
                     aws_partitions_config_release(partitions);
                 }
-            };
+            }
 
             RuleEngine::~RuleEngine()
             {

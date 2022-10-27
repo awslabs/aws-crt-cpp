@@ -95,15 +95,15 @@ namespace Aws
                  * Note: following fields are none if outcome is error.
                  * Headers and Properties are optional and could also be None.
                  */
-                Optional<StringView> GetUrl() const noexcept;
-                Optional<StringView> GetProperties() const noexcept;
-                Optional<UnorderedMap<StringView, Vector<StringView>>> GetHeaders() const noexcept;
+                Optional<StringView> GetUrl() const;
+                Optional<StringView> GetProperties() const;
+                Optional<UnorderedMap<StringView, Vector<StringView>>> GetHeaders() const;
 
                 /*
                  * Error properties.
                  * Note: following fields are none if outcome is error.
                  */
-                Optional<StringView> GetError() const noexcept;
+                Optional<StringView> GetError() const;
 
                 /**
                  * @return true if the instance is in a valid state, false otherwise.
