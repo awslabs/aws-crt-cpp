@@ -19,11 +19,6 @@ namespace Aws
                 m_requestContext = aws_endpoints_request_context_new(allocator);
             }
 
-            ResolutionOutcome::~ResolutionOutcome()
-            {
-                aws_endpoints_resolved_endpoint_release(m_resolvedEndpoint);
-            }
-
             bool RequestContext::AddString(const ByteCursor &name, const ByteCursor &value)
             {
                 return AWS_OP_SUCCESS !=
@@ -57,10 +52,7 @@ namespace Aws
                 return *this;
             }
 
-            ResolutionOutcome::~ResolutionOutcome()
-            {
-                aws_endpoints_resolved_endpoint_release(m_resolvedEndpoint);
-            }
+            ResolutionOutcome::~ResolutionOutcome() { aws_endpoints_resolved_endpoint_release(m_resolvedEndpoint); }
 
             bool ResolutionOutcome::IsEndpoint() const noexcept
             {
@@ -104,8 +96,7 @@ namespace Aws
                 {
                     ByteCursor key = aws_byte_cursor_from_string((const aws_string *)iter.element.key);
                     const aws_array_list *array = (const aws_array_list *)iter.element.value;
-                    headers.insert(
-                        {ByteCursorToStringView(key),
+                    headers.insert({ByteCursorToStringView(key),
                          ArrayListToVector<aws_string *, StringView>(array, CrtStringToStringView)});
                 }
 
