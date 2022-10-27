@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/Api.h>
+#include <aws/crt/JsonObject.h>
 #include <aws/crt/Types.h>
 #include <aws/crt/endpoints/RuleEngine.h>
 #include <aws/testing/aws_test_harness.h>
@@ -144,13 +145,29 @@ static int s_TestRuleEngine(struct aws_allocator *allocator, void *ctx)
     Aws::Crt::Endpoints::RequestContext context(allocator);
     context.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
 
-    auto resolved = engine.resolve(context);
+    auto resolved = engine.Resolve(context);
     ASSERT_TRUE(resolved.has_value());
     ASSERT_TRUE(resolved->IsEndpoint());
 
-    ASSERT_TRUE(resolved->getUrl()->compare("https://example.us-west-2.amazonaws.com") == 0);
+    ASSERT_TRUE(resolved->GetUrl()->compare("https://example.us-west-2.amazonaws.com") == 0);
 
-    ASSERT_TRUE(resolved->getHeaders()->at("x-amz-region")[0].compare("us-west-2") == 0);
+    ASSERT_TRUE(resolved->GetHeaders()->at("x-amz-region")[0].compare("us-west-2") == 0);
+
+    auto expected =
+        R"(
+    {
+      "authSchemes": [
+        {
+          "name": "sigv4",
+          "signingName": "serviceName",
+          "signingRegion": "us-west-2"
+        }
+      ]
+    })";
+
+    String props(resolved->GetProperties()->begin(), resolved->GetProperties()->end());
+    auto actual = JsonObject(props);
+    ASSERT_TRUE(actual == JsonObject(expected));
 
     return AWS_OP_SUCCESS;
 }

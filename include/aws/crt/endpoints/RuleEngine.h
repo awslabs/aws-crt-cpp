@@ -16,6 +16,12 @@ namespace Aws
     {
         namespace Endpoints
         {
+            /*
+             * Add parameter to the context.
+             * Only string and boolean values are supported.
+             * Adding parameter several times with the same name will overwrite
+             * previous values.
+             */
             class AWS_CRT_CPP_API RequestContext final
             {
               public:
@@ -33,9 +39,19 @@ namespace Aws
                  */
                 operator bool() const noexcept { return m_requestContext != nullptr; }
 
-                int AddString(const ByteCursor &name, const ByteCursor &value);
+                /*
+                 * Add string parameter.
+                 * True if added successfully and false if failed.
+                 * Aws::Crt::LastError() can be used to retrieve failure error code.
+                 */
+                bool AddString(const ByteCursor &name, const ByteCursor &value);
 
-                int AddBoolean(const ByteCursor &name, bool value);
+                /*
+                 * Add boolean parameter.
+                 * True if added successfully and false if failed.
+                 * Aws::Crt::LastError() can be used to retrieve failure error code.
+                 */
+                bool AddBoolean(const ByteCursor &name, bool value);
 
                 /// @private
                 aws_endpoints_request_context *GetNativeHandle() const noexcept { return m_requestContext; }
@@ -45,6 +61,21 @@ namespace Aws
                 aws_endpoints_request_context *m_requestContext;
             };
 
+            /*
+             * Outcome of Endpoint Resolution.
+             * Outcome can be either endpoint (IsEndpoint) or error (IsError).
+             * Endpoint outcome means that engine was able to resolve context to
+             * an endpoint and outcome can have the following fields defined:
+             * - Url (required) - resolved url
+             * - Headers (optional) - additional headers to be included with request
+             * - Properties (optional) - custom list of properties associated
+             *   with request (json blob to be interpreted by the caller.)
+             *
+             * Error outcome means that context could not be resolved to an endpoint.
+             * Outcome will have following fields:
+             * - Error (required) - error message providing more info on why
+             *   endpoint could not be resolved.
+             */
             class AWS_CRT_CPP_API ResolutionOutcome final
             {
               public:
@@ -54,16 +85,25 @@ namespace Aws
                 ResolutionOutcome(const ResolutionOutcome &) = delete;
                 ResolutionOutcome &operator=(const ResolutionOutcome &) = delete;
                 ResolutionOutcome(ResolutionOutcome &&toMove) noexcept;
-                ResolutionOutcome &operator=(ResolutionOutcome &&) = delete;
+                ResolutionOutcome &operator=(ResolutionOutcome &&);
 
                 bool IsEndpoint() const noexcept;
                 bool IsError() const noexcept;
 
-                Optional<StringView> getUrl() const noexcept;
-                Optional<StringView> getProperties() const noexcept;
-                Optional<UnorderedMap<StringView, Vector<StringView>>> getHeaders() const noexcept;
+                /*
+                 * Endpoint properties.
+                 * Note: following fields are none if outcome is error.
+                 * Headers and Properties are optional and could also be None.
+                 */
+                Optional<StringView> GetUrl() const noexcept;
+                Optional<StringView> GetProperties() const noexcept;
+                Optional<UnorderedMap<StringView, Vector<StringView>>> GetHeaders() const noexcept;
 
-                Optional<StringView> getError() const noexcept;
+                /*
+                 * Error properties.
+                 * Note: following fields are none if outcome is error.
+                 */
+                Optional<StringView> GetError() const noexcept;
 
                 /**
                  * @return true if the instance is in a valid state, false otherwise.
@@ -79,7 +119,7 @@ namespace Aws
             };
 
             /**
-             * Contains endpoints rule engine.
+             * Endpoints Rule Engine.
              */
             class AWS_CRT_CPP_API RuleEngine final
             {
@@ -90,7 +130,6 @@ namespace Aws
                     Allocator *allocator = ApiAllocator()) noexcept;
                 ~RuleEngine();
 
-                /* TODO: move/copy semantics */
                 RuleEngine(const RuleEngine &) = delete;
                 RuleEngine &operator=(const RuleEngine &) = delete;
                 RuleEngine(RuleEngine &&) = delete;
@@ -101,14 +140,18 @@ namespace Aws
                  */
                 operator bool() const noexcept { return m_ruleEngine != nullptr; }
 
-                Optional<ResolutionOutcome> resolve(const RequestContext &context) const;
+                /*
+                 * Resolves rules against the provided context.
+                 * If successful return will have resolution outcome.
+                 * If not, return will be none and Aws::Crt::LastError() can be
+                 * used to retrieve CRT error code.
+                 */
+                Optional<ResolutionOutcome> Resolve(const RequestContext &context) const;
 
               private:
                 Allocator *m_allocator;
                 aws_endpoints_rule_engine *m_ruleEngine;
             };
         } // namespace Endpoints
-
-    } // namespace Crt
-
+    }     // namespace Crt
 } // namespace Aws

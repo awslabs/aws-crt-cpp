@@ -24,14 +24,16 @@ namespace Aws
                 m_requestContext = aws_endpoints_request_context_release(m_requestContext);
             }
 
-            int RequestContext::AddString(const ByteCursor &name, const ByteCursor &value)
+            bool RequestContext::AddString(const ByteCursor &name, const ByteCursor &value)
             {
-                return aws_endpoints_request_context_add_string(m_allocator, m_requestContext, name, value);
+                return AWS_OP_SUCCESS !=
+                       aws_endpoints_request_context_add_string(m_allocator, m_requestContext, name, value);
             }
 
-            int RequestContext::AddBoolean(const ByteCursor &name, bool value)
+            bool RequestContext::AddBoolean(const ByteCursor &name, bool value)
             {
-                return aws_endpoints_request_context_add_boolean(m_allocator, m_requestContext, name, value);
+                return AWS_OP_SUCCESS !=
+                       aws_endpoints_request_context_add_boolean(m_allocator, m_requestContext, name, value);
             }
 
             ResolutionOutcome::ResolutionOutcome(aws_endpoints_resolved_endpoint *impl, Allocator *allocator)
@@ -43,6 +45,16 @@ namespace Aws
                 : m_resolvedEndpoint(toMove.m_resolvedEndpoint)
             {
                 toMove.m_resolvedEndpoint = nullptr;
+            }
+
+            ResolutionOutcome &ResolutionOutcome::operator=(ResolutionOutcome &&toMove)
+            {
+                if (&toMove != this)
+                {
+                    *this = ResolutionOutcome(std::move(toMove));
+                }
+
+                return *this;
             }
 
             ResolutionOutcome::~ResolutionOutcome()
@@ -60,7 +72,7 @@ namespace Aws
                 return AWS_ENDPOINTS_RESOLVED_ERROR == aws_endpoints_resolved_endpoint_get_type(m_resolvedEndpoint);
             }
 
-            Optional<StringView> ResolutionOutcome::getUrl() const noexcept
+            Optional<StringView> ResolutionOutcome::GetUrl() const noexcept
             {
                 ByteCursor url;
                 if (aws_endpoints_resolved_endpoint_get_url(m_resolvedEndpoint, &url))
@@ -77,7 +89,7 @@ namespace Aws
                 return ByteCursorToStringView(key);
             }
 
-            Optional<UnorderedMap<StringView, Vector<StringView>>> ResolutionOutcome::getHeaders() const noexcept
+            Optional<UnorderedMap<StringView, Vector<StringView>>> ResolutionOutcome::GetHeaders() const noexcept
             {
                 const aws_hash_table *resolved_headers = nullptr;
 
@@ -100,7 +112,7 @@ namespace Aws
                 return Optional<UnorderedMap<StringView, Vector<StringView>>>(headers);
             }
 
-            Optional<StringView> ResolutionOutcome::getProperties() const noexcept
+            Optional<StringView> ResolutionOutcome::GetProperties() const noexcept
             {
                 ByteCursor properties;
                 if (aws_endpoints_resolved_endpoint_get_properties(m_resolvedEndpoint, &properties))
@@ -111,7 +123,7 @@ namespace Aws
                 return Optional<StringView>(ByteCursorToStringView(properties));
             }
 
-            Optional<StringView> ResolutionOutcome::getError() const noexcept
+            Optional<StringView> ResolutionOutcome::GetError() const noexcept
             {
                 ByteCursor error;
                 if (aws_endpoints_resolved_endpoint_get_error(m_resolvedEndpoint, &error))
@@ -130,17 +142,17 @@ namespace Aws
             {
                 auto ruleset = aws_endpoints_ruleset_new_from_string(allocator, rulesetCursor);
                 auto partitions = aws_partitions_config_new_from_string(allocator, partitionsCursor);
-                if (ruleset && partitions)
+                if (ruleset != NULL && partitions != NULL)
                 {
                     m_ruleEngine = aws_endpoints_rule_engine_new(allocator, ruleset, partitions);
                 }
 
-                if (ruleset)
+                if (ruleset != NULL)
                 {
                     aws_endpoints_ruleset_release(ruleset);
                 }
 
-                if (partitions)
+                if (partitions != NULL)
                 {
                     aws_partitions_config_release(partitions);
                 }
@@ -151,7 +163,7 @@ namespace Aws
                 m_ruleEngine = aws_endpoints_rule_engine_release(m_ruleEngine);
             }
 
-            Optional<ResolutionOutcome> RuleEngine::resolve(const RequestContext &context) const
+            Optional<ResolutionOutcome> RuleEngine::Resolve(const RequestContext &context) const
             {
                 aws_endpoints_resolved_endpoint *resolved = NULL;
                 if (aws_endpoints_rule_engine_resolve(m_ruleEngine, context.GetNativeHandle(), &resolved))
