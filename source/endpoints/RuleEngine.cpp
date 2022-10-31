@@ -14,12 +14,12 @@ namespace Aws
     {
         namespace Endpoints
         {
-            
+
             RequestContext::RequestContext(Allocator *allocator) noexcept : m_allocator(allocator)
             {
                 m_requestContext = aws_endpoints_request_context_new(allocator);
             }
-            
+
             RequestContext::~RequestContext()
             {
                 m_requestContext = aws_endpoints_request_context_release(m_requestContext);
