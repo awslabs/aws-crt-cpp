@@ -47,6 +47,7 @@ namespace Aws
             aws_mqtt_library_init(allocator);
             aws_s3_library_init(allocator);
             aws_event_stream_library_init(allocator);
+            aws_sdkutils_library_init(allocator);
 
             cJSON_Hooks hooks;
             hooks.malloc_fn = s_cJSONAlloc;
@@ -86,6 +87,7 @@ namespace Aws
             aws_s3_library_clean_up();
             aws_mqtt_library_clean_up();
             aws_event_stream_library_clean_up();
+            aws_sdkutils_library_clean_up();
 
             s_BYOCryptoNewMD5Callback = nullptr;
             s_BYOCryptoNewSHA256Callback = nullptr;
