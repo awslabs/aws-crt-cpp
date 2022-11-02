@@ -114,7 +114,6 @@ namespace Aws
                 ResolutionOutcome(aws_endpoints_resolved_endpoint *impl, Allocator *allocator);
 
               private:
-                Allocator *m_allocator;
                 aws_endpoints_resolved_endpoint *m_resolvedEndpoint;
             };
 

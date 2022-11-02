@@ -38,7 +38,7 @@ namespace Aws
             }
 
             ResolutionOutcome::ResolutionOutcome(aws_endpoints_resolved_endpoint *impl, Allocator *allocator)
-                : m_allocator(allocator), m_resolvedEndpoint(impl)
+                : m_resolvedEndpoint(impl)
             {
             }
 
