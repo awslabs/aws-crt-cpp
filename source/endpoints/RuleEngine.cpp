@@ -37,10 +37,7 @@ namespace Aws
                        aws_endpoints_request_context_add_boolean(m_allocator, m_requestContext, name, value);
             }
 
-            ResolutionOutcome::ResolutionOutcome(aws_endpoints_resolved_endpoint *impl)
-                : m_resolvedEndpoint(impl)
-            {
-            }
+            ResolutionOutcome::ResolutionOutcome(aws_endpoints_resolved_endpoint *impl) : m_resolvedEndpoint(impl) {}
 
             ResolutionOutcome::ResolutionOutcome(ResolutionOutcome &&toMove) noexcept
                 : m_resolvedEndpoint(toMove.m_resolvedEndpoint)
