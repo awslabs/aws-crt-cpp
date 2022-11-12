@@ -111,7 +111,7 @@ namespace Aws
                 operator bool() const noexcept { return m_resolvedEndpoint != nullptr; }
 
                 /// @private For use by rule engine.
-                ResolutionOutcome(aws_endpoints_resolved_endpoint *impl, Allocator *allocator);
+                ResolutionOutcome(aws_endpoints_resolved_endpoint *impl);
 
               private:
                 aws_endpoints_resolved_endpoint *m_resolvedEndpoint;
