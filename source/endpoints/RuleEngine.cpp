@@ -133,7 +133,7 @@ namespace Aws
                 const ByteCursor &rulesetCursor,
                 const ByteCursor &partitionsCursor,
                 Allocator *allocator) noexcept
-                : m_allocator(allocator), m_ruleEngine(nullptr)
+                : m_ruleEngine(nullptr)
             {
                 auto ruleset = aws_endpoints_ruleset_new_from_string(allocator, rulesetCursor);
                 auto partitions = aws_partitions_config_new_from_string(allocator, partitionsCursor);
