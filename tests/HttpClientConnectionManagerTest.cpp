@@ -38,7 +38,8 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
         // ignored if S3 doesn't support them) followed by regular TLS ciphers that can be chosen and negotiated by S3.
         aws_tls_cipher_pref tls_cipher_pref = AWS_IO_TLS_CIPHER_PREF_PQ_TLSv1_0_2021_05;
 
-        if (aws_tls_is_cipher_pref_supported(tls_cipher_pref)) {
+        if (aws_tls_is_cipher_pref_supported(tls_cipher_pref))
+        {
             tlsCtxOptions.SetTlsCipherPreference(tls_cipher_pref);
         }
 
