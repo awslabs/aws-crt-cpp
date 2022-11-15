@@ -161,6 +161,12 @@ namespace Aws
                 aws_tls_ctx_options_set_minimum_tls_version(&m_options, minimumTlsVersion);
             }
 
+            void TlsContextOptions::SetTlsCipherPreference(aws_tls_cipher_pref cipher_pref)
+            {
+                AWS_ASSERT(m_isInit);
+                aws_tls_ctx_options_set_tls_cipher_preference(&m_options, cipher_pref);
+            }
+
             bool TlsContextOptions::OverrideDefaultTrustStore(const char *caPath, const char *caFile) noexcept
             {
                 AWS_ASSERT(m_isInit);
