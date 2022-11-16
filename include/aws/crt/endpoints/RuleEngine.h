@@ -148,7 +148,6 @@ namespace Aws
                 Optional<ResolutionOutcome> Resolve(const RequestContext &context) const;
 
               private:
-                Allocator *m_allocator;
                 aws_endpoints_rule_engine *m_ruleEngine;
             };
         } // namespace Endpoints
