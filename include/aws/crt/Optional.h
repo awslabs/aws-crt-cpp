@@ -186,6 +186,15 @@ namespace Aws
             T &&value() && { return std::move(*m_value); }
             const T &&value() const && { return std::move(*m_value); }
 
+            void reset()
+            {
+                if (m_value)
+                {
+                    m_value->~T();
+                    m_value = nullptr;
+                }
+            }
+
           private:
             typename std::aligned_storage<sizeof(T)>::type m_storage;
             T *m_value;
