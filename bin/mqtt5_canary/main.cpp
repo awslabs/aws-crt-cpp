@@ -795,7 +795,7 @@ int main(int argc, char **argv)
     for (size_t i = 0; i < testerOptions.clientCount; ++i)
     {
         struct AwsMqtt5CanaryTestClient client;
-        AWS_ZERO_STRUCT(client);
+        client = {};
         client.sharedTopic = Aws::Crt::String(sharedTopicArray);
         mqtt5Options.withPublishReceivedCallback(
             [&client](std::shared_ptr<Mqtt5::Mqtt5Client> /*client*/, std::shared_ptr<Mqtt5::PublishPacket> publish) {
