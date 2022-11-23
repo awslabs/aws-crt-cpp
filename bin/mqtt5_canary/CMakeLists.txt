@@ -9,7 +9,6 @@ file(GLOB MQTT5_CANARY_SRC
 set(MQTT5_CANARY_PROJECT_NAME mqtt5_canary)
 add_executable(${MQTT5_CANARY_PROJECT_NAME} ${MQTT5_CANARY_SRC})
 
-set(CMAKE_CXX_STANDARD 20)
 set_target_properties(${MQTT5_CANARY_PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(${MQTT5_CANARY_PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
 
@@ -38,7 +37,7 @@ target_include_directories(${MQTT5_CANARY_PROJECT_NAME} PUBLIC
 target_link_libraries(${MQTT5_CANARY_PROJECT_NAME} aws-crt-cpp)
 
 if (BUILD_SHARED_LIBS AND NOT WIN32)
-    message(INFO " mqtt5 will be built with shared libs, but you may need to set LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib to run the application")
+    message(INFO " mqtt5 canary will be built with shared libs, but you may need to set LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib to run the application")
 endif()
 
 install(TARGETS ${MQTT5_CANARY_PROJECT_NAME}
