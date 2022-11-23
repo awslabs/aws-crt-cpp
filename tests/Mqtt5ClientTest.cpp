@@ -353,7 +353,7 @@ static int s_TestMqtt5NewClientFull(Aws::Crt::Allocator *allocator, void *ctx)
     mqtt5Options.withReconnectOptions(reconnectOptions);
     mqtt5Options.withPingTimeoutMs(1000);
     mqtt5Options.withConnackTimeoutMs(100);
-    mqtt5Options.withOperationTimeoutSeconds(1000);
+    mqtt5Options.withAckTimeoutSeconds(1000);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -733,7 +733,7 @@ static int s_TestMqtt5DirectConnectionFull(Aws::Crt::Allocator *allocator, void 
     mqtt5Options.withReconnectOptions(reconnectOptions);
     mqtt5Options.withPingTimeoutMs(1000);
     mqtt5Options.withConnackTimeoutMs(100);
-    mqtt5Options.withOperationTimeoutSeconds(1000);
+    mqtt5Options.withAckTimeoutSeconds(1000);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -1230,7 +1230,7 @@ static int s_TestMqtt5WSConnectionFull(Aws::Crt::Allocator *allocator, void *ctx
     mqtt5Options.withReconnectOptions(reconnectOptions);
     mqtt5Options.withPingTimeoutMs(1000);
     mqtt5Options.withConnackTimeoutMs(100);
-    mqtt5Options.withOperationTimeoutSeconds(1000);
+    mqtt5Options.withAckTimeoutSeconds(1000);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;

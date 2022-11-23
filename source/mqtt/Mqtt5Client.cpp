@@ -530,7 +530,7 @@ namespace Aws
                   m_extendedValidationAndFlowControlOptions(AWS_MQTT5_EVAFCO_AWS_IOT_CORE_DEFAULTS),
                   m_offlineQueueBehavior(AWS_MQTT5_COQBT_DEFAULT),
                   m_reconnectionOptions({AWS_EXPONENTIAL_BACKOFF_JITTER_DEFAULT, 0, 0, 0}), m_pingTimeoutMs(0),
-                  m_connackTimeoutMs(0), m_operationTimeoutSec(0), m_allocator(allocator)
+                  m_connackTimeoutMs(0), m_ackTimeoutSec(0), m_allocator(allocator)
             {
                 m_socketOptions.SetSocketType(Io::SocketType::Stream);
                 AWS_ZERO_STRUCT(m_packetConnectViewStorage);
@@ -574,7 +574,7 @@ namespace Aws
                     m_reconnectionOptions.m_minConnectedTimeToResetReconnectDelayMs;
                 raw_options.ping_timeout_ms = m_pingTimeoutMs;
                 raw_options.connack_timeout_ms = m_connackTimeoutMs;
-                raw_options.operation_timeout_seconds = m_operationTimeoutSec;
+                raw_options.ack_timeout_seconds = m_ackTimeoutSec;
 
                 return true;
             }
@@ -668,10 +668,9 @@ namespace Aws
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withOperationTimeoutSeconds(
-                uint32_t operationTimeoutSeconds) noexcept
+            Mqtt5ClientOptions &Mqtt5ClientOptions::withAckTimeoutSeconds(uint32_t ackTimeoutSeconds) noexcept
             {
-                m_operationTimeoutSec = operationTimeoutSeconds;
+                m_ackTimeoutSec = ackTimeoutSeconds;
                 return *this;
             }
 

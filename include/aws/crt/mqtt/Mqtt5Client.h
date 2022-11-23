@@ -511,11 +511,11 @@ namespace Aws
                  * Sets Operation Timeout(Seconds). Time interval to wait for an ack after sending a QoS 1+ PUBLISH,
                  * SUBSCRIBE, or UNSUBSCRIBE before failing the operation.
                  *
-                 * @param operationTimeoutSeconds
+                 * @param ackTimeoutSeconds
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withOperationTimeoutSeconds(uint32_t operationTimeoutSeconds) noexcept;
+                Mqtt5ClientOptions &withAckTimeoutSeconds(uint32_t ackTimeoutSeconds) noexcept;
 
                 /**
                  * Sets callback for transform HTTP request.
@@ -736,7 +736,7 @@ namespace Aws
                  * Time interval to wait for an ack after sending a QoS 1+ PUBLISH, SUBSCRIBE, or UNSUBSCRIBE before
                  * failing the operation.
                  */
-                uint32_t m_operationTimeoutSec;
+                uint32_t m_ackTimeoutSec;
 
                 /* Underlying Parameters */
                 Crt::Allocator *m_allocator;

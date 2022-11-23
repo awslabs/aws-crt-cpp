@@ -210,7 +210,7 @@ namespace Aws
             static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithCustomCustomAuthorizer(
                 const Crt::String hostName,
                 const Mqtt5CustomAuthConfig &customAuthConfig,
-                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
+                Crt::Allocator *allocator) noexcept;
 
             /**
              * Sets the host to connect to.
@@ -356,11 +356,11 @@ namespace Aws
              * Sets Operation Timeout(Seconds). Time interval to wait for an ack after sending a QoS 1+ PUBLISH,
              * SUBSCRIBE, or UNSUBSCRIBE before failing the operation.
              *
-             * @param operationTimeoutSeconds
+             * @param ackTimeoutSeconds
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &withOperationTimeoutSeconds(uint32_t operationTimeoutSeconds) noexcept;
+            Mqtt5ClientBuilder &withAckTimeoutSeconds(uint32_t ackTimeoutSeconds) noexcept;
 
             /**
              * Overrides the default SDK Name to send as a metric in the MQTT CONNECT packet.

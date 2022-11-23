@@ -201,9 +201,9 @@ namespace Aws
         }
 
         Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomCustomAuthorizer(
-                const Crt::String hostName,
-                const Mqtt5CustomAuthConfig &customAuthConfig,
-                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept
+            const Crt::String hostName,
+            const Mqtt5CustomAuthConfig &customAuthConfig,
+            Crt::Allocator *allocator) noexcept
         {
             Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
             result->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitDefaultClient();
@@ -289,7 +289,7 @@ namespace Aws
         Mqtt5ClientBuilder &Mqtt5ClientBuilder::withOfflineQueueBehavior(
             ClientOperationQueueBehaviorType operationQueueBehavior) noexcept
         {
-            m_options->withOperationTimeoutSeconds(operationQueueBehavior);
+            m_options->withAckTimeoutSeconds(operationQueueBehavior);
             return *this;
         }
 
@@ -311,9 +311,9 @@ namespace Aws
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::withOperationTimeoutSeconds(uint32_t operationTimeoutSeconds) noexcept
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::withAckTimeoutSeconds(uint32_t ackTimeoutSeconds) noexcept
         {
-            m_options->withOperationTimeoutSeconds(operationTimeoutSeconds);
+            m_options->withAckTimeoutSeconds(ackTimeoutSeconds);
             return *this;
         }
 
