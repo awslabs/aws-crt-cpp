@@ -20,7 +20,7 @@ namespace Aws
              *
              * A user property is a name-value pair of utf-8 strings that can be added to mqtt5 packets.
              */
-            class UserProperty
+            class AWS_CRT_CPP_API UserProperty
             {
               public:
                 UserProperty(Crt::String key, Crt::String value) noexcept;
@@ -39,7 +39,7 @@ namespace Aws
                 Crt::String m_value;
             };
 
-            class IPacket
+            class AWS_CRT_CPP_API IPacket
             {
               public:
                 virtual PacketType getType() = 0;
@@ -49,7 +49,7 @@ namespace Aws
              * Data model of an [MQTT5
              * PUBLISH](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901100) packet
              */
-            class PublishPacket : public IPacket
+            class AWS_CRT_CPP_API PublishPacket : public IPacket
             {
               public:
                 PublishPacket(
@@ -445,7 +445,7 @@ namespace Aws
              *
              * Negotiated settings are communicated with every successful connection establishment.
              */
-            class NegotiatedSettings
+            class AWS_CRT_CPP_API NegotiatedSettings
             {
               public:
                 NegotiatedSettings(
@@ -590,7 +590,7 @@ namespace Aws
              * Data model of an [MQTT5
              * CONNECT](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901033) packet.
              */
-            class ConnectPacket : public IPacket
+            class AWS_CRT_CPP_API ConnectPacket : public IPacket
             {
               public:
                 /* Default constructor */
@@ -1085,7 +1085,7 @@ namespace Aws
              * Data model of an [MQTT5
              * CONNACK](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901074) packet.
              */
-            class ConnAckPacket : public IPacket
+            class AWS_CRT_CPP_API ConnAckPacket : public IPacket
             {
               public:
                 ConnAckPacket(
@@ -1439,7 +1439,7 @@ namespace Aws
              * Data model of an [MQTT5
              * DISCONNECT](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901205) packet.
              */
-            class DisconnectPacket : public IPacket
+            class AWS_CRT_CPP_API DisconnectPacket : public IPacket
             {
               public:
                 DisconnectPacket(Allocator *allocator = ApiAllocator()) noexcept;
@@ -1655,7 +1655,7 @@ namespace Aws
              * Data model of an [MQTT5
              * PUBACK](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901121) packet
              */
-            class PubAckPacket : public IPacket
+            class AWS_CRT_CPP_API PubAckPacket : public IPacket
             {
               public:
                 PubAckPacket(
@@ -1732,7 +1732,7 @@ namespace Aws
              * Publish with QoS0: Ack will be nullptr
              *              QoS1: Ack will contains a PubAckPacket
              */
-            class PublishResult
+            class AWS_CRT_CPP_API PublishResult
             {
               public:
                 PublishResult();                                     // QoS 0 success
@@ -1778,7 +1778,7 @@ namespace Aws
              * See [MQTT5 Subscription
              * Options](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901169)
              */
-            class Subscription
+            class AWS_CRT_CPP_API Subscription
             {
 
               public:
@@ -1903,7 +1903,7 @@ namespace Aws
              * Data model of an [MQTT5
              * SUBSCRIBE](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901161) packet.
              */
-            class SubscribePacket : public IPacket
+            class AWS_CRT_CPP_API SubscribePacket : public IPacket
             {
               public:
                 SubscribePacket(Allocator *allocator = ApiAllocator()) noexcept;
@@ -2030,7 +2030,7 @@ namespace Aws
              * Data model of an [MQTT5
              * SUBACK](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901171) packet.
              */
-            class SubAckPacket : public IPacket
+            class AWS_CRT_CPP_API SubAckPacket : public IPacket
             {
               public:
                 SubAckPacket(
@@ -2109,7 +2109,7 @@ namespace Aws
              * Data model of an [MQTT5
              * UNSUBSCRIBE](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901179) packet.
              */
-            class UnsubscribePacket : public IPacket
+            class AWS_CRT_CPP_API UnsubscribePacket : public IPacket
             {
               public:
                 UnsubscribePacket(Allocator *allocator = ApiAllocator()) noexcept;
@@ -2206,7 +2206,7 @@ namespace Aws
              * Data model of an [MQTT5
              * UNSUBACK](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901187) packet.
              */
-            class UnSubAckPacket : public IPacket
+            class AWS_CRT_CPP_API UnSubAckPacket : public IPacket
             {
               public:
                 UnSubAckPacket(

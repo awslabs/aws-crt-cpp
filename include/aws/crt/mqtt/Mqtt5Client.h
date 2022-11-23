@@ -55,7 +55,7 @@ namespace Aws
             };
 
             /* Simple statistics about the current state of the client's queue of operations */
-            struct Mqtt5ClientOperationStatistics
+            struct AWS_CRT_CPP_API Mqtt5ClientOperationStatistics
             {
                 /*
                  * total number of operations submitted to the client that have not yet been completed.  Unacked
