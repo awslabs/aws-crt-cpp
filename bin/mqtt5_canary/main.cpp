@@ -634,8 +634,7 @@ int main(int argc, char **argv)
     struct aws_allocator *allocator = aws_mem_tracer_new(aws_default_allocator(), NULL, AWS_MEMTRACE_STACKS, 15);
 
     ApiHandle apiHandle(allocator);
-    struct AppCtx appCtx;
-    AWS_ZERO_STRUCT(appCtx);
+    struct AppCtx appCtx = {};
     appCtx.allocator = allocator;
     appCtx.connect_timeout = 3000;
     aws_mutex_init(&appCtx.lock);

@@ -174,8 +174,7 @@ int main(int argc, char **argv)
 
     struct aws_allocator *allocator = aws_mem_tracer_new(aws_default_allocator(), NULL, AWS_MEMTRACE_STACKS, 15);
 
-    struct app_ctx app_ctx;
-    AWS_ZERO_STRUCT(app_ctx);
+    struct app_ctx app_ctx = {};
     app_ctx.allocator = allocator;
     app_ctx.connect_timeout = 3000;
     app_ctx.port = 1883;
