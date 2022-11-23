@@ -7,7 +7,6 @@
 #include <aws/crt/UUID.h>
 #include <aws/crt/auth/Credentials.h>
 #include <aws/crt/http/HttpProxyStrategy.h>
-#include <aws/crt/mqtt/Mqtt5Client.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
 #include <aws/iot/MqttCommon.h>
 #include <aws/testing/aws_test_harness.h>

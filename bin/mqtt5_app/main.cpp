@@ -9,7 +9,6 @@
 #include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Uri.h>
 
-#include <aws/crt/mqtt/Mqtt5Client.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
 
 #include <aws/common/command_line_parser.h>

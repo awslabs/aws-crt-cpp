@@ -11,7 +11,6 @@
 #include <aws/crt/io/TlsOptions.h>
 #include <aws/crt/io/Uri.h>
 
-#include <aws/crt/mqtt/Mqtt5Client.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
 
 #include <aws/common/clock.h>
