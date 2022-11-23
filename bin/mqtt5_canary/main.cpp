@@ -608,7 +608,6 @@ static int s_AwsMqtt5CanaryOperationPublishToSharedTopicQos1(
 }
 
 static struct AwsMqtt5CanaryOperationsFunctionTable s_AwsMqtt5CanaryOperationTable = {
-    .operationByOperationType =
         {
             NULL,                                                   /* null */
             &s_AwsMqtt5CanaryOperationStart,                        /* start */
@@ -623,7 +622,7 @@ static struct AwsMqtt5CanaryOperationsFunctionTable s_AwsMqtt5CanaryOperationTab
             &s_AwsMqtt5CanaryOperationPublishToSubscribedTopicQos1, /* publish_to_subscribed_topic_qos1 */
             &s_AwsMqtt5CanaryOperationPublishToSharedTopicQos0,     /* publish_to_shared_topic_qos0 */
             &s_AwsMqtt5CanaryOperationPublishToSharedTopicQos1,     /* publish_to_shared_topic_qos1 */
-        },
+        }
 };
 
 /**********************************************************
@@ -663,9 +662,8 @@ int main(int argc, char **argv)
      **********************************************************/
 
     // The log options is used to log memory allocation info after API get released.
-    struct aws_logger_standard_options logOptions = {
-        .level = (aws_log_level)appCtx.LogLevel,
-    };
+    struct aws_logger_standard_options logOptions;
+    logOptions.level= (aws_log_level)appCtx.LogLevel;
 
     if (appCtx.TraceFile)
     {

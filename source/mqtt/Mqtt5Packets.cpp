@@ -93,7 +93,7 @@ namespace Aws
                 const struct aws_mqtt5_user_property *properties,
                 size_t propertyCount)
             {
-                for (int i = 0; i < propertyCount; ++i)
+                for (size_t i = 0; i < propertyCount; ++i)
                 {
                     userProperties.push_back(UserProperty(
                         Aws::Crt::String((const char *)properties[i].name.ptr, properties[i].name.len),
@@ -1054,7 +1054,7 @@ namespace Aws
             {
                 setPacketStringOptional(m_reasonString, packet.reason_string);
                 setUserProperties(m_userProperties, packet.user_properties, packet.user_property_count);
-                for (int i = 0; i < packet.reason_code_count; i++)
+                for (size_t i = 0; i < packet.reason_code_count; i++)
                 {
                     m_reasonCodes.push_back(*(packet.reason_codes + i));
                 }
@@ -1138,7 +1138,7 @@ namespace Aws
             {
                 setPacketStringOptional(m_reasonString, packet.reason_string);
 
-                for (int i = 0; i < packet.reason_code_count; i++)
+                for (size_t i = 0; i < packet.reason_code_count; i++)
                 {
                     m_reasonCodes.push_back(*(packet.reason_codes + i));
                 }
