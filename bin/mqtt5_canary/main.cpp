@@ -661,19 +661,13 @@ int main(int argc, char **argv)
      * LOGGING
      **********************************************************/
 
-    // The log options is used to log memory allocation info after API get released.
-    struct aws_logger_standard_options logOptions;
-    logOptions.level= (aws_log_level)appCtx.LogLevel;
-
     if (appCtx.TraceFile)
     {
         apiHandle.InitializeLogging(appCtx.LogLevel, appCtx.TraceFile);
-        logOptions.filename = appCtx.TraceFile;
     }
     else
     {
         apiHandle.InitializeLogging(appCtx.LogLevel, stderr);
-        logOptions.file = stderr;
     }
 
     /***************************************************
