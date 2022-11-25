@@ -586,7 +586,6 @@ static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocat
 
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
     mqtt5Options.withHostName(mqtt5TestVars.m_hostname_string);
-    mqtt5Options.withPort(443);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -613,7 +612,17 @@ static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocat
 
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
         mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str());
-    tlsCtxOptions.SetAlpnList("x-amzn-mqtt-ca");
+    uint16_t port = 8883;
+    if (Io::TlsContextOptions::IsAlpnSupported())
+    {
+        /*
+        * Use ALPN to negotiate the mqtt protocol on a normal
+        * TLS port if possible.
+        */
+        tlsCtxOptions.SetAlpnList("x-amzn-mqtt-ca");
+        port = 443;
+    }
+    mqtt5Options.withPort(port);
 
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
@@ -1036,7 +1045,6 @@ static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, 
 
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
     mqtt5Options.withHostName(mqtt5TestVars.m_hostname_string);
-    mqtt5Options.withPort(443);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -1064,7 +1072,17 @@ static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, 
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
         mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str());
     tlsCtxOptions.OverrideDefaultTrustStore(mqtt5TestVars.m_rootca_path_string.c_str(), nullptr);
-    tlsCtxOptions.SetAlpnList("x-amzn-mqtt-ca");
+    uint16_t port = 8883;
+    if (Io::TlsContextOptions::IsAlpnSupported())
+    {
+        /*
+        * Use ALPN to negotiate the mqtt protocol on a normal
+        * TLS port if possible.
+        */
+        tlsCtxOptions.SetAlpnList("x-amzn-mqtt-ca");
+        port = 443;
+    }
+    mqtt5Options.withPort(port);
 
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
