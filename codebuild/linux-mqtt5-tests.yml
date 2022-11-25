@@ -1,4 +1,6 @@
 version: 0.2
+env:
+  shell: bash
 #this buildspec assumes the ubuntu 14 image
 phases:
   install:
