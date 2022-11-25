@@ -16,6 +16,8 @@ env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_REGION: us-east-1
+  AWS_TEST_MQTT5_DIRECT_MQTT_HOST: localhost
+  AWS_TEST_MQTT5_DIRECT_MQTT_PORT: 1883
 
 jobs:
   linux-compat:
@@ -30,10 +32,6 @@ jobs:
           - opensuse-leap
           - rhel8-x64
     steps:
-    - name : Test moqsuitto
-      run: |
-        export AWS_TEST_MQTT5_DIRECT_MQTT_HOST=localhost
-        export AWS_TEST_MQTT5_DIRECT_MQTT_PORT=1883
     # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
