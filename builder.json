@@ -12,6 +12,10 @@
     "build_steps": [
         "build-crt"
     ],
+    "env": {
+        "AWS_TEST_MQTT5_DIRECT_MQTT_HOST": "localhost",
+        "AWS_TEST_MQTT5_DIRECT_MQTT_PORT": "1883"
+    },
     "variants": {
         "openssl": {
             "hosts": {
