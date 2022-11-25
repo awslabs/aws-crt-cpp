@@ -16,8 +16,7 @@ phases:
   build:
     commands:
       - echo Build started on `date`
-      - sudo chmod a+xr ./codebuild/mqtt5_test_setup.sh
-      - ./codebuild/mqtt5_test_setup.sh s3://aws-crt-test-stuff/CodeBuildIotProdMQTT5EnvironmentVariables.txt us-east-1
+      - source ./codebuild/mqtt5_test_setup.sh s3://aws-crt-test-stuff/CodeBuildIotProdMQTT5EnvironmentVariables.txt us-east-1
 
       # Check if environment variable get set
       - echo $AWS_TEST_MQTT5_DIRECT_MQTT_PORT
@@ -26,7 +25,7 @@ phases:
       - ./codebuild/common-linux.sh -DENABLE_MQTT5_TEST=ON
 
       # cleanup
-      - ./codebuild/mqtt5_test_setup.sh s3://aws-crt-test-stuff/CodeBuildIotProdMQTT5EnvironmentVariables.txt cleanup
+      - source ./codebuild/mqtt5_test_setup.sh s3://aws-crt-test-stuff/CodeBuildIotProdMQTT5EnvironmentVariables.txt cleanup
 
   post_build:
     commands:
