@@ -32,13 +32,8 @@ jobs:
     steps:
     - name : Test moqsuitto
       run: |
-        sudo apt-add-repository ppa:mosquitto-dev/mosquitto-ppa
-        sudo apt-get update
-        sudo apt-get install mosquitto
-        sudo apt-get install mosquitto-clients
         export AWS_TEST_MQTT5_DIRECT_MQTT_HOST=localhost
         export AWS_TEST_MQTT5_DIRECT_MQTT_PORT=1883
-        mosquitto -v
     # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
