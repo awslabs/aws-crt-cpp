@@ -45,8 +45,8 @@ AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_certificate, "AWS_TEST_MQTT5
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_private_key, "AWS_TEST_MQTT5_KEY_FILE");
 
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_hostname, "AWS_TEST_MQTT5_IOT_CORE_HOST");
-AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_certificate, "AWS_TEST_MQTT5_IOT_CORE_CERTIFICATE_PATH");
-AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_key, "AWS_TEST_MQTT5_IOT_CORE_KEY_PATH");
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_certificate, "AWS_TEST_MQTT5_IOT_CERTIFICATE_PATH");
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_key, "AWS_TEST_MQTT5_IOT_KEY_PATH");
 
 enum Mqtt5TestType
 {
@@ -56,7 +56,6 @@ enum Mqtt5TestType
     MQTT5CONNECT_WS,
     MQTT5CONNECT_WS_BASIC_AUTH,
     MQTT5CONNECT_WS_TLS,
-    MQTT5CONNECT_PROXY,
     MQTT5CONNECT_IOT_CORE
 };
 
@@ -170,18 +169,6 @@ struct Mqtt5TestEnvVars
                 }
                 break;
             }
-            case MQTT5CONNECT_PROXY:
-            {
-                m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_proxy_hostname, &m_hostname);
-                m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_proxy_port, &m_port);
-
-                if (m_error == AWS_OP_SUCCESS)
-                {
-                    m_hostname_string = Aws::Crt::String((const char *)m_hostname->bytes, m_hostname->len, allocator);
-                    m_port_value = atoi((const char *)m_port->bytes);
-                }
-                break;
-            }
             case MQTT5CONNECT_IOT_CORE:
             {
                 m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &m_hostname);
@@ -203,6 +190,15 @@ struct Mqtt5TestEnvVars
             default:
                 m_error = AWS_OP_ERR;
                 break;
+        }
+
+        m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_proxy_hostname, &m_httpproxy_hostname);
+        m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_proxy_port, &m_httpproxy_port);
+
+        if (m_error == AWS_OP_SUCCESS)
+        {
+            m_httpproxy_hostname_string = Aws::Crt::String((const char *)m_httpproxy_hostname->bytes, m_hostname->len, allocator);
+            m_httpproxy_port_value = atoi((const char *)m_httpproxy_port->bytes);
         }
     }
 
@@ -245,6 +241,18 @@ struct Mqtt5TestEnvVars
             aws_string_destroy(m_private_key_path);
             m_private_key_path = NULL;
         }
+
+        if (m_httpproxy_hostname != NULL)
+        {
+            aws_string_destroy(m_httpproxy_hostname);
+            m_httpproxy_hostname = NULL;
+        }
+
+        if (m_httpproxy_port != NULL)
+        {
+            aws_string_destroy(m_httpproxy_port);
+            m_httpproxy_port = NULL;
+        }
     }
 
     int m_error;
@@ -256,6 +264,8 @@ struct Mqtt5TestEnvVars
     struct aws_string *m_password = NULL;
     struct aws_string *m_certificate_path = NULL;
     struct aws_string *m_private_key_path = NULL;
+    struct aws_string *m_httpproxy_hostname = NULL;
+    struct aws_string *m_httpproxy_port = NULL;
 
     Aws::Crt::String m_hostname_string;
     uint16_t m_port_value;
@@ -263,6 +273,8 @@ struct Mqtt5TestEnvVars
     Aws::Crt::ByteCursor m_password_cursor;
     Aws::Crt::String m_certificate_path_string;
     Aws::Crt::String m_private_key_path_string;
+    Aws::Crt::String m_httpproxy_hostname_string;
+    uint16_t m_httpproxy_port_value;
 };
 
 //////////////////////////////////////////////////////////
@@ -612,7 +624,7 @@ AWS_TEST_CASE(Mqtt5DirectConnectionWithMutualTLS, s_TestMqtt5DirectConnectionWit
 // */
 static int s_TestMqtt5DirectConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, void *ctx)
 {
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_PROXY);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_TLS);
     ASSERT_TRUE(mqtt5TestVars);
 
     ApiHandle apiHandle(allocator);
@@ -622,8 +634,8 @@ static int s_TestMqtt5DirectConnectionWithHttpProxy(Aws::Crt::Allocator *allocat
 
     // HTTP PROXY
     Aws::Crt::Http::HttpClientConnectionProxyOptions proxyOptions;
-    proxyOptions.HostName = mqtt5TestVars.m_hostname_string;
-    proxyOptions.Port = mqtt5TestVars.m_port_value;
+    proxyOptions.HostName = mqtt5TestVars.m_httpproxy_hostname_string;
+    proxyOptions.Port = mqtt5TestVars.m_httpproxy_port_value;
     proxyOptions.ProxyConnectionType = Aws::Crt::Http::AwsHttpProxyConnectionType::Tunneling;
     mqtt5Options.withHttpProxyOptions(proxyOptions);
 
@@ -1086,7 +1098,7 @@ AWS_TEST_CASE(Mqtt5WSConnectionWithMutualTLS, s_TestMqtt5WSConnectionWithMutualT
  */
 static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, void *ctx)
 {
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_PROXY);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS_TLS);
     ASSERT_TRUE(mqtt5TestVars);
 
     ApiHandle apiHandle(allocator);
@@ -1096,8 +1108,8 @@ static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, 
 
     // HTTP PROXY
     Aws::Crt::Http::HttpClientConnectionProxyOptions proxyOptions;
-    proxyOptions.HostName = mqtt5TestVars.m_hostname_string;
-    proxyOptions.Port = mqtt5TestVars.m_port_value;
+    proxyOptions.HostName = mqtt5TestVars.m_httpproxy_hostname_string;
+    proxyOptions.Port = mqtt5TestVars.m_httpproxy_port_value;
     proxyOptions.ProxyConnectionType = Aws::Crt::Http::AwsHttpProxyConnectionType::Tunneling;
     mqtt5Options.withHttpProxyOptions(proxyOptions);
 
