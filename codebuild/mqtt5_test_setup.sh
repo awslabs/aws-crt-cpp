@@ -107,12 +107,6 @@ if [ "${iot_cert_file}" != "" ]; then
 else
     echo "Could not get IoT certificate from secrets!"
 
-# Does the certificate file have data? If not, then abort!
-if [ "${iot_rootca_file}" != "" ]; then
-    echo "IoT root ca secret found"
-else
-    echo "Could not get IoT Root CA from secrets!"
-
     # Clean up...
     unset $(grep -v '^#' environment_files.txt | xargs | cut -d "=" -f 1)
     unset AWS_TEST_MQTT5_CERTIFICATE_FILE
@@ -145,6 +139,25 @@ else
 
     return 1
 fi
+# Does the root ca file have data? If not, then abort!
+if [ "${iot_rootca_file}" != "" ]; then
+    echo "IoT root ca secret found"
+else
+    echo "Could not get IoT Root CA from secrets!"
+    # Clean up...
+    unset $(grep -v '^#' environment_files.txt | xargs | cut -d "=" -f 1)
+    unset AWS_TEST_MQTT5_CERTIFICATE_FILE
+    unset AWS_TEST_MQTT5_KEY_FILE
+    rm "${PWD}/environment_files.txt"
+    rm "${PWD}/crt_certificate.pem"
+    rm "${PWD}/crt_privatekey.pem"
+    rm "${PWD}/iot_certificate.pem"
+    rm "${PWD}/iot_privatekey.pem"
+    rm "${PWD}/iot_rootca.pem"
+
+    return 1
+fi
+
 # Set IoT certificate and key paths
 export AWS_TEST_MQTT5_IOT_CERTIFICATE_PATH="${PWD}/iot_certificate.pem"
 export AWS_TEST_MQTT5_IOT_KEY_PATH="${PWD}/iot_privatekey.pem"
