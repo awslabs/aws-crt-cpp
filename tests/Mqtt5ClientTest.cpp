@@ -616,9 +616,6 @@ static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocat
     ASSERT_TRUE(tlsCtxOptions.OverrideDefaultTrustStore(nullptr, mqtt5TestVars.m_rootca_path_string.c_str()));
     printf("[MQTT5]override ca path: %s", mqtt5TestVars.m_rootca_path_string.c_str());
 
-    printf("[MQTT5]using port: %d", port);
-    mqtt5Options.withPort(port);
-
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
     Aws::Crt::Io::TlsConnectionOptions tlsConnection = tlsContext.NewConnectionOptions();
