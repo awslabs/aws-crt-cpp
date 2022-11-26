@@ -612,7 +612,8 @@ static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocat
 
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
         mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str());
-    tlsCtxOptions.OverrideDefaultTrustStore(nullptr, mqtt5TestVars.m_rootca_path_string.c_str());
+    ASSERT_TRUE(tlsCtxOptions.OverrideDefaultTrustStore(nullptr, mqtt5TestVars.m_rootca_path_string.c_str()));
+    printf("[MQTT5]override ca path: %s", mqtt5TestVars.m_rootca_path_string.c_str());
     uint16_t port = 8883;
     if (Io::TlsContextOptions::IsAlpnSupported())
     {
@@ -1072,7 +1073,7 @@ static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, 
 
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
         mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str());
-    tlsCtxOptions.OverrideDefaultTrustStore(nullptr, mqtt5TestVars.m_rootca_path_string.c_str());
+    ASSERT_TRUE(tlsCtxOptions.OverrideDefaultTrustStore(nullptr, mqtt5TestVars.m_rootca_path_string.c_str()));
     printf("[MQTT5]override ca path: %s", mqtt5TestVars.m_rootca_path_string.c_str());
     uint16_t port = 8883;
     if (Io::TlsContextOptions::IsAlpnSupported())
