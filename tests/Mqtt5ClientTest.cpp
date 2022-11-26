@@ -586,7 +586,6 @@ static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocat
 
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
     mqtt5Options.withHostName(mqtt5TestVars.m_hostname_string);
-    mqtt5Options.withPort(mqtt5TestVars.m_port_value);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -615,6 +614,9 @@ static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocat
         mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str());
     ASSERT_TRUE(tlsCtxOptions.OverrideDefaultTrustStore(nullptr, mqtt5TestVars.m_rootca_path_string.c_str()));
     printf("[MQTT5]override ca path: %s", mqtt5TestVars.m_rootca_path_string.c_str());
+    uint16_t port = 8883;
+    printf("[MQTT5]using port: %d", port);
+    mqtt5Options.withPort(port);
 
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
@@ -1037,7 +1039,6 @@ static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, 
 
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
     mqtt5Options.withHostName(mqtt5TestVars.m_hostname_string);
-    mqtt5Options.withPort(mqtt5TestVars.m_port_value);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -1066,6 +1067,8 @@ static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, 
         mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str());
     ASSERT_TRUE(tlsCtxOptions.OverrideDefaultTrustStore(nullptr, mqtt5TestVars.m_rootca_path_string.c_str()));
     printf("[MQTT5]override ca path: %s", mqtt5TestVars.m_rootca_path_string.c_str());
+    uint16_t port = 8883;
+    mqtt5Options.withPort(port);
 
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
