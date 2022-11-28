@@ -47,9 +47,6 @@ AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_private_key, "AWS_TEST_MQTT5
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_hostname, "AWS_TEST_MQTT5_IOT_CORE_HOST");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_certificate, "AWS_TEST_MQTT5_IOT_CERTIFICATE_PATH");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_key, "AWS_TEST_MQTT5_IOT_KEY_PATH");
-AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_ca, "AWS_TEST_MQTT5_IOT_ROOT_CA_PATH");
-
-
 
 enum Mqtt5TestType
 {
@@ -178,7 +175,6 @@ struct Mqtt5TestEnvVars
                 m_error |=
                     aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_certificate, &m_certificate_path);
                 m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_key, &m_private_key_path);
-                m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_ca, &m_rootca_path);
 
                 if (m_error == AWS_OP_SUCCESS)
                 {
@@ -187,8 +183,6 @@ struct Mqtt5TestEnvVars
                         Aws::Crt::String((const char *)m_certificate_path->bytes, m_certificate_path->len, allocator);
                     m_private_key_path_string =
                         Aws::Crt::String((const char *)m_private_key_path->bytes, m_private_key_path->len, allocator);
-                    m_rootca_path_string =
-                        Aws::Crt::String((const char *)m_rootca_path->bytes, m_rootca_path->len, allocator);
                 }
                 break;
             }
@@ -259,12 +253,6 @@ struct Mqtt5TestEnvVars
             aws_string_destroy(m_httpproxy_port);
             m_httpproxy_port = NULL;
         }
-
-        if (m_rootca_path != NULL)
-        {
-            aws_string_destroy(m_rootca_path);
-            m_rootca_path = NULL;
-        }
     }
 
     int m_error;
@@ -278,7 +266,6 @@ struct Mqtt5TestEnvVars
     struct aws_string *m_private_key_path = NULL;
     struct aws_string *m_httpproxy_hostname = NULL;
     struct aws_string *m_httpproxy_port = NULL;
-    struct aws_string *m_rootca_path = NULL;
 
     Aws::Crt::String m_hostname_string;
     uint16_t m_port_value;
@@ -286,7 +273,6 @@ struct Mqtt5TestEnvVars
     Aws::Crt::ByteCursor m_password_cursor;
     Aws::Crt::String m_certificate_path_string;
     Aws::Crt::String m_private_key_path_string;
-    Aws::Crt::String m_rootca_path_string;
     Aws::Crt::String m_httpproxy_hostname_string;
     uint16_t m_httpproxy_port_value;
 };
@@ -587,6 +573,7 @@ static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocat
 
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
     mqtt5Options.withHostName(mqtt5TestVars.m_hostname_string);
+    mqtt5Options.withPort(443);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -611,17 +598,8 @@ static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocat
         stoppedPromise.set_value();
     });
 
-
-    printf("[MQTT5]set cert & key path: %s \n %s \n", mqtt5TestVars.m_certificate_path_string.c_str(),
-    mqtt5TestVars.m_private_key_path_string.c_str());
-
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
         mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str());
-    ASSERT_TRUE(tlsCtxOptions.OverrideDefaultTrustStore(nullptr, mqtt5TestVars.m_rootca_path_string.c_str()));
-    printf("[MQTT5]override ca path: %s", mqtt5TestVars.m_rootca_path_string.c_str());
-    uint16_t port = 8883;
-    printf("[MQTT5]using port: %d", port);
-    mqtt5Options.withPort(port);
 
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
@@ -1045,6 +1023,7 @@ static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, 
 
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
     mqtt5Options.withHostName(mqtt5TestVars.m_hostname_string);
+    mqtt5Options.withPort(443);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -1071,10 +1050,6 @@ static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, 
 
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
         mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str());
-    ASSERT_TRUE(tlsCtxOptions.OverrideDefaultTrustStore(nullptr, mqtt5TestVars.m_rootca_path_string.c_str()));
-    printf("[MQTT5]override ca path: %s", mqtt5TestVars.m_rootca_path_string.c_str());
-    uint16_t port = 8883;
-    mqtt5Options.withPort(port);
 
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
@@ -1140,7 +1115,8 @@ static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, 
     mqtt5Options.withHttpProxyOptions(proxyOptions);
 
     // TLS
-    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
+    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
+        mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str());
     tlsCtxOptions.SetVerifyPeer(false);
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);

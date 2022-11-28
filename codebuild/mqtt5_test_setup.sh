@@ -100,7 +100,7 @@ export AWS_TEST_MQTT5_KEY_FILE="${PWD}/crt_privatekey.pem"
 # Get the certificate and key secrets (dumps straight to a file)
 iot_cert_file=$(aws secretsmanager get-secret-value --secret-id "${AWS_TEST_MQTT5_IOT_CERTIFICATE_PATH_SECRET}" --query "SecretString" --region ${region} | cut -f2 -d":" | cut -f2 -d\") && echo -e "$iot_cert_file" > ./iot_certificate.pem
 iot_key_file=$(aws secretsmanager get-secret-value --secret-id "${AWS_TEST_MQTT5_IOT_KEY_PATH_SECRET}" --query "SecretString" --region ${region} | cut -f2 -d":" | cut -f2 -d\") && echo -e "$iot_key_file" > ./iot_privatekey.pem
-iot_rootca_file=$(aws secretsmanager get-secret-value --secret-id "${AWS_TEST_MQTT5_IOT_ROOT_CA_PATH_SECRET}" --query "SecretString" --region ${region} | cut -f2 -d":" | cut -f2 -d\") && echo -e "$iot_rootca_file" > ./iot_rootca.pem
+
 # Does the certificate file have data? If not, then abort!
 if [ "${iot_cert_file}" != "" ]; then
     echo "IoT Certificate secret found"
@@ -116,7 +116,6 @@ else
     rm "${PWD}/crt_privatekey.pem"
     rm "${PWD}/iot_certificate.pem"
     rm "${PWD}/iot_privatekey.pem"
-    rm "${PWD}/iot_rootca.pem"
 
     return 1
 fi
@@ -135,25 +134,6 @@ else
     rm "${PWD}/crt_privatekey.pem"
     rm "${PWD}/iot_certificate.pem"
     rm "${PWD}/iot_privatekey.pem"
-    rm "${PWD}/iot_rootca.pem"
-
-    return 1
-fi
-# Does the root ca file have data? If not, then abort!
-if [ "${iot_rootca_file}" != "" ]; then
-    echo "IoT root ca secret found"
-else
-    echo "Could not get IoT Root CA from secrets!"
-    # Clean up...
-    unset $(grep -v '^#' environment_files.txt | xargs | cut -d "=" -f 1)
-    unset AWS_TEST_MQTT5_CERTIFICATE_FILE
-    unset AWS_TEST_MQTT5_KEY_FILE
-    rm "${PWD}/environment_files.txt"
-    rm "${PWD}/crt_certificate.pem"
-    rm "${PWD}/crt_privatekey.pem"
-    rm "${PWD}/iot_certificate.pem"
-    rm "${PWD}/iot_privatekey.pem"
-    rm "${PWD}/iot_rootca.pem"
 
     return 1
 fi
@@ -161,12 +141,6 @@ fi
 # Set IoT certificate and key paths
 export AWS_TEST_MQTT5_IOT_CERTIFICATE_PATH="${PWD}/iot_certificate.pem"
 export AWS_TEST_MQTT5_IOT_KEY_PATH="${PWD}/iot_privatekey.pem"
-export AWS_TEST_MQTT5_IOT_ROOT_CA_PATH="${PWD}/iot_rootca.pem"
-
-cat ${AWS_TEST_MQTT5_IOT_CERTIFICATE_PATH}
-cat ${AWS_TEST_MQTT5_IOT_KEY_PATH}
-# try listing the file path
-ls -d $PWD/*
 
 # Everything is set
 echo "Success: Environment variables set!"
