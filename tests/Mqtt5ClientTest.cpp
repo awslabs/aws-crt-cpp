@@ -610,6 +610,10 @@ static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocat
         stoppedPromise.set_value();
     });
 
+
+    printf("[MQTT5]set cert & key path: %s \n %s \n", mqtt5TestVars.m_certificate_path_string.c_str(),
+    mqtt5TestVars.m_private_key_path_string.c_str());
+
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
         mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str());
     ASSERT_TRUE(tlsCtxOptions.OverrideDefaultTrustStore(nullptr, mqtt5TestVars.m_rootca_path_string.c_str()));
