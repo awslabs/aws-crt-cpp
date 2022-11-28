@@ -24,7 +24,11 @@ phases:
       - echo $AWS_TEST_MQTT5_DIRECT_MQTT_PORT
 
       # Build and test
-      - ./codebuild/common-linux.sh -DENABLE_MQTT5_TEST=ON
+      - ./codebuild/common-linux.sh
+
+      - aws s3 cp s3://aws-crt-test-stuff/setup_proxy_test_env.sh /tmp/setup_proxy_test_env.sh
+      - sudo chmod a+xr /tmp/setup_proxy_test_env.sh
+      - ./codebuild/common-posix.sh -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DENABLE_FUZZ_TESTS=ON -DENABLE_MQTT5_TEST=ON
 
       # cleanup
       - source ./codebuild/mqtt5_test_setup.sh s3://aws-crt-test-stuff/Test_CodeBuildIotProdMQTT5EnvironmentVariables.txt cleanup
