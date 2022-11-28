@@ -1132,6 +1132,7 @@ static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, 
     ASSERT_TRUE(provider);
 
     Aws::Iot::WebsocketConfig config("us-east-1", provider);
+    config.ProxyOptions = proxyOptions;
 
     mqtt5Options.withWebsocketHandshakeTransformCallback(
         [config](
