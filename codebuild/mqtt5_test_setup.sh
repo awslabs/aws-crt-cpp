@@ -162,6 +162,8 @@ fi
 export AWS_TEST_MQTT5_IOT_CERTIFICATE_PATH="${PWD}/iot_certificate.pem"
 export AWS_TEST_MQTT5_IOT_KEY_PATH="${PWD}/iot_privatekey.pem"
 export AWS_TEST_MQTT5_IOT_ROOT_CA_PATH="${PWD}/iot_rootca.pem"
+# try listing the file path
+ls -d $PWD/*
 
 # Everything is set
 echo "Success: Environment variables set!"
