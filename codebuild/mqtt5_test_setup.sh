@@ -162,6 +162,9 @@ fi
 export AWS_TEST_MQTT5_IOT_CERTIFICATE_PATH="${PWD}/iot_certificate.pem"
 export AWS_TEST_MQTT5_IOT_KEY_PATH="${PWD}/iot_privatekey.pem"
 export AWS_TEST_MQTT5_IOT_ROOT_CA_PATH="${PWD}/iot_rootca.pem"
+
+cat ${AWS_TEST_MQTT5_IOT_CERTIFICATE_PATH}
+cat ${AWS_TEST_MQTT5_IOT_KEY_PATH}
 # try listing the file path
 ls -d $PWD/*
 
