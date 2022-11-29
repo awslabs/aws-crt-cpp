@@ -1105,6 +1105,7 @@ static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, 
 
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
     mqtt5Options.withHostName(mqtt5TestVars.m_hostname_string);
+    mqtt5Options.withPort(443);
 
     // HTTP PROXY
     Aws::Crt::Http::HttpClientConnectionProxyOptions proxyOptions;
