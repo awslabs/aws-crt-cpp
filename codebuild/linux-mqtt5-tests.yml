@@ -1,4 +1,6 @@
 version: 0.2
+env:
+  shell: bash
 #this buildspec assumes the ubuntu 14 image
 phases:
   install:
@@ -8,9 +10,6 @@ phases:
       - sudo apt-add-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-6.0 main"
       - sudo apt-get update -y
       - sudo apt-get install gcc-7 cmake -y
-      - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
-      - unzip -q -d /tmp /tmp/awscliv2.zip
-      - sudo /tmp/aws/install
 
   pre_build:
     commands:
@@ -19,11 +18,14 @@ phases:
   build:
     commands:
       - echo Build started on `date`
-      - sudo chmod a+xr /codebuild/mqtt5_test_setup.sh
-      - ./codebuild/mqtt5_test_setup.sh s3://aws-crt-test-stuff/TestIotProdMQTT5EnvironmentVariables.txt us-east-1
-      - aws s3 cp s3://aws-crt-test-stuff/setup_proxy_test_env.sh ./tmp/setup_proxy_test_env.sh
+      - source ./codebuild/mqtt5_test_setup.sh s3://aws-crt-test-stuff/CodeBuildIotProdMQTT5EnvironmentVariables.txt us-east-1
+
+      - aws s3 cp s3://aws-crt-test-stuff/setup_proxy_test_env.sh /tmp/setup_proxy_test_env.sh
       - sudo chmod a+xr /tmp/setup_proxy_test_env.sh
       - ./codebuild/common-posix.sh -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DENABLE_FUZZ_TESTS=ON -DENABLE_MQTT5_TEST=ON
+
+      # cleanup
+      - source ./codebuild/mqtt5_test_setup.sh s3://aws-crt-test-stuff/CodeBuildIotProdMQTT5EnvironmentVariables.txt cleanup
 
   post_build:
     commands:
