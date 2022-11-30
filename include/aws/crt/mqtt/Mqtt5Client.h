@@ -88,7 +88,7 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API OnAttemptingConnectEventData
             {
-                OnAttemptingConnectEventData(){}
+                OnAttemptingConnectEventData() {}
             };
 
             /**
@@ -96,7 +96,7 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API OnConnectionFailureEventData
             {
-                OnConnectionFailureEventData(): errorCode(AWS_ERROR_SUCCESS), connAckPacket(nullptr){}
+                OnConnectionFailureEventData() : errorCode(AWS_ERROR_SUCCESS), connAckPacket(nullptr) {}
 
                 int errorCode;
                 std::shared_ptr<ConnAckPacket> connAckPacket;
@@ -107,7 +107,7 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API OnConnectionSuccessEventData
             {
-                OnConnectionSuccessEventData(): connAckPacket(nullptr), negotiatedSettings(nullptr){}
+                OnConnectionSuccessEventData() : connAckPacket(nullptr), negotiatedSettings(nullptr) {}
 
                 std::shared_ptr<ConnAckPacket> connAckPacket;
                 std::shared_ptr<NegotiatedSettings> negotiatedSettings;
@@ -118,7 +118,7 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API OnDisconnectionEventData
             {
-                OnDisconnectionEventData(): errorCode(AWS_ERROR_SUCCESS), disconnectPacket(nullptr){}
+                OnDisconnectionEventData() : errorCode(AWS_ERROR_SUCCESS), disconnectPacket(nullptr) {}
 
                 int errorCode;
                 std::shared_ptr<DisconnectPacket> disconnectPacket;
@@ -128,15 +128,17 @@ namespace Aws
              * The data returned when OnStopped is invoked in the LifecycleEvents callback.
              * Currently empty, but may be used in the future for passing additional data.
              */
-            struct AWS_CRT_CPP_API OnStoppedEventData {
-                OnStoppedEventData(){}
+            struct AWS_CRT_CPP_API OnStoppedEventData
+            {
+                OnStoppedEventData() {}
             };
 
             /**
              * The data returned when a publish is made to a topic the MQTT5 client is subscribed to.
              */
-            struct AWS_CRT_CPP_API PublishReceivedEventData {
-                PublishReceivedEventData(): publishPacket(nullptr){}
+            struct AWS_CRT_CPP_API PublishReceivedEventData
+            {
+                PublishReceivedEventData() : publishPacket(nullptr) {}
                 std::shared_ptr<PublishPacket> publishPacket;
             };
 
@@ -145,29 +147,32 @@ namespace Aws
              * Mandatory event fields: client, connack_data, settings
              */
             using OnConnectionSuccessHandler =
-                std::function<void(std::shared_ptr<Mqtt5Client>,const OnConnectionSuccessEventData&)>;
+                std::function<void(std::shared_ptr<Mqtt5Client>, const OnConnectionSuccessEventData &)>;
 
             /**
              * Type signature of the callback invoked when connection failed
              */
-            using OnConnectionFailureHandler = std::function<void(std::shared_ptr<Mqtt5Client>,const OnConnectionFailureEventData&)>;
+            using OnConnectionFailureHandler =
+                std::function<void(std::shared_ptr<Mqtt5Client>, const OnConnectionFailureEventData &)>;
 
             /**
              * Type signature of the callback invoked when the internal connection is shutdown
              */
-            using OnDisconnectionHandler = std::function<void(std::shared_ptr<Mqtt5Client>, const OnDisconnectionEventData&)>;
+            using OnDisconnectionHandler =
+                std::function<void(std::shared_ptr<Mqtt5Client>, const OnDisconnectionEventData &)>;
 
             /**
              * Type signature of the callback invoked when attempting connect to client
              * Mandatory event fields: client
              */
-            using OnAttemptingConnectHandler = std::function<void(std::shared_ptr<Mqtt5Client>, const OnAttemptingConnectEventData&)>;
+            using OnAttemptingConnectHandler =
+                std::function<void(std::shared_ptr<Mqtt5Client>, const OnAttemptingConnectEventData &)>;
 
             /**
              * Type signature of the callback invoked when client connection stopped
              * Mandatory event fields: client
              */
-            using OnStoppedHandler = std::function<void(std::shared_ptr<Mqtt5Client>, const OnStoppedEventData&)>;
+            using OnStoppedHandler = std::function<void(std::shared_ptr<Mqtt5Client>, const OnStoppedEventData &)>;
 
             /**
              * Type signature of the callback invoked when a Disconnection Comlete
