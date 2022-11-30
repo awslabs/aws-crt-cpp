@@ -321,7 +321,10 @@ static int s_TestMqtt5NewClientMin(Aws::Crt::Allocator *allocator, void *ctx)
 {
     (void)ctx;
     struct Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -343,7 +346,10 @@ AWS_TEST_CASE(Mqtt5NewClientMinimal, s_TestMqtt5NewClientMin)
 static int s_TestMqtt5NewClientFull(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -421,7 +427,10 @@ AWS_TEST_CASE(Mqtt5NewClientFull, s_TestMqtt5NewClientFull)
 static int s_TestMqtt5DirectConnectionMinimal(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -451,7 +460,10 @@ AWS_TEST_CASE(Mqtt5DirectConnectionMinimal, s_TestMqtt5DirectConnectionMinimal)
 static int s_TestMqtt5DirectConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_BASIC_AUTH);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -487,7 +499,10 @@ AWS_TEST_CASE(Mqtt5DirectConnectionWithBasicAuth, s_TestMqtt5DirectConnectionWit
 static int s_TestMqtt5DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_TLS);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -529,7 +544,10 @@ AWS_TEST_CASE(Mqtt5DirectConnectionWithTLS, s_TestMqtt5DirectConnectionWithTLS)
 static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -569,7 +587,10 @@ AWS_TEST_CASE(Mqtt5DirectConnectionWithMutualTLS, s_TestMqtt5DirectConnectionWit
 static int s_TestMqtt5DirectConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_TLS);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -615,7 +636,10 @@ AWS_TEST_CASE(Mqtt5DirectConnectionWithHttpProxy, s_TestMqtt5DirectConnectionWit
 static int s_TestMqtt5DirectConnectionFull(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -697,7 +721,10 @@ AWS_TEST_CASE(Mqtt5DirectConnectionFull, s_TestMqtt5DirectConnectionFull)
 static int s_TestMqtt5WSConnectionMinimal(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -748,7 +775,10 @@ AWS_TEST_CASE(Mqtt5WSConnectionMinimal, s_TestMqtt5WSConnectionMinimal)
 static int s_TestMqtt5WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS_BASIC_AUTH);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -805,7 +835,10 @@ AWS_TEST_CASE(Mqtt5WSConnectionWithBasicAuth, s_TestMqtt5WSConnectionWithBasicAu
 static int s_TestMqtt5WSConnectionWithTLS(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS_TLS);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -867,7 +900,10 @@ AWS_TEST_CASE(Mqtt5WSConnectionWithTLS, s_TestMqtt5WSConnectionWithTLS)
 static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -930,7 +966,10 @@ AWS_TEST_CASE(Mqtt5WSConnectionWithMutualTLS, s_TestMqtt5WSConnectionWithMutualT
 static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS_TLS);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1001,7 +1040,10 @@ AWS_TEST_CASE(Mqtt5WSConnectionWithHttpProxy, s_TestMqtt5WSConnectionWithHttpPro
 static int s_TestMqtt5WSConnectionFull(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1105,7 +1147,10 @@ AWS_TEST_CASE(Mqtt5WSConnectionFull, s_TestMqtt5WSConnectionFull)
 static int s_TestMqtt5DirectInvalidHostname(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1134,7 +1179,10 @@ AWS_TEST_CASE(Mqtt5InvalidHostname, s_TestMqtt5DirectInvalidHostname)
 static int s_TestMqtt5DirectInvalidPort(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1163,7 +1211,10 @@ AWS_TEST_CASE(Mqtt5InvalidPort, s_TestMqtt5DirectInvalidPort)
 static int s_TestMqtt5WSInvalidPort(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1213,7 +1264,10 @@ AWS_TEST_CASE(Mqtt5WSInvalidPort, s_TestMqtt5WSInvalidPort)
 static int s_TestMqtt5SocketTimeout(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1257,7 +1311,10 @@ AWS_TEST_CASE(Mqtt5SocketTimeout, s_TestMqtt5SocketTimeout)
 static int s_TestMqtt5IncorrectBasicAuth(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_BASIC_AUTH);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1291,7 +1348,10 @@ AWS_TEST_CASE(Mqtt5IncorrectBasicAuth, s_TestMqtt5IncorrectBasicAuth)
 static int s_TestMqtt5IncorrectWSConnect(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1335,7 +1395,10 @@ AWS_TEST_CASE(Mqtt5IncorrectWSConnect, s_TestMqtt5IncorrectWSConnect)
 static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1410,7 +1473,10 @@ AWS_TEST_CASE(Mqtt5DoubleClientIDFailure, s_TestMqtt5DoubleClientIDFailure)
 static int s_TestMqtt5NegotiatedSettingsHappy(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1463,7 +1529,10 @@ static int s_TestMqtt5NegotiatedSettingsFull(Aws::Crt::Allocator *allocator, voi
     const uint16_t KEEP_ALIVE_INTERVAL = 1000;
 
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1522,7 +1591,10 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
     const uint32_t PACKET_MAX = UINT32_MAX;
 
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1578,7 +1650,10 @@ AWS_TEST_CASE(Mqtt5NegotiatedSettingsLimit, s_TestMqtt5NegotiatedSettingsLimit)
 static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1654,7 +1729,10 @@ AWS_TEST_CASE(Mqtt5SubUnsub, s_TestMqtt5SubUnsub)
 static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1742,7 +1820,10 @@ AWS_TEST_CASE(Mqtt5WillTest, s_TestMqtt5WillTest)
 static int s_TestMqtt5NullPublish(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1783,7 +1864,10 @@ AWS_TEST_CASE(Mqtt5NullPublish, s_TestMqtt5NullPublish)
 static int s_TestMqtt5NullSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1823,7 +1907,10 @@ AWS_TEST_CASE(Mqtt5NullSubscribe, s_TestMqtt5NullSubscribe)
 static int s_TestMqtt5NullUnsubscribe(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1861,7 +1948,10 @@ AWS_TEST_CASE(Mqtt5NullUnsubscribe, s_TestMqtt5NullUnsubscribe)
 static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
     // A long and invlid client id;
@@ -1897,7 +1987,10 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *ctx)
 {
 
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -2003,7 +2096,10 @@ AWS_TEST_CASE(Mqtt5QoS1SubPub, s_TestMqtt5QoS1SubPub)
 static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
     const Aws::Crt::String TEST_TOPIC = "test/s_TestMqtt5RetainSetAndClear" + Aws::Crt::UUID().ToString();
