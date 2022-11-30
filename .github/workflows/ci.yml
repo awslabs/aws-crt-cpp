@@ -30,7 +30,7 @@ jobs:
           - opensuse-leap
           - rhel8-x64
     steps:
-    # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
+        # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
