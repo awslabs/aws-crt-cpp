@@ -139,17 +139,11 @@ namespace Aws
 
             /**
              * Type signature of the callback invoked when connection failed
-             *
-             * Mandatory event fields: client, error_code
-             * Conditional event fields: connack_data
              */
             using OnConnectionFailureHandler = std::function<void(std::shared_ptr<Mqtt5Client>, OnConnectionFailureReturn)>;
 
             /**
              * Type signature of the callback invoked when the internal connection is shutdown
-             *
-             * Mandatory event fields: client, error_code
-             * Conditional event fields: disconnect_data
              */
             using OnDisconnectionHandler = std::function<void(std::shared_ptr<Mqtt5Client>, OnDisconnectionReturn)>;
 
@@ -357,50 +351,31 @@ namespace Aws
                 OnWebSocketHandshakeIntercept websocketInterceptor;
                 /**
                  * Callback handler trigged when client successfully establishes an MQTT connection
-                 *
-                 * @param Mqtt5Client: The shared client
-                 * @param PacketConnAck
-                 * @param NegotiateSettings
                  */
                 OnConnectionSuccessHandler onConnectionSuccess;
 
                 /**
                  * Callback handler trigged when client fails to establish an MQTT connection
-                 *
-                 * @param Mqtt5Client: The shared client
-                 * @param errorCode: errorCode indicates the reason for connection failure
-                 * @param PacketConnAck: (optional) ConnAck Packet
                  */
                 OnConnectionFailureHandler onConnectionFailure;
 
                 /**
                  * Callback handler trigged when client's current MQTT connection is closed
-                 *
-                 * @param Mqtt5Client: The shared client
-                 * @param errorCode: errorCode indicates the reason for disconnection
-                 * @param DisconnectPacket: The Disconnect Packet
                  */
                 OnDisconnectionHandler onDisconnection;
 
                 /**
                  * Callback handler trigged when client reaches the "Stopped" state
-                 *
-                 * @param Mqtt5Client: The shared client
                  */
                 OnStoppedHandler onStopped;
 
                 /**
                  * Callback handler trigged when client begins an attempt to connect to the remote endpoint.
-                 *
-                 * @param Mqtt5Client: The shared client
                  */
                 OnAttemptingConnectHandler onAttemptingConnect;
 
                 /**
                  * Callback handler trigged when an MQTT PUBLISH packet is received by the client
-                 *
-                 * @param Mqtt5Client: The shared client
-                 * @param PublishReturn: publishReturn All of the data that was received from the server
                  */
                 OnPublishReceivedHandler onPublishReceived;
                 aws_mqtt5_client *m_client;
