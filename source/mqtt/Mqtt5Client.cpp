@@ -56,8 +56,8 @@ namespace Aws
                         AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "Lifecycle event: Client Stopped!");
                         if (client->onStopped)
                         {
-                            OnStoppedReturn data;
-                            client->onStopped(client->getptr(), data);
+                            OnStoppedEventData eventData;
+                            client->onStopped(client->getptr(), eventData);
                         }
                         break;
 
@@ -65,8 +65,8 @@ namespace Aws
                         AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "Lifecycle event: Attempting Connect!");
                         if (client->onAttemptingConnect)
                         {
-                            OnAttemptingConnectReturn returnvalue;
-                            client->onAttemptingConnect(client->getptr(), returnvalue);
+                            OnAttemptingConnectEventData eventData;
+                            client->onAttemptingConnect(client->getptr(), eventData);
                         }
                         break;
 
@@ -79,16 +79,16 @@ namespace Aws
                             aws_error_debug_str(event->error_code));
                         if (client->onConnectionFailure)
                         {
-                            OnConnectionFailureReturn returnData;
-                            returnData.errorCode = event->error_code;
+                            OnConnectionFailureEventData eventData;
+                            eventData.errorCode = event->error_code;
                             std::shared_ptr<ConnAckPacket> packet = nullptr;
                             if (event->connack_data != NULL)
                             {
                                 packet = Aws::Crt::MakeShared<ConnAckPacket>(
                                     client->m_allocator, *event->connack_data, client->m_allocator);
-                                returnData.connAckPacket = packet;
+                                eventData.connAckPacket = packet;
                             }
-                            client->onConnectionFailure(client->getptr(), returnData);
+                            client->onConnectionFailure(client->getptr(), eventData);
                         }
                         break;
 
@@ -96,7 +96,7 @@ namespace Aws
                         AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "Lifecycle event: Connection Success!");
                         if (client->onConnectionSuccess)
                         {
-                            OnConnectionSuccessReturn returnData;
+                            OnConnectionSuccessEventData eventData;
 
                             std::shared_ptr<ConnAckPacket> packet = nullptr;
                             if (event->connack_data != NULL)
@@ -111,9 +111,9 @@ namespace Aws
                                     Aws::Crt::MakeShared<NegotiatedSettings>(ApiAllocator(), *event->settings);
                             }
 
-                            returnData.connAckPacket = packet;
-                            returnData.negotiatedSettings = neg_settings;
-                            client->onConnectionSuccess(client->getptr(), returnData);
+                            eventData.connAckPacket = packet;
+                            eventData.negotiatedSettings = neg_settings;
+                            client->onConnectionSuccess(client->getptr(), eventData);
                         }
                         break;
 
@@ -125,16 +125,16 @@ namespace Aws
                             aws_error_debug_str(event->error_code));
                         if (client->onDisconnection)
                         {
-                            OnDisconnectionReturn returnData;
+                            OnDisconnectionEventData eventData;
                             std::shared_ptr<DisconnectPacket> disconnection = nullptr;
                             if (event->disconnect_data != nullptr)
                             {
                                 disconnection = Aws::Crt::MakeShared<DisconnectPacket>(
                                     client->m_allocator, *event->disconnect_data, client->m_allocator);
                             }
-                            returnData.errorCode = event->error_code;
-                            returnData.disconnectPacket = disconnection;
-                            client->onDisconnection(client->getptr(), returnData);
+                            eventData.errorCode = event->error_code;
+                            eventData.disconnectPacket = disconnection;
+                            client->onDisconnection(client->getptr(), eventData);
                         }
                         break;
                 }
@@ -152,9 +152,9 @@ namespace Aws
                     {
                         std::shared_ptr<PublishPacket> packet =
                             std::make_shared<PublishPacket>(*publish, client->m_allocator);
-                        PublishReturn messageData;
-                        messageData.publishPacket = packet;
-                        client->onPublishReceived(client->getptr(), messageData);
+                        PublishReceivedEventData eventData;
+                        eventData.publishPacket = packet;
+                        client->onPublishReceived(client->getptr(), eventData);
                     }
                     else
                     {
