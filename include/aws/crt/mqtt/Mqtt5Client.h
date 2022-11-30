@@ -88,6 +88,7 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API OnAttemptingConnectReturn
             {
+                OnAttemptingConnectReturn(){}
             };
 
             /**
@@ -95,6 +96,8 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API OnConnectionFailureReturn
             {
+                OnConnectionFailureReturn(): errorCode(-1), connAckPacket(nullptr){}
+
                 int errorCode;
                 std::shared_ptr<ConnAckPacket> connAckPacket;
             };
@@ -104,6 +107,8 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API OnConnectionSuccessReturn
             {
+                OnConnectionSuccessReturn(): connAckPacket(nullptr), negotiatedSettings(nullptr){}
+
                 std::shared_ptr<ConnAckPacket> connAckPacket;
                 std::shared_ptr<NegotiatedSettings> negotiatedSettings;
             };
@@ -113,6 +118,8 @@ namespace Aws
              */
             struct AWS_CRT_CPP_API OnDisconnectionReturn
             {
+                OnDisconnectionReturn(): errorCode(-1), disconnectPacket(nullptr){}
+
                 int errorCode;
                 std::shared_ptr<DisconnectPacket> disconnectPacket;
             };
@@ -121,12 +128,15 @@ namespace Aws
              * The data returned when OnStopped is invoked in the LifecycleEvents callback.
              * Currently empty, but may be used in the future for passing additional data.
              */
-            struct AWS_CRT_CPP_API OnStoppedReturn {};
+            struct AWS_CRT_CPP_API OnStoppedReturn {
+                OnStoppedReturn(){}
+            };
 
             /**
              * The data returned when a publish is made to a topic the MQTT5 client is subscribed to.
              */
             struct AWS_CRT_CPP_API PublishReturn {
+                PublishReturn(): publishPacket(nullptr){}
                 std::shared_ptr<PublishPacket> publishPacket;
             };
 
