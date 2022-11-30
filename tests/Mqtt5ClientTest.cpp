@@ -197,7 +197,8 @@ struct Mqtt5TestEnvVars
 
         if (m_error == AWS_OP_SUCCESS)
         {
-            m_httpproxy_hostname_string = Aws::Crt::String((const char *)m_httpproxy_hostname->bytes, m_hostname->len, allocator);
+            m_httpproxy_hostname_string =
+                Aws::Crt::String((const char *)m_httpproxy_hostname->bytes, m_hostname->len, allocator);
             m_httpproxy_port_value = atoi((const char *)m_httpproxy_port->bytes);
         }
     }
@@ -539,8 +540,8 @@ static int s_TestMqtt5DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, vo
         stoppedPromise.set_value();
     });
 
-    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
-        mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str());
+    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
+
     ASSERT_TRUE(tlsCtxOptions);
     tlsCtxOptions.SetVerifyPeer(false);
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
@@ -967,8 +968,7 @@ static int s_TestMqtt5WSConnectionWithTLS(Aws::Crt::Allocator *allocator, void *
         stoppedPromise.set_value();
     });
 
-    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
-        mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str());
+    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
 
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
