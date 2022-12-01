@@ -65,14 +65,14 @@ struct Mqtt5TestEnvVars
     Mqtt5TestEnvVars(struct aws_allocator *allocator, Mqtt5TestType type)
         : m_allocator(allocator), m_error(AWS_OP_SUCCESS)
     {
-        m_hostname = NULL;
-        m_port = NULL;
-        m_username = NULL;
-        m_password = NULL;
-        m_certificate_path = NULL;
-        m_private_key_path = NULL;
-        m_httpproxy_hostname = NULL;
-        m_httpproxy_port = NULL;
+        m_hostname = nullptr;
+        m_port = nullptr;
+        m_username = nullptr;
+        m_password = nullptr;
+        m_certificate_path = nullptr;
+        m_private_key_path = nullptr;
+        m_httpproxy_hostname = nullptr;
+        m_httpproxy_port = nullptr;
         switch (type)
         {
             case MQTT5CONNECT_DIRECT:
@@ -83,10 +83,6 @@ struct Mqtt5TestEnvVars
                 {
                     m_hostname_string = Aws::Crt::String(((const char *)m_hostname->bytes), m_hostname->len, allocator);
                     m_port_value = atoi((const char *)m_port->bytes);
-                }
-                else
-                {
-                    m_error = AWS_ERROR_INVALID_INDEX;
                 }
                 break;
             }
@@ -104,10 +100,6 @@ struct Mqtt5TestEnvVars
                     m_port_value = atoi((const char *)m_port->bytes);
                     m_username_string = Aws::Crt::String((const char *)m_username->bytes, m_username->len, allocator);
                     m_password_cursor = ByteCursorFromArray(m_password->bytes, m_password->len);
-                }
-                else
-                {
-                    m_error = AWS_ERROR_INVALID_INDEX;
                 }
                 break;
             }
@@ -268,14 +260,14 @@ struct Mqtt5TestEnvVars
     int m_error;
     struct aws_allocator *m_allocator;
 
-    struct aws_string *m_hostname = NULL;
-    struct aws_string *m_port = NULL;
-    struct aws_string *m_username = NULL;
-    struct aws_string *m_password = NULL;
-    struct aws_string *m_certificate_path = NULL;
-    struct aws_string *m_private_key_path = NULL;
-    struct aws_string *m_httpproxy_hostname = NULL;
-    struct aws_string *m_httpproxy_port = NULL;
+    struct aws_string *m_hostname = nullptr;
+    struct aws_string *m_port = nullptr;
+    struct aws_string *m_username = nullptr;
+    struct aws_string *m_password = nullptr;
+    struct aws_string *m_certificate_path = nullptr;
+    struct aws_string *m_private_key_path = nullptr;
+    struct aws_string *m_httpproxy_hostname = nullptr;
+    struct aws_string *m_httpproxy_port = nullptr;
 
     Aws::Crt::String m_hostname_string;
     uint16_t m_port_value;
