@@ -2221,6 +2221,7 @@ static int s_TestIoTMqtt5ConnectWithmTLS(Aws::Crt::Allocator *allocator, void *c
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -2241,6 +2242,8 @@ static int s_TestIoTMqtt5ConnectWithmTLS(Aws::Crt::Allocator *allocator, void *c
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+
+    delete builder;
     return AWS_ERROR_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt5ConnectWithmTLS, s_TestIoTMqtt5ConnectWithmTLS)
@@ -2254,6 +2257,7 @@ static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, vo
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -2282,6 +2286,8 @@ static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, vo
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+
+    delete builder;
     return AWS_ERROR_SUCCESS;
 }
 
@@ -2344,6 +2350,15 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomeAuth(Aws::Crt::Allocator *allo
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+
+    aws_string_destroy(authname);
+    aws_string_destroy(username);
+    aws_string_destroy(password);
+    aws_string_destroy(tokenKeyname);
+    aws_string_destroy(tokenValue);
+    aws_string_destroy(tokenSignature);
+
+    delete builder;
     return AWS_ERROR_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt5ConnectWithSigningCustomeAuth, s_TestIoTMqtt5ConnectWithSigningCustomeAuth)
@@ -2393,6 +2408,12 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomeAuth(Aws::Crt::Allocator *al
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+
+    aws_string_destroy(authname);
+    aws_string_destroy(username);
+    aws_string_destroy(password);
+
+    delete builder;
     return AWS_ERROR_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt5ConnectWithNoSigningCustomeAuth, s_TestIoTMqtt5ConnectWithNoSigningCustomeAuth)
