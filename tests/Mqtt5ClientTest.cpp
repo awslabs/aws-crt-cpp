@@ -317,7 +317,7 @@ static int s_TestMqtt5NewClientMin(Aws::Crt::Allocator *allocator, void *ctx)
     ApiHandle apiHandle(allocator);
 
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
-    mqtt5Options.withHostName(Aws::Crt::String((const char*)mqtt5TestVars.m_hostname->bytes)).withPort(mqtt5TestVars.m_port_value);
+    mqtt5Options.withHostName(mqtt5TestVars.m_hostname_string).withPort(mqtt5TestVars.m_port_value);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
