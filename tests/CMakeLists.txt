@@ -127,6 +127,7 @@ if(ENABLE_PROXY_INTEGRATION_TESTS AND NOT BYO_CRYPTO)
     add_test_case(MqttViaHttpProxyAlpnBasicAuth)
 endif()
 
+#MQTT5 related tests
 add_test_case(Mqtt5NewClientMinimal)
 add_test_case(Mqtt5NewClientFull)
 if(ENABLE_MQTT5_TEST AND NOT BYO_CRYPTO)
