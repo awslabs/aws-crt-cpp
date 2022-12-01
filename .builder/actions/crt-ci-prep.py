@@ -14,6 +14,8 @@ class CrtCiPrep(Builder.Action):
 
         env.shell.setenv("AWS_TEST_MQTT5_DIRECT_MQTT_HOST", "localhost")
         env.shell.setenv("AWS_TEST_MQTT5_DIRECT_MQTT_PORT", "1883")
+        env.shell.setenv("AWS_TEST_MQTT5_PROXY_HOST", "localhost")
+        env.shell.setenv("AWS_TEST_MQTT5_PROXY_PORT", "1883")
 
         actions = []
 
