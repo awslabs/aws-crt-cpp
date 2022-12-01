@@ -199,7 +199,7 @@ struct Mqtt5TestEnvVars
         if (m_error == AWS_OP_SUCCESS)
         {
             m_httpproxy_hostname_string =
-                Aws::Crt::String((const char *)m_httpproxy_hostname->bytes, m_hostname->len, allocator);
+                Aws::Crt::String((const char *)m_httpproxy_hostname->bytes, m_httpproxy_hostname->len, allocator);
             m_httpproxy_port_value = atoi((const char *)m_httpproxy_port->bytes);
         }
     }
