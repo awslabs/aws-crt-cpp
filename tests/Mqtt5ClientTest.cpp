@@ -65,13 +65,21 @@ struct Mqtt5TestEnvVars
     Mqtt5TestEnvVars(struct aws_allocator *allocator, Mqtt5TestType type)
         : m_allocator(allocator), m_error(AWS_OP_SUCCESS)
     {
+        m_hostname = NULL;
+        m_port = NULL;
+        m_username = NULL;
+        m_password = NULL;
+        m_certificate_path = NULL;
+        m_private_key_path = NULL;
+        m_httpproxy_hostname = NULL;
+        m_httpproxy_port = NULL;
         switch (type)
         {
             case MQTT5CONNECT_DIRECT:
             {
-                aws_get_environment_value(allocator, s_mqtt5_test_envName_direct_hostName, &m_hostname);
-                aws_get_environment_value(allocator, s_mqtt5_test_envName_direct_port, &m_port);
-                if (m_hostname != NULL && m_port != NULL)
+                m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_direct_hostName, &m_hostname);
+                m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_direct_port, &m_port);
+                if (m_error == AWS_OP_SUCCESS)
                 {
                     m_hostname_string = Aws::Crt::String(((const char *)m_hostname->bytes), m_hostname->len, allocator);
                     m_port_value = atoi((const char *)m_port->bytes);
@@ -316,17 +324,16 @@ static void s_setupConnectionLifeCycle(
 static int s_TestMqtt5NewClientMin(Aws::Crt::Allocator *allocator, void *ctx)
 {
     (void)ctx;
-    //struct Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    // if (!mqtt5TestVars)
-    // {
-    //     printf("Environment Variables are not set for the test, skip the test");
-    // }
+    struct Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
-    mqtt5Options.withHostName("localhost");
-    mqtt5Options.withPort(1883);
+    mqtt5Options.withHostName(mqtt5TestVars.m_hostname_string).withPort(mqtt5TestVars.m_port_value);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
