@@ -490,7 +490,7 @@ namespace Aws
                 {
                     m_options->withHttpProxyOptions(m_websocketConfig->ProxyOptions.value());
                 }
-                else
+                else if (m_proxyOptions.has_value())
                 {
                     m_options->withHttpProxyOptions(m_proxyOptions.value());
                 }
@@ -546,7 +546,7 @@ namespace Aws
 
         Mqtt5CustomAuthConfig &Aws::Iot::Mqtt5CustomAuthConfig::WithTokenValue(Crt::String tokenValue)
         {
-            m_tokenKeyName = std::move(tokenValue);
+            m_tokenValue = std::move(tokenValue);
             return *this;
         }
 
