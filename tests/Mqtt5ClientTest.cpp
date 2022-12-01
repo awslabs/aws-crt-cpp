@@ -9,6 +9,7 @@
 #include <aws/crt/http/HttpProxyStrategy.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
 #include <aws/iot/MqttCommon.h>
+#include <aws/iot/Mqtt5Client.h>
 #include <aws/testing/aws_test_harness.h>
 
 #include <utility>
@@ -48,6 +49,20 @@ AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_private_key, "AWS_TEST_MQTT5
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_hostname, "AWS_TEST_MQTT5_IOT_CORE_HOST");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_certificate, "AWS_TEST_MQTT5_IOT_CERTIFICATE_PATH");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_key, "AWS_TEST_MQTT5_IOT_KEY_PATH");
+
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_nosign_custom_auth_name, "AWS_TEST_MQTT5_IOT_CORE_NO_SIGNING_AUTHORIZER_NAME");
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_nosign_custom_auth_username, "AWS_TEST_MQTT5_IOT_CORE_NO_SIGNING_AUTHORIZER_USERNAME");
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_nosign_custom_auth_password, "AWS_TEST_MQTT5_IOT_CORE_NO_SIGNING_AUTHORIZER_PASSWORD");
+
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_sign_custom_auth_name, "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_NAME");
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_sign_custom_auth_username, "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_USERNAME");
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_sign_custom_auth_password, "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_PASSWORD");
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_sign_custom_auth_tokenvalue, "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_TOKEN");
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_sign_custom_auth_tokenkey, "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_TOKEN_KEY_NAME");
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_sign_custom_auth_tokensignature, "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_TOKEN_SIGNATURE");
+
+
+
 
 enum Mqtt5TestType
 {
@@ -185,6 +200,7 @@ struct Mqtt5TestEnvVars
                 break;
         }
 
+        // Setup Http Proxy
         m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_proxy_hostname, &m_httpproxy_hostname);
         m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_proxy_port, &m_httpproxy_port);
 
@@ -293,6 +309,30 @@ static void s_setupConnectionLifeCycle(
         });
 
     mqtt5Options.withClientStoppedCallback([&stoppedPromise, clientName](Mqtt5Client &, const OnStoppedEventData &) {
+        printf("[MQTT5]%s Stopped", clientName);
+        stoppedPromise.set_value();
+    });
+}
+
+static void s_setupConnectionLifeCycle(
+    Aws::Iot::Mqtt5ClientBuilder *mqtt5Builder,
+    std::promise<bool> &connectionPromise,
+    std::promise<void> &stoppedPromise,
+    const char *clientName = "Client")
+{
+    mqtt5Builder->withClientConnectionSuccessCallback(
+        [&connectionPromise, clientName](Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
+            printf("[MQTT5]%s Connection Success.", clientName);
+            connectionPromise.set_value(true);
+        });
+
+    mqtt5Builder->withClientConnectionFailureCallback(
+        [&connectionPromise, clientName](Mqtt5Client &, const OnConnectionFailureEventData &eventData) {
+            printf("[MQTT5]%s Connection failed with error : %s", clientName, aws_error_debug_str(eventData.errorCode));
+            connectionPromise.set_value(false);
+        });
+
+    mqtt5Builder->withClientStoppedCallback([&stoppedPromise, clientName](Mqtt5Client &, const OnStoppedEventData &) {
         printf("[MQTT5]%s Stopped", clientName);
         stoppedPromise.set_value();
     });
@@ -2169,5 +2209,192 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *ct
 }
 
 AWS_TEST_CASE(Mqtt5RetainSetAndClear, s_TestMqtt5RetainSetAndClear)
+
+
+//////////////////////////////////////////////////////////////
+// IoT Builder Test
+//////////////////////////////////////////////////////////////
+/* Testing direct connect with mTLS (cert and key) */
+static int s_TestIoTMqtt5ConnectWithmTLS(Aws::Crt::Allocator *allocator, void *ctx)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+    mqtt5TestVars.m_hostname_string, mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str(), allocator);
+
+
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+
+    s_setupConnectionLifeCycle(builder, connectionPromise, stoppedPromise);
+
+    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
+
+    ASSERT_TRUE(*mqtt5Client);
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(connectionPromise.get_future().get());
+    ASSERT_TRUE(mqtt5Client->Stop());
+    stoppedPromise.get_future().get();
+    return AWS_ERROR_SUCCESS;
+}
+AWS_TEST_CASE(IoTMqtt5ConnectWithmTLS, s_TestIoTMqtt5ConnectWithmTLS)
+
+/*
+ * IoT Builder with websocket connect
+ */
+static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, void *ctx)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    // Create websocket configuration
+    Aws::Crt::Auth::CredentialsProviderChainDefaultConfig defaultConfig;
+    std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(defaultConfig);
+    if (!provider)
+    {
+        fprintf(stderr, "Failure to create credentials provider!\n");
+        exit(-1);
+    }
+    Aws::Iot::WebsocketConfig websocketConfig("us-east-1", provider);
+
+    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWebsocket(mqtt5TestVars.m_hostname_string, websocketConfig, allocator);
+
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+
+    s_setupConnectionLifeCycle(builder, connectionPromise, stoppedPromise);
+
+    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
+
+    ASSERT_TRUE(*mqtt5Client);
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(connectionPromise.get_future().get());
+    ASSERT_TRUE(mqtt5Client->Stop());
+    stoppedPromise.get_future().get();
+    return AWS_ERROR_SUCCESS;
+}
+
+AWS_TEST_CASE(IoTMqtt5ConnectWithWebsocket, s_TestIoTMqtt5ConnectWithWebsocket)
+
+
+/*
+ * Custom Auth (signing) connect
+ */
+static int s_TestIoTMqtt5ConnectWithSigningCustomeAuth(Aws::Crt::Allocator *allocator, void *ctx)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    struct aws_string *authname = NULL;
+    struct aws_string *username = NULL;
+    struct aws_string *password = NULL;
+    struct aws_string *tokenKeyname = NULL;
+    struct aws_string *tokenValue = NULL;
+    struct aws_string *tokenSignature = NULL;
+
+    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_name, &authname);
+    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_username, &username);
+    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_password, &password);
+    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenkey, &tokenKeyname);
+    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenvalue, &tokenValue);
+    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_proxy_port, &tokenSignature);
+
+    if (error != AWS_OP_SUCCESS)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
+    }
+
+    Aws::Iot::Mqtt5CustomAuthConfig authConfig(allocator);
+    authConfig.WithAuthrizaerName((const char*)authname->bytes);
+    authConfig.WithUsername((const char*)username->bytes);
+    authConfig.WithPassword(ByteCursorFromString((const char*)password->bytes));
+    authConfig.WithTokenKeyName((const char*)tokenKeyname->bytes);
+    authConfig.WithTokenValue((const char*)tokenValue->bytes);
+    authConfig.WithTokenSignature((const char*)tokenSignature->bytes);
+
+    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomCustomAuthorizer(mqtt5TestVars.m_hostname_string,authConfig, allocator);
+
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+
+    s_setupConnectionLifeCycle(builder, connectionPromise, stoppedPromise);
+
+    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
+
+    ASSERT_TRUE(*mqtt5Client);
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(connectionPromise.get_future().get());
+    ASSERT_TRUE(mqtt5Client->Stop());
+    stoppedPromise.get_future().get();
+    return AWS_ERROR_SUCCESS;
+}
+AWS_TEST_CASE(IoTMqtt5ConnectWithSigningCustomeAuth, s_TestIoTMqtt5ConnectWithSigningCustomeAuth)
+
+/*
+ * Custom Auth (no signing) connect
+ */
+static int s_TestIoTMqtt5ConnectWithNoSigningCustomeAuth(Aws::Crt::Allocator *allocator, void *ctx)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
+
+    struct aws_string *authname = NULL;
+    struct aws_string *username = NULL;
+    struct aws_string *password = NULL;
+
+    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_name, &authname);
+    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_username, &username);
+    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_password, &password);
+
+    if (error != AWS_OP_SUCCESS)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
+    }
+
+    ApiHandle apiHandle(allocator);
+    Aws::Iot::Mqtt5CustomAuthConfig authConfig(allocator);
+    authConfig.WithAuthrizaerName((const char*)authname->bytes);
+    authConfig.WithUsername((const char*)username->bytes);
+    authConfig.WithPassword(ByteCursorFromString((const char*)password->bytes));
+
+    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomCustomAuthorizer(mqtt5TestVars.m_hostname_string,authConfig, allocator);
+
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+
+    s_setupConnectionLifeCycle(builder, connectionPromise, stoppedPromise);
+
+    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
+
+    ASSERT_TRUE(*mqtt5Client);
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(connectionPromise.get_future().get());
+    ASSERT_TRUE(mqtt5Client->Stop());
+    stoppedPromise.get_future().get();
+    return AWS_ERROR_SUCCESS;
+}
+AWS_TEST_CASE(IoTMqtt5ConnectWithNoSigningCustomeAuth, s_TestIoTMqtt5ConnectWithNoSigningCustomeAuth)
 
 #endif // !BYO_CRYPTO

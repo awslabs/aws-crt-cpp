@@ -162,6 +162,12 @@ if(ENABLE_MQTT5_TEST AND NOT BYO_CRYPTO)
     add_net_test_case(Mqtt5NullConnectPacket)
     add_net_test_case(Mqtt5QoS1SubPub)
     add_net_test_case(Mqtt5RetainSetAndClear)
+
+    # IOT CORE TEST
+    add_net_test_case(IoTMqtt5ConnectWithmTLS)
+    add_net_test_case(IoTMqtt5ConnectWithWebsocket)
+    add_net_test_case(IoTMqtt5ConnectWithSigningCustomeAuth)
+    add_net_test_case(IoTMqtt5ConnectWithNoSigningCustomeAuth)
 endif()
 
 add_test_case(RuleEngine)
