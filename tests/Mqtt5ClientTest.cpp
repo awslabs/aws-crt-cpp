@@ -208,52 +208,52 @@ struct Mqtt5TestEnvVars
 
     ~Mqtt5TestEnvVars()
     {
-        if (m_hostname != NULL)
+        if (m_hostname != nullptr)
         {
             aws_string_destroy(m_hostname);
-            m_hostname = NULL;
+            m_hostname = nullptr;
         }
 
-        if (m_port != NULL)
+        if (m_port != nullptr)
         {
             aws_string_destroy(m_port);
-            m_port = NULL;
+            m_port = nullptr;
         }
 
-        if (m_username != NULL)
+        if (m_username != nullptr)
         {
             aws_string_destroy(m_username);
-            m_username = NULL;
+            m_username = nullptr;
         }
 
-        if (m_password != NULL)
+        if (m_password != nullptr)
         {
             aws_string_destroy(m_password);
-            m_password = NULL;
+            m_password = nullptr;
         }
 
-        if (m_certificate_path != NULL)
+        if (m_certificate_path != nullptr)
         {
             aws_string_destroy(m_certificate_path);
-            m_certificate_path = NULL;
+            m_certificate_path = nullptr;
         }
 
-        if (m_private_key_path != NULL)
+        if (m_private_key_path != nullptr)
         {
             aws_string_destroy(m_private_key_path);
-            m_private_key_path = NULL;
+            m_private_key_path = nullptr;
         }
 
-        if (m_httpproxy_hostname != NULL)
+        if (m_httpproxy_hostname != nullptr)
         {
             aws_string_destroy(m_httpproxy_hostname);
-            m_httpproxy_hostname = NULL;
+            m_httpproxy_hostname = nullptr;
         }
 
-        if (m_httpproxy_port != NULL)
+        if (m_httpproxy_port != nullptr)
         {
             aws_string_destroy(m_httpproxy_port);
-            m_httpproxy_port = NULL;
+            m_httpproxy_port = nullptr;
         }
     }
 
