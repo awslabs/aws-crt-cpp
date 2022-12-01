@@ -27,6 +27,7 @@
 #define AWS_MQTT5_CANARY_PAYLOAD_SIZE_MAX UINT16_MAX
 
 using namespace Aws::Crt;
+using namespace Aws::Crt::Mqtt5;
 
 struct AppCtx
 {
@@ -797,56 +798,48 @@ int main(int argc, char **argv)
         client = {};
         client.sharedTopic = Aws::Crt::String(sharedTopicArray);
         mqtt5Options.withPublishReceivedCallback(
-            [&client](std::shared_ptr<Mqtt5::Mqtt5Client> /*client*/, std::shared_ptr<Mqtt5::PublishPacket> publish) {
-                if (publish == nullptr)
-                {
-                    AWS_LOGF_INFO(
-                        AWS_LS_MQTT5_CANARY, "Client:[%s] NULL Publish Packet Received.", client.clientId.c_str());
-                    return;
-                }
+            [&client](Mqtt5Client & /*client*/, const Mqtt5::PublishReceivedEventData& publishData) {
                 AWS_LOGF_INFO(
                     AWS_LS_MQTT5_CANARY,
                     "Client:%s Publish Received on topic %s",
                     client.clientId.c_str(),
-                    publish->getTopic().c_str());
+                    publishData.publishPacket->getTopic().c_str());
             });
 
         mqtt5Options.withClientConnectionSuccessCallback(
             [&client](
-                Mqtt5::Mqtt5Client &,
-                std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings> settings)
+                Mqtt5Client &,
+                const Mqtt5::OnConnectionSuccessEventData& eventData)
             {
                 client.isConnected = true;
-                client.clientId = Aws::Crt::String(settings->getClientId().c_str(), settings->getClientId().length());
-                client.settings = settings;
+                client.clientId = Aws::Crt::String(eventData.negotiatedSettings->getClientId().c_str(), eventData.negotiatedSettings->getClientId().length());
+                client.settings = eventData.negotiatedSettings;
 
                 AWS_LOGF_INFO(
                     AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Connection Success", client.clientId.c_str());
             });
 
         mqtt5Options.withClientConnectionFailureCallback(
-            [&client](Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
+            [&client](Mqtt5Client &, const OnConnectionFailureEventData& eventData) {
                 AWS_LOGF_INFO(
                     AWS_LS_MQTT5_CANARY,
                     "ID:%s Connection failed with  Error Code: %d(%s)",
                     client.clientId.c_str(),
-                    error_code,
-                    aws_error_debug_str(error_code));
+                    eventData.errorCode,
+                    aws_error_debug_str(eventData.errorCode));
             });
 
         mqtt5Options.withClientDisconnectionCallback(
             [&client](
-                Aws::Crt::Mqtt5::Mqtt5Client &,
-                int /*errorCode*/,
-                std::shared_ptr<Aws::Crt::Mqtt5::DisconnectPacket> packet_disconnect)
+                Mqtt5Client &,
+                const OnDisconnectionEventData&)
             {
                 client.isConnected = false;
                 AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Disconnect", client.clientId.c_str());
             });
 
         mqtt5Options.withClientStoppedCallback(
-            [&client](Aws::Crt::Mqtt5::Mqtt5Client &)
+            [&client](Mqtt5Client &, const OnStoppedEventData&)
             { AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Stopped", client.clientId.c_str()); });
 
         client.client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, appCtx.allocator);

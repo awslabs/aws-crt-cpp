@@ -24,6 +24,7 @@
 #define AWS_MQTT5_CANARY_PAYLOAD_SIZE_MAX UINT16_MAX
 
 using namespace Aws::Crt;
+using namespace Aws::Crt::Mqtt5;
 
 struct app_ctx
 {
@@ -323,27 +324,25 @@ int main(int argc, char **argv)
 
     mqtt5OptionsBuilder.withClientConnectionSuccessCallback(
         [&connectionPromise](
-            Mqtt5::Mqtt5Client &,
-            std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-            std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings> settings)
+            Mqtt5Client &,const OnConnectionSuccessEventData& eventData)
         {
             std::cout << "**********************************************************" << std::endl;
-            std::cout << "MQTT5:Connected:: " << settings->getClientId().c_str() << std::endl;
+            std::cout << "MQTT5:Connected:: " << eventData.negotiatedSettings->getClientId().c_str() << std::endl;
             std::cout << "**********************************************************" << std::endl;
             connectionPromise.set_value(true);
         });
 
     mqtt5OptionsBuilder.withClientConnectionFailureCallback(
-        [&connectionPromise](Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>)
+        [&connectionPromise](Mqtt5Client &,const OnConnectionFailureEventData& eventData)
         {
             std::cout << "**********************************************************" << std::endl;
-            std::cout << "MQTT5:Connection failed with error " << aws_error_debug_str(error_code) << std::endl;
+            std::cout << "MQTT5:Connection failed with error " << aws_error_debug_str(eventData.errorCode) << std::endl;
             std::cout << "**********************************************************" << std::endl;
             connectionPromise.set_value(false);
         });
 
     mqtt5OptionsBuilder.withClientStoppedCallback(
-        [&stoppedPromise](Mqtt5::Mqtt5Client &)
+        [&stoppedPromise](Mqtt5Client &, const OnStoppedEventData&)
         {
             std::cout << "**********************************************************" << std::endl;
             std::cout << "MQTT5:client stopped." << std::endl;
@@ -352,12 +351,12 @@ int main(int argc, char **argv)
         });
 
     mqtt5OptionsBuilder.withClientAttemptingConnectCallback(
-        [](Mqtt5::Mqtt5Client &) { std::cout << "MQTT5:client attempting connect." << std::endl; });
+        [](Mqtt5Client &, const OnAttemptingConnectEventData&) { std::cout << "MQTT5:client attempting connect." << std::endl; });
 
     mqtt5OptionsBuilder.withClientDisconnectionCallback(
         [&disconnectionPromise](
-            Mqtt5::Mqtt5Client &, int errorCode, std::shared_ptr<Aws::Crt::Mqtt5::DisconnectPacket> packet_disconnect) {
-            if (errorCode == 0)
+            Mqtt5Client &, const OnDisconnectionEventData& eventData) {
+            if (eventData.errorCode == 0)
             {
                 std::cout << "**********************************************************" << std::endl;
                 std::cout << "MQTT5:Diesconnected." << std::endl;
@@ -366,12 +365,12 @@ int main(int argc, char **argv)
             else
             {
                 std::cout << "**********************************************************" << std::endl;
-                std::cout << "MQTT5:DisConnection failed with error " << aws_error_debug_str(errorCode) << std::endl;
-                if (packet_disconnect != NULL)
+                std::cout << "MQTT5:DisConnection failed with error " << aws_error_debug_str(eventData.errorCode) << std::endl;
+                if (eventData.disconnectPacket != NULL)
                 {
-                    if (packet_disconnect->getReasonString().has_value())
+                    if (eventData.disconnectPacket->getReasonString().has_value())
                     {
-                        std::cout << "disconnect packet: " << packet_disconnect->getReasonString().value().c_str()
+                        std::cout << "disconnect packet: " << eventData.disconnectPacket->getReasonString().value().c_str()
                                   << std::endl;
                     }
                 }
@@ -382,15 +381,12 @@ int main(int argc, char **argv)
 
     mqtt5OptionsBuilder.withPublishReceivedCallback(
         [&publishReceivedPromise1, &publishReceivedPromise2, &publishReceivedPromise3, &publishReceivedPromise0](
-            std::shared_ptr<Mqtt5::Mqtt5Client>, std::shared_ptr<Mqtt5::PublishPacket> publish)
+            Mqtt5Client &, const PublishReceivedEventData & eventData)
         {
-            if (publish == nullptr)
-                return;
-
-            ByteCursor payload = publish->getPayload();
+            ByteCursor payload = eventData.publishPacket->getPayload();
             String msg = String((const char *)payload.ptr, payload.len);
             std::cout << "**********************************************************" << std::endl;
-            for (Mqtt5::UserProperty prop : publish->getUserProperties())
+            for (Mqtt5::UserProperty prop : eventData.publishPacket->getUserProperties())
             {
                 std::cout << "MQTT5:Received Message: "
                           << "UserProerty: " << prop.getName().c_str() << "," << prop.getValue().c_str() << std::endl;

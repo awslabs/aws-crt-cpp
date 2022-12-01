@@ -15,6 +15,7 @@
 #if !BYO_CRYPTO
 
 using namespace Aws::Crt;
+using namespace Aws::Crt::Mqtt5;
 
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_direct_hostName, "AWS_TEST_MQTT5_DIRECT_MQTT_HOST");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_direct_port, "AWS_TEST_MQTT5_DIRECT_MQTT_PORT");
@@ -68,16 +69,12 @@ struct Mqtt5TestEnvVars
         {
             case MQTT5CONNECT_DIRECT:
             {
-                aws_get_environment_value(allocator, s_mqtt5_test_envName_direct_hostName, &m_hostname);
-                aws_get_environment_value(allocator, s_mqtt5_test_envName_direct_port, &m_port);
-                if (m_hostname != NULL && m_port != NULL)
+                m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_direct_hostName, &m_hostname);
+                m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_direct_port, &m_port);
+                if (m_error == AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = Aws::Crt::String(((const char *)m_hostname->bytes), m_hostname->len, allocator);
+                    m_hostname_string = Aws::Crt::String(((const char *)m_hostname->bytes), m_hostname->len);
                     m_port_value = atoi((const char *)m_port->bytes);
-                }
-                else
-                {
-                    m_error = AWS_ERROR_INVALID_INDEX;
                 }
                 break;
             }
@@ -91,14 +88,10 @@ struct Mqtt5TestEnvVars
 
                 if (m_error == AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = Aws::Crt::String((const char *)m_hostname->bytes, m_hostname->len, allocator);
+                    m_hostname_string = Aws::Crt::String((const char *)m_hostname->bytes, m_hostname->len);
                     m_port_value = atoi((const char *)m_port->bytes);
-                    m_username_string = Aws::Crt::String((const char *)m_username->bytes, m_username->len, allocator);
+                    m_username_string = Aws::Crt::String((const char *)m_username->bytes, m_username->len);
                     m_password_cursor = ByteCursorFromArray(m_password->bytes, m_password->len);
-                }
-                else
-                {
-                    m_error = AWS_ERROR_INVALID_INDEX;
                 }
                 break;
             }
@@ -111,12 +104,12 @@ struct Mqtt5TestEnvVars
 
                 if (m_error == AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = Aws::Crt::String((const char *)m_hostname->bytes, m_hostname->len, allocator);
+                    m_hostname_string = Aws::Crt::String((const char *)m_hostname->bytes, m_hostname->len);
                     m_port_value = atoi((const char *)m_port->bytes);
                     m_certificate_path_string =
-                        Aws::Crt::String((const char *)m_certificate_path->bytes, m_certificate_path->len, allocator);
+                        Aws::Crt::String((const char *)m_certificate_path->bytes, m_certificate_path->len);
                     m_private_key_path_string =
-                        Aws::Crt::String((const char *)m_private_key_path->bytes, m_private_key_path->len, allocator);
+                        Aws::Crt::String((const char *)m_private_key_path->bytes, m_private_key_path->len);
                 }
                 break;
             }
@@ -127,7 +120,7 @@ struct Mqtt5TestEnvVars
 
                 if (m_error == AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = Aws::Crt::String((const char *)m_hostname->bytes, m_hostname->len, allocator);
+                    m_hostname_string = Aws::Crt::String((const char *)m_hostname->bytes, m_hostname->len);
                     m_port_value = atoi((const char *)m_port->bytes);
                 }
                 break;
@@ -143,9 +136,9 @@ struct Mqtt5TestEnvVars
 
                 if (m_error == AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = Aws::Crt::String((const char *)m_hostname->bytes, m_hostname->len, allocator);
+                    m_hostname_string = Aws::Crt::String((const char *)m_hostname->bytes, m_hostname->len);
                     m_port_value = atoi((const char *)m_port->bytes);
-                    m_username_string = Aws::Crt::String((const char *)m_username->bytes, m_username->len, allocator);
+                    m_username_string = Aws::Crt::String((const char *)m_username->bytes, m_username->len);
                     m_password_cursor = ByteCursorFromArray(m_password->bytes, m_password->len);
                 }
                 break;
@@ -160,12 +153,12 @@ struct Mqtt5TestEnvVars
 
                 if (m_error == AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = Aws::Crt::String((const char *)m_hostname->bytes, m_hostname->len, allocator);
+                    m_hostname_string = Aws::Crt::String((const char *)m_hostname->bytes, m_hostname->len);
                     m_port_value = atoi((const char *)m_port->bytes);
                     m_certificate_path_string =
-                        Aws::Crt::String((const char *)m_certificate_path->bytes, m_certificate_path->len, allocator);
+                        Aws::Crt::String((const char *)m_certificate_path->bytes, m_certificate_path->len);
                     m_private_key_path_string =
-                        Aws::Crt::String((const char *)m_private_key_path->bytes, m_private_key_path->len, allocator);
+                        Aws::Crt::String((const char *)m_private_key_path->bytes, m_private_key_path->len);
                 }
                 break;
             }
@@ -178,11 +171,11 @@ struct Mqtt5TestEnvVars
 
                 if (m_error == AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = Aws::Crt::String((const char *)m_hostname->bytes, m_hostname->len, allocator);
+                    m_hostname_string = Aws::Crt::String((const char *)m_hostname->bytes, m_hostname->len);
                     m_certificate_path_string =
-                        Aws::Crt::String((const char *)m_certificate_path->bytes, m_certificate_path->len, allocator);
+                        Aws::Crt::String((const char *)m_certificate_path->bytes, m_certificate_path->len);
                     m_private_key_path_string =
-                        Aws::Crt::String((const char *)m_private_key_path->bytes, m_private_key_path->len, allocator);
+                        Aws::Crt::String((const char *)m_private_key_path->bytes, m_private_key_path->len);
                 }
                 break;
             }
@@ -198,7 +191,7 @@ struct Mqtt5TestEnvVars
         if (m_error == AWS_OP_SUCCESS)
         {
             m_httpproxy_hostname_string =
-                Aws::Crt::String((const char *)m_httpproxy_hostname->bytes, m_hostname->len, allocator);
+                Aws::Crt::String((const char *)m_httpproxy_hostname->bytes, m_httpproxy_hostname->len);
             m_httpproxy_port_value = atoi((const char *)m_httpproxy_port->bytes);
         }
     }
@@ -279,6 +272,33 @@ struct Mqtt5TestEnvVars
 };
 
 //////////////////////////////////////////////////////////
+// Test Helper
+//////////////////////////////////////////////////////////
+static void s_setupConnectionLifeCycle(
+    Mqtt5::Mqtt5ClientOptions &mqtt5Options,
+    std::promise<bool> &connectionPromise,
+    std::promise<void> &stoppedPromise,
+    const char *clientName = "Client")
+{
+    mqtt5Options.withClientConnectionSuccessCallback(
+        [&connectionPromise, clientName](Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
+            printf("[MQTT5]%s Connection Success.", clientName);
+            connectionPromise.set_value(true);
+        });
+
+    mqtt5Options.withClientConnectionFailureCallback(
+        [&connectionPromise, clientName](Mqtt5Client &, const OnConnectionFailureEventData &eventData) {
+            printf("[MQTT5]%s Connection failed with error : %s", clientName, aws_error_debug_str(eventData.errorCode));
+            connectionPromise.set_value(false);
+        });
+
+    mqtt5Options.withClientStoppedCallback([&stoppedPromise, clientName](Mqtt5Client &, const OnStoppedEventData &) {
+        printf("[MQTT5]%s Stopped", clientName);
+        stoppedPromise.set_value();
+    });
+}
+
+//////////////////////////////////////////////////////////
 // Creation Test Cases [New-UC]
 //////////////////////////////////////////////////////////
 
@@ -289,13 +309,15 @@ static int s_TestMqtt5NewClientMin(Aws::Crt::Allocator *allocator, void *ctx)
 {
     (void)ctx;
     struct Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
-    mqtt5Options.withHostName(mqtt5TestVars.m_hostname_string);
-    mqtt5Options.withPort(mqtt5TestVars.m_port_value);
+    mqtt5Options.withHostName(mqtt5TestVars.m_hostname_string).withPort(mqtt5TestVars.m_port_value);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
@@ -311,7 +333,10 @@ AWS_TEST_CASE(Mqtt5NewClientMinimal, s_TestMqtt5NewClientMin)
 static int s_TestMqtt5NewClientFull(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -370,25 +395,7 @@ static int s_TestMqtt5NewClientFull(Aws::Crt::Allocator *allocator, void *ctx)
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
@@ -407,7 +414,10 @@ AWS_TEST_CASE(Mqtt5NewClientFull, s_TestMqtt5NewClientFull)
 static int s_TestMqtt5DirectConnectionMinimal(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -418,25 +428,7 @@ static int s_TestMqtt5DirectConnectionMinimal(Aws::Crt::Allocator *allocator, vo
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
@@ -455,7 +447,10 @@ AWS_TEST_CASE(Mqtt5DirectConnectionMinimal, s_TestMqtt5DirectConnectionMinimal)
 static int s_TestMqtt5DirectConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_BASIC_AUTH);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -471,25 +466,7 @@ static int s_TestMqtt5DirectConnectionWithBasicAuth(Aws::Crt::Allocator *allocat
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
@@ -509,7 +486,10 @@ AWS_TEST_CASE(Mqtt5DirectConnectionWithBasicAuth, s_TestMqtt5DirectConnectionWit
 static int s_TestMqtt5DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_TLS);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -520,25 +500,7 @@ static int s_TestMqtt5DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, vo
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
 
@@ -569,7 +531,10 @@ AWS_TEST_CASE(Mqtt5DirectConnectionWithTLS, s_TestMqtt5DirectConnectionWithTLS)
 static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -580,25 +545,7 @@ static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocat
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
         mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str());
@@ -627,7 +574,10 @@ AWS_TEST_CASE(Mqtt5DirectConnectionWithMutualTLS, s_TestMqtt5DirectConnectionWit
 static int s_TestMqtt5DirectConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_TLS);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -653,25 +603,7 @@ static int s_TestMqtt5DirectConnectionWithHttpProxy(Aws::Crt::Allocator *allocat
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
@@ -691,7 +623,10 @@ AWS_TEST_CASE(Mqtt5DirectConnectionWithHttpProxy, s_TestMqtt5DirectConnectionWit
 static int s_TestMqtt5DirectConnectionFull(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -751,25 +686,7 @@ static int s_TestMqtt5DirectConnectionFull(Aws::Crt::Allocator *allocator, void 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
@@ -791,7 +708,10 @@ AWS_TEST_CASE(Mqtt5DirectConnectionFull, s_TestMqtt5DirectConnectionFull)
 static int s_TestMqtt5WSConnectionMinimal(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -802,25 +722,7 @@ static int s_TestMqtt5WSConnectionMinimal(Aws::Crt::Allocator *allocator, void *
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     Aws::Crt::Auth::CredentialsProviderChainDefaultConfig defaultConfig;
     std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> provider =
@@ -861,7 +763,10 @@ AWS_TEST_CASE(Mqtt5WSConnectionMinimal, s_TestMqtt5WSConnectionMinimal)
 static int s_TestMqtt5WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS_BASIC_AUTH);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -877,25 +782,7 @@ static int s_TestMqtt5WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     Aws::Crt::Auth::CredentialsProviderChainDefaultConfig defaultConfig;
     std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> provider =
@@ -937,7 +824,10 @@ AWS_TEST_CASE(Mqtt5WSConnectionWithBasicAuth, s_TestMqtt5WSConnectionWithBasicAu
 static int s_TestMqtt5WSConnectionWithTLS(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS_TLS);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -948,25 +838,7 @@ static int s_TestMqtt5WSConnectionWithTLS(Aws::Crt::Allocator *allocator, void *
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
 
@@ -1018,7 +890,10 @@ AWS_TEST_CASE(Mqtt5WSConnectionWithTLS, s_TestMqtt5WSConnectionWithTLS)
 static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1029,25 +904,7 @@ static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
         mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str());
@@ -1100,7 +957,10 @@ AWS_TEST_CASE(Mqtt5WSConnectionWithMutualTLS, s_TestMqtt5WSConnectionWithMutualT
 static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS_TLS);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1152,25 +1012,7 @@ static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
@@ -1190,7 +1032,10 @@ AWS_TEST_CASE(Mqtt5WSConnectionWithHttpProxy, s_TestMqtt5WSConnectionWithHttpPro
 static int s_TestMqtt5WSConnectionFull(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1250,25 +1095,7 @@ static int s_TestMqtt5WSConnectionFull(Aws::Crt::Allocator *allocator, void *ctx
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     // setup websocket config
     Aws::Crt::Auth::CredentialsProviderChainDefaultConfig defaultConfig;
@@ -1313,7 +1140,10 @@ AWS_TEST_CASE(Mqtt5WSConnectionFull, s_TestMqtt5WSConnectionFull)
 static int s_TestMqtt5DirectInvalidHostname(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1324,25 +1154,7 @@ static int s_TestMqtt5DirectInvalidHostname(Aws::Crt::Allocator *allocator, void
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
@@ -1360,7 +1172,10 @@ AWS_TEST_CASE(Mqtt5InvalidHostname, s_TestMqtt5DirectInvalidHostname)
 static int s_TestMqtt5DirectInvalidPort(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1371,25 +1186,7 @@ static int s_TestMqtt5DirectInvalidPort(Aws::Crt::Allocator *allocator, void *ct
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
@@ -1407,7 +1204,10 @@ AWS_TEST_CASE(Mqtt5InvalidPort, s_TestMqtt5DirectInvalidPort)
 static int s_TestMqtt5WSInvalidPort(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1418,25 +1218,7 @@ static int s_TestMqtt5WSInvalidPort(Aws::Crt::Allocator *allocator, void *ctx)
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     Aws::Crt::Auth::CredentialsProviderChainDefaultConfig defaultConfig;
     std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> provider =
@@ -1476,7 +1258,10 @@ AWS_TEST_CASE(Mqtt5WSInvalidPort, s_TestMqtt5WSInvalidPort)
 static int s_TestMqtt5SocketTimeout(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1491,27 +1276,17 @@ static int s_TestMqtt5SocketTimeout(Aws::Crt::Allocator *allocator, void *ctx)
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
+    // Override connection failed callback
     mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            ASSERT_TRUE(error_code == AWS_IO_SOCKET_TIMEOUT);
+        [&connectionPromise](Mqtt5Client &, const OnConnectionFailureEventData &eventData) {
+            printf("[MQTT5]Client Connection failed with error : %s", aws_error_debug_str(eventData.errorCode));
+            ASSERT_TRUE(eventData.errorCode == AWS_IO_SOCKET_TIMEOUT);
             connectionPromise.set_value(false);
             return 0;
         });
 
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
 
@@ -1529,7 +1304,10 @@ AWS_TEST_CASE(Mqtt5SocketTimeout, s_TestMqtt5SocketTimeout)
 static int s_TestMqtt5IncorrectBasicAuth(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_BASIC_AUTH);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1545,25 +1323,7 @@ static int s_TestMqtt5IncorrectBasicAuth(Aws::Crt::Allocator *allocator, void *c
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
@@ -1581,7 +1341,10 @@ AWS_TEST_CASE(Mqtt5IncorrectBasicAuth, s_TestMqtt5IncorrectBasicAuth)
 static int s_TestMqtt5IncorrectWSConnect(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1592,25 +1355,7 @@ static int s_TestMqtt5IncorrectWSConnect(Aws::Crt::Allocator *allocator, void *c
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     Aws::Crt::Auth::CredentialsProviderChainDefaultConfig defaultConfig;
     std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> provider =
@@ -1644,7 +1389,10 @@ AWS_TEST_CASE(Mqtt5IncorrectWSConnect, s_TestMqtt5IncorrectWSConnect)
 static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1663,31 +1411,12 @@ static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void
     std::promise<void> disconnectionPromise;
 
     // SETUP CLIENT 1 CALLBACKS
-    mqtt5Options.withClientConnectionSuccessCallback([&connection1Promise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client1 Connection Success.");
-        connection1Promise.set_value(true);
-    });
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connection1Promise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Client1 Connection failed with error : %s", aws_error_debug_str(error_code));
-            connection1Promise.set_value(false);
-        });
-    mqtt5Options.withClientStoppedCallback([&stopped1Promise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client1 Stopped");
-        stopped1Promise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connection1Promise, stopped1Promise, "Client1");
     mqtt5Options.withClientDisconnectionCallback(
-        [&disconnectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &,
-            int errorCode,
-            std::shared_ptr<Aws::Crt::Mqtt5::DisconnectPacket> packet_disconnect) {
-            if (errorCode != 0)
+        [&disconnectionPromise](Mqtt5Client &, const OnDisconnectionEventData &eventData) {
+            if (eventData.errorCode != 0)
             {
-                printf("[MQTT5]Client1 disconnected with error : %s", aws_error_debug_str(errorCode));
+                printf("[MQTT5]Client1 disconnected with error : %s", aws_error_debug_str(eventData.errorCode));
                 disconnectionPromise.set_value();
             }
             return 0;
@@ -1696,23 +1425,7 @@ static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client1 = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client1);
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connection2Promise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client2 Connection Success.");
-        connection2Promise.set_value(true);
-    });
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connection2Promise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection2 failed with error : %s", aws_error_debug_str(error_code));
-            connection2Promise.set_value(false);
-        });
-    mqtt5Options.withClientStoppedCallback([&stopped2Promise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client2 Stopped");
-        stopped2Promise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connection2Promise, stopped2Promise, "Client2");
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client2 = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client2);
@@ -1753,7 +1466,10 @@ AWS_TEST_CASE(Mqtt5DoubleClientIDFailure, s_TestMqtt5DoubleClientIDFailure)
 static int s_TestMqtt5NegotiatedSettingsHappy(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1770,27 +1486,15 @@ static int s_TestMqtt5NegotiatedSettingsHappy(Aws::Crt::Allocator *allocator, vo
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback(
-        [&connectionPromise, SESSION_EXPIRY_INTERVAL_SEC](
-            Aws::Crt::Mqtt5::Mqtt5Client &,
-            std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-            std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings> settings) {
-            printf("[MQTT5]Client Connection Success.");
-            ASSERT_TRUE(settings->getSessionExpiryIntervalSec() == SESSION_EXPIRY_INTERVAL_SEC);
-            connectionPromise.set_value(true);
-            return 0;
-        });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Client Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
+    // Override the ConnectionSuccessCallback to validate the negotiatedSettings
+    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise, SESSION_EXPIRY_INTERVAL_SEC](
+                                                         Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
+        printf("[MQTT5]Client Connection Success.");
+        ASSERT_TRUE(eventData.negotiatedSettings->getSessionExpiryIntervalSec() == SESSION_EXPIRY_INTERVAL_SEC);
+        connectionPromise.set_value(true);
+        return 0;
     });
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
@@ -1816,7 +1520,10 @@ static int s_TestMqtt5NegotiatedSettingsFull(Aws::Crt::Allocator *allocator, voi
     const uint16_t KEEP_ALIVE_INTERVAL = 1000;
 
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1836,30 +1543,20 @@ static int s_TestMqtt5NegotiatedSettingsFull(Aws::Crt::Allocator *allocator, voi
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
+
+    // Override the ConnectionSuccessCallback to validate the negotiatedSettings
     mqtt5Options.withClientConnectionSuccessCallback(
         [&connectionPromise, SESSION_EXPIRY_INTERVAL_SEC, CLIENT_ID, KEEP_ALIVE_INTERVAL](
-            Aws::Crt::Mqtt5::Mqtt5Client &,
-            std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-            std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings> settings) {
+            Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
             printf("[MQTT5]Client Connection Success.");
+            std::shared_ptr<NegotiatedSettings> settings = eventData.negotiatedSettings;
             ASSERT_TRUE(settings->getSessionExpiryIntervalSec() == SESSION_EXPIRY_INTERVAL_SEC);
             ASSERT_TRUE(settings->getClientId() == CLIENT_ID);
             ASSERT_TRUE(settings->getServerKeepAlive() == KEEP_ALIVE_INTERVAL);
             connectionPromise.set_value(true);
             return 0;
         });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Client Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
@@ -1884,7 +1581,10 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
     const uint32_t PACKET_MAX = UINT32_MAX;
 
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1902,12 +1602,12 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
+
     mqtt5Options.withClientConnectionSuccessCallback(
-        [&connectionPromise, RECEIVE_MAX, PACKET_MAX](
-            Aws::Crt::Mqtt5::Mqtt5Client &,
-            std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-            std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings> settings) {
+        [&connectionPromise, RECEIVE_MAX, PACKET_MAX](Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
             printf("[MQTT5]Client Connection Success.");
+            std::shared_ptr<NegotiatedSettings> settings = eventData.negotiatedSettings;
             uint16_t receivedmax = settings->getReceiveMaximumFromServer();
             uint32_t max_package = settings->getMaximumPacketSizeBytes();
             ASSERT_FALSE(receivedmax == RECEIVE_MAX);
@@ -1915,18 +1615,6 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
             connectionPromise.set_value(true);
             return 0;
         });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Client Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
@@ -1950,7 +1638,10 @@ AWS_TEST_CASE(Mqtt5NegotiatedSettingsLimit, s_TestMqtt5NegotiatedSettingsLimit)
 static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1964,30 +1655,11 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *ctx)
 
     int receivedCount = 0;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     mqtt5Options.withPublishReceivedCallback(
-        [&receivedCount,
-         TEST_TOPIC](std::shared_ptr<Mqtt5::Mqtt5Client>, std::shared_ptr<Mqtt5::PublishPacket> publish) {
-            String topic = publish->getTopic();
+        [&receivedCount, TEST_TOPIC](Mqtt5Client &, const PublishReceivedEventData &eventData) {
+            String topic = eventData.publishPacket->getTopic();
             if (topic == TEST_TOPIC)
             {
                 receivedCount++;
@@ -2044,7 +1716,10 @@ AWS_TEST_CASE(Mqtt5SubUnsub, s_TestMqtt5SubUnsub)
 static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -2060,30 +1735,11 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *ctx)
     std::promise<void> subscriberStoppedPromise;
     std::promise<void> publisherStoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback(
-        [&subscriberConnectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &,
-            std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-            std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings> settings) {
-            printf("[MQTT5]Subscriber Connection Success.");
-            subscriberConnectionPromise.set_value(true);
-        });
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&subscriberConnectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Subscriber Connection failed with error : %s", aws_error_debug_str(error_code));
-            subscriberConnectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&subscriberStoppedPromise](Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Subscriber Client Stopped");
-        subscriberStoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, subscriberConnectionPromise, subscriberStoppedPromise, "Suberscriber");
 
     mqtt5Options.withPublishReceivedCallback(
-        [&receivedWill,
-         TEST_TOPIC](std::shared_ptr<Mqtt5::Mqtt5Client>, std::shared_ptr<Mqtt5::PublishPacket> publish) {
-            String topic = publish->getTopic();
+        [&receivedWill, TEST_TOPIC](Mqtt5Client &, const PublishReceivedEventData &eventData) {
+            String topic = eventData.publishPacket->getTopic();
             if (topic == TEST_TOPIC)
             {
                 receivedWill = true;
@@ -2101,25 +1757,7 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *ctx)
     packetConnect->withWill(will);
     mqtt5Options.withConnectOptions(packetConnect);
 
-    mqtt5Options.withClientConnectionSuccessCallback(
-        [&publisherConnectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &,
-            std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-            std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings> settings) {
-            printf("[MQTT5]Subscriber Connection Success.");
-            publisherConnectionPromise.set_value(true);
-        });
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&publisherConnectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Subscriber Connection failed with error : %s", aws_error_debug_str(error_code));
-            publisherConnectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&publisherStoppedPromise](Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Subscriber Client Stopped");
-        publisherStoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, publisherConnectionPromise, publisherStoppedPromise, "Publisher");
 
     std::shared_ptr<Mqtt5::Mqtt5Client> publisher = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*publisher);
@@ -2136,7 +1774,7 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *ctx)
     subscribe->withSubscription(std::move(subscription));
     std::promise<void> subscribed;
     ASSERT_TRUE(subscriber->Subscribe(
-        subscribe, [&subscribed](std::shared_ptr<Mqtt5::Mqtt5Client>, int, std::shared_ptr<Mqtt5::SubAckPacket>) {
+        subscribe, [&subscribed](std::shared_ptr<Mqtt5Client>, int, std::shared_ptr<Mqtt5::SubAckPacket>) {
             subscribed.set_value();
         }));
 
@@ -2168,7 +1806,10 @@ AWS_TEST_CASE(Mqtt5WillTest, s_TestMqtt5WillTest)
 static int s_TestMqtt5NullPublish(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -2180,25 +1821,7 @@ static int s_TestMqtt5NullPublish(Aws::Crt::Allocator *allocator, void *ctx)
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
@@ -2227,7 +1850,10 @@ AWS_TEST_CASE(Mqtt5NullPublish, s_TestMqtt5NullPublish)
 static int s_TestMqtt5NullSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -2239,25 +1865,7 @@ static int s_TestMqtt5NullSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
@@ -2285,7 +1893,10 @@ AWS_TEST_CASE(Mqtt5NullSubscribe, s_TestMqtt5NullSubscribe)
 static int s_TestMqtt5NullUnsubscribe(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -2297,25 +1908,7 @@ static int s_TestMqtt5NullUnsubscribe(Aws::Crt::Allocator *allocator, void *ctx)
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        connectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        stoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
@@ -2341,7 +1934,10 @@ AWS_TEST_CASE(Mqtt5NullUnsubscribe, s_TestMqtt5NullUnsubscribe)
 static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
     // A long and invlid client id;
@@ -2377,7 +1973,10 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *ctx)
 {
 
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -2397,33 +1996,14 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *ctx)
     std::promise<void> subscriberStoppedPromise;
     std::promise<void> publisherStoppedPromise;
 
-    mqtt5Options.withClientConnectionSuccessCallback([&subscriberConnectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        subscriberConnectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&subscriberConnectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            subscriberConnectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&subscriberStoppedPromise](Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        subscriberStoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, subscriberConnectionPromise, subscriberStoppedPromise, "Subscriber");
 
     mqtt5Options.withPublishReceivedCallback(
-        [TEST_TOPIC, MESSAGE_NUMBER, &receivedMessages](
-            std::shared_ptr<Mqtt5::Mqtt5Client>, std::shared_ptr<Mqtt5::PublishPacket> publish) {
-            String topic = publish->getTopic();
+        [TEST_TOPIC, MESSAGE_NUMBER, &receivedMessages](Mqtt5Client &, const PublishReceivedEventData &eventData) {
+            String topic = eventData.publishPacket->getTopic();
             if (topic == TEST_TOPIC)
             {
-                ByteCursor payload = publish->getPayload();
+                ByteCursor payload = eventData.publishPacket->getPayload();
                 String message_string = String((const char *)payload.ptr, payload.len);
                 int message_int = atoi(message_string.c_str());
                 ASSERT_TRUE(message_int < MESSAGE_NUMBER);
@@ -2435,25 +2015,7 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *ctx)
     std::shared_ptr<Mqtt5::Mqtt5Client> subscriber = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*subscriber);
 
-    mqtt5Options.withClientConnectionSuccessCallback([&publisherConnectionPromise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client Connection Success.");
-        publisherConnectionPromise.set_value(true);
-    });
-
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&publisherConnectionPromise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection failed with error : %s", aws_error_debug_str(error_code));
-            publisherConnectionPromise.set_value(false);
-        });
-
-    mqtt5Options.withClientStoppedCallback([&publisherStoppedPromise](Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client Stopped");
-        publisherStoppedPromise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, publisherConnectionPromise, publisherStoppedPromise, "Publisher");
 
     std::shared_ptr<Mqtt5::Mqtt5Client> publisher = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*publisher);
@@ -2471,7 +2033,7 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *ctx)
 
     std::promise<void> subscribed;
     ASSERT_TRUE(subscriber->Subscribe(
-        subscribe, [&subscribed](std::shared_ptr<Mqtt5::Mqtt5Client>, int, std::shared_ptr<Mqtt5::SubAckPacket>) {
+        subscribe, [&subscribed](std::shared_ptr<Mqtt5Client>, int, std::shared_ptr<Mqtt5::SubAckPacket>) {
             subscribed.set_value();
         }));
 
@@ -2518,7 +2080,10 @@ AWS_TEST_CASE(Mqtt5QoS1SubPub, s_TestMqtt5QoS1SubPub)
 static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    ASSERT_TRUE(mqtt5TestVars);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
 
     ApiHandle apiHandle(allocator);
     const Aws::Crt::String TEST_TOPIC = "test/s_TestMqtt5RetainSetAndClear" + Aws::Crt::UUID().ToString();
@@ -2537,49 +2102,16 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *ct
     std::promise<void> stopped3Promise;
 
     // SETUP CLIENT 1 CALLBACKS
-    mqtt5Options.withClientConnectionSuccessCallback([&connection1Promise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client1 Connection Success.");
-        connection1Promise.set_value(true);
-    });
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connection1Promise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Client1 Connection failed with error : %s", aws_error_debug_str(error_code));
-            connection1Promise.set_value(false);
-        });
-    mqtt5Options.withClientStoppedCallback([&stopped1Promise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client1 Stopped");
-        stopped1Promise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connection1Promise, stopped1Promise, "Client1");
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client1 = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client1);
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connection2Promise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client2 Connection Success.");
-        connection2Promise.set_value(true);
-    });
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connection2Promise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection2 failed with error : %s", aws_error_debug_str(error_code));
-            connection2Promise.set_value(false);
-        });
-    mqtt5Options.withClientStoppedCallback([&stopped2Promise](Aws::Crt::Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client2 Stopped");
-        stopped2Promise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connection2Promise, stopped2Promise, "Client2");
 
     mqtt5Options.withPublishReceivedCallback(
-        [&client2RetianMessageReceived,
-         TEST_TOPIC](std::shared_ptr<Mqtt5::Mqtt5Client>, std::shared_ptr<Mqtt5::PublishPacket> publish) {
-            String topic = publish->getTopic();
+        [&client2RetianMessageReceived, TEST_TOPIC](Mqtt5Client &, const PublishReceivedEventData &eventData) {
+            String topic = eventData.publishPacket->getTopic();
             if (topic == TEST_TOPIC)
             {
                 client2RetianMessageReceived.set_value();
@@ -2589,34 +2121,17 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *ct
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client2 = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client2);
 
-    mqtt5Options.withClientConnectionSuccessCallback([&connection3Promise](
-                                                         Aws::Crt::Mqtt5::Mqtt5Client &,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>,
-                                                         std::shared_ptr<Aws::Crt::Mqtt5::NegotiatedSettings>) {
-        printf("[MQTT5]Client3 Connection Success.");
-        connection3Promise.set_value(true);
-    });
-    mqtt5Options.withClientConnectionFailureCallback(
-        [&connection3Promise](
-            Aws::Crt::Mqtt5::Mqtt5Client &, int error_code, std::shared_ptr<Aws::Crt::Mqtt5::ConnAckPacket>) {
-            printf("[MQTT5]Connection3 failed with error : %s", aws_error_debug_str(error_code));
-            connection3Promise.set_value(false);
-        });
-    mqtt5Options.withClientStoppedCallback([&stopped3Promise](Mqtt5::Mqtt5Client &) {
-        printf("[MQTT5]Client3 Stopped");
-        stopped3Promise.set_value();
-    });
+    s_setupConnectionLifeCycle(mqtt5Options, connection3Promise, stopped3Promise, "Client3");
 
-    mqtt5Options.withPublishReceivedCallback(
-        [TEST_TOPIC](std::shared_ptr<Mqtt5::Mqtt5Client>, std::shared_ptr<Mqtt5::PublishPacket> publish) {
-            String topic = publish->getTopic();
-            if (topic == TEST_TOPIC)
-            {
-                // Client3 should not receive any retian message
-                ASSERT_FALSE(false);
-            }
-            return 0;
-        });
+    mqtt5Options.withPublishReceivedCallback([TEST_TOPIC](Mqtt5Client &, const PublishReceivedEventData &eventData) {
+        String topic = eventData.publishPacket->getTopic();
+        if (topic == TEST_TOPIC)
+        {
+            // Client3 should not receive any retian message
+            ASSERT_FALSE(false);
+        }
+        return 0;
+    });
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client3 = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client3);
