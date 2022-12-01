@@ -21,10 +21,3 @@ jobs:
         source: './include ./source ./tests'
         exclude: './include/aws/crt/external ./source/external'
         inplace: True
-    - uses: EndBug/add-and-commit@v4
-      with:
-        author_name: Zhihui Xia
-        author_email: zhvixa@amazon.com
-        message: 'Committing clang-format changes'
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
