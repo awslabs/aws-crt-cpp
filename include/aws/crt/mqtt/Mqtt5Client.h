@@ -147,32 +147,32 @@ namespace Aws
              * Mandatory event fields: client, connack_data, settings
              */
             using OnConnectionSuccessHandler =
-                std::function<void(std::shared_ptr<Mqtt5Client>, const OnConnectionSuccessEventData &)>;
+                std::function<void(Mqtt5Client &, const OnConnectionSuccessEventData &)>;
 
             /**
              * Type signature of the callback invoked when connection failed
              */
             using OnConnectionFailureHandler =
-                std::function<void(std::shared_ptr<Mqtt5Client>, const OnConnectionFailureEventData &)>;
+                std::function<void(Mqtt5Client &, const OnConnectionFailureEventData &)>;
 
             /**
              * Type signature of the callback invoked when the internal connection is shutdown
              */
             using OnDisconnectionHandler =
-                std::function<void(std::shared_ptr<Mqtt5Client>, const OnDisconnectionEventData &)>;
+                std::function<void(Mqtt5Client &, const OnDisconnectionEventData &)>;
 
             /**
              * Type signature of the callback invoked when attempting connect to client
              * Mandatory event fields: client
              */
             using OnAttemptingConnectHandler =
-                std::function<void(std::shared_ptr<Mqtt5Client>, const OnAttemptingConnectEventData &)>;
+                std::function<void(Mqtt5Client &, const OnAttemptingConnectEventData &)>;
 
             /**
              * Type signature of the callback invoked when client connection stopped
              * Mandatory event fields: client
              */
-            using OnStoppedHandler = std::function<void(std::shared_ptr<Mqtt5Client>, const OnStoppedEventData &)>;
+            using OnStoppedHandler = std::function<void(Mqtt5Client &, const OnStoppedEventData &)>;
 
             /**
              * Type signature of the callback invoked when a Disconnection Comlete
@@ -202,7 +202,7 @@ namespace Aws
              * Type signature of the callback invoked when a PacketPublish message received (OnMessageHandler)
              */
             using OnPublishReceivedHandler =
-                std::function<void(std::shared_ptr<Mqtt5Client>, const PublishReceivedEventData &)>;
+                std::function<void(Mqtt5Client &, const PublishReceivedEventData &)>;
 
             /**
              * Callback for users to invoke upon completion of, presumably asynchronous, OnWebSocketHandshakeIntercept

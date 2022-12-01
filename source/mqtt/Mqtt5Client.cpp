@@ -57,7 +57,7 @@ namespace Aws
                         if (client->onStopped)
                         {
                             OnStoppedEventData eventData;
-                            client->onStopped(client->getptr(), eventData);
+                            client->onStopped(*client, eventData);
                         }
                         break;
 
@@ -66,7 +66,7 @@ namespace Aws
                         if (client->onAttemptingConnect)
                         {
                             OnAttemptingConnectEventData eventData;
-                            client->onAttemptingConnect(client->getptr(), eventData);
+                            client->onAttemptingConnect(*client, eventData);
                         }
                         break;
 
@@ -88,7 +88,7 @@ namespace Aws
                                     client->m_allocator, *event->connack_data, client->m_allocator);
                                 eventData.connAckPacket = packet;
                             }
-                            client->onConnectionFailure(client->getptr(), eventData);
+                            client->onConnectionFailure(*client, eventData);
                         }
                         break;
 
@@ -113,7 +113,7 @@ namespace Aws
 
                             eventData.connAckPacket = packet;
                             eventData.negotiatedSettings = neg_settings;
-                            client->onConnectionSuccess(client->getptr(), eventData);
+                            client->onConnectionSuccess(*client, eventData);
                         }
                         break;
 
@@ -134,7 +134,7 @@ namespace Aws
                             }
                             eventData.errorCode = event->error_code;
                             eventData.disconnectPacket = disconnection;
-                            client->onDisconnection(client->getptr(), eventData);
+                            client->onDisconnection(*client, eventData);
                         }
                         break;
                 }
@@ -154,7 +154,7 @@ namespace Aws
                             std::make_shared<PublishPacket>(*publish, client->m_allocator);
                         PublishReceivedEventData eventData;
                         eventData.publishPacket = packet;
-                        client->onPublishReceived(client->getptr(), eventData);
+                        client->onPublishReceived(*client, eventData);
                     }
                     else
                     {

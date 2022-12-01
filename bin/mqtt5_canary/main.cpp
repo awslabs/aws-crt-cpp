@@ -798,7 +798,7 @@ int main(int argc, char **argv)
         client = {};
         client.sharedTopic = Aws::Crt::String(sharedTopicArray);
         mqtt5Options.withPublishReceivedCallback(
-            [&client](std::shared_ptr<Mqtt5::Mqtt5Client> /*client*/, const Mqtt5::PublishReceivedEventData& publishData) {
+            [&client](Mqtt5Client & /*client*/, const Mqtt5::PublishReceivedEventData& publishData) {
                 AWS_LOGF_INFO(
                     AWS_LS_MQTT5_CANARY,
                     "Client:%s Publish Received on topic %s",
@@ -808,7 +808,7 @@ int main(int argc, char **argv)
 
         mqtt5Options.withClientConnectionSuccessCallback(
             [&client](
-                std::shared_ptr<Mqtt5::Mqtt5Client>,
+                Mqtt5Client &,
                 const Mqtt5::OnConnectionSuccessEventData& eventData)
             {
                 client.isConnected = true;
@@ -820,7 +820,7 @@ int main(int argc, char **argv)
             });
 
         mqtt5Options.withClientConnectionFailureCallback(
-            [&client](std::shared_ptr<Mqtt5::Mqtt5Client>, const OnConnectionFailureEventData& eventData) {
+            [&client](Mqtt5Client &, const OnConnectionFailureEventData& eventData) {
                 AWS_LOGF_INFO(
                     AWS_LS_MQTT5_CANARY,
                     "ID:%s Connection failed with  Error Code: %d(%s)",
@@ -831,7 +831,7 @@ int main(int argc, char **argv)
 
         mqtt5Options.withClientDisconnectionCallback(
             [&client](
-                std::shared_ptr<Mqtt5::Mqtt5Client>,
+                Mqtt5Client &,
                 const OnDisconnectionEventData&)
             {
                 client.isConnected = false;
@@ -839,7 +839,7 @@ int main(int argc, char **argv)
             });
 
         mqtt5Options.withClientStoppedCallback(
-            [&client](std::shared_ptr<Mqtt5::Mqtt5Client>, const OnStoppedEventData&)
+            [&client](Mqtt5Client &, const OnStoppedEventData&)
             { AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Stopped", client.clientId.c_str()); });
 
         client.client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, appCtx.allocator);
