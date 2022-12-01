@@ -308,16 +308,11 @@ static void s_setupConnectionLifeCycle(
 static int s_TestMqtt5NewClientMin(Aws::Crt::Allocator *allocator, void *ctx)
 {
     (void)ctx;
-    struct Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    if (!mqtt5TestVars)
-    {
-        printf("Environment Variables are not set for the test, skip the test");
-    }
-
     ApiHandle apiHandle(allocator);
 
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
-    mqtt5Options.withHostName(mqtt5TestVars.m_hostname_string).withPort(mqtt5TestVars.m_port_value);
+    // Hardcoded the host name and port for creation test
+    mqtt5Options.withHostName("localhost").withPort(1883);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
@@ -332,16 +327,11 @@ AWS_TEST_CASE(Mqtt5NewClientMinimal, s_TestMqtt5NewClientMin)
  */
 static int s_TestMqtt5NewClientFull(Aws::Crt::Allocator *allocator, void *ctx)
 {
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    if (!mqtt5TestVars)
-    {
-        printf("Environment Variables are not set for the test, skip the test");
-    }
-
     ApiHandle apiHandle(allocator);
 
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
-    mqtt5Options.withHostName(mqtt5TestVars.m_hostname_string).withPort(mqtt5TestVars.m_port_value);
+    // Hardcoded the host name and port for creation test
+    mqtt5Options.withHostName("localhost").withPort(1883);
 
     Aws::Crt::Io::SocketOptions socketOptions;
     socketOptions.SetConnectTimeoutMs(3000);
