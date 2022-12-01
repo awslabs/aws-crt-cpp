@@ -65,14 +65,6 @@ struct Mqtt5TestEnvVars
     Mqtt5TestEnvVars(struct aws_allocator *allocator, Mqtt5TestType type)
         : m_allocator(allocator), m_error(AWS_OP_SUCCESS)
     {
-        m_hostname = nullptr;
-        m_port = nullptr;
-        m_username = nullptr;
-        m_password = nullptr;
-        m_certificate_path = nullptr;
-        m_private_key_path = nullptr;
-        m_httpproxy_hostname = nullptr;
-        m_httpproxy_port = nullptr;
         switch (type)
         {
             case MQTT5CONNECT_DIRECT:
@@ -208,66 +200,68 @@ struct Mqtt5TestEnvVars
 
     ~Mqtt5TestEnvVars()
     {
-        if (m_hostname != nullptr)
+        if (m_hostname != NULL)
         {
             aws_string_destroy(m_hostname);
-            m_hostname = nullptr;
+            m_hostname_string.clear();
+            m_hostname = NULL;
         }
 
-        if (m_port != nullptr)
+        if (m_port != NULL)
         {
             aws_string_destroy(m_port);
-            m_port = nullptr;
+            m_port = NULL;
         }
 
-        if (m_username != nullptr)
+        if (m_username != NULL)
         {
             aws_string_destroy(m_username);
-            m_username = nullptr;
+            m_username = NULL;
         }
 
-        if (m_password != nullptr)
+        if (m_password != NULL)
         {
             aws_string_destroy(m_password);
-            m_password = nullptr;
+            m_password = NULL;
         }
 
-        if (m_certificate_path != nullptr)
+        if (m_certificate_path != NULL)
         {
             aws_string_destroy(m_certificate_path);
-            m_certificate_path = nullptr;
+            m_certificate_path = NULL;
         }
 
-        if (m_private_key_path != nullptr)
+        if (m_private_key_path != NULL)
         {
             aws_string_destroy(m_private_key_path);
-            m_private_key_path = nullptr;
+            m_private_key_path = NULL;
         }
 
-        if (m_httpproxy_hostname != nullptr)
+        if (m_httpproxy_hostname != NULL)
         {
             aws_string_destroy(m_httpproxy_hostname);
-            m_httpproxy_hostname = nullptr;
+            m_httpproxy_hostname = NULL;
+            m_httpproxy_hostname_string.clear();
         }
 
-        if (m_httpproxy_port != nullptr)
+        if (m_httpproxy_port != NULL)
         {
             aws_string_destroy(m_httpproxy_port);
-            m_httpproxy_port = nullptr;
+            m_httpproxy_port = NULL;
         }
     }
 
     int m_error;
     struct aws_allocator *m_allocator;
 
-    struct aws_string *m_hostname = nullptr;
-    struct aws_string *m_port = nullptr;
-    struct aws_string *m_username = nullptr;
-    struct aws_string *m_password = nullptr;
-    struct aws_string *m_certificate_path = nullptr;
-    struct aws_string *m_private_key_path = nullptr;
-    struct aws_string *m_httpproxy_hostname = nullptr;
-    struct aws_string *m_httpproxy_port = nullptr;
+    struct aws_string *m_hostname = NULL;
+    struct aws_string *m_port = NULL;
+    struct aws_string *m_username = NULL;
+    struct aws_string *m_password = NULL;
+    struct aws_string *m_certificate_path = NULL;
+    struct aws_string *m_private_key_path = NULL;
+    struct aws_string *m_httpproxy_hostname = NULL;
+    struct aws_string *m_httpproxy_port = NULL;
 
     Aws::Crt::String m_hostname_string;
     uint16_t m_port_value;
@@ -325,7 +319,7 @@ static int s_TestMqtt5NewClientMin(Aws::Crt::Allocator *allocator, void *ctx)
     ApiHandle apiHandle(allocator);
 
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
-    mqtt5Options.withHostName(mqtt5TestVars.m_hostname_string).withPort(mqtt5TestVars.m_port_value);
+    mqtt5Options.withHostName(Aws::Crt::String((const char*)mqtt5TestVars.m_hostname->bytes)).withPort(mqtt5TestVars.m_port_value);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
