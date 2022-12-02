@@ -1,4 +1,6 @@
 version: 0.2
+env:
+  shell: bash
 #this buildspec assumes the ubuntu 14 image
 phases:
   install:
@@ -22,7 +24,9 @@ phases:
       - echo Build started on `date`
       - aws s3 cp s3://aws-crt-test-stuff/setup_proxy_test_env.sh /tmp/setup_proxy_test_env.sh
       - sudo chmod a+xr /tmp/setup_proxy_test_env.sh
-      - ./codebuild/common-posix.sh -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DENABLE_FUZZ_TESTS=ON
+      # Setup Mqtt5 test environment
+      - source ./codebuild/mqtt5_test_setup.sh s3://aws-crt-test-stuff/CodeBuildIotProdMQTT5EnvironmentVariables_v2.txt us-east-1
+      - ./codebuild/common-posix.sh -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DENABLE_FUZZ_TESTS=ON -DENABLE_MQTT5_TEST=ON
       - ./format-check.sh
   post_build:
     commands:
