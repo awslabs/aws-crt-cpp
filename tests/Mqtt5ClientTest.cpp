@@ -2225,7 +2225,6 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *ct
 
 AWS_TEST_CASE(Mqtt5RetainSetAndClear, s_TestMqtt5RetainSetAndClear)
 
-
 //////////////////////////////////////////////////////////////
 // IoT Builder Test
 //////////////////////////////////////////////////////////////
@@ -2246,7 +2245,6 @@ static int s_TestIoTMqtt5ConnectWithmTLS(Aws::Crt::Allocator *allocator, void *c
         mqtt5TestVars.m_certificate_path_string.c_str(),
         mqtt5TestVars.m_private_key_path_string.c_str(),
         allocator);
-
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -2312,7 +2310,6 @@ static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, vo
 }
 
 AWS_TEST_CASE(IoTMqtt5ConnectWithWebsocket, s_TestIoTMqtt5ConnectWithWebsocket)
-
 
 /*
  * Custom Auth (signing) connect
