@@ -2320,7 +2320,8 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomeAuth(Aws::Crt::Allocator *allo
     error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_password, &password);
     error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenkey, &tokenKeyname);
     error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenvalue, &tokenValue);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_proxy_port, &tokenSignature);
+    error |=
+        aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokensignature, &tokenSignature);
 
     if (error != AWS_OP_SUCCESS)
     {

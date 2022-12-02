@@ -36,6 +36,13 @@ namespace Aws
              * Create a custom authorizer configuration
              */
             Mqtt5CustomAuthConfig(Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
+            virtual ~Mqtt5CustomAuthConfig();
+
+            Mqtt5CustomAuthConfig(const Mqtt5CustomAuthConfig &rhs);
+            Mqtt5CustomAuthConfig(Mqtt5CustomAuthConfig &&rhs) = delete;
+
+            Mqtt5CustomAuthConfig &operator=(const Mqtt5CustomAuthConfig &rhs);
+            Mqtt5CustomAuthConfig &operator=(Mqtt5CustomAuthConfig &&rhs) = delete;
 
             Mqtt5CustomAuthConfig &WithAuthrizaerName(Crt::String authName);
             Mqtt5CustomAuthConfig &WithUsername(Crt::String username);
@@ -400,7 +407,9 @@ namespace Aws
             virtual ~Mqtt5ClientBuilder()
             {
                 if (m_options)
+                {
                     delete m_options;
+                }
             };
             Mqtt5ClientBuilder(const Mqtt5ClientBuilder &) = delete;
             Mqtt5ClientBuilder(Mqtt5ClientBuilder &&) = delete;

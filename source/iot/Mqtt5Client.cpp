@@ -505,6 +505,82 @@ namespace Aws
             AWS_ZERO_STRUCT(m_passwordStorage);
         }
 
+        Aws::Iot::Mqtt5CustomAuthConfig::~Mqtt5CustomAuthConfig()
+        {
+            aws_byte_buf_clean_up(&m_passwordStorage);
+        }
+
+        Aws::Iot::Mqtt5CustomAuthConfig::Mqtt5CustomAuthConfig(const Mqtt5CustomAuthConfig &rhs)
+        {
+            if (&rhs != this)
+            {
+                m_allocator = rhs.m_allocator;
+                if (rhs.m_authorizerName.has_value())
+                {
+                    m_authorizerName = rhs.m_authorizerName.value();
+                }
+                if (rhs.m_tokenKeyName.has_value())
+                {
+                    m_tokenKeyName = rhs.m_tokenKeyName.value();
+                }
+                if (rhs.m_tokenSignature.has_value())
+                {
+                    m_tokenSignature = rhs.m_tokenSignature.value();
+                }
+                if (rhs.m_tokenValue.has_value())
+                {
+                    m_tokenValue = rhs.m_tokenValue.value();
+                }
+                if (rhs.m_username.has_value())
+                {
+                    m_username = rhs.m_username.value();
+                }
+                if (rhs.m_password.has_value())
+                {
+                    aws_byte_buf_clean_up(&m_passwordStorage);
+                    AWS_ZERO_STRUCT(m_passwordStorage);
+                    aws_byte_buf_init_copy_from_cursor(&m_passwordStorage, m_allocator, rhs.m_password.value());
+                    m_password = aws_byte_cursor_from_buf(&m_passwordStorage);
+                }
+            }
+        }
+
+        Mqtt5CustomAuthConfig &Aws::Iot::Mqtt5CustomAuthConfig::operator=(const Mqtt5CustomAuthConfig &rhs)
+        {
+            if (&rhs != this)
+            {
+                m_allocator = rhs.m_allocator;
+                if (rhs.m_authorizerName.has_value())
+                {
+                    m_authorizerName = rhs.m_authorizerName.value();
+                }
+                if (rhs.m_tokenKeyName.has_value())
+                {
+                    m_tokenKeyName = rhs.m_tokenKeyName.value();
+                }
+                if (rhs.m_tokenSignature.has_value())
+                {
+                    m_tokenSignature = rhs.m_tokenSignature.value();
+                }
+                if (rhs.m_tokenValue.has_value())
+                {
+                    m_tokenValue = rhs.m_tokenValue.value();
+                }
+                if (rhs.m_username.has_value())
+                {
+                    m_username = rhs.m_username.value();
+                }
+                if (rhs.m_password.has_value())
+                {
+                    aws_byte_buf_clean_up(&m_passwordStorage);
+                    AWS_ZERO_STRUCT(m_passwordStorage);
+                    aws_byte_buf_init_copy_from_cursor(&m_passwordStorage, m_allocator, rhs.m_password.value());
+                    m_password = aws_byte_cursor_from_buf(&m_passwordStorage);
+                }
+            }
+            return *this;
+        }
+
         const Crt::Optional<Crt::String> &Mqtt5CustomAuthConfig::GetAuthrizaerName() { return m_authorizerName; }
 
         const Crt::Optional<Crt::String> &Mqtt5CustomAuthConfig::GetUsername() { return m_username; }
