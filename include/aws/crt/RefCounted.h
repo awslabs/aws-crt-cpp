@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 
+#include <aws/common/assert.h>
 #include <memory>
 #include <mutex>
 
