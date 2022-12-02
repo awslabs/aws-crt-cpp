@@ -534,7 +534,6 @@ namespace Aws
                 }
                 if (rhs.m_password.has_value())
                 {
-                    aws_byte_buf_clean_up(&m_passwordStorage);
                     AWS_ZERO_STRUCT(m_passwordStorage);
                     aws_byte_buf_init_copy_from_cursor(&m_passwordStorage, m_allocator, rhs.m_password.value());
                     m_password = aws_byte_cursor_from_buf(&m_passwordStorage);
