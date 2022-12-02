@@ -505,10 +505,7 @@ namespace Aws
             AWS_ZERO_STRUCT(m_passwordStorage);
         }
 
-        Aws::Iot::Mqtt5CustomAuthConfig::~Mqtt5CustomAuthConfig()
-        {
-            aws_byte_buf_clean_up(&m_passwordStorage);
-        }
+        Aws::Iot::Mqtt5CustomAuthConfig::~Mqtt5CustomAuthConfig() { aws_byte_buf_clean_up(&m_passwordStorage); }
 
         Aws::Iot::Mqtt5CustomAuthConfig::Mqtt5CustomAuthConfig(const Mqtt5CustomAuthConfig &rhs)
         {
