@@ -85,8 +85,7 @@ namespace Aws
                     usernameString = AddToUsernameParameter(
                         usernameString,
                         customAuthConfig->GetTokenValue().value(),
-                        customAuthConfig->GetTokenKeyName().value() + "="
-                        );
+                        customAuthConfig->GetTokenKeyName().value() + "=");
                     usernameString = AddToUsernameParameter(
                         usernameString,
                         customAuthConfig->GetTokenSignature().value(),
