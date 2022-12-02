@@ -26,21 +26,7 @@ namespace Aws
                 }
             }
 
-            HttpMessage::~HttpMessage()
-            {
-                if (m_message != nullptr)
-                {
-                    aws_input_stream *old_stream = aws_http_message_get_body_stream(m_message);
-                    if (old_stream != nullptr)
-                    {
-                        aws_input_stream_destroy(old_stream);
-                    }
-
-                    aws_http_message_release(m_message);
-
-                    m_message = nullptr;
-                }
-            }
+            HttpMessage::~HttpMessage() { m_message = aws_http_message_release(m_message); }
 
             std::shared_ptr<Aws::Crt::Io::InputStream> HttpMessage::GetBody() const noexcept { return m_bodyStream; }
 
