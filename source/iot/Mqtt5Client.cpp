@@ -84,8 +84,9 @@ namespace Aws
                 {
                     usernameString = AddToUsernameParameter(
                         usernameString,
-                        customAuthConfig->GetTokenKeyName().value(),
-                        customAuthConfig->GetTokenValue().value());
+                        customAuthConfig->GetTokenValue().value(),
+                        customAuthConfig->GetTokenKeyName().value() + "="
+                        );
                     usernameString = AddToUsernameParameter(
                         usernameString,
                         customAuthConfig->GetTokenSignature().value(),
@@ -448,6 +449,10 @@ namespace Aws
                     username = AddToUsernameParameter(username, "SDK", m_sdkName);
                     username = AddToUsernameParameter(username, "Version", m_sdkName);
                 }
+                AWS_LOGF_INFO(
+                            AWS_LS_MQTT5_CLIENT,
+                            "user name setup: %s.",
+                            username.c_str());
                 m_connectOptions->withUserName(username);
             }
 
