@@ -11,8 +11,8 @@ env:
     BUILDER_VERSION: v0.9.21
     BUILDER_SOURCE: releases
     BUILDER_HOST: https://d19elf31gohf1l.cloudfront.net
-    PACKAGE_NAME: 'aws-crt-cpp'
-    CANARY_TEST_EXE_PATH: build/bin/mqtt5_canary/mqtt5_canary
+    PACKAGE_NAME: aws-crt-cpp
+    CANARY_TEST_EXE_PATH: build/install/bin/mqtt5_canary
     CANARY_SERVER_ARN: Mqtt5MosquittoSever
     CANARY_BUILD_S3_DST: mqtt5-canary/s3
 
