@@ -20,9 +20,10 @@ phases:
   install:
     commands:
       # install cmake for codebuild environment.
-      - apt-get install build-essential libssl-dev -y -f
+      - add-apt-repository ppa:openjdk-r/ppa
+      - add-apt-repository ppa:ubuntu-toolchain-r/test
       - apt-get update -y
-      - apt-get install cmake -y -f
+      - sudo apt-get install cmake -y
       # Install necessary lib for canary wrapper
       - sudo apt-get install gcc python3-dev -y -f
       - sudo apt-get install pip -y -f
