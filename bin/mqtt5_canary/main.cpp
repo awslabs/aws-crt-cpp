@@ -248,8 +248,8 @@ static void s_AwsMqtt5CanaryInitTesterOptions(struct AwsMqtt5CanaryTesterOptions
     testerOptions->tps = 50;
     /* How long to run the test before exiting */
     testerOptions->testRunSeconds = 60;
-    /* Time interval for printing memory usage info */
-    testerOptions->memoryCheckIntervalSec = 15;
+    /* Time interval for printing memory usage info in seconds. Default to 10 mins */
+    testerOptions->memoryCheckIntervalSec = 600;
 }
 
 struct AwsMqtt5CanaryTestClient
@@ -666,7 +666,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        apiHandle.InitializeLogging(appCtx.LogLevel, stderr);
+        apiHandle.InitializeLogging(appCtx.LogLevel, stdout);
     }
 
     /***************************************************
