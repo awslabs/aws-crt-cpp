@@ -183,7 +183,7 @@ static void s_ParseOptions(int argc, char **argv, struct AppCtx &ctx, struct Aws
                 }
                 else
                 {
-                    std::cerr << "unsupported log level " << aws_cli_optarg << std::endl;
+                    fprintf("unsupported log level %s\n", aws_cli_optarg);
                     s_Usage(1);
                 }
                 break;
@@ -205,25 +205,24 @@ static void s_ParseOptions(int argc, char **argv, struct AppCtx &ctx, struct Aws
                 ctx.uri = Io::Uri(aws_byte_cursor_from_c_str(aws_cli_positional_arg), ctx.allocator);
                 if (!ctx.uri)
                 {
-                    std::cerr << "Failed to parse uri \"" << aws_cli_positional_arg << "\" with error "
-                              << aws_error_debug_str(ctx.uri.LastError()) << std::endl;
+                    fprintf("Failed to parse uri %s with error %s\n", aws_cli_positional_arg,
+                       aws_error_debug_str(ctx.uri.LastError());
                     s_Usage(1);
                 }
                 else
                 {
-                    std::cerr << "Success to parse uri \"" << aws_cli_positional_arg
-                              << static_cast<const char *>(AWS_BYTE_CURSOR_PRI(ctx.uri.GetFullUri())) << std::endl;
+                    fprintf("Succeed to parse uri %s\n", static_cast<const char *>(AWS_BYTE_CURSOR_PRI(ctx.uri.GetFullUri());
                 }
                 break;
             default:
-                std::cerr << "Unknown option\n";
+                fprintf("Succeed to parse uri\n");
                 s_Usage(1);
         }
     }
 
     if (!ctx.uri)
     {
-        std::cerr << "A URI for the request must be supplied.\n";
+        fprintf("A URI for the request must be supplied.\n");
         s_Usage(1);
     }
 }
@@ -346,7 +345,7 @@ static int s_AwsMqtt5CanaryOperationStart(struct AwsMqtt5CanaryTestClient *testC
 
     if (testClient->client == nullptr)
     {
-        AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "Invalid Client, Client Creation Failed.");
+        AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "Invalid Client, Client Creation Failed.");
         return AWS_OP_ERR;
     }
 
@@ -362,6 +361,7 @@ static int s_AwsMqtt5CanaryOperationStart(struct AwsMqtt5CanaryTestClient *testC
         }
         return AWS_OP_SUCCESS;
     }
+    AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Start Failed", testClient->clientId.c_str());
     return AWS_OP_ERR;
 }
 
@@ -377,6 +377,7 @@ static int s_AwsMqtt5CanaryOperationStop(struct AwsMqtt5CanaryTestClient *testCl
         AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Stop", testClient->clientId.c_str());
         return AWS_OP_SUCCESS;
     }
+    AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Stop Failed", testClient->clientId.c_str());
     return AWS_OP_ERR;
 }
 
@@ -416,6 +417,7 @@ static int s_AwsMqtt5CanaryOperationSubscribe(struct AwsMqtt5CanaryTestClient *t
     {
         return AWS_OP_SUCCESS;
     }
+    AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Subscribe Failed", testClient->clientId.c_str());
     return AWS_OP_ERR;
 }
 
@@ -435,11 +437,12 @@ static int s_AwsMqtt5CanaryOperationUnsubscribeBad(struct AwsMqtt5CanaryTestClie
     std::shared_ptr<Mqtt5::UnsubscribePacket> unsubscription = std::make_shared<Mqtt5::UnsubscribePacket>(allocator);
     unsubscription->withTopicFilters(topics);
 
-    if (testClient->client->Unsubscribe(unsubscription))
+    if (!testClient->client->Unsubscribe(unsubscription))
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Unsubscribe Bad", testClient->clientId.c_str());
         return AWS_OP_SUCCESS;
     }
+    AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Unsubscribe Bad Failed", testClient->clientId.c_str());
     return AWS_OP_ERR;
 }
 
@@ -472,6 +475,7 @@ static int s_AwsMqtt5CanaryOperationUnsubscribe(struct AwsMqtt5CanaryTestClient 
             AWS_LS_MQTT5_CANARY, "ID:%s Unsubscribe from topic: %s", testClient->clientId.c_str(), topicArray);
         return AWS_OP_SUCCESS;
     }
+    AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Unsubscribe Failed", testClient->clientId.c_str());
     return AWS_OP_ERR;
 }
 
@@ -501,8 +505,11 @@ static int s_AwsMqtt5CanaryOperationPublish(
 
     if (testClient->client->Publish(packetPublish))
     {
+        AWS_LOGF_INFO(
+            AWS_LS_MQTT5_CANARY, "ID:%s Publish to topic %s", testClient->clientId.c_str(), topicFilter.c_str());
         return AWS_OP_SUCCESS;
     }
+    AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Publish Failed", testClient->clientId.c_str());
     return AWS_OP_ERR;
 }
 
@@ -683,8 +690,10 @@ int main(int argc, char **argv)
             tlsCtxOptions = Io::TlsContextOptions::InitClientWithMtls(appCtx.cert, appCtx.key);
             if (!tlsCtxOptions)
             {
-                std::cout << "Failed to load " << appCtx.cert << " and " << appCtx.key << " with error "
-                          << aws_error_debug_str(tlsCtxOptions.LastError()) << std::endl;
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT5_CANARY,
+                    "Failed to load %s and %s with error %s.", appCtx.cert, appCtx.key
+                    ,aws_error_debug_str(tlsCtxOptions.LastError());
                 exit(1);
             }
         }
@@ -693,8 +702,10 @@ int main(int argc, char **argv)
             tlsCtxOptions = Io::TlsContextOptions::InitDefaultClient();
             if (!tlsCtxOptions)
             {
-                std::cout << "Failed to create a default tlsCtxOptions with error "
-                          << aws_error_debug_str(tlsCtxOptions.LastError()) << std::endl;
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT5_CANARY,
+                    "Failed to create a default tlsCtxOptions with error %s"
+                    ,aws_error_debug_str(tlsCtxOptions.LastError());
                 exit(1);
             }
         }
@@ -703,19 +714,20 @@ int main(int argc, char **argv)
 
         tlsConnectionOptions = tlsContext.NewConnectionOptions();
 
-        std::cout << "[MQTT5] Looking into the uri string: "
-                  << static_cast<const char *>(AWS_BYTE_CURSOR_PRI(appCtx.uri.GetFullUri())) << std::endl;
-
         if (!tlsConnectionOptions.SetServerName(hostName))
         {
-            std::cout << "Failed to set servername with error " << aws_error_debug_str(tlsConnectionOptions.LastError())
-                      << std::endl;
+            AWS_LOGF_ERROR(
+                AWS_LS_MQTT5_CANARY,
+                "Failed to set servername with error %s",
+                aws_error_debug_str(tlsConnectionOptions.LastError()));
             exit(1);
         }
         if (!tlsConnectionOptions.SetAlpnList("x-amzn-mqtt-ca"))
         {
-            std::cout << "Failed to load alpn list with error " << aws_error_debug_str(tlsConnectionOptions.LastError())
-                      << std::endl;
+            AWS_LOGF_ERROR(
+                AWS_LS_MQTT5_CANARY,
+                "Failed to set alpn list with error %s",
+                aws_error_debug_str(tlsConnectionOptions.LastError()));
             exit(1);
         }
     }
@@ -731,24 +743,30 @@ int main(int argc, char **argv)
     Io::EventLoopGroup eventLoopGroup(testerOptions.elgMaxThreads, appCtx.allocator);
     if (!eventLoopGroup)
     {
-        std::cerr << "Failed to create evenloop group with error " << aws_error_debug_str(eventLoopGroup.LastError())
-                  << std::endl;
+        AWS_LOGF_ERROR(
+            AWS_LS_MQTT5_CANARY,
+            "Failed to create eventloop group with error %s",
+            aws_error_debug_str(eventLoopGroup.LastError()));
         exit(1);
     }
 
     Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, appCtx.allocator);
     if (!defaultHostResolver)
     {
-        std::cerr << "Failed to create host resolver with error "
-                  << aws_error_debug_str(defaultHostResolver.LastError()) << std::endl;
+        AWS_LOGF_ERROR(
+            AWS_LS_MQTT5_CANARY,
+            "Failed to create host resolver with error %s",
+            aws_error_debug_str(defaultHostResolver.LastError()));
         exit(1);
     }
 
     Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, appCtx.allocator);
     if (!clientBootstrap)
     {
-        std::cerr << "Failed to create client bootstrap with error " << aws_error_debug_str(clientBootstrap.LastError())
-                  << std::endl;
+        AWS_LOGF_ERROR(
+            AWS_LS_MQTT5_CANARY,
+            "Failed to create client bootstrap with error %s",
+            aws_error_debug_str(clientBootstrap.LastError()));
         exit(1);
     }
 
@@ -820,8 +838,9 @@ int main(int argc, char **argv)
             });
 
         mqtt5Options.withClientConnectionFailureCallback(
-            [&client](Mqtt5Client &, const OnConnectionFailureEventData& eventData) {
-                AWS_LOGF_INFO(
+            [&client](Mqtt5Client &, const OnConnectionFailureEventData &eventData)
+            {
+                AWS_LOGF_ERROR(
                     AWS_LS_MQTT5_CANARY,
                     "ID:%s Connection failed with  Error Code: %d(%s)",
                     client.clientId.c_str(),
@@ -846,7 +865,11 @@ int main(int argc, char **argv)
 
         awsMqtt5CanaryOperationFn *operation_fn =
             s_AwsMqtt5CanaryOperationTable.operationByOperationType[AWS_MQTT5_CANARY_OPERATION_START];
-        (*operation_fn)(&client, appCtx.allocator);
+        if ((*operation_fn)(&client, appCtx.allocator) == AWS_OP_ERR)
+        {
+            AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Operation Failed.", client.clientId.c_str());
+        }
+    }
 
         aws_thread_current_sleep(AWS_MQTT5_CANARY_CLIENT_CREATION_SLEEP_TIME);
         clients.push_back(client);
