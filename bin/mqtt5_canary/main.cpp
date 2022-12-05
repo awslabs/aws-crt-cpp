@@ -183,7 +183,7 @@ static void s_ParseOptions(int argc, char **argv, struct AppCtx &ctx, struct Aws
                 }
                 else
                 {
-                    fprintf("unsupported log level %s\n", aws_cli_optarg);
+                    fprintf(stderr, "unsupported log level %s\n", aws_cli_optarg);
                     s_Usage(1);
                 }
                 break;
@@ -205,24 +205,30 @@ static void s_ParseOptions(int argc, char **argv, struct AppCtx &ctx, struct Aws
                 ctx.uri = Io::Uri(aws_byte_cursor_from_c_str(aws_cli_positional_arg), ctx.allocator);
                 if (!ctx.uri)
                 {
-                    fprintf("Failed to parse uri %s with error %s\n", aws_cli_positional_arg,
-                       aws_error_debug_str(ctx.uri.LastError());
+                    fprintf(
+                        stderr,
+                        "Failed to parse uri %s with error %s\n",
+                        aws_cli_positional_arg,
+                        aws_error_debug_str(ctx.uri.LastError()));
                     s_Usage(1);
                 }
                 else
                 {
-                    fprintf("Succeed to parse uri %s\n", static_cast<const char *>(AWS_BYTE_CURSOR_PRI(ctx.uri.GetFullUri());
+                    fprintf(
+                        stderr,
+                        "Succeed to parse uri %s\n",
+                        static_cast<const char *>(AWS_BYTE_CURSOR_PRI(ctx.uri.GetFullUri())));
                 }
                 break;
             default:
-                fprintf("Succeed to parse uri\n");
+                fprintf(stderr, "Succeed to parse uri\n");
                 s_Usage(1);
         }
     }
 
     if (!ctx.uri)
     {
-        fprintf("A URI for the request must be supplied.\n");
+        fprintf(stderr, "A URI for the request must be supplied.\n");
         s_Usage(1);
     }
 }
@@ -692,8 +698,10 @@ int main(int argc, char **argv)
             {
                 AWS_LOGF_ERROR(
                     AWS_LS_MQTT5_CANARY,
-                    "Failed to load %s and %s with error %s.", appCtx.cert, appCtx.key
-                    ,aws_error_debug_str(tlsCtxOptions.LastError());
+                    "Failed to load %s and %s with error %s.",
+                    appCtx.cert,
+                    appCtx.key,
+                    aws_error_debug_str(tlsCtxOptions.LastError()));
                 exit(1);
             }
         }
@@ -704,8 +712,8 @@ int main(int argc, char **argv)
             {
                 AWS_LOGF_ERROR(
                     AWS_LS_MQTT5_CANARY,
-                    "Failed to create a default tlsCtxOptions with error %s"
-                    ,aws_error_debug_str(tlsCtxOptions.LastError());
+                    "Failed to create a default tlsCtxOptions with error %s",
+                    aws_error_debug_str(tlsCtxOptions.LastError()));
                 exit(1);
             }
         }
@@ -869,7 +877,6 @@ int main(int argc, char **argv)
         {
             AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Operation Failed.", client.clientId.c_str());
         }
-    }
 
         aws_thread_current_sleep(AWS_MQTT5_CANARY_CLIENT_CREATION_SLEEP_TIME);
         clients.push_back(client);
