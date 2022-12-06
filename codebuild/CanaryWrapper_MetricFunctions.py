@@ -9,7 +9,7 @@ def get_metric_total_cpu_usage(psutil_process : psutil.Process):
     global cache_cpu_psutil_process
 
     try:
-        if (psutil_process == None):
+        if (psutil_process is None):
             print ("ERROR - No psutil.process passed! Cannot gather metric!", flush=True)
             return None
         # We always need to skip the first CPU poll
@@ -26,7 +26,7 @@ def get_metric_total_cpu_usage(psutil_process : psutil.Process):
 # Note: This value is in BYTES.
 def get_metric_total_memory_usage_value(psutil_process : psutil.Process):
     try:
-        if (psutil_process == None):
+        if (psutil_process is None):
             print ("ERROR - No psutil.process passed! Cannot gather metric!", flush=True)
             return None
         return psutil.virtual_memory()[3]
@@ -38,7 +38,7 @@ def get_metric_total_memory_usage_value(psutil_process : psutil.Process):
 
 def get_metric_total_memory_usage_percent(psutil_process : psutil.Process):
     try:
-        if (psutil_process == None):
+        if (psutil_process is None):
             print ("ERROR - No psutil.process passed! Cannot gather metric!", flush=True)
             return None
         return psutil.virtual_memory()[2]

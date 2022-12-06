@@ -43,7 +43,7 @@ class DataSnapshot_Metric():
             self.reports_to_skip -= 1
             return None # skips sending to Cloudwatch
 
-        if (self.metric_value == None):
+        if (self.metric_value is None):
             return None # skips sending to Cloudwatch
 
         return {
@@ -178,7 +178,7 @@ class DataSnapshot():
 
         # Git related stuff
         # ==================
-        if (git_hash == None or git_repo_name == None):
+        if (git_hash is None or git_repo_name is None):
             print("[DataSnapshot] ERROR - a Git hash and repository name are REQUIRED for the canary wrapper to run!")
             self.abort_due_to_internal_error = True
             self.abort_due_to_internal_error_reason = "No Git hash and repository passed!"
@@ -190,7 +190,7 @@ class DataSnapshot():
         if (self.git_hash_as_namespace == False):
             self.git_metric_namespace = self.git_fixed_namespace_text
         else:
-            if (self.datetime_string == None):
+            if (self.datetime_string is None):
                 git_namespace_prepend_text = self.git_repo_name + "-" + self.git_hash
             else:
                 git_namespace_prepend_text = self.git_repo_name + "/" + self.datetime_string + "-" + self.git_hash
@@ -436,12 +436,12 @@ class DataSnapshot():
         # Upload to S3
         try:
             if (log_is_error == False):
-                if (self.datetime_string == None):
+                if (self.datetime_string is None):
                     self.s3_client.upload_file(self.git_hash + ".log", self.s3_bucket_name, self.git_repo_name + "/" + self.git_hash + ".log")
                 else:
                     self.s3_client.upload_file(self.git_hash + ".log", self.s3_bucket_name, self.git_repo_name + "/" + self.datetime_string + "/" + self.git_hash + ".log")
             else:
-                if (self.datetime_string == None):
+                if (self.datetime_string is None):
                     self.s3_client.upload_file(self.git_hash + ".log", self.s3_bucket_name, self.git_repo_name + "/Failed_Logs/" + self.git_hash + ".log")
                 else:
                     self.s3_client.upload_file(self.git_hash + ".log", self.s3_bucket_name, self.git_repo_name + "/Failed_Logs/" + self.datetime_string + "/" + self.git_hash + ".log")
@@ -527,7 +527,7 @@ class DataSnapshot():
             metric_dimension_string = "System_Metrics"
 
         widget = self._find_cloudwatch_widget(name=new_widget_name)
-        if (widget == None):
+        if (widget is None):
             widget = DataSnapshot_Dashboard_Widget(
                 widget_name=new_widget_name, metric_namespace=self.git_metric_namespace,
                 metric_dimension=metric_dimension_string,
@@ -586,7 +586,7 @@ class DataSnapshot():
     # Does NOT need to called on loop. Call post_metrics on loop to send all the metrics as expected.
     # This is just the Cloudwatch part of that loop.
     def export_metrics_cloudwatch(self):
-        if (self.cloudwatch_client == None):
+        if (self.cloudwatch_client is None):
             self.print_message("[DataSnapshot] Error - cannot export Cloudwatch metrics! Cloudwatch was not initialized.")
             self.abort_due_to_internal_error = True
             self.abort_due_to_internal_error_reason = "Could not export Cloudwatch metrics due to no Cloudwatch client initialized!"
@@ -898,7 +898,7 @@ class ApplicationMonitor():
     def start_monitoring(self):
         self.print_message("[ApplicationMonitor] Starting to monitor application...")
 
-        if (self.application_process == None):
+        if (self.application_process is None):
             try:
                 canary_command = self.wrapper_application_path + " " + self.wrapper_application_arguments
                 self.application_process = subprocess.Popen(canary_command + " | tee " + self.stdout_file_path, shell=True)
@@ -940,7 +940,7 @@ class ApplicationMonitor():
 
     def stop_monitoring(self):
         self.print_message ("[ApplicationMonitor] Stopping monitor application...")
-        if (not self.application_process == None):
+        if (not self.application_process is None):
             self.application_process.terminate()
             self.application_process.wait()
             self.print_message ("[ApplicationMonitor] Stopped monitor application!")
