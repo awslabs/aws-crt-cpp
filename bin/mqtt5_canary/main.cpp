@@ -161,8 +161,9 @@ static void s_ParseOptions(int argc, char **argv, struct AppCtx &ctx, struct Aws
                 break;
             case 'u':
                 ctx.use_tls = true;
+                break;
             case 't':
-                ctx.TraceFile = aws_cli_optarg;
+                testerOptions->elgMaxThreads = (uint16_t)atoi(aws_cli_optarg);
                 break;
             case 'v':
                 if (!strcmp(aws_cli_optarg, "TRACE"))
@@ -221,7 +222,7 @@ static void s_ParseOptions(int argc, char **argv, struct AppCtx &ctx, struct Aws
                 }
                 break;
             default:
-                fprintf(stderr, "Succeed to parse uri\n");
+                fprintf(stderr, "Unknown option\n");
                 s_Usage(1);
         }
     }
@@ -680,6 +681,7 @@ int main(int argc, char **argv)
     else
     {
         apiHandle.InitializeLogging(appCtx.LogLevel, stdout);
+        printf("log to stdout");
     }
 
     /***************************************************
