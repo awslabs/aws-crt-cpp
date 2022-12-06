@@ -824,6 +824,7 @@ int main(int argc, char **argv)
     {
         struct AwsMqtt5CanaryTestClient client;
         client = {};
+        client.clientId = String("TestClient") + std::to_string(i).c_str();
         client.sharedTopic = Aws::Crt::String(sharedTopicArray);
         mqtt5Options.withPublishReceivedCallback(
             [&client](Mqtt5Client & /*client*/, const Mqtt5::PublishReceivedEventData& publishData) {
