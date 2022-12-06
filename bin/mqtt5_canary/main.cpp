@@ -448,13 +448,13 @@ static int s_AwsMqtt5CanaryOperationUnsubscribeBad(struct AwsMqtt5CanaryTestClie
             unsubscription,
             [testClient](std::shared_ptr<Mqtt5::Mqtt5Client>, int, std::shared_ptr<Mqtt5::UnSubAckPacket> packet)
             {
-                if(packet->getReasonCodes()[0] == AWS_MQTT5_UARC_SUCCESS)
+                if (packet->getReasonCodes()[0] == AWS_MQTT5_UARC_SUCCESS)
                 {
                     AWS_LOGF_ERROR(
-                    AWS_LS_MQTT5_CANARY,
-                    "ID:%s Unsubscribe Bad Server Failed with errorcode : %s",
-                    testClient->clientId.c_str(),
-                    packet->getReasonString()->c_str());
+                        AWS_LS_MQTT5_CANARY,
+                        "ID:%s Unsubscribe Bad Server Failed with errorcode : %s",
+                        testClient->clientId.c_str(),
+                        packet->getReasonString()->c_str());
                 }
             }))
     {
@@ -946,7 +946,10 @@ int main(int argc, char **argv)
     /**********************************************************
      * CLEAN UP
      **********************************************************/
-    clients.clear();
+    // mqtt5Options.~Mqtt5ClientOptions();
+    // clients.clear();
+    // defaultHostResolver.~DefaultHostResolver();
+    // eventLoopGroup.~EventLoopGroup();
 
     return 0;
 }
