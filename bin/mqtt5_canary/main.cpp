@@ -693,7 +693,6 @@ int main(int argc, char **argv)
     else
     {
         apiHandle.InitializeLogging(appCtx.LogLevel, stdout);
-        printf("log to stdout");
     }
 
     /***************************************************
@@ -782,7 +781,11 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, appCtx.allocator);
+    std::promise<void> bootstrapShutdownPromise;
+    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+    clientBootstrap.SetShutdownCompleteCallback([&bootstrapShutdownPromise]() { bootstrapShutdownPromise.set_value(); });
+    clientBootstrap.EnableBlockingShutdown();
+
     if (!clientBootstrap)
     {
         AWS_LOGF_ERROR(
@@ -812,6 +815,7 @@ int main(int argc, char **argv)
         .withSocketOptions(socketOptions)
         .withBootstrap(&clientBootstrap)
         .withPingTimeoutMs(10000)
+        .withAckTimeoutSeconds(1)
         .withReconnectOptions({AWS_EXPONENTIAL_BACKOFF_JITTER_NONE, 1000, 120000, 3000});
 
     if (appCtx.use_tls)
@@ -946,10 +950,13 @@ int main(int argc, char **argv)
     /**********************************************************
      * CLEAN UP
      **********************************************************/
-    // mqtt5Options.~Mqtt5ClientOptions();
-    // clients.clear();
-    // defaultHostResolver.~DefaultHostResolver();
-    // eventLoopGroup.~EventLoopGroup();
 
-    return 0;
+    // Waiting for bootstrap clean up
+    // std::future<void> bootstrapShutdownFuture = bootstrapShutdownPromise.get_future();
+    // if(std::future_status::ready == bootstrapShutdownFuture.wait_for(std::chrono::seconds(10)))
+    // {
+    //     return 0;
+    // }
+    // exit(1);
+    clients.clear();
 }
