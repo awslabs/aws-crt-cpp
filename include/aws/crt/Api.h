@@ -6,6 +6,7 @@
 #include <aws/crt/Types.h>
 #include <aws/crt/crypto/HMAC.h>
 #include <aws/crt/crypto/Hash.h>
+#include <aws/crt/mqtt/Mqtt5Client.h>
 #include <aws/crt/mqtt/MqttClient.h>
 
 #include <aws/common/logging.h>

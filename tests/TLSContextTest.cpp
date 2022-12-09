@@ -13,6 +13,7 @@ static int s_TestTLSContextResourceSafety(Aws::Crt::Allocator *allocator, void *
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
         Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
+        tlsCtxOptions.SetTlsCipherPreference(AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT);
 
         Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
         ASSERT_TRUE(tlsContext);

@@ -480,7 +480,12 @@ int main(int argc, char **argv)
     };
 
     request.SetMethod(ByteCursorFromCString(appCtx.verb));
-    request.SetPath(appCtx.uri.GetPathAndQuery());
+    auto pathAndQuery = appCtx.uri.GetPathAndQuery();
+    if (pathAndQuery.len > 0) {
+        request.SetPath(pathAndQuery);
+    } else {
+        request.SetPath(ByteCursorFromCString("/"));
+    }
 
     if (connection->GetVersion() == Http::HttpVersion::Http2)
     {
