@@ -126,9 +126,11 @@ namespace Aws
             if (!result->m_tlsConnectionOptions.value())
             {
                 int error_code = result->m_tlsConnectionOptions->LastError();
-                AWS_LOGF_ERROR(AWS_LS_MQTT5_GENERAL,
-                "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
-                error_code, aws_error_debug_str(error_code));
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT5_GENERAL,
+                    "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
+                    error_code,
+                    aws_error_debug_str(error_code));
                 delete result;
                 return nullptr;
             }
@@ -147,9 +149,11 @@ namespace Aws
             if (!result->m_tlsConnectionOptions.value())
             {
                 int error_code = result->m_tlsConnectionOptions->LastError();
-                AWS_LOGF_ERROR(AWS_LS_MQTT5_GENERAL,
-                "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
-                error_code, aws_error_debug_str(error_code));
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT5_GENERAL,
+                    "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
+                    error_code,
+                    aws_error_debug_str(error_code));
                 delete result;
                 return nullptr;
             }
@@ -168,9 +172,11 @@ namespace Aws
             if (!result->m_tlsConnectionOptions.value())
             {
                 int error_code = result->m_tlsConnectionOptions->LastError();
-                AWS_LOGF_ERROR(AWS_LS_MQTT5_GENERAL,
-                "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
-                error_code, aws_error_debug_str(error_code));
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT5_GENERAL,
+                    "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
+                    error_code,
+                    aws_error_debug_str(error_code));
                 delete result;
                 return nullptr;
             }
@@ -189,9 +195,11 @@ namespace Aws
             if (!result->m_tlsConnectionOptions.value())
             {
                 int error_code = result->m_tlsConnectionOptions->LastError();
-                AWS_LOGF_ERROR(AWS_LS_MQTT5_GENERAL,
-                "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
-                error_code, aws_error_debug_str(error_code));
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT5_GENERAL,
+                    "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
+                    error_code,
+                    aws_error_debug_str(error_code));
                 delete result;
                 return nullptr;
             }
@@ -209,9 +217,11 @@ namespace Aws
             if (!result->m_tlsConnectionOptions.value())
             {
                 int error_code = result->m_tlsConnectionOptions->LastError();
-                AWS_LOGF_ERROR(AWS_LS_MQTT5_GENERAL,
-                "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
-                error_code, aws_error_debug_str(error_code));
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT5_GENERAL,
+                    "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
+                    error_code,
+                    aws_error_debug_str(error_code));
                 delete result;
                 return nullptr;
             }
@@ -230,9 +240,11 @@ namespace Aws
             if (!result->m_tlsConnectionOptions.value())
             {
                 int error_code = result->m_tlsConnectionOptions->LastError();
-                AWS_LOGF_ERROR(AWS_LS_MQTT5_GENERAL,
-                "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
-                error_code, aws_error_debug_str(error_code));
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT5_GENERAL,
+                    "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
+                    error_code,
+                    aws_error_debug_str(error_code));
                 delete result;
                 return nullptr;
             }
