@@ -169,6 +169,7 @@ if(ENABLE_MQTT5_TEST AND NOT BYO_CRYPTO)
     add_net_test_case(IoTMqtt5ConnectWithSigningCustomAuth)
     add_net_test_case(IoTMqtt5ConnectWithNoSigningCustomAuth)
     add_net_test_case(IoTMqtt5ConnectWithNoSigningCustomAuthWebsockets)
+    add_net_test_case(IoTMqtt5ConnectWithSigningCustomAuthWebsockets)
 endif()
 
 add_test_case(RuleEngine)

@@ -2354,9 +2354,8 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuth(Aws::Crt::Allocator *alloc
     authConfig.WithTokenValue((const char *)tokenValue->bytes);
     authConfig.WithTokenSignature((const char *)tokenSignature->bytes);
 
-    Aws::Iot::Mqtt5ClientBuilder *builder =
-        Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizer(
-            mqtt5TestVars.m_hostname_string, authConfig, allocator);
+    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizer(
+        mqtt5TestVars.m_hostname_string, authConfig, allocator);
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
@@ -2413,9 +2412,8 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *all
     authConfig.WithUsername((const char *)username->bytes);
     authConfig.WithPassword(ByteCursorFromString((const char *)password->bytes));
 
-    Aws::Iot::Mqtt5ClientBuilder *builder =
-        Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizer(
-            mqtt5TestVars.m_hostname_string, authConfig, allocator);
+    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizer(
+        mqtt5TestVars.m_hostname_string, authConfig, allocator);
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
@@ -2471,9 +2469,9 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets(Aws::Crt::Allo
 
     Aws::Iot::WebsocketConfig websocketConfig("us-east-1");
 
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
-        mqtt5TestVars.m_hostname_string, authConfig, websocketConfig, allocator
-    );
+    Aws::Iot::Mqtt5ClientBuilder *builder =
+        Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
+            mqtt5TestVars.m_hostname_string, authConfig, websocketConfig, allocator);
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
@@ -2494,6 +2492,79 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets(Aws::Crt::Allo
     delete builder;
     return AWS_ERROR_SUCCESS;
 }
-AWS_TEST_CASE(IoTMqtt5ConnectWithNoSigningCustomAuthWebsockets, s_Tests_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets)
+AWS_TEST_CASE(IoTMqtt5ConnectWithNoSigningCustomAuthWebsockets, s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets)
+
+/*
+ * Custom Auth (signing) connect
+ */
+static int s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Allocator *allocator, void *ctx)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    struct aws_string *authname = NULL;
+    struct aws_string *username = NULL;
+    struct aws_string *password = NULL;
+    struct aws_string *tokenKeyname = NULL;
+    struct aws_string *tokenValue = NULL;
+    struct aws_string *tokenSignature = NULL;
+
+    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_name, &authname);
+    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_username, &username);
+    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_password, &password);
+    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenkey, &tokenKeyname);
+    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenvalue, &tokenValue);
+    error |=
+        aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokensignature, &tokenSignature);
+
+    if (error != AWS_OP_SUCCESS)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
+    }
+
+    Aws::Iot::Mqtt5CustomAuthConfig authConfig(allocator);
+    authConfig.WithAuthorizerName((const char *)authname->bytes);
+    authConfig.WithUsername((const char *)username->bytes);
+    authConfig.WithPassword(ByteCursorFromString((const char *)password->bytes));
+    authConfig.WithTokenKeyName((const char *)tokenKeyname->bytes);
+    authConfig.WithTokenValue((const char *)tokenValue->bytes);
+    authConfig.WithTokenSignature((const char *)tokenSignature->bytes);
+
+    Aws::Iot::WebsocketConfig websocketConfig("us-east-1");
+
+    Aws::Iot::Mqtt5ClientBuilder *builder =
+        Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
+            mqtt5TestVars.m_hostname_string, authConfig, websocketConfig, allocator);
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+
+    s_setupConnectionLifeCycle(builder, connectionPromise, stoppedPromise);
+
+    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
+
+    ASSERT_TRUE(*mqtt5Client);
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(connectionPromise.get_future().get());
+    ASSERT_TRUE(mqtt5Client->Stop());
+    stoppedPromise.get_future().get();
+
+    aws_string_destroy(authname);
+    aws_string_destroy(username);
+    aws_string_destroy(password);
+    aws_string_destroy(tokenKeyname);
+    aws_string_destroy(tokenValue);
+    aws_string_destroy(tokenSignature);
+
+    delete builder;
+    return AWS_ERROR_SUCCESS;
+}
+AWS_TEST_CASE(IoTMqtt5ConnectWithSigningCustomAuthWebsockets, s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets)
 
 #endif // !BYO_CRYPTO

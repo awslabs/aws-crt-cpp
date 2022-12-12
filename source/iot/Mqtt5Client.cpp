@@ -426,7 +426,8 @@ namespace Aws
                         AWS_LS_MQTT_GENERAL,
                         "Attempting to connect to authorizer with unsupported port. Port is not 443...");
                 }
-                if (!m_websocketConfig) {
+                if (!m_websocketConfig)
+                {
                     if (!m_tlsConnectionOptions->SetAlpnList("mqtt"))
                     {
                         return nullptr;
