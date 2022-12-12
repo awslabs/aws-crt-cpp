@@ -2495,7 +2495,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets(Aws::Crt::Allo
 AWS_TEST_CASE(IoTMqtt5ConnectWithNoSigningCustomAuthWebsockets, s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets)
 
 /*
- * Custom Auth (signing) connect
+ * Custom Auth (signing) connect - websockets
  */
 static int s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Allocator *allocator, void *ctx)
 {
