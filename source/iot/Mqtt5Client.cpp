@@ -75,10 +75,10 @@ namespace Aws
                     usernameString += customAuthConfig->GetUsername().value();
                 }
 
-                if (customAuthConfig->GetAuthrizaerName().has_value())
+                if (customAuthConfig->GetAuthorizerName().has_value())
                 {
                     usernameString = AddToUsernameParameter(
-                        usernameString, customAuthConfig->GetAuthrizaerName().value(), "x-amz-customauthorizer-name=");
+                        usernameString, customAuthConfig->GetAuthorizerName().value(), "x-amz-customauthorizer-name=");
                 }
                 if (usingSigning)
                 {
@@ -200,7 +200,7 @@ namespace Aws
             return result;
         }
 
-        Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomCustomAuthorizer(
+        Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizer(
             const Crt::String hostName,
             const Mqtt5CustomAuthConfig &customAuthConfig,
             Crt::Allocator *allocator) noexcept
@@ -213,6 +213,25 @@ namespace Aws
                 return result;
             }
             result->withHostName(hostName);
+            result->WithCustomAuthorizer(customAuthConfig);
+            return result;
+        }
+
+        Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
+            const Crt::String hostName,
+            const Mqtt5CustomAuthConfig &customAuthConfig,
+            const WebsocketConfig &config,
+            Crt::Allocator *allocator) noexcept
+        {
+            Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
+            result->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitDefaultClient();
+            if (!result->m_tlsConnectionOptions)
+            {
+                result->m_lastError = result->m_tlsConnectionOptions->LastError();
+                return result;
+            }
+            result->withHostName(hostName);
+            result->m_websocketConfig = config;
             result->WithCustomAuthorizer(customAuthConfig);
             return result;
         }
@@ -407,9 +426,11 @@ namespace Aws
                         AWS_LS_MQTT_GENERAL,
                         "Attempting to connect to authorizer with unsupported port. Port is not 443...");
                 }
-                if (!m_tlsConnectionOptions->SetAlpnList("mqtt"))
-                {
-                    return nullptr;
+                if (!m_websocketConfig) {
+                    if (!m_tlsConnectionOptions->SetAlpnList("mqtt"))
+                    {
+                        return nullptr;
+                    }
                 }
             }
 
@@ -577,7 +598,7 @@ namespace Aws
             return *this;
         }
 
-        const Crt::Optional<Crt::String> &Mqtt5CustomAuthConfig::GetAuthrizaerName() { return m_authorizerName; }
+        const Crt::Optional<Crt::String> &Mqtt5CustomAuthConfig::GetAuthorizerName() { return m_authorizerName; }
 
         const Crt::Optional<Crt::String> &Mqtt5CustomAuthConfig::GetUsername() { return m_username; }
 
@@ -589,7 +610,7 @@ namespace Aws
 
         const Crt::Optional<Crt::String> &Mqtt5CustomAuthConfig::GetTokenSignature() { return m_tokenSignature; }
 
-        Mqtt5CustomAuthConfig &Aws::Iot::Mqtt5CustomAuthConfig::WithAuthrizaerName(Crt::String authName)
+        Mqtt5CustomAuthConfig &Aws::Iot::Mqtt5CustomAuthConfig::WithAuthorizerName(Crt::String authName)
         {
             m_authorizerName = std::move(authName);
             return *this;
