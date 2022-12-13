@@ -171,12 +171,6 @@ namespace Aws
             using OnStoppedHandler = std::function<void(Mqtt5Client &, const OnStoppedEventData &)>;
 
             /**
-             * Type signature of the callback invoked when a Disconnection Comlete
-             *
-             */
-            using OnDisconnectCompletionHandler = std::function<void(std::shared_ptr<Mqtt5Client>, int)>;
-
-            /**
              * Type signature of the callback invoked when a Publish Complete
              */
             using OnPublishCompletionHandler = std::function<void(Mqtt5Client *, int, std::shared_ptr<PublishResult>)>;
