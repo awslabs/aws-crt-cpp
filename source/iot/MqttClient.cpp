@@ -331,12 +331,14 @@ namespace Aws
             m_username = usernameString;
             m_password = password;
 
-            if (!m_contextOptions.SetAlpnList("mqtt"))
+            if (!m_websocketConfig)
             {
-                m_lastError = m_contextOptions.LastError();
+                if (!m_contextOptions.SetAlpnList("mqtt"))
+                {
+                    m_lastError = m_contextOptions.LastError();
+                }
+                m_portOverride = 443;
             }
-
-            m_portOverride = 443;
             return *this;
         }
 
@@ -408,10 +410,6 @@ namespace Aws
                     AWS_LOGF_WARN(
                         AWS_LS_MQTT_GENERAL,
                         "Attempting to connect to authorizer with unsupported port. Port is not 443...");
-                }
-                if (!m_contextOptions.SetAlpnList("mqtt"))
-                {
-                    return MqttClientConnectionConfig::CreateInvalid(m_contextOptions.LastError());
                 }
             }
 
