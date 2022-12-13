@@ -446,7 +446,7 @@ static int s_AwsMqtt5CanaryOperationUnsubscribeBad(struct AwsMqtt5CanaryTestClie
 
     if (testClient->client->Unsubscribe(
             unsubscription,
-            [testClient](std::shared_ptr<Mqtt5::Mqtt5Client>, int, std::shared_ptr<Mqtt5::UnSubAckPacket> packet)
+            [testClient](Mqtt5Client *, int, std::shared_ptr<Mqtt5::UnSubAckPacket> packet)
             {
                 if (packet->getReasonCodes()[0] == AWS_MQTT5_UARC_SUCCESS)
                 {
@@ -522,7 +522,12 @@ static int s_AwsMqtt5CanaryOperationPublish(
         .withUserProperty(std::move(up2))
         .withUserProperty(std::move(up3));
 
-    if (testClient->client->Publish(packetPublish))
+    if (testClient->client->Publish(
+            packetPublish,
+            [](Mqtt5Client *, int, std::shared_ptr<Mqtt5::PublishResult> packet)
+            {
+                // std::cout << "CANARY MQTT5: check publish completion packet : " << std::endl;
+            }))
     {
         AWS_LOGF_INFO(
             AWS_LS_MQTT5_CANARY, "ID:%s Publish to topic %s", testClient->clientId.c_str(), topicFilter.c_str());
@@ -658,305 +663,318 @@ static struct AwsMqtt5CanaryOperationsFunctionTable s_AwsMqtt5CanaryOperationTab
 int main(int argc, char **argv)
 {
     struct aws_allocator *allocator = aws_mem_tracer_new(aws_default_allocator(), NULL, AWS_MEMTRACE_STACKS, 15);
-
-    ApiHandle apiHandle(allocator);
-    struct AppCtx appCtx = {};
-    appCtx.allocator = allocator;
-    appCtx.connect_timeout = 3000;
-    aws_mutex_init(&appCtx.lock);
-    appCtx.port = 1883;
-
-    struct AwsMqtt5CanaryTesterOptions testerOptions;
-    AWS_ZERO_STRUCT(testerOptions);
-    s_AwsMqtt5CanaryInitTesterOptions(&testerOptions);
-    enum AwsMqtt5CanaryOperations operations[AWS_MQTT5_CANARY_OPERATION_ARRAY_SIZE];
-    AWS_ZERO_STRUCT(operations);
-    testerOptions.operations = operations;
-
-    s_ParseOptions(argc, argv, appCtx, &testerOptions);
-    if (appCtx.uri.GetPort())
     {
-        appCtx.port = appCtx.uri.GetPort();
-    }
 
-    s_Mqtt5CanaryUpdateTpsSleepTime(&testerOptions);
-    s_AwsMqtt5CanaryInitWeightedOperations(&testerOptions);
+        ApiHandle apiHandle(allocator);
+        struct AppCtx appCtx = {};
+        appCtx.allocator = allocator;
+        appCtx.connect_timeout = 3000;
+        aws_mutex_init(&appCtx.lock);
+        appCtx.port = 1883;
 
-    /**********************************************************
-     * LOGGING
-     **********************************************************/
+        struct AwsMqtt5CanaryTesterOptions testerOptions;
+        AWS_ZERO_STRUCT(testerOptions);
+        s_AwsMqtt5CanaryInitTesterOptions(&testerOptions);
+        enum AwsMqtt5CanaryOperations operations[AWS_MQTT5_CANARY_OPERATION_ARRAY_SIZE];
+        AWS_ZERO_STRUCT(operations);
+        testerOptions.operations = operations;
 
-    if (appCtx.TraceFile)
-    {
-        apiHandle.InitializeLogging(appCtx.LogLevel, appCtx.TraceFile);
-    }
-    else
-    {
-        apiHandle.InitializeLogging(appCtx.LogLevel, stdout);
-    }
-
-    /***************************************************
-     * TLS
-     ***************************************************/
-    auto hostName = appCtx.uri.GetHostName();
-    Io::TlsContextOptions tlsCtxOptions;
-    Io::TlsContext tlsContext;
-    Io::TlsConnectionOptions tlsConnectionOptions;
-    if (appCtx.use_tls)
-    {
-        if (appCtx.cert && appCtx.key)
+        s_ParseOptions(argc, argv, appCtx, &testerOptions);
+        if (appCtx.uri.GetPort())
         {
-            tlsCtxOptions = Io::TlsContextOptions::InitClientWithMtls(appCtx.cert, appCtx.key);
-            if (!tlsCtxOptions)
-            {
-                AWS_LOGF_ERROR(
-                    AWS_LS_MQTT5_CANARY,
-                    "Failed to load %s and %s with error %s.",
-                    appCtx.cert,
-                    appCtx.key,
-                    aws_error_debug_str(tlsCtxOptions.LastError()));
-                exit(1);
-            }
+            appCtx.port = appCtx.uri.GetPort();
+        }
+
+        s_Mqtt5CanaryUpdateTpsSleepTime(&testerOptions);
+        s_AwsMqtt5CanaryInitWeightedOperations(&testerOptions);
+
+        /**********************************************************
+         * LOGGING
+         **********************************************************/
+
+        if (appCtx.TraceFile)
+        {
+            apiHandle.InitializeLogging(appCtx.LogLevel, appCtx.TraceFile);
         }
         else
         {
-            tlsCtxOptions = Io::TlsContextOptions::InitDefaultClient();
-            if (!tlsCtxOptions)
+            apiHandle.InitializeLogging(appCtx.LogLevel, stdout);
+        }
+
+        /***************************************************
+         * TLS
+         ***************************************************/
+        auto hostName = appCtx.uri.GetHostName();
+        Io::TlsContextOptions tlsCtxOptions;
+        Io::TlsContext tlsContext;
+        Io::TlsConnectionOptions tlsConnectionOptions;
+        if (appCtx.use_tls)
+        {
+            if (appCtx.cert && appCtx.key)
+            {
+                tlsCtxOptions = Io::TlsContextOptions::InitClientWithMtls(appCtx.cert, appCtx.key);
+                if (!tlsCtxOptions)
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_MQTT5_CANARY,
+                        "Failed to load %s and %s with error %s.",
+                        appCtx.cert,
+                        appCtx.key,
+                        aws_error_debug_str(tlsCtxOptions.LastError()));
+                    exit(1);
+                }
+            }
+            else
+            {
+                tlsCtxOptions = Io::TlsContextOptions::InitDefaultClient();
+                if (!tlsCtxOptions)
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_MQTT5_CANARY,
+                        "Failed to create a default tlsCtxOptions with error %s",
+                        aws_error_debug_str(tlsCtxOptions.LastError()));
+                    exit(1);
+                }
+            }
+
+            tlsContext = Io::TlsContext(tlsCtxOptions, Io::TlsMode::CLIENT, appCtx.allocator);
+
+            tlsConnectionOptions = tlsContext.NewConnectionOptions();
+
+            if (!tlsConnectionOptions.SetServerName(hostName))
             {
                 AWS_LOGF_ERROR(
                     AWS_LS_MQTT5_CANARY,
-                    "Failed to create a default tlsCtxOptions with error %s",
-                    aws_error_debug_str(tlsCtxOptions.LastError()));
+                    "Failed to set servername with error %s",
+                    aws_error_debug_str(tlsConnectionOptions.LastError()));
+                exit(1);
+            }
+            if (!tlsConnectionOptions.SetAlpnList("x-amzn-mqtt-ca"))
+            {
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT5_CANARY,
+                    "Failed to set alpn list with error %s",
+                    aws_error_debug_str(tlsConnectionOptions.LastError()));
                 exit(1);
             }
         }
 
-        tlsContext = Io::TlsContext(tlsCtxOptions, Io::TlsMode::CLIENT, appCtx.allocator);
+        /**********************************************************
+         * EVENT LOOP GROUP
+         **********************************************************/
 
-        tlsConnectionOptions = tlsContext.NewConnectionOptions();
+        Io::SocketOptions socketOptions;
+        socketOptions.SetConnectTimeoutMs(appCtx.connect_timeout);
+        socketOptions.SetKeepAliveIntervalSec(10000);
 
-        if (!tlsConnectionOptions.SetServerName(hostName))
+        Io::EventLoopGroup eventLoopGroup(testerOptions.elgMaxThreads, appCtx.allocator);
+        if (!eventLoopGroup)
         {
             AWS_LOGF_ERROR(
                 AWS_LS_MQTT5_CANARY,
-                "Failed to set servername with error %s",
-                aws_error_debug_str(tlsConnectionOptions.LastError()));
+                "Failed to create eventloop group with error %s",
+                aws_error_debug_str(eventLoopGroup.LastError()));
             exit(1);
         }
-        if (!tlsConnectionOptions.SetAlpnList("x-amzn-mqtt-ca"))
+
+        Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, appCtx.allocator);
+        if (!defaultHostResolver)
         {
             AWS_LOGF_ERROR(
                 AWS_LS_MQTT5_CANARY,
-                "Failed to set alpn list with error %s",
-                aws_error_debug_str(tlsConnectionOptions.LastError()));
+                "Failed to create host resolver with error %s",
+                aws_error_debug_str(defaultHostResolver.LastError()));
             exit(1);
         }
-    }
 
-    /**********************************************************
-     * EVENT LOOP GROUP
-     **********************************************************/
+        std::promise<void> bootstrapShutdownPromise;
+        Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
 
-    Io::SocketOptions socketOptions;
-    socketOptions.SetConnectTimeoutMs(appCtx.connect_timeout);
-    socketOptions.SetKeepAliveIntervalSec(10000);
-
-    Io::EventLoopGroup eventLoopGroup(testerOptions.elgMaxThreads, appCtx.allocator);
-    if (!eventLoopGroup)
-    {
-        AWS_LOGF_ERROR(
-            AWS_LS_MQTT5_CANARY,
-            "Failed to create eventloop group with error %s",
-            aws_error_debug_str(eventLoopGroup.LastError()));
-        exit(1);
-    }
-
-    Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, appCtx.allocator);
-    if (!defaultHostResolver)
-    {
-        AWS_LOGF_ERROR(
-            AWS_LS_MQTT5_CANARY,
-            "Failed to create host resolver with error %s",
-            aws_error_debug_str(defaultHostResolver.LastError()));
-        exit(1);
-    }
-
-    std::promise<void> bootstrapShutdownPromise;
-    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
-    clientBootstrap.SetShutdownCompleteCallback([&bootstrapShutdownPromise]() { bootstrapShutdownPromise.set_value(); });
-    clientBootstrap.EnableBlockingShutdown();
-
-    if (!clientBootstrap)
-    {
-        AWS_LOGF_ERROR(
-            AWS_LS_MQTT5_CANARY,
-            "Failed to create client bootstrap with error %s",
-            aws_error_debug_str(clientBootstrap.LastError()));
-        exit(1);
-    }
-
-    /**********************************************************
-     * MQTT5 CLIENT CREATION
-     **********************************************************/
-
-    uint16_t receive_maximum = 9;
-    uint32_t maximum_packet_size = 128 * 1024;
-
-    std::shared_ptr<Mqtt5::ConnectPacket> packetConnect = std::make_shared<Mqtt5::ConnectPacket>(allocator);
-    packetConnect->withKeepAliveIntervalSec(30)
-        .withMaximumPacketSizeBytes(maximum_packet_size)
-        .withReceiveMaximum(receive_maximum);
-
-    Aws::Crt::String namestring((const char *)hostName.ptr, hostName.len);
-    Aws::Crt::Mqtt5::Mqtt5ClientOptions mqtt5Options(appCtx.allocator);
-    mqtt5Options.withHostName(namestring)
-        .withPort(appCtx.port)
-        .withConnectOptions(packetConnect)
-        .withSocketOptions(socketOptions)
-        .withBootstrap(&clientBootstrap)
-        .withPingTimeoutMs(10000)
-        .withAckTimeoutSeconds(1)
-        .withReconnectOptions({AWS_EXPONENTIAL_BACKOFF_JITTER_NONE, 1000, 120000, 3000});
-
-    if (appCtx.use_tls)
-    {
-        mqtt5Options.withTlsConnectionOptions(tlsConnectionOptions);
-    }
-
-    if (appCtx.use_websockets)
-    {
-        mqtt5Options.withWebsocketHandshakeTransformCallback(s_AwsMqtt5TransformWebsocketHandshakeFn);
-    }
-
-    std::vector<struct AwsMqtt5CanaryTestClient> clients;
-
-    uint64_t startTime = 0;
-    aws_high_res_clock_get_ticks(&startTime);
-    char sharedTopicArray[AWS_MQTT5_CANARY_TOPIC_ARRAY_SIZE];
-    AWS_ZERO_STRUCT(sharedTopicArray);
-    snprintf(sharedTopicArray, sizeof sharedTopicArray, "%" PRId64 "_shared_topic", startTime);
-
-    for (size_t i = 0; i < testerOptions.clientCount; ++i)
-    {
-        struct AwsMqtt5CanaryTestClient client;
-        client = {};
-        client.clientId = String("TestClient") + std::to_string(i).c_str();
-        client.sharedTopic = Aws::Crt::String(sharedTopicArray);
-        mqtt5Options.withPublishReceivedCallback(
-            [&client](Mqtt5Client & /*client*/, const Mqtt5::PublishReceivedEventData& publishData) {
-                AWS_LOGF_INFO(
-                    AWS_LS_MQTT5_CANARY,
-                    "Client:%s Publish Received on topic %s",
-                    client.clientId.c_str(),
-                    publishData.publishPacket->getTopic().c_str());
-            });
-
-        mqtt5Options.withClientConnectionSuccessCallback(
-            [&client](
-                Mqtt5Client &,
-                const Mqtt5::OnConnectionSuccessEventData& eventData)
-            {
-                client.isConnected = true;
-                client.clientId = Aws::Crt::String(eventData.negotiatedSettings->getClientId().c_str(), eventData.negotiatedSettings->getClientId().length());
-                client.settings = eventData.negotiatedSettings;
-
-                AWS_LOGF_INFO(
-                    AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Connection Success", client.clientId.c_str());
-            });
-
-        mqtt5Options.withClientConnectionFailureCallback(
-            [&client](Mqtt5Client &, const OnConnectionFailureEventData &eventData)
-            {
-                AWS_LOGF_ERROR(
-                    AWS_LS_MQTT5_CANARY,
-                    "ID:%s Connection failed with  Error Code: %d(%s)",
-                    client.clientId.c_str(),
-                    eventData.errorCode,
-                    aws_error_debug_str(eventData.errorCode));
-            });
-
-        mqtt5Options.withClientDisconnectionCallback(
-            [&client](
-                Mqtt5Client &,
-                const OnDisconnectionEventData&)
-            {
-                client.isConnected = false;
-                AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Disconnect", client.clientId.c_str());
-            });
-
-        mqtt5Options.withClientStoppedCallback(
-            [&client](Mqtt5Client &, const OnStoppedEventData&)
-            { AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Stopped", client.clientId.c_str()); });
-
-        client.client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, appCtx.allocator);
-
-        awsMqtt5CanaryOperationFn *operation_fn =
-            s_AwsMqtt5CanaryOperationTable.operationByOperationType[AWS_MQTT5_CANARY_OPERATION_START];
-        if ((*operation_fn)(&client, appCtx.allocator) == AWS_OP_ERR)
+        if (!clientBootstrap)
         {
-            AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Operation Failed.", client.clientId.c_str());
+            AWS_LOGF_ERROR(
+                AWS_LS_MQTT5_CANARY,
+                "Failed to create client bootstrap with error %s",
+                aws_error_debug_str(clientBootstrap.LastError()));
+            exit(1);
         }
 
-        aws_thread_current_sleep(AWS_MQTT5_CANARY_CLIENT_CREATION_SLEEP_TIME);
-        clients.push_back(client);
-    }
+        /**********************************************************
+         * MQTT5 CLIENT CREATION
+         **********************************************************/
 
-    fprintf(stderr, "Clients created\n");
+        uint16_t receive_maximum = 9;
+        uint32_t maximum_packet_size = 128 * 1024;
 
-    /**********************************************************
-     * TESTING
-     **********************************************************/
-    bool done = false;
-    size_t operationsExecuted = 0;
-    uint64_t timeTestFinish = 0;
-    aws_high_res_clock_get_ticks(&timeTestFinish);
-    timeTestFinish +=
-        aws_timestamp_convert(testerOptions.testRunSeconds, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_NANOS, NULL);
-    uint64_t timeInterval =
-        aws_timestamp_convert(testerOptions.memoryCheckIntervalSec, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_NANOS, NULL);
-    uint64_t memoryCheckPoint = 0;
+        std::shared_ptr<Mqtt5::ConnectPacket> packetConnect = std::make_shared<Mqtt5::ConnectPacket>(allocator);
+        packetConnect->withKeepAliveIntervalSec(30)
+            .withMaximumPacketSizeBytes(maximum_packet_size)
+            .withReceiveMaximum(receive_maximum);
 
-    printf("Running test for %zu seconds\n", testerOptions.testRunSeconds);
+        Aws::Crt::String namestring((const char *)hostName.ptr, hostName.len);
+        Aws::Crt::Mqtt5::Mqtt5ClientOptions mqtt5Options(appCtx.allocator);
+        mqtt5Options.withHostName(namestring)
+            .withPort(appCtx.port)
+            .withConnectOptions(packetConnect)
+            .withSocketOptions(socketOptions)
+            .withBootstrap(&clientBootstrap)
+            .withPingTimeoutMs(10000)
+            .withAckTimeoutSeconds(1)
+            .withReconnectOptions({AWS_EXPONENTIAL_BACKOFF_JITTER_NONE, 1000, 120000, 3000});
 
-    while (!done)
-    {
-        uint64_t now = 0;
-        aws_high_res_clock_get_ticks(&now);
-        operationsExecuted++;
-
-        AwsMqtt5CanaryOperations nextOperation = s_AwsMqtt5CanaryGetRandomOperation(&testerOptions);
-        awsMqtt5CanaryOperationFn *operation_fn =
-            s_AwsMqtt5CanaryOperationTable.operationByOperationType[nextOperation];
-
-        (*operation_fn)(&clients[rand() % testerOptions.clientCount], appCtx.allocator);
-
-        if (now > timeTestFinish)
+        if (appCtx.use_tls)
         {
-            done = true;
+            mqtt5Options.withTlsConnectionOptions(tlsConnectionOptions);
         }
 
-        if (now > memoryCheckPoint)
+        if (appCtx.use_websockets)
         {
-            const size_t outstanding_bytes = aws_mem_tracer_bytes(allocator);
-            printf("Summary:\n");
-            printf("   Outstanding bytes: %zu\n", outstanding_bytes);
-            printf("   Operations executed: %zu\n", operationsExecuted);
-            printf("   Operating TPS average over test: %zu\n\n", operationsExecuted / testerOptions.testRunSeconds);
-            memoryCheckPoint = now + timeInterval;
+            mqtt5Options.withWebsocketHandshakeTransformCallback(s_AwsMqtt5TransformWebsocketHandshakeFn);
         }
 
-        aws_thread_current_sleep(testerOptions.tpsSleepTime);
-    }
-    /**********************************************************
-     * CLEAN UP
-     **********************************************************/
+        std::vector<struct AwsMqtt5CanaryTestClient> clients;
 
-    // Waiting for bootstrap clean up
-    // std::future<void> bootstrapShutdownFuture = bootstrapShutdownPromise.get_future();
-    // if(std::future_status::ready == bootstrapShutdownFuture.wait_for(std::chrono::seconds(10)))
-    // {
-    //     return 0;
-    // }
-    // exit(1);
-    clients.clear();
+        uint64_t startTime = 0;
+        aws_high_res_clock_get_ticks(&startTime);
+        char sharedTopicArray[AWS_MQTT5_CANARY_TOPIC_ARRAY_SIZE];
+        AWS_ZERO_STRUCT(sharedTopicArray);
+        snprintf(sharedTopicArray, sizeof sharedTopicArray, "%" PRId64 "_shared_topic", startTime);
+
+        for (size_t i = 0; i < testerOptions.clientCount; ++i)
+        {
+            struct AwsMqtt5CanaryTestClient client;
+            client = {};
+            client.clientId = String("TestClient") + std::to_string(i).c_str();
+            client.sharedTopic = Aws::Crt::String(sharedTopicArray);
+            mqtt5Options.withPublishReceivedCallback(
+                [&client](Mqtt5Client & /*client*/, const Mqtt5::PublishReceivedEventData &publishData)
+                {
+                    AWS_LOGF_INFO(
+                        AWS_LS_MQTT5_CANARY,
+                        "Client:%s Publish Received on topic %s",
+                        client.clientId.c_str(),
+                        publishData.publishPacket->getTopic().c_str());
+                });
+
+            mqtt5Options.withClientConnectionSuccessCallback(
+                [&client](Mqtt5Client &, const Mqtt5::OnConnectionSuccessEventData &eventData)
+                {
+                    client.isConnected = true;
+                    client.clientId = Aws::Crt::String(
+                        eventData.negotiatedSettings->getClientId().c_str(),
+                        eventData.negotiatedSettings->getClientId().length());
+                    client.settings = eventData.negotiatedSettings;
+
+                    AWS_LOGF_INFO(
+                        AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Connection Success", client.clientId.c_str());
+                });
+
+            mqtt5Options.withClientConnectionFailureCallback(
+                [&client](Mqtt5Client &, const OnConnectionFailureEventData &eventData)
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_MQTT5_CANARY,
+                        "ID:%s Connection failed with  Error Code: %d(%s)",
+                        client.clientId.c_str(),
+                        eventData.errorCode,
+                        aws_error_debug_str(eventData.errorCode));
+                });
+
+            mqtt5Options.withClientDisconnectionCallback(
+                [&client](Mqtt5Client &, const OnDisconnectionEventData &)
+                {
+                    client.isConnected = false;
+                    AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Disconnect", client.clientId.c_str());
+                });
+
+            mqtt5Options.withClientStoppedCallback(
+                [&client](Mqtt5Client &, const OnStoppedEventData &)
+                { AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Stopped", client.clientId.c_str()); });
+
+            client.client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, appCtx.allocator);
+            if (client.client == nullptr)
+            {
+                AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Client Creation Failed.", client.clientId.c_str());
+                continue;
+            }
+
+            awsMqtt5CanaryOperationFn *operation_fn =
+                s_AwsMqtt5CanaryOperationTable.operationByOperationType[AWS_MQTT5_CANARY_OPERATION_START];
+            if ((*operation_fn)(&client, appCtx.allocator) == AWS_OP_ERR)
+            {
+                AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Operation Failed.", client.clientId.c_str());
+            }
+
+            aws_thread_current_sleep(AWS_MQTT5_CANARY_CLIENT_CREATION_SLEEP_TIME);
+            clients.push_back(client);
+        }
+
+        fprintf(stderr, "Clients created\n");
+
+        /**********************************************************
+         * TESTING
+         **********************************************************/
+        bool done = false;
+        size_t operationsExecuted = 0;
+        uint64_t timeTestFinish = 0;
+        aws_high_res_clock_get_ticks(&timeTestFinish);
+        timeTestFinish +=
+            aws_timestamp_convert(testerOptions.testRunSeconds, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_NANOS, NULL);
+        uint64_t timeInterval =
+            aws_timestamp_convert(testerOptions.memoryCheckIntervalSec, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_NANOS, NULL);
+        uint64_t memoryCheckPoint = 0;
+
+        printf("Running test for %zu seconds\n", testerOptions.testRunSeconds);
+
+        while (!done)
+        {
+            uint64_t now = 0;
+            aws_high_res_clock_get_ticks(&now);
+            operationsExecuted++;
+
+            AwsMqtt5CanaryOperations nextOperation = s_AwsMqtt5CanaryGetRandomOperation(&testerOptions);
+            awsMqtt5CanaryOperationFn *operation_fn =
+                s_AwsMqtt5CanaryOperationTable.operationByOperationType[nextOperation];
+
+            (*operation_fn)(&clients[rand() % clients.size()], appCtx.allocator);
+
+            if (now > timeTestFinish)
+            {
+                done = true;
+            }
+
+            if (now > memoryCheckPoint)
+            {
+                const size_t outstanding_bytes = aws_mem_tracer_bytes(allocator);
+                printf("Summary:\n");
+                printf("   Outstanding bytes: %zu\n", outstanding_bytes);
+                printf("   Operations executed: %zu\n", operationsExecuted);
+                printf(
+                    "   Operating TPS average over test: %zu\n\n", operationsExecuted / testerOptions.testRunSeconds);
+                memoryCheckPoint = now + timeInterval;
+            }
+
+            aws_thread_current_sleep(testerOptions.tpsSleepTime);
+        }
+        /**********************************************************
+         * CLEAN UP
+         **********************************************************/
+
+        // Waiting for bootstrap clean up
+        // std::future<void> bootstrapShutdownFuture = bootstrapShutdownPromise.get_future();
+        // if(std::future_status::ready == bootstrapShutdownFuture.wait_for(std::chrono::seconds(10)))
+        // {
+        //     return 0;
+        // }
+        // exit(1);
+        for (auto client : clients)
+        {
+            awsMqtt5CanaryOperationFn *operation_fn =
+                s_AwsMqtt5CanaryOperationTable.operationByOperationType[AWS_MQTT5_CANARY_OPERATION_STOP];
+            if ((*operation_fn)(&client, appCtx.allocator) == AWS_OP_ERR)
+            {
+                AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s STOP Operation Failed.", client.clientId.c_str());
+            }
+        }
+    }
 }

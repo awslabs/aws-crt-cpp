@@ -24,7 +24,7 @@ namespace Aws
             {
                 PubAckCallbackData(Allocator *alloc = ApiAllocator()) : client(nullptr), allocator(alloc) {}
 
-                std::shared_ptr<Mqtt5Client> client;
+                Mqtt5Client *client;
                 OnPublishCompletionHandler onPublishCompletion;
                 Allocator *allocator;
             };
@@ -33,7 +33,7 @@ namespace Aws
             {
                 SubAckCallbackData(Allocator *alloc = ApiAllocator()) : client(nullptr), allocator(alloc) {}
 
-                std::shared_ptr<Mqtt5Client> client;
+                Mqtt5Client *client;
                 OnSubscribeCompletionHandler onSubscribeCompletion;
                 Allocator *allocator;
             };
@@ -42,7 +42,7 @@ namespace Aws
             {
                 UnSubAckCallbackData(Allocator *alloc = ApiAllocator()) : client(nullptr), allocator(alloc) {}
 
-                std::shared_ptr<Mqtt5Client> client;
+                Mqtt5Client *client;
                 OnUnsubscribeCompletionHandler onUnsubscribeCompletion;
                 Allocator *allocator;
             };
@@ -431,7 +431,7 @@ namespace Aws
 
                 PubAckCallbackData *pubCallbackData = Aws::Crt::New<PubAckCallbackData>(m_allocator);
 
-                pubCallbackData->client = this->getptr();
+                pubCallbackData->client = this;
                 pubCallbackData->allocator = m_allocator;
                 pubCallbackData->onPublishCompletion = onPublishCmpletionCallback;
 
@@ -465,7 +465,7 @@ namespace Aws
                 /* Setup subscription Completion callback*/
                 SubAckCallbackData *subCallbackData = Aws::Crt::New<SubAckCallbackData>(m_allocator);
 
-                subCallbackData->client = this->getptr();
+                subCallbackData->client = this;
                 subCallbackData->allocator = m_allocator;
                 subCallbackData->onSubscribeCompletion = onSubscribeCompletionCallback;
 
@@ -498,7 +498,7 @@ namespace Aws
 
                 UnSubAckCallbackData *unSubCallbackData = Aws::Crt::New<UnSubAckCallbackData>(m_allocator);
 
-                unSubCallbackData->client = this->getptr();
+                unSubCallbackData->client = this;
                 unSubCallbackData->allocator = m_allocator;
                 unSubCallbackData->onUnsubscribeCompletion = onUnsubscribeCompletionCallback;
 
