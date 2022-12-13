@@ -12,6 +12,8 @@
 
 #include <utility>
 
+#define AWS_MQTT_MAX_TOPIC_LENGTH 65535
+
 namespace Aws
 {
     namespace Crt
@@ -660,7 +662,7 @@ namespace Aws
                     return 0;
                 }
 
-                size_t topicLen = strlen(topic) + 1;
+                size_t topicLen = strnlen(topic, AWS_MQTT_MAX_TOPIC_LENGTH) + 1;
                 char *topicCpy =
                     reinterpret_cast<char *>(aws_mem_calloc(m_owningClient->allocator, topicLen, sizeof(char)));
 
