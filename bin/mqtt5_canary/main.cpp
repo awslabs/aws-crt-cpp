@@ -522,12 +522,7 @@ static int s_AwsMqtt5CanaryOperationPublish(
         .withUserProperty(std::move(up2))
         .withUserProperty(std::move(up3));
 
-    if (testClient->client->Publish(
-            packetPublish,
-            [](Mqtt5Client *, int, std::shared_ptr<Mqtt5::PublishResult> packet)
-            {
-                // std::cout << "CANARY MQTT5: check publish completion packet : " << std::endl;
-            }))
+    if (testClient->client->Publish(packetPublish))
     {
         AWS_LOGF_INFO(
             AWS_LS_MQTT5_CANARY, "ID:%s Publish to topic %s", testClient->clientId.c_str(), topicFilter.c_str());
@@ -695,7 +690,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        apiHandle.InitializeLogging(appCtx.LogLevel, stdout);
+        apiHandle.InitializeLogging(appCtx.LogLevel, stderr);
     }
 
     /***************************************************
@@ -784,7 +779,6 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    std::promise<void> bootstrapShutdownPromise;
     Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
 
     if (!clientBootstrap)
@@ -816,7 +810,6 @@ int main(int argc, char **argv)
         .withSocketOptions(socketOptions)
         .withBootstrap(&clientBootstrap)
         .withPingTimeoutMs(10000)
-        .withAckTimeoutSeconds(1)
         .withReconnectOptions({AWS_EXPONENTIAL_BACKOFF_JITTER_NONE, 1000, 120000, 3000});
 
     if (appCtx.use_tls)
