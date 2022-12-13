@@ -1818,9 +1818,10 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *ctx)
     std::shared_ptr<Mqtt5::SubscribePacket> subscribe = std::make_shared<Mqtt5::SubscribePacket>(allocator);
     subscribe->withSubscription(std::move(subscription));
     std::promise<void> subscribed;
-    ASSERT_TRUE(subscriber->Subscribe(
-        subscribe,
-        [&subscribed](Mqtt5Client *, int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
+    ASSERT_TRUE(
+        subscriber->Subscribe(subscribe, [&subscribed](Mqtt5Client *, int, std::shared_ptr<Mqtt5::SubAckPacket>) {
+            subscribed.set_value();
+        }));
 
     subscribed.get_future().get();
 
@@ -2076,9 +2077,10 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *ctx)
     subscribe->withSubscription(std::move(subscription));
 
     std::promise<void> subscribed;
-    ASSERT_TRUE(subscriber->Subscribe(
-        subscribe,
-        [&subscribed](Mqtt5Client *, int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
+    ASSERT_TRUE(
+        subscriber->Subscribe(subscribe, [&subscribed](Mqtt5Client *, int, std::shared_ptr<Mqtt5::SubAckPacket>) {
+            subscribed.set_value();
+        }));
 
     subscribed.get_future().get();
 
