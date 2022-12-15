@@ -141,7 +141,7 @@ namespace Aws
             aws_mem_release(allocator, t);
         }
 
-        template <typename T, typename... Args> T *New(Allocator *allocator, Args &&... args)
+        template <typename T, typename... Args> T *New(Allocator *allocator, Args &&...args)
         {
             T *t = reinterpret_cast<T *>(aws_mem_acquire(allocator, sizeof(T)));
             if (!t)
@@ -149,7 +149,7 @@ namespace Aws
             return new (t) T(std::forward<Args>(args)...);
         }
 
-        template <typename T, typename... Args> std::shared_ptr<T> MakeShared(Allocator *allocator, Args &&... args)
+        template <typename T, typename... Args> std::shared_ptr<T> MakeShared(Allocator *allocator, Args &&...args)
         {
             T *t = reinterpret_cast<T *>(aws_mem_acquire(allocator, sizeof(T)));
             if (!t)

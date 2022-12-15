@@ -1651,12 +1651,13 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
 
     mqtt5Options.withClientConnectionSuccessCallback(
         [&connectionPromise, RECEIVE_MAX, PACKET_MAX](Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
-            printf("[MQTT5]Client Connection Success.");
             std::shared_ptr<NegotiatedSettings> settings = eventData.negotiatedSettings;
             uint16_t receivedmax = settings->getReceiveMaximumFromServer();
             uint32_t max_package = settings->getMaximumPacketSizeBytes();
             ASSERT_FALSE(receivedmax == RECEIVE_MAX);
             ASSERT_FALSE(max_package == PACKET_MAX);
+            ASSERT_FALSE(settings->getRejoinedSession());
+
             connectionPromise.set_value(true);
             return 0;
         });
@@ -1668,10 +1669,80 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+
     return AWS_ERROR_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5NegotiatedSettingsLimit, s_TestMqtt5NegotiatedSettingsLimit)
+
+/*
+ * [Negotiated-UC4] Rejoin Always Session Behavior
+ */
+static int s_TestMqtt5NegotiatedSettingsRejoinAlways(Aws::Crt::Allocator *allocator, void *ctx)
+{
+    static const uint32_t SESSION_EXPIRY_INTERVAL_SEC = 3600;
+
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+
+    ApiHandle apiHandle(allocator);
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    mqtt5Options.withHostName(mqtt5TestVars.m_hostname_string);
+    mqtt5Options.withPort(mqtt5TestVars.m_port_value);
+
+    std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect = std::make_shared<Aws::Crt::Mqtt5::ConnectPacket>();
+    packetConnect->withSessionExpiryIntervalSec(SESSION_EXPIRY_INTERVAL_SEC);
+    packetConnect->withClientId(Aws::Crt::UUID().ToString());
+    mqtt5Options.withConnectOptions(packetConnect);
+
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
+
+    mqtt5Options.withClientConnectionSuccessCallback(
+        [&connectionPromise](Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
+            std::shared_ptr<NegotiatedSettings> settings = eventData.negotiatedSettings;
+            ASSERT_FALSE(settings->getRejoinedSession());
+            connectionPromise.set_value(true);
+            return 0;
+        });
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(*mqtt5Client);
+
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(connectionPromise.get_future().get());
+    ASSERT_TRUE(mqtt5Client->Stop());
+    stoppedPromise.get_future().get();
+
+    mqtt5Options.withSessionBehavior(Aws::Crt::Mqtt5::ClientSessionBehaviorType::AWS_MQTT5_CSBT_REJOIN_ALWAYS);
+
+    std::promise<bool> sessionConnectedPromise;
+    std::promise<void> sessionStoppedPromise;
+    s_setupConnectionLifeCycle(mqtt5Options, sessionConnectedPromise, sessionStoppedPromise);
+
+    mqtt5Options.withClientConnectionSuccessCallback(
+        [&sessionConnectedPromise](Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
+            std::shared_ptr<NegotiatedSettings> settings = eventData.negotiatedSettings;
+            ASSERT_TRUE(settings->getRejoinedSession());
+            sessionConnectedPromise.set_value(true);
+            return 0;
+        });
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> sessionMqtt5Client =
+        Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(*sessionMqtt5Client);
+
+    ASSERT_TRUE(sessionMqtt5Client->Start());
+    ASSERT_TRUE(sessionConnectedPromise.get_future().get());
+    ASSERT_TRUE(sessionMqtt5Client->Stop());
+    sessionStoppedPromise.get_future().get();
+
+    return AWS_ERROR_SUCCESS;
+}
+
+AWS_TEST_CASE(Mqtt5NegotiatedSettingsRejoinAlways, s_TestMqtt5NegotiatedSettingsRejoinAlways)
 
 //////////////////////////////////////////////////////////
 // Operation Tests [Op-UC]
