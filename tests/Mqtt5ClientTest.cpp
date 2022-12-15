@@ -312,21 +312,25 @@ static void s_setupConnectionLifeCycle(
     const char *clientName = "Client")
 {
     mqtt5Options.withClientConnectionSuccessCallback(
-        [&connectionPromise, clientName](Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
+        [&connectionPromise, clientName](Mqtt5Client &, const OnConnectionSuccessEventData &eventData)
+        {
             printf("[MQTT5]%s Connection Success.", clientName);
             connectionPromise.set_value(true);
         });
 
     mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise, clientName](Mqtt5Client &, const OnConnectionFailureEventData &eventData) {
+        [&connectionPromise, clientName](Mqtt5Client &, const OnConnectionFailureEventData &eventData)
+        {
             printf("[MQTT5]%s Connection failed with error : %s", clientName, aws_error_debug_str(eventData.errorCode));
             connectionPromise.set_value(false);
         });
 
-    mqtt5Options.withClientStoppedCallback([&stoppedPromise, clientName](Mqtt5Client &, const OnStoppedEventData &) {
-        printf("[MQTT5]%s Stopped", clientName);
-        stoppedPromise.set_value();
-    });
+    mqtt5Options.withClientStoppedCallback(
+        [&stoppedPromise, clientName](Mqtt5Client &, const OnStoppedEventData &)
+        {
+            printf("[MQTT5]%s Stopped", clientName);
+            stoppedPromise.set_value();
+        });
 }
 
 static void s_setupConnectionLifeCycle(
@@ -336,21 +340,25 @@ static void s_setupConnectionLifeCycle(
     const char *clientName = "Client")
 {
     mqtt5Builder->withClientConnectionSuccessCallback(
-        [&connectionPromise, clientName](Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
+        [&connectionPromise, clientName](Mqtt5Client &, const OnConnectionSuccessEventData &eventData)
+        {
             printf("[MQTT5]%s Connection Success.", clientName);
             connectionPromise.set_value(true);
         });
 
     mqtt5Builder->withClientConnectionFailureCallback(
-        [&connectionPromise, clientName](Mqtt5Client &, const OnConnectionFailureEventData &eventData) {
+        [&connectionPromise, clientName](Mqtt5Client &, const OnConnectionFailureEventData &eventData)
+        {
             printf("[MQTT5]%s Connection failed with error : %s", clientName, aws_error_debug_str(eventData.errorCode));
             connectionPromise.set_value(false);
         });
 
-    mqtt5Builder->withClientStoppedCallback([&stoppedPromise, clientName](Mqtt5Client &, const OnStoppedEventData &) {
-        printf("[MQTT5]%s Stopped", clientName);
-        stoppedPromise.set_value();
-    });
+    mqtt5Builder->withClientStoppedCallback(
+        [&stoppedPromise, clientName](Mqtt5Client &, const OnStoppedEventData &)
+        {
+            printf("[MQTT5]%s Stopped", clientName);
+            stoppedPromise.set_value();
+        });
 }
 
 //////////////////////////////////////////////////////////
@@ -780,11 +788,10 @@ static int s_TestMqtt5WSConnectionMinimal(Aws::Crt::Allocator *allocator, void *
     mqtt5Options.withWebsocketHandshakeTransformCallback(
         [config](
             std::shared_ptr<Aws::Crt::Http::HttpRequest> req,
-            const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete) {
-            auto signingComplete =
-                [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
-                    onComplete(req1, errorCode);
-                };
+            const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete)
+        {
+            auto signingComplete = [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode)
+            { onComplete(req1, errorCode); };
 
             auto signerConfig = config.CreateSigningConfigCb();
 
@@ -840,11 +847,10 @@ static int s_TestMqtt5WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, 
     mqtt5Options.withWebsocketHandshakeTransformCallback(
         [config](
             std::shared_ptr<Aws::Crt::Http::HttpRequest> req,
-            const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete) {
-            auto signingComplete =
-                [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
-                    onComplete(req1, errorCode);
-                };
+            const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete)
+        {
+            auto signingComplete = [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode)
+            { onComplete(req1, errorCode); };
 
             auto signerConfig = config.CreateSigningConfigCb();
 
@@ -906,11 +912,10 @@ static int s_TestMqtt5WSConnectionWithTLS(Aws::Crt::Allocator *allocator, void *
     mqtt5Options.withWebsocketHandshakeTransformCallback(
         [config](
             std::shared_ptr<Aws::Crt::Http::HttpRequest> req,
-            const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete) {
-            auto signingComplete =
-                [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
-                    onComplete(req1, errorCode);
-                };
+            const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete)
+        {
+            auto signingComplete = [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode)
+            { onComplete(req1, errorCode); };
 
             auto signerConfig = config.CreateSigningConfigCb();
 
@@ -973,11 +978,10 @@ static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, 
     mqtt5Options.withWebsocketHandshakeTransformCallback(
         [config](
             std::shared_ptr<Aws::Crt::Http::HttpRequest> req,
-            const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete) {
-            auto signingComplete =
-                [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
-                    onComplete(req1, errorCode);
-                };
+            const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete)
+        {
+            auto signingComplete = [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode)
+            { onComplete(req1, errorCode); };
 
             auto signerConfig = config.CreateSigningConfigCb();
 
@@ -1043,11 +1047,10 @@ static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, 
     mqtt5Options.withWebsocketHandshakeTransformCallback(
         [config](
             std::shared_ptr<Aws::Crt::Http::HttpRequest> req,
-            const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete) {
-            auto signingComplete =
-                [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
-                    onComplete(req1, errorCode);
-                };
+            const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete)
+        {
+            auto signingComplete = [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode)
+            { onComplete(req1, errorCode); };
 
             auto signerConfig = config.CreateSigningConfigCb();
 
@@ -1154,11 +1157,10 @@ static int s_TestMqtt5WSConnectionFull(Aws::Crt::Allocator *allocator, void *ctx
     mqtt5Options.withWebsocketHandshakeTransformCallback(
         [config](
             std::shared_ptr<Aws::Crt::Http::HttpRequest> req,
-            const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete) {
-            auto signingComplete =
-                [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
-                    onComplete(req1, errorCode);
-                };
+            const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete)
+        {
+            auto signingComplete = [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode)
+            { onComplete(req1, errorCode); };
 
             auto signerConfig = config.CreateSigningConfigCb();
 
@@ -1276,11 +1278,10 @@ static int s_TestMqtt5WSInvalidPort(Aws::Crt::Allocator *allocator, void *ctx)
     mqtt5Options.withWebsocketHandshakeTransformCallback(
         [config](
             std::shared_ptr<Aws::Crt::Http::HttpRequest> req,
-            const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete) {
-            auto signingComplete =
-                [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
-                    onComplete(req1, errorCode);
-                };
+            const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete)
+        {
+            auto signingComplete = [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode)
+            { onComplete(req1, errorCode); };
 
             auto signerConfig = config.CreateSigningConfigCb();
 
@@ -1325,7 +1326,8 @@ static int s_TestMqtt5SocketTimeout(Aws::Crt::Allocator *allocator, void *ctx)
 
     // Override connection failed callback
     mqtt5Options.withClientConnectionFailureCallback(
-        [&connectionPromise](Mqtt5Client &, const OnConnectionFailureEventData &eventData) {
+        [&connectionPromise](Mqtt5Client &, const OnConnectionFailureEventData &eventData)
+        {
             printf("[MQTT5]Client Connection failed with error : %s", aws_error_debug_str(eventData.errorCode));
             ASSERT_TRUE(eventData.errorCode == AWS_IO_SOCKET_TIMEOUT);
             connectionPromise.set_value(false);
@@ -1413,9 +1415,8 @@ static int s_TestMqtt5IncorrectWSConnect(Aws::Crt::Allocator *allocator, void *c
     mqtt5Options.withWebsocketHandshakeTransformCallback(
         [config](
             std::shared_ptr<Aws::Crt::Http::HttpRequest> req,
-            const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete) {
-            onComplete(req, AWS_ERROR_UNSUPPORTED_OPERATION);
-        });
+            const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete)
+        { onComplete(req, AWS_ERROR_UNSUPPORTED_OPERATION); });
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
@@ -1458,7 +1459,8 @@ static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void
     // SETUP CLIENT 1 CALLBACKS
     s_setupConnectionLifeCycle(mqtt5Options, connection1Promise, stopped1Promise, "Client1");
     mqtt5Options.withClientDisconnectionCallback(
-        [&disconnectionPromise](Mqtt5Client &, const OnDisconnectionEventData &eventData) {
+        [&disconnectionPromise](Mqtt5Client &, const OnDisconnectionEventData &eventData)
+        {
             if (eventData.errorCode != 0)
             {
                 printf("[MQTT5]Client1 disconnected with error : %s", aws_error_debug_str(eventData.errorCode));
@@ -1534,13 +1536,14 @@ static int s_TestMqtt5NegotiatedSettingsHappy(Aws::Crt::Allocator *allocator, vo
     s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     // Override the ConnectionSuccessCallback to validate the negotiatedSettings
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise, SESSION_EXPIRY_INTERVAL_SEC](
-                                                         Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
-        printf("[MQTT5]Client Connection Success.");
-        ASSERT_TRUE(eventData.negotiatedSettings->getSessionExpiryIntervalSec() == SESSION_EXPIRY_INTERVAL_SEC);
-        connectionPromise.set_value(true);
-        return 0;
-    });
+    mqtt5Options.withClientConnectionSuccessCallback(
+        [&connectionPromise, SESSION_EXPIRY_INTERVAL_SEC](Mqtt5Client &, const OnConnectionSuccessEventData &eventData)
+        {
+            printf("[MQTT5]Client Connection Success.");
+            ASSERT_TRUE(eventData.negotiatedSettings->getSessionExpiryIntervalSec() == SESSION_EXPIRY_INTERVAL_SEC);
+            connectionPromise.set_value(true);
+            return 0;
+        });
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
@@ -1593,7 +1596,8 @@ static int s_TestMqtt5NegotiatedSettingsFull(Aws::Crt::Allocator *allocator, voi
     // Override the ConnectionSuccessCallback to validate the negotiatedSettings
     mqtt5Options.withClientConnectionSuccessCallback(
         [&connectionPromise, SESSION_EXPIRY_INTERVAL_SEC, CLIENT_ID, KEEP_ALIVE_INTERVAL](
-            Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
+            Mqtt5Client &, const OnConnectionSuccessEventData &eventData)
+        {
             printf("[MQTT5]Client Connection Success.");
             std::shared_ptr<NegotiatedSettings> settings = eventData.negotiatedSettings;
             ASSERT_TRUE(settings->getSessionExpiryIntervalSec() == SESSION_EXPIRY_INTERVAL_SEC);
@@ -1650,13 +1654,15 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
     s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     mqtt5Options.withClientConnectionSuccessCallback(
-        [&connectionPromise, RECEIVE_MAX, PACKET_MAX](Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
-            printf("[MQTT5]Client Connection Success.");
+        [&connectionPromise, RECEIVE_MAX, PACKET_MAX](Mqtt5Client &, const OnConnectionSuccessEventData &eventData)
+        {
             std::shared_ptr<NegotiatedSettings> settings = eventData.negotiatedSettings;
             uint16_t receivedmax = settings->getReceiveMaximumFromServer();
             uint32_t max_package = settings->getMaximumPacketSizeBytes();
             ASSERT_FALSE(receivedmax == RECEIVE_MAX);
             ASSERT_FALSE(max_package == PACKET_MAX);
+            ASSERT_FALSE(settings->getRejoinedSession());
+
             connectionPromise.set_value(true);
             return 0;
         });
@@ -1668,10 +1674,82 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+
     return AWS_ERROR_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5NegotiatedSettingsLimit, s_TestMqtt5NegotiatedSettingsLimit)
+
+/*
+ * [Negotiated-UC4] Rejoin Always Session Behavior
+ */
+static int s_TestMqtt5NegotiatedSettingsRejoinAlways(Aws::Crt::Allocator *allocator, void *ctx)
+{
+    static const uint32_t SESSION_EXPIRY_INTERVAL_SEC = 3600;
+
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+
+    ApiHandle apiHandle(allocator);
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    mqtt5Options.withHostName(mqtt5TestVars.m_hostname_string);
+    mqtt5Options.withPort(mqtt5TestVars.m_port_value);
+
+    std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect = std::make_shared<Aws::Crt::Mqtt5::ConnectPacket>();
+    packetConnect->withSessionExpiryIntervalSec(SESSION_EXPIRY_INTERVAL_SEC);
+    packetConnect->withClientId(Aws::Crt::UUID().ToString());
+    mqtt5Options.withConnectOptions(packetConnect);
+
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
+
+    mqtt5Options.withClientConnectionSuccessCallback(
+        [&connectionPromise](Mqtt5Client &, const OnConnectionSuccessEventData &eventData)
+        {
+            std::shared_ptr<NegotiatedSettings> settings = eventData.negotiatedSettings;
+            ASSERT_FALSE(settings->getRejoinedSession());
+            connectionPromise.set_value(true);
+            return 0;
+        });
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(*mqtt5Client);
+
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(connectionPromise.get_future().get());
+    ASSERT_TRUE(mqtt5Client->Stop());
+    stoppedPromise.get_future().get();
+
+    mqtt5Options.withSessionBehavior(Aws::Crt::Mqtt5::ClientSessionBehaviorType::AWS_MQTT5_CSBT_REJOIN_ALWAYS);
+
+    std::promise<bool> sessionConnectedPromise;
+    std::promise<void> sessionStoppedPromise;
+    s_setupConnectionLifeCycle(mqtt5Options, sessionConnectedPromise, sessionStoppedPromise);
+
+    mqtt5Options.withClientConnectionSuccessCallback(
+        [&sessionConnectedPromise](Mqtt5Client &, const OnConnectionSuccessEventData &eventData)
+        {
+            std::shared_ptr<NegotiatedSettings> settings = eventData.negotiatedSettings;
+            ASSERT_TRUE(settings->getRejoinedSession());
+            sessionConnectedPromise.set_value(true);
+            return 0;
+        });
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> sessionMqtt5Client =
+        Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(*sessionMqtt5Client);
+
+    ASSERT_TRUE(sessionMqtt5Client->Start());
+    ASSERT_TRUE(sessionConnectedPromise.get_future().get());
+    ASSERT_TRUE(sessionMqtt5Client->Stop());
+    sessionStoppedPromise.get_future().get();
+
+    return AWS_ERROR_SUCCESS;
+}
+
+AWS_TEST_CASE(Mqtt5NegotiatedSettingsRejoinAlways, s_TestMqtt5NegotiatedSettingsRejoinAlways)
 
 //////////////////////////////////////////////////////////
 // Operation Tests [Op-UC]
@@ -1703,7 +1781,8 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *ctx)
     s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     mqtt5Options.withPublishReceivedCallback(
-        [&receivedCount, TEST_TOPIC](Mqtt5Client &, const PublishReceivedEventData &eventData) {
+        [&receivedCount, TEST_TOPIC](Mqtt5Client &, const PublishReceivedEventData &eventData)
+        {
             String topic = eventData.publishPacket->getTopic();
             if (topic == TEST_TOPIC)
             {
@@ -1783,7 +1862,8 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *ctx)
     s_setupConnectionLifeCycle(mqtt5Options, subscriberConnectionPromise, subscriberStoppedPromise, "Suberscriber");
 
     mqtt5Options.withPublishReceivedCallback(
-        [&receivedWill, TEST_TOPIC](Mqtt5Client &, const PublishReceivedEventData &eventData) {
+        [&receivedWill, TEST_TOPIC](Mqtt5Client &, const PublishReceivedEventData &eventData)
+        {
             String topic = eventData.publishPacket->getTopic();
             if (topic == TEST_TOPIC)
             {
@@ -1819,9 +1899,9 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *ctx)
     subscribe->withSubscription(std::move(subscription));
     std::promise<void> subscribed;
     ASSERT_TRUE(subscriber->Subscribe(
-        subscribe, [&subscribed](std::shared_ptr<Mqtt5Client>, int, std::shared_ptr<Mqtt5::SubAckPacket>) {
-            subscribed.set_value();
-        }));
+        subscribe,
+        [&subscribed](std::shared_ptr<Mqtt5Client>, int, std::shared_ptr<Mqtt5::SubAckPacket>)
+        { subscribed.set_value(); }));
 
     subscribed.get_future().get();
 
@@ -2044,7 +2124,8 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *ctx)
     s_setupConnectionLifeCycle(mqtt5Options, subscriberConnectionPromise, subscriberStoppedPromise, "Subscriber");
 
     mqtt5Options.withPublishReceivedCallback(
-        [TEST_TOPIC, MESSAGE_NUMBER, &receivedMessages](Mqtt5Client &, const PublishReceivedEventData &eventData) {
+        [TEST_TOPIC, MESSAGE_NUMBER, &receivedMessages](Mqtt5Client &, const PublishReceivedEventData &eventData)
+        {
             String topic = eventData.publishPacket->getTopic();
             if (topic == TEST_TOPIC)
             {
@@ -2078,9 +2159,9 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *ctx)
 
     std::promise<void> subscribed;
     ASSERT_TRUE(subscriber->Subscribe(
-        subscribe, [&subscribed](std::shared_ptr<Mqtt5Client>, int, std::shared_ptr<Mqtt5::SubAckPacket>) {
-            subscribed.set_value();
-        }));
+        subscribe,
+        [&subscribed](std::shared_ptr<Mqtt5Client>, int, std::shared_ptr<Mqtt5::SubAckPacket>)
+        { subscribed.set_value(); }));
 
     subscribed.get_future().get();
 
@@ -2155,7 +2236,8 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *ct
     s_setupConnectionLifeCycle(mqtt5Options, connection2Promise, stopped2Promise, "Client2");
 
     mqtt5Options.withPublishReceivedCallback(
-        [&client2RetianMessageReceived, TEST_TOPIC](Mqtt5Client &, const PublishReceivedEventData &eventData) {
+        [&client2RetianMessageReceived, TEST_TOPIC](Mqtt5Client &, const PublishReceivedEventData &eventData)
+        {
             String topic = eventData.publishPacket->getTopic();
             if (topic == TEST_TOPIC)
             {
@@ -2168,15 +2250,17 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *ct
 
     s_setupConnectionLifeCycle(mqtt5Options, connection3Promise, stopped3Promise, "Client3");
 
-    mqtt5Options.withPublishReceivedCallback([TEST_TOPIC](Mqtt5Client &, const PublishReceivedEventData &eventData) {
-        String topic = eventData.publishPacket->getTopic();
-        if (topic == TEST_TOPIC)
+    mqtt5Options.withPublishReceivedCallback(
+        [TEST_TOPIC](Mqtt5Client &, const PublishReceivedEventData &eventData)
         {
-            // Client3 should not receive any retian message
-            ASSERT_FALSE(false);
-        }
-        return 0;
-    });
+            String topic = eventData.publishPacket->getTopic();
+            if (topic == TEST_TOPIC)
+            {
+                // Client3 should not receive any retian message
+                ASSERT_FALSE(false);
+            }
+            return 0;
+        });
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client3 = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client3);
