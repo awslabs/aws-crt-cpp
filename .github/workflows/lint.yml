@@ -20,3 +20,4 @@ jobs:
       with:
         source: './include ./source ./tests'
         exclude: './include/aws/crt/external ./source/external'
+        clangFormatVersion: 11.0.0
