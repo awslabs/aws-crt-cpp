@@ -2684,6 +2684,7 @@ static int s_TestMqtt5InterruptSub(Aws::Crt::Allocator *allocator, void *ctx)
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
 
+    delete builder;
     return AWS_ERROR_SUCCESS;
 }
 
@@ -2733,6 +2734,7 @@ static int s_TestMqtt5InterruptUnsub(Aws::Crt::Allocator *allocator, void *ctx)
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
 
+    delete builder;
     return AWS_ERROR_SUCCESS;
 }
 
@@ -2781,6 +2783,7 @@ static int s_TestMqtt5InterruptPublishQoS0(Aws::Crt::Allocator *allocator, void 
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
 
+    delete builder;
     return AWS_ERROR_SUCCESS;
 }
 
