@@ -2786,5 +2786,4 @@ static int s_TestMqtt5InterruptPublishQoS0(Aws::Crt::Allocator *allocator, void 
 
 AWS_TEST_CASE(Mqtt5InterruptPublishQoS0, s_TestMqtt5InterruptPublishQoS0)
 
-
 #endif // !BYO_CRYPTO
