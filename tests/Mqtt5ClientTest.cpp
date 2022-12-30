@@ -2743,7 +2743,7 @@ AWS_TEST_CASE(Mqtt5InterruptUnsub, s_TestMqtt5InterruptUnsub)
 /*
  * [IT-UC3] Interrupt Publish
  */
-static int s_TestMqtt5InterruptPublishQoS0(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5InterruptPublishQoS1(Aws::Crt::Allocator *allocator, void *ctx)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
@@ -2773,10 +2773,10 @@ static int s_TestMqtt5InterruptPublishQoS0(Aws::Crt::Allocator *allocator, void 
 
     const Aws::Crt::String TEST_TOPIC = "test/s_TestMqtt5InterruptPublish" + Aws::Crt::UUID().ToString();
 
-    /* Publish QOS0 to test topic */
+    /* Publish QOS1 to test topic */
     ByteBuf payload = Aws::Crt::ByteBufFromCString("Hello World");
     std::shared_ptr<Mqtt5::PublishPacket> publish = std::make_shared<Mqtt5::PublishPacket>(
-        TEST_TOPIC, ByteCursorFromByteBuf(payload), Mqtt5::QOS::AWS_MQTT5_QOS_AT_MOST_ONCE, allocator);
+        TEST_TOPIC, ByteCursorFromByteBuf(payload), Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
     ASSERT_TRUE(mqtt5Client->Publish(publish));
 
     /* Stop immediately */
@@ -2787,6 +2787,6 @@ static int s_TestMqtt5InterruptPublishQoS0(Aws::Crt::Allocator *allocator, void 
     return AWS_ERROR_SUCCESS;
 }
 
-AWS_TEST_CASE(Mqtt5InterruptPublishQoS0, s_TestMqtt5InterruptPublishQoS0)
+AWS_TEST_CASE(Mqtt5InterruptPublishQoS1, s_TestMqtt5InterruptPublishQoS1)
 
 #endif // !BYO_CRYPTO

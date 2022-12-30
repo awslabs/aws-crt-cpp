@@ -173,7 +173,7 @@ if(ENABLE_MQTT5_TEST AND NOT BYO_CRYPTO)
     add_net_test_case(IoTMqtt5ConnectWithSigningCustomAuthWebsockets)
     add_net_test_case(Mqtt5InterruptSub)
     add_net_test_case(Mqtt5InterruptUnsub)
-    add_net_test_case(Mqtt5InterruptPublishQoS0)
+    add_net_test_case(Mqtt5InterruptPublishQoS1)
 endif()
 
 add_test_case(RuleEngine)
