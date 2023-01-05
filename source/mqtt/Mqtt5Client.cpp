@@ -50,6 +50,8 @@ namespace Aws
             void Mqtt5Client::s_lifeCycleEventCallback(const struct aws_mqtt5_client_lifecycle_event *event)
             {
                 Mqtt5Client *client = reinterpret_cast<Mqtt5Client *>(event->user_data);
+                AWS_ASSERT(client != nullptr);
+
                 switch (event->event_type)
                 {
                     case AWS_MQTT5_CLET_STOPPED:
@@ -171,46 +173,45 @@ namespace Aws
             {
                 AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "Publish completion callback triggered.");
                 auto callbackData = reinterpret_cast<PubAckCallbackData *>(complete_ctx);
+                AWS_ASSERT(callbackData != nullptr);
+                AWS_ASSERT(callbackData->client != nullptr);
 
-                if (callbackData)
+                std::shared_ptr<PublishResult> publish = nullptr;
+                switch (packet_type)
                 {
-                    std::shared_ptr<PublishResult> publish = nullptr;
-                    switch (packet_type)
+                    case aws_mqtt5_packet_type::AWS_MQTT5_PT_PUBACK:
                     {
-                        case aws_mqtt5_packet_type::AWS_MQTT5_PT_PUBACK:
+                        if (publshCompletionPacket != NULL)
                         {
-                            if (publshCompletionPacket != NULL)
-                            {
-                                std::shared_ptr<PubAckPacket> packet = std::make_shared<PubAckPacket>(
-                                    *(aws_mqtt5_packet_puback_view *)publshCompletionPacket, callbackData->allocator);
-                                publish = std::make_shared<PublishResult>(std::move(packet));
-                            }
-                            else // This should never happened.
-                            {
-                                AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "The PubAck Packet is invalid.");
-                                publish = std::make_shared<PublishResult>(AWS_ERROR_INVALID_ARGUMENT);
-                            }
-                            break;
+                            std::shared_ptr<PubAckPacket> packet = std::make_shared<PubAckPacket>(
+                                *(aws_mqtt5_packet_puback_view *)publshCompletionPacket, callbackData->allocator);
+                            publish = std::make_shared<PublishResult>(std::move(packet));
                         }
-                        case aws_mqtt5_packet_type::AWS_MQTT5_PT_NONE:
+                        else // This should never happened.
                         {
-                            publish = std::make_shared<PublishResult>(error_code);
-                            break;
-                        }
-                        default: // Invalid packet type
-                        {
-                            AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "Invalid Packet Type.");
+                            AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "The PubAck Packet is invalid.");
                             publish = std::make_shared<PublishResult>(AWS_ERROR_INVALID_ARGUMENT);
-                            break;
                         }
+                        break;
                     }
-                    if (callbackData->onPublishCompletion != NULL)
+                    case aws_mqtt5_packet_type::AWS_MQTT5_PT_NONE:
                     {
-                        callbackData->onPublishCompletion(callbackData->client, error_code, publish);
+                        publish = std::make_shared<PublishResult>(error_code);
+                        break;
                     }
-
-                    Crt::Delete(callbackData, callbackData->allocator);
+                    default: // Invalid packet type
+                    {
+                        AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "Invalid Packet Type.");
+                        publish = std::make_shared<PublishResult>(AWS_ERROR_INVALID_ARGUMENT);
+                        break;
+                    }
                 }
+                if (callbackData->onPublishCompletion != NULL)
+                {
+                    callbackData->onPublishCompletion(*(callbackData->client), error_code, publish);
+                }
+
+                Crt::Delete(callbackData, callbackData->allocator);
             }
 
             void Mqtt5Client::s_onWebsocketHandshake(
@@ -254,6 +255,7 @@ namespace Aws
             {
                 SubAckCallbackData *callbackData = reinterpret_cast<SubAckCallbackData *>(complete_ctx);
                 AWS_ASSERT(callbackData != nullptr);
+                AWS_ASSERT(callbackData->client != nullptr);
 
                 std::shared_ptr<SubAckPacket> packet = nullptr;
                 if (suback != nullptr)
@@ -272,7 +274,7 @@ namespace Aws
 
                 if (callbackData->onSubscribeCompletion)
                 {
-                    callbackData->onSubscribeCompletion(callbackData->client, error_code, packet);
+                    callbackData->onSubscribeCompletion(*(callbackData->client), error_code, packet);
                 }
                 Crt::Delete(callbackData, callbackData->allocator);
             }
@@ -284,6 +286,7 @@ namespace Aws
             {
                 UnSubAckCallbackData *callbackData = reinterpret_cast<UnSubAckCallbackData *>(complete_ctx);
                 AWS_ASSERT(callbackData != nullptr);
+                AWS_ASSERT(callbackData->client != nullptr);
 
                 std::shared_ptr<UnSubAckPacket> packet = nullptr;
                 if (unsuback != nullptr)
@@ -302,7 +305,7 @@ namespace Aws
 
                 if (callbackData->onUnsubscribeCompletion != NULL)
                 {
-                    callbackData->onUnsubscribeCompletion(callbackData->client, error_code, packet);
+                    callbackData->onUnsubscribeCompletion(*(callbackData->client), error_code, packet);
                 }
 
                 Crt::Delete(callbackData, callbackData->allocator);

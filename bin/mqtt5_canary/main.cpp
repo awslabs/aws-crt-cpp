@@ -446,8 +446,10 @@ static int s_AwsMqtt5CanaryOperationUnsubscribeBad(struct AwsMqtt5CanaryTestClie
 
     if (testClient->client->Unsubscribe(
             unsubscription,
-            [testClient](Mqtt5Client *, int, std::shared_ptr<Mqtt5::UnSubAckPacket> packet)
+            [testClient](Mqtt5Client &, int, std::shared_ptr<Mqtt5::UnSubAckPacket> packet)
             {
+                if (packet == nullptr)
+                    return;
                 if (packet->getReasonCodes()[0] == AWS_MQTT5_UARC_SUCCESS)
                 {
                     AWS_LOGF_ERROR(
