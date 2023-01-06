@@ -432,21 +432,21 @@ namespace Aws
                 aws_mqtt5_packet_publish_view publish;
                 publishOptions->initializeRawOptions(publish);
 
-                PubAckCallbackData *pubCallbackData = Aws::Crt::New<PubAckCallbackData>(m_allocator);
+                // PubAckCallbackData *pubCallbackData = Aws::Crt::New<PubAckCallbackData>(m_allocator);
 
-                pubCallbackData->client = this;
-                pubCallbackData->allocator = m_allocator;
-                pubCallbackData->onPublishCompletion = onPublishCmpletionCallback;
+                // pubCallbackData->client = this;
+                // pubCallbackData->allocator = m_allocator;
+                // pubCallbackData->onPublishCompletion = onPublishCmpletionCallback;
 
-                aws_mqtt5_publish_completion_options options;
+                // aws_mqtt5_publish_completion_options options;
 
-                options.completion_callback = Mqtt5Client::s_publishCompletionCallback;
-                options.completion_user_data = pubCallbackData;
+                // options.completion_callback = Mqtt5Client::s_publishCompletionCallback;
+                // options.completion_user_data = nullptr;
 
-                int result = aws_mqtt5_client_publish(m_client, &publish, &options);
+                int result = aws_mqtt5_client_publish(m_client, &publish, NULL);
                 if (result != AWS_OP_SUCCESS)
                 {
-                    Crt::Delete(pubCallbackData, pubCallbackData->allocator);
+                    // Crt::Delete(pubCallbackData, pubCallbackData->allocator);
                     return false;
                 }
                 return true;
