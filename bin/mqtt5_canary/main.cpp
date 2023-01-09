@@ -506,9 +506,9 @@ static int s_AwsMqtt5CanaryOperationPublish(
     Mqtt5::QOS qos,
     Allocator *allocator)
 {
-    // Mqtt5::UserProperty up1("property1", "value1");
-    // Mqtt5::UserProperty up2("property2", "value2");
-    // Mqtt5::UserProperty up3("property3", "value3");
+    Mqtt5::UserProperty up1("property1", "value1");
+    Mqtt5::UserProperty up2("property2", "value2");
+    Mqtt5::UserProperty up3("property3", "value3");
 
     uint16_t payload_size = (rand() % UINT16_MAX) + 1;
     uint8_t payload_data[AWS_MQTT5_CANARY_PAYLOAD_SIZE_MAX];
@@ -519,10 +519,13 @@ static int s_AwsMqtt5CanaryOperationPublish(
     ByteCursor payload = ByteCursorFromArray(payload_data, payload_size);
 
     std::shared_ptr<Mqtt5::PublishPacket> packetPublish = std::make_shared<Mqtt5::PublishPacket>(allocator);
-    packetPublish->withTopic(topicFilter).withQOS(qos).withRetain(false).withPayload(payload);
-    // .withUserProperty(std::move(up1))
-    // .withUserProperty(std::move(up2))
-    // .withUserProperty(std::move(up3));
+    packetPublish->withTopic(topicFilter)
+        .withQOS(qos)
+        .withRetain(false)
+        .withPayload(payload)
+        .withUserProperty(std::move(up1))
+        .withUserProperty(std::move(up2))
+        .withUserProperty(std::move(up3));
 
     if (testClient->client->Publish(packetPublish))
     {
