@@ -592,9 +592,9 @@ namespace Aws
                     raw_options.correlation_data = &m_correlationData.value();
                 }
 
-                // s_AllocateUnderlyingUserProperties(m_userPropertiesStorage, m_userProperties, m_allocator);
-                // raw_options.user_properties = m_userPropertiesStorage;
-                // raw_options.user_property_count = m_userProperties.size();
+                s_AllocateUnderlyingUserProperties(m_userPropertiesStorage, m_userProperties, m_allocator);
+                raw_options.user_properties = m_userPropertiesStorage;
+                raw_options.user_property_count = m_userProperties.size();
 
                 return true;
             }
