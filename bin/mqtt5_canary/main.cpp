@@ -308,12 +308,12 @@ static void s_AwsMqtt5CanaryAddOperationToArray(
 static void s_AwsMqtt5CanaryInitWeightedOperations(AwsMqtt5CanaryTesterOptions *testerOptions)
 {
 
-    s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_STOP, 1);
+    s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_STOP, 0);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_SUBSCRIBE, 0);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_UNSUBSCRIBE, 0);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_UNSUBSCRIBE_BAD, 0);
-    s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_QOS0, 100);
-    s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_QOS1, 0);
+    s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_QOS0, 0);
+    s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_QOS1, 100);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_TO_SUBSCRIBED_TOPIC_QOS0, 0);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_TO_SUBSCRIBED_TOPIC_QOS1, 0);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_TO_SHARED_TOPIC_QOS0, 0);
@@ -506,22 +506,23 @@ static int s_AwsMqtt5CanaryOperationPublish(
     Mqtt5::QOS qos,
     Allocator *allocator)
 {
-    Mqtt5::UserProperty up1("property1", "value1");
-    Mqtt5::UserProperty up2("property2", "value2");
-    Mqtt5::UserProperty up3("property3", "value3");
+    // Mqtt5::UserProperty up1("property1", "value1");
+    // Mqtt5::UserProperty up2("property2", "value2");
+    // Mqtt5::UserProperty up3("property3", "value3");
 
     uint16_t payload_size = (rand() % UINT16_MAX) + 1;
     uint8_t payload_data[AWS_MQTT5_CANARY_PAYLOAD_SIZE_MAX];
+    for (size_t i = 0; i < payload_size; i++)
+    {
+        payload_data[i] = rand() % 128 + 1;
+    }
     ByteCursor payload = ByteCursorFromArray(payload_data, payload_size);
 
     std::shared_ptr<Mqtt5::PublishPacket> packetPublish = std::make_shared<Mqtt5::PublishPacket>(allocator);
-    packetPublish->withTopic(topicFilter)
-        .withQOS(qos)
-        .withRetain(false)
-        .withPayload(payload)
-        .withUserProperty(std::move(up1))
-        .withUserProperty(std::move(up2))
-        .withUserProperty(std::move(up3));
+    packetPublish->withTopic(topicFilter).withQOS(qos).withRetain(false).withPayload(payload);
+    // .withUserProperty(std::move(up1))
+    // .withUserProperty(std::move(up2))
+    // .withUserProperty(std::move(up3));
 
     if (testClient->client->Publish(packetPublish))
     {

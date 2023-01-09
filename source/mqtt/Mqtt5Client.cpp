@@ -181,17 +181,17 @@ namespace Aws
                 {
                     case aws_mqtt5_packet_type::AWS_MQTT5_PT_PUBACK:
                     {
-                        if (publshCompletionPacket != NULL)
-                        {
-                            std::shared_ptr<PubAckPacket> packet = std::make_shared<PubAckPacket>(
-                                *(aws_mqtt5_packet_puback_view *)publshCompletionPacket, callbackData->allocator);
-                            publish = std::make_shared<PublishResult>(std::move(packet));
-                        }
-                        else // This should never happened.
-                        {
-                            AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "The PubAck Packet is invalid.");
-                            publish = std::make_shared<PublishResult>(AWS_ERROR_INVALID_ARGUMENT);
-                        }
+                        // if (publshCompletionPacket != NULL)
+                        // {
+                        //     std::shared_ptr<PubAckPacket> packet = std::make_shared<PubAckPacket>(
+                        //         *(aws_mqtt5_packet_puback_view *)publshCompletionPacket, callbackData->allocator);
+                        //     publish = std::make_shared<PublishResult>(std::move(packet));
+                        // }
+                        // else // This should never happened.
+                        // {
+                        //     AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "The PubAck Packet is invalid.");
+                        //     publish = std::make_shared<PublishResult>(AWS_ERROR_INVALID_ARGUMENT);
+                        // }
                         break;
                     }
                     case aws_mqtt5_packet_type::AWS_MQTT5_PT_NONE:
