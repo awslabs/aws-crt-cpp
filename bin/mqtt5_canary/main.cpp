@@ -312,8 +312,8 @@ static void s_AwsMqtt5CanaryInitWeightedOperations(AwsMqtt5CanaryTesterOptions *
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_SUBSCRIBE, 0);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_UNSUBSCRIBE, 0);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_UNSUBSCRIBE_BAD, 0);
-    s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_QOS0, 0);
-    s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_QOS1, 100);
+    s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_QOS0, 100);
+    s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_QOS1, 0);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_TO_SUBSCRIBED_TOPIC_QOS0, 0);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_TO_SUBSCRIBED_TOPIC_QOS1, 0);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_TO_SHARED_TOPIC_QOS0, 0);
