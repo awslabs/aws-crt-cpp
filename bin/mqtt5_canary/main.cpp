@@ -365,6 +365,10 @@ static int s_AwsMqtt5CanaryOperationStart(struct AwsMqtt5CanaryTestClient *testC
         {
             testClient->clientId = Aws::Crt::String("Client ID not set");
         }
+        // Set isConnected flag to "true" to prevent calling "Start" again on the same client.
+        // If the connection operation failed eventually, "withClientConnectionFailureCallback"
+        // will set the flag to false.
+        testClient->isConnected = true;
         return AWS_OP_SUCCESS;
     }
     AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Start Failed", testClient->clientId.c_str());
@@ -841,53 +845,56 @@ int main(int argc, char **argv)
         client = {};
         client.clientId = String("TestClient") + std::to_string(i).c_str();
         client.sharedTopic = Aws::Crt::String(sharedTopicArray);
+        client.isConnected = false;
+        clients.push_back(client);
         mqtt5Options.withPublishReceivedCallback(
-            [&client](Mqtt5Client & /*client*/, const Mqtt5::PublishReceivedEventData &publishData)
+            [&clients, i](Mqtt5Client & /*client*/, const Mqtt5::PublishReceivedEventData &publishData)
             {
                 AWS_LOGF_INFO(
                     AWS_LS_MQTT5_CANARY,
                     "Client:%s Publish Received on topic %s",
-                    client.clientId.c_str(),
+                    clients[i].clientId.c_str(),
                     publishData.publishPacket->getTopic().c_str());
             });
 
         mqtt5Options.withClientConnectionSuccessCallback(
-            [&client](Mqtt5Client &, const Mqtt5::OnConnectionSuccessEventData &eventData)
+            [&clients, i](Mqtt5Client &, const Mqtt5::OnConnectionSuccessEventData &eventData)
             {
-                client.isConnected = true;
-                client.clientId = Aws::Crt::String(
+                clients[i].isConnected = true;
+                clients[i].clientId = Aws::Crt::String(
                     eventData.negotiatedSettings->getClientId().c_str(),
                     eventData.negotiatedSettings->getClientId().length());
-                client.settings = eventData.negotiatedSettings;
+                clients[i].settings = eventData.negotiatedSettings;
 
                 AWS_LOGF_INFO(
-                    AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Connection Success", client.clientId.c_str());
+                    AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Connection Success", clients[i].clientId.c_str());
             });
 
         mqtt5Options.withClientConnectionFailureCallback(
-            [&client](Mqtt5Client &, const OnConnectionFailureEventData &eventData)
+            [&clients,i](Mqtt5Client &, const OnConnectionFailureEventData &eventData)
             {
+                clients[i].isConnected = false;
                 AWS_LOGF_ERROR(
                     AWS_LS_MQTT5_CANARY,
                     "ID:%s Connection failed with  Error Code: %d(%s)",
-                    client.clientId.c_str(),
+                    clients[i].clientId.c_str(),
                     eventData.errorCode,
                     aws_error_debug_str(eventData.errorCode));
             });
 
         mqtt5Options.withClientDisconnectionCallback(
-            [&client](Mqtt5Client &, const OnDisconnectionEventData &)
+            [&clients,i](Mqtt5Client &, const OnDisconnectionEventData &)
             {
-                client.isConnected = false;
-                AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Disconnect", client.clientId.c_str());
+                clients[i].isConnected = false;
+                AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Disconnect", clients[i].clientId.c_str());
             });
 
         mqtt5Options.withClientStoppedCallback(
-            [&client](Mqtt5Client &, const OnStoppedEventData &)
-            { AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Stopped", client.clientId.c_str()); });
+            [&clients,i](Mqtt5Client &, const OnStoppedEventData &)
+            { AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Stopped", clients[i].clientId.c_str()); });
 
-        client.client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, appCtx.allocator);
-        if (client.client == nullptr)
+        clients[i].client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, appCtx.allocator);
+        if (clients[i].client == nullptr)
         {
             AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Client Creation Failed.", client.clientId.c_str());
             continue;
@@ -895,13 +902,12 @@ int main(int argc, char **argv)
 
         awsMqtt5CanaryOperationFn *operation_fn =
             s_AwsMqtt5CanaryOperationTable.operationByOperationType[AWS_MQTT5_CANARY_OPERATION_START];
-        if ((*operation_fn)(&client, appCtx.allocator) == AWS_OP_ERR)
+        if ((*operation_fn)(&clients[i], appCtx.allocator) == AWS_OP_ERR)
         {
             AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Operation Failed.", client.clientId.c_str());
         }
 
         aws_thread_current_sleep(AWS_MQTT5_CANARY_CLIENT_CREATION_SLEEP_TIME);
-        clients.push_back(client);
     }
 
     fprintf(stderr, "Clients created\n");
