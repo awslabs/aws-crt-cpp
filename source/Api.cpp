@@ -133,7 +133,7 @@ namespace Aws
                 }
             }
 
-            if (aws_logger_init_standard(&m_logger, ApiAllocator(), &options))
+            if (aws_logger_init_noalloc(&m_logger, ApiAllocator(), &options))
             {
                 return;
             }
