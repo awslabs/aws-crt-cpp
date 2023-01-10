@@ -255,7 +255,7 @@ static void s_AwsMqtt5CanaryInitTesterOptions(struct AwsMqtt5CanaryTesterOptions
     /* How long to run the test before exiting */
     testerOptions->testRunSeconds = 60;
     /* Time interval for printing memory usage info in seconds. Default to 10 mins */
-    testerOptions->memoryCheckIntervalSec = 60;
+    testerOptions->memoryCheckIntervalSec = 600;
 }
 
 struct AwsMqtt5CanaryTestClient
@@ -511,11 +511,18 @@ static int s_AwsMqtt5CanaryOperationPublish(
     Mqtt5::QOS qos,
     Allocator *allocator)
 {
-    Mqtt5::UserProperty up1("property1", "value1");
-    Mqtt5::UserProperty up2("property2", "value2");
-    Mqtt5::UserProperty up3("property3", "value3");
+    uint16_t up_size = (rand() % UINT16_MAX) + 1;
+    char up_data[AWS_MQTT5_CANARY_PAYLOAD_SIZE_MAX];
+    for (size_t i = 0; i < up_size; i++)
+    {
+        up_data[i] = rand() % 128 + 1;
+    }
 
-    uint16_t payload_size = (rand() % UINT16_MAX) + 1;
+    Mqtt5::UserProperty up1("property1", up_data);
+    Mqtt5::UserProperty up2("property2", up_data);
+    Mqtt5::UserProperty up3("property3", up_data);
+
+    uint16_t payload_size = 1;
     uint8_t payload_data[AWS_MQTT5_CANARY_PAYLOAD_SIZE_MAX];
     for (size_t i = 0; i < payload_size; i++)
     {
@@ -694,14 +701,14 @@ int main(int argc, char **argv)
      * LOGGING
      **********************************************************/
 
-    // if (appCtx.TraceFile)
-    // {
-    //     apiHandle.InitializeLogging(appCtx.LogLevel, appCtx.TraceFile);
-    // }
-    // else
-    // {
-    //     apiHandle.InitializeLogging(appCtx.LogLevel, stderr);
-    // }
+    if (appCtx.TraceFile)
+    {
+        apiHandle.InitializeLogging(appCtx.LogLevel, appCtx.TraceFile);
+    }
+    else
+    {
+        apiHandle.InitializeLogging(appCtx.LogLevel, stderr);
+    }
 
     /***************************************************
      * TLS
