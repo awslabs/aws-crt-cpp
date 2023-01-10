@@ -28,7 +28,7 @@ struct ElasticurlCtx
     const char *CaPath = nullptr;
     const char *Cert = nullptr;
     const char *Key = nullptr;
-    int ConnectTimeout = 5000;
+    int ConnectTimeout = 20000; // ms
     Vector<const char *> HeaderLines;
     const char *Alpn = "h2;http/1.1";
     bool IncludeHeaders = false;
