@@ -446,7 +446,7 @@ namespace Aws
                 int result = aws_mqtt5_client_publish(m_client, &publish, &options);
                 if (result != AWS_OP_SUCCESS)
                 {
-                    // Crt::Delete(pubCallbackData, pubCallbackData->allocator);
+                    Crt::Delete(pubCallbackData, pubCallbackData->allocator);
                     return false;
                 }
                 return true;
