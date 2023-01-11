@@ -511,7 +511,7 @@ static int s_AwsMqtt5CanaryOperationPublish(
     Mqtt5::QOS qos,
     Allocator *allocator)
 {
-    uint16_t up_size = (rand() % UINT16_MAX) + 1;
+    uint16_t up_size = (rand() % UINT16_MAX);
     char up_data[AWS_MQTT5_CANARY_PAYLOAD_SIZE_MAX];
     AWS_ZERO_STRUCT(up_data);
     for (size_t i = 0; i < up_size; i++)
