@@ -298,7 +298,6 @@ static void s_AwsMqtt5CanaryAddOperationToArray(
 {
     for (size_t i = 0; i < probability; ++i)
     {
-
         tester_options->operations[tester_options->distributionsTotal] = operation_type;
         tester_options->distributionsTotal += 1;
     }
@@ -514,10 +513,12 @@ static int s_AwsMqtt5CanaryOperationPublish(
     uint16_t up_size = (rand() % UINT16_MAX);
     char up_data[AWS_MQTT5_CANARY_PAYLOAD_SIZE_MAX];
     AWS_ZERO_STRUCT(up_data);
-    for (size_t i = 0; i < up_size; i++)
+    size_t i = 0;
+    for (; i < up_size; i++)
     {
         up_data[i] = rand() % 128 + 1;
     }
+    up_data[i] = 0;
 
     Mqtt5::UserProperty up1("property1", up_data);
     Mqtt5::UserProperty up2("property2", up_data);
