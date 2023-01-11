@@ -425,7 +425,6 @@ namespace Aws
                 ///////////////////////////////////////////////////////////////////////////
                 // Underlying data storage for internal use
                 ///////////////////////////////////////////////////////////////////////////
-                ByteBuf m_payloadStorage;
                 ByteBuf m_contentTypeStorage;
                 ByteBuf m_correlationDataStorage;
                 Crt::String m_responseTopicString;

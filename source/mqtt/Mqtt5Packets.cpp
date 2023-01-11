@@ -450,7 +450,6 @@ namespace Aws
                 : m_allocator(allocator), m_qos(packet.qos), m_retain(packet.retain),
                   m_topicName((const char *)packet.topic.ptr, packet.topic.len), m_userPropertiesStorage(nullptr)
             {
-                AWS_ZERO_STRUCT(m_payloadStorage);
                 AWS_ZERO_STRUCT(m_contentTypeStorage);
                 AWS_ZERO_STRUCT(m_correlationDataStorage);
                 AWS_ZERO_STRUCT(m_payload);
@@ -473,7 +472,6 @@ namespace Aws
                 : m_allocator(allocator), m_qos(QOS::AWS_MQTT5_QOS_AT_MOST_ONCE), m_retain(false), m_topicName(""),
                   m_userPropertiesStorage(nullptr)
             {
-                AWS_ZERO_STRUCT(m_payloadStorage);
                 AWS_ZERO_STRUCT(m_contentTypeStorage);
                 AWS_ZERO_STRUCT(m_correlationDataStorage);
                 AWS_ZERO_STRUCT(m_payload);
@@ -487,22 +485,16 @@ namespace Aws
                 : m_allocator(allocator), m_qos(qos), m_retain(false), m_topicName(std::move(topic)),
                   m_userPropertiesStorage(nullptr)
             {
-                AWS_ZERO_STRUCT(m_payloadStorage);
                 AWS_ZERO_STRUCT(m_contentTypeStorage);
                 AWS_ZERO_STRUCT(m_correlationDataStorage);
                 AWS_ZERO_STRUCT(m_payload);
 
-                // Setup message payload, sync with PublishPacket::withPayload
-                aws_byte_buf_clean_up(&m_payloadStorage);
-                aws_byte_buf_init_copy_from_cursor(&m_payloadStorage, m_allocator, payload);
-                m_payload = aws_byte_cursor_from_buf(&m_payloadStorage);
+                m_payload = payload;
             }
 
             PublishPacket &PublishPacket::withPayload(ByteCursor payload) noexcept
             {
-                aws_byte_buf_clean_up(&m_payloadStorage);
-                aws_byte_buf_init_copy_from_cursor(&m_payloadStorage, m_allocator, payload);
-                m_payload = aws_byte_cursor_from_buf(&m_payloadStorage);
+                m_payload = payload;
                 return *this;
             }
 
@@ -641,7 +633,6 @@ namespace Aws
 
             PublishPacket::~PublishPacket()
             {
-                aws_byte_buf_clean_up(&m_payloadStorage);
                 aws_byte_buf_clean_up(&m_correlationDataStorage);
                 aws_byte_buf_clean_up(&m_contentTypeStorage);
 
