@@ -857,6 +857,7 @@ int main(int argc, char **argv)
         client.sharedTopic = Aws::Crt::String(sharedTopicArray);
         client.isConnected = false;
         clients.push_back(client);
+        mqtt5Options.withAckTimeoutSeconds(10);
         mqtt5Options.withPublishReceivedCallback(
             [&clients, i](Mqtt5Client & /*client*/, const Mqtt5::PublishReceivedEventData &publishData)
             {
