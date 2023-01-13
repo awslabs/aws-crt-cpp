@@ -35,6 +35,7 @@ AWS_STATIC_STRING_FROM_LITERAL(
 AWS_STATIC_STRING_FROM_LITERAL(
     s_mqtt5_test_envName_websocket_basic_auth_port,
     "AWS_TEST_MQTT5_WS_MQTT_BASIC_AUTH_PORT");
+
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_websocket_tls_hostName, "AWS_TEST_MQTT5_WS_MQTT_TLS_HOST");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_websocket_tls_port, "AWS_TEST_MQTT5_WS_MQTT_TLS_PORT");
 
