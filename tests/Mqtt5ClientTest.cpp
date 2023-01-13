@@ -45,7 +45,6 @@ AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_proxy_port, "AWS_TEST_MQTT5_
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_proxy_mqtt_host, "AWS_TEST_MQTT5_PROXY_MQTT_HOST");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_proxy_mqtt_port, "AWS_TEST_MQTT5_PROXY_MQTT_PORT");
 
-
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_certificate, "AWS_TEST_MQTT5_CERTIFICATE_FILE");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_private_key, "AWS_TEST_MQTT5_KEY_FILE");
 
