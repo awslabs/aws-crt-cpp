@@ -42,6 +42,9 @@ AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_basic_username, "AWS_TEST_MQ
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_basic_password, "AWS_TEST_MQTT5_BASIC_AUTH_PASSWORD");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_proxy_hostname, "AWS_TEST_MQTT5_PROXY_HOST");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_proxy_port, "AWS_TEST_MQTT5_PROXY_PORT");
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_proxy_mqtt_host, "AWS_TEST_MQTT5_PROXY_MQTT_HOST");
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_proxy_mqtt_port, "AWS_TEST_MQTT5_PROXY_MQTT_PORT");
+
 
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_certificate, "AWS_TEST_MQTT5_CERTIFICATE_FILE");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_private_key, "AWS_TEST_MQTT5_KEY_FILE");
@@ -87,7 +90,8 @@ enum Mqtt5TestType
     MQTT5CONNECT_WS,
     MQTT5CONNECT_WS_BASIC_AUTH,
     MQTT5CONNECT_WS_TLS,
-    MQTT5CONNECT_IOT_CORE
+    MQTT5CONNECT_IOT_CORE,
+    MQTT5CONNECT_PROXY_HOST
 };
 
 struct Mqtt5TestEnvVars
@@ -202,6 +206,26 @@ struct Mqtt5TestEnvVars
                 if (m_error == AWS_OP_SUCCESS)
                 {
                     m_hostname_string = Aws::Crt::String((const char *)m_hostname->bytes, m_hostname->len);
+                    m_certificate_path_string =
+                        Aws::Crt::String((const char *)m_certificate_path->bytes, m_certificate_path->len);
+                    m_private_key_path_string =
+                        Aws::Crt::String((const char *)m_private_key_path->bytes, m_private_key_path->len);
+                }
+                break;
+            }
+            case MQTT5CONNECT_PROXY_HOST:
+            {
+                m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_proxy_mqtt_host, &m_hostname);
+                m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_proxy_mqtt_port, &m_port);
+                // We use the IoT Core certificate and private key
+                m_error |=
+                    aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_certificate, &m_certificate_path);
+                m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_key, &m_private_key_path);
+
+                if (m_error == AWS_OP_SUCCESS)
+                {
+                    m_hostname_string = Aws::Crt::String((const char *)m_hostname->bytes, m_hostname->len);
+                    m_port_value = atoi((const char *)m_port->bytes);
                     m_certificate_path_string =
                         Aws::Crt::String((const char *)m_certificate_path->bytes, m_certificate_path->len);
                     m_private_key_path_string =
@@ -618,7 +642,7 @@ AWS_TEST_CASE(Mqtt5DirectConnectionWithMutualTLS, s_TestMqtt5DirectConnectionWit
 // */
 static int s_TestMqtt5DirectConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, void *ctx)
 {
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_TLS);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_PROXY_HOST);
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
@@ -636,9 +660,9 @@ static int s_TestMqtt5DirectConnectionWithHttpProxy(Aws::Crt::Allocator *allocat
     proxyOptions.ProxyConnectionType = Aws::Crt::Http::AwsHttpProxyConnectionType::Tunneling;
     mqtt5Options.withHttpProxyOptions(proxyOptions);
 
-    // TLS
-    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
-    tlsCtxOptions.SetVerifyPeer(false);
+    // mTLS
+    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
+        mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str(), allocator);
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
     Aws::Crt::Io::TlsConnectionOptions tlsConnection = tlsContext.NewConnectionOptions();
@@ -1021,9 +1045,9 @@ static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, 
     proxyOptions.ProxyConnectionType = Aws::Crt::Http::AwsHttpProxyConnectionType::Tunneling;
     mqtt5Options.withHttpProxyOptions(proxyOptions);
 
-    // TLS
-    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
-    tlsCtxOptions.SetVerifyPeer(false);
+    // mTLS
+    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
+        mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str(), allocator);
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
     Aws::Crt::Io::TlsConnectionOptions tlsConnection = tlsContext.NewConnectionOptions();
@@ -2056,7 +2080,7 @@ static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *ct
     }
 
     ApiHandle apiHandle(allocator);
-    // A long and invlid client id;
+    // A long and invalid client id;
     Aws::Crt::String CLIENT_ID =
         "AClientIDGreaterThan128charactersToMakeAInvalidClientIDAndNULLCONNECTPACKETAClientIDGr"
         "eaterThan128charactersToMakeAInvalidClientIDAndNULLCONNECTPACKETAClientIDGreaterThan12"
@@ -2213,7 +2237,7 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *ct
     std::promise<void> stopped1Promise;
     std::promise<bool> connection2Promise;
     std::promise<void> stopped2Promise;
-    std::promise<void> client2RetianMessageReceived;
+    std::promise<void> client2RetainMessageReceived;
     std::promise<bool> connection3Promise;
     std::promise<void> stopped3Promise;
 
@@ -2226,11 +2250,11 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *ct
     s_setupConnectionLifeCycle(mqtt5Options, connection2Promise, stopped2Promise, "Client2");
 
     mqtt5Options.withPublishReceivedCallback(
-        [&client2RetianMessageReceived, TEST_TOPIC](Mqtt5Client &, const PublishReceivedEventData &eventData) {
+        [&client2RetainMessageReceived, TEST_TOPIC](Mqtt5Client &, const PublishReceivedEventData &eventData) {
             String topic = eventData.publishPacket->getTopic();
             if (topic == TEST_TOPIC)
             {
-                client2RetianMessageReceived.set_value();
+                client2RetainMessageReceived.set_value();
             }
         });
 
@@ -2243,7 +2267,7 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *ct
         String topic = eventData.publishPacket->getTopic();
         if (topic == TEST_TOPIC)
         {
-            // Client3 should not receive any retian message
+            // Client3 should not receive any retain message
             ASSERT_FALSE(false);
         }
         return 0;
@@ -2252,7 +2276,7 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *ct
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client3 = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client3);
 
-    // 1. client1 start and publish a retian message
+    // 1. client1 start and publish a retain message
     ASSERT_TRUE(mqtt5Client1->Start());
     ASSERT_TRUE(connection1Promise.get_future().get());
     std::shared_ptr<Mqtt5::PublishPacket> setRetainPacket = std::make_shared<Mqtt5::PublishPacket>(allocator);
@@ -2268,13 +2292,13 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *ct
     subscribe->withSubscription(std::move(subscription));
     ASSERT_TRUE(mqtt5Client2->Subscribe(subscribe));
 
-    client2RetianMessageReceived.get_future().get();
+    client2RetainMessageReceived.get_future().get();
 
     // Stop client2
     ASSERT_TRUE(mqtt5Client2->Stop());
     stopped2Promise.get_future().get();
 
-    // 4. client1 reset retian message
+    // 4. client1 reset retain message
     std::shared_ptr<Mqtt5::PublishPacket> clearRetainPacket = std::make_shared<Mqtt5::PublishPacket>(allocator);
     clearRetainPacket->withTopic(TEST_TOPIC).withRetain(true);
     ASSERT_TRUE(mqtt5Client1->Publish(clearRetainPacket));
