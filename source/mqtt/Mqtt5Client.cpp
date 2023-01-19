@@ -521,8 +521,10 @@ namespace Aws
                 if (m_client != nullptr)
                 {
                     aws_mqtt5_client_get_stats(m_client, &m_operationStatisticsNative);
-                    m_operationStatistics.incompleteOperationCount = m_operationStatisticsNative.incomplete_operation_count;
-                    m_operationStatistics.incompleteOperationSize = m_operationStatisticsNative.incomplete_operation_size;
+                    m_operationStatistics.incompleteOperationCount =
+                        m_operationStatisticsNative.incomplete_operation_count;
+                    m_operationStatistics.incompleteOperationSize =
+                        m_operationStatisticsNative.incomplete_operation_size;
                     m_operationStatistics.unackedOperationCount = m_operationStatisticsNative.unacked_operation_count;
                     m_operationStatistics.unackedOperationSize = m_operationStatisticsNative.unacked_operation_size;
                 }
