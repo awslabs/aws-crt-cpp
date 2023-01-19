@@ -392,6 +392,7 @@ namespace Aws
                 Allocator *m_allocator;
 
                 Mqtt5ClientOperationStatistics m_operationStatistics;
+                aws_mqtt5_client_operation_statistics m_operationStatisticsNative;
                 std::condition_variable m_terminationCondition;
                 std::mutex m_terminationMutex;
                 bool m_terminationPredicate = false;

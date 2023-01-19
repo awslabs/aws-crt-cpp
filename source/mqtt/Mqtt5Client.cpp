@@ -520,12 +520,11 @@ namespace Aws
             {
                 if (m_client != nullptr)
                 {
-                    aws_mqtt5_client_operation_statistics *operationStat = nullptr;
-                    aws_mqtt5_client_get_stats(m_client, operationStat);
-                    m_operationStatistics.incompleteOperationCount = operationStat->incomplete_operation_count;
-                    m_operationStatistics.incompleteOperationSize = operationStat->incomplete_operation_size;
-                    m_operationStatistics.unackedOperationCount = operationStat->unacked_operation_count;
-                    m_operationStatistics.unackedOperationSize = operationStat->unacked_operation_size;
+                    aws_mqtt5_client_get_stats(m_client, &m_operationStatisticsNative);
+                    m_operationStatistics.incompleteOperationCount = m_operationStatisticsNative.incomplete_operation_count;
+                    m_operationStatistics.incompleteOperationSize = m_operationStatisticsNative.incomplete_operation_size;
+                    m_operationStatistics.unackedOperationCount = m_operationStatisticsNative.unacked_operation_count;
+                    m_operationStatistics.unackedOperationSize = m_operationStatisticsNative.unacked_operation_size;
                 }
                 return m_operationStatistics;
             }

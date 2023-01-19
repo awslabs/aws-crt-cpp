@@ -704,12 +704,11 @@ namespace Aws
             {
                 if (m_underlyingConnection != nullptr)
                 {
-                    aws_mqtt_connection_operation_statistics *operationStat = nullptr;
-                    aws_mqtt_client_connection_get_stats(m_underlyingConnection, operationStat);
-                    m_operationStatistics.incompleteOperationCount = operationStat->incomplete_operation_count;
-                    m_operationStatistics.incompleteOperationSize = operationStat->incomplete_operation_size;
-                    m_operationStatistics.unackedOperationCount = operationStat->unacked_operation_count;
-                    m_operationStatistics.unackedOperationSize = operationStat->unacked_operation_size;
+                    aws_mqtt_client_connection_get_stats(m_underlyingConnection, &m_operationStatisticsNative);
+                    m_operationStatistics.incompleteOperationCount = m_operationStatisticsNative.incomplete_operation_count;
+                    m_operationStatistics.incompleteOperationSize = m_operationStatisticsNative.incomplete_operation_size;
+                    m_operationStatistics.unackedOperationCount = m_operationStatisticsNative.unacked_operation_count;
+                    m_operationStatistics.unackedOperationSize = m_operationStatisticsNative.unacked_operation_size;
                 }
                 return m_operationStatistics;
             }
