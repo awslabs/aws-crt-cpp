@@ -271,7 +271,8 @@ namespace Aws
                 const Crt::Io::TlsContext &tlsContext,
                 bool useWebsocket) noexcept
                 : m_owningClient(client), m_tlsContext(tlsContext), m_tlsOptions(tlsContext.NewConnectionOptions()),
-                  m_onAnyCbData(nullptr), m_useTls(true), m_useWebsocket(useWebsocket)
+                  m_onAnyCbData(nullptr), m_useTls(true), m_useWebsocket(useWebsocket),
+                  m_operationStatistics({0, 0, 0, 0})
             {
                 s_connectionInit(this, hostName, port, socketOptions);
             }
@@ -282,7 +283,8 @@ namespace Aws
                 uint16_t port,
                 const Io::SocketOptions &socketOptions,
                 bool useWebsocket) noexcept
-                : m_owningClient(client), m_onAnyCbData(nullptr), m_useTls(false), m_useWebsocket(useWebsocket)
+                : m_owningClient(client), m_onAnyCbData(nullptr), m_useTls(false), m_useWebsocket(useWebsocket),
+                  m_operationStatistics({0, 0, 0, 0})
             {
                 s_connectionInit(this, hostName, port, socketOptions);
             }
@@ -696,6 +698,20 @@ namespace Aws
                 }
 
                 return packetId;
+            }
+
+            const MqttConnectionOperationStatistics &MqttConnection::GetOperationStatistics() noexcept
+            {
+                if (m_underlyingConnection != nullptr)
+                {
+                    aws_mqtt_connection_operation_statistics *operationStat = nullptr;
+                    aws_mqtt_client_connection_get_stats(m_underlyingConnection, operationStat);
+                    m_operationStatistics.incompleteOperationCount = operationStat->incomplete_operation_count;
+                    m_operationStatistics.incompleteOperationSize = operationStat->incomplete_operation_size;
+                    m_operationStatistics.unackedOperationCount = operationStat->unacked_operation_count;
+                    m_operationStatistics.unackedOperationSize = operationStat->unacked_operation_size;
+                }
+                return m_operationStatistics;
             }
 
             MqttClient::MqttClient(Io::ClientBootstrap &bootstrap, Allocator *allocator) noexcept
