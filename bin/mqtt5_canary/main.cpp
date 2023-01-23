@@ -516,7 +516,7 @@ static int s_AwsMqtt5CanaryOperationPublish(
     size_t i = 0;
     for (i = 0 ; i < up_size; i++)
     {
-        up_data[i] = rand() % 128 + 1;
+        up_data[i] = 'A';
     }
     up_data[i] = 0;
 
