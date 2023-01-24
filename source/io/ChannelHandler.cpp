@@ -98,6 +98,7 @@ namespace Aws
                 ChannelHandler::s_Destroy,
                 s_ResetStatistics,
                 s_GatherStatistics,
+                NULL,
             };
 
             ChannelHandler::ChannelHandler(Allocator *allocator) : m_allocator(allocator)

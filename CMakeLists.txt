@@ -337,7 +337,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE MATCHES Debug)
     if(MSVC)
         target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
     else()
-        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
+        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wno-long-long -pedantic -Werror)
     endif()
 endif()
 
