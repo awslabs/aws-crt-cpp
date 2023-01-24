@@ -123,7 +123,7 @@ namespace Aws
             Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
             result->m_tlsConnectionOptions =
                 Crt::Io::TlsContextOptions::InitClientWithMtls(certPath, pkeyPath, allocator);
-            if (!result->m_tlsConnectionOptions)
+            if (!result->m_tlsConnectionOptions.value())
             {
                 result->m_lastError = result->m_tlsConnectionOptions->LastError();
                 return result;
