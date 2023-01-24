@@ -332,13 +332,13 @@ endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE MATCHES Debug)
     target_compile_definitions(${PROJECT_NAME} PRIVATE "-DDEBUG_BUILD")
+endif()
 
-    # set extra warning flags for debug build
-    if(MSVC)
-        target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
-    else()
-        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wno-long-long -pedantic -Werror)
-    endif()
+ # set extra warning flags
+if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
+else()
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wno-long-long -pedantic -Werror)
 endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC
