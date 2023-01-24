@@ -288,7 +288,7 @@ namespace Aws
                 std::shared_ptr<UnSubAckPacket> packet = nullptr;
                 if (unsuback != nullptr)
                 {
-                    packet = std::make_shared<UnSubAckPacket>(*unsuback, callbackData->allocator);
+                    packet = std::make_shared<UnSubAckPacket>(*unsuback);
                 }
 
                 if (error_code != 0)

@@ -1134,7 +1134,7 @@ namespace Aws
                 }
             }
 
-            UnSubAckPacket::UnSubAckPacket(const aws_mqtt5_packet_unsuback_view &packet, Allocator *allocator) noexcept
+            UnSubAckPacket::UnSubAckPacket(const aws_mqtt5_packet_unsuback_view &packet) noexcept
             {
                 setPacketStringOptional(m_reasonString, packet.reason_string);
 
@@ -1160,9 +1160,7 @@ namespace Aws
                 return m_reasonCodes;
             }
 
-            NegotiatedSettings::NegotiatedSettings(
-                const aws_mqtt5_negotiated_settings &negotiated_settings,
-                Allocator *allocator) noexcept
+            NegotiatedSettings::NegotiatedSettings(const aws_mqtt5_negotiated_settings &negotiated_settings) noexcept
             {
                 m_maximumQOS = negotiated_settings.maximum_qos;
                 m_sessionExpiryIntervalSec = negotiated_settings.session_expiry_interval;
