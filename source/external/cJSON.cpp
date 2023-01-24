@@ -424,7 +424,7 @@ CJSON_PUBLIC(char*) cJSON_SetValuestring(cJSON *object, const char *valuestring)
     {
         return NULL;
     }
-    if (strlen(valuestring) <= strlen(object->valuestring))
+    if (strlen(valuestring) < strlen(object->valuestring))
     {
         strncpy(object->valuestring, valuestring, strlen(valuestring) + 1);
         return object->valuestring;
