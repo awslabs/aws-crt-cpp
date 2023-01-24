@@ -338,7 +338,7 @@ endif()
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
 else()
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wno-long-long -pedantic -Werror)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
 endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC
