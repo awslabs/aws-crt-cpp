@@ -427,7 +427,7 @@ CJSON_PUBLIC(char*) cJSON_SetValuestring(cJSON *object, const char *valuestring)
     if (strlen(valuestring) <= strlen(object->valuestring))
     {
         
-        strncpy(object->valuestring, valuestring);
+        strcpy(object->valuestring, valuestring);
         return object->valuestring;
     }
     copy = (char*) cJSON_strdup((const unsigned char*)valuestring, &global_hooks);
