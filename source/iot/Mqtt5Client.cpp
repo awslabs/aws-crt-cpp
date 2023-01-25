@@ -123,7 +123,7 @@ namespace Aws
             Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
             result->m_tlsConnectionOptions =
                 Crt::Io::TlsContextOptions::InitClientWithMtls(certPath, pkeyPath, allocator);
-            if (!result->m_tlsConnectionOptions)
+            if (!result->m_tlsConnectionOptions.value())
             {
                 result->m_lastError = result->m_tlsConnectionOptions->LastError();
                 return result;
@@ -140,7 +140,7 @@ namespace Aws
         {
             Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
             result->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(cert, pkey, allocator);
-            if (!result->m_tlsConnectionOptions)
+            if (!result->m_tlsConnectionOptions.value())
             {
                 result->m_lastError = result->m_tlsConnectionOptions->LastError();
                 return result;
@@ -157,7 +157,7 @@ namespace Aws
             Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
             result->m_tlsConnectionOptions =
                 Crt::Io::TlsContextOptions::InitClientWithMtlsPkcs11(pkcs11Options, allocator);
-            if (!result->m_tlsConnectionOptions)
+            if (!result->m_tlsConnectionOptions.value())
             {
                 result->m_lastError = result->m_tlsConnectionOptions->LastError();
                 return result;
@@ -174,7 +174,7 @@ namespace Aws
             Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
             result->m_tlsConnectionOptions =
                 Crt::Io::TlsContextOptions::InitClientWithMtlsSystemPath(windowsCertStorePath, allocator);
-            if (!result->m_tlsConnectionOptions)
+            if (!result->m_tlsConnectionOptions.value())
             {
                 result->m_lastError = result->m_tlsConnectionOptions->LastError();
                 return result;
@@ -190,11 +190,6 @@ namespace Aws
         {
             Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
             result->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitDefaultClient();
-            if (!result->m_tlsConnectionOptions)
-            {
-                result->m_lastError = result->m_tlsConnectionOptions->LastError();
-                return result;
-            }
             result->withHostName(hostName);
             result->m_websocketConfig = config;
             return result;
@@ -207,11 +202,6 @@ namespace Aws
         {
             Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
             result->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitDefaultClient();
-            if (!result->m_tlsConnectionOptions)
-            {
-                result->m_lastError = result->m_tlsConnectionOptions->LastError();
-                return result;
-            }
             result->withHostName(hostName);
             result->WithCustomAuthorizer(customAuthConfig);
             return result;
@@ -225,19 +215,6 @@ namespace Aws
         {
             Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
             result->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitDefaultClient();
-            if (!result->m_tlsConnectionOptions.value())
-            {
-                result->m_lastError = result->m_tlsConnectionOptions->LastError();
-                int error_code = result->m_tlsConnectionOptions->LastError();
-                return result;
-                AWS_LOGF_ERROR(
-                    AWS_LS_MQTT5_GENERAL,
-                    "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
-                    error_code,
-                    aws_error_debug_str(error_code));
-                delete result;
-                return nullptr;
-            }
             result->withHostName(hostName);
             result->m_websocketConfig = config;
             result->WithCustomAuthorizer(customAuthConfig);
