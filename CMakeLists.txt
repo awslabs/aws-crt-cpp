@@ -340,7 +340,7 @@ if(AWS_WARNINGS_ARE_ERRORS)
         target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
     else()
         target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
-endif()
+    endif()
 endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC
