@@ -448,7 +448,10 @@ namespace Aws
             class AWS_CRT_CPP_API NegotiatedSettings
             {
               public:
-                NegotiatedSettings(const aws_mqtt5_negotiated_settings &negotiated_settings) noexcept;
+                NegotiatedSettings(
+                    const aws_mqtt5_negotiated_settings &negotiated_settings,
+
+                    Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
                  * @return The maximum QoS allowed for publishes on this connection instance
@@ -2206,7 +2209,9 @@ namespace Aws
             class AWS_CRT_CPP_API UnSubAckPacket : public IPacket
             {
               public:
-                UnSubAckPacket(const aws_mqtt5_packet_unsuback_view &packet) noexcept;
+                UnSubAckPacket(
+                    const aws_mqtt5_packet_unsuback_view &packet,
+                    Allocator *allocator = ApiAllocator()) noexcept;
 
                 /* The packet type */
                 PacketType getType() override { return PacketType::AWS_MQTT5_PT_UNSUBACK; };
