@@ -6,10 +6,9 @@
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/Types.h>
 
+struct aws_json_value;
 namespace Aws
 {
-    struct cJSON;
-
     namespace Crt
     {
         class JsonView;
@@ -190,8 +189,8 @@ namespace Aws
 
           private:
             void Destroy();
-            JsonObject(cJSON *value);
-            cJSON *m_value;
+            JsonObject(aws_json_value *value);
+            aws_json_value *m_value;
             bool m_wasParseSuccessful;
             String m_errorMessage;
             friend class JsonView;
@@ -398,9 +397,9 @@ namespace Aws
             JsonObject Materialize() const;
 
           private:
-            JsonView(cJSON *val);
-            JsonView &operator=(cJSON *val);
-            cJSON *m_value;
+            JsonView(aws_json_value *val);
+            JsonView &operator=(aws_json_value *val);
+            aws_json_value *m_value;
         };
     } // namespace Crt
 } // namespace Aws

@@ -4,7 +4,6 @@
  */
 #include <aws/crt/Api.h>
 #include <aws/crt/StlAllocator.h>
-#include <aws/crt/external/cJSON.h>
 #include <aws/crt/io/TlsOptions.h>
 
 #include <aws/auth/auth.h>
@@ -36,10 +35,6 @@ namespace Aws
         std::mutex ApiHandle::s_lock_event_loop_group;
         std::mutex ApiHandle::s_lock_default_host_resolver;
 
-        static void *s_cJSONAlloc(size_t sz) { return aws_mem_acquire(ApiAllocator(), sz); }
-
-        static void s_cJSONFree(void *ptr) { return aws_mem_release(ApiAllocator(), ptr); }
-
         static void s_initApi(Allocator *allocator)
         {
             // sets up the StlAllocator for use.
@@ -48,11 +43,6 @@ namespace Aws
             aws_s3_library_init(allocator);
             aws_event_stream_library_init(allocator);
             aws_sdkutils_library_init(allocator);
-
-            cJSON_Hooks hooks;
-            hooks.malloc_fn = s_cJSONAlloc;
-            hooks.free_fn = s_cJSONFree;
-            cJSON_InitHooks(&hooks);
         }
 
         ApiHandle::ApiHandle(Allocator *allocator) noexcept
