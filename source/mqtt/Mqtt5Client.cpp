@@ -309,7 +309,7 @@ namespace Aws
             }
 
             Mqtt5Client::Mqtt5Client(const Mqtt5ClientOptions &options, Allocator *allocator) noexcept
-                : m_client(nullptr), m_allocator(allocator), m_operationStatistics({0, 0, 0, 0})
+                : m_client(nullptr), m_allocator(allocator))
             {
                 aws_mqtt5_client_options clientOptions;
 
@@ -518,6 +518,7 @@ namespace Aws
 
             const Mqtt5ClientOperationStatistics &Mqtt5Client::GetOperationStatistics() noexcept
             {
+                aws_mqtt5_client_operation_statistics m_operationStatisticsNative = {0, 0, 0, 0};
                 if (m_client != nullptr)
                 {
                     aws_mqtt5_client_get_stats(m_client, &m_operationStatisticsNative);

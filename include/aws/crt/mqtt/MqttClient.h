@@ -379,7 +379,6 @@ namespace Aws
                 bool m_useTls;
                 bool m_useWebsocket;
                 MqttConnectionOperationStatistics m_operationStatistics;
-                aws_mqtt_connection_operation_statistics m_operationStatisticsNative;
 
                 MqttConnection(
                     aws_mqtt_client *client,

@@ -271,8 +271,7 @@ namespace Aws
                 const Crt::Io::TlsContext &tlsContext,
                 bool useWebsocket) noexcept
                 : m_owningClient(client), m_tlsContext(tlsContext), m_tlsOptions(tlsContext.NewConnectionOptions()),
-                  m_onAnyCbData(nullptr), m_useTls(true), m_useWebsocket(useWebsocket),
-                  m_operationStatistics({0, 0, 0, 0})
+                  m_onAnyCbData(nullptr), m_useTls(true), m_useWebsocket(useWebsocket))
             {
                 s_connectionInit(this, hostName, port, socketOptions);
             }
@@ -283,8 +282,7 @@ namespace Aws
                 uint16_t port,
                 const Io::SocketOptions &socketOptions,
                 bool useWebsocket) noexcept
-                : m_owningClient(client), m_onAnyCbData(nullptr), m_useTls(false), m_useWebsocket(useWebsocket),
-                  m_operationStatistics({0, 0, 0, 0})
+                : m_owningClient(client), m_onAnyCbData(nullptr), m_useTls(false), m_useWebsocket(useWebsocket))
             {
                 s_connectionInit(this, hostName, port, socketOptions);
             }
@@ -702,6 +700,7 @@ namespace Aws
 
             const MqttConnectionOperationStatistics &MqttConnection::GetOperationStatistics() noexcept
             {
+                aws_mqtt_connection_operation_statistics m_operationStatisticsNative = {0, 0, 0, 0};
                 if (m_underlyingConnection != nullptr)
                 {
                     aws_mqtt_client_connection_get_stats(m_underlyingConnection, &m_operationStatisticsNative);
