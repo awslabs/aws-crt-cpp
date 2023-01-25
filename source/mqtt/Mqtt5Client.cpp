@@ -309,7 +309,7 @@ namespace Aws
             }
 
             Mqtt5Client::Mqtt5Client(const Mqtt5ClientOptions &options, Allocator *allocator) noexcept
-                : m_client(nullptr), m_allocator(allocator))
+                : m_client(nullptr), m_allocator(allocator)
             {
                 aws_mqtt5_client_options clientOptions;
 
