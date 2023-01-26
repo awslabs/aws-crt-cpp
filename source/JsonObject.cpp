@@ -360,11 +360,18 @@ namespace Aws
             AWS_ASSERT(m_value);
             auto item = aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key));
             struct aws_byte_cursor output_cursor;
-            aws_json_value_get_string(item, &output_cursor);
+            if (aws_json_value_get_string(item, &output_cursor) != AWS_OP_SUCCESS)
+            {
+                AWS_LOGF_ERROR(AWS_LS_COMMON_JSON_PARSER, "Error: Could not get string from JSON with key %s", key);
+                return "";
+            }
 
             if (output_cursor.len > 0 && output_cursor.ptr != NULL)
             {
-                return (char *)output_cursor.ptr;
+                aws_string *str = aws_string_new_from_cursor(ApiAllocator(), &output_cursor);
+                String ret_val(aws_string_c_str(str));
+                aws_string_destroy_secure(str);
+                return ret_val;
             }
             return "";
         }
@@ -372,12 +379,19 @@ namespace Aws
         String JsonView::AsString() const
         {
             struct aws_byte_cursor output_cursor;
-            aws_json_value_get_string(m_value, &output_cursor);
+            if (aws_json_value_get_string(m_value, &output_cursor) != AWS_OP_SUCCESS)
+            {
+                AWS_LOGF_ERROR(AWS_LS_COMMON_JSON_PARSER, "Error: Could not get string from JSON");
+                return "";
+            }
             if (output_cursor.len > 0 && output_cursor.ptr != NULL)
             {
-                return (char *)output_cursor.ptr;
+                aws_string *str = aws_string_new_from_cursor(ApiAllocator(), &output_cursor);
+                String ret_val(aws_string_c_str(str));
+                aws_string_destroy_secure(str);
+                return ret_val;
             }
-            return {};
+            return "";
         }
 
         bool JsonView::GetBool(const String &key) const { return GetBool(key.c_str()); }
@@ -388,7 +402,11 @@ namespace Aws
             auto item = aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key));
             AWS_ASSERT(item);
             bool output = false;
-            aws_json_value_get_boolean(item, &output);
+            if (aws_json_value_get_boolean(item, &output) != AWS_OP_SUCCESS)
+            {
+                AWS_LOGF_ERROR(AWS_LS_COMMON_JSON_PARSER, "Error: Could not get boolean from JSON with key %s", key);
+                return false;
+            }
             return output;
         }
 
@@ -396,7 +414,11 @@ namespace Aws
         {
             AWS_ASSERT(aws_json_value_is_boolean(m_value));
             bool output = false;
-            aws_json_value_get_boolean(m_value, &output);
+            if (aws_json_value_get_boolean(m_value, &output) != AWS_OP_SUCCESS)
+            {
+                AWS_LOGF_ERROR(AWS_LS_COMMON_JSON_PARSER, "Error: Could not get boolean from JSON");
+                return false;
+            }
             return output;
         }
 
@@ -408,7 +430,11 @@ namespace Aws
             auto item = aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key));
             AWS_ASSERT(item);
             double output = 0;
-            aws_json_value_get_number(item, &output);
+            if (aws_json_value_get_number(item, &output) != AWS_OP_SUCCESS)
+            {
+                AWS_LOGF_ERROR(AWS_LS_COMMON_JSON_PARSER, "Error: Could not get integer from JSON with key %s", key);
+                return 0;
+            }
             return static_cast<int>(output);
         }
 
@@ -416,7 +442,11 @@ namespace Aws
         {
             AWS_ASSERT(aws_json_value_is_number(m_value));
             double output = 0;
-            aws_json_value_get_number(m_value, &output);
+            if (aws_json_value_get_number(m_value, &output) != AWS_OP_SUCCESS)
+            {
+                AWS_LOGF_ERROR(AWS_LS_COMMON_JSON_PARSER, "Error: Could not get integer from JSON");
+                return 0;
+            };
             return static_cast<int>(output);
         }
 
@@ -428,7 +458,11 @@ namespace Aws
         {
             AWS_ASSERT(aws_json_value_is_number(m_value));
             double output = 0;
-            aws_json_value_get_number(m_value, &output);
+            if (aws_json_value_get_number(m_value, &output) != AWS_OP_SUCCESS)
+            {
+                AWS_LOGF_ERROR(AWS_LS_COMMON_JSON_PARSER, "Error: Could not get int64 from JSON");
+                return 0;
+            }
             return static_cast<int64_t>(output);
         }
 
@@ -440,7 +474,11 @@ namespace Aws
             auto item = aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key));
             AWS_ASSERT(item);
             double output = 0;
-            aws_json_value_get_number(item, &output);
+            if (aws_json_value_get_number(item, &output) != AWS_OP_SUCCESS)
+            {
+                AWS_LOGF_ERROR(AWS_LS_COMMON_JSON_PARSER, "Error: Could not get double from JSON with key %s", key);
+                return 0;
+            }
             return output;
         }
 
@@ -448,7 +486,11 @@ namespace Aws
         {
             AWS_ASSERT(aws_json_value_is_number(m_value));
             double output = 0;
-            aws_json_value_get_number(m_value, &output);
+            if (aws_json_value_get_number(m_value, &output) != AWS_OP_SUCCESS)
+            {
+                AWS_LOGF_ERROR(AWS_LS_COMMON_JSON_PARSER, "Error: Could not get double from JSON");
+                return 0;
+            }
             return output;
         }
 
@@ -485,11 +527,9 @@ namespace Aws
             AWS_ASSERT(aws_json_value_is_array(array));
             Vector<JsonView> returnArray(static_cast<size_t>(aws_json_get_array_size(array)));
 
-            auto *element = aws_json_get_array_element(m_value, 0);
             for (size_t i = 0; i < returnArray.size(); i++)
             {
-                element = aws_json_get_array_element(m_value, i);
-                returnArray[i] = element;
+                returnArray[i] = aws_json_get_array_element(array, i);
             }
 
             return returnArray;
@@ -525,7 +565,12 @@ namespace Aws
                 element = aws_json_get_array_element(m_value, i);
                 aws_byte_cursor element_cursor;
                 aws_json_value_get_string(m_value, &element_cursor);
-                valueMap.emplace(std::make_pair(String((char *)element_cursor.ptr), JsonView(element)));
+
+                aws_string *aws_element_str = aws_string_new_from_cursor(ApiAllocator(), &element_cursor);
+                String element_str(aws_string_c_str(aws_element_str));
+                aws_string_destroy_secure(aws_element_str);
+
+                valueMap.emplace(std::make_pair(element_str, JsonView(element)));
             }
 
             return valueMap;
@@ -602,8 +647,11 @@ namespace Aws
             struct aws_byte_buf buf;
             aws_byte_buf_init(&buf, ApiAllocator(), 0);
             aws_byte_buf_append_json_string(m_value, &buf);
-            struct aws_byte_cursor cursor = aws_byte_cursor_from_buf(&buf);
-            String out((char *)cursor.ptr);
+
+            struct aws_string *str = aws_string_new_from_buf(ApiAllocator(), &buf);
+            String out(aws_string_c_str(str));
+            aws_string_destroy_secure(str);
+
             aws_byte_buf_clean_up(&buf);
             return out;
         }
@@ -621,8 +669,11 @@ namespace Aws
             struct aws_byte_buf buf;
             aws_byte_buf_init(&buf, ApiAllocator(), 0);
             aws_byte_buf_append_json_string_formatted(m_value, &buf);
-            struct aws_byte_cursor cursor = aws_byte_cursor_from_buf(&buf);
-            String out((char *)cursor.ptr);
+
+            struct aws_string *str = aws_string_new_from_buf(ApiAllocator(), &buf);
+            String out(aws_string_c_str(str));
+            aws_string_destroy_secure(str);
+
             aws_byte_buf_clean_up(&buf);
             return out;
         }
