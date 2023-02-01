@@ -19,12 +19,17 @@ namespace Aws
         JsonObject::JsonObject(aws_json_value *value)
             : m_value(aws_json_value_duplicate(value)), m_wasParseSuccessful(true)
         {
+            m_value = aws_json_value_duplicate(value);
+            if (m_value == nullptr)
+            {
+                m_wasParseSuccessful = false;
+                m_errorMessage = "Failed to duplicate passed JSON";
+            }
         }
 
         JsonObject::JsonObject(const String &value) : m_wasParseSuccessful(true)
         {
             m_value = aws_json_value_new_from_string(ApiAllocator(), byteCursorFromString(value));
-
             if (m_value == nullptr)
             {
                 m_wasParseSuccessful = false;
@@ -36,7 +41,8 @@ namespace Aws
             : m_wasParseSuccessful(value.m_wasParseSuccessful), m_errorMessage(value.m_errorMessage)
         {
             m_value = aws_json_value_duplicate(value.m_value);
-            if (m_value == nullptr) {
+            if (m_value == nullptr)
+            {
                 m_wasParseSuccessful = false;
                 m_errorMessage = "Failed to duplicate passed JSON";
             }
