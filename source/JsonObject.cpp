@@ -29,7 +29,7 @@ namespace Aws
 
         JsonObject::JsonObject(const String &value) : m_wasParseSuccessful(true)
         {
-            m_value = aws_json_value_new_from_string(ApiAllocator(), byteCursorFromString(value));
+            m_value = aws_json_value_new_from_string(ApiAllocator(), ByteCursorFromString(value));
             if (m_value == nullptr)
             {
                 m_wasParseSuccessful = false;
@@ -109,7 +109,7 @@ namespace Aws
                 m_value = aws_json_value_new_object(ApiAllocator());
             }
 
-            const auto val = aws_json_value_new_string(ApiAllocator(), byteCursorFromString(value));
+            const auto val = aws_json_value_new_string(ApiAllocator(), ByteCursorFromString(value));
             AddOrReplace(m_value, key, val);
             return *this;
         }
@@ -122,7 +122,7 @@ namespace Aws
         JsonObject &JsonObject::AsString(const String &value)
         {
             Destroy();
-            m_value = aws_json_value_new_string(ApiAllocator(), byteCursorFromString(value));
+            m_value = aws_json_value_new_string(ApiAllocator(), ByteCursorFromString(value));
             return *this;
         }
 
@@ -208,7 +208,7 @@ namespace Aws
             for (const auto &i : array)
             {
                 aws_json_value_add_array_element(
-                    arrayValue, aws_json_value_new_string(ApiAllocator(), byteCursorFromString(i)));
+                    arrayValue, aws_json_value_new_string(ApiAllocator(), ByteCursorFromString(i)));
             }
 
             AddOrReplace(m_value, key, arrayValue);
