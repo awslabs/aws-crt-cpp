@@ -1136,6 +1136,8 @@ namespace Aws
 
             UnSubAckPacket::UnSubAckPacket(const aws_mqtt5_packet_unsuback_view &packet, Allocator *allocator) noexcept
             {
+                (void)allocator;
+
                 setPacketStringOptional(m_reasonString, packet.reason_string);
 
                 for (size_t i = 0; i < packet.reason_code_count; i++)
@@ -1164,6 +1166,8 @@ namespace Aws
                 const aws_mqtt5_negotiated_settings &negotiated_settings,
                 Allocator *allocator) noexcept
             {
+                (void)allocator;
+
                 m_maximumQOS = negotiated_settings.maximum_qos;
                 m_sessionExpiryIntervalSec = negotiated_settings.session_expiry_interval;
                 m_receiveMaximumFromServer = negotiated_settings.receive_maximum_from_server;

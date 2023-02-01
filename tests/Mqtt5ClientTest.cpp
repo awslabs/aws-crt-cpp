@@ -2789,4 +2789,67 @@ static int s_TestMqtt5InterruptPublishQoS1(Aws::Crt::Allocator *allocator, void 
 
 AWS_TEST_CASE(Mqtt5InterruptPublishQoS1, s_TestMqtt5InterruptPublishQoS1)
 
+//////////////////////////////////////////////////////////
+// Misc Tests
+//////////////////////////////////////////////////////////
+
+/*
+ * [Misc] test_operation_statistics_uc1
+ */
+static int s_TestMqtt5OperationStatisticsSimple(Aws::Crt::Allocator *allocator, void *ctx)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    const String TEST_TOPIC = "test/MQTT5_Binding_CPP" + Aws::Crt::UUID().ToString();
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    mqtt5Options.withHostName(mqtt5TestVars.m_hostname_string).withPort(mqtt5TestVars.m_port_value);
+
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(*mqtt5Client);
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(connectionPromise.get_future().get());
+
+    /* Make sure the operations are empty */
+    Mqtt5::Mqtt5ClientOperationStatistics statistics = mqtt5Client->GetOperationStatistics();
+    ASSERT_INT_EQUALS(0, statistics.incompleteOperationCount);
+    ASSERT_INT_EQUALS(0, statistics.incompleteOperationSize);
+    ASSERT_INT_EQUALS(0, statistics.unackedOperationCount);
+    ASSERT_INT_EQUALS(0, statistics.unackedOperationSize);
+
+    /* Publish message 1 to test topic */
+    ByteBuf payload = Aws::Crt::ByteBufFromCString("Hello World");
+    std::shared_ptr<Mqtt5::PublishPacket> publish = std::make_shared<Mqtt5::PublishPacket>(
+        TEST_TOPIC, ByteCursorFromByteBuf(payload), Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+    ASSERT_TRUE(mqtt5Client->Publish(publish));
+
+    // Sleep and wait for message received
+    aws_thread_current_sleep(2000 * 1000 * 1000);
+
+    /* Make sure the operations are empty */
+    statistics = mqtt5Client->GetOperationStatistics();
+    ASSERT_INT_EQUALS(0, statistics.incompleteOperationCount);
+    ASSERT_INT_EQUALS(0, statistics.incompleteOperationSize);
+    ASSERT_INT_EQUALS(0, statistics.unackedOperationCount);
+    ASSERT_INT_EQUALS(0, statistics.unackedOperationSize);
+
+    ASSERT_TRUE(mqtt5Client->Stop());
+    stoppedPromise.get_future().get();
+
+    return AWS_ERROR_SUCCESS;
+}
+
+AWS_TEST_CASE(Mqtt5OperationStatisticsSimple, s_TestMqtt5OperationStatisticsSimple)
+
 #endif // !BYO_CRYPTO
