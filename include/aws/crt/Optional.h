@@ -19,14 +19,14 @@ namespace Aws
             Optional() : m_value(nullptr) {}
             Optional(const T &val)
             {
-                new (&m_storage) T(val);
-                m_value = reinterpret_cast<T *>(&m_storage);
+                new (m_storage) T(val);
+                m_value = reinterpret_cast<T *>(m_storage);
             }
 
             Optional(T &&val)
             {
-                new (&m_storage) T(std::forward<T>(val));
-                m_value = reinterpret_cast<T *>(&m_storage);
+                new (m_storage) T(std::forward<T>(val));
+                m_value = reinterpret_cast<T *>(m_storage);
             }
 
             ~Optional()
@@ -45,8 +45,8 @@ namespace Aws
                     return *this;
                 }
 
-                new (&m_storage) T(std::forward<U>(u));
-                m_value = reinterpret_cast<T *>(&m_storage);
+                new (m_storage) T(std::forward<U>(u));
+                m_value = reinterpret_cast<T *>(m_storage);
 
                 return *this;
             }
@@ -55,8 +55,8 @@ namespace Aws
             {
                 if (other.m_value)
                 {
-                    new (&m_storage) T(*other.m_value);
-                    m_value = reinterpret_cast<T *>(&m_storage);
+                    new (m_storage) T(*other.m_value);
+                    m_value = reinterpret_cast<T *>(m_storage);
                 }
                 else
                 {
@@ -68,8 +68,8 @@ namespace Aws
             {
                 if (other.m_value)
                 {
-                    new (&m_storage) T(std::forward<T>(*other.m_value));
-                    m_value = reinterpret_cast<T *>(&m_storage);
+                    new (m_storage) T(std::forward<T>(*other.m_value));
+                    m_value = reinterpret_cast<T *>(m_storage);
                 }
                 else
                 {
@@ -101,8 +101,8 @@ namespace Aws
 
                 if (other.m_value)
                 {
-                    new (&m_storage) T(*other.m_value);
-                    m_value = reinterpret_cast<T *>(&m_storage);
+                    new (m_storage) T(*other.m_value);
+                    m_value = reinterpret_cast<T *>(m_storage);
                 }
 
                 return *this;
@@ -132,8 +132,8 @@ namespace Aws
 
                 if (other.m_value)
                 {
-                    new (&m_storage) T(*other.m_value);
-                    m_value = reinterpret_cast<T *>(&m_storage);
+                    new (m_storage) T(*other.m_value);
+                    m_value = reinterpret_cast<T *>(m_storage);
                 }
 
                 return *this;
@@ -163,8 +163,8 @@ namespace Aws
 
                 if (other.m_value)
                 {
-                    new (&m_storage) T(std::forward<U>(*other.m_value));
-                    m_value = reinterpret_cast<T *>(&m_storage);
+                    new (m_storage) T(std::forward<U>(*other.m_value));
+                    m_value = reinterpret_cast<T *>(m_storage);
                 }
 
                 return *this;
@@ -196,7 +196,7 @@ namespace Aws
             }
 
           private:
-            typename std::aligned_storage<sizeof(T)>::type m_storage;
+            alignas(T) char m_storage[sizeof(T)];
             T *m_value;
         };
     } // namespace Crt
