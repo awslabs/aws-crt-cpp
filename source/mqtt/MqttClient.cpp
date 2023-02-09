@@ -78,8 +78,8 @@ namespace Aws
                 {
                     if (connWrapper->OnConnectionSuccess)
                     {
-                        OnConnectionSuccessData callbackData = {.returnCode = returnCode,
-                                                                .sessionPresent = sessionPresent};
+                        OnConnectionSuccessData callbackData = {
+                            .returnCode = returnCode, .sessionPresent = sessionPresent};
                         connWrapper->OnConnectionSuccess(*connWrapper, &callbackData);
                     }
                 }
