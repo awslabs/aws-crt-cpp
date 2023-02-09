@@ -36,6 +36,43 @@ namespace Aws
             class MqttConnection;
 
             /**
+             * The data returned when the connection closed callback is invoked in a connection.
+             * Note: This class is currently empty, but this may contain additional data in the future.
+             */
+            struct OnConnectionClosedData
+            {
+            };
+
+            /**
+             * The data returned when the connection success callback is invoked in a connection.
+             */
+            struct OnConnectionSuccessData
+            {
+                /**
+                 * The Connect return code received from the server.
+                 */
+                ReturnCode returnCode;
+
+                /**
+                 * Returns whether a session was present and resumed for this successful connection.
+                 * Will be set to true if the connection resumed an already present MQTT connection session.
+                 */
+                bool sessionPresent;
+            };
+
+            /**
+             * The data returned when the connection failure callback is invoked in a connection.
+             */
+            struct OnConnectionFailureData
+            {
+                /**
+                 * The AWS CRT error code for the connection failure.
+                 * Use Aws::Crt::ErrorDebugString to get a human readable string from the error code.
+                 */
+                int error;
+            };
+
+            /**
              * Invoked Upon Connection loss.
              */
             using OnConnectionInterruptedHandler = std::function<void(MqttConnection &connection, int error)>;
@@ -51,6 +88,27 @@ namespace Aws
              */
             using OnConnectionCompletedHandler = std::function<
                 void(MqttConnection &connection, int errorCode, ReturnCode returnCode, bool sessionPresent)>;
+
+            /**
+             * Invoked when a connection is disconnected successfully.
+             *
+             * Note: Currently callbackData will always be nullptr, but this may change in the future to send additional
+             * data
+             */
+            using OnConnectionClosedHandler =
+                std::function<void(MqttConnection &connection, OnConnectionClosedData *callbackData)>;
+
+            /**
+             * Invoked whenever the connection successfully connects.
+             */
+            using OnConnectionSuccessHandler =
+                std::function<void(MqttConnection &connection, OnConnectionSuccessData *callbackData)>;
+
+            /**
+             * Invoked whenever the connection fails to connect.
+             */
+            using OnConnectionFailureHandler =
+                std::function<void(MqttConnection &connection, OnConnectionFailureData *callbackData)>;
 
             /**
              * Invoked when a suback message is received.
@@ -365,6 +423,9 @@ namespace Aws
                 OnConnectionCompletedHandler OnConnectionCompleted;
                 OnDisconnectHandler OnDisconnect;
                 OnWebSocketHandshakeIntercept WebsocketInterceptor;
+                OnConnectionClosedHandler OnConnectionClosed;
+                OnConnectionSuccessHandler OnConnectionSuccess;
+                OnConnectionFailureHandler OnConnectionFailure;
 
               private:
                 aws_mqtt_client *m_owningClient;
@@ -406,6 +467,11 @@ namespace Aws
                     aws_mqtt_client_connection *,
                     ReturnCode returnCode,
                     bool sessionPresent,
+                    void *userData);
+
+                static void s_onConnectionClosed(
+                    aws_mqtt_client_connection *,
+                    on_connection_closed_data *data,
                     void *userData);
 
                 static void s_onDisconnect(aws_mqtt_client_connection *connection, void *userData);

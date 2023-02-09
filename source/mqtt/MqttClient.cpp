@@ -40,6 +40,25 @@ namespace Aws
                 {
                     connWrapper->OnConnectionResumed(*connWrapper, returnCode, sessionPresent);
                 }
+                if (connWrapper->OnConnectionSuccess)
+                {
+                    OnConnectionSuccessData callbackData = {.returnCode = returnCode, .sessionPresent = sessionPresent};
+                    connWrapper->OnConnectionSuccess(*connWrapper, &callbackData);
+                }
+            }
+
+            void MqttConnection::s_onConnectionClosed(
+                aws_mqtt_client_connection *,
+                on_connection_closed_data *data,
+                void *userData)
+            {
+                (void)data;
+
+                auto connWrapper = reinterpret_cast<MqttConnection *>(userData);
+                if (connWrapper->OnConnectionClosed)
+                {
+                    connWrapper->OnConnectionClosed(*connWrapper, nullptr);
+                }
             }
 
             void MqttConnection::s_onConnectionCompleted(
@@ -53,6 +72,24 @@ namespace Aws
                 if (connWrapper->OnConnectionCompleted)
                 {
                     connWrapper->OnConnectionCompleted(*connWrapper, errorCode, returnCode, sessionPresent);
+                }
+
+                if (errorCode == AWS_ERROR_SUCCESS)
+                {
+                    if (connWrapper->OnConnectionSuccess)
+                    {
+                        OnConnectionSuccessData callbackData = {.returnCode = returnCode,
+                                                                .sessionPresent = sessionPresent};
+                        connWrapper->OnConnectionSuccess(*connWrapper, &callbackData);
+                    }
+                }
+                else
+                {
+                    if (connWrapper->OnConnectionFailure)
+                    {
+                        OnConnectionFailureData callbackData = {.error = errorCode};
+                        connWrapper->OnConnectionFailure(*connWrapper, &callbackData);
+                    }
                 }
             }
 
@@ -234,6 +271,9 @@ namespace Aws
                         self,
                         MqttConnection::s_onConnectionResumed,
                         self);
+
+                    aws_mqtt_client_connection_set_connection_closed_handler(
+                        self->m_underlyingConnection, MqttConnection::s_onConnectionClosed, self);
                 }
             }
 
