@@ -42,7 +42,9 @@ namespace Aws
                 }
                 if (connWrapper->OnConnectionSuccess)
                 {
-                    OnConnectionSuccessData callbackData = {.returnCode = returnCode, .sessionPresent = sessionPresent};
+                    OnConnectionSuccessData callbackData;
+                    callbackData.returnCode = returnCode;
+                    callbackData.sessionPresent = sessionPresent;
                     connWrapper->OnConnectionSuccess(*connWrapper, &callbackData);
                 }
             }
@@ -78,8 +80,9 @@ namespace Aws
                 {
                     if (connWrapper->OnConnectionSuccess)
                     {
-                        OnConnectionSuccessData callbackData = {
-                            .returnCode = returnCode, .sessionPresent = sessionPresent};
+                        OnConnectionSuccessData callbackData;
+                        callbackData.returnCode = returnCode;
+                        callbackData.sessionPresent = sessionPresent;
                         connWrapper->OnConnectionSuccess(*connWrapper, &callbackData);
                     }
                 }
@@ -87,7 +90,8 @@ namespace Aws
                 {
                     if (connWrapper->OnConnectionFailure)
                     {
-                        OnConnectionFailureData callbackData = {.error = errorCode};
+                        OnConnectionFailureData callbackData;
+                        callbackData.error = errorCode;
                         connWrapper->OnConnectionFailure(*connWrapper, &callbackData);
                     }
                 }
