@@ -103,8 +103,7 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, Byt
         std::condition_variable semaphore;
         std::mutex semaphoreLock;
 
-        auto onConnectionSetup = [&](const std::shared_ptr<Http::HttpClientConnection> &newConnection, int errorCode)
-        {
+        auto onConnectionSetup = [&](const std::shared_ptr<Http::HttpClientConnection> &newConnection, int errorCode) {
             std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
             if (!errorCode)
@@ -120,8 +119,7 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, Byt
             semaphore.notify_one();
         };
 
-        auto onConnectionShutdown = [&](Http::HttpClientConnection &, int errorCode)
-        {
+        auto onConnectionShutdown = [&](Http::HttpClientConnection &, int errorCode) {
             std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
             connectionShutdown = true;
@@ -162,8 +160,7 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, Byt
         requestOptions.request = &request;
 
         bool streamCompleted = false;
-        requestOptions.onStreamComplete = [&](Http::HttpStream &, int errorCode)
-        {
+        requestOptions.onStreamComplete = [&](Http::HttpStream &, int errorCode) {
             std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
             streamCompleted = true;
@@ -176,10 +173,12 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, Byt
         };
         requestOptions.onIncomingHeadersBlockDone = nullptr;
         requestOptions.onIncomingHeaders =
-            [&](Http::HttpStream &stream, enum aws_http_header_block, const Http::HttpHeader *, std::size_t)
-        { responseCode = stream.GetResponseStatusCode(); };
-        requestOptions.onIncomingBody = [&](Http::HttpStream &, const ByteCursor &data)
-        { downloadedFile.write((const char *)data.ptr, data.len); };
+            [&](Http::HttpStream &stream, enum aws_http_header_block, const Http::HttpHeader *, std::size_t) {
+                responseCode = stream.GetResponseStatusCode();
+            };
+        requestOptions.onIncomingBody = [&](Http::HttpStream &, const ByteCursor &data) {
+            downloadedFile.write((const char *)data.ptr, data.len);
+        };
 
         request.SetMethod(ByteCursorFromCString("GET"));
         request.SetPath(uri.GetPathAndQuery());
@@ -261,8 +260,7 @@ static int s_TestHttpStreamUnActivated(struct aws_allocator *allocator, void *ct
         std::condition_variable semaphore;
         std::mutex semaphoreLock;
 
-        auto onConnectionSetup = [&](const std::shared_ptr<Http::HttpClientConnection> &newConnection, int errorCode)
-        {
+        auto onConnectionSetup = [&](const std::shared_ptr<Http::HttpClientConnection> &newConnection, int errorCode) {
             std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
             if (!errorCode)
@@ -278,8 +276,7 @@ static int s_TestHttpStreamUnActivated(struct aws_allocator *allocator, void *ct
             semaphore.notify_one();
         };
 
-        auto onConnectionShutdown = [&](Http::HttpClientConnection &, int errorCode)
-        {
+        auto onConnectionShutdown = [&](Http::HttpClientConnection &, int errorCode) {
             std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
             connectionShutdown = true;
@@ -312,18 +309,15 @@ static int s_TestHttpStreamUnActivated(struct aws_allocator *allocator, void *ct
         Http::HttpRequestOptions requestOptions;
         requestOptions.request = &request;
 
-        requestOptions.onStreamComplete = [&](Http::HttpStream &, int)
-        {
+        requestOptions.onStreamComplete = [&](Http::HttpStream &, int) {
             // do nothing.
         };
         requestOptions.onIncomingHeadersBlockDone = nullptr;
         requestOptions.onIncomingHeaders =
-            [&](Http::HttpStream &, enum aws_http_header_block, const Http::HttpHeader *, std::size_t)
-        {
-            // do nothing
-        };
-        requestOptions.onIncomingBody = [&](Http::HttpStream &, const ByteCursor &)
-        {
+            [&](Http::HttpStream &, enum aws_http_header_block, const Http::HttpHeader *, std::size_t) {
+                // do nothing
+            };
+        requestOptions.onIncomingBody = [&](Http::HttpStream &, const ByteCursor &) {
             // do nothing
         };
 

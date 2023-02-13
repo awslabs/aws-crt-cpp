@@ -21,28 +21,16 @@ namespace Aws
             namespace SignedBodyValue
             {
                 const char *EmptySha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
-                const char *EmptySha256Str()
-                {
-                    return EmptySha256;
-                }
+                const char *EmptySha256Str() { return EmptySha256; }
 
                 const char *UnsignedPayload = "UNSIGNED-PAYLOAD";
-                const char *UnsignedPayloadStr()
-                {
-                    return UnsignedPayload;
-                }
+                const char *UnsignedPayloadStr() { return UnsignedPayload; }
 
                 const char *StreamingAws4HmacSha256Payload = "STREAMING-AWS4-HMAC-SHA256-PAYLOAD";
-                const char *StreamingAws4HmacSha256PayloadStr()
-                {
-                    return StreamingAws4HmacSha256Payload;
-                }
+                const char *StreamingAws4HmacSha256PayloadStr() { return StreamingAws4HmacSha256Payload; }
 
                 const char *StreamingAws4HmacSha256Events = "STREAMING-AWS4-HMAC-SHA256-EVENTS";
-                const char *StreamingAws4HmacSha256EventsStr()
-                {
-                    return StreamingAws4HmacSha256Events;
-                }
+                const char *StreamingAws4HmacSha256EventsStr() { return StreamingAws4HmacSha256Events; }
             } // namespace SignedBodyValue
 
             AwsSigningConfig::AwsSigningConfig(Allocator *allocator)
@@ -61,10 +49,7 @@ namespace Aws
                 m_config.config_type = AWS_SIGNING_CONFIG_AWS;
             }
 
-            AwsSigningConfig::~AwsSigningConfig()
-            {
-                m_allocator = nullptr;
-            }
+            AwsSigningConfig::~AwsSigningConfig() { m_allocator = nullptr; }
 
             SigningAlgorithm AwsSigningConfig::GetSigningAlgorithm() const noexcept
             {
@@ -86,10 +71,7 @@ namespace Aws
                 m_config.signature_type = static_cast<aws_signature_type>(signatureType);
             }
 
-            const Crt::String &AwsSigningConfig::GetRegion() const noexcept
-            {
-                return m_signingRegion;
-            }
+            const Crt::String &AwsSigningConfig::GetRegion() const noexcept { return m_signingRegion; }
 
             void AwsSigningConfig::SetRegion(const Crt::String &region) noexcept
             {
@@ -97,10 +79,7 @@ namespace Aws
                 m_config.region = ByteCursorFromCString(m_signingRegion.c_str());
             }
 
-            const Crt::String &AwsSigningConfig::GetService() const noexcept
-            {
-                return m_serviceName;
-            }
+            const Crt::String &AwsSigningConfig::GetService() const noexcept { return m_serviceName; }
 
             void AwsSigningConfig::SetService(const Crt::String &service) noexcept
             {
@@ -138,10 +117,7 @@ namespace Aws
                 m_config.flags.should_normalize_uri_path = shouldNormalizeUriPath;
             }
 
-            bool AwsSigningConfig::GetOmitSessionToken() const noexcept
-            {
-                return m_config.flags.omit_session_token;
-            }
+            bool AwsSigningConfig::GetOmitSessionToken() const noexcept { return m_config.flags.omit_session_token; }
 
             void AwsSigningConfig::SetOmitSessionToken(bool omitSessionToken) noexcept
             {
@@ -168,10 +144,7 @@ namespace Aws
                 m_config.should_sign_header_ud = userData;
             }
 
-            const Crt::String &AwsSigningConfig::GetSignedBodyValue() const noexcept
-            {
-                return m_signedBodyValue;
-            }
+            const Crt::String &AwsSigningConfig::GetSignedBodyValue() const noexcept { return m_signedBodyValue; }
 
             void AwsSigningConfig::SetSignedBodyValue(const Crt::String &signedBodyValue) noexcept
             {

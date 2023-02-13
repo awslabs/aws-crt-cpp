@@ -126,10 +126,7 @@ namespace Aws
                 return aws_channel_slot_acquire_max_message_for_write(GetSlot());
             }
 
-            void ChannelHandler::ShutDownChannel(int errorCode)
-            {
-                aws_channel_shutdown(GetSlot()->channel, errorCode);
-            }
+            void ChannelHandler::ShutDownChannel(int errorCode) { aws_channel_shutdown(GetSlot()->channel, errorCode); }
 
             bool ChannelHandler::ChannelsThreadIsCallersThread() const
             {
@@ -173,10 +170,7 @@ namespace Aws
                 return aws_channel_slot_upstream_message_overhead(GetSlot());
             }
 
-            struct aws_channel_slot *ChannelHandler::GetSlot() const
-            {
-                return m_handler.slot;
-            }
+            struct aws_channel_slot *ChannelHandler::GetSlot() const { return m_handler.slot; }
 
             struct TaskWrapper
             {

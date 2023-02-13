@@ -10,9 +10,6 @@ namespace Aws
 {
     namespace Crt
     {
-        size_t HashString(const char *str) noexcept
-        {
-            return (size_t)aws_hash_c_string(str);
-        }
+        size_t HashString(const char *str) noexcept { return (size_t)aws_hash_c_string(str); }
     } // namespace Crt
 } // namespace Aws

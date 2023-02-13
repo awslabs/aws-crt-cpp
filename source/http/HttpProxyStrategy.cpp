@@ -16,10 +16,7 @@ namespace Aws
         {
             HttpProxyStrategy::HttpProxyStrategy(struct aws_http_proxy_strategy *strategy) : m_strategy(strategy) {}
 
-            HttpProxyStrategy::~HttpProxyStrategy()
-            {
-                aws_http_proxy_strategy_release(m_strategy);
-            }
+            HttpProxyStrategy::~HttpProxyStrategy() { aws_http_proxy_strategy_release(m_strategy); }
 
             HttpProxyStrategyBasicAuthConfig::HttpProxyStrategyBasicAuthConfig()
                 : ConnectionType(AwsHttpProxyConnectionType::Legacy), Username(), Password()

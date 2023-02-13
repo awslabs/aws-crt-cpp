@@ -256,8 +256,9 @@ namespace Aws
 
                 auto onInterceptComplete =
                     [complete_fn,
-                     complete_ctx](const std::shared_ptr<Http::HttpRequest> &transformedRequest, int errorCode)
-                { complete_fn(transformedRequest->GetUnderlyingMessage(), errorCode, complete_ctx); };
+                     complete_ctx](const std::shared_ptr<Http::HttpRequest> &transformedRequest, int errorCode) {
+                        complete_fn(transformedRequest->GetUnderlyingMessage(), errorCode, complete_ctx);
+                    };
 
                 connection->WebsocketInterceptor(request, onInterceptComplete);
             }
@@ -300,15 +301,9 @@ namespace Aws
                 }
             }
 
-            MqttConnection::operator bool() const noexcept
-            {
-                return m_underlyingConnection != nullptr;
-            }
+            MqttConnection::operator bool() const noexcept { return m_underlyingConnection != nullptr; }
 
-            int MqttConnection::LastError() const noexcept
-            {
-                return aws_last_error();
-            }
+            int MqttConnection::LastError() const noexcept { return aws_last_error(); }
 
             bool MqttConnection::SetWill(const char *topic, QOS qos, bool retain, const ByteBuf &payload) noexcept
             {
@@ -428,8 +423,9 @@ namespace Aws
             {
                 return SetOnMessageHandler(
                     [onPublish](
-                        MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool)
-                    { onPublish(connection, topic, payload); });
+                        MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
+                        onPublish(connection, topic, payload);
+                    });
             }
 
             bool MqttConnection::SetOnMessageHandler(OnMessageReceivedHandler &&onMessage) noexcept
@@ -466,8 +462,9 @@ namespace Aws
                     topicFilter,
                     qos,
                     [onPublish](
-                        MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool)
-                    { onPublish(connection, topic, payload); },
+                        MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
+                        onPublish(connection, topic, payload);
+                    },
                     std::move(onSubAck));
             }
 
@@ -537,8 +534,9 @@ namespace Aws
                     newTopicFilters.emplace_back(
                         pair.first,
                         [pubHandler](
-                            MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool)
-                        { pubHandler(connection, topic, payload); });
+                            MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
+                            pubHandler(connection, topic, payload);
+                        });
                 }
                 return Subscribe(newTopicFilters, qos, std::move(onSubAck));
             }
@@ -750,15 +748,9 @@ namespace Aws
                 return *this;
             }
 
-            MqttClient::operator bool() const noexcept
-            {
-                return m_client != nullptr;
-            }
+            MqttClient::operator bool() const noexcept { return m_client != nullptr; }
 
-            int MqttClient::LastError() const noexcept
-            {
-                return aws_last_error();
-            }
+            int MqttClient::LastError() const noexcept { return aws_last_error(); }
 
             std::shared_ptr<MqttConnection> MqttClient::NewConnection(
                 const char *hostName,
@@ -789,13 +781,10 @@ namespace Aws
                 }
 
                 toSeat = new (toSeat) MqttConnection(m_client, hostName, port, socketOptions, tlsContext, useWebsocket);
-                return std::shared_ptr<MqttConnection>(
-                    toSeat,
-                    [allocator](MqttConnection *connection)
-                    {
-                        connection->~MqttConnection();
-                        aws_mem_release(allocator, reinterpret_cast<void *>(connection));
-                    });
+                return std::shared_ptr<MqttConnection>(toSeat, [allocator](MqttConnection *connection) {
+                    connection->~MqttConnection();
+                    aws_mem_release(allocator, reinterpret_cast<void *>(connection));
+                });
             }
 
             std::shared_ptr<MqttConnection> MqttClient::NewConnection(
@@ -817,13 +806,10 @@ namespace Aws
                 }
 
                 toSeat = new (toSeat) MqttConnection(m_client, hostName, port, socketOptions, useWebsocket);
-                return std::shared_ptr<MqttConnection>(
-                    toSeat,
-                    [allocator](MqttConnection *connection)
-                    {
-                        connection->~MqttConnection();
-                        aws_mem_release(allocator, reinterpret_cast<void *>(connection));
-                    });
+                return std::shared_ptr<MqttConnection>(toSeat, [allocator](MqttConnection *connection) {
+                    connection->~MqttConnection();
+                    aws_mem_release(allocator, reinterpret_cast<void *>(connection));
+                });
             }
         } // namespace Mqtt
     }     // namespace Crt

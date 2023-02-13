@@ -46,8 +46,8 @@ class GetCredentialsWaiter
             m_credentials = nullptr;
         }
 
-        m_provider->GetCredentials([this](std::shared_ptr<Credentials> credentials, int error_code)
-                                   { OnCreds(credentials, error_code); });
+        m_provider->GetCredentials(
+            [this](std::shared_ptr<Credentials> credentials, int error_code) { OnCreds(credentials, error_code); });
 
         {
             std::unique_lock<std::mutex> lock(m_lock);
@@ -300,8 +300,7 @@ static int s_TestProviderDelegateGet(struct aws_allocator *allocator, void *ctx)
     {
         ApiHandle apiHandle(allocator);
 
-        auto delegateGetCredentials = [&allocator]() -> std::shared_ptr<Credentials>
-        {
+        auto delegateGetCredentials = [&allocator]() -> std::shared_ptr<Credentials> {
             Credentials credentials(
                 aws_byte_cursor_from_c_str(s_access_key_id),
                 aws_byte_cursor_from_c_str(s_secret_access_key),
@@ -337,8 +336,7 @@ static int s_TestProviderDelegateGetAnonymous(struct aws_allocator *allocator, v
     {
         ApiHandle apiHandle(allocator);
 
-        auto delegateGetCredentials = [&allocator]() -> std::shared_ptr<Credentials>
-        {
+        auto delegateGetCredentials = [&allocator]() -> std::shared_ptr<Credentials> {
             Credentials credentials(allocator);
             return Aws::Crt::MakeShared<Auth::Credentials>(allocator, credentials.GetUnderlyingHandle());
         };

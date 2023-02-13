@@ -10,10 +10,7 @@ namespace Aws
 {
     namespace Crt
     {
-        ByteBuf ByteBufFromCString(const char *str) noexcept
-        {
-            return aws_byte_buf_from_c_str(str);
-        }
+        ByteBuf ByteBufFromCString(const char *str) noexcept { return aws_byte_buf_from_c_str(str); }
 
         ByteBuf ByteBufFromEmptyArray(const uint8_t *array, size_t len) noexcept
         {
@@ -33,15 +30,9 @@ namespace Aws
             return retVal;
         }
 
-        void ByteBufDelete(ByteBuf &buf)
-        {
-            aws_byte_buf_clean_up(&buf);
-        }
+        void ByteBufDelete(ByteBuf &buf) { aws_byte_buf_clean_up(&buf); }
 
-        ByteCursor ByteCursorFromCString(const char *str) noexcept
-        {
-            return aws_byte_cursor_from_c_str(str);
-        }
+        ByteCursor ByteCursorFromCString(const char *str) noexcept { return aws_byte_cursor_from_c_str(str); }
 
         ByteCursor ByteCursorFromString(const Crt::String &str) noexcept
         {
@@ -53,10 +44,7 @@ namespace Aws
             return aws_byte_cursor_from_array((const void *)str.data(), str.length());
         }
 
-        ByteCursor ByteCursorFromByteBuf(const ByteBuf &buf) noexcept
-        {
-            return aws_byte_cursor_from_buf(&buf);
-        }
+        ByteCursor ByteCursorFromByteBuf(const ByteBuf &buf) noexcept { return aws_byte_cursor_from_buf(&buf); }
 
         ByteCursor ByteCursorFromArray(const uint8_t *array, size_t len) noexcept
         {

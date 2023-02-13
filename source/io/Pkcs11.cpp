@@ -62,10 +62,7 @@ namespace Aws
 
             Pkcs11Lib::Pkcs11Lib(aws_pkcs11_lib &impl) : impl(&impl) {}
 
-            Pkcs11Lib::~Pkcs11Lib()
-            {
-                aws_pkcs11_lib_release(impl);
-            }
+            Pkcs11Lib::~Pkcs11Lib() { aws_pkcs11_lib_release(impl); }
 
         } // namespace Io
     }     // namespace Crt
