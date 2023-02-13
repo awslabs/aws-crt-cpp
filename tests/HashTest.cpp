@@ -28,6 +28,8 @@ static int s_TestSHA256ResourceSafety(struct aws_allocator *allocator, void *)
 
         ASSERT_TRUE(sha256.Update(input));
         ASSERT_TRUE(sha256.Digest(outputBuf));
+        ASSERT_UINT_EQUALS(Aws::Crt::Crypto::SHA256_DIGEST_SIZE, sha256.DigestSize());
+
         ASSERT_FALSE(sha256);
 
         ASSERT_BIN_ARRAYS_EQUALS(expectedBuf.buffer, expectedBuf.len, outputBuf.buffer, outputBuf.len);
@@ -71,6 +73,8 @@ static int s_TestMD5ResourceSafety(struct aws_allocator *allocator, void *)
 
         ASSERT_TRUE(md5.Update(input));
         ASSERT_TRUE(md5.Digest(outputBuf));
+        ASSERT_UINT_EQUALS(Aws::Crt::Crypto::MD5_DIGEST_SIZE, md5.DigestSize());
+
         ASSERT_FALSE(md5);
 
         ASSERT_BIN_ARRAYS_EQUALS(expectedBuf.buffer, expectedBuf.len, outputBuf.buffer, outputBuf.len);
@@ -80,6 +84,36 @@ static int s_TestMD5ResourceSafety(struct aws_allocator *allocator, void *)
 }
 
 AWS_TEST_CASE(MD5ResourceSafety, s_TestMD5ResourceSafety)
+
+static int s_TestSHA1ResourceSafety(struct aws_allocator *allocator, void *)
+{
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+        Aws::Crt::Crypto::Hash sha1 = Aws::Crt::Crypto::Hash::CreateSHA1(allocator);
+        ASSERT_TRUE(sha1);
+
+        Aws::Crt::ByteCursor input = aws_byte_cursor_from_c_str("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu");
+        uint8_t expected[] =
+        {
+            0xa4, 0x9b, 0x24, 0x46, 0xa0, 0x2c, 0x64, 0x5b, 0xf4, 0x19, 0xf9, 0x95, 0xb6, 0x70, 0x91, 0x25, 0x3a,0x04, 0xa2, 0x59
+        };
+        Aws::Crt::ByteBuf expectedBuf = Aws::Crt::ByteBufFromArray(expected, sizeof(expected));
+
+        uint8_t output[Aws::Crt::Crypto::SHA1_DIGEST_SIZE] = {0};
+        Aws::Crt::ByteBuf outputBuf = Aws::Crt::ByteBufFromEmptyArray(output, sizeof(output));
+
+        ASSERT_TRUE(sha1.Update(input));
+        ASSERT_TRUE(sha1.Digest(outputBuf));
+        ASSERT_UINT_EQUALS(Aws::Crt::Crypto::SHA1_DIGEST_SIZE, sha1.DigestSize());
+        ASSERT_FALSE(sha1);
+
+        ASSERT_BIN_ARRAYS_EQUALS(expectedBuf.buffer, expectedBuf.len, outputBuf.buffer, outputBuf.len);
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(SHA1ResourceSafety, s_TestSHA1ResourceSafety)
 
 #else
 

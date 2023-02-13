@@ -110,6 +110,16 @@ namespace Aws
                 return false;
             }
 
+            size_t HMAC::DigestSize() const noexcept
+            {
+                if (*this)
+                {
+                    return m_hmac->digest_size;
+                }
+
+                return 0;
+            }
+
             aws_hmac_vtable ByoHMAC::s_Vtable = {
                 "aws-crt-cpp-byo-crypto-hmac",
                 "aws-crt-cpp-byo-crypto",

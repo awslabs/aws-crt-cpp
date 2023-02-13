@@ -88,6 +88,12 @@ namespace Aws
                  */
                 bool Digest(ByteBuf &output, size_t truncateTo = 0) noexcept;
 
+                /**
+                 * Returns the size of the digest for this hmac algorithm. If this object is not valid, it will
+                 * return 0 instead.
+                 */
+                size_t DigestSize() const noexcept;
+
               private:
                 HMAC(aws_hmac *hmac) noexcept;
                 HMAC() = delete;

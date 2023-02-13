@@ -30,6 +30,7 @@ add_test_case(JsonExplicitNull)
 add_test_case(JsonBoolTest)
 add_test_case(SHA256ResourceSafety)
 add_test_case(MD5ResourceSafety)
+add_test_case(SHA1ResourceSafety)
 add_test_case(SHA256HMACResourceSafety)
 
 if(NOT BYO_CRYPTO)
