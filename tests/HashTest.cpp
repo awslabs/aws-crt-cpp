@@ -94,7 +94,7 @@ static int s_TestSHA1ResourceSafety(struct aws_allocator *allocator, void *)
 
         Aws::Crt::ByteCursor input =
             aws_byte_cursor_from_c_str("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnop"
-                                                                "jklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu");
+                                       "jklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu");
         uint8_t expected[] = {0xa4, 0x9b, 0x24, 0x46, 0xa0, 0x2c, 0x64, 0x5b, 0xf4, 0x19,
                               0xf9, 0x95, 0xb6, 0x70, 0x91, 0x25, 0x3a,0x04, 0xa2, 0x59};
         Aws::Crt::ByteBuf expectedBuf = Aws::Crt::ByteBufFromArray(expected, sizeof(expected));
