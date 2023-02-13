@@ -24,9 +24,19 @@ namespace Aws
             {
                 auto impl = static_cast<InputStream *>(stream->impl);
 
+                // Detect whether implementation raises an error when reporting failure.
+                // Docs for C++ SeekImpl API say you "SHOULD" raise an error,
+                // but the C API does in fact require an error to be raised.
+                aws_reset_error();
+
                 if (impl->SeekImpl(offset, static_cast<StreamSeekBasis>(basis)))
                 {
                     return AWS_OP_SUCCESS;
+                }
+
+                if (aws_last_error() == 0)
+                {
+                    aws_raise_error(AWS_IO_STREAM_SEEK_FAILED);
                 }
 
                 return AWS_OP_ERR;
@@ -36,9 +46,19 @@ namespace Aws
             {
                 auto impl = static_cast<InputStream *>(stream->impl);
 
+                // Detect whether implementation raises an error when reporting failure.
+                // Docs for C++ ReadImpl API say you "SHOULD" raise an error,
+                // but the C API does in fact require an error to be raised.
+                aws_reset_error();
+
                 if (impl->ReadImpl(*dest))
                 {
                     return AWS_OP_SUCCESS;
+                }
+
+                if (aws_last_error() == 0)
+                {
+                    aws_raise_error(AWS_IO_STREAM_READ_FAILED);
                 }
 
                 return AWS_OP_ERR;
