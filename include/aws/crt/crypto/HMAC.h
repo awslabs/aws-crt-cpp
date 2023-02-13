@@ -89,6 +89,18 @@ namespace Aws
                 bool Digest(ByteBuf &output, size_t truncateTo = 0) noexcept;
 
                 /**
+                 * Computes the running HMAC and finishes the running HMAC operation and writes the digest into output.
+                 * The available capacity of output must be large enough for the digest.
+                 * See: SHA256_DIGEST_SIZE and MD5_DIGEST_SIZE for size
+                 * hints. 'truncateTo' is for if you want truncated output (e.g. you only want the first 16 bytes of a
+                 * SHA256 HMAC digest. Returns true on success. Call LastError() for the reason this call failed.
+                 *
+                 * This is an API a user would use for smaller size inputs. For larger, streaming inputs, use
+                 * multiple calls to Update() for each buffer, followed by a single call to Digest().
+                 */
+                bool ComputeOneShot(const ByteCursor &input, ByteBuf &output, size_t truncateTo = 0) noexcept;
+
+                /**
                  * Returns the size of the digest for this hmac algorithm. If this object is not valid, it will
                  * return 0 instead.
                  */

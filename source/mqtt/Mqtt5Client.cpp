@@ -232,9 +232,8 @@ namespace Aws
 
                 auto onInterceptComplete =
                     [complete_fn,
-                     complete_ctx](const std::shared_ptr<Http::HttpRequest> &transformedRequest, int errorCode) {
-                        complete_fn(transformedRequest->GetUnderlyingMessage(), errorCode, complete_ctx);
-                    };
+                     complete_ctx](const std::shared_ptr<Http::HttpRequest> &transformedRequest, int errorCode)
+                { complete_fn(transformedRequest->GetUnderlyingMessage(), errorCode, complete_ctx); };
 
                 client->websocketInterceptor(request, onInterceptComplete);
             }
@@ -393,13 +392,25 @@ namespace Aws
                     toSeat, [allocator](Mqtt5Client *client) { Crt::Delete(client, allocator); });
             }
 
-            Mqtt5Client::operator bool() const noexcept { return m_client != nullptr; }
+            Mqtt5Client::operator bool() const noexcept
+            {
+                return m_client != nullptr;
+            }
 
-            int Mqtt5Client::LastError() const noexcept { return aws_last_error(); }
+            int Mqtt5Client::LastError() const noexcept
+            {
+                return aws_last_error();
+            }
 
-            bool Mqtt5Client::Start() const noexcept { return aws_mqtt5_client_start(m_client) == AWS_OP_SUCCESS; }
+            bool Mqtt5Client::Start() const noexcept
+            {
+                return aws_mqtt5_client_start(m_client) == AWS_OP_SUCCESS;
+            }
 
-            bool Mqtt5Client::Stop() noexcept { return aws_mqtt5_client_stop(m_client, NULL, NULL) == AWS_OP_SUCCESS; }
+            bool Mqtt5Client::Stop() noexcept
+            {
+                return aws_mqtt5_client_stop(m_client, NULL, NULL) == AWS_OP_SUCCESS;
+            }
 
             bool Mqtt5Client::Stop(std::shared_ptr<DisconnectPacket> disconnectOptions) noexcept
             {

@@ -448,13 +448,13 @@ namespace Aws
             auto websocketConfig = m_websocketConfig.value();
             auto signerTransform = [websocketConfig](
                                        std::shared_ptr<Crt::Http::HttpRequest> req,
-                                       const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete) {
+                                       const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete)
+            {
                 // it is only a very happy coincidence that these function signatures match. This is the callback
                 // for signing to be complete. It invokes the callback for websocket handshake to be complete.
                 auto signingComplete =
-                    [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
-                        onComplete(req1, errorCode);
-                    };
+                    [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode)
+                { onComplete(req1, errorCode); };
 
                 auto signerConfig = websocketConfig.CreateSigningConfigCb();
 

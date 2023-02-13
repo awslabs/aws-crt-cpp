@@ -32,7 +32,10 @@ namespace Aws
                 }
             }
 
-            EventLoopGroup::~EventLoopGroup() { aws_event_loop_group_release(m_eventLoopGroup); }
+            EventLoopGroup::~EventLoopGroup()
+            {
+                aws_event_loop_group_release(m_eventLoopGroup);
+            }
 
             EventLoopGroup::EventLoopGroup(EventLoopGroup &&toMove) noexcept
                 : m_eventLoopGroup(toMove.m_eventLoopGroup), m_lastError(toMove.m_lastError)
@@ -51,9 +54,15 @@ namespace Aws
                 return *this;
             }
 
-            int EventLoopGroup::LastError() const { return m_lastError; }
+            int EventLoopGroup::LastError() const
+            {
+                return m_lastError;
+            }
 
-            EventLoopGroup::operator bool() const { return m_lastError == AWS_ERROR_SUCCESS; }
+            EventLoopGroup::operator bool() const
+            {
+                return m_lastError == AWS_ERROR_SUCCESS;
+            }
 
             aws_event_loop_group *EventLoopGroup::GetUnderlyingHandle() noexcept
             {

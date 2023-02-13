@@ -19,7 +19,13 @@ namespace Aws
                 ByteBuf &output,
                 size_t truncateTo) noexcept
             {
-                return aws_sha256_hmac_compute(allocator, &secret, &input, &output, truncateTo) == AWS_OP_SUCCESS;
+                auto hmac = HMAC::CreateSHA256HMAC(allocator, secret);
+                if (hmac)
+                {
+                    return hmac.ComputeOneShot(input, output, truncateTo);
+                }
+
+                return false;
             }
 
             bool ComputeSHA256HMAC(
@@ -28,7 +34,7 @@ namespace Aws
                 ByteBuf &output,
                 size_t truncateTo) noexcept
             {
-                return aws_sha256_hmac_compute(ApiAllocator(), &secret, &input, &output, truncateTo) == AWS_OP_SUCCESS;
+                return ComputeSHA256HMAC(ApiAllocator(), secret, input, output, truncateTo);
             }
 
             HMAC::HMAC(aws_hmac *hmac) noexcept : m_hmac(hmac), m_good(false), m_lastError(0)
@@ -105,6 +111,21 @@ namespace Aws
                         return false;
                     }
                     return true;
+                }
+
+                return false;
+            }
+
+            bool HMAC::ComputeOneShot(const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
+            {
+                if (*this)
+                {
+                    if (!Update(input))
+                    {
+                        return false;
+                    }
+
+                    return Digest(output, truncateTo);
                 }
 
                 return false;

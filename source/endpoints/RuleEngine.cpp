@@ -55,7 +55,10 @@ namespace Aws
                 return *this;
             }
 
-            ResolutionOutcome::~ResolutionOutcome() { aws_endpoints_resolved_endpoint_release(m_resolvedEndpoint); }
+            ResolutionOutcome::~ResolutionOutcome()
+            {
+                aws_endpoints_resolved_endpoint_release(m_resolvedEndpoint);
+            }
 
             bool ResolutionOutcome::IsEndpoint() const noexcept
             {
@@ -153,7 +156,10 @@ namespace Aws
                 }
             }
 
-            RuleEngine::~RuleEngine() { m_ruleEngine = aws_endpoints_rule_engine_release(m_ruleEngine); }
+            RuleEngine::~RuleEngine()
+            {
+                m_ruleEngine = aws_endpoints_rule_engine_release(m_ruleEngine);
+            }
 
             Optional<ResolutionOutcome> RuleEngine::Resolve(const RequestContext &context) const
             {

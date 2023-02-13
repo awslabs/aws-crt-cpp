@@ -477,13 +477,13 @@ namespace Aws
                 auto websocketConfig = m_websocketConfig.value();
                 auto signerTransform = [websocketConfig](
                                            std::shared_ptr<Crt::Http::HttpRequest> req,
-                                           const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete) {
+                                           const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete)
+                {
                     // it is only a very happy coincidence that these function signatures match. This is the callback
                     // for signing to be complete. It invokes the callback for websocket handshake to be complete.
                     auto signingComplete =
-                        [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
-                            onComplete(req1, errorCode);
-                        };
+                        [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode)
+                    { onComplete(req1, errorCode); };
 
                     auto signerConfig = websocketConfig.CreateSigningConfigCb();
 
@@ -512,7 +512,10 @@ namespace Aws
             AWS_ZERO_STRUCT(m_passwordStorage);
         }
 
-        Aws::Iot::Mqtt5CustomAuthConfig::~Mqtt5CustomAuthConfig() { aws_byte_buf_clean_up(&m_passwordStorage); }
+        Aws::Iot::Mqtt5CustomAuthConfig::~Mqtt5CustomAuthConfig()
+        {
+            aws_byte_buf_clean_up(&m_passwordStorage);
+        }
 
         Aws::Iot::Mqtt5CustomAuthConfig::Mqtt5CustomAuthConfig(const Mqtt5CustomAuthConfig &rhs)
         {
@@ -584,17 +587,35 @@ namespace Aws
             return *this;
         }
 
-        const Crt::Optional<Crt::String> &Mqtt5CustomAuthConfig::GetAuthorizerName() { return m_authorizerName; }
+        const Crt::Optional<Crt::String> &Mqtt5CustomAuthConfig::GetAuthorizerName()
+        {
+            return m_authorizerName;
+        }
 
-        const Crt::Optional<Crt::String> &Mqtt5CustomAuthConfig::GetUsername() { return m_username; }
+        const Crt::Optional<Crt::String> &Mqtt5CustomAuthConfig::GetUsername()
+        {
+            return m_username;
+        }
 
-        const Crt::Optional<Crt::ByteCursor> &Mqtt5CustomAuthConfig::GetPassword() { return m_password; }
+        const Crt::Optional<Crt::ByteCursor> &Mqtt5CustomAuthConfig::GetPassword()
+        {
+            return m_password;
+        }
 
-        const Crt::Optional<Crt::String> &Mqtt5CustomAuthConfig::GetTokenKeyName() { return m_tokenKeyName; }
+        const Crt::Optional<Crt::String> &Mqtt5CustomAuthConfig::GetTokenKeyName()
+        {
+            return m_tokenKeyName;
+        }
 
-        const Crt::Optional<Crt::String> &Mqtt5CustomAuthConfig::GetTokenValue() { return m_tokenValue; }
+        const Crt::Optional<Crt::String> &Mqtt5CustomAuthConfig::GetTokenValue()
+        {
+            return m_tokenValue;
+        }
 
-        const Crt::Optional<Crt::String> &Mqtt5CustomAuthConfig::GetTokenSignature() { return m_tokenSignature; }
+        const Crt::Optional<Crt::String> &Mqtt5CustomAuthConfig::GetTokenSignature()
+        {
+            return m_tokenSignature;
+        }
 
         Mqtt5CustomAuthConfig &Aws::Iot::Mqtt5CustomAuthConfig::WithAuthorizerName(Crt::String authName)
         {

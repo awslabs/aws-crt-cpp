@@ -14,7 +14,10 @@ namespace Aws
 {
     namespace Crt
     {
-        JsonObject::JsonObject() : m_wasParseSuccessful(true) { m_value = nullptr; }
+        JsonObject::JsonObject() : m_wasParseSuccessful(true)
+        {
+            m_value = nullptr;
+        }
 
         JsonObject::JsonObject(cJSON *value)
             : m_value(cJSON_Duplicate(value, 1 /* recurse */)), m_wasParseSuccessful(true)
@@ -47,9 +50,15 @@ namespace Aws
             value.m_value = nullptr;
         }
 
-        void JsonObject::Destroy() { cJSON_Delete(m_value); }
+        void JsonObject::Destroy()
+        {
+            cJSON_Delete(m_value);
+        }
 
-        JsonObject::~JsonObject() { Destroy(); }
+        JsonObject::~JsonObject()
+        {
+            Destroy();
+        }
 
         JsonObject &JsonObject::operator=(const JsonObject &other)
         {
@@ -128,7 +137,10 @@ namespace Aws
             return *this;
         }
 
-        JsonObject &JsonObject::WithBool(const String &key, bool value) { return WithBool(key.c_str(), value); }
+        JsonObject &JsonObject::WithBool(const String &key, bool value)
+        {
+            return WithBool(key.c_str(), value);
+        }
 
         JsonObject &JsonObject::AsBool(bool value)
         {
@@ -164,7 +176,10 @@ namespace Aws
             return WithDouble(key.c_str(), static_cast<double>(value));
         }
 
-        JsonObject &JsonObject::AsInt64(int64_t value) { return AsDouble(static_cast<double>(value)); }
+        JsonObject &JsonObject::AsInt64(int64_t value)
+        {
+            return AsDouble(static_cast<double>(value));
+        }
 
         JsonObject &JsonObject::WithDouble(const char *key, double value)
         {
@@ -178,7 +193,10 @@ namespace Aws
             return *this;
         }
 
-        JsonObject &JsonObject::WithDouble(const String &key, double value) { return WithDouble(key.c_str(), value); }
+        JsonObject &JsonObject::WithDouble(const String &key, double value)
+        {
+            return WithDouble(key.c_str(), value);
+        }
 
         JsonObject &JsonObject::AsDouble(double value)
         {
@@ -329,9 +347,15 @@ namespace Aws
             return cJSON_Compare(m_value, other.m_value, 1 /*case-sensitive*/) != 0;
         }
 
-        bool JsonObject::operator!=(const JsonObject &other) const { return !(*this == other); }
+        bool JsonObject::operator!=(const JsonObject &other) const
+        {
+            return !(*this == other);
+        }
 
-        JsonView JsonObject::View() const { return *this; }
+        JsonView JsonObject::View() const
+        {
+            return *this;
+        }
 
         JsonView::JsonView() : m_value(nullptr) {}
 
@@ -351,7 +375,10 @@ namespace Aws
             return *this;
         }
 
-        String JsonView::GetString(const String &key) const { return GetString(key.c_str()); }
+        String JsonView::GetString(const String &key) const
+        {
+            return GetString(key.c_str());
+        }
 
         String JsonView::GetString(const char *key) const
         {
@@ -371,7 +398,10 @@ namespace Aws
             return str;
         }
 
-        bool JsonView::GetBool(const String &key) const { return GetBool(key.c_str()); }
+        bool JsonView::GetBool(const String &key) const
+        {
+            return GetBool(key.c_str());
+        }
 
         bool JsonView::GetBool(const char *key) const
         {
@@ -387,7 +417,10 @@ namespace Aws
             return cJSON_IsTrue(m_value) != 0;
         }
 
-        int JsonView::GetInteger(const String &key) const { return GetInteger(key.c_str()); }
+        int JsonView::GetInteger(const String &key) const
+        {
+            return GetInteger(key.c_str());
+        }
 
         int JsonView::GetInteger(const char *key) const
         {
@@ -403,9 +436,15 @@ namespace Aws
             return m_value->valueint;
         }
 
-        int64_t JsonView::GetInt64(const String &key) const { return static_cast<int64_t>(GetDouble(key)); }
+        int64_t JsonView::GetInt64(const String &key) const
+        {
+            return static_cast<int64_t>(GetDouble(key));
+        }
 
-        int64_t JsonView::GetInt64(const char *key) const { return static_cast<int64_t>(GetDouble(key)); }
+        int64_t JsonView::GetInt64(const char *key) const
+        {
+            return static_cast<int64_t>(GetDouble(key));
+        }
 
         int64_t JsonView::AsInt64() const
         {
@@ -413,7 +452,10 @@ namespace Aws
             return static_cast<int64_t>(m_value->valuedouble);
         }
 
-        double JsonView::GetDouble(const String &key) const { return GetDouble(key.c_str()); }
+        double JsonView::GetDouble(const String &key) const
+        {
+            return GetDouble(key.c_str());
+        }
 
         double JsonView::GetDouble(const char *key) const
         {
@@ -429,7 +471,10 @@ namespace Aws
             return m_value->valuedouble;
         }
 
-        JsonView JsonView::GetJsonObject(const String &key) const { return GetJsonObject(key.c_str()); }
+        JsonView JsonView::GetJsonObject(const String &key) const
+        {
+            return GetJsonObject(key.c_str());
+        }
 
         JsonView JsonView::GetJsonObject(const char *key) const
         {
@@ -438,7 +483,10 @@ namespace Aws
             return item;
         }
 
-        JsonObject JsonView::GetJsonObjectCopy(const String &key) const { return GetJsonObjectCopy(key.c_str()); }
+        JsonObject JsonView::GetJsonObjectCopy(const String &key) const
+        {
+            return GetJsonObjectCopy(key.c_str());
+        }
 
         JsonObject JsonView::GetJsonObjectCopy(const char *key) const
         {
@@ -453,7 +501,10 @@ namespace Aws
             return m_value;
         }
 
-        Vector<JsonView> JsonView::GetArray(const String &key) const { return GetArray(key.c_str()); }
+        Vector<JsonView> JsonView::GetArray(const String &key) const
+        {
+            return GetArray(key.c_str());
+        }
 
         Vector<JsonView> JsonView::GetArray(const char *key) const
         {
@@ -502,7 +553,10 @@ namespace Aws
             return valueMap;
         }
 
-        bool JsonView::ValueExists(const String &key) const { return ValueExists(key.c_str()); }
+        bool JsonView::ValueExists(const String &key) const
+        {
+            return ValueExists(key.c_str());
+        }
 
         bool JsonView::ValueExists(const char *key) const
         {
@@ -515,7 +569,10 @@ namespace Aws
             return !(item == nullptr || cJSON_IsNull(item) != 0);
         }
 
-        bool JsonView::KeyExists(const String &key) const { return KeyExists(key.c_str()); }
+        bool JsonView::KeyExists(const String &key) const
+        {
+            return KeyExists(key.c_str());
+        }
 
         bool JsonView::KeyExists(const char *key) const
         {
@@ -527,11 +584,20 @@ namespace Aws
             return cJSON_GetObjectItemCaseSensitive(m_value, key) != nullptr;
         }
 
-        bool JsonView::IsObject() const { return cJSON_IsObject(m_value) != 0; }
+        bool JsonView::IsObject() const
+        {
+            return cJSON_IsObject(m_value) != 0;
+        }
 
-        bool JsonView::IsBool() const { return cJSON_IsBool(m_value) != 0; }
+        bool JsonView::IsBool() const
+        {
+            return cJSON_IsBool(m_value) != 0;
+        }
 
-        bool JsonView::IsString() const { return cJSON_IsString(m_value) != 0; }
+        bool JsonView::IsString() const
+        {
+            return cJSON_IsString(m_value) != 0;
+        }
 
         bool JsonView::IsIntegerType() const
         {
@@ -553,9 +619,15 @@ namespace Aws
             return m_value->valuedouble != static_cast<int64_t>(m_value->valuedouble);
         }
 
-        bool JsonView::IsListType() const { return cJSON_IsArray(m_value) != 0; }
+        bool JsonView::IsListType() const
+        {
+            return cJSON_IsArray(m_value) != 0;
+        }
 
-        bool JsonView::IsNull() const { return cJSON_IsNull(m_value) != 0; }
+        bool JsonView::IsNull() const
+        {
+            return cJSON_IsNull(m_value) != 0;
+        }
 
         String JsonView::WriteCompact(bool treatAsObject) const
         {
@@ -591,6 +663,9 @@ namespace Aws
             return out;
         }
 
-        JsonObject JsonView::Materialize() const { return m_value; }
+        JsonObject JsonView::Materialize() const
+        {
+            return m_value;
+        }
     } // namespace Crt
 } // namespace Aws

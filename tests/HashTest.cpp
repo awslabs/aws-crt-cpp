@@ -92,11 +92,11 @@ static int s_TestSHA1ResourceSafety(struct aws_allocator *allocator, void *)
         Aws::Crt::Crypto::Hash sha1 = Aws::Crt::Crypto::Hash::CreateSHA1(allocator);
         ASSERT_TRUE(sha1);
 
-        Aws::Crt::ByteCursor input = aws_byte_cursor_from_c_str("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu");
-        uint8_t expected[] =
-        {
-            0xa4, 0x9b, 0x24, 0x46, 0xa0, 0x2c, 0x64, 0x5b, 0xf4, 0x19, 0xf9, 0x95, 0xb6, 0x70, 0x91, 0x25, 0x3a,0x04, 0xa2, 0x59
-        };
+        Aws::Crt::ByteCursor input =
+            aws_byte_cursor_from_c_str("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnop"
+                                       "qklmnopqrlmnopqrsmnopqrstnopqrstu");
+        uint8_t expected[] = {0xa4, 0x9b, 0x24, 0x46, 0xa0, 0x2c, 0x64, 0x5b, 0xf4, 0x19,
+                              0xf9, 0x95, 0xb6, 0x70, 0x91, 0x25, 0x3a, 0x04, 0xa2, 0x59};
         Aws::Crt::ByteBuf expectedBuf = Aws::Crt::ByteBufFromArray(expected, sizeof(expected));
 
         uint8_t output[Aws::Crt::Crypto::SHA1_DIGEST_SIZE] = {0};
@@ -156,9 +156,9 @@ static int s_TestSHA256ResourceSafety(struct aws_allocator *allocator, void *)
         };
         Aws::Crt::String expectedStr = Aws::Crt::String(reinterpret_cast<const char *>(expected), sizeof(expected));
 
-        apiHandle.SetBYOCryptoNewSHA256Callback([&](size_t digestSize, Aws::Crt::Allocator *allocator) {
-            return Aws::Crt::MakeShared<ByoCryptoHashInterceptor>(allocator, digestSize, allocator, expectedStr);
-        });
+        apiHandle.SetBYOCryptoNewSHA256Callback(
+            [&](size_t digestSize, Aws::Crt::Allocator *allocator)
+            { return Aws::Crt::MakeShared<ByoCryptoHashInterceptor>(allocator, digestSize, allocator, expectedStr); });
 
         Aws::Crt::Crypto::Hash sha256 = Aws::Crt::Crypto::Hash::CreateSHA256(allocator);
         ASSERT_TRUE(sha256);
@@ -204,9 +204,9 @@ static int s_TestMD5ResourceSafety(struct aws_allocator *allocator, void *)
         };
         Aws::Crt::String expectedStr = Aws::Crt::String(reinterpret_cast<const char *>(expected), sizeof(expected));
 
-        apiHandle.SetBYOCryptoNewMD5Callback([&](size_t digestSize, struct aws_allocator *allocator) {
-            return Aws::Crt::MakeShared<ByoCryptoHashInterceptor>(allocator, digestSize, allocator, expectedStr);
-        });
+        apiHandle.SetBYOCryptoNewMD5Callback(
+            [&](size_t digestSize, struct aws_allocator *allocator)
+            { return Aws::Crt::MakeShared<ByoCryptoHashInterceptor>(allocator, digestSize, allocator, expectedStr); });
 
         Aws::Crt::Crypto::Hash md5 = Aws::Crt::Crypto::Hash::CreateMD5(allocator);
         ASSERT_TRUE(md5);

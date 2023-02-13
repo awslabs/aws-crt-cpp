@@ -91,7 +91,8 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
         {
             Vector<std::shared_ptr<Http::HttpClientConnection>> connections;
 
-            auto onConnectionAvailable = [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode) {
+            auto onConnectionAvailable = [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode)
+            {
                 {
                     std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
@@ -249,7 +250,8 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
         {
             Vector<std::shared_ptr<Http::HttpClientConnection>> connections;
 
-            auto onConnectionAvailable = [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode) {
+            auto onConnectionAvailable = [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode)
+            {
                 {
                     std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
@@ -272,9 +274,10 @@ static int s_TestHttpClientConnectionWithPendingAcquisitions(struct aws_allocato
                     ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
                 }
                 std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
-                semaphore.wait(uniqueLock, [&]() {
-                    return connections.size() + connectionsFailed == connectionManagerOptions.MaxConnections;
-                });
+                semaphore.wait(
+                    uniqueLock,
+                    [&]()
+                    { return connections.size() + connectionsFailed == connectionManagerOptions.MaxConnections; });
             }
 
             /* make sure the test was actually meaningful. */
@@ -368,7 +371,8 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
         {
             Vector<std::shared_ptr<Http::HttpClientConnection>> connections;
 
-            auto onConnectionAvailable = [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode) {
+            auto onConnectionAvailable = [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode)
+            {
                 {
                     std::lock_guard<std::mutex> lockGuard(semaphoreLock);
 
@@ -391,9 +395,9 @@ static int s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections
                     ASSERT_TRUE(connectionManager->AcquireConnection(onConnectionAvailable));
                 }
                 std::unique_lock<std::mutex> uniqueLock(semaphoreLock);
-                semaphore.wait(uniqueLock, [&]() {
-                    return connectionCount + connectionsFailed == connectionManagerOptions.MaxConnections;
-                });
+                semaphore.wait(
+                    uniqueLock,
+                    [&]() { return connectionCount + connectionsFailed == connectionManagerOptions.MaxConnections; });
             }
 
             /* make sure the test was actually meaningful. */

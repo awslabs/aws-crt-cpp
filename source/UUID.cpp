@@ -31,9 +31,15 @@ namespace Aws
             return *this;
         }
 
-        bool UUID::operator==(const UUID &other) noexcept { return aws_uuid_equals(&m_uuid, &other.m_uuid); }
+        bool UUID::operator==(const UUID &other) noexcept
+        {
+            return aws_uuid_equals(&m_uuid, &other.m_uuid);
+        }
 
-        bool UUID::operator!=(const UUID &other) noexcept { return !aws_uuid_equals(&m_uuid, &other.m_uuid); }
+        bool UUID::operator!=(const UUID &other) noexcept
+        {
+            return !aws_uuid_equals(&m_uuid, &other.m_uuid);
+        }
 
         String UUID::ToString() const
         {
@@ -45,10 +51,19 @@ namespace Aws
             return uuidStr;
         }
 
-        UUID::operator String() const { return ToString(); }
+        UUID::operator String() const
+        {
+            return ToString();
+        }
 
-        UUID::operator ByteBuf() const noexcept { return ByteBufFromArray(m_uuid.uuid_data, sizeof(m_uuid.uuid_data)); }
+        UUID::operator ByteBuf() const noexcept
+        {
+            return ByteBufFromArray(m_uuid.uuid_data, sizeof(m_uuid.uuid_data));
+        }
 
-        int UUID::GetLastError() const noexcept { return aws_last_error(); }
+        int UUID::GetLastError() const noexcept
+        {
+            return aws_last_error();
+        }
     } // namespace Crt
 } // namespace Aws

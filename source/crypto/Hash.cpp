@@ -30,7 +30,13 @@ namespace Aws
             bool ComputeSHA1(Allocator *allocator, const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
             {
                 auto hash = Hash::CreateSHA1(allocator);
-                return hash.ComputeOneShot(input, output, truncateTo);
+
+                if (hash)
+                {
+                    return hash.ComputeOneShot(input, output, truncateTo);
+                }
+
+                return false;
             }
 
             bool ComputeSHA1(const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
@@ -41,17 +47,28 @@ namespace Aws
             bool ComputeMD5(Allocator *allocator, const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
             {
                 auto hash = Hash::CreateMD5(allocator);
-                return hash.ComputeOneShot(input, output, truncateTo);
+
+                if (hash)
+                {
+                    return hash.ComputeOneShot(input, output, truncateTo);
+                }
+
+                return false;
             }
 
             bool ComputeMD5(const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
             {
                 auto hash = Hash::CreateMD5(ApiAllocator());
-                return hash.ComputeOneShot(input, output, truncateTo);
+
+                if (hash)
+                {
+                    return hash.ComputeOneShot(input, output, truncateTo);
+                }
+
+                return false;
             }
 
-            Hash::Hash(aws_hash *hash) noexcept :
-                  m_hash(hash), m_good(false), m_lastError(0)
+            Hash::Hash(aws_hash *hash) noexcept : m_hash(hash), m_good(false), m_lastError(0)
             {
                 if (hash)
                 {
@@ -88,11 +105,20 @@ namespace Aws
                 return *this;
             }
 
-            Hash Hash::CreateSHA256(Allocator *allocator) noexcept { return Hash(aws_sha256_new(allocator)); }
+            Hash Hash::CreateSHA256(Allocator *allocator) noexcept
+            {
+                return Hash(aws_sha256_new(allocator));
+            }
 
-            Hash Hash::CreateMD5(Allocator *allocator) noexcept { return Hash(aws_md5_new(allocator)); }
+            Hash Hash::CreateMD5(Allocator *allocator) noexcept
+            {
+                return Hash(aws_md5_new(allocator));
+            }
 
-            Hash Hash::CreateSHA1(Allocator *allocator) noexcept { return Hash(aws_sha1_new(allocator)); }
+            Hash Hash::CreateSHA1(Allocator *allocator) noexcept
+            {
+                return Hash(aws_sha1_new(allocator));
+            }
 
             bool Hash::Update(const ByteCursor &toHash) noexcept
             {
