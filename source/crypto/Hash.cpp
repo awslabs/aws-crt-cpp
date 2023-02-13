@@ -87,20 +87,11 @@ namespace Aws
                 return *this;
             }
 
-            Hash Hash::CreateSHA256(Allocator *allocator) noexcept
-            {
-                return Hash(aws_sha256_new(allocator));
-            }
+            Hash Hash::CreateSHA256(Allocator *allocator) noexcept { return Hash(aws_sha256_new(allocator)); }
 
-            Hash Hash::CreateMD5(Allocator *allocator) noexcept
-            {
-                return Hash(aws_md5_new(allocator));
-            }
+            Hash Hash::CreateMD5(Allocator *allocator) noexcept { return Hash(aws_md5_new(allocator)); }
 
-            Hash Hash::CreateSHA1(Allocator *allocator) noexcept
-            {
-                return Hash(aws_sha1_new(allocator));
-            }
+            Hash Hash::CreateSHA1(Allocator *allocator) noexcept { return Hash(aws_sha1_new(allocator)); }
 
             bool Hash::Update(const ByteCursor &toHash) noexcept
             {
