@@ -77,6 +77,8 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
             bool subscribed = false;
             bool published = false;
             bool received = false;
+            bool connection_success = false;
+            bool closed = false;
             auto onConnectionCompleted =
                 [&](MqttConnection &, int errorCode, ReturnCode returnCode, bool sessionPresent) {
                     printf(
@@ -108,9 +110,22 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
                 published = true;
                 cv.notify_one();
             };
+            auto onConnectionSuccess = [&](MqttConnection &, OnConnectionSuccessData *data) {
+                connection_success = true;
+                ASSERT_TRUE(data != nullptr);
+                ASSERT_TRUE(data->returnCode == 0); // AWS_MQTT_CONNECT_ACCEPTED
+                ASSERT_TRUE(data->sessionPresent == false);
+                cv.notify_one();
+            };
+            auto onConnectionClosed = [&](MqttConnection &, OnConnectionClosedData *data) {
+                closed = true;
+                cv.notify_one();
+            };
 
             mqttConnection->OnConnectionCompleted = onConnectionCompleted;
             mqttConnection->OnDisconnect = onDisconnect;
+            mqttConnection->OnConnectionSuccess = onConnectionSuccess;
+            mqttConnection->OnConnectionClosed = onConnectionClosed;
             char clientId[32];
             snprintf(clientId, sizeof(clientId), "aws-crt-cpp-v2-%d", tries);
             mqttConnection->Connect(clientId, true);
@@ -118,6 +133,12 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
             {
                 std::unique_lock<std::mutex> lock(mutex);
                 cv.wait(lock, [&]() { return connected; });
+            }
+
+            // Make sure connection success callback fired
+            {
+                std::unique_lock<std::mutex> lock(mutex);
+                cv.wait(lock, [&]() { return connection_success; });
             }
 
             mqttConnection->Subscribe("/publish/me/senpai", QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, onTest, onSubAck);
@@ -147,6 +168,12 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
                 std::unique_lock<std::mutex> lock(mutex);
                 cv.wait(lock, [&]() { return !connected; });
             }
+
+            // Make sure closed callback fired
+            {
+                std::unique_lock<std::mutex> lock(mutex);
+                cv.wait(lock, [&]() { return closed; });
+            }
             ASSERT_TRUE(mqttConnection);
         }
     }
@@ -155,6 +182,124 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
 }
 
 AWS_TEST_CASE(IotPublishSubscribe, s_TestIotPublishSubscribe)
+
+static int s_TestIotFailTest(Aws::Crt::Allocator *allocator, void *ctx)
+{
+    using namespace Aws::Crt;
+    using namespace Aws::Crt::Io;
+    using namespace Aws::Crt::Mqtt;
+
+    const char *credentialFiles[] = {TEST_CERTIFICATE, TEST_PRIVATEKEY, TEST_ROOTCA};
+
+    for (int fileIdx = 0; fileIdx < AWS_ARRAY_SIZE(credentialFiles); ++fileIdx)
+    {
+        std::ifstream file;
+        file.open(credentialFiles[fileIdx]);
+        if (!file.is_open())
+        {
+            printf("Required credential file %s is missing or unreadable, skipping test\n", credentialFiles[fileIdx]);
+            return AWS_ERROR_SUCCESS;
+        }
+    }
+
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        Aws::Crt::Io::TlsContextOptions tlsCtxOptions =
+            Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(TEST_CERTIFICATE, TEST_PRIVATEKEY);
+        tlsCtxOptions.OverrideDefaultTrustStore(nullptr, TEST_ROOTCA);
+        Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+        ASSERT_TRUE(tlsContext);
+
+        Aws::Crt::Io::SocketOptions socketOptions;
+        socketOptions.SetConnectTimeoutMs(3000);
+
+        Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+        ASSERT_TRUE(eventLoopGroup);
+
+        Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+        ASSERT_TRUE(defaultHostResolver);
+
+        Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+        ASSERT_TRUE(allocator);
+        clientBootstrap.EnableBlockingShutdown();
+
+        Aws::Crt::Mqtt::MqttClient mqttClient(clientBootstrap, allocator);
+        ASSERT_TRUE(mqttClient);
+
+        int tries = 0;
+        while (tries++ < 10)
+        {
+            // Intentially use a bad port so we fail to connect
+            auto mqttConnection = mqttClient.NewConnection(
+                "a16523t7iy5uyg-ats.iot.us-east-1.amazonaws.com", 123, socketOptions, tlsContext);
+
+            std::mutex mutex;
+            std::condition_variable cv;
+            bool connected = false;
+            bool connection_failure = false;
+            bool closed = false;
+            auto onConnectionCompleted =
+                [&](MqttConnection &, int errorCode, ReturnCode returnCode, bool sessionPresent) {
+                    printf(
+                        "%s errorCode=%d returnCode=%d sessionPresent=%d\n",
+                        (errorCode == 0) ? "CONNECTED" : "COMPLETED",
+                        errorCode,
+                        (int)returnCode,
+                        (int)sessionPresent);
+                    connected = true;
+                    cv.notify_one();
+                };
+            auto onDisconnect = [&](MqttConnection &) {
+                printf("DISCONNECTED\n");
+                connected = false;
+                cv.notify_one();
+            };
+            auto onConnectionFailure = [&](MqttConnection &, OnConnectionFailureData *data) {
+                connection_failure = true;
+                ASSERT_TRUE(data != nullptr);
+                ASSERT_TRUE(data->error != 0);
+                cv.notify_one();
+            };
+            auto onConnectionClosed = [&](MqttConnection &, OnConnectionClosedData *data) {
+                closed = true;
+                cv.notify_one();
+            };
+
+            mqttConnection->OnConnectionCompleted = onConnectionCompleted;
+            mqttConnection->OnDisconnect = onDisconnect;
+            mqttConnection->OnConnectionFailure = onConnectionFailure;
+            mqttConnection->OnConnectionClosed = onConnectionClosed;
+            char clientId[32];
+            snprintf(clientId, sizeof(clientId), "aws-crt-cpp-v2-%d", tries);
+            mqttConnection->Connect(clientId, true);
+
+            // Make sure the connection failure callback fired
+            {
+                std::unique_lock<std::mutex> lock(mutex);
+                cv.wait(lock, [&]() { return connection_failure; });
+            }
+
+            mqttConnection->Disconnect();
+            {
+                std::unique_lock<std::mutex> lock(mutex);
+                cv.wait(lock, [&]() { return !connected; });
+            }
+
+            // Make sure closed callback fired
+            {
+                std::unique_lock<std::mutex> lock(mutex);
+                cv.wait(lock, [&]() { return closed; });
+            }
+            ASSERT_TRUE(mqttConnection);
+        }
+    }
+
+    return AWS_ERROR_SUCCESS;
+}
+
+AWS_TEST_CASE(IotFailTest, s_TestIotFailTest)
 
 static int s_TestIotStatisticsPublishWaitStatisticsDisconnect(Aws::Crt::Allocator *allocator, void *ctx)
 {
