@@ -22,12 +22,7 @@ namespace Aws
                 auto hmac = HMAC::CreateSHA256HMAC(allocator, secret);
                 if (hmac)
                 {
-                    if (!hmac.Update(input))
-                    {
-                        return false;
-                    }
-
-                    return hmac.Digest(output, truncateTo);
+                    return hmac.ComputeOneShot(input, output, truncateTo);
                 }
 
                 return false;
