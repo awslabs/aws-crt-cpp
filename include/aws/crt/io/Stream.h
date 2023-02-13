@@ -105,9 +105,12 @@ namespace Aws
                  * Read up-to buffer::capacity - buffer::len into buffer::buffer
                  * Increment buffer::len by the amount you read in.
                  *
-                 * @return true on success, false otherwise. Return false, when there is nothing left to read.
-                 * You SHOULD raise an error via aws_raise_error()
-                 * if an actual failure condition occurs.
+                 * @return true if nothing went wrong.
+                 * Return true even if you read 0 bytes because the end-of-file has been reached.
+                 * Return true even if you read 0 bytes because data is not currently available.
+                 *
+                 * Return false if an actual failure condition occurs,
+                 * you SHOULD also raise an error via aws_raise_error().
                  */
                 virtual bool ReadImpl(ByteBuf &buffer) noexcept = 0;
 
