@@ -90,7 +90,7 @@ namespace Aws
                 void(MqttConnection &connection, int errorCode, ReturnCode returnCode, bool sessionPresent)>;
 
             /**
-             * Invoked when a connection is disconnected successfully.
+             * Invoked when a connection is disconnected and shutdown successfully.
              *
              * Note: Currently callbackData will always be nullptr, but this may change in the future to send additional
              * data
@@ -100,12 +100,16 @@ namespace Aws
 
             /**
              * Invoked whenever the connection successfully connects.
+             *
+             * This callback is invoked for every successful connect and every successful reconnect.
              */
             using OnConnectionSuccessHandler =
                 std::function<void(MqttConnection &connection, OnConnectionSuccessData *callbackData)>;
 
             /**
              * Invoked whenever the connection fails to connect.
+             *
+             * This callback is invoked for every failed connect and every failed reconnect.
              */
             using OnConnectionFailureHandler =
                 std::function<void(MqttConnection &connection, OnConnectionFailureData *callbackData)>;
