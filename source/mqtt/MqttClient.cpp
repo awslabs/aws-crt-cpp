@@ -61,9 +61,6 @@ namespace Aws
                 {
                     connWrapper->OnConnectionClosed(*connWrapper, nullptr);
                 }
-
-                // Release the reference that was obtained in the disconnect call
-                aws_mqtt_client_release(connWrapper->m_owningClient);
             }
 
             void MqttConnection::s_onConnectionCompleted(
@@ -107,7 +104,6 @@ namespace Aws
                 {
                     connWrapper->OnDisconnect(*connWrapper);
                 }
-                // Note: Because closed is always called after disconnect, we do not call aws_mqtt_client_release here.
             }
 
             struct PubCallbackData
@@ -339,6 +335,9 @@ namespace Aws
             {
                 if (*this)
                 {
+                    // Get rid of the on_closed callback, because if we are destroying the connection we do not care.
+                    aws_mqtt_client_connection_set_connection_closed_handler(m_underlyingConnection, nullptr, nullptr);
+
                     aws_mqtt_client_connection_release(m_underlyingConnection);
 
                     if (m_onAnyCbData)
@@ -458,17 +457,8 @@ namespace Aws
 
             bool MqttConnection::Disconnect() noexcept
             {
-                // Acquire a new reference to keep it alive for the duration of the disconnect
-                aws_mqtt_client_acquire(m_owningClient);
-                int result = aws_mqtt_client_connection_disconnect(
-                                 m_underlyingConnection, MqttConnection::s_onDisconnect, this) == AWS_OP_SUCCESS;
-
-                if (result != AWS_OP_SUCCESS)
-                {
-                    // If there was an error, free the reference
-                    aws_mqtt_client_release(m_owningClient);
-                }
-                return result;
+                return aws_mqtt_client_connection_disconnect(
+                           m_underlyingConnection, MqttConnection::s_onDisconnect, this) == AWS_OP_SUCCESS;
             }
 
             aws_mqtt_client_connection *MqttConnection::GetUnderlyingConnection() noexcept
