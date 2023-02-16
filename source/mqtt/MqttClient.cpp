@@ -61,6 +61,9 @@ namespace Aws
                 {
                     connWrapper->OnConnectionClosed(*connWrapper, nullptr);
                 }
+
+                // Release the reference that was obtained in the disconnect call
+                aws_mqtt_client_release(connWrapper->m_owningClient);
             }
 
             void MqttConnection::s_onConnectionCompleted(
@@ -104,6 +107,7 @@ namespace Aws
                 {
                     connWrapper->OnDisconnect(*connWrapper);
                 }
+                // Note: Because closed is always called after disconnect, we do not call aws_mqtt_client_release here.
             }
 
             struct PubCallbackData
@@ -454,8 +458,17 @@ namespace Aws
 
             bool MqttConnection::Disconnect() noexcept
             {
-                return aws_mqtt_client_connection_disconnect(
-                           m_underlyingConnection, MqttConnection::s_onDisconnect, this) == AWS_OP_SUCCESS;
+                // Acquire a new reference to keep it alive for the duration of the disconnect
+                aws_mqtt_client_acquire(m_owningClient);
+                int result = aws_mqtt_client_connection_disconnect(
+                                 m_underlyingConnection, MqttConnection::s_onDisconnect, this) == AWS_OP_SUCCESS;
+
+                if (result != AWS_OP_SUCCESS)
+                {
+                    // If there was an error, free the reference
+                    aws_mqtt_client_release(m_owningClient);
+                }
+                return result;
             }
 
             aws_mqtt_client_connection *MqttConnection::GetUnderlyingConnection() noexcept
