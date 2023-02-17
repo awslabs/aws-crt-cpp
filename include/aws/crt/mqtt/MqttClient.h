@@ -93,7 +93,7 @@ namespace Aws
              * Invoked when a connection is disconnected and shutdown successfully.
              *
              * Note: Currently callbackData will always be nullptr, but this may change in the future to send additional
-             * data
+             * data.
              */
             using OnConnectionClosedHandler =
                 std::function<void(MqttConnection &connection, OnConnectionClosedData *callbackData)>;
