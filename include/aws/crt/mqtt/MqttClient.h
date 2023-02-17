@@ -37,7 +37,7 @@ namespace Aws
 
             /**
              * The data returned when the connection closed callback is invoked in a connection.
-             * Note: This class is currently empty, but this may contain additional data in the future.
+             * Note: This class is currently empty, but this may contain data in the future.
              */
             struct OnConnectionClosedData
             {
