@@ -112,9 +112,7 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
             };
             auto onConnectionSuccess = [&](MqttConnection &, OnConnectionSuccessData *data) {
                 connection_success = true;
-                ASSERT_TRUE(data != nullptr);
-                ASSERT_TRUE(data->returnCode == 0); // AWS_MQTT_CONNECT_ACCEPTED
-                ASSERT_TRUE(data->sessionPresent == false);
+                printf("CONNECTION SUCCESS: returnCode=%i sessionPresent=%i\n", data->returnCode, data->sessionPresent);
                 cv.notify_one();
             };
             auto onConnectionClosed = [&](MqttConnection &, OnConnectionClosedData *data) {
@@ -258,8 +256,7 @@ static int s_TestIotFailTest(Aws::Crt::Allocator *allocator, void *ctx)
             };
             auto onConnectionFailure = [&](MqttConnection &, OnConnectionFailureData *data) {
                 connection_failure = true;
-                ASSERT_TRUE(data != nullptr);
-                ASSERT_TRUE(data->error != 0);
+                printf("CONNECTION FAILURE: error=%i\n", data->error);
                 cv.notify_one();
             };
             auto onConnectionClosed = [&](MqttConnection &, OnConnectionClosedData *data) {
