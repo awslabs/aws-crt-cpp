@@ -117,6 +117,7 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
             };
             auto onConnectionClosed = [&](MqttConnection &, OnConnectionClosedData *data) {
                 closed = true;
+                printf("CLOSED");
                 cv.notify_one();
             };
 
@@ -133,7 +134,7 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
                 cv.wait(lock, [&]() { return connected; });
             }
 
-            // Make sure connection success callback fired
+            // Make sure the connection success callback fired
             {
                 std::unique_lock<std::mutex> lock(mutex);
                 cv.wait(lock, [&]() { return connection_success; });
@@ -155,7 +156,7 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
                 cv.wait(lock, [&]() { return published; });
             }
 
-            // wait for message received callback
+            // wait for the message received callback
             {
                 std::unique_lock<std::mutex> lock(mutex);
                 cv.wait(lock, [&]() { return received; });
@@ -167,7 +168,7 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
                 cv.wait(lock, [&]() { return !connected; });
             }
 
-            // Make sure closed callback fired
+            // Make sure the closed callback fired
             {
                 std::unique_lock<std::mutex> lock(mutex);
                 cv.wait(lock, [&]() { return closed; });
@@ -261,6 +262,7 @@ static int s_TestIotFailTest(Aws::Crt::Allocator *allocator, void *ctx)
             };
             auto onConnectionClosed = [&](MqttConnection &, OnConnectionClosedData *data) {
                 closed = true;
+                printf("CLOSED");
                 cv.notify_one();
             };
 
@@ -284,7 +286,7 @@ static int s_TestIotFailTest(Aws::Crt::Allocator *allocator, void *ctx)
                 cv.wait(lock, [&]() { return !connected; });
             }
 
-            // Make sure closed callback fired
+            // Make sure the closed callback fired
             {
                 std::unique_lock<std::mutex> lock(mutex);
                 cv.wait(lock, [&]() { return closed; });
