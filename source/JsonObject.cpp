@@ -14,7 +14,7 @@ namespace Aws
 {
     namespace Crt
     {
-        JsonObject::JsonObject() : m_wasParseSuccessful(true) { m_value = nullptr; }
+        JsonObject::JsonObject() : m_wasParseSuccessful(true) { m_value = aws_json_value_new_object(ApiAllocator()); }
 
         JsonObject::JsonObject(aws_json_value *value)
             : m_value(aws_json_value_duplicate(value)), m_wasParseSuccessful(true)
