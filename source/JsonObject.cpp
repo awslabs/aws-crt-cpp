@@ -284,6 +284,7 @@ namespace Aws
 
         JsonObject &JsonObject::AsNull()
         {
+            Destroy();
             m_value = aws_json_value_new_null(ApiAllocator());
             return *this;
         }
