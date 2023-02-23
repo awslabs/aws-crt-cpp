@@ -12,6 +12,8 @@
 
 #include <utility>
 
+#define AWS_MQTT_MAX_TOPIC_LENGTH 65535
+
 namespace Aws
 {
     namespace Crt
@@ -660,7 +662,7 @@ namespace Aws
                     return 0;
                 }
 
-                size_t topicLen = strlen(topic) + 1;
+                size_t topicLen = strnlen(topic, AWS_MQTT_MAX_TOPIC_LENGTH) + 1;
                 char *topicCpy =
                     reinterpret_cast<char *>(aws_mem_calloc(m_owningClient->allocator, topicLen, sizeof(char)));
 
@@ -694,6 +696,22 @@ namespace Aws
                 }
 
                 return packetId;
+            }
+
+            const MqttConnectionOperationStatistics &MqttConnection::GetOperationStatistics() noexcept
+            {
+                aws_mqtt_connection_operation_statistics m_operationStatisticsNative = {0, 0, 0, 0};
+                if (m_underlyingConnection != nullptr)
+                {
+                    aws_mqtt_client_connection_get_stats(m_underlyingConnection, &m_operationStatisticsNative);
+                    m_operationStatistics.incompleteOperationCount =
+                        m_operationStatisticsNative.incomplete_operation_count;
+                    m_operationStatistics.incompleteOperationSize =
+                        m_operationStatisticsNative.incomplete_operation_size;
+                    m_operationStatistics.unackedOperationCount = m_operationStatisticsNative.unacked_operation_count;
+                    m_operationStatistics.unackedOperationSize = m_operationStatisticsNative.unacked_operation_size;
+                }
+                return m_operationStatistics;
             }
 
             MqttClient::MqttClient(Io::ClientBootstrap &bootstrap, Allocator *allocator) noexcept

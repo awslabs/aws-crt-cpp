@@ -179,6 +179,12 @@ namespace Aws
                 void SetMinimumTlsVersion(aws_tls_versions minimumTlsVersion);
 
                 /**
+                 * Sets the preferred TLS Cipher List
+                 * @param cipher_pref: The preferred TLS cipher list.
+                 */
+                void SetTlsCipherPreference(aws_tls_cipher_pref cipher_pref);
+
+                /**
                  * Overrides the default system trust store.
                  * @param caPath: Path to directory containing trusted certificates, which will overrides the
                  * default trust store. Only useful on Unix style systems where all anchors are stored in a directory
