@@ -289,3 +289,153 @@ static int s_Sigv4SigningTestUnsignedPayload(struct aws_allocator *allocator, vo
 }
 
 AWS_TEST_CASE(Sigv4SigningTestUnsignedPayload, s_Sigv4SigningTestUnsignedPayload)
+
+/* Sigv4a Tests */
+
+static int s_Sigv4aSigningTestSimple(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+        ASSERT_TRUE(eventLoopGroup);
+
+        Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+        ASSERT_TRUE(defaultHostResolver);
+
+        Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+        ASSERT_TRUE(clientBootstrap);
+        clientBootstrap.EnableBlockingShutdown();
+
+        Aws::Crt::Io::TlsContextOptions tlsOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient(allocator);
+        Aws::Crt::Io::TlsContext tlsContext(tlsOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+
+        CredentialsProviderChainDefaultConfig config;
+        config.Bootstrap = &clientBootstrap;
+        config.TlsContext = &tlsContext;
+
+        auto provider = s_MakeAsyncStaticProvider(allocator, clientBootstrap);
+
+        auto signer = Aws::Crt::MakeShared<Sigv4HttpRequestSigner>(allocator, allocator);
+
+        auto request = s_MakeDummyRequest(allocator);
+
+        AwsSigningConfig signingConfig(allocator);
+        signingConfig.SetSigningTimepoint(Aws::Crt::DateTime());
+        signingConfig.SetRegion("test");
+        signingConfig.SetService("service");
+        signingConfig.SetSigningAlgorithm(SigningAlgorithm::SigV4A);
+        signingConfig.SetCredentialsProvider(provider);
+
+        SignWaiter waiter;
+
+        signer->SignRequest(
+            request, signingConfig, [&](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request, int errorCode) {
+                waiter.OnSigningComplete(request, errorCode);
+            });
+        waiter.Wait();
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(Sigv4aSigningTestSimple, s_Sigv4aSigningTestSimple)
+
+static int s_Sigv4aSigningTestCredentials(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+        ASSERT_TRUE(eventLoopGroup);
+
+        Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+        ASSERT_TRUE(defaultHostResolver);
+
+        Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+        ASSERT_TRUE(clientBootstrap);
+        clientBootstrap.EnableBlockingShutdown();
+
+        Aws::Crt::Io::TlsContextOptions tlsOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient(allocator);
+        Aws::Crt::Io::TlsContext tlsContext(tlsOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+
+        CredentialsProviderChainDefaultConfig config;
+        config.Bootstrap = &clientBootstrap;
+        config.TlsContext = &tlsContext;
+
+        auto signer = Aws::Crt::MakeShared<Sigv4HttpRequestSigner>(allocator, allocator);
+
+        auto request = s_MakeDummyRequest(allocator);
+
+        AwsSigningConfig signingConfig(allocator);
+        signingConfig.SetSigningTimepoint(Aws::Crt::DateTime());
+        signingConfig.SetRegion("test");
+        signingConfig.SetService("service");
+        signingConfig.SetSigningAlgorithm(SigningAlgorithm::SigV4A);
+        signingConfig.SetCredentials(s_MakeDummyCredentials(allocator));
+
+        SignWaiter waiter;
+
+        signer->SignRequest(
+            request, signingConfig, [&](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request, int errorCode) {
+                waiter.OnSigningComplete(request, errorCode);
+            });
+        waiter.Wait();
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(Sigv4aSigningTestCredentials, s_Sigv4aSigningTestCredentials)
+
+static int s_Sigv4aSigningTestUnsignedPayload(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+        ASSERT_TRUE(eventLoopGroup);
+
+        Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+        ASSERT_TRUE(defaultHostResolver);
+
+        Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+        ASSERT_TRUE(clientBootstrap);
+        clientBootstrap.EnableBlockingShutdown();
+
+        Aws::Crt::Io::TlsContextOptions tlsOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient(allocator);
+        Aws::Crt::Io::TlsContext tlsContext(tlsOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+
+        CredentialsProviderChainDefaultConfig config;
+        config.Bootstrap = &clientBootstrap;
+        config.TlsContext = &tlsContext;
+
+        auto signer = Aws::Crt::MakeShared<Sigv4HttpRequestSigner>(allocator, allocator);
+
+        auto request = s_MakeDummyRequest(allocator);
+
+        AwsSigningConfig signingConfig(allocator);
+        signingConfig.SetSigningTimepoint(Aws::Crt::DateTime());
+        signingConfig.SetRegion("test");
+        signingConfig.SetService("service");
+        signingConfig.SetSigningAlgorithm(SigningAlgorithm::SigV4A);
+        signingConfig.SetCredentials(s_MakeDummyCredentials(allocator));
+        signingConfig.SetSignedBodyValue(Aws::Crt::Auth::SignedBodyValue::UnsignedPayloadStr());
+        signingConfig.SetSignedBodyHeader(Aws::Crt::Auth::SignedBodyHeaderType::XAmzContentSha256);
+
+        SignWaiter waiter;
+
+        signer->SignRequest(
+            request, signingConfig, [&](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request, int errorCode) {
+                waiter.OnSigningComplete(request, errorCode);
+            });
+        waiter.Wait();
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(Sigv4aSigningTestUnsignedPayload, s_Sigv4aSigningTestUnsignedPayload)
