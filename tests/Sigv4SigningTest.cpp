@@ -182,10 +182,11 @@ static int s_Sigv4SigningTestSimple(struct aws_allocator *allocator, void *ctx)
 
         SignWaiter waiter;
 
-        signer->SignRequest(
+        ASSERT_TRUE(signer->SignRequest(
             request, signingConfig, [&](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request, int errorCode) {
+                ASSERT_SUCCESS(errorCode);
                 waiter.OnSigningComplete(request, errorCode);
-            });
+            }));
         waiter.Wait();
     }
 
@@ -229,10 +230,11 @@ static int s_Sigv4SigningTestCredentials(struct aws_allocator *allocator, void *
 
         SignWaiter waiter;
 
-        signer->SignRequest(
+        ASSERT_TRUE(signer->SignRequest(
             request, signingConfig, [&](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request, int errorCode) {
+                ASSERT_SUCCESS(errorCode);
                 waiter.OnSigningComplete(request, errorCode);
-            });
+            }));
         waiter.Wait();
     }
 
@@ -278,10 +280,11 @@ static int s_Sigv4SigningTestUnsignedPayload(struct aws_allocator *allocator, vo
 
         SignWaiter waiter;
 
-        signer->SignRequest(
+        ASSERT_TRUE(signer->SignRequest(
             request, signingConfig, [&](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request, int errorCode) {
+                ASSERT_SUCCESS(errorCode);
                 waiter.OnSigningComplete(request, errorCode);
-            });
+            }));
         waiter.Wait();
     }
 
@@ -330,10 +333,11 @@ static int s_Sigv4aSigningTestSimple(struct aws_allocator *allocator, void *ctx)
 
         SignWaiter waiter;
 
-        signer->SignRequest(
+        ASSERT_TRUE(signer->SignRequest(
             request, signingConfig, [&](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request, int errorCode) {
+                ASSERT_SUCCESS(errorCode);
                 waiter.OnSigningComplete(request, errorCode);
-            });
+            }));
         waiter.Wait();
     }
 
@@ -378,10 +382,11 @@ static int s_Sigv4aSigningTestCredentials(struct aws_allocator *allocator, void 
 
         SignWaiter waiter;
 
-        signer->SignRequest(
+        ASSERT_TRUE(signer->SignRequest(
             request, signingConfig, [&](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request, int errorCode) {
+                ASSERT_SUCCESS(errorCode);
                 waiter.OnSigningComplete(request, errorCode);
-            });
+            }));
         waiter.Wait();
     }
 
@@ -428,10 +433,11 @@ static int s_Sigv4aSigningTestUnsignedPayload(struct aws_allocator *allocator, v
 
         SignWaiter waiter;
 
-        signer->SignRequest(
+        ASSERT_TRUE(signer->SignRequest(
             request, signingConfig, [&](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request, int errorCode) {
+                ASSERT_SUCCESS(errorCode);
                 waiter.OnSigningComplete(request, errorCode);
-            });
+            }));
         waiter.Wait();
     }
 
