@@ -19,6 +19,7 @@ if(NOT BYO_CRYPTO)
     add_net_test_case(MqttClientNewConnectionUninitializedTlsContext)
     add_net_test_case(TLSContextResourceSafety)
     add_net_test_case(TLSContextUninitializedNewConnectionOptions)
+    add_test_case(Sigv4aSigningTestCredentials)
 endif()
 
 add_test_case(Base64RoundTrip)
