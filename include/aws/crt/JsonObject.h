@@ -210,8 +210,15 @@ namespace Aws
              */
             JsonObject &WithNewKeyValue(const char *key, aws_json_value *valueToOwn);
 
-            aws_json_value *NewArray(const Vector<JsonObject> &objectsToCopy);
-            aws_json_value *NewArray(Vector<JsonObject> &&objectsToMove);
+            /**
+             * Return new aws_json_value, an array containing duplicates of everything in objectsToCopy.
+             */
+            static aws_json_value *NewArray(const Vector<JsonObject> &objectsToCopy);
+
+            /**
+             * Return new aws_json_value, an array which has taken ownership of everything in objectsToMove
+             */
+            static aws_json_value *NewArray(Vector<JsonObject> &&objectsToMove);
 
             aws_json_value *m_value;
 
