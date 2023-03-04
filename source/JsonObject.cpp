@@ -14,50 +14,27 @@ namespace Aws
 {
     namespace Crt
     {
-        JsonObject::JsonObject() : m_wasParseSuccessful(true) { m_value = aws_json_value_new_object(ApiAllocator()); }
+        JsonObject::JsonObject() { m_value = nullptr; }
 
-        JsonObject::JsonObject(aws_json_value *value)
-            : m_value(aws_json_value_duplicate(value)), m_wasParseSuccessful(true)
+        JsonObject::JsonObject(const aws_json_value *valueToCopy)
         {
-            m_value = aws_json_value_duplicate(value);
-            if (m_value == nullptr)
-            {
-                m_wasParseSuccessful = false;
-                m_errorMessage = "Failed to duplicate passed JSON";
-            }
+            m_value = valueToCopy ? aws_json_value_duplicate(valueToCopy) : nullptr;
         }
 
-        JsonObject::JsonObject(const String &value) : m_wasParseSuccessful(true)
+        JsonObject::JsonObject(const String &stringToParse)
         {
-            m_value = aws_json_value_new_from_string(ApiAllocator(), ByteCursorFromString(value));
-            if (m_value == nullptr)
-            {
-                m_wasParseSuccessful = false;
-                m_errorMessage = "Failed to parse JSON: " + value;
-            }
+            m_value = aws_json_value_new_from_string(ApiAllocator(), ByteCursorFromString(stringToParse));
         }
 
-        JsonObject::JsonObject(const JsonObject &value)
-            : m_wasParseSuccessful(value.m_wasParseSuccessful), m_errorMessage(value.m_errorMessage)
+        JsonObject::JsonObject(const JsonObject &other) : JsonObject(other.m_value) {}
+
+        JsonObject::JsonObject(JsonObject &&other) noexcept
         {
-            m_value = aws_json_value_duplicate(value.m_value);
-            if (m_value == nullptr)
-            {
-                m_wasParseSuccessful = false;
-                m_errorMessage = "Failed to duplicate passed JSON";
-            }
+            m_value = other.m_value;
+            other.m_value = nullptr;
         }
 
-        JsonObject::JsonObject(JsonObject &&value) noexcept
-            : m_value(value.m_value), m_wasParseSuccessful(value.m_wasParseSuccessful),
-              m_errorMessage(std::move(value.m_errorMessage))
-        {
-            value.m_value = nullptr;
-        }
-
-        void JsonObject::Destroy() { aws_json_value_destroy(m_value); }
-
-        JsonObject::~JsonObject() { Destroy(); }
+        JsonObject::~JsonObject() { aws_json_value_destroy(m_value); }
 
         JsonObject &JsonObject::operator=(const JsonObject &other)
         {
@@ -66,10 +43,8 @@ namespace Aws
                 return *this;
             }
 
-            Destroy();
-            m_value = aws_json_value_duplicate(other.m_value);
-            m_wasParseSuccessful = other.m_wasParseSuccessful;
-            m_errorMessage = other.m_errorMessage;
+            this->~JsonObject();
+            new (this) JsonObject(other);
             return *this;
         }
 
@@ -80,38 +55,38 @@ namespace Aws
                 return *this;
             }
 
-            using std::swap;
-            swap(m_value, other.m_value);
-            swap(m_errorMessage, other.m_errorMessage);
-            m_wasParseSuccessful = other.m_wasParseSuccessful;
+            this->~JsonObject();
+            new (this) JsonObject(std::move(other));
             return *this;
         }
 
-        static void AddOrReplace(aws_json_value *root, const char *key, aws_json_value *value)
+        JsonObject &JsonObject::AsNewValue(aws_json_value *valueToOwn)
         {
+            this->~JsonObject();
+            m_value = valueToOwn;
+            return *this;
+        }
+
+        JsonObject &JsonObject::WithNewKeyValue(const char *key, aws_json_value *valueToOwn)
+        {
+            // Convert to JSON object if necessary
+            if (m_value == nullptr || !aws_json_value_is_object(m_value))
+            {
+                AsNewValue(aws_json_value_new_object(ApiAllocator()));
+            }
+
             struct aws_byte_cursor key_cursor = aws_byte_cursor_from_c_str(key);
-            const auto existing = aws_json_value_get_from_object(root, key_cursor);
-            if (existing != nullptr)
-            {
-                aws_json_value_remove_from_object(root, key_cursor);
-                aws_json_value_add_to_object(root, key_cursor, value);
-            }
-            else
-            {
-                aws_json_value_add_to_object(root, key_cursor, value);
-            }
+
+            // Remove any existing item at key
+            aws_json_value_remove_from_object(m_value, key_cursor);
+
+            aws_json_value_add_to_object(m_value, key_cursor, valueToOwn);
+            return *this;
         }
 
         JsonObject &JsonObject::WithString(const char *key, const String &value)
         {
-            if (m_value == nullptr)
-            {
-                m_value = aws_json_value_new_object(ApiAllocator());
-            }
-
-            const auto val = aws_json_value_new_string(ApiAllocator(), ByteCursorFromString(value));
-            AddOrReplace(m_value, key, val);
-            return *this;
+            return WithNewKeyValue(key, aws_json_value_new_string(ApiAllocator(), ByteCursorFromString(value)));
         }
 
         JsonObject &JsonObject::WithString(const String &key, const String &value)
@@ -121,30 +96,19 @@ namespace Aws
 
         JsonObject &JsonObject::AsString(const String &value)
         {
-            Destroy();
-            m_value = aws_json_value_new_string(ApiAllocator(), ByteCursorFromString(value));
-            return *this;
+            return AsNewValue(aws_json_value_new_string(ApiAllocator(), ByteCursorFromString(value)));
         }
 
         JsonObject &JsonObject::WithBool(const char *key, bool value)
         {
-            if (m_value == nullptr)
-            {
-                m_value = aws_json_value_new_object(ApiAllocator());
-            }
-
-            const auto val = aws_json_value_new_boolean(ApiAllocator(), value);
-            AddOrReplace(m_value, key, val);
-            return *this;
+            return WithNewKeyValue(key, aws_json_value_new_boolean(ApiAllocator(), value));
         }
 
         JsonObject &JsonObject::WithBool(const String &key, bool value) { return WithBool(key.c_str(), value); }
 
         JsonObject &JsonObject::AsBool(bool value)
         {
-            Destroy();
-            m_value = aws_json_value_new_boolean(ApiAllocator(), value);
-            return *this;
+            return AsNewValue(aws_json_value_new_boolean(ApiAllocator(), value));
         }
 
         JsonObject &JsonObject::WithInteger(const char *key, int value)
@@ -159,9 +123,7 @@ namespace Aws
 
         JsonObject &JsonObject::AsInteger(int value)
         {
-            Destroy();
-            m_value = aws_json_value_new_number(ApiAllocator(), static_cast<double>(value));
-            return *this;
+            return AsNewValue(aws_json_value_new_number(ApiAllocator(), static_cast<double>(value)));
         }
 
         JsonObject &JsonObject::WithInt64(const char *key, int64_t value)
@@ -178,32 +140,18 @@ namespace Aws
 
         JsonObject &JsonObject::WithDouble(const char *key, double value)
         {
-            if (m_value == nullptr)
-            {
-                m_value = aws_json_value_new_object(ApiAllocator());
-            }
-
-            const auto val = aws_json_value_new_number(ApiAllocator(), value);
-            AddOrReplace(m_value, key, val);
-            return *this;
+            return WithNewKeyValue(key, aws_json_value_new_number(ApiAllocator(), value));
         }
 
         JsonObject &JsonObject::WithDouble(const String &key, double value) { return WithDouble(key.c_str(), value); }
 
         JsonObject &JsonObject::AsDouble(double value)
         {
-            Destroy();
-            m_value = aws_json_value_new_number(ApiAllocator(), value);
-            return *this;
+            return AsNewValue(aws_json_value_new_number(ApiAllocator(), value));
         }
 
         JsonObject &JsonObject::WithArray(const char *key, const Vector<String> &array)
         {
-            if (m_value == nullptr)
-            {
-                m_value = aws_json_value_new_object(ApiAllocator());
-            }
-
             auto arrayValue = aws_json_value_new_array(ApiAllocator());
             for (const auto &i : array)
             {
@@ -211,8 +159,7 @@ namespace Aws
                     arrayValue, aws_json_value_new_string(ApiAllocator(), ByteCursorFromString(i)));
             }
 
-            AddOrReplace(m_value, key, arrayValue);
-            return *this;
+            return WithNewKeyValue(key, arrayValue);
         }
 
         JsonObject &JsonObject::WithArray(const String &key, const Vector<String> &array)
@@ -220,86 +167,56 @@ namespace Aws
             return WithArray(key.c_str(), array);
         }
 
+        aws_json_value *JsonObject::NewArray(const Vector<JsonObject> &objectsToCopy)
+        {
+            aws_json_value *newArray = aws_json_value_new_array(ApiAllocator());
+            for (const auto &i : objectsToCopy)
+            {
+                /* old version of this code would silently ignore invalid items, so continue doing the same */
+                if (i.m_value != nullptr)
+                {
+                    aws_json_value_add_array_element(newArray, aws_json_value_duplicate(i.m_value));
+                }
+            }
+            return newArray;
+        }
+
+        aws_json_value *JsonObject::NewArray(Vector<JsonObject> &&objectsToMove)
+        {
+            aws_json_value *newArray = aws_json_value_new_array(ApiAllocator());
+            for (auto &i : objectsToMove)
+            {
+                /* old version of this code would silently ignore invalid items, so continue doing the same */
+                if (i.m_value != nullptr)
+                {
+                    aws_json_value_add_array_element(newArray, aws_json_value_duplicate(i.m_value));
+                    i.m_value = nullptr;
+                }
+            }
+            return newArray;
+        }
+
         JsonObject &JsonObject::WithArray(const String &key, const Vector<JsonObject> &array)
         {
-            if (m_value == nullptr)
-            {
-                m_value = aws_json_value_new_object(ApiAllocator());
-            }
-
-            auto arrayValue = aws_json_value_new_array(ApiAllocator());
-            for (const auto &i : array)
-            {
-                aws_json_value_add_array_element(arrayValue, aws_json_value_duplicate(i.m_value));
-            }
-
-            AddOrReplace(m_value, key.c_str(), arrayValue);
-            return *this;
+            return WithNewKeyValue(key.c_str(), NewArray(array));
         }
 
         JsonObject &JsonObject::WithArray(const String &key, Vector<JsonObject> &&array)
         {
-            if (m_value == nullptr)
-            {
-                m_value = aws_json_value_new_object(ApiAllocator());
-            }
-
-            auto arrayValue = aws_json_value_new_array(ApiAllocator());
-            for (auto &i : array)
-            {
-                aws_json_value_add_array_element(arrayValue, i.m_value);
-                i.m_value = nullptr;
-            }
-
-            AddOrReplace(m_value, key.c_str(), arrayValue);
-            return *this;
+            return WithNewKeyValue(key.c_str(), NewArray(std::move(array)));
         }
 
-        JsonObject &JsonObject::AsArray(const Vector<JsonObject> &array)
-        {
-            auto arrayValue = aws_json_value_new_array(ApiAllocator());
-            for (const auto &i : array)
-            {
-                aws_json_value_add_array_element(arrayValue, aws_json_value_duplicate(i.m_value));
-            }
+        JsonObject &JsonObject::AsArray(const Vector<JsonObject> &array) { return AsNewValue(NewArray(array)); }
 
-            Destroy();
-            m_value = arrayValue;
-            return *this;
-        }
+        JsonObject &JsonObject::AsArray(Vector<JsonObject> &&array) { return AsNewValue(NewArray(std::move(array))); }
 
-        JsonObject &JsonObject::AsArray(Vector<JsonObject> &&array)
-        {
-            auto arrayValue = aws_json_value_new_array(ApiAllocator());
-            for (auto &i : array)
-            {
-                aws_json_value_add_array_element(arrayValue, i.m_value);
-                i.m_value = nullptr;
-            }
-
-            Destroy();
-            m_value = arrayValue;
-            return *this;
-        }
-
-        JsonObject &JsonObject::AsNull()
-        {
-            Destroy();
-            m_value = aws_json_value_new_null(ApiAllocator());
-            return *this;
-        }
+        JsonObject &JsonObject::AsNull() { return AsNewValue(aws_json_value_new_null(ApiAllocator())); }
 
         JsonObject &JsonObject::WithObject(const char *key, const JsonObject &value)
         {
-            if (m_value == nullptr)
-            {
-                m_value = aws_json_value_new_object(ApiAllocator());
-            }
-
             const auto copy = value.m_value == nullptr ? aws_json_value_new_object(ApiAllocator())
                                                        : aws_json_value_duplicate(value.m_value);
-            AddOrReplace(m_value, key, copy);
-            return *this;
+            return WithNewKeyValue(key, copy);
         }
 
         JsonObject &JsonObject::WithObject(const String &key, const JsonObject &value)
@@ -309,15 +226,9 @@ namespace Aws
 
         JsonObject &JsonObject::WithObject(const char *key, JsonObject &&value)
         {
-            if (m_value == nullptr)
-            {
-                m_value = aws_json_value_new_object(ApiAllocator());
-            }
-
-            AddOrReplace(
-                m_value, key, value.m_value == nullptr ? aws_json_value_new_object(ApiAllocator()) : value.m_value);
+            auto valueToOwn = value.m_value == nullptr ? aws_json_value_new_object(ApiAllocator()) : value.m_value;
             value.m_value = nullptr;
-            return *this;
+            return WithNewKeyValue(key, valueToOwn);
         }
 
         JsonObject &JsonObject::WithObject(const String &key, JsonObject &&value)
@@ -339,10 +250,22 @@ namespace Aws
 
         bool JsonObject::operator==(const JsonObject &other) const
         {
-            return aws_json_value_compare(m_value, other.m_value, true) != 0;
+            if (m_value != nullptr && other.m_value != nullptr)
+            {
+                return aws_json_value_compare(m_value, other.m_value, true);
+            }
+            return false;
         }
 
         bool JsonObject::operator!=(const JsonObject &other) const { return !(*this == other); }
+
+        const String &JsonObject::GetErrorMessage() const
+        {
+            // This function is deprecated. The failure string is always the same.
+            // This function signature returns the string by reference, so just have 1 static instance of it.
+            static String errorMessage = "Failed to parse JSON";
+            return errorMessage;
+        }
 
         JsonView JsonObject::View() const { return *this; }
 
@@ -350,7 +273,7 @@ namespace Aws
 
         JsonView::JsonView(const JsonObject &val) : m_value(val.m_value) {}
 
-        JsonView::JsonView(aws_json_value *val) : m_value(val) {}
+        JsonView::JsonView(const aws_json_value *val) : m_value(val) {}
 
         JsonView &JsonView::operator=(const JsonObject &v)
         {
@@ -358,50 +281,37 @@ namespace Aws
             return *this;
         }
 
-        JsonView &JsonView::operator=(aws_json_value *val)
-        {
-            m_value = val;
-            return *this;
-        }
-
         String JsonView::GetString(const String &key) const { return GetString(key.c_str()); }
 
         String JsonView::GetString(const char *key) const
         {
-            AWS_ASSERT(m_value);
-            auto item = aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key));
-            struct aws_byte_cursor output_cursor;
-            if (aws_json_value_get_string(item, &output_cursor) != AWS_OP_SUCCESS)
+            if (m_value != nullptr)
             {
-                AWS_LOGF_ERROR(AWS_LS_COMMON_JSON_PARSER, "Error: Could not get string from JSON with key %s", key);
-                return "";
+                aws_json_value *item = aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key));
+                if (item != nullptr)
+                {
+                    struct aws_byte_cursor cursor;
+                    if (aws_json_value_get_string(item, &cursor) == AWS_OP_SUCCESS)
+                    {
+                        return String((const char *)cursor.ptr, cursor.len);
+                    }
+                }
             }
 
-            if (output_cursor.len > 0 && output_cursor.ptr != NULL)
-            {
-                aws_string *str = aws_string_new_from_cursor(ApiAllocator(), &output_cursor);
-                String ret_val(aws_string_c_str(str));
-                aws_string_destroy_secure(str);
-                return ret_val;
-            }
             return "";
         }
 
         String JsonView::AsString() const
         {
-            struct aws_byte_cursor output_cursor;
-            if (aws_json_value_get_string(m_value, &output_cursor) != AWS_OP_SUCCESS)
+            if (m_value != nullptr)
             {
-                AWS_LOGF_ERROR(AWS_LS_COMMON_JSON_PARSER, "Error: Could not get string from JSON");
-                return "";
+                struct aws_byte_cursor cursor;
+                if (aws_json_value_get_string(m_value, &cursor) == AWS_OP_SUCCESS)
+                {
+                    return String((const char *)cursor.ptr, cursor.len);
+                }
             }
-            if (output_cursor.len > 0 && output_cursor.ptr != NULL)
-            {
-                aws_string *str = aws_string_new_from_cursor(ApiAllocator(), &output_cursor);
-                String ret_val(aws_string_c_str(str));
-                aws_string_destroy_secure(str);
-                return ret_val;
-            }
+
             return "";
         }
 
@@ -409,138 +319,136 @@ namespace Aws
 
         bool JsonView::GetBool(const char *key) const
         {
-            AWS_ASSERT(m_value);
-            auto item = aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key));
-            AWS_ASSERT(item);
-            bool output = false;
-            if (aws_json_value_get_boolean(item, &output) != AWS_OP_SUCCESS)
+            if (m_value != nullptr)
             {
-                AWS_LOGF_ERROR(AWS_LS_COMMON_JSON_PARSER, "Error: Could not get boolean from JSON with key %s", key);
-                return false;
+                aws_json_value *item = aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key));
+                if (item != nullptr)
+                {
+                    bool boolean = false;
+                    if (aws_json_value_get_boolean(item, &boolean) != AWS_OP_SUCCESS)
+                    {
+                        return boolean;
+                    }
+                }
             }
-            return output;
+
+            return false;
         }
 
         bool JsonView::AsBool() const
         {
-            AWS_ASSERT(aws_json_value_is_boolean(m_value));
-            bool output = false;
-            if (aws_json_value_get_boolean(m_value, &output) != AWS_OP_SUCCESS)
+            if (m_value != nullptr)
             {
-                AWS_LOGF_ERROR(AWS_LS_COMMON_JSON_PARSER, "Error: Could not get boolean from JSON");
-                return false;
+                bool boolean = false;
+                if (aws_json_value_get_boolean(m_value, &boolean) != AWS_OP_SUCCESS)
+                {
+                    return boolean;
+                }
             }
-            return output;
+
+            return false;
         }
 
-        int JsonView::GetInteger(const String &key) const { return GetInteger(key.c_str()); }
+        int JsonView::GetInteger(const String &key) const { return static_cast<int>(GetDouble(key)); }
 
-        int JsonView::GetInteger(const char *key) const
-        {
-            AWS_ASSERT(m_value);
-            auto item = aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key));
-            AWS_ASSERT(item);
-            double output = 0;
-            if (aws_json_value_get_number(item, &output) != AWS_OP_SUCCESS)
-            {
-                AWS_LOGF_ERROR(AWS_LS_COMMON_JSON_PARSER, "Error: Could not get integer from JSON with key %s", key);
-                return 0;
-            }
-            return static_cast<int>(output);
-        }
+        int JsonView::GetInteger(const char *key) const { return static_cast<int>(GetDouble(key)); }
 
-        int JsonView::AsInteger() const
-        {
-            AWS_ASSERT(aws_json_value_is_number(m_value));
-            double output = 0;
-            if (aws_json_value_get_number(m_value, &output) != AWS_OP_SUCCESS)
-            {
-                AWS_LOGF_ERROR(AWS_LS_COMMON_JSON_PARSER, "Error: Could not get integer from JSON");
-                return 0;
-            };
-            return static_cast<int>(output);
-        }
+        int JsonView::AsInteger() const { return static_cast<int>(AsDouble()); }
 
         int64_t JsonView::GetInt64(const String &key) const { return static_cast<int64_t>(GetDouble(key)); }
 
         int64_t JsonView::GetInt64(const char *key) const { return static_cast<int64_t>(GetDouble(key)); }
 
-        int64_t JsonView::AsInt64() const
-        {
-            AWS_ASSERT(aws_json_value_is_number(m_value));
-            double output = 0;
-            if (aws_json_value_get_number(m_value, &output) != AWS_OP_SUCCESS)
-            {
-                AWS_LOGF_ERROR(AWS_LS_COMMON_JSON_PARSER, "Error: Could not get int64 from JSON");
-                return 0;
-            }
-            return static_cast<int64_t>(output);
-        }
+        int64_t JsonView::AsInt64() const { return static_cast<int64_t>(AsDouble()); }
 
         double JsonView::GetDouble(const String &key) const { return GetDouble(key.c_str()); }
 
         double JsonView::GetDouble(const char *key) const
         {
-            AWS_ASSERT(m_value);
-            auto item = aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key));
-            AWS_ASSERT(item);
-            double output = 0;
-            if (aws_json_value_get_number(item, &output) != AWS_OP_SUCCESS)
+            if (m_value != nullptr)
             {
-                AWS_LOGF_ERROR(AWS_LS_COMMON_JSON_PARSER, "Error: Could not get double from JSON with key %s", key);
-                return 0;
+                aws_json_value *item = aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key));
+                if (item != nullptr)
+                {
+                    double number;
+                    if (aws_json_value_get_number(item, &number) == AWS_OP_SUCCESS)
+                    {
+                        return number;
+                    }
+                }
             }
-            return output;
+
+            return 0.0;
         }
 
         double JsonView::AsDouble() const
         {
-            AWS_ASSERT(aws_json_value_is_number(m_value));
-            double output = 0;
-            if (aws_json_value_get_number(m_value, &output) != AWS_OP_SUCCESS)
+            if (m_value != nullptr)
             {
-                AWS_LOGF_ERROR(AWS_LS_COMMON_JSON_PARSER, "Error: Could not get double from JSON");
-                return 0;
+                double number;
+                if (aws_json_value_get_number(m_value, &number) == AWS_OP_SUCCESS)
+                {
+                    return number;
+                }
             }
-            return output;
+
+            return 0.0;
         }
 
         JsonView JsonView::GetJsonObject(const String &key) const { return GetJsonObject(key.c_str()); }
 
         JsonView JsonView::GetJsonObject(const char *key) const
         {
-            AWS_ASSERT(m_value);
-            auto item = aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key));
-            return item;
+            if (m_value != nullptr)
+            {
+                return aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key));
+            }
+
+            return nullptr;
         }
 
         JsonObject JsonView::GetJsonObjectCopy(const String &key) const { return GetJsonObjectCopy(key.c_str()); }
 
         JsonObject JsonView::GetJsonObjectCopy(const char *key) const
         {
-            AWS_ASSERT(m_value);
-            /* force a deep copy */
-            return JsonObject(aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key)));
+            if (m_value != nullptr)
+            {
+                aws_json_value *item = aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key));
+                if (item != nullptr)
+                {
+                    /* force a deep copy */
+                    return JsonObject(item);
+                }
+            }
+
+            return nullptr;
         }
 
         JsonView JsonView::AsObject() const
         {
-            AWS_ASSERT(aws_json_value_is_object(m_value));
-            return m_value;
+            if (m_value != nullptr)
+            {
+                if (aws_json_value_is_object(m_value))
+                {
+                    return m_value;
+                }
+            }
+
+            return nullptr;
         }
 
         Vector<JsonView> JsonView::GetArray(const String &key) const { return GetArray(key.c_str()); }
 
         Vector<JsonView> JsonView::GetArray(const char *key) const
         {
-            AWS_ASSERT(m_value);
-            auto array = aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key));
-            AWS_ASSERT(aws_json_value_is_array(array));
-            Vector<JsonView> returnArray(static_cast<size_t>(aws_json_get_array_size(array)));
-
-            for (size_t i = 0; i < returnArray.size(); i++)
+            Vector<JsonView> returnArray;
+            if (m_value != nullptr)
             {
-                returnArray[i] = aws_json_get_array_element(array, i);
+                aws_json_value *item = aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key));
+                if (item != nullptr)
+                {
+                    return JsonView(item).AsArray();
+                }
             }
 
             return returnArray;
@@ -548,14 +456,19 @@ namespace Aws
 
         Vector<JsonView> JsonView::AsArray() const
         {
-            AWS_ASSERT(aws_json_value_is_array(m_value));
-            Vector<JsonView> returnArray(static_cast<size_t>(aws_json_get_array_size(m_value)));
-
-            auto element = aws_json_get_array_element(m_value, 0);
-            for (size_t i = 0; element != nullptr && i < returnArray.size(); i++)
+            Vector<JsonView> returnArray;
+            if (m_value != nullptr)
             {
-                element = aws_json_get_array_element(m_value, i);
-                returnArray[i] = element;
+                aws_json_const_iterate_array(
+                    m_value,
+                    [](size_t index, const aws_json_value *value, bool *out_should_continue, void *user_data) {
+                        (void)index;
+                        (void)out_should_continue;
+                        auto returnArray = static_cast<Vector<JsonView> *>(user_data);
+                        returnArray->emplace_back(JsonView(const_cast<aws_json_value *>(value)));
+                        return AWS_OP_SUCCESS;
+                    },
+                    &returnArray);
             }
 
             return returnArray;
@@ -564,24 +477,21 @@ namespace Aws
         Map<String, JsonView> JsonView::GetAllObjects() const
         {
             Map<String, JsonView> valueMap;
-            if (m_value == nullptr)
+            if (m_value != nullptr)
             {
-                return valueMap;
-            }
-
-            size_t array_size = aws_json_get_array_size(m_value);
-            auto element = aws_json_get_array_element(m_value, 0);
-            for (size_t i = 0; element != nullptr && i < array_size; i++)
-            {
-                element = aws_json_get_array_element(m_value, i);
-                aws_byte_cursor element_cursor;
-                aws_json_value_get_string(m_value, &element_cursor);
-
-                aws_string *aws_element_str = aws_string_new_from_cursor(ApiAllocator(), &element_cursor);
-                String element_str(aws_string_c_str(aws_element_str));
-                aws_string_destroy_secure(aws_element_str);
-
-                valueMap.emplace(std::make_pair(element_str, JsonView(element)));
+                aws_json_const_iterate_object(
+                    m_value,
+                    [](const aws_byte_cursor *key,
+                       const aws_json_value *value,
+                       bool *out_should_continue,
+                       void *user_data) {
+                        (void)out_should_continue;
+                        auto valueMap = static_cast<Map<String, JsonView> *>(user_data);
+                        valueMap->emplace(
+                            String((const char *)key->ptr, key->len), JsonView(const_cast<aws_json_value *>(value)));
+                        return AWS_OP_SUCCESS;
+                    },
+                    &valueMap);
             }
 
             return valueMap;
@@ -591,60 +501,71 @@ namespace Aws
 
         bool JsonView::ValueExists(const char *key) const
         {
-            if (aws_json_value_is_object(m_value) == 0)
+            if (m_value != nullptr)
             {
-                return false;
+                aws_json_value *item = aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key));
+                if (item != nullptr)
+                {
+                    return !aws_json_value_is_null(item);
+                }
             }
 
-            auto item = aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key));
-            return !(item == nullptr || aws_json_value_is_null(item) != 0);
+            return false;
         }
 
         bool JsonView::KeyExists(const String &key) const { return KeyExists(key.c_str()); }
 
         bool JsonView::KeyExists(const char *key) const
         {
-            if (aws_json_value_is_object(m_value) == 0)
+            if (m_value != nullptr)
             {
-                return false;
+                return aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key)) != nullptr;
             }
 
-            return aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key)) != nullptr;
+            return false;
         }
 
-        bool JsonView::IsObject() const { return aws_json_value_is_object(m_value) != 0; }
+        bool JsonView::IsObject() const { return m_value != nullptr && aws_json_value_is_object(m_value); }
 
-        bool JsonView::IsBool() const { return aws_json_value_is_boolean(m_value) != 0; }
+        bool JsonView::IsBool() const { return m_value != nullptr && aws_json_value_is_boolean(m_value); }
 
-        bool JsonView::IsString() const { return aws_json_value_is_string(m_value) != 0; }
+        bool JsonView::IsString() const { return m_value != nullptr && aws_json_value_is_string(m_value); }
+
+        bool JsonView::IsNumber() const { return m_value != nullptr && aws_json_value_is_number(m_value); }
 
         bool JsonView::IsIntegerType() const
         {
-            if (aws_json_value_is_number(m_value) == 0)
+            if (m_value)
             {
-                return false;
+                double value_double;
+                if (aws_json_value_get_number(m_value, &value_double) == AWS_OP_SUCCESS)
+                {
+                    return value_double == static_cast<int64_t>(value_double);
+                }
             }
-            double value_double = 0;
-            aws_json_value_get_number(m_value, &value_double);
-            return value_double == static_cast<int64_t>(value_double);
+
+            return false;
         }
 
         bool JsonView::IsFloatingPointType() const
         {
-            if (aws_json_value_is_number(m_value) == 0)
+            if (m_value)
             {
-                return false;
+                double value_double;
+                if (aws_json_value_get_number(m_value, &value_double) == AWS_OP_SUCCESS)
+                {
+                    return value_double != static_cast<int64_t>(value_double);
+                }
             }
-            double value_double = 0;
-            aws_json_value_get_number(m_value, &value_double);
-            return value_double != static_cast<int64_t>(value_double);
+
+            return false;
         }
 
-        bool JsonView::IsListType() const { return aws_json_value_is_array(m_value) != 0; }
+        bool JsonView::IsListType() const { return m_value != nullptr && aws_json_value_is_array(m_value); }
 
-        bool JsonView::IsNull() const { return aws_json_value_is_null(m_value) != 0; }
+        bool JsonView::IsNull() const { return m_value != nullptr && aws_json_value_is_null(m_value); }
 
-        String JsonView::WriteCompact(bool treatAsObject) const
+        String JsonView::Write(bool treatAsObject, bool readable) const
         {
             if (m_value == nullptr)
             {
@@ -655,39 +576,24 @@ namespace Aws
                 return "";
             }
 
-            struct aws_byte_buf buf;
+            String resultString;
+            aws_byte_buf buf;
             aws_byte_buf_init(&buf, ApiAllocator(), 0);
-            aws_byte_buf_append_json_string(m_value, &buf);
 
-            struct aws_string *str = aws_string_new_from_buf(ApiAllocator(), &buf);
-            String out(aws_string_c_str(str));
-            aws_string_destroy_secure(str);
+            auto aws_json_write_fn =
+                readable ? aws_byte_buf_append_json_string_formatted : aws_byte_buf_append_json_string;
 
-            aws_byte_buf_clean_up(&buf);
-            return out;
-        }
-
-        String JsonView::WriteReadable(bool treatAsObject) const
-        {
-            if (m_value == nullptr)
+            if (aws_json_write_fn(m_value, &buf) == AWS_OP_SUCCESS)
             {
-                if (treatAsObject)
-                {
-                    return "{\n}\n";
-                }
-                return "";
+                resultString.assign((const char *)buf.buffer, buf.len);
             }
-            struct aws_byte_buf buf;
-            aws_byte_buf_init(&buf, ApiAllocator(), 0);
-            aws_byte_buf_append_json_string_formatted(m_value, &buf);
-
-            struct aws_string *str = aws_string_new_from_buf(ApiAllocator(), &buf);
-            String out(aws_string_c_str(str));
-            aws_string_destroy_secure(str);
-
             aws_byte_buf_clean_up(&buf);
-            return out;
+            return resultString;
         }
+
+        String JsonView::WriteCompact(bool treatAsObject) const { return Write(treatAsObject, false /*readable*/); }
+
+        String JsonView::WriteReadable(bool treatAsObject) const { return Write(treatAsObject, true /*readable*/); }
 
         JsonObject JsonView::Materialize() const { return m_value; }
     } // namespace Crt
