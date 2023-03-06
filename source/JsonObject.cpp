@@ -263,11 +263,12 @@ namespace Aws
         {
             // This function is deprecated. The failure string is always the same.
             // This function signature returns the string by reference, so just have 1 static instance of it.
-            static String errorMessage = "Failed to parse JSON";
-            return errorMessage;
+            static String failMessage = "Failed to parse JSON";
+            static String okMessage = "";
+            return m_value == nullptr ? failMessage : okMessage;
         }
 
-        JsonView JsonObject::View() const { return *this; }
+        JsonView JsonObject::View() const { return JsonView(*this); }
 
         JsonView::JsonView() : m_value(nullptr) {}
 
@@ -325,7 +326,7 @@ namespace Aws
                 if (item != nullptr)
                 {
                     bool boolean = false;
-                    if (aws_json_value_get_boolean(item, &boolean) != AWS_OP_SUCCESS)
+                    if (aws_json_value_get_boolean(item, &boolean) == AWS_OP_SUCCESS)
                     {
                         return boolean;
                     }
@@ -340,7 +341,7 @@ namespace Aws
             if (m_value != nullptr)
             {
                 bool boolean = false;
-                if (aws_json_value_get_boolean(m_value, &boolean) != AWS_OP_SUCCESS)
+                if (aws_json_value_get_boolean(m_value, &boolean) == AWS_OP_SUCCESS)
                 {
                     return boolean;
                 }
@@ -401,10 +402,16 @@ namespace Aws
         {
             if (m_value != nullptr)
             {
-                return aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key));
+                struct aws_json_value *value_at_key =
+                    aws_json_value_get_from_object(m_value, aws_byte_cursor_from_c_str(key));
+                if (value_at_key != nullptr)
+                {
+                    return JsonView(value_at_key);
+                }
             }
 
-            return nullptr;
+            // failed
+            return JsonView();
         }
 
         JsonObject JsonView::GetJsonObjectCopy(const String &key) const { return GetJsonObjectCopy(key.c_str()); }
@@ -421,7 +428,8 @@ namespace Aws
                 }
             }
 
-            return nullptr;
+            // failed
+            return JsonObject();
         }
 
         JsonView JsonView::AsObject() const
@@ -430,11 +438,12 @@ namespace Aws
             {
                 if (aws_json_value_is_object(m_value))
                 {
-                    return m_value;
+                    return JsonView(m_value);
                 }
             }
 
-            return nullptr;
+            // failed
+            return JsonView();
         }
 
         Vector<JsonView> JsonView::GetArray(const String &key) const { return GetArray(key.c_str()); }
