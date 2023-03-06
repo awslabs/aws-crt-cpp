@@ -372,6 +372,7 @@ static int s_TestMqtt5NewClientMin(Aws::Crt::Allocator *allocator, void *ctx)
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
 
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -444,6 +445,7 @@ static int s_TestMqtt5NewClientFull(Aws::Crt::Allocator *allocator, void *ctx)
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -481,6 +483,7 @@ static int s_TestMqtt5DirectConnectionMinimal(Aws::Crt::Allocator *allocator, vo
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -520,6 +523,7 @@ static int s_TestMqtt5DirectConnectionWithBasicAuth(Aws::Crt::Allocator *allocat
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -564,6 +568,7 @@ static int s_TestMqtt5DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, vo
     connectionPromise.get_future().get();
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -608,6 +613,7 @@ static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocat
     connectionPromise.get_future().get();
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -657,6 +663,7 @@ static int s_TestMqtt5DirectConnectionWithHttpProxy(Aws::Crt::Allocator *allocat
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -739,6 +746,7 @@ static int s_TestMqtt5DirectConnectionFull(Aws::Crt::Allocator *allocator, void 
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5DirectConnectionFull, s_TestMqtt5DirectConnectionFull)
@@ -797,6 +805,7 @@ static int s_TestMqtt5WSConnectionMinimal(Aws::Crt::Allocator *allocator, void *
     connectionPromise.get_future().get();
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -858,6 +867,7 @@ static int s_TestMqtt5WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, 
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -923,6 +933,7 @@ static int s_TestMqtt5WSConnectionWithTLS(Aws::Crt::Allocator *allocator, void *
     connectionPromise.get_future().get();
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -990,6 +1001,7 @@ static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, 
     connectionPromise.get_future().get();
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -1066,6 +1078,7 @@ static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, 
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -1171,6 +1184,7 @@ static int s_TestMqtt5WSConnectionFull(Aws::Crt::Allocator *allocator, void *ctx
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5WSConnectionFull, s_TestMqtt5WSConnectionFull)
@@ -1207,6 +1221,7 @@ static int s_TestMqtt5DirectInvalidHostname(Aws::Crt::Allocator *allocator, void
     ASSERT_FALSE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5InvalidHostname, s_TestMqtt5DirectInvalidHostname)
@@ -1239,6 +1254,7 @@ static int s_TestMqtt5DirectInvalidPort(Aws::Crt::Allocator *allocator, void *ct
     ASSERT_FALSE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5InvalidPort, s_TestMqtt5DirectInvalidPort)
@@ -1293,6 +1309,7 @@ static int s_TestMqtt5WSInvalidPort(Aws::Crt::Allocator *allocator, void *ctx)
     ASSERT_FALSE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5WSInvalidPort, s_TestMqtt5WSInvalidPort)
@@ -1339,6 +1356,7 @@ static int s_TestMqtt5SocketTimeout(Aws::Crt::Allocator *allocator, void *ctx)
     ASSERT_FALSE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5SocketTimeout, s_TestMqtt5SocketTimeout)
@@ -1377,6 +1395,7 @@ static int s_TestMqtt5IncorrectBasicAuth(Aws::Crt::Allocator *allocator, void *c
     ASSERT_FALSE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -1423,6 +1442,7 @@ static int s_TestMqtt5IncorrectWSConnect(Aws::Crt::Allocator *allocator, void *c
     ASSERT_FALSE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -1492,6 +1512,8 @@ static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void
     stopped2Promise.get_future().get();
     ASSERT_TRUE(mqtt5Client1->Stop());
     stopped1Promise.get_future().get();
+    mqtt5Client1->Close();
+    mqtt5Client2->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -1549,6 +1571,7 @@ static int s_TestMqtt5NegotiatedSettingsHappy(Aws::Crt::Allocator *allocator, vo
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -1610,6 +1633,7 @@ static int s_TestMqtt5NegotiatedSettingsFull(Aws::Crt::Allocator *allocator, voi
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -1669,7 +1693,7 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -1715,7 +1739,7 @@ static int s_TestMqtt5NegotiatedSettingsRejoinAlways(Aws::Crt::Allocator *alloca
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-
+    mqtt5Client->Close();
     mqtt5Options.withSessionBehavior(Aws::Crt::Mqtt5::ClientSessionBehaviorType::AWS_MQTT5_CSBT_REJOIN_ALWAYS);
 
     std::promise<bool> sessionConnectedPromise;
@@ -1738,7 +1762,7 @@ static int s_TestMqtt5NegotiatedSettingsRejoinAlways(Aws::Crt::Allocator *alloca
     ASSERT_TRUE(sessionConnectedPromise.get_future().get());
     ASSERT_TRUE(sessionMqtt5Client->Stop());
     sessionStoppedPromise.get_future().get();
-
+    sessionMqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -1818,7 +1842,7 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *ctx)
 
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-
+    mqtt5Client->Close();
     ASSERT_TRUE(receivedCount == 1);
 
     return AWS_ERROR_SUCCESS;
@@ -1900,13 +1924,14 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *ctx)
     disconnect->withReasonCode(AWS_MQTT5_DRC_DISCONNECT_WITH_WILL_MESSAGE);
     ASSERT_TRUE(publisher->Stop(disconnect));
     publisherStoppedPromise.get_future().get();
+    publisher->Close();
 
     aws_thread_current_sleep(10000ULL * 1000 * 1000);
     ASSERT_TRUE(receivedWill);
 
     ASSERT_TRUE(subscriber->Stop());
     subscriberStoppedPromise.get_future().get();
-
+    subscriber->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -1954,6 +1979,7 @@ static int s_TestMqtt5NullPublish(Aws::Crt::Allocator *allocator, void *ctx)
 
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
 
     return AWS_ERROR_SUCCESS;
 }
@@ -1997,6 +2023,7 @@ static int s_TestMqtt5NullSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
 
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
 
     return AWS_ERROR_SUCCESS;
 }
@@ -2041,6 +2068,7 @@ static int s_TestMqtt5NullUnsubscribe(Aws::Crt::Allocator *allocator, void *ctx)
 
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
+    mqtt5Client->Close();
 
     return AWS_ERROR_SUCCESS;
 }
@@ -2072,6 +2100,7 @@ static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *ct
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_FALSE(*mqtt5Client);
+    mqtt5Client->Close();
 
     return AWS_ERROR_SUCCESS;
 }
@@ -2177,6 +2206,8 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *ctx)
     subscriberStoppedPromise.get_future().get();
     ASSERT_TRUE(publisher->Stop());
     publisherStoppedPromise.get_future().get();
+    subscriber->Close();
+    publisher->Close();
 
     return AWS_ERROR_SUCCESS;
 }
@@ -2291,6 +2322,9 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *ct
     stopped3Promise.get_future().get();
     ASSERT_TRUE(mqtt5Client1->Stop());
     stopped1Promise.get_future().get();
+    mqtt5Client1->Close();
+    mqtt5Client2->Close();
+    mqtt5Client3->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -2331,6 +2365,7 @@ static int s_TestIoTMqtt5ConnectWithmTLS(Aws::Crt::Allocator *allocator, void *c
     stoppedPromise.get_future().get();
 
     delete builder;
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt5ConnectWithmTLS, s_TestIoTMqtt5ConnectWithmTLS)
@@ -2377,6 +2412,7 @@ static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, vo
     stoppedPromise.get_future().get();
 
     delete builder;
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -2448,6 +2484,7 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuth(Aws::Crt::Allocator *alloc
     aws_string_destroy(tokenSignature);
 
     delete builder;
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt5ConnectWithSigningCustomAuth, s_TestIoTMqtt5ConnectWithSigningCustomAuth)
@@ -2503,6 +2540,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *all
     aws_string_destroy(password);
 
     delete builder;
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt5ConnectWithNoSigningCustomAuth, s_TestIoTMqtt5ConnectWithNoSigningCustomAuth)
@@ -2561,6 +2599,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets(Aws::Crt::Allo
     aws_string_destroy(password);
 
     delete builder;
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt5ConnectWithNoSigningCustomAuthWebsockets, s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets)
@@ -2634,6 +2673,7 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Alloca
     aws_string_destroy(tokenSignature);
 
     delete builder;
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt5ConnectWithSigningCustomAuthWebsockets, s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets)
@@ -2685,6 +2725,7 @@ static int s_TestMqtt5InterruptSub(Aws::Crt::Allocator *allocator, void *ctx)
     stoppedPromise.get_future().get();
 
     delete builder;
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -2735,6 +2776,7 @@ static int s_TestMqtt5InterruptUnsub(Aws::Crt::Allocator *allocator, void *ctx)
     stoppedPromise.get_future().get();
 
     delete builder;
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -2784,6 +2826,7 @@ static int s_TestMqtt5InterruptPublishQoS1(Aws::Crt::Allocator *allocator, void 
     stoppedPromise.get_future().get();
 
     delete builder;
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 
@@ -2846,7 +2889,7 @@ static int s_TestMqtt5OperationStatisticsSimple(Aws::Crt::Allocator *allocator, 
 
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-
+    mqtt5Client->Close();
     return AWS_ERROR_SUCCESS;
 }
 

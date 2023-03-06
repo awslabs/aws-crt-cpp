@@ -369,6 +369,18 @@ namespace Aws
             {
                 if (m_client != nullptr)
                 {
+                    // Techniquely, this should never happen as the Mqtt5Client will not get released until we call
+                    // Close(), and in Close() we should have released the native client already. WARN THE USER THERE IS
+                    // SOMETHING WRONG HERE.
+                    AWS_LOGF_WARN(
+                        AWS_LS_MQTT5_CLIENT,
+                        "The Mqtt5Client::Close() function was not called before termination. This could potentially "
+                        "cause dead lock and invalid memory accesss. You MUST always call Mqtt5Client::Close() before "
+                        "release the client.");
+                    // In case developer get around the `Close()`, here, we still try to release the native client to
+                    // aovid dead lock on native client. However, this might cause unpredicted memory corruption since
+                    // the Mqtt5Client is already in destruction progress while the native client might still access it
+                    // in its operation callbacks during native client termination.
                     aws_mqtt5_client_release(m_client);
                     std::unique_lock<std::mutex> lock(m_terminationMutex);
                     m_terminationCondition.wait(lock, [this] { return m_terminationPredicate == true; });
@@ -389,8 +401,10 @@ namespace Aws
                 }
 
                 toSeat = new (toSeat) Mqtt5Client(options, allocator);
-                return std::shared_ptr<Mqtt5Client>(
+                std::shared_ptr<Mqtt5Client> shared_client = std::shared_ptr<Mqtt5Client>(
                     toSeat, [allocator](Mqtt5Client *client) { Crt::Delete(client, allocator); });
+                shared_client->m_selfReference = shared_client;
+                return shared_client;
             }
 
             Mqtt5Client::operator bool() const noexcept { return m_client != nullptr; }
@@ -403,6 +417,11 @@ namespace Aws
 
             bool Mqtt5Client::Stop(std::shared_ptr<DisconnectPacket> disconnectOptions) noexcept
             {
+                if (m_client == nullptr)
+                {
+                    return false;
+                }
+
                 if (disconnectOptions == nullptr)
                 {
                     return Stop();
@@ -421,6 +440,11 @@ namespace Aws
                 std::shared_ptr<PublishPacket> publishOptions,
                 OnPublishCompletionHandler onPublishCmpletionCallback) noexcept
             {
+                if (m_client == nullptr)
+                {
+                    return false;
+                }
+
                 if (publishOptions == nullptr)
                 {
                     return false;
@@ -453,6 +477,11 @@ namespace Aws
                 std::shared_ptr<SubscribePacket> subscribeOptions,
                 OnSubscribeCompletionHandler onSubscribeCompletionCallback) noexcept
             {
+                if (m_client == nullptr)
+                {
+                    return false;
+                }
+
                 if (subscribeOptions == nullptr)
                 {
                     return false;
@@ -488,6 +517,11 @@ namespace Aws
                 std::shared_ptr<UnsubscribePacket> unsubscribeOptions,
                 OnUnsubscribeCompletionHandler onUnsubscribeCompletionCallback) noexcept
             {
+                if (m_client == nullptr)
+                {
+                    return false;
+                }
+
                 if (unsubscribeOptions == nullptr)
                 {
                     return false;
@@ -514,6 +548,18 @@ namespace Aws
                     return false;
                 }
                 return result == AWS_OP_SUCCESS;
+            }
+
+            void Mqtt5Client::Close() noexcept
+            {
+                if (m_selfReference == nullptr || m_client == nullptr)
+                    return;
+                aws_mqtt5_client_release(m_client);
+                // Waiting for client termination
+                std::unique_lock<std::mutex> lock(m_terminationMutex);
+                m_terminationCondition.wait(lock, [this] { return m_terminationPredicate == true; });
+                m_client = nullptr;
+                m_selfReference = nullptr;
             }
 
             const Mqtt5ClientOperationStatistics &Mqtt5Client::GetOperationStatistics() noexcept

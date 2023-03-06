@@ -581,5 +581,6 @@ int main(int argc, char **argv)
     {
         std::cout << "[ERROR]Failed to start the client " << std::endl;
     }
+    mqtt5Client->Close();
     return 0;
 }
