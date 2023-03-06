@@ -395,7 +395,7 @@ namespace Aws
                 const Mqtt5ClientOptions &options,
                 Allocator *allocator) noexcept
             {
-                /* Copied from MqttClient.cpp:ln754 */
+                /* Copied from MqttClient.cpp:ln754 (MqttClient::NewConnection) */
                 // As the constructor is private, make share would not work here. We do make_share manually.
                 Mqtt5Client *toSeat = reinterpret_cast<Mqtt5Client *>(aws_mem_acquire(allocator, sizeof(Mqtt5Client)));
                 if (!toSeat)
@@ -404,6 +404,13 @@ namespace Aws
                 }
 
                 toSeat = new (toSeat) Mqtt5Client(options, allocator);
+                // Creation failed, make sure we release the allocated memoryß
+                if (!toSeat)
+                {
+                    Crt::Delete(toSeat, allocator);
+                }
+                return nullptr;
+
                 std::shared_ptr<Mqtt5Client> shared_client = std::shared_ptr<Mqtt5Client>(
                     toSeat, [allocator](Mqtt5Client *client) { Crt::Delete(client, allocator); });
                 shared_client->m_selfReference = shared_client;
