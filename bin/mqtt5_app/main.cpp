@@ -415,7 +415,7 @@ int main(int argc, char **argv)
     std::cout << "MQTT5: Start Init Client ...." << std::endl;
     auto mqtt5Client = Aws::Crt::Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5OptionsBuilder, app_ctx.allocator);
 
-    if (mqtt5Client == nullptr)
+    if (mqtt5Client)
     {
         std::cerr << "Failed to Init Mqtt5Client with error code: %d." << aws_error_debug_str(mqtt5Client->LastError())
                   << std::endl;
@@ -449,8 +449,10 @@ int main(int argc, char **argv)
         subscribe->withSubscriptions(subscriptionList);
         bool subscribeSuccess = mqtt5Client->Subscribe(
             subscribe,
-            [](std::shared_ptr<Mqtt5::Mqtt5Client>, int, std::shared_ptr<Mqtt5::SubAckPacket> packet)
+            [](Mqtt5Client &, int, std::shared_ptr<Mqtt5::SubAckPacket> packet)
             {
+                if (packet == nullptr)
+                    return;
                 std::cout << "**********************************************************" << std::endl;
                 std::cout << "MQTT5: check suback packet : " << std::endl;
                 for (auto code : packet->getReasonCodes())
