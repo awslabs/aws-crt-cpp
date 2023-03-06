@@ -404,12 +404,12 @@ namespace Aws
                 }
 
                 toSeat = new (toSeat) Mqtt5Client(options, allocator);
-                // Creation failed, make sure we release the allocated memoryß
+                // Creation failed, make sure we release the allocated memory
                 if (!toSeat)
                 {
                     Crt::Delete(toSeat, allocator);
+                    return nullptr;
                 }
-                return nullptr;
 
                 std::shared_ptr<Mqtt5Client> shared_client = std::shared_ptr<Mqtt5Client>(
                     toSeat, [allocator](Mqtt5Client *client) { Crt::Delete(client, allocator); });
