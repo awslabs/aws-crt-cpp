@@ -2099,7 +2099,6 @@ static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *ct
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_FALSE(*mqtt5Client);
-    mqtt5Client->Close();
 
     return AWS_ERROR_SUCCESS;
 }
