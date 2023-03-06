@@ -261,11 +261,7 @@ namespace Aws
 
         const String &JsonObject::GetErrorMessage() const
         {
-            // This function is deprecated. The failure string is always the same.
-            // This function signature returns the string by reference, so just have 1 static instance of it.
-            static String failMessage = "Failed to parse JSON";
-            static String okMessage = "";
-            return m_value == nullptr ? failMessage : okMessage;
+            return m_value == nullptr ? *s_errorMessage : *s_okMessage;
         }
 
         JsonView JsonObject::View() const { return JsonView(*this); }

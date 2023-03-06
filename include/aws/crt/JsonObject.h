@@ -11,6 +11,7 @@ namespace Aws
 {
     namespace Crt
     {
+
         class JsonView;
         /**
          * JSON DOM manipulation class.
@@ -222,7 +223,17 @@ namespace Aws
 
             aws_json_value *m_value;
 
+            /* Once upon a time each class instance had an m_errorMessage string member,
+             * and if parse failed the string would explain why.
+             * When we switched json implementations, there was no longer a unique string
+             * explaining why parse failed so we dropped that member from the class.
+             * To avoid breaking the GetErrorMessage() API, which returns the string by REFERENCE,
+             * we now use singletons that are created/destroyed along with library init/cleanup. */
+            static std::unique_ptr<String> s_errorMessage;
+            static std::unique_ptr<String> s_okMessage;
+
             friend class JsonView;
+            friend class ApiHandle;
         };
 
         /**

@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/Api.h>
+#include <aws/crt/JsonObject.h>
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/io/TlsOptions.h>
 
@@ -35,7 +36,11 @@ namespace Aws
         std::mutex ApiHandle::s_lock_event_loop_group;
         std::mutex ApiHandle::s_lock_default_host_resolver;
 
-        static void s_initApi(Allocator *allocator)
+        std::unique_ptr<String> JsonObject::s_errorMessage;
+        std::unique_ptr<String> JsonObject::s_okMessage;
+
+        ApiHandle::ApiHandle(Allocator *allocator) noexcept
+            : m_logger(), m_shutdownBehavior(ApiHandleShutdownBehavior::Blocking)
         {
             // sets up the StlAllocator for use.
             g_allocator = allocator;
@@ -43,18 +48,12 @@ namespace Aws
             aws_s3_library_init(allocator);
             aws_event_stream_library_init(allocator);
             aws_sdkutils_library_init(allocator);
+
+            JsonObject::s_errorMessage.reset(new String("Failed to parse JSON"));
+            JsonObject::s_okMessage.reset(new String(""));
         }
 
-        ApiHandle::ApiHandle(Allocator *allocator) noexcept
-            : m_logger(), m_shutdownBehavior(ApiHandleShutdownBehavior::Blocking)
-        {
-            s_initApi(allocator);
-        }
-
-        ApiHandle::ApiHandle() noexcept : m_logger(), m_shutdownBehavior(ApiHandleShutdownBehavior::Blocking)
-        {
-            s_initApi(DefaultAllocator());
-        }
+        ApiHandle::ApiHandle() noexcept : ApiHandle(DefaultAllocator()) {}
 
         ApiHandle::~ApiHandle()
         {
@@ -86,6 +85,9 @@ namespace Aws
             s_BYOCryptoNewTlsContextImplCallback = nullptr;
             s_BYOCryptoDeleteTlsContextImplCallback = nullptr;
             s_BYOCryptoIsTlsAlpnSupportedCallback = nullptr;
+
+            JsonObject::s_errorMessage = nullptr;
+            JsonObject::s_okMessage = nullptr;
         }
 
         void ApiHandle::InitializeLogging(Aws::Crt::LogLevel level, const char *filename)
