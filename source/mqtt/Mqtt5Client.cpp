@@ -562,13 +562,14 @@ namespace Aws
 
             void Mqtt5Client::Close() noexcept
             {
-                if (m_selfReference == nullptr || m_client == nullptr)
-                    return;
-                aws_mqtt5_client_release(m_client);
-                // Waiting for client termination
-                std::unique_lock<std::mutex> lock(m_terminationMutex);
-                m_terminationCondition.wait(lock, [this] { return m_terminationPredicate == true; });
-                m_client = nullptr;
+                if (m_client != nullptr)
+                {
+                    aws_mqtt5_client_release(m_client);
+                    // Waiting for client termination
+                    std::unique_lock<std::mutex> lock(m_terminationMutex);
+                    m_terminationCondition.wait(lock, [this] { return m_terminationPredicate == true; });
+                    m_client = nullptr;
+                }
                 m_selfReference = nullptr;
             }
 
