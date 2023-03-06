@@ -6,6 +6,8 @@
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
 
+#include <aws/common/rw_lock.h>
+
 namespace Aws
 {
     namespace Crt
@@ -251,7 +253,7 @@ namespace Aws
                  *
                  * @return bool: true if operation succeed, otherwise false.
                  */
-                bool Start() const noexcept;
+                bool Start() noexcept;
 
                 /**
                  * Notifies the MQTT5 client that you want it to transition to the stopped state, disconnecting any
@@ -400,6 +402,7 @@ namespace Aws
                 Mqtt5ClientOperationStatistics m_operationStatistics;
                 std::condition_variable m_terminationCondition;
                 std::mutex m_terminationMutex;
+                struct aws_rw_lock m_client_lock;
                 bool m_terminationPredicate = false;
                 // The self reference is used to keep the Mqtt5Client alive until the underlying
                 // m_client get terminated.

@@ -365,11 +365,15 @@ namespace Aws
                 clientOptions.client_termination_handler = &Mqtt5Client::s_clientTerminationCompletion;
                 clientOptions.client_termination_handler_user_data = this;
 
-                m_client = aws_mqtt5_client_new(allocator, &clientOptions);
+                if (aws_rw_lock_init(&m_client_lock) == AWS_OP_SUCCESS)
+                {
+                    m_client = aws_mqtt5_client_new(allocator, &clientOptions);
+                }
             }
 
             Mqtt5Client::~Mqtt5Client()
             {
+                aws_rw_lock_wlock(&m_client_lock);
                 if (m_client != nullptr)
                 {
                     // Techniquely, this should never happen as the Mqtt5Client will not get released until we call
@@ -389,6 +393,8 @@ namespace Aws
                     m_terminationCondition.wait(lock, [this] { return m_terminationPredicate == true; });
                     m_client = nullptr;
                 }
+                aws_rw_lock_wunlock(&m_client_lock);
+                aws_rw_lock_clean_up(&m_client_lock);
             }
 
             std::shared_ptr<Mqtt5Client> Mqtt5Client::NewMqtt5Client(
@@ -421,17 +427,42 @@ namespace Aws
 
             int Mqtt5Client::LastError() const noexcept { return aws_last_error(); }
 
-            bool Mqtt5Client::Start() const noexcept { return aws_mqtt5_client_start(m_client) == AWS_OP_SUCCESS; }
+            bool Mqtt5Client::Start() noexcept
+            {
+                if (aws_rw_lock_try_rlock(&m_client_lock) != AWS_ERROR_SUCCESS || m_client == nullptr)
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_MQTT5_CLIENT,
+                        "Mqtt5Client: Invalid Client or the client is in termination. Please create a new client.");
+                    return false;
+                }
+                aws_rw_lock_runlock(&m_client_lock);
+                return aws_mqtt5_client_start(m_client) == AWS_OP_SUCCESS;
+            }
 
-            bool Mqtt5Client::Stop() noexcept { return aws_mqtt5_client_stop(m_client, NULL, NULL) == AWS_OP_SUCCESS; }
+            bool Mqtt5Client::Stop() noexcept
+            {
+                if (aws_rw_lock_try_rlock(&m_client_lock) != AWS_ERROR_SUCCESS || m_client == nullptr)
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_MQTT5_CLIENT,
+                        "Mqtt5Client: Invalid Client or the client is in termination. Please create a new client.");
+                    return false;
+                }
+                aws_rw_lock_runlock(&m_client_lock);
+                return aws_mqtt5_client_stop(m_client, NULL, NULL) == AWS_OP_SUCCESS;
+            }
 
             bool Mqtt5Client::Stop(std::shared_ptr<DisconnectPacket> disconnectOptions) noexcept
             {
-                if (m_client == nullptr)
+                if (aws_rw_lock_try_rlock(&m_client_lock) != AWS_ERROR_SUCCESS || m_client == nullptr)
                 {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_MQTT5_CLIENT,
+                        "Mqtt5Client: Invalid Client or the client is in termination. Please create a new client.");
                     return false;
                 }
-
+                aws_rw_lock_runlock(&m_client_lock);
                 if (disconnectOptions == nullptr)
                 {
                     return Stop();
@@ -450,11 +481,14 @@ namespace Aws
                 std::shared_ptr<PublishPacket> publishOptions,
                 OnPublishCompletionHandler onPublishCmpletionCallback) noexcept
             {
-                if (m_client == nullptr)
+                if (aws_rw_lock_try_rlock(&m_client_lock) != AWS_ERROR_SUCCESS || m_client == nullptr)
                 {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_MQTT5_CLIENT,
+                        "Mqtt5Client: Invalid Client or the client is in termination. Please create a new client.");
                     return false;
                 }
-
+                aws_rw_lock_runlock(&m_client_lock);
                 if (publishOptions == nullptr)
                 {
                     return false;
@@ -487,11 +521,14 @@ namespace Aws
                 std::shared_ptr<SubscribePacket> subscribeOptions,
                 OnSubscribeCompletionHandler onSubscribeCompletionCallback) noexcept
             {
-                if (m_client == nullptr)
+                if (aws_rw_lock_try_rlock(&m_client_lock) != AWS_ERROR_SUCCESS || m_client == nullptr)
                 {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_MQTT5_CLIENT,
+                        "Mqtt5Client: Invalid Client or the client is in termination. Please create a new client.");
                     return false;
                 }
-
+                aws_rw_lock_runlock(&m_client_lock);
                 if (subscribeOptions == nullptr)
                 {
                     return false;
@@ -527,11 +564,14 @@ namespace Aws
                 std::shared_ptr<UnsubscribePacket> unsubscribeOptions,
                 OnUnsubscribeCompletionHandler onUnsubscribeCompletionCallback) noexcept
             {
-                if (m_client == nullptr)
+                if (aws_rw_lock_try_rlock(&m_client_lock) != AWS_ERROR_SUCCESS || m_client == nullptr)
                 {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_MQTT5_CLIENT,
+                        "Mqtt5Client: Invalid Client or the client is in termination. Please create a new client.");
                     return false;
                 }
-
+                aws_rw_lock_runlock(&m_client_lock);
                 if (unsubscribeOptions == nullptr)
                 {
                     return false;
@@ -562,6 +602,7 @@ namespace Aws
 
             void Mqtt5Client::Close() noexcept
             {
+                aws_rw_lock_wlock(&m_client_lock);
                 if (m_client != nullptr)
                 {
                     aws_mqtt5_client_release(m_client);
@@ -570,22 +611,29 @@ namespace Aws
                     m_terminationCondition.wait(lock, [this] { return m_terminationPredicate == true; });
                     m_client = nullptr;
                 }
+                aws_rw_lock_wunlock(&m_client_lock);
+
                 m_selfReference = nullptr;
             }
 
             const Mqtt5ClientOperationStatistics &Mqtt5Client::GetOperationStatistics() noexcept
             {
                 aws_mqtt5_client_operation_statistics m_operationStatisticsNative = {0, 0, 0, 0};
-                if (m_client != nullptr)
+                if (aws_rw_lock_try_rlock(&m_client_lock) != AWS_ERROR_SUCCESS || m_client == nullptr)
                 {
-                    aws_mqtt5_client_get_stats(m_client, &m_operationStatisticsNative);
-                    m_operationStatistics.incompleteOperationCount =
-                        m_operationStatisticsNative.incomplete_operation_count;
-                    m_operationStatistics.incompleteOperationSize =
-                        m_operationStatisticsNative.incomplete_operation_size;
-                    m_operationStatistics.unackedOperationCount = m_operationStatisticsNative.unacked_operation_count;
-                    m_operationStatistics.unackedOperationSize = m_operationStatisticsNative.unacked_operation_size;
+                    AWS_LOGF_WARN(
+                        AWS_LS_MQTT5_CLIENT,
+                        "Mqtt5Client: Invalid Client or the client is in termination. Return the data from the last "
+                        "access.");
+                    return m_operationStatistics;
                 }
+                aws_rw_lock_runlock(&m_client_lock);
+                aws_mqtt5_client_get_stats(m_client, &m_operationStatisticsNative);
+                m_operationStatistics.incompleteOperationCount = m_operationStatisticsNative.incomplete_operation_count;
+                m_operationStatistics.incompleteOperationSize = m_operationStatisticsNative.incomplete_operation_size;
+                m_operationStatistics.unackedOperationCount = m_operationStatisticsNative.unacked_operation_count;
+                m_operationStatistics.unackedOperationSize = m_operationStatisticsNative.unacked_operation_size;
+
                 return m_operationStatistics;
             }
 
