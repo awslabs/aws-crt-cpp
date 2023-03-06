@@ -173,14 +173,12 @@ namespace Aws
             /**
              * Type signature of the callback invoked when a Publish Complete
              */
-            using OnPublishCompletionHandler =
-                std::function<void(Mqtt5Client &, int, std::shared_ptr<PublishResult> &)>;
+            using OnPublishCompletionHandler = std::function<void(Mqtt5Client &, int, std::shared_ptr<PublishResult>)>;
 
             /**
              * Type signature of the callback invoked when a Subscribe Complete
              */
-            using OnSubscribeCompletionHandler =
-                std::function<void(Mqtt5Client &, int, std::shared_ptr<SubAckPacket> &)>;
+            using OnSubscribeCompletionHandler = std::function<void(Mqtt5Client &, int, std::shared_ptr<SubAckPacket>)>;
 
             /**
              * Type signature of the callback invoked when a Unsubscribe Complete
