@@ -44,14 +44,14 @@ namespace Aws
             Mqtt5CustomAuthConfig &operator=(const Mqtt5CustomAuthConfig &rhs);
             Mqtt5CustomAuthConfig &operator=(Mqtt5CustomAuthConfig &&rhs) = delete;
 
-            Mqtt5CustomAuthConfig &WithAuthrizaerName(Crt::String authName);
+            Mqtt5CustomAuthConfig &WithAuthorizerName(Crt::String authName);
             Mqtt5CustomAuthConfig &WithUsername(Crt::String username);
             Mqtt5CustomAuthConfig &WithPassword(Crt::ByteCursor password);
-            Mqtt5CustomAuthConfig &WithTokenKeyName(Crt::String toeknKeyName);
+            Mqtt5CustomAuthConfig &WithTokenKeyName(Crt::String tokenKeyName);
             Mqtt5CustomAuthConfig &WithTokenValue(Crt::String tokenValue);
             Mqtt5CustomAuthConfig &WithTokenSignature(Crt::String tokenSignature);
 
-            const Crt::Optional<Crt::String> &GetAuthrizaerName();
+            const Crt::Optional<Crt::String> &GetAuthorizerName();
             const Crt::Optional<Crt::String> &GetUsername();
             const Crt::Optional<Crt::ByteCursor> &GetPassword();
             const Crt::Optional<Crt::String> &GetTokenKeyName();
@@ -214,9 +214,25 @@ namespace Aws
              *
              * Mqtt5ClientBuilder
              */
-            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithCustomCustomAuthorizer(
+            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithCustomAuthorizer(
                 const Crt::String hostName,
                 const Mqtt5CustomAuthConfig &customAuthConfig,
+                Crt::Allocator *allocator) noexcept;
+
+            /**
+             * Sets the builder up for connection using authorization configuration using Websockets.
+             *
+             * @param hostName - AWS IoT endpoint to connect to
+             * @param customAuthConfig custom authorization configuration information
+             * @param config websocket configuration information
+             * @param allocator memory allocator to use
+             *
+             * Mqtt5ClientBuilder
+             */
+            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
+                const Crt::String hostName,
+                const Mqtt5CustomAuthConfig &customAuthConfig,
+                const WebsocketConfig &config,
                 Crt::Allocator *allocator) noexcept;
 
             /**

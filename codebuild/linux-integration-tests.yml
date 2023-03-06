@@ -18,7 +18,6 @@ phases:
     commands:
       - export CC=clang-6.0
       - export CXX=clang++-6.0
-      - export CLANG_FORMAT=clang-format-6.0
   build:
     commands:
       - echo Build started on `date`
@@ -27,7 +26,6 @@ phases:
       # Setup Mqtt5 test environment
       - source ./codebuild/mqtt5_test_setup.sh s3://aws-crt-test-stuff/CodeBuildIotProdMQTT5EnvironmentVariables_v2.txt us-east-1
       - ./codebuild/common-posix.sh -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DENABLE_FUZZ_TESTS=ON -DENABLE_MQTT5_TEST=ON
-      - ./format-check.sh
   post_build:
     commands:
       - echo Build completed on `date`

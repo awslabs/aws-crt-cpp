@@ -121,6 +121,34 @@ namespace Aws
             using OnWebSocketHandshakeIntercept = std::function<
                 void(std::shared_ptr<Http::HttpRequest> req, const OnWebSocketHandshakeInterceptComplete &onComplete)>;
 
+            /* Simple statistics about the current state of the client's queue of operations */
+            struct AWS_CRT_CPP_API MqttConnectionOperationStatistics
+            {
+                /*
+                 * total number of operations submitted to the connection that have not yet been completed.  Unacked
+                 * operations are a subset of this.
+                 */
+                uint64_t incompleteOperationCount;
+
+                /*
+                 * total packet size of operations submitted to the connection that have not yet been completed. Unacked
+                 * operations are a subset of this.
+                 */
+                uint64_t incompleteOperationSize;
+
+                /*
+                 * total number of operations that have been sent to the server and are waiting for a corresponding ACK
+                 * before they can be completed.
+                 */
+                uint64_t unackedOperationCount;
+
+                /*
+                 * total packet size of operations that have been sent to the server and are waiting for a corresponding
+                 * ACK before they can be completed.
+                 */
+                uint64_t unackedOperationSize;
+            };
+
             /**
              * Represents a persistent Mqtt Connection. The memory is owned by MqttClient.
              * To get a new instance of this class, see MqttClient::NewConnection. Unless
@@ -325,6 +353,13 @@ namespace Aws
                     const ByteBuf &payload,
                     OnOperationCompleteHandler &&onOpComplete) noexcept;
 
+                /**
+                 * Get the statistics about the current state of the connection's queue of operations
+                 *
+                 * @return MqttConnectionOperationStatistics
+                 */
+                const MqttConnectionOperationStatistics &GetOperationStatistics() noexcept;
+
                 OnConnectionInterruptedHandler OnConnectionInterrupted;
                 OnConnectionResumedHandler OnConnectionResumed;
                 OnConnectionCompletedHandler OnConnectionCompleted;
@@ -343,6 +378,7 @@ namespace Aws
                 void *m_onAnyCbData;
                 bool m_useTls;
                 bool m_useWebsocket;
+                MqttConnectionOperationStatistics m_operationStatistics;
 
                 MqttConnection(
                     aws_mqtt_client *client,
