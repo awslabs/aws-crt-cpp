@@ -310,16 +310,16 @@ namespace Aws
                     std::shared_ptr<UnsubscribePacket> unsubscribeOptions,
                     OnUnsubscribeCompletionHandler onUnsubscribeCompletionCallback = NULL) noexcept;
 
-                /*
-                 * Tell the client to release the native client and clean up unhandled the resources
-                 * and operations before destory the client. You MUST only call this function when you
-                 * want to destory the client.
+                /**
+                 * Tells the client to release the native client and clean up unhandled the resources
+                 * and operations before destroying the client. You MUST only call this function when you
+                 * want to destroy the client.
                  * This is "an ugly and unfortunate necessity" before releasing the Mqtt5Client. And You
                  * MUST call this function to avoid any future memory leaks or dead lock.
                  *
-                 * IMPORTANT: After the function get invoked, the Mqtt5Client will become invalid. DO
-                 * NOT call the function unless you plan to destory the client. If you would like to
-                 * reuse the client, please checkout `Start()` and `Stop()`.
+                 * IMPORTANT: After the function is invoked, the Mqtt5Client will become invalid. DO
+                 * NOT call the function unless you plan to destroy the client. If you would like to
+                 * reuse the client, please use `Start()` and `Stop()`.
                  *
                  */
                 void Close() noexcept;
@@ -404,8 +404,10 @@ namespace Aws
                 std::mutex m_terminationMutex;
                 struct aws_rw_lock m_client_lock;
                 bool m_terminationPredicate = false;
-                // The self reference is used to keep the Mqtt5Client alive until the underlying
-                // m_client get terminated.
+                /**
+                 * The self reference is used to keep the Mqtt5Client alive until the underlying
+                 * m_client get terminated.
+                 */
                 std::shared_ptr<Mqtt5Client> m_selfReference;
             };
 

@@ -187,7 +187,7 @@ namespace Aws
                                 *(aws_mqtt5_packet_puback_view *)publshCompletionPacket, callbackData->allocator);
                             publish = std::make_shared<PublishResult>(std::move(packet));
                         }
-                        else // This should never happened.
+                        else /* This should never happened. */
                         {
                             AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "The PubAck Packet is invalid.");
                             publish = std::make_shared<PublishResult>(AWS_ERROR_INVALID_ARGUMENT);
@@ -199,7 +199,7 @@ namespace Aws
                         publish = std::make_shared<PublishResult>(error_code);
                         break;
                     }
-                    default: // Invalid packet type
+                    default: /* Invalid packet type */
                     {
                         AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "Invalid Packet Type.");
                         publish = std::make_shared<PublishResult>(AWS_ERROR_INVALID_ARGUMENT);
@@ -376,18 +376,22 @@ namespace Aws
                 aws_rw_lock_wlock(&m_client_lock);
                 if (m_client != nullptr)
                 {
-                    // Techniquely, this should never happen as the Mqtt5Client will not get released until we call
-                    // Close(), and in Close() we should have released the native client already. WARN THE USER THERE IS
-                    // SOMETHING WRONG HERE.
-                    AWS_LOGF_WARN(
+                    /**
+                     * Technically, this should never happen as Mqtt5Client will not get released until we call
+                     *`Close()`, and in `Close()` we should have released the native client already. WARN THE DEVELOPER
+                     *THAT THERE IS SOMETHING WRONG HERE.
+                     **/
+                    AWS_LOGF_ERROR(
                         AWS_LS_MQTT5_CLIENT,
-                        "The Mqtt5Client::Close() function was not called before termination. This could potentially "
-                        "cause dead lock and invalid memory accesss. You MUST always call Mqtt5Client::Close() before "
-                        "release the client.");
-                    // In case developer get around the `Close()`, here, we still try to release the native client to
-                    // aovid dead lock on native client. However, this might cause unpredicted memory corruption since
-                    // the Mqtt5Client is already in destruction progress while the native client might still access it
-                    // in its operation callbacks during native client termination.
+                        "Native client is not released before destruction. This usually means `Mqtt5Client::Close()` "
+                        "was not called before termination. This could potentially cause dead lock and invalid memory "
+                        "access. You MUST always call `Mqtt5Client::Close()` before exiting.");
+                    /**
+                     * In case the developer get around `Close()`, here, we still try to release the native client to
+                     * avoid dead lock on native client. However, this might cause unpredicted memory corruption since
+                     * the Mqtt5Client is already in destruction progress while the native client might still access it
+                     * in its operation callbacks during native client termination.
+                     */
                     aws_mqtt5_client_release(m_client);
                     std::unique_lock<std::mutex> lock(m_terminationMutex);
                     m_terminationCondition.wait(lock, [this] { return m_terminationPredicate == true; });
@@ -433,7 +437,7 @@ namespace Aws
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_MQTT5_CLIENT,
-                        "Mqtt5Client: Invalid Client or the client is in termination. Please create a new client.");
+                        "Mqtt5Client: Invalid client or the client is in termination. Please create a new client.");
                     return false;
                 }
                 aws_rw_lock_runlock(&m_client_lock);
@@ -446,7 +450,7 @@ namespace Aws
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_MQTT5_CLIENT,
-                        "Mqtt5Client: Invalid Client or the client is in termination. Please create a new client.");
+                        "Mqtt5Client: Invalid client or the client is in termination. Please create a new client.");
                     return false;
                 }
                 aws_rw_lock_runlock(&m_client_lock);
@@ -459,7 +463,7 @@ namespace Aws
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_MQTT5_CLIENT,
-                        "Mqtt5Client: Invalid Client or the client is in termination. Please create a new client.");
+                        "Mqtt5Client: Invalid client or the client is in termination. Please create a new client.");
                     return false;
                 }
                 aws_rw_lock_runlock(&m_client_lock);
@@ -485,7 +489,7 @@ namespace Aws
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_MQTT5_CLIENT,
-                        "Mqtt5Client: Invalid Client or the client is in termination. Please create a new client.");
+                        "Mqtt5Client: Invalid client or the client is in termination. Please create a new client.");
                     return false;
                 }
                 aws_rw_lock_runlock(&m_client_lock);
@@ -525,7 +529,7 @@ namespace Aws
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_MQTT5_CLIENT,
-                        "Mqtt5Client: Invalid Client or the client is in termination. Please create a new client.");
+                        "Mqtt5Client: Invalid client or the client is in termination. Please create a new client.");
                     return false;
                 }
                 aws_rw_lock_runlock(&m_client_lock);
@@ -568,7 +572,7 @@ namespace Aws
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_MQTT5_CLIENT,
-                        "Mqtt5Client: Invalid Client or the client is in termination. Please create a new client.");
+                        "Mqtt5Client: Invalid client or the client is in termination. Please create a new client.");
                     return false;
                 }
                 aws_rw_lock_runlock(&m_client_lock);
@@ -606,7 +610,7 @@ namespace Aws
                 if (m_client != nullptr)
                 {
                     aws_mqtt5_client_release(m_client);
-                    // Waiting for client termination
+                    /* Waiting for client termination */
                     std::unique_lock<std::mutex> lock(m_terminationMutex);
                     m_terminationCondition.wait(lock, [this] { return m_terminationPredicate == true; });
                     m_client = nullptr;
@@ -623,7 +627,7 @@ namespace Aws
                 {
                     AWS_LOGF_WARN(
                         AWS_LS_MQTT5_CLIENT,
-                        "Mqtt5Client: Invalid Client or the client is in termination. Return the data from the last "
+                        "Mqtt5Client: Invalid client or the client is in termination. Return the data from the last "
                         "access.");
                     return m_operationStatistics;
                 }
