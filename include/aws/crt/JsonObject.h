@@ -231,6 +231,8 @@ namespace Aws
              * we now use singletons that are created/destroyed along with library init/cleanup. */
             static std::unique_ptr<String> s_errorMessage;
             static std::unique_ptr<String> s_okMessage;
+            static void OnLibraryInit();
+            static void OnLibraryCleanup();
 
             friend class JsonView;
             friend class ApiHandle;

@@ -36,9 +36,6 @@ namespace Aws
         std::mutex ApiHandle::s_lock_event_loop_group;
         std::mutex ApiHandle::s_lock_default_host_resolver;
 
-        std::unique_ptr<String> JsonObject::s_errorMessage;
-        std::unique_ptr<String> JsonObject::s_okMessage;
-
         ApiHandle::ApiHandle(Allocator *allocator) noexcept
             : m_logger(), m_shutdownBehavior(ApiHandleShutdownBehavior::Blocking)
         {
@@ -49,8 +46,7 @@ namespace Aws
             aws_event_stream_library_init(allocator);
             aws_sdkutils_library_init(allocator);
 
-            JsonObject::s_errorMessage.reset(new String("Failed to parse JSON"));
-            JsonObject::s_okMessage.reset(new String(""));
+            JsonObject::OnLibraryInit();
         }
 
         ApiHandle::ApiHandle() noexcept : ApiHandle(DefaultAllocator()) {}
@@ -65,6 +61,8 @@ namespace Aws
             {
                 aws_thread_join_all_managed();
             }
+
+            JsonObject::OnLibraryCleanup();
 
             if (aws_logger_get() == &m_logger)
             {

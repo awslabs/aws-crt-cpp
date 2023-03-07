@@ -259,6 +259,21 @@ namespace Aws
 
         bool JsonObject::operator!=(const JsonObject &other) const { return !(*this == other); }
 
+        std::unique_ptr<String> JsonObject::s_errorMessage;
+        std::unique_ptr<String> JsonObject::s_okMessage;
+
+        void JsonObject::OnLibraryInit()
+        {
+            s_errorMessage.reset(New<String>(DefaultAllocator(), "Failed to parse JSON"));
+            s_okMessage.reset(New<String>(DefaultAllocator(), ""));
+        }
+
+        void JsonObject::OnLibraryCleanup()
+        {
+            s_errorMessage.reset();
+            s_okMessage.reset();
+        }
+
         const String &JsonObject::GetErrorMessage() const
         {
             return m_value == nullptr ? *s_errorMessage : *s_okMessage;
