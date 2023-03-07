@@ -85,7 +85,7 @@ static void s_InitializeProxyTestSupport(ProxyIntegrationTestState &testState)
 
     struct aws_allocator *allocator = testState.m_allocator;
 
-    testState.m_eventLoopGroup = Aws::Crt::MakeShared<EventLoopGroup>(allocator, 1, allocator);
+    testState.m_eventLoopGroup = Aws::Crt::MakeShared<EventLoopGroup>(allocator, static_cast<uint16_t>(1), allocator);
     testState.m_hostResolver =
         Aws::Crt::MakeShared<DefaultHostResolver>(allocator, *testState.m_eventLoopGroup, 8, 30, allocator);
     testState.m_clientBootstrap = Aws::Crt::MakeShared<ClientBootstrap>(
@@ -167,8 +167,8 @@ static void s_InitializeProxiedRawConnection(ProxyIntegrationTestState &testStat
             testState.m_signal.notify_one();
         };
 
-    testState.m_connectionOptions.OnConnectionShutdownCallback = [&](HttpClientConnection &newConnection,
-                                                                     int errorCode) {};
+    testState.m_connectionOptions.OnConnectionShutdownCallback = [&](HttpClientConnection &/*newConnection*/,
+                                                                     int /*errorCode*/) {};
 
     HttpClientConnection::CreateConnection(testState.m_connectionOptions, allocator);
 
@@ -266,8 +266,8 @@ static int s_InitializeProxyEnvironmentalOptions(
     ASSERT_SUCCESS(aws_get_environment_value(allocator, s_GetProxyHostVariable(proxyHostType), &proxy_host_name));
     ASSERT_SUCCESS(aws_get_environment_value(allocator, s_GetProxyPortVariable(proxyHostType), &proxy_port));
 
-    testState.m_proxyOptions.HostName = Aws::Crt::String((const char *)proxy_host_name->bytes);
-    testState.m_proxyOptions.Port = atoi((const char *)proxy_port->bytes);
+    testState.m_proxyOptions.HostName = Aws::Crt::String(aws_string_c_str(proxy_host_name));
+    testState.m_proxyOptions.Port = static_cast<uint16_t>(atoi(aws_string_c_str(proxy_port)));
 
     aws_string_destroy(proxy_host_name);
     aws_string_destroy(proxy_port);
@@ -407,7 +407,7 @@ static void s_MakeForwardingTestRequest(ProxyIntegrationTestState &testState)
             }
         };
 
-    requestOptions.onStreamComplete = [&testState](Http::HttpStream &stream, int errorCode) {
+    requestOptions.onStreamComplete = [&testState](Http::HttpStream &/*stream*/, int /*errorCode*/) {
         {
             std::lock_guard<std::mutex> lock(testState.m_lock);
             testState.m_streamComplete = true;
@@ -477,8 +477,8 @@ static int s_InitializeDeprecatedBasicAuth(ProxyIntegrationTestState &testState)
 
     ASSERT_SUCCESS(s_InitializeBasicAuthParameters(testState));
 
-    testState.m_proxyOptions.BasicAuthUsername = (const char *)(testState.m_BasicUsername->bytes);
-    testState.m_proxyOptions.BasicAuthPassword = (const char *)(testState.m_BasicPassword->bytes);
+    testState.m_proxyOptions.BasicAuthUsername = aws_string_c_str(testState.m_BasicUsername);
+    testState.m_proxyOptions.BasicAuthPassword = aws_string_c_str(testState.m_BasicPassword);
 
     return AWS_OP_SUCCESS;
 }
@@ -515,8 +515,8 @@ static int s_InitializeBasicAuth(ProxyIntegrationTestState &testState)
 
     ASSERT_SUCCESS(s_InitializeBasicAuthParameters(testState));
 
-    basicAuthConfig.Username = (const char *)(testState.m_BasicUsername->bytes);
-    basicAuthConfig.Password = (const char *)(testState.m_BasicPassword->bytes);
+    basicAuthConfig.Username = aws_string_c_str(testState.m_BasicUsername);
+    basicAuthConfig.Password = aws_string_c_str(testState.m_BasicPassword);
 
     testState.m_proxyOptions.ProxyStrategy =
         HttpProxyStrategy::CreateBasicHttpProxyStrategy(basicAuthConfig, allocator);
@@ -729,9 +729,9 @@ static int s_InitializeX509Provider(ProxyIntegrationTestState &testState)
 
     CredentialsProviderX509Config providerConfig;
     providerConfig.Bootstrap = testState.m_clientBootstrap.get();
-    providerConfig.Endpoint = (const char *)(x509Endpoint->bytes);
-    providerConfig.RoleAlias = (const char *)(x509RoleAlias->bytes);
-    providerConfig.ThingName = (const char *)(x509ThingName->bytes);
+    providerConfig.Endpoint = aws_string_c_str(x509Endpoint);
+    providerConfig.RoleAlias = aws_string_c_str(x509RoleAlias);
+    providerConfig.ThingName = aws_string_c_str(x509ThingName);
     providerConfig.ProxyOptions = testState.m_proxyOptions;
 
     Aws::Crt::Io::TlsContextOptions x509TlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
@@ -760,7 +760,7 @@ static int s_InitializeX509Provider(ProxyIntegrationTestState &testState)
 static int s_X509GetCredentials(ProxyIntegrationTestState &testState)
 {
 
-    auto credentialsResolved = [&testState](std::shared_ptr<Credentials> credentials, int errorCode) {
+    auto credentialsResolved = [&testState](std::shared_ptr<Credentials> credentials, int /*errorCode*/) {
         {
             std::lock_guard<std::mutex> lock(testState.m_lock);
             testState.m_credentials = credentials;
@@ -899,11 +899,11 @@ static int s_BuildMqttConnection(ProxyIntegrationTestState &testState)
     ASSERT_SUCCESS(aws_get_environment_value(allocator, s_AwsIotSigningRegionVariable, &awsIotSigningRegion));
     ASSERT_SUCCESS(aws_get_environment_value(allocator, s_AwsIotMqttEndpointVariable, &awsIotEndpoint));
 
-    Iot::WebsocketConfig config(Aws::Crt::String((const char *)awsIotSigningRegion->bytes), testState.m_x509Provider);
+    Iot::WebsocketConfig config(Aws::Crt::String(aws_string_c_str(awsIotSigningRegion)), testState.m_x509Provider);
     config.ProxyOptions = testState.m_proxyOptions;
 
     Iot::MqttClientConnectionConfigBuilder builder = Aws::Iot::MqttClientConnectionConfigBuilder(config);
-    builder.WithEndpoint(Aws::Crt::String((const char *)awsIotEndpoint->bytes));
+    builder.WithEndpoint(Aws::Crt::String(aws_string_c_str(awsIotEndpoint)));
 
     testState.m_mqttConnection = testState.m_mqttClient->NewConnection(builder.Build());
     ASSERT_NOT_NULL(testState.m_mqttConnection.get());
@@ -1086,9 +1086,9 @@ static int s_BuildMqttAlpnConnection(ProxyIntegrationTestState &testState)
     ASSERT_SUCCESS(aws_get_environment_value(allocator, s_RootCAPathVariable, &rootCAPath));
 
     Iot::MqttClientConnectionConfigBuilder builder =
-        Aws::Iot::MqttClientConnectionConfigBuilder((const char *)certificatePath->bytes, (const char *)keyPath->bytes);
-    builder.WithCertificateAuthority((const char *)rootCAPath->bytes);
-    builder.WithEndpoint(Aws::Crt::String((const char *)awsIotEndpoint->bytes));
+        Aws::Iot::MqttClientConnectionConfigBuilder(aws_string_c_str(certificatePath), aws_string_c_str(keyPath));
+    builder.WithCertificateAuthority(aws_string_c_str(rootCAPath));
+    builder.WithEndpoint(Aws::Crt::String(aws_string_c_str(awsIotEndpoint)));
     builder.WithHttpProxyOptions(testState.m_proxyOptions);
 
     testState.m_mqttConnection = testState.m_mqttClient->NewConnection(builder.Build());

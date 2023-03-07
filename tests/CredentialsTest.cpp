@@ -375,8 +375,8 @@ static int s_InitializeProxyOptions(
     ASSERT_SUCCESS(aws_get_environment_value(allocator, s_httpProxyHostEnvVariable, &proxy_host_name));
     ASSERT_SUCCESS(aws_get_environment_value(allocator, s_httpProxyPortEnvVariable, &proxy_port));
 
-    proxyOptions.HostName = Aws::Crt::String((const char *)proxy_host_name->bytes);
-    proxyOptions.Port = atoi((const char *)proxy_port->bytes);
+    proxyOptions.HostName = Aws::Crt::String(aws_string_c_str(proxy_host_name));
+    proxyOptions.Port = static_cast<uint16_t>(atoi(aws_string_c_str(proxy_port)));
 
     aws_string_destroy(proxy_host_name);
     aws_string_destroy(proxy_port);
@@ -392,7 +392,7 @@ static int s_GetCognitoIdentityFromEnvironment(String &identity, struct aws_allo
 
     ASSERT_SUCCESS(aws_get_environment_value(allocator, s_CognitoIdentityEnvVariable, &id));
 
-    identity = Aws::Crt::String((const char *)id->bytes);
+    identity = Aws::Crt::String(aws_string_c_str(id));
 
     aws_string_destroy(id);
 
@@ -475,7 +475,7 @@ static int s_GetSTSRoleFromEnvironment(String &roleArn, struct aws_allocator *al
 
     ASSERT_SUCCESS(aws_get_environment_value(allocator, s_STSRoleArnEnvVariable, &role));
 
-    roleArn = Aws::Crt::String((const char *)role->bytes);
+    roleArn = Aws::Crt::String(aws_string_c_str(role));
 
     aws_string_destroy(role);
 
