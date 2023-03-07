@@ -93,7 +93,7 @@ enum Mqtt5TestType
 struct Mqtt5TestEnvVars
 {
     Mqtt5TestEnvVars(struct aws_allocator *allocator, Mqtt5TestType type)
-        : m_allocator(allocator), m_error(AWS_OP_SUCCESS)
+        : m_error(AWS_OP_SUCCESS), m_allocator(allocator)
     {
         switch (type)
         {
@@ -1534,13 +1534,13 @@ static int s_TestMqtt5NegotiatedSettingsHappy(Aws::Crt::Allocator *allocator, vo
     s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     // Override the ConnectionSuccessCallback to validate the negotiatedSettings
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise, SESSION_EXPIRY_INTERVAL_SEC](
-                                                         Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
-        printf("[MQTT5]Client Connection Success.");
-        ASSERT_TRUE(eventData.negotiatedSettings->getSessionExpiryIntervalSec() == SESSION_EXPIRY_INTERVAL_SEC);
-        connectionPromise.set_value(true);
-        return 0;
-    });
+    mqtt5Options.withClientConnectionSuccessCallback(
+        [&connectionPromise](Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
+            printf("[MQTT5]Client Connection Success.");
+            ASSERT_TRUE(eventData.negotiatedSettings->getSessionExpiryIntervalSec() == SESSION_EXPIRY_INTERVAL_SEC);
+            connectionPromise.set_value(true);
+            return 0;
+        });
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
@@ -1592,8 +1592,7 @@ static int s_TestMqtt5NegotiatedSettingsFull(Aws::Crt::Allocator *allocator, voi
 
     // Override the ConnectionSuccessCallback to validate the negotiatedSettings
     mqtt5Options.withClientConnectionSuccessCallback(
-        [&connectionPromise, SESSION_EXPIRY_INTERVAL_SEC, CLIENT_ID, KEEP_ALIVE_INTERVAL](
-            Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
+        [&connectionPromise, &CLIENT_ID](Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
             printf("[MQTT5]Client Connection Success.");
             std::shared_ptr<NegotiatedSettings> settings = eventData.negotiatedSettings;
             ASSERT_TRUE(settings->getSessionExpiryIntervalSec() == SESSION_EXPIRY_INTERVAL_SEC);
@@ -1650,7 +1649,7 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
     s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     mqtt5Options.withClientConnectionSuccessCallback(
-        [&connectionPromise, RECEIVE_MAX, PACKET_MAX](Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
+        [&connectionPromise](Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
             std::shared_ptr<NegotiatedSettings> settings = eventData.negotiatedSettings;
             uint16_t receivedmax = settings->getReceiveMaximumFromServer();
             uint32_t max_package = settings->getMaximumPacketSizeBytes();
@@ -2115,7 +2114,7 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *ctx)
     s_setupConnectionLifeCycle(mqtt5Options, subscriberConnectionPromise, subscriberStoppedPromise, "Subscriber");
 
     mqtt5Options.withPublishReceivedCallback(
-        [TEST_TOPIC, MESSAGE_NUMBER, &receivedMessages](Mqtt5Client &, const PublishReceivedEventData &eventData) {
+        [&TEST_TOPIC, &receivedMessages](Mqtt5Client &, const PublishReceivedEventData &eventData) {
             String topic = eventData.publishPacket->getTopic();
             if (topic == TEST_TOPIC)
             {

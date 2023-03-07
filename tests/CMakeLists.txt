@@ -194,6 +194,15 @@ endif()
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 
+ # set extra warning flags
+if(AWS_WARNINGS_ARE_ERRORS)
+    if(MSVC)
+        target_compile_options(${TEST_BINARY_NAME} PRIVATE /W4 /WX /wd4068)
+    else()
+        target_compile_options(${TEST_BINARY_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror -Wno-gnu-zero-variadic-macro-arguments)
+    endif()
+endif()
+
 add_custom_command(TARGET ${TEST_BINARY_NAME} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_CURRENT_SOURCE_DIR}/resources $<TARGET_FILE_DIR:${TEST_BINARY_NAME}>)
