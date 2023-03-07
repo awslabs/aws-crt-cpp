@@ -264,8 +264,8 @@ namespace Aws
 
         void JsonObject::OnLibraryInit()
         {
-            s_errorMessage.reset(New<String>(DefaultAllocator(), "Failed to parse JSON"));
-            s_okMessage.reset(New<String>(DefaultAllocator(), ""));
+            s_errorMessage.reset(new String("Failed to parse JSON"));
+            s_okMessage.reset(new String(""));
         }
 
         void JsonObject::OnLibraryCleanup()
