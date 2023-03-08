@@ -21,7 +21,6 @@ namespace Aws
           public:
             ScopedTryReadLock() : m_lock(nullptr), m_last_error(AWS_ERROR_INVALID_ARGUMENT) {}
 
-            //
             ScopedTryReadLock(aws_rw_lock *lock)
             {
                 m_lock = lock;
@@ -44,8 +43,8 @@ namespace Aws
             ScopedTryReadLock &operator=(ScopedTryReadLock &&) noexcept = delete;
 
           private:
+            struct aws_rw_lock *m_lock;
             int m_last_error;
-            aws_rw_lock *m_lock;
         };
     } // namespace Crt
 } // namespace Aws
