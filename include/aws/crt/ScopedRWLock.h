@@ -24,7 +24,7 @@ namespace Aws
             //
             ScopedTryReadLock(aws_rw_lock *lock)
             {
-                m_value = lock;
+                m_lock = lock;
                 m_last_error = aws_rw_lock_try_rlock(m_lock);
             }
 

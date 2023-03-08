@@ -378,18 +378,20 @@ namespace Aws
                 // {
                 //     /**
                 //      * Technically, this should never happen as Mqtt5Client will not get released until we call
-                //      *`Close()`, and in `Close()` we should have released the native client already. WARN THE DEVELOPER
-                //      *THAT THERE IS SOMETHING WRONG HERE.
+                //      *`Close()`, and in `Close()` we should have released the native client already. WARN THE
+                //      DEVELOPER *THAT THERE IS SOMETHING WRONG HERE.
                 //      **/
                 //     AWS_LOGF_ERROR(
                 //         AWS_LS_MQTT5_CLIENT,
-                //         "Native client is not released before destruction. This usually means `Mqtt5Client::Close()` "
-                //         "was not called before termination. This could potentially cause dead lock and invalid memory "
-                //         "access. You MUST always call `Mqtt5Client::Close()` before exiting.");
+                //         "Native client is not released before destruction. This usually means `Mqtt5Client::Close()`
+                //         " "was not called before termination. This could potentially cause dead lock and invalid
+                //         memory " "access. You MUST always call `Mqtt5Client::Close()` before exiting.");
                 //     /**
                 //      * In case the developer get around `Close()`, here, we still try to release the native client to
-                //      * avoid dead lock on native client. However, this might cause unpredicted memory corruption since
-                //      * the Mqtt5Client is already in destruction progress while the native client might still access it
+                //      * avoid dead lock on native client. However, this might cause unpredicted memory corruption
+                //      since
+                //      * the Mqtt5Client is already in destruction progress while the native client might still access
+                //      it
                 //      * in its operation callbacks during native client termination.
                 //      */
                 //     aws_mqtt5_client_release(m_client);
