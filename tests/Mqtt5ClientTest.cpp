@@ -103,7 +103,7 @@ struct Mqtt5TestEnvVars
                 m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_direct_port, &m_port);
                 if (m_error == AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = Aws::Crt::String((aws_string_c_str(m_hostname)), m_hostname->len);
+                    m_hostname_string = aws_string_c_str(m_hostname);
                     m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
                 }
                 break;
@@ -118,9 +118,9 @@ struct Mqtt5TestEnvVars
 
                 if (m_error == AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = Aws::Crt::String(aws_string_c_str(m_hostname), m_hostname->len);
+                    m_hostname_string = aws_string_c_str(m_hostname);
                     m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
-                    m_username_string = Aws::Crt::String(aws_string_c_str(m_username), m_username->len);
+                    m_username_string = aws_string_c_str(m_username);
                     m_password_cursor = ByteCursorFromArray(m_password->bytes, m_password->len);
                 }
                 break;
@@ -134,12 +134,10 @@ struct Mqtt5TestEnvVars
 
                 if (m_error == AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = Aws::Crt::String(aws_string_c_str(m_hostname), m_hostname->len);
+                    m_hostname_string = aws_string_c_str(m_hostname);
                     m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
-                    m_certificate_path_string =
-                        Aws::Crt::String(aws_string_c_str(m_certificate_path), m_certificate_path->len);
-                    m_private_key_path_string =
-                        Aws::Crt::String(aws_string_c_str(m_private_key_path), m_private_key_path->len);
+                    m_certificate_path_string = aws_string_c_str(m_certificate_path);
+                    m_private_key_path_string = aws_string_c_str(m_private_key_path);
                 }
                 break;
             }
@@ -150,7 +148,7 @@ struct Mqtt5TestEnvVars
 
                 if (m_error == AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = Aws::Crt::String(aws_string_c_str(m_hostname), m_hostname->len);
+                    m_hostname_string = aws_string_c_str(m_hostname);
                     m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
                 }
                 break;
@@ -166,9 +164,9 @@ struct Mqtt5TestEnvVars
 
                 if (m_error == AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = Aws::Crt::String(aws_string_c_str(m_hostname), m_hostname->len);
+                    m_hostname_string = aws_string_c_str(m_hostname);
                     m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
-                    m_username_string = Aws::Crt::String(aws_string_c_str(m_username), m_username->len);
+                    m_username_string = aws_string_c_str(m_username);
                     m_password_cursor = ByteCursorFromArray(m_password->bytes, m_password->len);
                 }
                 break;
@@ -183,12 +181,10 @@ struct Mqtt5TestEnvVars
 
                 if (m_error == AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = Aws::Crt::String(aws_string_c_str(m_hostname), m_hostname->len);
+                    m_hostname_string = aws_string_c_str(m_hostname);
                     m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
-                    m_certificate_path_string =
-                        Aws::Crt::String(aws_string_c_str(m_certificate_path), m_certificate_path->len);
-                    m_private_key_path_string =
-                        Aws::Crt::String(aws_string_c_str(m_private_key_path), m_private_key_path->len);
+                    m_certificate_path_string = aws_string_c_str(m_certificate_path);
+                    m_private_key_path_string = aws_string_c_str(m_private_key_path);
                 }
                 break;
             }
@@ -201,11 +197,9 @@ struct Mqtt5TestEnvVars
 
                 if (m_error == AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = Aws::Crt::String(aws_string_c_str(m_hostname), m_hostname->len);
-                    m_certificate_path_string =
-                        Aws::Crt::String(aws_string_c_str(m_certificate_path), m_certificate_path->len);
-                    m_private_key_path_string =
-                        Aws::Crt::String(aws_string_c_str(m_private_key_path), m_private_key_path->len);
+                    m_hostname_string = aws_string_c_str(m_hostname);
+                    m_certificate_path_string = aws_string_c_str(m_certificate_path);
+                    m_private_key_path_string = aws_string_c_str(m_private_key_path);
                 }
                 break;
             }
@@ -221,8 +215,7 @@ struct Mqtt5TestEnvVars
 
         if (m_error == AWS_OP_SUCCESS)
         {
-            m_httpproxy_hostname_string =
-                Aws::Crt::String(aws_string_c_str(m_httpproxy_hostname), m_httpproxy_hostname->len);
+            m_httpproxy_hostname_string = aws_string_c_str(m_httpproxy_hostname);
             m_httpproxy_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_httpproxy_port)));
         }
     }
