@@ -167,7 +167,7 @@ static void s_InitializeProxiedRawConnection(ProxyIntegrationTestState &testStat
             testState.m_signal.notify_one();
         };
 
-    testState.m_connectionOptions.OnConnectionShutdownCallback = [&](HttpClientConnection &/*newConnection*/,
+    testState.m_connectionOptions.OnConnectionShutdownCallback = [&](HttpClientConnection & /*newConnection*/,
                                                                      int /*errorCode*/) {};
 
     HttpClientConnection::CreateConnection(testState.m_connectionOptions, allocator);
@@ -407,7 +407,7 @@ static void s_MakeForwardingTestRequest(ProxyIntegrationTestState &testState)
             }
         };
 
-    requestOptions.onStreamComplete = [&testState](Http::HttpStream &/*stream*/, int /*errorCode*/) {
+    requestOptions.onStreamComplete = [&testState](Http::HttpStream & /*stream*/, int /*errorCode*/) {
         {
             std::lock_guard<std::mutex> lock(testState.m_lock);
             testState.m_streamComplete = true;
