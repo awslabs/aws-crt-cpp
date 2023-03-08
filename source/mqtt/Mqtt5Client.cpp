@@ -189,8 +189,8 @@ namespace Aws
                         }
                         else /* This should never happened. */
                         {
-                            AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "The PubAck Packet is invalid.");
-                            publish = std::make_shared<PublishResult>(AWS_ERROR_INVALID_ARGUMENT);
+                            AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "The PubAck Packet is null.");
+                            AWS_FATAL_ASSERT(!"The PubAck Packet is invalid.");
                         }
                         break;
                     }
@@ -202,7 +202,7 @@ namespace Aws
                     default: /* Invalid packet type */
                     {
                         AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "Invalid Packet Type.");
-                        publish = std::make_shared<PublishResult>(AWS_ERROR_INVALID_ARGUMENT);
+                        publish = std::make_shared<PublishResult>(AWS_ERROR_UNKNOWN);
                         break;
                     }
                 }
@@ -365,10 +365,9 @@ namespace Aws
                 clientOptions.client_termination_handler = &Mqtt5Client::s_clientTerminationCompletion;
                 clientOptions.client_termination_handler_user_data = this;
 
-                if (aws_rw_lock_init(&m_client_lock) == AWS_OP_SUCCESS)
-                {
-                    m_client = aws_mqtt5_client_new(allocator, &clientOptions);
-                }
+                AWS_FATAL_ASSERT(aws_rw_lock_init(&m_client_lock) == AWS_OP_SUCCESS);
+
+                m_client = aws_mqtt5_client_new(allocator, &clientOptions);
             }
 
             Mqtt5Client::~Mqtt5Client()
