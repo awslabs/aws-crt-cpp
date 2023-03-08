@@ -6,6 +6,7 @@
 #include <aws/crt/mqtt/Mqtt5Packets.h>
 
 #include <aws/crt/Api.h>
+#include <aws/crt/ScopedRWLock.h>
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/http/HttpProxyStrategy.h>
 #include <aws/crt/http/HttpRequestResponse.h>
@@ -432,14 +433,14 @@ namespace Aws
 
             bool Mqtt5Client::Start() noexcept
             {
-                if (aws_rw_lock_try_rlock(&m_client_lock) != AWS_ERROR_SUCCESS || m_client == nullptr)
+                ScopedTryReadLock lock(&m_client_lock);
+                if (!lock || m_client == nullptr)
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_MQTT5_CLIENT,
                         "Mqtt5Client: Invalid client or the client is in termination. Please create a new client.");
                     return false;
                 }
-                aws_rw_lock_runlock(&m_client_lock);
                 return aws_mqtt5_client_start(m_client) == AWS_OP_SUCCESS;
             }
 
