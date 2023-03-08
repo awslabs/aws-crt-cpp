@@ -28,12 +28,12 @@ namespace Aws
                 m_last_error = aws_rw_lock_try_rlock(m_lock);
             }
 
-            int aws_last_error(){return m_last_error;}
+            int aws_last_error() { return m_last_error; }
             operator bool() const { return m_last_error == AWS_ERROR_SUCCESS; }
 
             ~ScopedTryReadLock()
             {
-                if(m_last_error == AWS_ERROR_SUCCESS)
+                if (m_last_error == AWS_ERROR_SUCCESS)
                 {
                     aws_rw_lock_runlock(m_lock);
                 }
