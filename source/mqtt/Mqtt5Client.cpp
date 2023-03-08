@@ -244,9 +244,9 @@ namespace Aws
             void Mqtt5Client::s_clientTerminationCompletion(void *complete_ctx)
             {
                 Mqtt5Client *client = reinterpret_cast<Mqtt5Client *>(complete_ctx);
-                std::unique_lock<std::mutex> lock(client->m_terminationMutex);
-                client->m_terminationPredicate = true;
-                client->m_terminationCondition.notify_all();
+                /* Waiting for client termination */
+                client->m_client = nullptr;
+                client->m_selfReference = nullptr;
             }
 
             void Mqtt5Client::s_subscribeCompletionCallback(
@@ -373,30 +373,30 @@ namespace Aws
 
             Mqtt5Client::~Mqtt5Client()
             {
-                aws_rw_lock_wlock(&m_client_lock);
-                if (m_client != nullptr)
-                {
-                    /**
-                     * Technically, this should never happen as Mqtt5Client will not get released until we call
-                     *`Close()`, and in `Close()` we should have released the native client already. WARN THE DEVELOPER
-                     *THAT THERE IS SOMETHING WRONG HERE.
-                     **/
-                    AWS_LOGF_ERROR(
-                        AWS_LS_MQTT5_CLIENT,
-                        "Native client is not released before destruction. This usually means `Mqtt5Client::Close()` "
-                        "was not called before termination. This could potentially cause dead lock and invalid memory "
-                        "access. You MUST always call `Mqtt5Client::Close()` before exiting.");
-                    /**
-                     * In case the developer get around `Close()`, here, we still try to release the native client to
-                     * avoid dead lock on native client. However, this might cause unpredicted memory corruption since
-                     * the Mqtt5Client is already in destruction progress while the native client might still access it
-                     * in its operation callbacks during native client termination.
-                     */
-                    aws_mqtt5_client_release(m_client);
-                    std::unique_lock<std::mutex> lock(m_terminationMutex);
-                    m_terminationCondition.wait(lock, [this] { return m_terminationPredicate == true; });
-                    m_client = nullptr;
-                }
+                // aws_rw_lock_wunlock(&m_client_lock);
+                // if (m_client != nullptr)
+                // {
+                //     /**
+                //      * Technically, this should never happen as Mqtt5Client will not get released until we call
+                //      *`Close()`, and in `Close()` we should have released the native client already. WARN THE DEVELOPER
+                //      *THAT THERE IS SOMETHING WRONG HERE.
+                //      **/
+                //     AWS_LOGF_ERROR(
+                //         AWS_LS_MQTT5_CLIENT,
+                //         "Native client is not released before destruction. This usually means `Mqtt5Client::Close()` "
+                //         "was not called before termination. This could potentially cause dead lock and invalid memory "
+                //         "access. You MUST always call `Mqtt5Client::Close()` before exiting.");
+                //     /**
+                //      * In case the developer get around `Close()`, here, we still try to release the native client to
+                //      * avoid dead lock on native client. However, this might cause unpredicted memory corruption since
+                //      * the Mqtt5Client is already in destruction progress while the native client might still access it
+                //      * in its operation callbacks during native client termination.
+                //      */
+                //     aws_mqtt5_client_release(m_client);
+                //     std::unique_lock<std::mutex> lock(m_terminationMutex);
+                //     m_terminationCondition.wait(lock, [this] { return m_terminationPredicate == true; });
+                //     m_client = nullptr;
+                // }
                 aws_rw_lock_wunlock(&m_client_lock);
                 aws_rw_lock_clean_up(&m_client_lock);
             }
@@ -610,14 +610,7 @@ namespace Aws
                 if (m_client != nullptr)
                 {
                     aws_mqtt5_client_release(m_client);
-                    /* Waiting for client termination */
-                    std::unique_lock<std::mutex> lock(m_terminationMutex);
-                    m_terminationCondition.wait(lock, [this] { return m_terminationPredicate == true; });
-                    m_client = nullptr;
                 }
-                aws_rw_lock_wunlock(&m_client_lock);
-
-                m_selfReference = nullptr;
             }
 
             const Mqtt5ClientOperationStatistics &Mqtt5Client::GetOperationStatistics() noexcept
