@@ -6,12 +6,12 @@
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/Types.h>
 
+struct aws_json_value;
 namespace Aws
 {
-    struct cJSON;
-
     namespace Crt
     {
+
         class JsonView;
         /**
          * JSON DOM manipulation class.
@@ -27,25 +27,26 @@ namespace Aws
 
             /**
              * Constructs a JSON DOM by parsing the input string.
+             * Call WasParseSuccessful() on new object to determine if parse was successful.
              */
-            JsonObject(const String &value);
+            JsonObject(const String &stringToParse);
 
             /**
-             * Performs a deep copy of the JSON DOM parameter.
+             * Construct a deep copy.
              * Prefer using a @ref JsonView if copying is not needed.
              */
-            JsonObject(const JsonObject &value);
+            JsonObject(const JsonObject &other);
 
             /**
-             * Moves the ownership of the internal JSON DOM.
+             * Move constructor.
              * No copying is performed.
              */
-            JsonObject(JsonObject &&value) noexcept;
+            JsonObject(JsonObject &&other) noexcept;
 
             ~JsonObject();
 
             /**
-             * Performs a deep copy of the JSON DOM parameter.
+             * Performs a deep copy.
              */
             JsonObject &operator=(const JsonObject &other);
 
@@ -84,35 +85,39 @@ namespace Aws
             JsonObject &AsBool(bool value);
 
             /**
-             * Adds an integer value at key at the top level of this node.
+             * Adds a number value at key at the top level of this node.
+             * Precision may be lost.
              */
             JsonObject &WithInteger(const String &key, int value);
             JsonObject &WithInteger(const char *key, int value);
 
             /**
-             * Converts the current JSON node to an integer.
+             * Converts the current JSON node to a number.
+             * Precision may be lost.
              */
             JsonObject &AsInteger(int value);
 
             /**
-             * Adds a 64-bit integer value at key to the top level of this node.
+             * Adds a number value at key to the top level of this node.
+             * Precision may be lost.
              */
             JsonObject &WithInt64(const String &key, int64_t value);
             JsonObject &WithInt64(const char *key, int64_t value);
 
             /**
-             * Converts the current JSON node to a 64-bit integer.
+             * Converts the current JSON node to a number.
+             * Precision may be lost.
              */
             JsonObject &AsInt64(int64_t value);
 
             /**
-             * Adds a double value at key at the top level of this node.
+             * Adds a number value at key at the top level of this node.
              */
             JsonObject &WithDouble(const String &key, double value);
             JsonObject &WithDouble(const char *key, double value);
 
             /**
-             * Converts the current JSON node to a double.
+             * Converts the current JSON node to a number.
              */
             JsonObject &AsDouble(double value);
 
@@ -173,28 +178,64 @@ namespace Aws
             JsonObject &AsObject(JsonObject &&value);
 
             /**
-             * Returns true if the last parse request was successful. If this returns false,
-             * you can call GetErrorMessage() to find the cause.
+             * Returns true if the last parse request was successful.
              */
-            inline bool WasParseSuccessful() const { return m_wasParseSuccessful; }
+            inline bool WasParseSuccessful() const { return m_value != nullptr; }
 
             /**
-             * Returns the last error message from a failed parse attempt. Returns empty string if no error.
+             * @deprecated
              */
-            inline const String &GetErrorMessage() const { return m_errorMessage; }
+            const String &GetErrorMessage() const;
 
             /**
-             * Creates a view from the current root JSON node.
+             * Creates a view of this JSON node.
              */
             JsonView View() const;
 
           private:
-            void Destroy();
-            JsonObject(cJSON *value);
-            cJSON *m_value;
-            bool m_wasParseSuccessful;
-            String m_errorMessage;
+            /**
+             * Construct a duplicate of this JSON value.
+             */
+            JsonObject(const aws_json_value *valueToCopy);
+
+            /**
+             * Helper for all AsXYZ() functions.
+             * Destroys any pre-existing value and takes ownership of new value.
+             */
+            JsonObject &AsNewValue(aws_json_value *valueToOwn);
+
+            /**
+             * Helper for all WithXZY() functions.
+             * Take ownership of new value and add at key, replacing any previous value.
+             * Converts this node to JSON object if necessary.
+             */
+            JsonObject &WithNewKeyValue(const char *key, aws_json_value *valueToOwn);
+
+            /**
+             * Return new aws_json_value, an array containing duplicates of everything in objectsToCopy.
+             */
+            static aws_json_value *NewArray(const Vector<JsonObject> &objectsToCopy);
+
+            /**
+             * Return new aws_json_value, an array which has taken ownership of everything in objectsToMove
+             */
+            static aws_json_value *NewArray(Vector<JsonObject> &&objectsToMove);
+
+            aws_json_value *m_value;
+
+            /* Once upon a time each class instance had an m_errorMessage string member,
+             * and if parse failed the string would explain why.
+             * When we switched json implementations, there was no longer a unique string
+             * explaining why parse failed so we dropped that member from the class.
+             * To avoid breaking the GetErrorMessage() API, which returns the string by REFERENCE,
+             * we now use singletons that are created/destroyed along with library init/cleanup. */
+            static std::unique_ptr<String> s_errorMessage;
+            static std::unique_ptr<String> s_okMessage;
+            static void OnLibraryInit();
+            static void OnLibraryCleanup();
+
             friend class JsonView;
+            friend class ApiHandle;
         };
 
         /**
@@ -360,13 +401,17 @@ namespace Aws
             bool IsString() const;
 
             /**
-             * Tests whether the current value is an int or int64_t.
-             * Returns false if the value is floating-point.
+             * Tests whether the current value is a number.
+             */
+            bool IsNumber() const;
+
+            /**
+             * Tests whether the current value is a number that can convert to an int64_t without losing precision.
              */
             bool IsIntegerType() const;
 
             /**
-             * Tests whether the current value is a floating-point.
+             * Tests whether the current value is a number that will lose precision if converted to an int64_t.
              */
             bool IsFloatingPointType() const;
 
@@ -376,7 +421,7 @@ namespace Aws
             bool IsListType() const;
 
             /**
-             * Tests whether the current value is NULL.
+             * Tests whether the current value is a JSON null.
              */
             bool IsNull() const;
 
@@ -398,9 +443,11 @@ namespace Aws
             JsonObject Materialize() const;
 
           private:
-            JsonView(cJSON *val);
-            JsonView &operator=(cJSON *val);
-            cJSON *m_value;
+            JsonView(const aws_json_value *val);
+
+            String Write(bool treatAsObject, bool readable) const;
+
+            const aws_json_value *m_value;
         };
     } // namespace Crt
 } // namespace Aws
