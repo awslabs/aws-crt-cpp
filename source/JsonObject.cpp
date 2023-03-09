@@ -14,7 +14,7 @@ namespace Aws
 {
     namespace Crt
     {
-        JsonObject::JsonObject() { m_value = nullptr; }
+        JsonObject::JsonObject() : m_value(nullptr) {}
 
         JsonObject::JsonObject(const aws_json_value *valueToCopy)
         {
@@ -38,31 +38,30 @@ namespace Aws
 
         JsonObject &JsonObject::operator=(const JsonObject &other)
         {
-            if (this == &other)
+            if (this != &other)
             {
-                return *this;
+                this->~JsonObject();
+                new (this) JsonObject(other);
             }
 
-            this->~JsonObject();
-            new (this) JsonObject(other);
             return *this;
         }
 
         JsonObject &JsonObject::operator=(JsonObject &&other) noexcept
         {
-            if (this == &other)
+            if (this != &other)
             {
-                return *this;
+                this->~JsonObject();
+                new (this) JsonObject(std::move(other));
             }
 
-            this->~JsonObject();
-            new (this) JsonObject(std::move(other));
             return *this;
         }
 
         JsonObject &JsonObject::AsNewValue(aws_json_value *valueToOwn)
         {
             this->~JsonObject();
+            new (this) JsonObject();
             m_value = valueToOwn;
             return *this;
         }
