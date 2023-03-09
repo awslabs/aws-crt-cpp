@@ -60,9 +60,8 @@ namespace Aws
 
         /**
          * Custom implementation of an ScopedWriteLock type. Wrapping the aws_rw_lock.
-         * On creation, the ScopedTryReadLock will acquire the lock.
+         * On creation, the ScopedWriteLock will acquire the write lock.
          * The lock will be unlocked on destruction.
-         * Use aws_last_error() or operator bool() to check if the lock get acquired successfully.
          */
         class ScopedWriteLock
         {
@@ -664,7 +663,6 @@ namespace Aws
                         "access.");
                     return m_operationStatistics;
                 }
-
                 aws_mqtt5_client_get_stats(m_client, &m_operationStatisticsNative);
                 m_operationStatistics.incompleteOperationCount = m_operationStatisticsNative.incomplete_operation_count;
                 m_operationStatistics.incompleteOperationSize = m_operationStatisticsNative.incomplete_operation_size;
