@@ -400,10 +400,7 @@ namespace Aws
                 Allocator *m_allocator;
 
                 Mqtt5ClientOperationStatistics m_operationStatistics;
-                std::condition_variable m_terminationCondition;
-                std::mutex m_terminationMutex;
                 struct aws_rw_lock m_client_lock;
-                bool m_terminationPredicate = false;
                 /**
                  * The self reference is used to keep the Mqtt5Client alive until the underlying
                  * m_client get terminated.

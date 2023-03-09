@@ -484,27 +484,27 @@ namespace Aws
 
             bool Mqtt5Client::Stop() noexcept
             {
-                if (aws_rw_lock_try_rlock(&m_client_lock) != AWS_ERROR_SUCCESS || m_client == nullptr)
+                ScopedTryReadLock lock(&m_client_lock);
+                if (!lock || m_client == nullptr)
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_MQTT5_CLIENT,
                         "Mqtt5Client: Invalid client or the client is in termination. Please create a new client.");
                     return false;
                 }
-                aws_rw_lock_runlock(&m_client_lock);
                 return aws_mqtt5_client_stop(m_client, NULL, NULL) == AWS_OP_SUCCESS;
             }
 
             bool Mqtt5Client::Stop(std::shared_ptr<DisconnectPacket> disconnectOptions) noexcept
             {
-                if (aws_rw_lock_try_rlock(&m_client_lock) != AWS_ERROR_SUCCESS || m_client == nullptr)
+                ScopedTryReadLock lock(&m_client_lock);
+                if (!lock || m_client == nullptr)
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_MQTT5_CLIENT,
                         "Mqtt5Client: Invalid client or the client is in termination. Please create a new client.");
                     return false;
                 }
-                aws_rw_lock_runlock(&m_client_lock);
                 if (disconnectOptions == nullptr)
                 {
                     return Stop();
@@ -523,14 +523,14 @@ namespace Aws
                 std::shared_ptr<PublishPacket> publishOptions,
                 OnPublishCompletionHandler onPublishCmpletionCallback) noexcept
             {
-                if (aws_rw_lock_try_rlock(&m_client_lock) != AWS_ERROR_SUCCESS || m_client == nullptr)
+                ScopedTryReadLock lock(&m_client_lock);
+                if (!lock || m_client == nullptr)
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_MQTT5_CLIENT,
                         "Mqtt5Client: Invalid client or the client is in termination. Please create a new client.");
                     return false;
                 }
-                aws_rw_lock_runlock(&m_client_lock);
                 if (publishOptions == nullptr)
                 {
                     return false;
@@ -563,14 +563,14 @@ namespace Aws
                 std::shared_ptr<SubscribePacket> subscribeOptions,
                 OnSubscribeCompletionHandler onSubscribeCompletionCallback) noexcept
             {
-                if (aws_rw_lock_try_rlock(&m_client_lock) != AWS_ERROR_SUCCESS || m_client == nullptr)
+                ScopedTryReadLock lock(&m_client_lock);
+                if (!lock || m_client == nullptr)
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_MQTT5_CLIENT,
                         "Mqtt5Client: Invalid client or the client is in termination. Please create a new client.");
                     return false;
                 }
-                aws_rw_lock_runlock(&m_client_lock);
                 if (subscribeOptions == nullptr)
                 {
                     return false;
@@ -606,14 +606,14 @@ namespace Aws
                 std::shared_ptr<UnsubscribePacket> unsubscribeOptions,
                 OnUnsubscribeCompletionHandler onUnsubscribeCompletionCallback) noexcept
             {
-                if (aws_rw_lock_try_rlock(&m_client_lock) != AWS_ERROR_SUCCESS || m_client == nullptr)
+                ScopedTryReadLock lock(&m_client_lock);
+                if (!lock || m_client == nullptr)
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_MQTT5_CLIENT,
                         "Mqtt5Client: Invalid client or the client is in termination. Please create a new client.");
                     return false;
                 }
-                aws_rw_lock_runlock(&m_client_lock);
                 if (unsubscribeOptions == nullptr)
                 {
                     return false;
@@ -655,7 +655,8 @@ namespace Aws
             const Mqtt5ClientOperationStatistics &Mqtt5Client::GetOperationStatistics() noexcept
             {
                 aws_mqtt5_client_operation_statistics m_operationStatisticsNative = {0, 0, 0, 0};
-                if (aws_rw_lock_try_rlock(&m_client_lock) != AWS_ERROR_SUCCESS || m_client == nullptr)
+                ScopedTryReadLock lock(&m_client_lock);
+                if (!lock || m_client == nullptr)
                 {
                     AWS_LOGF_WARN(
                         AWS_LS_MQTT5_CLIENT,
@@ -663,7 +664,7 @@ namespace Aws
                         "access.");
                     return m_operationStatistics;
                 }
-                aws_rw_lock_runlock(&m_client_lock);
+
                 aws_mqtt5_client_get_stats(m_client, &m_operationStatisticsNative);
                 m_operationStatistics.incompleteOperationCount = m_operationStatisticsNative.incomplete_operation_count;
                 m_operationStatistics.incompleteOperationSize = m_operationStatisticsNative.incomplete_operation_size;
