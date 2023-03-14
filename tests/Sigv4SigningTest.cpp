@@ -418,7 +418,7 @@ static int s_Sigv4aSigningTestCredentials(struct aws_allocator *allocator, void 
         size_t headerCount = request->GetHeaderCount();
         for (size_t i = 0; i < headerCount; ++i)
         {
-            struct Optional<HttpHeader> optionalHeader = request->GetHeader(i);
+            Optional<HttpHeader> optionalHeader = request->GetHeader(i);
             if (optionalHeader.has_value())
             {
                 HttpHeader header = optionalHeader.value();
