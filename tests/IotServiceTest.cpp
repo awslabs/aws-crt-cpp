@@ -28,7 +28,7 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
 
     const char *credentialFiles[] = {TEST_CERTIFICATE, TEST_PRIVATEKEY, TEST_ROOTCA};
 
-    for (int fileIdx = 0; fileIdx < AWS_ARRAY_SIZE(credentialFiles); ++fileIdx)
+    for (size_t fileIdx = 0; fileIdx < AWS_ARRAY_SIZE(credentialFiles); ++fileIdx)
     {
         std::ifstream file;
         file.open(credentialFiles[fileIdx]);
@@ -164,7 +164,7 @@ static int s_TestIotStatisticsPublishWaitStatisticsDisconnect(Aws::Crt::Allocato
 
     const char *credentialFiles[] = {TEST_CERTIFICATE, TEST_PRIVATEKEY, TEST_ROOTCA};
 
-    for (int fileIdx = 0; fileIdx < AWS_ARRAY_SIZE(credentialFiles); ++fileIdx)
+    for (size_t fileIdx = 0; fileIdx < AWS_ARRAY_SIZE(credentialFiles); ++fileIdx)
     {
         std::ifstream file;
         file.open(credentialFiles[fileIdx]);
@@ -284,7 +284,7 @@ static int s_TestIotStatisticsPublishStatisticsWaitDisconnect(Aws::Crt::Allocato
 
     const char *credentialFiles[] = {TEST_CERTIFICATE, TEST_PRIVATEKEY, TEST_ROOTCA};
 
-    for (int fileIdx = 0; fileIdx < AWS_ARRAY_SIZE(credentialFiles); ++fileIdx)
+    for (size_t fileIdx = 0; fileIdx < AWS_ARRAY_SIZE(credentialFiles); ++fileIdx)
     {
         std::ifstream file;
         file.open(credentialFiles[fileIdx]);

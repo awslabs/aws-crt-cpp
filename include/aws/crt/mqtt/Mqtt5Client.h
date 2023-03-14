@@ -6,6 +6,8 @@
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
 
+#include <aws/common/rw_lock.h>
+
 namespace Aws
 {
     namespace Crt
@@ -171,28 +173,20 @@ namespace Aws
             using OnStoppedHandler = std::function<void(Mqtt5Client &, const OnStoppedEventData &)>;
 
             /**
-             * Type signature of the callback invoked when a Disconnection Comlete
-             *
-             */
-            using OnDisconnectCompletionHandler = std::function<void(std::shared_ptr<Mqtt5Client>, int)>;
-
-            /**
              * Type signature of the callback invoked when a Publish Complete
              */
-            using OnPublishCompletionHandler =
-                std::function<void(std::shared_ptr<Mqtt5Client>, int, std::shared_ptr<PublishResult>)>;
+            using OnPublishCompletionHandler = std::function<void(Mqtt5Client &, int, std::shared_ptr<PublishResult>)>;
 
             /**
              * Type signature of the callback invoked when a Subscribe Complete
              */
-            using OnSubscribeCompletionHandler =
-                std::function<void(std::shared_ptr<Mqtt5Client>, int, std::shared_ptr<SubAckPacket>)>;
+            using OnSubscribeCompletionHandler = std::function<void(Mqtt5Client &, int, std::shared_ptr<SubAckPacket>)>;
 
             /**
              * Type signature of the callback invoked when a Unsubscribe Complete
              */
             using OnUnsubscribeCompletionHandler =
-                std::function<void(std::shared_ptr<Mqtt5Client>, int, std::shared_ptr<UnSubAckPacket>)>;
+                std::function<void(Mqtt5Client &, int, std::shared_ptr<UnSubAckPacket>)>;
 
             /**
              * Type signature of the callback invoked when a PacketPublish message received (OnMessageHandler)
@@ -259,7 +253,7 @@ namespace Aws
                  *
                  * @return bool: true if operation succeed, otherwise false.
                  */
-                bool Start() const noexcept;
+                bool Start() noexcept;
 
                 /**
                  * Notifies the MQTT5 client that you want it to transition to the stopped state, disconnecting any
@@ -315,6 +309,20 @@ namespace Aws
                 bool Unsubscribe(
                     std::shared_ptr<UnsubscribePacket> unsubscribeOptions,
                     OnUnsubscribeCompletionHandler onUnsubscribeCompletionCallback = NULL) noexcept;
+
+                /**
+                 * Tells the client to release the native client and clean up unhandled the resources
+                 * and operations before destroying the client. You MUST only call this function when you
+                 * want to destroy the client.
+                 * This is "an ugly and unfortunate necessity" before releasing the Mqtt5Client. And You
+                 * MUST call this function to avoid any future memory leaks or dead lock.
+                 *
+                 * IMPORTANT: After the function is invoked, the Mqtt5Client will become invalid. DO
+                 * NOT call the function unless you plan to destroy the client. If you would like to
+                 * reuse the client, please use `Start()` and `Stop()`.
+                 *
+                 */
+                void Close() noexcept;
 
                 /**
                  * Get the statistics about the current state of the client's queue of operations
@@ -392,9 +400,12 @@ namespace Aws
                 Allocator *m_allocator;
 
                 Mqtt5ClientOperationStatistics m_operationStatistics;
-                std::condition_variable m_terminationCondition;
-                std::mutex m_terminationMutex;
-                bool m_terminationPredicate = false;
+                struct aws_rw_lock m_client_lock;
+                /**
+                 * The self reference is used to keep the Mqtt5Client alive until the underlying
+                 * m_client get terminated.
+                 */
+                std::shared_ptr<Mqtt5Client> m_selfReference;
             };
 
             /**

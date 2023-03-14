@@ -449,8 +449,10 @@ int main(int argc, char **argv)
         subscribe->withSubscriptions(subscriptionList);
         bool subscribeSuccess = mqtt5Client->Subscribe(
             subscribe,
-            [](std::shared_ptr<Mqtt5::Mqtt5Client>, int, std::shared_ptr<Mqtt5::SubAckPacket> packet)
+            [](Mqtt5Client &, int, std::shared_ptr<Mqtt5::SubAckPacket> packet)
             {
+                if (packet == nullptr)
+                    return;
                 std::cout << "**********************************************************" << std::endl;
                 std::cout << "MQTT5: check suback packet : " << std::endl;
                 for (auto code : packet->getReasonCodes())
@@ -581,5 +583,6 @@ int main(int argc, char **argv)
     {
         std::cout << "[ERROR]Failed to start the client " << std::endl;
     }
+    mqtt5Client->Close();
     return 0;
 }

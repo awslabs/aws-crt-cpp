@@ -18,13 +18,81 @@ namespace Aws
 {
     namespace Crt
     {
+
+        ////////////////////////////////////////////////////////////////////
+        // Helper Class for ScopedRWLock
+        ////////////////////////////////////////////////////////////////////
+
+        /**
+         * Custom implementation of an ScopedTryReadLock type. Wrapping the aws_rw_lock.
+         * On creation, the ScopedTryReadLock will attempts to acquire the lock and returns immediately if it can not.
+         * The lock will be unlocked on destruction.
+         * Use aws_last_error() or operator bool() to check if the lock get acquired successfully.
+         */
+        class ScopedTryReadLock
+        {
+          public:
+            ScopedTryReadLock(aws_rw_lock *lock)
+            {
+                m_lock = lock;
+                m_last_error = aws_rw_lock_try_rlock(m_lock);
+            }
+
+            int aws_last_error() { return m_last_error; }
+            operator bool() const { return m_last_error == AWS_ERROR_SUCCESS; }
+
+            ~ScopedTryReadLock()
+            {
+                if (m_last_error == AWS_ERROR_SUCCESS)
+                {
+                    aws_rw_lock_runlock(m_lock);
+                }
+            }
+            ScopedTryReadLock(const ScopedTryReadLock &) noexcept = delete;
+            ScopedTryReadLock(ScopedTryReadLock &&) noexcept = delete;
+            ScopedTryReadLock &operator=(const ScopedTryReadLock &) noexcept = delete;
+            ScopedTryReadLock &operator=(ScopedTryReadLock &&) noexcept = delete;
+
+          private:
+            struct aws_rw_lock *m_lock;
+            int m_last_error;
+        };
+
+        /**
+         * Custom implementation of an ScopedWriteLock type. Wrapping the aws_rw_lock.
+         * On creation, the ScopedWriteLock will acquire the write lock.
+         * The lock will be unlocked on destruction.
+         */
+        class ScopedWriteLock
+        {
+          public:
+            ScopedWriteLock(aws_rw_lock *lock)
+            {
+                m_lock = lock;
+                aws_rw_lock_wlock(m_lock);
+            }
+
+            ~ScopedWriteLock() { aws_rw_lock_wunlock(m_lock); }
+
+            ScopedWriteLock(const ScopedWriteLock &) noexcept = delete;
+            ScopedWriteLock(ScopedWriteLock &&) noexcept = delete;
+            ScopedWriteLock &operator=(const ScopedWriteLock &) noexcept = delete;
+            ScopedWriteLock &operator=(ScopedWriteLock &&) noexcept = delete;
+
+          private:
+            struct aws_rw_lock *m_lock;
+        };
+
+        ////////////////////////////////////////////////////////////////////
+        // MQTT5
+        ////////////////////////////////////////////////////////////////////
         namespace Mqtt5
         {
             struct PubAckCallbackData : public std::enable_shared_from_this<PubAckCallbackData>
             {
                 PubAckCallbackData(Allocator *alloc = ApiAllocator()) : client(nullptr), allocator(alloc) {}
 
-                std::shared_ptr<Mqtt5Client> client;
+                Mqtt5Client *client;
                 OnPublishCompletionHandler onPublishCompletion;
                 Allocator *allocator;
             };
@@ -33,7 +101,7 @@ namespace Aws
             {
                 SubAckCallbackData(Allocator *alloc = ApiAllocator()) : client(nullptr), allocator(alloc) {}
 
-                std::shared_ptr<Mqtt5Client> client;
+                Mqtt5Client *client;
                 OnSubscribeCompletionHandler onSubscribeCompletion;
                 Allocator *allocator;
             };
@@ -42,7 +110,7 @@ namespace Aws
             {
                 UnSubAckCallbackData(Allocator *alloc = ApiAllocator()) : client(nullptr), allocator(alloc) {}
 
-                std::shared_ptr<Mqtt5Client> client;
+                Mqtt5Client *client;
                 OnUnsubscribeCompletionHandler onUnsubscribeCompletion;
                 Allocator *allocator;
             };
@@ -50,6 +118,8 @@ namespace Aws
             void Mqtt5Client::s_lifeCycleEventCallback(const struct aws_mqtt5_client_lifecycle_event *event)
             {
                 Mqtt5Client *client = reinterpret_cast<Mqtt5Client *>(event->user_data);
+                AWS_ASSERT(client != nullptr);
+
                 switch (event->event_type)
                 {
                     case AWS_MQTT5_CLET_STOPPED:
@@ -171,46 +241,45 @@ namespace Aws
             {
                 AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "Publish completion callback triggered.");
                 auto callbackData = reinterpret_cast<PubAckCallbackData *>(complete_ctx);
+                AWS_ASSERT(callbackData != nullptr);
+                AWS_ASSERT(callbackData->client != nullptr);
 
-                if (callbackData)
+                std::shared_ptr<PublishResult> publish = nullptr;
+                switch (packet_type)
                 {
-                    std::shared_ptr<PublishResult> publish = nullptr;
-                    switch (packet_type)
+                    case aws_mqtt5_packet_type::AWS_MQTT5_PT_PUBACK:
                     {
-                        case aws_mqtt5_packet_type::AWS_MQTT5_PT_PUBACK:
+                        if (publshCompletionPacket != NULL)
                         {
-                            if (publshCompletionPacket != NULL)
-                            {
-                                std::shared_ptr<PubAckPacket> packet = std::make_shared<PubAckPacket>(
-                                    *(aws_mqtt5_packet_puback_view *)publshCompletionPacket, callbackData->allocator);
-                                publish = std::make_shared<PublishResult>(std::move(packet));
-                            }
-                            else // This should never happened.
-                            {
-                                AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "The PubAck Packet is invalid.");
-                                publish = std::make_shared<PublishResult>(AWS_ERROR_INVALID_ARGUMENT);
-                            }
-                            break;
+                            std::shared_ptr<PubAckPacket> packet = std::make_shared<PubAckPacket>(
+                                *(aws_mqtt5_packet_puback_view *)publshCompletionPacket, callbackData->allocator);
+                            publish = std::make_shared<PublishResult>(std::move(packet));
                         }
-                        case aws_mqtt5_packet_type::AWS_MQTT5_PT_NONE:
+                        else /* This should never happened. */
                         {
-                            publish = std::make_shared<PublishResult>(error_code);
-                            break;
+                            AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "The PubAck Packet is null.");
+                            AWS_FATAL_ASSERT(!"The PubAck Packet is invalid.");
                         }
-                        default: // Invalid packet type
-                        {
-                            AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "Invalid Packet Type.");
-                            publish = std::make_shared<PublishResult>(AWS_ERROR_INVALID_ARGUMENT);
-                            break;
-                        }
+                        break;
                     }
-                    if (callbackData->onPublishCompletion != NULL)
+                    case aws_mqtt5_packet_type::AWS_MQTT5_PT_NONE:
                     {
-                        callbackData->onPublishCompletion(callbackData->client, error_code, publish);
+                        publish = std::make_shared<PublishResult>(error_code);
+                        break;
                     }
-
-                    Crt::Delete(callbackData, callbackData->allocator);
+                    default: /* Invalid packet type */
+                    {
+                        AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "Invalid Packet Type.");
+                        publish = std::make_shared<PublishResult>(AWS_ERROR_UNKNOWN);
+                        break;
+                    }
                 }
+                if (callbackData->onPublishCompletion != NULL)
+                {
+                    callbackData->onPublishCompletion(*(callbackData->client), error_code, publish);
+                }
+
+                Crt::Delete(callbackData, callbackData->allocator);
             }
 
             void Mqtt5Client::s_onWebsocketHandshake(
@@ -242,9 +311,7 @@ namespace Aws
             void Mqtt5Client::s_clientTerminationCompletion(void *complete_ctx)
             {
                 Mqtt5Client *client = reinterpret_cast<Mqtt5Client *>(complete_ctx);
-                std::unique_lock<std::mutex> lock(client->m_terminationMutex);
-                client->m_terminationPredicate = true;
-                client->m_terminationCondition.notify_all();
+                client->m_selfReference = nullptr;
             }
 
             void Mqtt5Client::s_subscribeCompletionCallback(
@@ -254,6 +321,7 @@ namespace Aws
             {
                 SubAckCallbackData *callbackData = reinterpret_cast<SubAckCallbackData *>(complete_ctx);
                 AWS_ASSERT(callbackData != nullptr);
+                AWS_ASSERT(callbackData->client != nullptr);
 
                 std::shared_ptr<SubAckPacket> packet = nullptr;
                 if (suback != nullptr)
@@ -272,7 +340,7 @@ namespace Aws
 
                 if (callbackData->onSubscribeCompletion)
                 {
-                    callbackData->onSubscribeCompletion(callbackData->client, error_code, packet);
+                    callbackData->onSubscribeCompletion(*(callbackData->client), error_code, packet);
                 }
                 Crt::Delete(callbackData, callbackData->allocator);
             }
@@ -284,6 +352,7 @@ namespace Aws
             {
                 UnSubAckCallbackData *callbackData = reinterpret_cast<UnSubAckCallbackData *>(complete_ctx);
                 AWS_ASSERT(callbackData != nullptr);
+                AWS_ASSERT(callbackData->client != nullptr);
 
                 std::shared_ptr<UnSubAckPacket> packet = nullptr;
                 if (unsuback != nullptr)
@@ -302,7 +371,7 @@ namespace Aws
 
                 if (callbackData->onUnsubscribeCompletion != NULL)
                 {
-                    callbackData->onUnsubscribeCompletion(callbackData->client, error_code, packet);
+                    callbackData->onUnsubscribeCompletion(*(callbackData->client), error_code, packet);
                 }
 
                 Crt::Delete(callbackData, callbackData->allocator);
@@ -362,25 +431,18 @@ namespace Aws
                 clientOptions.client_termination_handler = &Mqtt5Client::s_clientTerminationCompletion;
                 clientOptions.client_termination_handler_user_data = this;
 
+                AWS_FATAL_ASSERT(aws_rw_lock_init(&m_client_lock) == AWS_OP_SUCCESS);
+
                 m_client = aws_mqtt5_client_new(allocator, &clientOptions);
             }
 
-            Mqtt5Client::~Mqtt5Client()
-            {
-                if (m_client != nullptr)
-                {
-                    aws_mqtt5_client_release(m_client);
-                    std::unique_lock<std::mutex> lock(m_terminationMutex);
-                    m_terminationCondition.wait(lock, [this] { return m_terminationPredicate == true; });
-                    m_client = nullptr;
-                }
-            }
+            Mqtt5Client::~Mqtt5Client() { aws_rw_lock_clean_up(&m_client_lock); }
 
             std::shared_ptr<Mqtt5Client> Mqtt5Client::NewMqtt5Client(
                 const Mqtt5ClientOptions &options,
                 Allocator *allocator) noexcept
             {
-                /* Copied from MqttClient.cpp:ln754 */
+                /* Copied from MqttClient.cpp:ln754 (MqttClient::NewConnection) */
                 // As the constructor is private, make share would not work here. We do make_share manually.
                 Mqtt5Client *toSeat = reinterpret_cast<Mqtt5Client *>(aws_mem_acquire(allocator, sizeof(Mqtt5Client)));
                 if (!toSeat)
@@ -389,20 +451,59 @@ namespace Aws
                 }
 
                 toSeat = new (toSeat) Mqtt5Client(options, allocator);
-                return std::shared_ptr<Mqtt5Client>(
+                // Creation failed, make sure we release the allocated memory
+                if (!*toSeat)
+                {
+                    Crt::Delete(toSeat, allocator);
+                    return nullptr;
+                }
+
+                std::shared_ptr<Mqtt5Client> shared_client = std::shared_ptr<Mqtt5Client>(
                     toSeat, [allocator](Mqtt5Client *client) { Crt::Delete(client, allocator); });
+                shared_client->m_selfReference = shared_client;
+                return shared_client;
             }
 
             Mqtt5Client::operator bool() const noexcept { return m_client != nullptr; }
 
             int Mqtt5Client::LastError() const noexcept { return aws_last_error(); }
 
-            bool Mqtt5Client::Start() const noexcept { return aws_mqtt5_client_start(m_client) == AWS_OP_SUCCESS; }
+            bool Mqtt5Client::Start() noexcept
+            {
+                ScopedTryReadLock lock(&m_client_lock);
+                if (!lock || m_client == nullptr)
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_MQTT5_CLIENT,
+                        "Mqtt5Client: Invalid client or the client is in termination. Please create a new client.");
+                    return false;
+                }
+                return aws_mqtt5_client_start(m_client) == AWS_OP_SUCCESS;
+            }
 
-            bool Mqtt5Client::Stop() noexcept { return aws_mqtt5_client_stop(m_client, NULL, NULL) == AWS_OP_SUCCESS; }
+            bool Mqtt5Client::Stop() noexcept
+            {
+                ScopedTryReadLock lock(&m_client_lock);
+                if (!lock || m_client == nullptr)
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_MQTT5_CLIENT,
+                        "Mqtt5Client: Invalid client or the client is in termination. Please create a new client.");
+                    return false;
+                }
+                return aws_mqtt5_client_stop(m_client, NULL, NULL) == AWS_OP_SUCCESS;
+            }
 
             bool Mqtt5Client::Stop(std::shared_ptr<DisconnectPacket> disconnectOptions) noexcept
             {
+                ScopedTryReadLock lock(&m_client_lock);
+                if (!lock || m_client == nullptr)
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_MQTT5_CLIENT,
+                        "Mqtt5Client: Invalid client or the client is in termination. Please create a new client.");
+                    return false;
+                }
                 if (disconnectOptions == nullptr)
                 {
                     return Stop();
@@ -421,6 +522,14 @@ namespace Aws
                 std::shared_ptr<PublishPacket> publishOptions,
                 OnPublishCompletionHandler onPublishCmpletionCallback) noexcept
             {
+                ScopedTryReadLock lock(&m_client_lock);
+                if (!lock || m_client == nullptr)
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_MQTT5_CLIENT,
+                        "Mqtt5Client: Invalid client or the client is in termination. Please create a new client.");
+                    return false;
+                }
                 if (publishOptions == nullptr)
                 {
                     return false;
@@ -431,7 +540,7 @@ namespace Aws
 
                 PubAckCallbackData *pubCallbackData = Aws::Crt::New<PubAckCallbackData>(m_allocator);
 
-                pubCallbackData->client = this->getptr();
+                pubCallbackData->client = this;
                 pubCallbackData->allocator = m_allocator;
                 pubCallbackData->onPublishCompletion = onPublishCmpletionCallback;
 
@@ -453,6 +562,14 @@ namespace Aws
                 std::shared_ptr<SubscribePacket> subscribeOptions,
                 OnSubscribeCompletionHandler onSubscribeCompletionCallback) noexcept
             {
+                ScopedTryReadLock lock(&m_client_lock);
+                if (!lock || m_client == nullptr)
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_MQTT5_CLIENT,
+                        "Mqtt5Client: Invalid client or the client is in termination. Please create a new client.");
+                    return false;
+                }
                 if (subscribeOptions == nullptr)
                 {
                     return false;
@@ -465,7 +582,7 @@ namespace Aws
                 /* Setup subscription Completion callback*/
                 SubAckCallbackData *subCallbackData = Aws::Crt::New<SubAckCallbackData>(m_allocator);
 
-                subCallbackData->client = this->getptr();
+                subCallbackData->client = this;
                 subCallbackData->allocator = m_allocator;
                 subCallbackData->onSubscribeCompletion = onSubscribeCompletionCallback;
 
@@ -488,6 +605,14 @@ namespace Aws
                 std::shared_ptr<UnsubscribePacket> unsubscribeOptions,
                 OnUnsubscribeCompletionHandler onUnsubscribeCompletionCallback) noexcept
             {
+                ScopedTryReadLock lock(&m_client_lock);
+                if (!lock || m_client == nullptr)
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_MQTT5_CLIENT,
+                        "Mqtt5Client: Invalid client or the client is in termination. Please create a new client.");
+                    return false;
+                }
                 if (unsubscribeOptions == nullptr)
                 {
                     return false;
@@ -498,7 +623,7 @@ namespace Aws
 
                 UnSubAckCallbackData *unSubCallbackData = Aws::Crt::New<UnSubAckCallbackData>(m_allocator);
 
-                unSubCallbackData->client = this->getptr();
+                unSubCallbackData->client = this;
                 unSubCallbackData->allocator = m_allocator;
                 unSubCallbackData->onUnsubscribeCompletion = onUnsubscribeCompletionCallback;
 
@@ -516,19 +641,34 @@ namespace Aws
                 return result == AWS_OP_SUCCESS;
             }
 
+            void Mqtt5Client::Close() noexcept
+            {
+                ScopedWriteLock lock(&m_client_lock);
+                if (m_client != nullptr)
+                {
+                    aws_mqtt5_client_release(m_client);
+                    m_client = nullptr;
+                }
+            }
+
             const Mqtt5ClientOperationStatistics &Mqtt5Client::GetOperationStatistics() noexcept
             {
                 aws_mqtt5_client_operation_statistics m_operationStatisticsNative = {0, 0, 0, 0};
-                if (m_client != nullptr)
+                ScopedTryReadLock lock(&m_client_lock);
+                if (!lock || m_client == nullptr)
                 {
-                    aws_mqtt5_client_get_stats(m_client, &m_operationStatisticsNative);
-                    m_operationStatistics.incompleteOperationCount =
-                        m_operationStatisticsNative.incomplete_operation_count;
-                    m_operationStatistics.incompleteOperationSize =
-                        m_operationStatisticsNative.incomplete_operation_size;
-                    m_operationStatistics.unackedOperationCount = m_operationStatisticsNative.unacked_operation_count;
-                    m_operationStatistics.unackedOperationSize = m_operationStatisticsNative.unacked_operation_size;
+                    AWS_LOGF_WARN(
+                        AWS_LS_MQTT5_CLIENT,
+                        "Mqtt5Client: Invalid client or the client is in termination. Return the data from the last "
+                        "access.");
+                    return m_operationStatistics;
                 }
+                aws_mqtt5_client_get_stats(m_client, &m_operationStatisticsNative);
+                m_operationStatistics.incompleteOperationCount = m_operationStatisticsNative.incomplete_operation_count;
+                m_operationStatistics.incompleteOperationSize = m_operationStatisticsNative.incomplete_operation_size;
+                m_operationStatistics.unackedOperationCount = m_operationStatisticsNative.unacked_operation_count;
+                m_operationStatistics.unackedOperationSize = m_operationStatisticsNative.unacked_operation_size;
+
                 return m_operationStatistics;
             }
 
