@@ -12,7 +12,7 @@ namespace Aws
     {
         namespace Mqtt5
         {
-            class Mqtt5Client;
+            class Mqtt5ListenerOptions;
 
             /**
              * Type signature of the callback invoked when a PacketPublish message received for Mqtt5Listener.
@@ -20,14 +20,14 @@ namespace Aws
              * @return true if the message get handled otherwise return false
              */
             using OnListenerPublishReceivedHandler =
-                std::function<bool(Mqtt5Listener &, const PublishReceivedEventData &)>;
+                std::function<bool(Mqtt5Client &, const PublishReceivedEventData &)>;
 
             /**
              * An MQTT5 listener. This is a move-only type. Unless otherwise specified,
              * all function arguments need only to live through the duration of the
              * function call.
              */
-            class AWS_CRT_CPP_API Mqtt5Listener final
+            class AWS_CRT_CPP_API Mqtt5Listener final : public std::enable_shared_from_this<Mqtt5Listener>
             {
               public:
                 /**
@@ -61,6 +61,16 @@ namespace Aws
                  */
                 int LastError() const noexcept;
 
+                /**
+                 * Tells the listener to release the native listener and clean up unhandled the resources
+                 * and operations before destroying it. You MUST only call this function when you want to
+                 * release the listener.
+                 * This is "an ugly and unfortunate necessity" before releasing the Mqtt5Listener. And You
+                 * MUST call this function to avoid any future memory leaks or dead lock.
+                 *
+                 */
+                void Close() noexcept;
+
                 virtual ~Mqtt5Listener();
 
               private:
@@ -73,7 +83,7 @@ namespace Aws
 
                 static bool s_publishReceivedCallback(const aws_mqtt5_packet_publish_view *publish, void *user_data);
 
-                static void s_clientTerminationCompletion(void *complete_ctx);
+                static void s_listenerTerminationCompletion(void *complete_ctx);
 
                 /**
                  * Callback handler triggered when client successfully establishes an MQTT connection
@@ -106,17 +116,13 @@ namespace Aws
                 OnListenerPublishReceivedHandler onListenerPublishReceived;
 
                 std::shared_ptr<Mqtt5Client> m_mqtt5Client;
-
+                std::shared_ptr<Mqtt5Listener> m_selfReference;
                 /**
                  * Underlying c classes for data storage and operational members
                  */
                 aws_mqtt5_listener *m_listener;
                 Allocator *m_allocator;
-
-                Mqtt5ListenerOperationStatistics m_operationStatistics;
-                std::condition_variable m_terminationCondition;
-                std::mutex m_terminationMutex;
-                bool m_terminationPredicate = false;
+                aws_rw_lock m_listener_lock;
             };
 
             /**
@@ -134,52 +140,55 @@ namespace Aws
                 Mqtt5ListenerOptions(Crt::Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
-                 * Sets callback triggered when client successfully establishes an MQTT connection
+                 * Sets callback triggered when Listener successfully establishes an MQTT connection
                  *
                  * @param callback
                  *
                  * @return this option object
                  */
-                Mqtt5ListenerOptions &withClientConnectionSuccessCallback(OnConnectionSuccessHandler callback) noexcept;
+                Mqtt5ListenerOptions &withListenerConnectionSuccessCallback(
+                    OnConnectionSuccessHandler callback) noexcept;
 
                 /**
-                 * Sets callback triggered when client fails to establish an MQTT connection
+                 * Sets callback triggered when Listener fails to establish an MQTT connection
                  *
                  * @param callback
                  *
                  * @return this option object
                  */
-                Mqtt5ListenerOptions &withClientConnectionFailureCallback(OnConnectionFailureHandler callback) noexcept;
+                Mqtt5ListenerOptions &withListenerConnectionFailureCallback(
+                    OnConnectionFailureHandler callback) noexcept;
 
                 /**
-                 * Sets callback triggered when client's current MQTT connection is closed
+                 * Sets callback triggered when Listener's current MQTT connection is closed
                  *
                  * @param callback
                  *
                  * @return this option object
                  */
-                Mqtt5ListenerOptions &withClientDisconnectionCallback(OnDisconnectionHandler callback) noexcept;
+                Mqtt5ListenerOptions &withListenerDisconnectionCallback(OnDisconnectionHandler callback) noexcept;
 
                 /**
-                 * Sets callback triggered when client reaches the "Stopped" state
+                 * Sets callback triggered when Listener reaches the "Stopped" state
                  *
                  * @param callback
                  *
                  * @return this option object
                  */
-                Mqtt5ListenerOptions &withClientStoppedCallback(OnStoppedHandler callback) noexcept;
+                Mqtt5ListenerOptions &withListenerStoppedCallback(OnStoppedHandler callback) noexcept;
 
                 /**
-                 * Sets callback triggered when client begins an attempt to connect to the remote endpoint.
+                 * Sets callback triggered when Listener begins an attempt to connect to the remote endpoint.
                  *
                  * @param callback
                  *
                  * @return this option object
                  */
-                Mqtt5ListenerOptions &withClientAttemptingConnectCallback(OnAttemptingConnectHandler callback) noexcept;
+                Mqtt5ListenerOptions &withListenerAttemptingConnectCallback(
+                    OnAttemptingConnectHandler callback) noexcept;
 
                 /**
-                 * Sets callback triggered when a PUBLISH packet is received by the client
+                 * Sets callback triggered when a PUBLISH packet is received by the Listener
                  *
                  * @param callback
                  *
@@ -189,13 +198,13 @@ namespace Aws
                     OnListenerPublishReceivedHandler callback) noexcept;
 
                 /**
-                 * Initializes the C aws_mqtt5_client_options from Mqtt5ListenerOptions. For internal use
+                 * Initializes the C aws_mqtt5_Listener_options from Mqtt5ListenerOptions. For internal use
                  *
-                 * @param raw_options - output parameter containing low level client options to be passed to the C
+                 * @param raw_options - output parameter containing low level Listener options to be passed to the C
                  * interface
                  *
                  */
-                bool initializeRawOptions(aws_mqtt5_client_options &raw_options) const noexcept;
+                bool initializeRawOptions(aws_mqtt5_listener_config &raw_options) const noexcept;
 
                 virtual ~Mqtt5ListenerOptions();
                 Mqtt5ListenerOptions(const Mqtt5ListenerOptions &) = delete;
@@ -205,17 +214,17 @@ namespace Aws
 
               private:
                 /**
-                 * Callback handler triggered when client successfully establishes an MQTT connection
+                 * Callback handler triggered when Listener successfully establishes an MQTT connection
                  */
                 OnConnectionSuccessHandler onConnectionSuccess;
 
                 /**
-                 * Callback handler triggered when client fails to establish an MQTT connection
+                 * Callback handler triggered when Listener fails to establish an MQTT connection
                  */
                 OnConnectionFailureHandler onConnectionFailure;
 
                 /**
-                 * Callback handler triggered when client's current MQTT connection is closed
+                 * Callback handler triggered when Listener's current MQTT connection is closed
                  */
                 OnDisconnectionHandler onDisconnection;
 

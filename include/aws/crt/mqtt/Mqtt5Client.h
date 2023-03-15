@@ -216,6 +216,8 @@ namespace Aws
              */
             class AWS_CRT_CPP_API Mqtt5Client final : public std::enable_shared_from_this<Mqtt5Client>
             {
+                friend class Mqtt5Listener;
+
               public:
                 /**
                  * Factory function for mqtt5 client
@@ -239,7 +241,7 @@ namespace Aws
                 /**
                  * @return true if the instance is in a valid state, false otherwise.
                  */
-                operator bool() const noexcept;
+                operator bool() noexcept;
 
                 /**
                  * @return the value of the last aws error encountered by operations on this instance.
@@ -364,6 +366,21 @@ namespace Aws
                     void *complete_ctx);
 
                 static void s_clientTerminationCompletion(void *complete_ctx);
+
+                /**
+                 * A handler to access and do operation on underlying native client.
+                 * params:
+                 *  - aws_mqtt5_client* client: native client to processing
+                 *  - void* user_data : user defined user data passed in by the caller
+                 *  - void* out_data :  user defined out data as out-parameter
+                 */
+                using processingNativeClientHandler = std::function<bool(aws_mqtt5_client *, void *, void *)>;
+
+                /*
+                 * This is an evil help function to allow accessing the native client. It will call the
+                 * callback with native client and user_data, then return the result of the callback
+                 */
+                bool ProceedOnNativeClient(processingNativeClientHandler callback, void *user_data, void *out_data);
 
                 /* The handler is set by clientoptions */
                 OnWebSocketHandshakeIntercept websocketInterceptor;

@@ -18,71 +18,6 @@ namespace Aws
 {
     namespace Crt
     {
-
-        ////////////////////////////////////////////////////////////////////
-        // Helper Class for ScopedRWLock
-        ////////////////////////////////////////////////////////////////////
-
-        /**
-         * Custom implementation of an ScopedTryReadLock type. Wrapping the aws_rw_lock.
-         * On creation, the ScopedTryReadLock will attempts to acquire the lock and returns immediately if it can not.
-         * The lock will be unlocked on destruction.
-         * Use aws_last_error() or operator bool() to check if the lock get acquired successfully.
-         */
-        class ScopedTryReadLock
-        {
-          public:
-            ScopedTryReadLock(aws_rw_lock *lock)
-            {
-                m_lock = lock;
-                m_last_error = aws_rw_lock_try_rlock(m_lock);
-            }
-
-            int aws_last_error() { return m_last_error; }
-            operator bool() const { return m_last_error == AWS_ERROR_SUCCESS; }
-
-            ~ScopedTryReadLock()
-            {
-                if (m_last_error == AWS_ERROR_SUCCESS)
-                {
-                    aws_rw_lock_runlock(m_lock);
-                }
-            }
-            ScopedTryReadLock(const ScopedTryReadLock &) noexcept = delete;
-            ScopedTryReadLock(ScopedTryReadLock &&) noexcept = delete;
-            ScopedTryReadLock &operator=(const ScopedTryReadLock &) noexcept = delete;
-            ScopedTryReadLock &operator=(ScopedTryReadLock &&) noexcept = delete;
-
-          private:
-            struct aws_rw_lock *m_lock;
-            int m_last_error;
-        };
-
-        /**
-         * Custom implementation of an ScopedWriteLock type. Wrapping the aws_rw_lock.
-         * On creation, the ScopedWriteLock will acquire the write lock.
-         * The lock will be unlocked on destruction.
-         */
-        class ScopedWriteLock
-        {
-          public:
-            ScopedWriteLock(aws_rw_lock *lock)
-            {
-                m_lock = lock;
-                aws_rw_lock_wlock(m_lock);
-            }
-
-            ~ScopedWriteLock() { aws_rw_lock_wunlock(m_lock); }
-
-            ScopedWriteLock(const ScopedWriteLock &) noexcept = delete;
-            ScopedWriteLock(ScopedWriteLock &&) noexcept = delete;
-            ScopedWriteLock &operator=(const ScopedWriteLock &) noexcept = delete;
-            ScopedWriteLock &operator=(ScopedWriteLock &&) noexcept = delete;
-
-          private:
-            struct aws_rw_lock *m_lock;
-        };
-
         ////////////////////////////////////////////////////////////////////
         // MQTT5
         ////////////////////////////////////////////////////////////////////
@@ -314,6 +249,21 @@ namespace Aws
                 client->m_selfReference = nullptr;
             }
 
+            bool Mqtt5Client::ProceedOnNativeClient(
+                processingNativeClientHandler callback,
+                void *user_data,
+                void *out_data)
+            {
+                ScopedTryReadLock lock(&m_client_lock);
+                if (!lock)
+                    return false;
+                if (callback)
+                {
+                    return callback(m_client, user_data, out_data);
+                }
+                return false;
+            }
+
             void Mqtt5Client::s_subscribeCompletionCallback(
                 const aws_mqtt5_packet_suback_view *suback,
                 int error_code,
@@ -464,7 +414,15 @@ namespace Aws
                 return shared_client;
             }
 
-            Mqtt5Client::operator bool() const noexcept { return m_client != nullptr; }
+            Mqtt5Client::operator bool() noexcept
+            {
+                ScopedTryReadLock lock(&m_client_lock);
+                if (!lock)
+                {
+                    return false;
+                }
+                return m_client != nullptr;
+            }
 
             int Mqtt5Client::LastError() const noexcept { return aws_last_error(); }
 
@@ -646,6 +604,7 @@ namespace Aws
                 ScopedWriteLock lock(&m_client_lock);
                 if (m_client != nullptr)
                 {
+                    /* The ref count is initialized in `aws_mqtt5_client_new()` with `aws_ref_count_init()` */
                     aws_mqtt5_client_release(m_client);
                     m_client = nullptr;
                 }

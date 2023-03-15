@@ -3,6 +3,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include <aws/common/rw_lock.h>
 #include <aws/mqtt/v5/mqtt5_client.h>
 #include <aws/mqtt/v5/mqtt5_listener.h>
 #include <aws/mqtt/v5/mqtt5_types.h>
@@ -114,6 +115,70 @@ namespace Aws
              * https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901022
              */
             using PacketType = aws_mqtt5_packet_type;
+
+            ////////////////////////////////////////////////////////////////////
+            // Helper Class for ScopedRWLock
+            ////////////////////////////////////////////////////////////////////
+
+            /**
+             * Custom implementation of an ScopedTryReadLock type. Wrapping the aws_rw_lock.
+             * On creation, the ScopedTryReadLock will attempts to acquire the lock and returns immediately if it can
+             * not. The lock will be unlocked on destruction. Use aws_last_error() or operator bool() to check if the
+             * lock get acquired successfully.
+             */
+            class ScopedTryReadLock
+            {
+              public:
+                ScopedTryReadLock(aws_rw_lock *lock)
+                {
+                    m_lock = lock;
+                    m_last_error = aws_rw_lock_try_rlock(m_lock);
+                }
+
+                int aws_last_error() { return m_last_error; }
+                operator bool() const { return m_last_error == AWS_ERROR_SUCCESS; }
+
+                ~ScopedTryReadLock()
+                {
+                    if (m_last_error == AWS_ERROR_SUCCESS)
+                    {
+                        aws_rw_lock_runlock(m_lock);
+                    }
+                }
+                ScopedTryReadLock(const ScopedTryReadLock &) noexcept = delete;
+                ScopedTryReadLock(ScopedTryReadLock &&) noexcept = delete;
+                ScopedTryReadLock &operator=(const ScopedTryReadLock &) noexcept = delete;
+                ScopedTryReadLock &operator=(ScopedTryReadLock &&) noexcept = delete;
+
+              private:
+                struct aws_rw_lock *m_lock;
+                int m_last_error;
+            };
+
+            /**
+             * Custom implementation of an ScopedWriteLock type. Wrapping the aws_rw_lock.
+             * On creation, the ScopedWriteLock will acquire the write lock.
+             * The lock will be unlocked on destruction.
+             */
+            class ScopedWriteLock
+            {
+              public:
+                ScopedWriteLock(aws_rw_lock *lock)
+                {
+                    m_lock = lock;
+                    aws_rw_lock_wlock(m_lock);
+                }
+
+                ~ScopedWriteLock() { aws_rw_lock_wunlock(m_lock); }
+
+                ScopedWriteLock(const ScopedWriteLock &) noexcept = delete;
+                ScopedWriteLock(ScopedWriteLock &&) noexcept = delete;
+                ScopedWriteLock &operator=(const ScopedWriteLock &) noexcept = delete;
+                ScopedWriteLock &operator=(ScopedWriteLock &&) noexcept = delete;
+
+              private:
+                struct aws_rw_lock *m_lock;
+            };
 
         } // namespace Mqtt5
 
