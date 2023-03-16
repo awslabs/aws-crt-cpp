@@ -54,15 +54,9 @@ namespace Aws
                 return shared_listener;
             }
 
-            Mqtt5Listener::operator bool() const noexcept
-            {
-                return m_listener != nullptr;
-            }
+            Mqtt5Listener::operator bool() const noexcept { return m_listener != nullptr; }
 
-            int Mqtt5Listener::LastError() const noexcept
-            {
-                return aws_last_error();
-            }
+            int Mqtt5Listener::LastError() const noexcept { return aws_last_error(); }
 
             void Mqtt5Listener::Close() noexcept
             {
@@ -80,6 +74,7 @@ namespace Aws
                 const Mqtt5ListenerOptions &options,
                 const std::shared_ptr<Mqtt5Client> client,
                 Allocator *allocator) noexcept
+                : m_allocator(allocator)
             {
                 m_mqtt5Client = client;
                 if (options.onConnectionFailure)
