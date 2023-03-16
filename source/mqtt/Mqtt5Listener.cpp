@@ -2,8 +2,6 @@
 #include <aws/crt/mqtt/Mqtt5Packets.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
 
-#include <aws/mqtt/v5/mqtt5_listener.h>
-
 namespace Aws
 {
     namespace Crt
@@ -13,7 +11,8 @@ namespace Aws
             class ScopedWriteLock;
 
             static bool ProcessNativeClientAndCreateMqtt5Listener(
-                aws_mqtt5_client *native_client,
+                struct aws_mqtt5_client *native_client,
+                Allocator *allocator,
                 void *listener_options,
                 void *out_result)
             {
@@ -22,7 +21,7 @@ namespace Aws
                 aws_mqtt5_listener_config *config = static_cast<aws_mqtt5_listener_config *>(listener_options);
                 config->client = native_client;
 
-                out_result = aws_mqtt5_listener_new(g_allocator, config);
+                out_result = aws_mqtt5_listener_new(allocator, config);
                 return true;
             }
 
@@ -121,7 +120,7 @@ namespace Aws
                 AWS_FATAL_ASSERT(aws_rw_lock_init(&m_listener_lock) == AWS_OP_SUCCESS);
 
                 m_mqtt5Client->ProceedOnNativeClient(
-                    &ProcessNativeClientAndCreateMqtt5Listener, &listener_config, m_listener);
+                    &ProcessNativeClientAndCreateMqtt5Listener, allocator, &listener_config, m_listener);
             }
 
             void Mqtt5Listener::s_lifeCycleEventCallback(const aws_mqtt5_client_lifecycle_event *event)

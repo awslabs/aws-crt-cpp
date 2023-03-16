@@ -374,13 +374,18 @@ namespace Aws
                  *  - void* user_data : user defined user data passed in by the caller
                  *  - void* out_data :  user defined out data as out-parameter
                  */
-                using processingNativeClientHandler = std::function<bool(aws_mqtt5_client *, void *, void *)>;
+                using processingNativeClientHandler =
+                    std::function<bool(aws_mqtt5_client *, Allocator *, void *, void *)>;
 
                 /*
                  * This is an evil help function to allow accessing the native client. It will call the
                  * callback with native client and user_data, then return the result of the callback
                  */
-                bool ProceedOnNativeClient(processingNativeClientHandler callback, void *user_data, void *out_data);
+                bool ProceedOnNativeClient(
+                    processingNativeClientHandler callback,
+                    Allocator *,
+                    void *user_data,
+                    void *out_data);
 
                 /* The handler is set by clientoptions */
                 OnWebSocketHandshakeIntercept websocketInterceptor;

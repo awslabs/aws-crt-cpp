@@ -251,6 +251,7 @@ namespace Aws
 
             bool Mqtt5Client::ProceedOnNativeClient(
                 processingNativeClientHandler callback,
+                Allocator *allocator,
                 void *user_data,
                 void *out_data)
             {
@@ -259,7 +260,7 @@ namespace Aws
                     return false;
                 if (callback)
                 {
-                    return callback(m_client, user_data, out_data);
+                    return callback(m_client, allocator, user_data, out_data);
                 }
                 return false;
             }
