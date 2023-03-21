@@ -355,36 +355,33 @@ static void s_setupListenerLifeCycle(
 {
 
     listenerOptions->withListenerAttemptingConnectCallback(
-        [identity](Mqtt5Client &, const OnAttemptingConnectEventData &)
-        { printf("[MQTT5Listener]%s attempting connection Success.", identity); });
+        [identity](Mqtt5Client &, const OnAttemptingConnectEventData &) {
+            printf("[MQTT5Listener]%s attempting connection Success.", identity);
+        });
 
     listenerOptions->withListenerConnectionSuccessCallback(
-        [&connectionPromise, identity](Mqtt5Client &, const OnConnectionSuccessEventData &)
-        {
+        [&connectionPromise, identity](Mqtt5Client &, const OnConnectionSuccessEventData &) {
             printf("[MQTT5Listener]%s Connection Success.", identity);
             connectionPromise.set_value(true);
         });
 
-    listenerOptions->withListenerConnectionFailureCallback(
-        [&connectionPromise, identity](Mqtt5Client &, const OnConnectionFailureEventData &eventData)
-        {
-            printf(
-                "[MQTT5Listener]%s Connection failed with error : %s",
-                identity,
-                aws_error_debug_str(eventData.errorCode));
-            connectionPromise.set_value(false);
-        });
+    listenerOptions->withListenerConnectionFailureCallback([&connectionPromise, identity](
+                                                               Mqtt5Client &,
+                                                               const OnConnectionFailureEventData &eventData) {
+        printf(
+            "[MQTT5Listener]%s Connection failed with error : %s", identity, aws_error_debug_str(eventData.errorCode));
+        connectionPromise.set_value(false);
+    });
 
     listenerOptions->withListenerStoppedCallback(
-        [&stoppedPromise, identity](Mqtt5Client &, const OnStoppedEventData &)
-        {
+        [&stoppedPromise, identity](Mqtt5Client &, const OnStoppedEventData &) {
             printf("[MQTT5]%s Stopped", identity);
             stoppedPromise.set_value();
         });
 
-    listenerOptions->withListenerDisconnectionCallback(
-        [identity](Mqtt5Client &, const OnDisconnectionEventData &)
-        { printf("[MQTT5Listener]%s disconnecting Success.", identity); });
+    listenerOptions->withListenerDisconnectionCallback([identity](Mqtt5Client &, const OnDisconnectionEventData &) {
+        printf("[MQTT5Listener]%s disconnecting Success.", identity);
+    });
 }
 
 //////////////////////////////////////////////////////////
@@ -3014,13 +3011,11 @@ static int s_TestMqtt5NewListenerFull(Aws::Crt::Allocator *allocator, void *)
 
     s_setupListenerLifeCycle(&listenerOptions, connectionPromise, stoppedPromise);
 
-    listenerOptions.withListenerPublishReceivedCallback(
-        [](Mqtt5Client &, const PublishReceivedEventData &eventData)
-        {
-            String topic = eventData.publishPacket->getTopic();
-            AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "[MQTT5Listener] message received on topic: %s.", topic.c_str());
-            return false;
-        });
+    listenerOptions.withListenerPublishReceivedCallback([](Mqtt5Client &, const PublishReceivedEventData &eventData) {
+        String topic = eventData.publishPacket->getTopic();
+        AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "[MQTT5Listener] message received on topic: %s.", topic.c_str());
+        return false;
+    });
 
     std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
         Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, mqtt5Client, allocator);
@@ -3144,26 +3139,22 @@ static int s_TestMqtt5ListenerRemoveLifecycleEvent(Aws::Crt::Allocator *allocato
     bool listenerStopped = false;
 
     listenerOptions.withListenerConnectionSuccessCallback(
-        [&listenerConnectionPromise](Mqtt5Client &, const OnConnectionSuccessEventData &)
-        {
+        [&listenerConnectionPromise](Mqtt5Client &, const OnConnectionSuccessEventData &) {
             printf("[MQTT5Listener]Listener Connection Success.");
             listenerConnectionPromise.set_value(true);
         });
 
     listenerOptions.withListenerConnectionFailureCallback(
-        [&listenerConnectionPromise](Mqtt5Client &, const OnConnectionFailureEventData &eventData)
-        {
+        [&listenerConnectionPromise](Mqtt5Client &, const OnConnectionFailureEventData &eventData) {
             printf(
                 "[MQTT5Listener]Listener Connection failed with error : %s", aws_error_debug_str(eventData.errorCode));
             listenerConnectionPromise.set_value(false);
         });
 
-    listenerOptions.withListenerStoppedCallback(
-        [&listenerStopped](Mqtt5Client &, const OnStoppedEventData &)
-        {
-            printf("[MQTT5]Listener Stopped");
-            listenerStopped = true;
-        });
+    listenerOptions.withListenerStoppedCallback([&listenerStopped](Mqtt5Client &, const OnStoppedEventData &) {
+        printf("[MQTT5]Listener Stopped");
+        listenerStopped = true;
+    });
 
     std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
         Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, mqtt5Client, allocator);
@@ -3223,8 +3214,7 @@ static int s_TestMqtt5ListenerPublishReceivedCallback(Aws::Crt::Allocator *alloc
     int clientListenerMessageCount = 0;
     builder->withPublishReceivedCallback(
         [&clientTestMessageCount, &clientListenerMessageCount, TEST_TOPIC, LISTENER_TOPIC](
-            Mqtt5Client &, const PublishReceivedEventData &eventData)
-        {
+            Mqtt5Client &, const PublishReceivedEventData &eventData) {
             String topic = eventData.publishPacket->getTopic();
             if (topic == TEST_TOPIC)
             {
@@ -3247,8 +3237,7 @@ static int s_TestMqtt5ListenerPublishReceivedCallback(Aws::Crt::Allocator *alloc
     int listenerTestMessageCount = 0;
     int listenerListenerMessageCount = 0;
     listenerOptions.withListenerPublishReceivedCallback(
-        [&listenerListenerMessageCount, LISTENER_TOPIC](Mqtt5Client &, const PublishReceivedEventData &eventData)
-        {
+        [&listenerListenerMessageCount, LISTENER_TOPIC](Mqtt5Client &, const PublishReceivedEventData &eventData) {
             String topic = eventData.publishPacket->getTopic();
             if (topic == LISTENER_TOPIC)
             {
@@ -3257,8 +3246,6 @@ static int s_TestMqtt5ListenerPublishReceivedCallback(Aws::Crt::Allocator *alloc
             }
             return false;
         });
-    std::promise<bool> listenerConnectionPromise;
-    bool listenerStopped = false;
 
     std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
         Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, mqtt5Client, allocator);
@@ -3339,8 +3326,9 @@ static int s_TestMqtt5ListenerRemovePublishReceived(Aws::Crt::Allocator *allocat
     /* Mqtt5Client setup publish received callback for subscriber */
     int clientTestMessageCount = 0;
     builder->withPublishReceivedCallback(
-        [&clientTestMessageCount](Mqtt5Client &, const PublishReceivedEventData &eventData)
-        { ++clientTestMessageCount; });
+        [&clientTestMessageCount](Mqtt5Client &, const PublishReceivedEventData &eventData) {
+            ++clientTestMessageCount;
+        });
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
     ASSERT_TRUE(mqtt5Client);
@@ -3352,14 +3340,11 @@ static int s_TestMqtt5ListenerRemovePublishReceived(Aws::Crt::Allocator *allocat
 
     int listenerTestMessageCount = 0;
     listenerOptions.withListenerPublishReceivedCallback(
-        [&listenerTestMessageCount](Mqtt5Client &, const PublishReceivedEventData &eventData)
-        {
+        [&listenerTestMessageCount](Mqtt5Client &, const PublishReceivedEventData &eventData) {
             String topic = eventData.publishPacket->getTopic();
             ++listenerTestMessageCount;
             return true;
         });
-    std::promise<bool> listenerConnectionPromise;
-    bool listenerStopped = false;
 
     std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
         Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, mqtt5Client, allocator);

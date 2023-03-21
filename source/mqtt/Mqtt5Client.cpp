@@ -387,10 +387,7 @@ namespace Aws
                 m_client = aws_mqtt5_client_new(allocator, &clientOptions);
             }
 
-            Mqtt5Client::~Mqtt5Client()
-            {
-                aws_rw_lock_clean_up(&m_client_lock);
-            }
+            Mqtt5Client::~Mqtt5Client() { aws_rw_lock_clean_up(&m_client_lock); }
 
             std::shared_ptr<Mqtt5Client> Mqtt5Client::NewMqtt5Client(
                 const Mqtt5ClientOptions &options,

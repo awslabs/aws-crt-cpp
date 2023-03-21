@@ -240,9 +240,6 @@ namespace Aws
                  * @param PublishPacket: received Publish Packet
                  */
                 OnListenerPublishReceivedHandler onListenerPublishReceived;
-
-                /* Underlying Parameters */
-                Crt::Allocator *m_allocator;
             };
 
         } // namespace Mqtt5
