@@ -3269,7 +3269,12 @@ static int s_TestMqtt5ListenerPublishReceivedCallback(Aws::Crt::Allocator *alloc
     std::shared_ptr<Mqtt5::SubscribePacket> subscribe = std::make_shared<Mqtt5::SubscribePacket>(allocator);
     subscribe->withSubscription(std::move(subscription1));
     subscribe->withSubscription(std::move(subscription2));
-    ASSERT_TRUE(mqtt5Client->Subscribe(subscribe));
+    std::promise<void> subscribed;
+    ASSERT_TRUE(
+        mqtt5Client->Subscribe(subscribe, [&subscribed](Mqtt5Client &, int, std::shared_ptr<Mqtt5::SubAckPacket>) {
+            subscribed.set_value();
+        }));
+    subscribed.get_future().get();
 
     /* Publish message 1 to test topic */
     ByteBuf payload = Aws::Crt::ByteBufFromCString("Hello World");
@@ -3371,7 +3376,12 @@ static int s_TestMqtt5ListenerRemovePublishReceived(Aws::Crt::Allocator *allocat
     subscription1.withNoLocal(false);
     std::shared_ptr<Mqtt5::SubscribePacket> subscribe = std::make_shared<Mqtt5::SubscribePacket>(allocator);
     subscribe->withSubscription(std::move(subscription1));
-    ASSERT_TRUE(mqtt5Client->Subscribe(subscribe));
+    std::promise<void> subscribed;
+    ASSERT_TRUE(
+        mqtt5Client->Subscribe(subscribe, [&subscribed](Mqtt5Client &, int, std::shared_ptr<Mqtt5::SubAckPacket>) {
+            subscribed.set_value();
+        }));
+    subscribed.get_future().get();
 
     /* Publish 1st message */
     ByteBuf payload = Aws::Crt::ByteBufFromCString("Hello World");
