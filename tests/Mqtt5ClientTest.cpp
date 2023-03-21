@@ -3326,9 +3326,7 @@ static int s_TestMqtt5ListenerRemovePublishReceived(Aws::Crt::Allocator *allocat
     /* Mqtt5Client setup publish received callback for subscriber */
     int clientTestMessageCount = 0;
     builder->withPublishReceivedCallback(
-        [&clientTestMessageCount](Mqtt5Client &, const PublishReceivedEventData &eventData) {
-            ++clientTestMessageCount;
-        });
+        [&clientTestMessageCount](Mqtt5Client &, const PublishReceivedEventData &) { ++clientTestMessageCount; });
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
     ASSERT_TRUE(mqtt5Client);
