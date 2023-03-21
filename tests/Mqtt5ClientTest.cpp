@@ -3166,8 +3166,8 @@ static int s_TestMqtt5ListenerRemoveLifecycleEvent(Aws::Crt::Allocator *allocato
     ASSERT_TRUE(listenerConnectionPromise.get_future().get());
 
     mqtt5Listener->Close();
-    /* Wait for mqtt5Listener closed */
-    aws_thread_current_sleep(10000ULL * 1000 * 5);
+    /* Wait 5s for mqtt5Listener closed */
+    aws_thread_current_sleep(5000ULL * 1000 * 1000);
     ASSERT_TRUE(mqtt5Client->Stop());
 
     clientStoppedPromise.get_future().get();
@@ -3209,11 +3209,14 @@ static int s_TestMqtt5ListenerPublishReceivedCallback(Aws::Crt::Allocator *alloc
     std::promise<void> clientStoppedPromise;
     s_setupConnectionLifeCycle(builder, clientConnectionPromise, clientStoppedPromise);
 
+    std::promise<void> clientMessageReceived;
+    std::promise<void> listenerMessageReceived;
+
     /* Mqtt5Client setup publish received callback for subscriber */
     int clientTestMessageCount = 0;
     int clientListenerMessageCount = 0;
     builder->withPublishReceivedCallback(
-        [&clientTestMessageCount, &clientListenerMessageCount, TEST_TOPIC, LISTENER_TOPIC](
+        [&clientMessageReceived, &clientTestMessageCount, &clientListenerMessageCount, TEST_TOPIC, LISTENER_TOPIC](
             Mqtt5Client &, const PublishReceivedEventData &eventData) {
             String topic = eventData.publishPacket->getTopic();
             if (topic == TEST_TOPIC)
@@ -3224,6 +3227,7 @@ static int s_TestMqtt5ListenerPublishReceivedCallback(Aws::Crt::Allocator *alloc
             {
                 ++clientListenerMessageCount;
             }
+            clientMessageReceived.set_value();
         });
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
@@ -3237,11 +3241,13 @@ static int s_TestMqtt5ListenerPublishReceivedCallback(Aws::Crt::Allocator *alloc
     int listenerTestMessageCount = 0;
     int listenerListenerMessageCount = 0;
     listenerOptions.withListenerPublishReceivedCallback(
-        [&listenerListenerMessageCount, LISTENER_TOPIC](Mqtt5Client &, const PublishReceivedEventData &eventData) {
+        [&listenerMessageReceived, &listenerListenerMessageCount, LISTENER_TOPIC](
+            Mqtt5Client &, const PublishReceivedEventData &eventData) {
             String topic = eventData.publishPacket->getTopic();
             if (topic == LISTENER_TOPIC)
             {
                 ++listenerListenerMessageCount;
+                listenerMessageReceived.set_value();
                 return true;
             }
             return false;
@@ -3275,8 +3281,10 @@ static int s_TestMqtt5ListenerPublishReceivedCallback(Aws::Crt::Allocator *alloc
         LISTENER_TOPIC, ByteCursorFromByteBuf(payload), Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
     ASSERT_TRUE(mqtt5Client->Publish(listener_publish));
 
-    /* Wait for message processing */
-    aws_thread_current_sleep(10000ULL * 1000 * 1000);
+    /* Wait for message processing. If we failed to get the future
+     * successfully, it usually means the test failed. */
+    clientMessageReceived.get_future().get();
+    listenerMessageReceived.get_future().get();
 
     ASSERT_TRUE(clientTestMessageCount > 0);
     ASSERT_TRUE(clientListenerMessageCount == 0);
@@ -3323,10 +3331,16 @@ static int s_TestMqtt5ListenerRemovePublishReceived(Aws::Crt::Allocator *allocat
     std::promise<void> clientStoppedPromise;
     s_setupConnectionLifeCycle(builder, clientConnectionPromise, clientStoppedPromise);
 
+    std::promise<void> clientMessageReceived;
+    std::promise<void> listenerMessageReceived;
+
     /* Mqtt5Client setup publish received callback for subscriber */
     int clientTestMessageCount = 0;
     builder->withPublishReceivedCallback(
-        [&clientTestMessageCount](Mqtt5Client &, const PublishReceivedEventData &) { ++clientTestMessageCount; });
+        [&clientMessageReceived, &clientTestMessageCount](Mqtt5Client &, const PublishReceivedEventData &) {
+            clientMessageReceived.set_value();
+            ++clientTestMessageCount;
+        });
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
     ASSERT_TRUE(mqtt5Client);
@@ -3337,12 +3351,13 @@ static int s_TestMqtt5ListenerRemovePublishReceived(Aws::Crt::Allocator *allocat
     Mqtt5::Mqtt5ListenerOptions listenerOptions;
 
     int listenerTestMessageCount = 0;
-    listenerOptions.withListenerPublishReceivedCallback(
-        [&listenerTestMessageCount](Mqtt5Client &, const PublishReceivedEventData &eventData) {
-            String topic = eventData.publishPacket->getTopic();
-            ++listenerTestMessageCount;
-            return true;
-        });
+    listenerOptions.withListenerPublishReceivedCallback([&listenerMessageReceived, &listenerTestMessageCount](
+                                                            Mqtt5Client &, const PublishReceivedEventData &eventData) {
+        String topic = eventData.publishPacket->getTopic();
+        ++listenerTestMessageCount;
+        listenerMessageReceived.set_value();
+        return true;
+    });
 
     std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
         Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, mqtt5Client, allocator);
@@ -3366,20 +3381,20 @@ static int s_TestMqtt5ListenerRemovePublishReceived(Aws::Crt::Allocator *allocat
     ASSERT_TRUE(mqtt5Client->Publish(test_publish));
 
     /* Wait for message processing */
-    aws_thread_current_sleep(10000ULL * 1000 * 1000);
+    listenerMessageReceived.get_future().get();
 
     ASSERT_TRUE(clientTestMessageCount == 0);
     ASSERT_TRUE(listenerTestMessageCount == 1);
 
     mqtt5Listener->Close();
     /* Wait for listener closed */
-    aws_thread_current_sleep(10000ULL * 1000 * 5);
+    aws_thread_current_sleep(5000ULL * 1000 * 1000);
 
     /* Publish 2nd message */
     ASSERT_TRUE(mqtt5Client->Publish(test_publish));
 
     /* Wait for message processing */
-    aws_thread_current_sleep(10000ULL * 1000 * 1000);
+    clientMessageReceived.get_future().get();
 
     ASSERT_TRUE(clientTestMessageCount == 1);
     ASSERT_TRUE(listenerTestMessageCount == 1);
