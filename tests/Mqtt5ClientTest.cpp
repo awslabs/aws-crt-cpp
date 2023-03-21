@@ -3257,7 +3257,7 @@ static int s_TestMqtt5ListenerPublishReceivedCallback(Aws::Crt::Allocator *alloc
         Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, mqtt5Client, allocator);
     ASSERT_TRUE(mqtt5Listener);
 
-    /* Start pulbisher and subscriber */
+    /* Start client*/
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(clientConnectionPromise.get_future().get());
 
@@ -3351,19 +3351,18 @@ static int s_TestMqtt5ListenerRemovePublishReceived(Aws::Crt::Allocator *allocat
     Mqtt5::Mqtt5ListenerOptions listenerOptions;
 
     int listenerTestMessageCount = 0;
-    listenerOptions.withListenerPublishReceivedCallback([&listenerMessageReceived, &listenerTestMessageCount](
-                                                            Mqtt5Client &, const PublishReceivedEventData &eventData) {
-        String topic = eventData.publishPacket->getTopic();
-        ++listenerTestMessageCount;
-        listenerMessageReceived.set_value();
-        return true;
-    });
+    listenerOptions.withListenerPublishReceivedCallback(
+        [&listenerMessageReceived, &listenerTestMessageCount](Mqtt5Client &, const PublishReceivedEventData &) {
+            ++listenerTestMessageCount;
+            listenerMessageReceived.set_value();
+            return true;
+        });
 
     std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
         Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, mqtt5Client, allocator);
     ASSERT_TRUE(mqtt5Listener);
 
-    /* Start pulbisher and subscriber */
+    /* Start client */
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(clientConnectionPromise.get_future().get());
 
