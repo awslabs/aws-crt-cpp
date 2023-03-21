@@ -7,6 +7,7 @@
 #include <aws/crt/UUID.h>
 #include <aws/crt/auth/Credentials.h>
 #include <aws/crt/http/HttpProxyStrategy.h>
+#include <aws/crt/mqtt/Mqtt5Listener.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
 #include <aws/iot/Mqtt5Client.h>
 #include <aws/iot/MqttCommon.h>
@@ -344,6 +345,46 @@ static void s_setupConnectionLifeCycle(
         printf("[MQTT5]%s Stopped", clientName);
         stoppedPromise.set_value();
     });
+}
+
+static void s_setupListenerLifeCycle(
+    Aws::Crt::Mqtt5::Mqtt5ListenerOptions *listenerOptions,
+    std::promise<bool> &connectionPromise,
+    std::promise<void> &stoppedPromise,
+    const char *identity = "Listener")
+{
+
+    listenerOptions->withListenerAttemptingConnectCallback(
+        [identity](Mqtt5Client &, const OnAttemptingConnectEventData &)
+        { printf("[MQTT5Listener]%s attempting connection Success.", identity); });
+
+    listenerOptions->withListenerConnectionSuccessCallback(
+        [&connectionPromise, identity](Mqtt5Client &, const OnConnectionSuccessEventData &)
+        {
+            printf("[MQTT5Listener]%s Connection Success.", identity);
+            connectionPromise.set_value(true);
+        });
+
+    listenerOptions->withListenerConnectionFailureCallback(
+        [&connectionPromise, identity](Mqtt5Client &, const OnConnectionFailureEventData &eventData)
+        {
+            printf(
+                "[MQTT5Listener]%s Connection failed with error : %s",
+                identity,
+                aws_error_debug_str(eventData.errorCode));
+            connectionPromise.set_value(false);
+        });
+
+    listenerOptions->withListenerStoppedCallback(
+        [&stoppedPromise, identity](Mqtt5Client &, const OnStoppedEventData &)
+        {
+            printf("[MQTT5]%s Stopped", identity);
+            stoppedPromise.set_value();
+        });
+
+    listenerOptions->withListenerDisconnectionCallback(
+        [identity](Mqtt5Client &, const OnDisconnectionEventData &)
+        { printf("[MQTT5Listener]%s disconnecting Success.", identity); });
 }
 
 //////////////////////////////////////////////////////////
@@ -2877,5 +2918,67 @@ static int s_TestMqtt5OperationStatisticsSimple(Aws::Crt::Allocator *allocator, 
 }
 
 AWS_TEST_CASE(Mqtt5OperationStatisticsSimple, s_TestMqtt5OperationStatisticsSimple)
+
+//////////////////////////////////////////////////////////
+// Mqtt5 Listener Tests
+//////////////////////////////////////////////////////////
+
+/*
+ * [LNew-UC1] Happy path. Minimal creation and cleanup
+ */
+static int s_TestMqtt5NewListenerMin(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    // Hardcoded the host name and port for creation test
+    mqtt5Options.withHostName("localhost").withPort(1883);
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(mqtt5Client);
+
+    Mqtt5::Mqtt5ListenerOptions listenerOptions(allocator);
+    std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
+        Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, mqtt5Client, allocator);
+    ASSERT_TRUE(mqtt5Listener);
+
+    mqtt5Listener->Close();
+    mqtt5Client->Close();
+    return AWS_ERROR_SUCCESS;
+}
+
+AWS_TEST_CASE(Mqtt5NewListenerMinimal, s_TestMqtt5NewListenerMin)
+
+/*
+ * [LNEW-UC2] Happy Path. Full setup and cleanup
+ */
+static int s_TestMqtt5NewListenerFull(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    // Hardcoded the host name and port for creation test
+    mqtt5Options.withHostName("localhost").withPort(1883);
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(mqtt5Client);
+
+    Mqtt5::Mqtt5ListenerOptions listenerOptions(allocator);
+
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+
+    s_setupListenerLifeCycle(&listenerOptions, connectionPromise, stoppedPromise);
+
+    std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
+        Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, mqtt5Client, allocator);
+    ASSERT_TRUE(mqtt5Listener);
+
+    mqtt5Listener->Close();
+    mqtt5Client->Close();
+    return AWS_ERROR_SUCCESS;
+}
+
+AWS_TEST_CASE(Mqtt5NewListenerFull, s_TestMqtt5NewListenerFull)
 
 #endif // !BYO_CRYPTO

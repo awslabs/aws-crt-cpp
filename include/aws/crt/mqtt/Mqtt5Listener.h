@@ -40,7 +40,7 @@ namespace Aws
                  */
                 static std::shared_ptr<Mqtt5Listener> NewMqtt5Listener(
                     const Mqtt5ListenerOptions &options,
-                    const std::shared_ptr<Mqtt5Client> client,
+                    const std::shared_ptr<Mqtt5Client> &client,
                     Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
@@ -76,7 +76,7 @@ namespace Aws
               private:
                 Mqtt5Listener(
                     const Mqtt5ListenerOptions &options,
-                    const std::shared_ptr<Mqtt5Client> client,
+                    const std::shared_ptr<Mqtt5Client> &client,
                     Allocator *allocator = ApiAllocator()) noexcept;
 
                 static void s_lifeCycleEventCallback(const aws_mqtt5_client_lifecycle_event *event);

@@ -133,6 +133,8 @@ endif()
 #MQTT5 related tests
 add_test_case(Mqtt5NewClientMinimal)
 add_test_case(Mqtt5NewClientFull)
+add_test_case(Mqtt5NewListenerMinimal)
+add_test_case(Mqtt5NewListenerFull)
 if(ENABLE_MQTT5_TEST AND NOT BYO_CRYPTO)
     add_net_test_case(Mqtt5DirectConnectionMinimal)
     add_net_test_case(Mqtt5DirectConnectionWithBasicAuth)

@@ -246,14 +246,14 @@ namespace Aws
             void Mqtt5Client::s_clientTerminationCompletion(void *complete_ctx)
             {
                 Mqtt5Client *client = reinterpret_cast<Mqtt5Client *>(complete_ctx);
-                client->m_selfReference = nullptr;
+                client->m_selfReference.reset();
             }
 
             bool Mqtt5Client::ProceedOnNativeClient(
                 processingNativeClientHandler callback,
                 Allocator *allocator,
                 void *user_data,
-                void *out_data)
+                void **out_data)
             {
                 ScopedTryReadLock lock(&m_client_lock);
                 if (!lock)
@@ -387,7 +387,10 @@ namespace Aws
                 m_client = aws_mqtt5_client_new(allocator, &clientOptions);
             }
 
-            Mqtt5Client::~Mqtt5Client() { aws_rw_lock_clean_up(&m_client_lock); }
+            Mqtt5Client::~Mqtt5Client()
+            {
+                aws_rw_lock_clean_up(&m_client_lock);
+            }
 
             std::shared_ptr<Mqtt5Client> Mqtt5Client::NewMqtt5Client(
                 const Mqtt5ClientOptions &options,
@@ -411,7 +414,7 @@ namespace Aws
 
                 std::shared_ptr<Mqtt5Client> shared_client = std::shared_ptr<Mqtt5Client>(
                     toSeat, [allocator](Mqtt5Client *client) { Crt::Delete(client, allocator); });
-                shared_client->m_selfReference = shared_client;
+                shared_client->m_selfReference = toSeat->shared_from_this();
                 return shared_client;
             }
 

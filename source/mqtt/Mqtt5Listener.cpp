@@ -14,20 +14,20 @@ namespace Aws
                 struct aws_mqtt5_client *native_client,
                 Allocator *allocator,
                 void *listener_options,
-                void *out_result)
+                void **out_result)
             {
-                AWS_FATAL_ASSERT(!native_client);
-                AWS_FATAL_ASSERT(!listener_options);
+                AWS_FATAL_ASSERT(native_client);
+                AWS_FATAL_ASSERT(listener_options);
                 aws_mqtt5_listener_config *config = static_cast<aws_mqtt5_listener_config *>(listener_options);
                 config->client = native_client;
 
-                out_result = aws_mqtt5_listener_new(allocator, config);
+                *out_result = aws_mqtt5_listener_new(allocator, config);
                 return true;
             }
 
             std::shared_ptr<Mqtt5Listener> Aws::Crt::Mqtt5::Mqtt5Listener::NewMqtt5Listener(
                 const Mqtt5ListenerOptions &options,
-                const std::shared_ptr<Mqtt5Client> client,
+                const std::shared_ptr<Mqtt5Client> &client,
                 Allocator *allocator) noexcept
             {
                 /* Copied from MqttClient.cpp:ln754 (MqttClient::NewConnection) */
@@ -49,7 +49,7 @@ namespace Aws
 
                 std::shared_ptr<Mqtt5Listener> shared_listener = std::shared_ptr<Mqtt5Listener>(
                     toSeat, [allocator](Mqtt5Listener *listener) { Crt::Delete(listener, allocator); });
-                shared_listener->m_selfReference = shared_listener;
+                shared_listener->m_selfReference = toSeat->shared_from_this();
                 return shared_listener;
             }
 
@@ -71,11 +71,11 @@ namespace Aws
 
             Mqtt5Listener::Mqtt5Listener(
                 const Mqtt5ListenerOptions &options,
-                const std::shared_ptr<Mqtt5Client> client,
+                const std::shared_ptr<Mqtt5Client> &client,
                 Allocator *allocator) noexcept
                 : m_allocator(allocator)
             {
-                m_mqtt5Client = client;
+                m_mqtt5Client = client->shared_from_this();
                 if (options.onConnectionFailure)
                 {
                     this->onConnectionFailure = options.onConnectionFailure;
@@ -120,7 +120,7 @@ namespace Aws
                 AWS_FATAL_ASSERT(aws_rw_lock_init(&m_listener_lock) == AWS_OP_SUCCESS);
 
                 m_mqtt5Client->ProceedOnNativeClient(
-                    &ProcessNativeClientAndCreateMqtt5Listener, allocator, &listener_config, m_listener);
+                    &ProcessNativeClientAndCreateMqtt5Listener, allocator, &listener_config, (void **)&m_listener);
             }
 
             void Mqtt5Listener::s_lifeCycleEventCallback(const aws_mqtt5_client_lifecycle_event *event)
@@ -233,7 +233,7 @@ namespace Aws
                             std::make_shared<PublishPacket>(*publish, listener->m_allocator);
                         PublishReceivedEventData eventData;
                         eventData.publishPacket = packet;
-                        return listener->onListenerPublishReceived(*(listener->m_mqtt5Client), eventData);
+                        return listener->onListenerPublishReceived(*client, eventData);
                     }
                     else
                     {
@@ -246,10 +246,10 @@ namespace Aws
             void Mqtt5Listener::s_listenerTerminationCompletion(void *complete_ctx)
             {
                 Mqtt5Listener *listener = reinterpret_cast<Mqtt5Listener *>(complete_ctx);
-                /* release mqtt5Listener reference */
-                listener->m_selfReference = nullptr;
                 /* release mqtt5Client */
-                listener->m_mqtt5Client = nullptr;
+                listener->m_mqtt5Client.reset();
+                /* release mqtt5Listener reference */
+                listener->m_selfReference.reset();
             }
 
             Mqtt5ListenerOptions::Mqtt5ListenerOptions(Crt::Allocator *allocator) noexcept : m_allocator(allocator) {}
