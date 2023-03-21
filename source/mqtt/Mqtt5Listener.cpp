@@ -260,7 +260,15 @@ namespace Aws
                 listener->m_selfReference.reset();
             }
 
-            Mqtt5ListenerOptions::Mqtt5ListenerOptions(Crt::Allocator *allocator) noexcept : m_allocator(allocator) {}
+            Mqtt5ListenerOptions::Mqtt5ListenerOptions() noexcept
+            {
+                onAttemptingConnect = NULL;
+                onConnectionFailure = NULL;
+                onConnectionSuccess = NULL;
+                onDisconnection = NULL;
+                onStopped = NULL;
+                onListenerPublishReceived = NULL;
+            }
 
             Mqtt5ListenerOptions &Mqtt5ListenerOptions::withListenerConnectionSuccessCallback(
                 OnConnectionSuccessHandler callback) noexcept

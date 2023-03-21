@@ -137,7 +137,7 @@ namespace Aws
                 /**
                  * Default constructor of Mqtt5ListenerOptions
                  */
-                Mqtt5ListenerOptions(Crt::Allocator *allocator = ApiAllocator()) noexcept;
+                Mqtt5ListenerOptions() noexcept;
 
                 /**
                  * Sets callback triggered when Listener successfully establishes an MQTT connection
