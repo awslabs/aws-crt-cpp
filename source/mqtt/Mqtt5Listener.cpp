@@ -67,7 +67,9 @@ namespace Aws
                 }
             }
 
-            Mqtt5Listener::~Mqtt5Listener() {}
+            Mqtt5Listener::~Mqtt5Listener() {
+                aws_rw_lock_clean_up(&m_listener_lock);
+            }
 
             Mqtt5Listener::Mqtt5Listener(
                 const Mqtt5ListenerOptions &options,
