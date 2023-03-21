@@ -75,6 +75,14 @@ namespace Aws
                 Allocator *allocator) noexcept
                 : m_allocator(allocator)
             {
+
+                if (client == nullptr || !*client)
+                {
+                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_GENERAL, "Failed to create Mqtt5Listener. Invalid Client.");
+                    m_listener = nullptr;
+                    return;
+                }
+
                 m_mqtt5Client = client->shared_from_this();
                 if (options.onConnectionFailure)
                 {

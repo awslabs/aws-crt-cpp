@@ -197,15 +197,6 @@ namespace Aws
                 Mqtt5ListenerOptions &withListenerPublishReceivedCallback(
                     OnListenerPublishReceivedHandler callback) noexcept;
 
-                /**
-                 * Initializes the C aws_mqtt5_Listener_options from Mqtt5ListenerOptions. For internal use
-                 *
-                 * @param raw_options - output parameter containing low level Listener options to be passed to the C
-                 * interface
-                 *
-                 */
-                bool initializeRawOptions(aws_mqtt5_listener_config &raw_options) const noexcept;
-
                 virtual ~Mqtt5ListenerOptions();
                 Mqtt5ListenerOptions(const Mqtt5ListenerOptions &) = delete;
                 Mqtt5ListenerOptions(Mqtt5ListenerOptions &&) = delete;
