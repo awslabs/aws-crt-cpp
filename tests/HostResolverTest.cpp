@@ -163,3 +163,4 @@ static int s_TestCustomResolution(struct aws_allocator *allocator, void *)
 }
 
 AWS_TEST_CASE(CustomResolution, s_TestCustomResolution)
+
