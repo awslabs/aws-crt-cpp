@@ -454,6 +454,7 @@ static int s_TestMqtt5DirectConnectionMinimal(Aws::Crt::Allocator *allocator, vo
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -487,6 +488,7 @@ static int s_TestMqtt5DirectConnectionWithBasicAuth(Aws::Crt::Allocator *allocat
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -526,6 +528,7 @@ static int s_TestMqtt5DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, vo
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -571,6 +574,7 @@ static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocat
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -614,6 +618,7 @@ static int s_TestMqtt5DirectConnectionWithHttpProxy(Aws::Crt::Allocator *allocat
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -663,6 +668,7 @@ static int s_TestMqtt5DirectConnectionFull(Aws::Crt::Allocator *allocator, void 
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -748,6 +754,7 @@ static int s_TestMqtt5WSConnectionMinimal(Aws::Crt::Allocator *allocator, void *
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -803,6 +810,7 @@ static int s_TestMqtt5WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, 
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -864,6 +872,7 @@ static int s_TestMqtt5WSConnectionWithTLS(Aws::Crt::Allocator *allocator, void *
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -930,6 +939,7 @@ static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, 
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -997,6 +1007,7 @@ static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, 
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1072,6 +1083,7 @@ static int s_TestMqtt5WSConnectionFull(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1180,6 +1192,7 @@ static int s_TestMqtt5DirectInvalidHostname(Aws::Crt::Allocator *allocator, void
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1212,6 +1225,7 @@ static int s_TestMqtt5DirectInvalidPort(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1244,6 +1258,7 @@ static int s_TestMqtt5WSInvalidPort(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1298,6 +1313,7 @@ static int s_TestMqtt5SocketTimeout(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1344,6 +1360,7 @@ static int s_TestMqtt5IncorrectBasicAuth(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1381,6 +1398,7 @@ static int s_TestMqtt5IncorrectWSConnect(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1429,6 +1447,7 @@ static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1506,6 +1525,7 @@ static int s_TestMqtt5NegotiatedSettingsHappy(Aws::Crt::Allocator *allocator, vo
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1559,6 +1579,7 @@ static int s_TestMqtt5NegotiatedSettingsFull(Aws::Crt::Allocator *allocator, voi
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1618,6 +1639,7 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1745,6 +1767,7 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1823,6 +1846,7 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1913,6 +1937,7 @@ static int s_TestMqtt5NullPublish(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1957,6 +1982,7 @@ static int s_TestMqtt5NullSubscribe(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -2000,6 +2026,7 @@ static int s_TestMqtt5NullUnsubscribe(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -2041,6 +2068,7 @@ static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -2080,6 +2108,7 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -2185,6 +2214,7 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
@@ -2447,6 +2477,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *all
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     struct aws_string *authname = NULL;
@@ -2502,6 +2533,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets(Aws::Crt::Allo
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     struct aws_string *authname = NULL;
@@ -2788,6 +2820,7 @@ static int s_TestMqtt5OperationStatisticsSimple(Aws::Crt::Allocator *allocator, 
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
     }
 
     ApiHandle apiHandle(allocator);
