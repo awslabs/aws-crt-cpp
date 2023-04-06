@@ -105,7 +105,7 @@ struct Mqtt5TestEnvVars
                 {
                     return;
                 }
-                if(m_hostname == NULL || m_port == NULL)
+                if (m_hostname == NULL || m_port == NULL)
                 {
                     m_error = AWS_OP_ERR;
                     return;
@@ -126,7 +126,7 @@ struct Mqtt5TestEnvVars
                 {
                     return;
                 }
-                if(m_hostname == NULL || m_port == NULL || m_username == NULL || m_password == NULL)
+                if (m_hostname == NULL || m_port == NULL || m_username == NULL || m_password == NULL)
                 {
                     m_error = AWS_OP_ERR;
                     return;
@@ -148,7 +148,7 @@ struct Mqtt5TestEnvVars
                 {
                     return;
                 }
-                if(m_hostname == NULL || m_port == NULL || m_certificate_path == NULL || m_private_key_path == NULL)
+                if (m_hostname == NULL || m_port == NULL || m_certificate_path == NULL || m_private_key_path == NULL)
                 {
                     m_error = AWS_OP_ERR;
                     return;
@@ -168,7 +168,7 @@ struct Mqtt5TestEnvVars
                 {
                     return;
                 }
-                if(m_hostname == NULL || m_port == NULL)
+                if (m_hostname == NULL || m_port == NULL)
                 {
                     m_error = AWS_OP_ERR;
                     return;
@@ -192,7 +192,7 @@ struct Mqtt5TestEnvVars
                 {
                     return;
                 }
-                if(m_hostname == NULL || m_port == NULL || m_username == NULL || m_password == NULL)
+                if (m_hostname == NULL || m_port == NULL || m_username == NULL || m_password == NULL)
                 {
                     m_error = AWS_OP_ERR;
                     return;
@@ -217,7 +217,7 @@ struct Mqtt5TestEnvVars
                 {
                     return;
                 }
-                if(m_hostname == NULL || m_port == NULL || m_certificate_path == NULL || m_private_key_path == NULL)
+                if (m_hostname == NULL || m_port == NULL || m_certificate_path == NULL || m_private_key_path == NULL)
                 {
                     m_error = AWS_OP_ERR;
                     return;
@@ -241,7 +241,7 @@ struct Mqtt5TestEnvVars
                 {
                     return;
                 }
-                if(m_hostname == NULL || m_certificate_path == NULL || m_private_key_path == NULL)
+                if (m_hostname == NULL || m_certificate_path == NULL || m_private_key_path == NULL)
                 {
                     m_error = AWS_OP_ERR;
                     return;
@@ -677,7 +677,7 @@ static int s_TestMqtt5DirectConnectionWithHttpProxy(Aws::Crt::Allocator *allocat
     mqtt5Options.withHostName(mqtt5TestVars.m_hostname_string).withPort(mqtt5TestVars.m_port_value);
 
     // HTTP PROXY
-    if(mqtt5TestVars.m_httpproxy_hostname->len == 0)
+    if (mqtt5TestVars.m_httpproxy_hostname->len == 0)
     {
         printf("HTTP PROXY Environment Variables are not set for the test, skip the test");
         return AWS_ERROR_SUCCESS;
@@ -1072,7 +1072,7 @@ static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, 
     mqtt5Options.withPort(443);
 
     // HTTP PROXY
-    if(mqtt5TestVars.m_httpproxy_hostname->len == 0)
+    if (mqtt5TestVars.m_httpproxy_hostname->len == 0)
     {
         printf("HTTP PROXY Environment Variables are not set for the test, skip the test");
         return AWS_ERROR_SUCCESS;
