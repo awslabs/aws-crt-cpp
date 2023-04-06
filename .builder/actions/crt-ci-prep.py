@@ -4,9 +4,29 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 
 
 class CrtCiPrep(Builder.Action):
+    def _write_environment_script_secret_to_env(self, env, secret_name):
+        mqtt5_ci_environment_script = env.shell.get_secret(secret_name)
+        env_line = re.compile('^export\s+(\w+)=(.+)')
+
+        lines = mqtt5_ci_environment_script.splitlines()
+        for line in lines:
+            env_pair_match = env_line.match(line)
+            if env_pair_match.group(1) and env_pair_match.group(2):
+                env.shell.setenv(env_pair_match.group(1), env_pair_match.group(2), quiet=True)
+
+    def _write_secret_to_temp_file(self, env, secret_name):
+        secret_value = env.shell.get_secret(secret_name)
+
+        fd, filename = tempfile.mkstemp()
+        os.write(fd, str.encode(secret_value))
+        os.close(fd)
+
+        return filename
+
 
     def run(self, env):
         env.shell.setenv("AWS_TESTING_COGNITO_IDENTITY", env.shell.get_secret("aws-c-auth-testing/cognito-identity"))
