@@ -48,6 +48,7 @@ if(NOT BYO_CRYPTO)
 endif()
 
 add_test_case(DefaultResolution)
+add_test_case(CustomResolution)
 add_test_case(OptionalCopySafety)
 add_test_case(OptionalMoveSafety)
 add_test_case(OptionalCopyAndMoveSemantics)
