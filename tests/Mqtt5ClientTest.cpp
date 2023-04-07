@@ -504,7 +504,7 @@ static int s_TestMqtt5DirectConnectionMinimal(Aws::Crt::Allocator *allocator, vo
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
-        return AWS_ERROR_SUCCESS;
+        return AWS_ERROR_UNKNOWN;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1753,6 +1753,11 @@ static int s_TestMqtt5NegotiatedSettingsRejoinAlways(Aws::Crt::Allocator *alloca
     static const uint32_t SESSION_EXPIRY_INTERVAL_SEC = 3600;
 
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_ERROR_SUCCESS;
+    }
 
     ApiHandle apiHandle(allocator);
 
