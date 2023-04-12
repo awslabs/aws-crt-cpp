@@ -19,6 +19,7 @@ if(NOT BYO_CRYPTO)
     add_net_test_case(MqttClientNewConnectionUninitializedTlsContext)
     add_net_test_case(TLSContextResourceSafety)
     add_net_test_case(TLSContextUninitializedNewConnectionOptions)
+    add_test_case(Sigv4aSigningTestCredentials)
 endif()
 
 add_test_case(Base64RoundTrip)
@@ -192,6 +193,15 @@ if(AWS_HAS_CI_ENVIRONMENT AND NOT BYO_CRYPTO)
 endif()
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
+
+ # set extra warning flags
+if(AWS_WARNINGS_ARE_ERRORS)
+    if(MSVC)
+        target_compile_options(${TEST_BINARY_NAME} PRIVATE /W4 /WX /wd4068)
+    else()
+        target_compile_options(${TEST_BINARY_NAME} PRIVATE -Wall -Wno-long-long -Werror)
+    endif()
+endif()
 
 add_custom_command(TARGET ${TEST_BINARY_NAME} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory

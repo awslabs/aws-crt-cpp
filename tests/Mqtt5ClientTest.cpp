@@ -93,7 +93,7 @@ enum Mqtt5TestType
 struct Mqtt5TestEnvVars
 {
     Mqtt5TestEnvVars(struct aws_allocator *allocator, Mqtt5TestType type)
-        : m_allocator(allocator), m_error(AWS_OP_SUCCESS)
+        : m_error(AWS_OP_SUCCESS), m_allocator(allocator)
     {
         switch (type)
         {
@@ -103,8 +103,8 @@ struct Mqtt5TestEnvVars
                 m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_direct_port, &m_port);
                 if (m_error == AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = Aws::Crt::String(((const char *)m_hostname->bytes), m_hostname->len);
-                    m_port_value = atoi((const char *)m_port->bytes);
+                    m_hostname_string = aws_string_c_str(m_hostname);
+                    m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
                 }
                 break;
             }
@@ -118,9 +118,9 @@ struct Mqtt5TestEnvVars
 
                 if (m_error == AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = Aws::Crt::String((const char *)m_hostname->bytes, m_hostname->len);
-                    m_port_value = atoi((const char *)m_port->bytes);
-                    m_username_string = Aws::Crt::String((const char *)m_username->bytes, m_username->len);
+                    m_hostname_string = aws_string_c_str(m_hostname);
+                    m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
+                    m_username_string = aws_string_c_str(m_username);
                     m_password_cursor = ByteCursorFromArray(m_password->bytes, m_password->len);
                 }
                 break;
@@ -134,12 +134,10 @@ struct Mqtt5TestEnvVars
 
                 if (m_error == AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = Aws::Crt::String((const char *)m_hostname->bytes, m_hostname->len);
-                    m_port_value = atoi((const char *)m_port->bytes);
-                    m_certificate_path_string =
-                        Aws::Crt::String((const char *)m_certificate_path->bytes, m_certificate_path->len);
-                    m_private_key_path_string =
-                        Aws::Crt::String((const char *)m_private_key_path->bytes, m_private_key_path->len);
+                    m_hostname_string = aws_string_c_str(m_hostname);
+                    m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
+                    m_certificate_path_string = aws_string_c_str(m_certificate_path);
+                    m_private_key_path_string = aws_string_c_str(m_private_key_path);
                 }
                 break;
             }
@@ -150,8 +148,8 @@ struct Mqtt5TestEnvVars
 
                 if (m_error == AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = Aws::Crt::String((const char *)m_hostname->bytes, m_hostname->len);
-                    m_port_value = atoi((const char *)m_port->bytes);
+                    m_hostname_string = aws_string_c_str(m_hostname);
+                    m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
                 }
                 break;
             }
@@ -166,9 +164,9 @@ struct Mqtt5TestEnvVars
 
                 if (m_error == AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = Aws::Crt::String((const char *)m_hostname->bytes, m_hostname->len);
-                    m_port_value = atoi((const char *)m_port->bytes);
-                    m_username_string = Aws::Crt::String((const char *)m_username->bytes, m_username->len);
+                    m_hostname_string = aws_string_c_str(m_hostname);
+                    m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
+                    m_username_string = aws_string_c_str(m_username);
                     m_password_cursor = ByteCursorFromArray(m_password->bytes, m_password->len);
                 }
                 break;
@@ -183,12 +181,10 @@ struct Mqtt5TestEnvVars
 
                 if (m_error == AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = Aws::Crt::String((const char *)m_hostname->bytes, m_hostname->len);
-                    m_port_value = atoi((const char *)m_port->bytes);
-                    m_certificate_path_string =
-                        Aws::Crt::String((const char *)m_certificate_path->bytes, m_certificate_path->len);
-                    m_private_key_path_string =
-                        Aws::Crt::String((const char *)m_private_key_path->bytes, m_private_key_path->len);
+                    m_hostname_string = aws_string_c_str(m_hostname);
+                    m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
+                    m_certificate_path_string = aws_string_c_str(m_certificate_path);
+                    m_private_key_path_string = aws_string_c_str(m_private_key_path);
                 }
                 break;
             }
@@ -201,11 +197,9 @@ struct Mqtt5TestEnvVars
 
                 if (m_error == AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = Aws::Crt::String((const char *)m_hostname->bytes, m_hostname->len);
-                    m_certificate_path_string =
-                        Aws::Crt::String((const char *)m_certificate_path->bytes, m_certificate_path->len);
-                    m_private_key_path_string =
-                        Aws::Crt::String((const char *)m_private_key_path->bytes, m_private_key_path->len);
+                    m_hostname_string = aws_string_c_str(m_hostname);
+                    m_certificate_path_string = aws_string_c_str(m_certificate_path);
+                    m_private_key_path_string = aws_string_c_str(m_private_key_path);
                 }
                 break;
             }
@@ -221,9 +215,8 @@ struct Mqtt5TestEnvVars
 
         if (m_error == AWS_OP_SUCCESS)
         {
-            m_httpproxy_hostname_string =
-                Aws::Crt::String((const char *)m_httpproxy_hostname->bytes, m_httpproxy_hostname->len);
-            m_httpproxy_port_value = atoi((const char *)m_httpproxy_port->bytes);
+            m_httpproxy_hostname_string = aws_string_c_str(m_httpproxy_hostname);
+            m_httpproxy_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_httpproxy_port)));
         }
     }
 
@@ -312,7 +305,7 @@ static void s_setupConnectionLifeCycle(
     const char *clientName = "Client")
 {
     mqtt5Options.withClientConnectionSuccessCallback(
-        [&connectionPromise, clientName](Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
+        [&connectionPromise, clientName](Mqtt5Client &, const OnConnectionSuccessEventData &) {
             printf("[MQTT5]%s Connection Success.", clientName);
             connectionPromise.set_value(true);
         });
@@ -336,7 +329,7 @@ static void s_setupConnectionLifeCycle(
     const char *clientName = "Client")
 {
     mqtt5Builder->withClientConnectionSuccessCallback(
-        [&connectionPromise, clientName](Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
+        [&connectionPromise, clientName](Mqtt5Client &, const OnConnectionSuccessEventData &) {
             printf("[MQTT5]%s Connection Success.", clientName);
             connectionPromise.set_value(true);
         });
@@ -360,9 +353,8 @@ static void s_setupConnectionLifeCycle(
 /*
  * [New-UC1] Happy path. Minimal creation and cleanup
  */
-static int s_TestMqtt5NewClientMin(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5NewClientMin(Aws::Crt::Allocator *allocator, void *)
 {
-    (void)ctx;
     ApiHandle apiHandle(allocator);
 
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
@@ -380,7 +372,7 @@ AWS_TEST_CASE(Mqtt5NewClientMinimal, s_TestMqtt5NewClientMin)
 /*
  * [New-UC2] Maximum creation and cleanup
  */
-static int s_TestMqtt5NewClientFull(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5NewClientFull(Aws::Crt::Allocator *allocator, void *)
 {
     ApiHandle apiHandle(allocator);
 
@@ -456,7 +448,7 @@ AWS_TEST_CASE(Mqtt5NewClientFull, s_TestMqtt5NewClientFull)
 /*
  * [ConnDC-UC1] Happy path. Direct connection with minimal configuration
  */
-static int s_TestMqtt5DirectConnectionMinimal(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5DirectConnectionMinimal(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
@@ -489,7 +481,7 @@ AWS_TEST_CASE(Mqtt5DirectConnectionMinimal, s_TestMqtt5DirectConnectionMinimal)
 /*
  * [ConnDC-UC2] Direct connection with basic authentication
  */
-static int s_TestMqtt5DirectConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5DirectConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_BASIC_AUTH);
     if (!mqtt5TestVars)
@@ -528,7 +520,7 @@ AWS_TEST_CASE(Mqtt5DirectConnectionWithBasicAuth, s_TestMqtt5DirectConnectionWit
 /*
  * [ConnDC-UC3] Direct connection with TLS
  */
-static int s_TestMqtt5DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_TLS);
     if (!mqtt5TestVars)
@@ -573,7 +565,7 @@ AWS_TEST_CASE(Mqtt5DirectConnectionWithTLS, s_TestMqtt5DirectConnectionWithTLS)
  * [ConnDC-UC4] Direct connection with mutual TLS
  */
 
-static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
@@ -616,7 +608,7 @@ AWS_TEST_CASE(Mqtt5DirectConnectionWithMutualTLS, s_TestMqtt5DirectConnectionWit
 ///*
 // * [ConnDC-UC5] Direct connection with HttpProxy options
 // */
-static int s_TestMqtt5DirectConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5DirectConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_TLS);
     if (!mqtt5TestVars)
@@ -665,7 +657,7 @@ AWS_TEST_CASE(Mqtt5DirectConnectionWithHttpProxy, s_TestMqtt5DirectConnectionWit
 /*
  * [ConnDC-UC6] Direct connection with all options set
  */
-static int s_TestMqtt5DirectConnectionFull(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5DirectConnectionFull(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
@@ -750,7 +742,7 @@ AWS_TEST_CASE(Mqtt5DirectConnectionFull, s_TestMqtt5DirectConnectionFull)
 /*
  * [ConnWS-UC1] Happy path. Websocket connection with minimal configuration.
  */
-static int s_TestMqtt5WSConnectionMinimal(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5WSConnectionMinimal(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS);
     if (!mqtt5TestVars)
@@ -805,7 +797,7 @@ AWS_TEST_CASE(Mqtt5WSConnectionMinimal, s_TestMqtt5WSConnectionMinimal)
 /*
  * [ConnWS-UC2] websocket connection with basic authentication
  */
-static int s_TestMqtt5WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS_BASIC_AUTH);
     if (!mqtt5TestVars)
@@ -866,7 +858,7 @@ AWS_TEST_CASE(Mqtt5WSConnectionWithBasicAuth, s_TestMqtt5WSConnectionWithBasicAu
 /*
  * [ConnWS-UC3] websocket connection with TLS
  */
-static int s_TestMqtt5WSConnectionWithTLS(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5WSConnectionWithTLS(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS_TLS);
     if (!mqtt5TestVars)
@@ -932,7 +924,7 @@ AWS_TEST_CASE(Mqtt5WSConnectionWithTLS, s_TestMqtt5WSConnectionWithTLS)
  * [ConnDC-UC4] Websocket connection with mutual TLS
  */
 
-static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
@@ -999,7 +991,7 @@ AWS_TEST_CASE(Mqtt5WSConnectionWithMutualTLS, s_TestMqtt5WSConnectionWithMutualT
  * ConnWS-UC5] Websocket connection with HttpProxy options
  *
  */
-static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS_TLS);
     if (!mqtt5TestVars)
@@ -1074,7 +1066,7 @@ AWS_TEST_CASE(Mqtt5WSConnectionWithHttpProxy, s_TestMqtt5WSConnectionWithHttpPro
 /*
  * [ConnDC-UC6] Direct connection with all options set
  */
-static int s_TestMqtt5WSConnectionFull(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5WSConnectionFull(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS);
     if (!mqtt5TestVars)
@@ -1182,7 +1174,7 @@ AWS_TEST_CASE(Mqtt5WSConnectionFull, s_TestMqtt5WSConnectionFull)
 /*
  * [ConnNegativeID-UC1] Client connect with invalid host name
  */
-static int s_TestMqtt5DirectInvalidHostname(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5DirectInvalidHostname(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
@@ -1214,7 +1206,7 @@ AWS_TEST_CASE(Mqtt5InvalidHostname, s_TestMqtt5DirectInvalidHostname)
 /*
  * [ConnNegativeID-UC2] Client connect with invalid port for direct connection
  */
-static int s_TestMqtt5DirectInvalidPort(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5DirectInvalidPort(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
@@ -1246,7 +1238,7 @@ AWS_TEST_CASE(Mqtt5InvalidPort, s_TestMqtt5DirectInvalidPort)
 /*
  * [ConnNegativeID-UC3] Client connect with invalid port for websocket connection
  */
-static int s_TestMqtt5WSInvalidPort(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5WSInvalidPort(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS);
     if (!mqtt5TestVars)
@@ -1300,7 +1292,7 @@ AWS_TEST_CASE(Mqtt5WSInvalidPort, s_TestMqtt5WSInvalidPort)
 /*
  * [ConnNegativeID-UC4] Client connect with socket timeout
  */
-static int s_TestMqtt5SocketTimeout(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5SocketTimeout(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
@@ -1346,7 +1338,7 @@ AWS_TEST_CASE(Mqtt5SocketTimeout, s_TestMqtt5SocketTimeout)
 /*
  * [ConnNegativeID-UC5] Client connect with incorrect basic authentication credentials
  */
-static int s_TestMqtt5IncorrectBasicAuth(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5IncorrectBasicAuth(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_BASIC_AUTH);
     if (!mqtt5TestVars)
@@ -1383,7 +1375,7 @@ static int s_TestMqtt5IncorrectBasicAuth(Aws::Crt::Allocator *allocator, void *c
 AWS_TEST_CASE(Mqtt5IncorrectBasicAuth, s_TestMqtt5IncorrectBasicAuth)
 
 // [ConnNegativeID-UC6] Client Websocket Handshake Failure test
-static int s_TestMqtt5IncorrectWSConnect(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5IncorrectWSConnect(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS);
     if (!mqtt5TestVars)
@@ -1431,7 +1423,7 @@ AWS_TEST_CASE(Mqtt5IncorrectWSConnect, s_TestMqtt5IncorrectWSConnect)
 /*
  * [ConnNegativeID-UC7] Double Client ID Failure test
  */
-static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
@@ -1508,7 +1500,7 @@ AWS_TEST_CASE(Mqtt5DoubleClientIDFailure, s_TestMqtt5DoubleClientIDFailure)
 /*
  * [Negotiated-UC1] Happy path, minimal success test
  */
-static int s_TestMqtt5NegotiatedSettingsHappy(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5NegotiatedSettingsHappy(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
@@ -1534,8 +1526,7 @@ static int s_TestMqtt5NegotiatedSettingsHappy(Aws::Crt::Allocator *allocator, vo
     s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     // Override the ConnectionSuccessCallback to validate the negotiatedSettings
-    mqtt5Options.withClientConnectionSuccessCallback([&connectionPromise, SESSION_EXPIRY_INTERVAL_SEC](
-                                                         Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
+    mqtt5Options.withClientConnectionSuccessCallback([&](Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
         printf("[MQTT5]Client Connection Success.");
         ASSERT_TRUE(eventData.negotiatedSettings->getSessionExpiryIntervalSec() == SESSION_EXPIRY_INTERVAL_SEC);
         connectionPromise.set_value(true);
@@ -1557,7 +1548,7 @@ AWS_TEST_CASE(Mqtt5NegotiatedSettingsHappy, s_TestMqtt5NegotiatedSettingsHappy)
 /*
  * [Negotiated-UC2] maximum success test
  */
-static int s_TestMqtt5NegotiatedSettingsFull(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5NegotiatedSettingsFull(Aws::Crt::Allocator *allocator, void *)
 {
     const String CLIENT_ID = "s_TestMqtt5NegotiatedSettingsFull" + Aws::Crt::UUID().ToString();
     const uint32_t SESSION_EXPIRY_INTERVAL_SEC = 600;
@@ -1591,17 +1582,15 @@ static int s_TestMqtt5NegotiatedSettingsFull(Aws::Crt::Allocator *allocator, voi
     s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     // Override the ConnectionSuccessCallback to validate the negotiatedSettings
-    mqtt5Options.withClientConnectionSuccessCallback(
-        [&connectionPromise, SESSION_EXPIRY_INTERVAL_SEC, CLIENT_ID, KEEP_ALIVE_INTERVAL](
-            Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
-            printf("[MQTT5]Client Connection Success.");
-            std::shared_ptr<NegotiatedSettings> settings = eventData.negotiatedSettings;
-            ASSERT_TRUE(settings->getSessionExpiryIntervalSec() == SESSION_EXPIRY_INTERVAL_SEC);
-            ASSERT_TRUE(settings->getClientId() == CLIENT_ID);
-            ASSERT_TRUE(settings->getServerKeepAlive() == KEEP_ALIVE_INTERVAL);
-            connectionPromise.set_value(true);
-            return 0;
-        });
+    mqtt5Options.withClientConnectionSuccessCallback([&](Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
+        printf("[MQTT5]Client Connection Success.");
+        std::shared_ptr<NegotiatedSettings> settings = eventData.negotiatedSettings;
+        ASSERT_TRUE(settings->getSessionExpiryIntervalSec() == SESSION_EXPIRY_INTERVAL_SEC);
+        ASSERT_TRUE(settings->getClientId() == CLIENT_ID);
+        ASSERT_TRUE(settings->getServerKeepAlive() == KEEP_ALIVE_INTERVAL);
+        connectionPromise.set_value(true);
+        return 0;
+    });
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
@@ -1618,7 +1607,7 @@ AWS_TEST_CASE(Mqtt5NegotiatedSettingsFull, s_TestMqtt5NegotiatedSettingsFull)
 /*
  * [Negotiated-UC3] Server Settings limit test
  */
-static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, void *)
 {
     const uint32_t SESSION_EXPIRY_INTERVAL_SEC = UINT32_MAX;
     const uint16_t RECEIVE_MAX = UINT16_MAX;
@@ -1649,18 +1638,17 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
 
     s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
-    mqtt5Options.withClientConnectionSuccessCallback(
-        [&connectionPromise, RECEIVE_MAX, PACKET_MAX](Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
-            std::shared_ptr<NegotiatedSettings> settings = eventData.negotiatedSettings;
-            uint16_t receivedmax = settings->getReceiveMaximumFromServer();
-            uint32_t max_package = settings->getMaximumPacketSizeBytes();
-            ASSERT_FALSE(receivedmax == RECEIVE_MAX);
-            ASSERT_FALSE(max_package == PACKET_MAX);
-            ASSERT_FALSE(settings->getRejoinedSession());
+    mqtt5Options.withClientConnectionSuccessCallback([&](Mqtt5Client &, const OnConnectionSuccessEventData &eventData) {
+        std::shared_ptr<NegotiatedSettings> settings = eventData.negotiatedSettings;
+        uint16_t receivedmax = settings->getReceiveMaximumFromServer();
+        uint32_t max_package = settings->getMaximumPacketSizeBytes();
+        ASSERT_FALSE(receivedmax == RECEIVE_MAX);
+        ASSERT_FALSE(max_package == PACKET_MAX);
+        ASSERT_FALSE(settings->getRejoinedSession());
 
-            connectionPromise.set_value(true);
-            return 0;
-        });
+        connectionPromise.set_value(true);
+        return 0;
+    });
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*mqtt5Client);
@@ -1678,7 +1666,7 @@ AWS_TEST_CASE(Mqtt5NegotiatedSettingsLimit, s_TestMqtt5NegotiatedSettingsLimit)
 /*
  * [Negotiated-UC4] Rejoin Always Session Behavior
  */
-static int s_TestMqtt5NegotiatedSettingsRejoinAlways(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5NegotiatedSettingsRejoinAlways(Aws::Crt::Allocator *allocator, void *)
 {
     static const uint32_t SESSION_EXPIRY_INTERVAL_SEC = 3600;
 
@@ -1751,7 +1739,7 @@ AWS_TEST_CASE(Mqtt5NegotiatedSettingsRejoinAlways, s_TestMqtt5NegotiatedSettings
 /*
  * [Op-UC1] Sub-Unsub happy path
  */
-static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
@@ -1829,7 +1817,7 @@ AWS_TEST_CASE(Mqtt5SubUnsub, s_TestMqtt5SubUnsub)
 /*
  * [Op-UC2] Will test
  */
-static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
@@ -1919,7 +1907,7 @@ AWS_TEST_CASE(Mqtt5WillTest, s_TestMqtt5WillTest)
 /*
  * [ErrorOp-UC1] Null Publish Test
  */
-static int s_TestMqtt5NullPublish(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5NullPublish(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
@@ -1963,7 +1951,7 @@ AWS_TEST_CASE(Mqtt5NullPublish, s_TestMqtt5NullPublish)
 /*
  * [ErrorOp-UC2] Null Subscribe Test
  */
-static int s_TestMqtt5NullSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5NullSubscribe(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
@@ -2006,7 +1994,7 @@ AWS_TEST_CASE(Mqtt5NullSubscribe, s_TestMqtt5NullSubscribe)
 /*
  * [ErrorOp-UC3] Null unsubscribe test
  */
-static int s_TestMqtt5NullUnsubscribe(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5NullUnsubscribe(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
@@ -2047,7 +2035,7 @@ static int s_TestMqtt5NullUnsubscribe(Aws::Crt::Allocator *allocator, void *ctx)
 
 AWS_TEST_CASE(Mqtt5NullUnsubscribe, s_TestMqtt5NullUnsubscribe)
 
-static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
@@ -2085,7 +2073,7 @@ AWS_TEST_CASE(Mqtt5NullConnectPacket, s_TestMqtt5NullConnectPacket)
 /*
  * [QoS1-UC1] Happy path. No drop in connection, no retry, no reconnect.
  */
-static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *)
 {
 
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
@@ -2114,19 +2102,18 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *ctx)
 
     s_setupConnectionLifeCycle(mqtt5Options, subscriberConnectionPromise, subscriberStoppedPromise, "Subscriber");
 
-    mqtt5Options.withPublishReceivedCallback(
-        [TEST_TOPIC, MESSAGE_NUMBER, &receivedMessages](Mqtt5Client &, const PublishReceivedEventData &eventData) {
-            String topic = eventData.publishPacket->getTopic();
-            if (topic == TEST_TOPIC)
-            {
-                ByteCursor payload = eventData.publishPacket->getPayload();
-                String message_string = String((const char *)payload.ptr, payload.len);
-                int message_int = atoi(message_string.c_str());
-                ASSERT_TRUE(message_int < MESSAGE_NUMBER);
-                ++receivedMessages[message_int];
-            }
-            return 0;
-        });
+    mqtt5Options.withPublishReceivedCallback([&](Mqtt5Client &, const PublishReceivedEventData &eventData) {
+        String topic = eventData.publishPacket->getTopic();
+        if (topic == TEST_TOPIC)
+        {
+            ByteCursor payload = eventData.publishPacket->getPayload();
+            String message_string = String((const char *)payload.ptr, payload.len);
+            int message_int = atoi(message_string.c_str());
+            ASSERT_TRUE(message_int < MESSAGE_NUMBER);
+            ++receivedMessages[message_int];
+        }
+        return 0;
+    });
 
     std::shared_ptr<Mqtt5::Mqtt5Client> subscriber = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(*subscriber);
@@ -2158,10 +2145,9 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *ctx)
     /* Publish message 10 to test topic */
     for (int i = 0; i < MESSAGE_NUMBER; i++)
     {
-        char number = '0' + i;
-        ByteBuf payload = ByteBufFromCString(&number);
+        std::string payload = std::to_string(i);
         std::shared_ptr<Mqtt5::PublishPacket> publish = std::make_shared<Mqtt5::PublishPacket>(
-            TEST_TOPIC, ByteCursorFromByteBuf(payload), Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+            TEST_TOPIC, ByteCursorFromCString(payload.c_str()), Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
         ASSERT_TRUE(publisher->Publish(publish));
     }
 
@@ -2193,7 +2179,7 @@ AWS_TEST_CASE(Mqtt5QoS1SubPub, s_TestMqtt5QoS1SubPub)
 /*
  * [Retain-UC1] Set-And-Clear Test
  */
-static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
@@ -2300,7 +2286,7 @@ AWS_TEST_CASE(Mqtt5RetainSetAndClear, s_TestMqtt5RetainSetAndClear)
 // IoT Builder Test
 //////////////////////////////////////////////////////////////
 /* Testing direct connect with mTLS (cert and key) */
-static int s_TestIoTMqtt5ConnectWithmTLS(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestIoTMqtt5ConnectWithmTLS(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
@@ -2338,7 +2324,7 @@ AWS_TEST_CASE(IoTMqtt5ConnectWithmTLS, s_TestIoTMqtt5ConnectWithmTLS)
 /*
  * IoT Builder with websocket connect
  */
-static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
@@ -2385,7 +2371,7 @@ AWS_TEST_CASE(IoTMqtt5ConnectWithWebsocket, s_TestIoTMqtt5ConnectWithWebsocket)
 /*
  * Custom Auth (signing) connect
  */
-static int s_TestIoTMqtt5ConnectWithSigningCustomAuth(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestIoTMqtt5ConnectWithSigningCustomAuth(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
@@ -2418,12 +2404,12 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuth(Aws::Crt::Allocator *alloc
     }
 
     Aws::Iot::Mqtt5CustomAuthConfig authConfig(allocator);
-    authConfig.WithAuthorizerName((const char *)authname->bytes);
-    authConfig.WithUsername((const char *)username->bytes);
-    authConfig.WithPassword(ByteCursorFromString((const char *)password->bytes));
-    authConfig.WithTokenKeyName((const char *)tokenKeyname->bytes);
-    authConfig.WithTokenValue((const char *)tokenValue->bytes);
-    authConfig.WithTokenSignature((const char *)tokenSignature->bytes);
+    authConfig.WithAuthorizerName(aws_string_c_str(authname));
+    authConfig.WithUsername(aws_string_c_str(username));
+    authConfig.WithPassword(ByteCursorFromString(aws_string_c_str(password)));
+    authConfig.WithTokenKeyName(aws_string_c_str(tokenKeyname));
+    authConfig.WithTokenValue(aws_string_c_str(tokenValue));
+    authConfig.WithTokenSignature(aws_string_c_str(tokenSignature));
 
     Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizer(
         mqtt5TestVars.m_hostname_string, authConfig, allocator);
@@ -2455,7 +2441,7 @@ AWS_TEST_CASE(IoTMqtt5ConnectWithSigningCustomAuth, s_TestIoTMqtt5ConnectWithSig
 /*
  * Custom Auth (no signing) connect
  */
-static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
@@ -2479,9 +2465,9 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *all
 
     ApiHandle apiHandle(allocator);
     Aws::Iot::Mqtt5CustomAuthConfig authConfig(allocator);
-    authConfig.WithAuthorizerName((const char *)authname->bytes);
-    authConfig.WithUsername((const char *)username->bytes);
-    authConfig.WithPassword(ByteCursorFromString((const char *)password->bytes));
+    authConfig.WithAuthorizerName(aws_string_c_str(authname));
+    authConfig.WithUsername(aws_string_c_str(username));
+    authConfig.WithPassword(ByteCursorFromString(aws_string_c_str(password)));
 
     Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizer(
         mqtt5TestVars.m_hostname_string, authConfig, allocator);
@@ -2510,7 +2496,7 @@ AWS_TEST_CASE(IoTMqtt5ConnectWithNoSigningCustomAuth, s_TestIoTMqtt5ConnectWithN
 /*
  * Custom Auth (no signing) connect - websockets
  */
-static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
@@ -2534,9 +2520,9 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets(Aws::Crt::Allo
 
     ApiHandle apiHandle(allocator);
     Aws::Iot::Mqtt5CustomAuthConfig authConfig(allocator);
-    authConfig.WithAuthorizerName((const char *)authname->bytes);
-    authConfig.WithUsername((const char *)username->bytes);
-    authConfig.WithPassword(ByteCursorFromString((const char *)password->bytes));
+    authConfig.WithAuthorizerName(aws_string_c_str(authname));
+    authConfig.WithUsername(aws_string_c_str(username));
+    authConfig.WithPassword(ByteCursorFromString(aws_string_c_str(password)));
 
     Aws::Iot::WebsocketConfig websocketConfig("us-east-1");
 
@@ -2568,7 +2554,7 @@ AWS_TEST_CASE(IoTMqtt5ConnectWithNoSigningCustomAuthWebsockets, s_TestIoTMqtt5Co
 /*
  * Custom Auth (signing) connect - websockets
  */
-static int s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
@@ -2601,12 +2587,12 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Alloca
     }
 
     Aws::Iot::Mqtt5CustomAuthConfig authConfig(allocator);
-    authConfig.WithAuthorizerName((const char *)authname->bytes);
-    authConfig.WithUsername((const char *)username->bytes);
-    authConfig.WithPassword(ByteCursorFromString((const char *)password->bytes));
-    authConfig.WithTokenKeyName((const char *)tokenKeyname->bytes);
-    authConfig.WithTokenValue((const char *)tokenValue->bytes);
-    authConfig.WithTokenSignature((const char *)tokenSignature->bytes);
+    authConfig.WithAuthorizerName(aws_string_c_str(authname));
+    authConfig.WithUsername(aws_string_c_str(username));
+    authConfig.WithPassword(ByteCursorFromString(aws_string_c_str(password)));
+    authConfig.WithTokenKeyName(aws_string_c_str(tokenKeyname));
+    authConfig.WithTokenValue(aws_string_c_str(tokenValue));
+    authConfig.WithTokenSignature(aws_string_c_str(tokenSignature));
 
     Aws::Iot::WebsocketConfig websocketConfig("us-east-1");
 
@@ -2645,7 +2631,7 @@ AWS_TEST_CASE(IoTMqtt5ConnectWithSigningCustomAuthWebsockets, s_TestIoTMqtt5Conn
 /*
  * [IT-UC1] Interrupt subscription
  */
-static int s_TestMqtt5InterruptSub(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5InterruptSub(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
@@ -2693,7 +2679,7 @@ AWS_TEST_CASE(Mqtt5InterruptSub, s_TestMqtt5InterruptSub)
 /*
  * [IT-UC2] Interrupt Unsubscription
  */
-static int s_TestMqtt5InterruptUnsub(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5InterruptUnsub(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
@@ -2743,7 +2729,7 @@ AWS_TEST_CASE(Mqtt5InterruptUnsub, s_TestMqtt5InterruptUnsub)
 /*
  * [IT-UC3] Interrupt Publish
  */
-static int s_TestMqtt5InterruptPublishQoS1(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5InterruptPublishQoS1(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
@@ -2796,7 +2782,7 @@ AWS_TEST_CASE(Mqtt5InterruptPublishQoS1, s_TestMqtt5InterruptPublishQoS1)
 /*
  * [Misc] test_operation_statistics_uc1
  */
-static int s_TestMqtt5OperationStatisticsSimple(Aws::Crt::Allocator *allocator, void *ctx)
+static int s_TestMqtt5OperationStatisticsSimple(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)

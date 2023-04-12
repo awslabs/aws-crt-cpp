@@ -37,7 +37,7 @@ static int s_TestCreatingImdsClient(struct aws_allocator *allocator, void *ctx)
     return AWS_OP_SUCCESS;
 }
 
-AWS_TEST_CASE(TestCreatingImdsClient, s_TestCreatingImdsClient);
+AWS_TEST_CASE(TestCreatingImdsClient, s_TestCreatingImdsClient)
 
 static int s_TestImdsClientGetInstanceInfo(struct aws_allocator *allocator, void *ctx)
 {
@@ -62,7 +62,6 @@ static int s_TestImdsClientGetInstanceInfo(struct aws_allocator *allocator, void
         std::mutex lock;
         int error = 0;
         InstanceInfo info;
-        AWS_ZERO_STRUCT(info);
 
         auto callback = [&](const InstanceInfo &instanceInfo, int errorCode, void *) {
             std::unique_lock<std::mutex> ulock(lock);
@@ -88,7 +87,7 @@ static int s_TestImdsClientGetInstanceInfo(struct aws_allocator *allocator, void
     return AWS_OP_SUCCESS;
 }
 
-AWS_TEST_CASE(TestImdsClientGetInstanceInfo, s_TestImdsClientGetInstanceInfo);
+AWS_TEST_CASE(TestImdsClientGetInstanceInfo, s_TestImdsClientGetInstanceInfo)
 
 static int s_TestImdsClientGetCredentials(struct aws_allocator *allocator, void *ctx)
 {
@@ -113,7 +112,6 @@ static int s_TestImdsClientGetCredentials(struct aws_allocator *allocator, void 
         std::mutex lock;
         int error = 0;
         InstanceInfo info;
-        AWS_ZERO_STRUCT(info);
 
         std::string role;
         auto roleCallback = [&](const StringView &resource, int errorCode, void *) {
@@ -161,4 +159,4 @@ static int s_TestImdsClientGetCredentials(struct aws_allocator *allocator, void 
     return AWS_OP_SUCCESS;
 }
 
-AWS_TEST_CASE(TestImdsClientGetCredentials, s_TestImdsClientGetCredentials);
+AWS_TEST_CASE(TestImdsClientGetCredentials, s_TestImdsClientGetCredentials)
