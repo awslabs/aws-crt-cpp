@@ -6,6 +6,8 @@
 #include <aws/mqtt/v5/mqtt5_client.h>
 #include <aws/mqtt/v5/mqtt5_types.h>
 
+#include <functional>
+
 namespace Aws
 {
     namespace Crt

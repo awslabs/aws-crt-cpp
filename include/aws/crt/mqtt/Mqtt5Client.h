@@ -258,12 +258,8 @@ namespace Aws
 
                 /* The client core to handle the user callbacks and c client termination */
                 std::shared_ptr<Mqtt5ClientCore> m_client_core;
-                Allocator *m_allocator;
 
                 Mqtt5ClientOperationStatistics m_operationStatistics;
-                std::condition_variable m_terminationCondition;
-                std::mutex m_terminationMutex;
-                bool m_terminationPredicate = false;
             };
 
             /**
