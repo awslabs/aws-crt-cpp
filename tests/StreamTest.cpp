@@ -45,7 +45,7 @@ static int s_StreamTestLength(struct aws_allocator *allocator, void *ctx)
 
         int64_t length = 0;
         ASSERT_SUCCESS(aws_input_stream_get_length(wrappedStream.GetUnderlyingStream(), &length));
-        ASSERT_TRUE(length == strlen(STREAM_CONTENTS));
+        ASSERT_TRUE(static_cast<uint64_t>(length) == strlen(STREAM_CONTENTS));
     }
 
     return AWS_OP_SUCCESS;
@@ -191,7 +191,7 @@ static int s_StreamTestRefcount(struct aws_allocator *allocator, void *ctx)
             /* Test that you can still use it correctly */
             int64_t length = 0;
             ASSERT_SUCCESS(aws_input_stream_get_length(wrappedStream->GetUnderlyingStream(), &length));
-            ASSERT_TRUE(length == strlen(STREAM_CONTENTS));
+            ASSERT_TRUE(static_cast<uint64_t>(length) == strlen(STREAM_CONTENTS));
 
             /* C side keep a reference on it. */
             aws_input_stream_acquire(wrappedStream->GetUnderlyingStream());
@@ -201,7 +201,7 @@ static int s_StreamTestRefcount(struct aws_allocator *allocator, void *ctx)
          * invoked from C */
         int64_t length = 0;
         ASSERT_SUCCESS(aws_input_stream_get_length(c_stream, &length));
-        ASSERT_TRUE(length == strlen(STREAM_CONTENTS));
+        ASSERT_TRUE(static_cast<uint64_t>(length) == strlen(STREAM_CONTENTS));
         /* Release the refcount from C to clean up resource without leak */
         aws_input_stream_release(c_stream);
     }

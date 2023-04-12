@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/Api.h>
+#include <aws/crt/JsonObject.h>
 #include <aws/crt/StlAllocator.h>
-#include <aws/crt/external/cJSON.h>
 #include <aws/crt/io/TlsOptions.h>
 
 #include <aws/auth/auth.h>
@@ -36,11 +36,8 @@ namespace Aws
         std::mutex ApiHandle::s_lock_event_loop_group;
         std::mutex ApiHandle::s_lock_default_host_resolver;
 
-        static void *s_cJSONAlloc(size_t sz) { return aws_mem_acquire(ApiAllocator(), sz); }
-
-        static void s_cJSONFree(void *ptr) { return aws_mem_release(ApiAllocator(), ptr); }
-
-        static void s_initApi(Allocator *allocator)
+        ApiHandle::ApiHandle(Allocator *allocator) noexcept
+            : m_logger(), m_shutdownBehavior(ApiHandleShutdownBehavior::Blocking)
         {
             // sets up the StlAllocator for use.
             g_allocator = allocator;
@@ -49,22 +46,10 @@ namespace Aws
             aws_event_stream_library_init(allocator);
             aws_sdkutils_library_init(allocator);
 
-            cJSON_Hooks hooks;
-            hooks.malloc_fn = s_cJSONAlloc;
-            hooks.free_fn = s_cJSONFree;
-            cJSON_InitHooks(&hooks);
+            JsonObject::OnLibraryInit();
         }
 
-        ApiHandle::ApiHandle(Allocator *allocator) noexcept
-            : m_logger(), m_shutdownBehavior(ApiHandleShutdownBehavior::Blocking)
-        {
-            s_initApi(allocator);
-        }
-
-        ApiHandle::ApiHandle() noexcept : m_logger(), m_shutdownBehavior(ApiHandleShutdownBehavior::Blocking)
-        {
-            s_initApi(DefaultAllocator());
-        }
+        ApiHandle::ApiHandle() noexcept : ApiHandle(DefaultAllocator()) {}
 
         ApiHandle::~ApiHandle()
         {
@@ -76,6 +61,8 @@ namespace Aws
             {
                 aws_thread_join_all_managed();
             }
+
+            JsonObject::OnLibraryCleanup();
 
             if (aws_logger_get() == &m_logger)
             {
