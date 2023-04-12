@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/http/HttpConnection.h>
+#include <aws/crt/mqtt/Mqtt5Client.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
 
 #include <mutex>
@@ -14,12 +15,6 @@ namespace Aws
     {
         namespace Mqtt5
         {
-            class Mqtt5Client;
-            class Mqtt5ClientOptions;
-            class PublishPacket;
-            class SubscribePacket;
-            class UnsubscribePacket;
-
             /**
              * An MQTT5 client. This is a move-only type. Unless otherwise specified,
              * all function arguments need only to live through the duration of the
