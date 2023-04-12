@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/mqtt/Mqtt5Client.h>
+#include <aws/crt/mqtt/Mqtt5ClientCore.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
 
 #include <aws/crt/Api.h>
@@ -20,360 +21,16 @@ namespace Aws
     {
         namespace Mqtt5
         {
-            struct PubAckCallbackData : public std::enable_shared_from_this<PubAckCallbackData>
-            {
-                PubAckCallbackData(Allocator *alloc = ApiAllocator()) : client(nullptr), allocator(alloc) {}
-
-                std::shared_ptr<Mqtt5Client> client;
-                OnPublishCompletionHandler onPublishCompletion;
-                Allocator *allocator;
-            };
-
-            struct SubAckCallbackData
-            {
-                SubAckCallbackData(Allocator *alloc = ApiAllocator()) : client(nullptr), allocator(alloc) {}
-
-                std::shared_ptr<Mqtt5Client> client;
-                OnSubscribeCompletionHandler onSubscribeCompletion;
-                Allocator *allocator;
-            };
-
-            struct UnSubAckCallbackData
-            {
-                UnSubAckCallbackData(Allocator *alloc = ApiAllocator()) : client(nullptr), allocator(alloc) {}
-
-                std::shared_ptr<Mqtt5Client> client;
-                OnUnsubscribeCompletionHandler onUnsubscribeCompletion;
-                Allocator *allocator;
-            };
-
-            void Mqtt5Client::s_lifeCycleEventCallback(const struct aws_mqtt5_client_lifecycle_event *event)
-            {
-                Mqtt5Client *client = reinterpret_cast<Mqtt5Client *>(event->user_data);
-                switch (event->event_type)
-                {
-                    case AWS_MQTT5_CLET_STOPPED:
-                        AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "Lifecycle event: Client Stopped!");
-                        if (client->onStopped)
-                        {
-                            OnStoppedEventData eventData;
-                            client->onStopped(*client, eventData);
-                        }
-                        break;
-
-                    case AWS_MQTT5_CLET_ATTEMPTING_CONNECT:
-                        AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "Lifecycle event: Attempting Connect!");
-                        if (client->onAttemptingConnect)
-                        {
-                            OnAttemptingConnectEventData eventData;
-                            client->onAttemptingConnect(*client, eventData);
-                        }
-                        break;
-
-                    case AWS_MQTT5_CLET_CONNECTION_FAILURE:
-                        AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "Lifecycle event: Connection Failure!");
-                        AWS_LOGF_INFO(
-                            AWS_LS_MQTT5_CLIENT,
-                            "  Error Code: %d(%s)",
-                            event->error_code,
-                            aws_error_debug_str(event->error_code));
-                        if (client->onConnectionFailure)
-                        {
-                            OnConnectionFailureEventData eventData;
-                            eventData.errorCode = event->error_code;
-                            std::shared_ptr<ConnAckPacket> packet = nullptr;
-                            if (event->connack_data != NULL)
-                            {
-                                packet = Aws::Crt::MakeShared<ConnAckPacket>(
-                                    client->m_allocator, *event->connack_data, client->m_allocator);
-                                eventData.connAckPacket = packet;
-                            }
-                            client->onConnectionFailure(*client, eventData);
-                        }
-                        break;
-
-                    case AWS_MQTT5_CLET_CONNECTION_SUCCESS:
-                        AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "Lifecycle event: Connection Success!");
-                        if (client->onConnectionSuccess)
-                        {
-                            OnConnectionSuccessEventData eventData;
-
-                            std::shared_ptr<ConnAckPacket> packet = nullptr;
-                            if (event->connack_data != NULL)
-                            {
-                                packet = Aws::Crt::MakeShared<ConnAckPacket>(ApiAllocator(), *event->connack_data);
-                            }
-
-                            std::shared_ptr<NegotiatedSettings> neg_settings = nullptr;
-                            if (event->settings != NULL)
-                            {
-                                neg_settings =
-                                    Aws::Crt::MakeShared<NegotiatedSettings>(ApiAllocator(), *event->settings);
-                            }
-
-                            eventData.connAckPacket = packet;
-                            eventData.negotiatedSettings = neg_settings;
-                            client->onConnectionSuccess(*client, eventData);
-                        }
-                        break;
-
-                    case AWS_MQTT5_CLET_DISCONNECTION:
-                        AWS_LOGF_INFO(
-                            AWS_LS_MQTT5_CLIENT,
-                            "  Error Code: %d(%s)",
-                            event->error_code,
-                            aws_error_debug_str(event->error_code));
-                        if (client->onDisconnection)
-                        {
-                            OnDisconnectionEventData eventData;
-                            std::shared_ptr<DisconnectPacket> disconnection = nullptr;
-                            if (event->disconnect_data != nullptr)
-                            {
-                                disconnection = Aws::Crt::MakeShared<DisconnectPacket>(
-                                    client->m_allocator, *event->disconnect_data, client->m_allocator);
-                            }
-                            eventData.errorCode = event->error_code;
-                            eventData.disconnectPacket = disconnection;
-                            client->onDisconnection(*client, eventData);
-                        }
-                        break;
-                }
-            }
-
-            void Mqtt5Client::s_publishReceivedCallback(
-                const struct aws_mqtt5_packet_publish_view *publish,
-                void *user_data)
-            {
-                AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "on publish recieved callback");
-                Mqtt5Client *client = reinterpret_cast<Mqtt5Client *>(user_data);
-                if (client != nullptr && client->onPublishReceived != nullptr)
-                {
-                    if (publish != NULL)
-                    {
-                        std::shared_ptr<PublishPacket> packet =
-                            std::make_shared<PublishPacket>(*publish, client->m_allocator);
-                        PublishReceivedEventData eventData;
-                        eventData.publishPacket = packet;
-                        client->onPublishReceived(*client, eventData);
-                    }
-                    else
-                    {
-                        AWS_LOGF_ERROR(AWS_LS_MQTT5_CLIENT, "Failed to access Publish packet view.");
-                    }
-                }
-            }
-
-            void Mqtt5Client::s_publishCompletionCallback(
-                enum aws_mqtt5_packet_type packet_type,
-                const void *publshCompletionPacket,
-                int error_code,
-                void *complete_ctx)
-            {
-                AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "Publish completion callback triggered.");
-                auto callbackData = reinterpret_cast<PubAckCallbackData *>(complete_ctx);
-
-                if (callbackData)
-                {
-                    std::shared_ptr<PublishResult> publish = nullptr;
-                    switch (packet_type)
-                    {
-                        case aws_mqtt5_packet_type::AWS_MQTT5_PT_PUBACK:
-                        {
-                            if (publshCompletionPacket != NULL)
-                            {
-                                std::shared_ptr<PubAckPacket> packet = std::make_shared<PubAckPacket>(
-                                    *(aws_mqtt5_packet_puback_view *)publshCompletionPacket, callbackData->allocator);
-                                publish = std::make_shared<PublishResult>(std::move(packet));
-                            }
-                            else // This should never happened.
-                            {
-                                AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "The PubAck Packet is invalid.");
-                                publish = std::make_shared<PublishResult>(AWS_ERROR_INVALID_ARGUMENT);
-                            }
-                            break;
-                        }
-                        case aws_mqtt5_packet_type::AWS_MQTT5_PT_NONE:
-                        {
-                            publish = std::make_shared<PublishResult>(error_code);
-                            break;
-                        }
-                        default: // Invalid packet type
-                        {
-                            AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "Invalid Packet Type.");
-                            publish = std::make_shared<PublishResult>(AWS_ERROR_INVALID_ARGUMENT);
-                            break;
-                        }
-                    }
-                    if (callbackData->onPublishCompletion != NULL)
-                    {
-                        callbackData->onPublishCompletion(callbackData->client, error_code, publish);
-                    }
-
-                    Crt::Delete(callbackData, callbackData->allocator);
-                }
-            }
-
-            void Mqtt5Client::s_onWebsocketHandshake(
-                struct aws_http_message *rawRequest,
-                void *user_data,
-                aws_mqtt5_transform_websocket_handshake_complete_fn *complete_fn,
-                void *complete_ctx)
-            {
-                auto client = reinterpret_cast<Mqtt5Client *>(user_data);
-
-                Allocator *allocator = client->m_allocator;
-                // we have to do this because of private constructors.
-                auto toSeat =
-                    reinterpret_cast<Http::HttpRequest *>(aws_mem_acquire(allocator, sizeof(Http::HttpRequest)));
-                toSeat = new (toSeat) Http::HttpRequest(allocator, rawRequest);
-
-                std::shared_ptr<Http::HttpRequest> request = std::shared_ptr<Http::HttpRequest>(
-                    toSeat, [allocator](Http::HttpRequest *ptr) { Crt::Delete(ptr, allocator); });
-
-                auto onInterceptComplete =
-                    [complete_fn,
-                     complete_ctx](const std::shared_ptr<Http::HttpRequest> &transformedRequest, int errorCode) {
-                        complete_fn(transformedRequest->GetUnderlyingMessage(), errorCode, complete_ctx);
-                    };
-
-                client->websocketInterceptor(request, onInterceptComplete);
-            }
-
-            void Mqtt5Client::s_clientTerminationCompletion(void *complete_ctx)
-            {
-                Mqtt5Client *client = reinterpret_cast<Mqtt5Client *>(complete_ctx);
-                std::unique_lock<std::mutex> lock(client->m_terminationMutex);
-                client->m_terminationPredicate = true;
-                client->m_terminationCondition.notify_all();
-            }
-
-            void Mqtt5Client::s_subscribeCompletionCallback(
-                const aws_mqtt5_packet_suback_view *suback,
-                int error_code,
-                void *complete_ctx)
-            {
-                SubAckCallbackData *callbackData = reinterpret_cast<SubAckCallbackData *>(complete_ctx);
-                AWS_ASSERT(callbackData != nullptr);
-
-                std::shared_ptr<SubAckPacket> packet = nullptr;
-                if (suback != nullptr)
-                {
-                    packet = std::make_shared<SubAckPacket>(*suback, callbackData->allocator);
-                }
-
-                if (error_code != 0)
-                {
-                    AWS_LOGF_INFO(
-                        AWS_LS_MQTT5_CLIENT,
-                        "SubscribeCompletion Failed with Error Code: %d(%s)",
-                        error_code,
-                        aws_error_debug_str(error_code));
-                }
-
-                if (callbackData->onSubscribeCompletion)
-                {
-                    callbackData->onSubscribeCompletion(callbackData->client, error_code, packet);
-                }
-                Crt::Delete(callbackData, callbackData->allocator);
-            }
-
-            void Mqtt5Client::s_unsubscribeCompletionCallback(
-                const aws_mqtt5_packet_unsuback_view *unsuback,
-                int error_code,
-                void *complete_ctx)
-            {
-                UnSubAckCallbackData *callbackData = reinterpret_cast<UnSubAckCallbackData *>(complete_ctx);
-                AWS_ASSERT(callbackData != nullptr);
-
-                std::shared_ptr<UnSubAckPacket> packet = nullptr;
-                if (unsuback != nullptr)
-                {
-                    packet = std::make_shared<UnSubAckPacket>(*unsuback, callbackData->allocator);
-                }
-
-                if (error_code != 0)
-                {
-                    AWS_LOGF_INFO(
-                        AWS_LS_MQTT5_CLIENT,
-                        "UnsubscribeCompletion Failed with Error Code: %d(%s)",
-                        error_code,
-                        aws_error_debug_str(error_code));
-                }
-
-                if (callbackData->onUnsubscribeCompletion != NULL)
-                {
-                    callbackData->onUnsubscribeCompletion(callbackData->client, error_code, packet);
-                }
-
-                Crt::Delete(callbackData, callbackData->allocator);
-            }
-
             Mqtt5Client::Mqtt5Client(const Mqtt5ClientOptions &options, Allocator *allocator) noexcept
-                : m_client(nullptr), m_allocator(allocator)
+                : m_client_core(nullptr), m_allocator(allocator)
             {
-                aws_mqtt5_client_options clientOptions;
-
-                options.initializeRawOptions(clientOptions);
-
-                /* Setup Callbacks */
-                if (options.websocketHandshakeTransform)
-                {
-                    this->websocketInterceptor = options.websocketHandshakeTransform;
-                    clientOptions.websocket_handshake_transform = &Mqtt5Client::s_onWebsocketHandshake;
-                    clientOptions.websocket_handshake_transform_user_data = this;
-                }
-
-                if (options.onConnectionFailure)
-                {
-                    this->onConnectionFailure = options.onConnectionFailure;
-                }
-
-                if (options.onConnectionSuccess)
-                {
-                    this->onConnectionSuccess = options.onConnectionSuccess;
-                }
-
-                if (options.onDisconnection)
-                {
-                    this->onDisconnection = options.onDisconnection;
-                }
-
-                if (options.onPublishReceived)
-                {
-                    this->onPublishReceived = options.onPublishReceived;
-                }
-
-                if (options.onStopped)
-                {
-                    this->onStopped = options.onStopped;
-                }
-
-                if (options.onAttemptingConnect)
-                {
-                    this->onAttemptingConnect = options.onAttemptingConnect;
-                }
-
-                clientOptions.publish_received_handler_user_data = this;
-                clientOptions.publish_received_handler = &Mqtt5Client::s_publishReceivedCallback;
-
-                clientOptions.lifecycle_event_handler = &Mqtt5Client::s_lifeCycleEventCallback;
-                clientOptions.lifecycle_event_handler_user_data = this;
-
-                clientOptions.client_termination_handler = &Mqtt5Client::s_clientTerminationCompletion;
-                clientOptions.client_termination_handler_user_data = this;
-
-                m_client = aws_mqtt5_client_new(allocator, &clientOptions);
+                m_client_core = Mqtt5ClientCore::NewMqtt5ClientCore(options, allocator);
             }
 
             Mqtt5Client::~Mqtt5Client()
             {
-                if (m_client != nullptr)
-                {
-                    aws_mqtt5_client_release(m_client);
-                    std::unique_lock<std::mutex> lock(m_terminationMutex);
-                    m_terminationCondition.wait(lock, [this] { return m_terminationPredicate == true; });
-                    m_client = nullptr;
-                }
+                m_client_core->Close();
+                m_client_core.reset();
             }
 
             std::shared_ptr<Mqtt5Client> Mqtt5Client::NewMqtt5Client(
@@ -389,20 +46,40 @@ namespace Aws
                 }
 
                 toSeat = new (toSeat) Mqtt5Client(options, allocator);
+
+                // Creation failed, make sure we release the allocated memory
+                if (!*toSeat)
+                {
+                    Crt::Delete(toSeat, allocator);
+                    return nullptr;
+                }
+
                 return std::shared_ptr<Mqtt5Client>(
                     toSeat, [allocator](Mqtt5Client *client) { Crt::Delete(client, allocator); });
             }
 
-            Mqtt5Client::operator bool() const noexcept { return m_client != nullptr; }
+            Mqtt5Client::operator bool() const noexcept { return m_client_core != nullptr; }
 
             int Mqtt5Client::LastError() const noexcept { return aws_last_error(); }
 
-            bool Mqtt5Client::Start() const noexcept { return aws_mqtt5_client_start(m_client) == AWS_OP_SUCCESS; }
+            bool Mqtt5Client::Start() const noexcept
+            {
+                if (m_client_core == nullptr)
+                    return false;
+                return aws_mqtt5_client_start(m_client_core->m_client) == AWS_OP_SUCCESS;
+            }
 
-            bool Mqtt5Client::Stop() noexcept { return aws_mqtt5_client_stop(m_client, NULL, NULL) == AWS_OP_SUCCESS; }
+            bool Mqtt5Client::Stop() noexcept
+            {
+                if (m_client_core == nullptr)
+                    return false;
+                return aws_mqtt5_client_stop(m_client_core->m_client, NULL, NULL) == AWS_OP_SUCCESS;
+            }
 
             bool Mqtt5Client::Stop(std::shared_ptr<DisconnectPacket> disconnectOptions) noexcept
             {
+                if (m_client_core == nullptr)
+                    return false;
                 if (disconnectOptions == nullptr)
                 {
                     return Stop();
@@ -414,114 +91,53 @@ namespace Aws
                 {
                     return false;
                 }
-                return aws_mqtt5_client_stop(m_client, &disconnect_packet, NULL) == AWS_OP_SUCCESS;
+                return aws_mqtt5_client_stop(m_client_core->m_client, &disconnect_packet, NULL) == AWS_OP_SUCCESS;
             }
 
             bool Mqtt5Client::Publish(
                 std::shared_ptr<PublishPacket> publishOptions,
-                OnPublishCompletionHandler onPublishCmpletionCallback) noexcept
+                OnPublishCompletionHandler onPublishCompletionCallback) noexcept
             {
-                if (publishOptions == nullptr)
+                if (m_client_core == nullptr || publishOptions == nullptr)
                 {
                     return false;
                 }
 
-                aws_mqtt5_packet_publish_view publish;
-                publishOptions->initializeRawOptions(publish);
-
-                PubAckCallbackData *pubCallbackData = Aws::Crt::New<PubAckCallbackData>(m_allocator);
-
-                pubCallbackData->client = this->getptr();
-                pubCallbackData->allocator = m_allocator;
-                pubCallbackData->onPublishCompletion = onPublishCmpletionCallback;
-
-                aws_mqtt5_publish_completion_options options;
-
-                options.completion_callback = Mqtt5Client::s_publishCompletionCallback;
-                options.completion_user_data = pubCallbackData;
-
-                int result = aws_mqtt5_client_publish(m_client, &publish, &options);
-                if (result != AWS_OP_SUCCESS)
-                {
-                    Crt::Delete(pubCallbackData, pubCallbackData->allocator);
-                    return false;
-                }
-                return true;
+                /* The callbacks should be handled by the client core*/
+                return m_client_core->Publish(publishOptions, onPublishCompletionCallback);
             }
 
             bool Mqtt5Client::Subscribe(
                 std::shared_ptr<SubscribePacket> subscribeOptions,
                 OnSubscribeCompletionHandler onSubscribeCompletionCallback) noexcept
             {
-                if (subscribeOptions == nullptr)
+                if (m_client_core == nullptr || subscribeOptions == nullptr)
                 {
                     return false;
                 }
-                /* Setup packet_subscribe */
-                aws_mqtt5_packet_subscribe_view subscribe;
-
-                subscribeOptions->initializeRawOptions(subscribe);
-
-                /* Setup subscription Completion callback*/
-                SubAckCallbackData *subCallbackData = Aws::Crt::New<SubAckCallbackData>(m_allocator);
-
-                subCallbackData->client = this->getptr();
-                subCallbackData->allocator = m_allocator;
-                subCallbackData->onSubscribeCompletion = onSubscribeCompletionCallback;
-
-                aws_mqtt5_subscribe_completion_options options;
-
-                options.completion_callback = Mqtt5Client::s_subscribeCompletionCallback;
-                options.completion_user_data = subCallbackData;
-
-                /* Subscribe to topic */
-                int result = aws_mqtt5_client_subscribe(m_client, &subscribe, &options);
-                if (result != AWS_OP_SUCCESS)
-                {
-                    Crt::Delete(subCallbackData, subCallbackData->allocator);
-                    return false;
-                }
-                return result == AWS_OP_SUCCESS;
+                /* The callbacks should be handled by the client core*/
+                return m_client_core->Subscribe(subscribeOptions, onSubscribeCompletionCallback);
             }
 
             bool Mqtt5Client::Unsubscribe(
                 std::shared_ptr<UnsubscribePacket> unsubscribeOptions,
                 OnUnsubscribeCompletionHandler onUnsubscribeCompletionCallback) noexcept
             {
-                if (unsubscribeOptions == nullptr)
+                if (m_client_core == nullptr || unsubscribeOptions == nullptr)
                 {
                     return false;
                 }
 
-                aws_mqtt5_packet_unsubscribe_view unsubscribe;
-                unsubscribeOptions->initializeRawOptions(unsubscribe);
-
-                UnSubAckCallbackData *unSubCallbackData = Aws::Crt::New<UnSubAckCallbackData>(m_allocator);
-
-                unSubCallbackData->client = this->getptr();
-                unSubCallbackData->allocator = m_allocator;
-                unSubCallbackData->onUnsubscribeCompletion = onUnsubscribeCompletionCallback;
-
-                aws_mqtt5_unsubscribe_completion_options options;
-
-                options.completion_callback = Mqtt5Client::s_unsubscribeCompletionCallback;
-                options.completion_user_data = unSubCallbackData;
-
-                int result = aws_mqtt5_client_unsubscribe(m_client, &unsubscribe, &options);
-                if (result != AWS_OP_SUCCESS)
-                {
-                    Crt::Delete(unSubCallbackData, unSubCallbackData->allocator);
-                    return false;
-                }
-                return result == AWS_OP_SUCCESS;
+                /* The callbacks should be handled by the client core*/
+                return m_client_core->Unsubscribe(unsubscribeOptions, onUnsubscribeCompletionCallback);
             }
 
             const Mqtt5ClientOperationStatistics &Mqtt5Client::GetOperationStatistics() noexcept
             {
                 aws_mqtt5_client_operation_statistics m_operationStatisticsNative = {0, 0, 0, 0};
-                if (m_client != nullptr)
+                if (m_client_core != nullptr)
                 {
-                    aws_mqtt5_client_get_stats(m_client, &m_operationStatisticsNative);
+                    aws_mqtt5_client_get_stats(m_client_core->m_client, &m_operationStatisticsNative);
                     m_operationStatistics.incompleteOperationCount =
                         m_operationStatisticsNative.incomplete_operation_count;
                     m_operationStatistics.incompleteOperationSize =

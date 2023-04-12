@@ -25,6 +25,7 @@ namespace Aws
             class SubAckPacket;
             class UnsubscribePacket;
             class UnSubAckPacket;
+            class Mqtt5ClientCore;
 
             struct AWS_CRT_CPP_API ReconnectOptions
             {
@@ -146,58 +147,49 @@ namespace Aws
              * Type signature of the callback invoked when connection succeed
              * Mandatory event fields: client, connack_data, settings
              */
-            using OnConnectionSuccessHandler = std::function<void(Mqtt5Client &, const OnConnectionSuccessEventData &)>;
+            using OnConnectionSuccessHandler = std::function<void(const OnConnectionSuccessEventData &)>;
 
             /**
              * Type signature of the callback invoked when connection failed
              */
-            using OnConnectionFailureHandler = std::function<void(Mqtt5Client &, const OnConnectionFailureEventData &)>;
+            using OnConnectionFailureHandler = std::function<void(const OnConnectionFailureEventData &)>;
 
             /**
              * Type signature of the callback invoked when the internal connection is shutdown
              */
-            using OnDisconnectionHandler = std::function<void(Mqtt5Client &, const OnDisconnectionEventData &)>;
+            using OnDisconnectionHandler = std::function<void(const OnDisconnectionEventData &)>;
 
             /**
              * Type signature of the callback invoked when attempting connect to client
              * Mandatory event fields: client
              */
-            using OnAttemptingConnectHandler = std::function<void(Mqtt5Client &, const OnAttemptingConnectEventData &)>;
+            using OnAttemptingConnectHandler = std::function<void(const OnAttemptingConnectEventData &)>;
 
             /**
              * Type signature of the callback invoked when client connection stopped
              * Mandatory event fields: client
              */
-            using OnStoppedHandler = std::function<void(Mqtt5Client &, const OnStoppedEventData &)>;
-
-            /**
-             * Type signature of the callback invoked when a Disconnection Comlete
-             *
-             */
-            using OnDisconnectCompletionHandler = std::function<void(std::shared_ptr<Mqtt5Client>, int)>;
+            using OnStoppedHandler = std::function<void(const OnStoppedEventData &)>;
 
             /**
              * Type signature of the callback invoked when a Publish Complete
              */
-            using OnPublishCompletionHandler =
-                std::function<void(std::shared_ptr<Mqtt5Client>, int, std::shared_ptr<PublishResult>)>;
+            using OnPublishCompletionHandler = std::function<void(int, std::shared_ptr<PublishResult>)>;
 
             /**
              * Type signature of the callback invoked when a Subscribe Complete
              */
-            using OnSubscribeCompletionHandler =
-                std::function<void(std::shared_ptr<Mqtt5Client>, int, std::shared_ptr<SubAckPacket>)>;
+            using OnSubscribeCompletionHandler = std::function<void(int, std::shared_ptr<SubAckPacket>)>;
 
             /**
              * Type signature of the callback invoked when a Unsubscribe Complete
              */
-            using OnUnsubscribeCompletionHandler =
-                std::function<void(std::shared_ptr<Mqtt5Client>, int, std::shared_ptr<UnSubAckPacket>)>;
+            using OnUnsubscribeCompletionHandler = std::function<void(int, std::shared_ptr<UnSubAckPacket>)>;
 
             /**
              * Type signature of the callback invoked when a PacketPublish message received (OnMessageHandler)
              */
-            using OnPublishReceivedHandler = std::function<void(Mqtt5Client &, const PublishReceivedEventData &)>;
+            using OnPublishReceivedHandler = std::function<void(const PublishReceivedEventData &)>;
 
             /**
              * Callback for users to invoke upon completion of, presumably asynchronous, OnWebSocketHandshakeIntercept
@@ -328,67 +320,8 @@ namespace Aws
               private:
                 Mqtt5Client(const Mqtt5ClientOptions &options, Allocator *allocator = ApiAllocator()) noexcept;
 
-                /* Static Callbacks */
-                static void s_publishCompletionCallback(
-                    enum aws_mqtt5_packet_type packet_type,
-                    const void *packet,
-                    int error_code,
-                    void *complete_ctx);
-
-                static void s_subscribeCompletionCallback(
-                    const struct aws_mqtt5_packet_suback_view *puback,
-                    int error_code,
-                    void *complete_ctx);
-
-                static void s_unsubscribeCompletionCallback(
-                    const struct aws_mqtt5_packet_unsuback_view *puback,
-                    int error_code,
-                    void *complete_ctx);
-
-                static void s_lifeCycleEventCallback(const aws_mqtt5_client_lifecycle_event *event);
-
-                static void s_publishReceivedCallback(const aws_mqtt5_packet_publish_view *publish, void *user_data);
-
-                static void s_onWebsocketHandshake(
-                    aws_http_message *rawRequest,
-                    void *user_data,
-                    aws_mqtt5_transform_websocket_handshake_complete_fn *complete_fn,
-                    void *complete_ctx);
-
-                static void s_clientTerminationCompletion(void *complete_ctx);
-
-                /* The handler is set by clientoptions */
-                OnWebSocketHandshakeIntercept websocketInterceptor;
-                /**
-                 * Callback handler trigged when client successfully establishes an MQTT connection
-                 */
-                OnConnectionSuccessHandler onConnectionSuccess;
-
-                /**
-                 * Callback handler trigged when client fails to establish an MQTT connection
-                 */
-                OnConnectionFailureHandler onConnectionFailure;
-
-                /**
-                 * Callback handler trigged when client's current MQTT connection is closed
-                 */
-                OnDisconnectionHandler onDisconnection;
-
-                /**
-                 * Callback handler trigged when client reaches the "Stopped" state
-                 */
-                OnStoppedHandler onStopped;
-
-                /**
-                 * Callback handler trigged when client begins an attempt to connect to the remote endpoint.
-                 */
-                OnAttemptingConnectHandler onAttemptingConnect;
-
-                /**
-                 * Callback handler trigged when an MQTT PUBLISH packet is received by the client
-                 */
-                OnPublishReceivedHandler onPublishReceived;
-                aws_mqtt5_client *m_client;
+                /* The client core to handle the user callbacks and c client termination */
+                std::shared_ptr<Mqtt5ClientCore> m_client_core;
                 Allocator *m_allocator;
 
                 Mqtt5ClientOperationStatistics m_operationStatistics;
@@ -404,6 +337,7 @@ namespace Aws
             {
 
                 friend class Mqtt5Client;
+                friend class Mqtt5ClientCore;
 
               public:
                 /**
