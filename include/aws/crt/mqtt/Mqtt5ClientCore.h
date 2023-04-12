@@ -14,6 +14,7 @@ namespace Aws
     {
         namespace Mqtt5
         {
+
             /**
              * An MQTT5 client. This is a move-only type. Unless otherwise specified,
              * all function arguments need only to live through the duration of the
