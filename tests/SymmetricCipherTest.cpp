@@ -152,13 +152,15 @@ static int s_TestAES_256_Keywrap_Generated_Materials_ResourceSafety(struct aws_a
 
         ASSERT_TRUE(keywrapCipher.Reset());
 
+        uint8_t decryptOutput[Aws::Crt::Crypto::AES_256_CIPHER_BLOCK_SIZE * 3] = {0};
+        auto decryptOutputBuf = Aws::Crt::ByteBufFromEmptyArray(decryptOutput, sizeof(decryptOutput));
+
         auto decryptInput = Aws::Crt::ByteCursorFromByteBuf(outputBuf);
-        outputBuf.len = 0;
 
-        ASSERT_TRUE(keywrapCipher.Decrypt(decryptInput, outputBuf));
-        ASSERT_TRUE(keywrapCipher.FinalizeDecryption(outputBuf));
+        ASSERT_TRUE(keywrapCipher.Decrypt(decryptInput, decryptOutputBuf));
+        ASSERT_TRUE(keywrapCipher.FinalizeDecryption(decryptOutputBuf));
 
-        ASSERT_BIN_ARRAYS_EQUALS(input.ptr, input.len, outputBuf.buffer, outputBuf.len);
+        ASSERT_BIN_ARRAYS_EQUALS(input.ptr, input.len, decryptOutputBuf.buffer, decryptOutputBuf.len);
 
         ASSERT_FALSE(keywrapCipher);
 
