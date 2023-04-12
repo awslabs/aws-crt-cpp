@@ -96,7 +96,7 @@ namespace Aws
 
                 /**
                  * Encrypts the value in toEncrypt and stores any immediate results in out. Out can be dynamically
-                 * re-sized if out is a dynamic byte buf. Otherwise, make sure the size of out is at least 1 block
+                 * re-sized if out is a dynamic byte buf. Otherwise, make sure the size of out is at least 2 blocks
                  * larger than the input to allow for padding.
                  *
                  * Returns true on success. Call

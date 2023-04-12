@@ -12,13 +12,13 @@ static int s_TestAES_256_CBC_Generated_Materials_ResourceSafety(struct aws_alloc
 {
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
-        Aws::Crt::Crypto::SymmetricCipher cbcCipher = 
+        Aws::Crt::Crypto::SymmetricCipher cbcCipher =
             Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_CBC_Cipher(allocator);
         ASSERT_TRUE(cbcCipher);
 
         auto input = aws_byte_cursor_from_c_str("abc");
 
-        uint8_t output[Aws::Crt::Crypto::AES_256_CIPHER_BLOCK_SIZE] = {0};
+        uint8_t output[Aws::Crt::Crypto::AES_256_CIPHER_BLOCK_SIZE * 2] = {0};
         auto outputBuf = Aws::Crt::ByteBufFromEmptyArray(output, sizeof(output));
 
         ASSERT_TRUE(cbcCipher.Encrypt(input, outputBuf));
@@ -59,7 +59,7 @@ static int s_TestAES_256_CTR_Generated_Materials_ResourceSafety(struct aws_alloc
 
         auto input = aws_byte_cursor_from_c_str("abc");
 
-        uint8_t output[Aws::Crt::Crypto::AES_256_CIPHER_BLOCK_SIZE] = {0};
+        uint8_t output[Aws::Crt::Crypto::AES_256_CIPHER_BLOCK_SIZE * 2] = {0};
         auto outputBuf = Aws::Crt::ByteBufFromEmptyArray(output, sizeof(output));
 
         ASSERT_TRUE(ctrCipher.Encrypt(input, outputBuf));
@@ -100,7 +100,7 @@ static int s_TestAES_256_GCM_Generated_Materials_ResourceSafety(struct aws_alloc
 
         auto input = aws_byte_cursor_from_c_str("abc");
 
-        uint8_t output[Aws::Crt::Crypto::AES_256_CIPHER_BLOCK_SIZE] = {0};
+        uint8_t output[Aws::Crt::Crypto::AES_256_CIPHER_BLOCK_SIZE * 2] = {0};
         auto outputBuf = Aws::Crt::ByteBufFromEmptyArray(output, sizeof(output));
 
         ASSERT_TRUE(gcmCipher.Encrypt(input, outputBuf));
