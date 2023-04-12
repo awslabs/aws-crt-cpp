@@ -449,7 +449,7 @@ static int s_AwsMqtt5CanaryOperationUnsubscribeBad(struct AwsMqtt5CanaryTestClie
 
     if (testClient->client->Unsubscribe(
             unsubscription,
-            [testClient](Mqtt5Client &, int, std::shared_ptr<Mqtt5::UnSubAckPacket> packet)
+            [testClient](int, std::shared_ptr<Mqtt5::UnSubAckPacket> packet)
             {
                 if (packet == nullptr)
                     return;
@@ -859,7 +859,7 @@ int main(int argc, char **argv)
         clients.push_back(client);
         mqtt5Options.withAckTimeoutSeconds(10);
         mqtt5Options.withPublishReceivedCallback(
-            [&clients, i](Mqtt5Client & /*client*/, const Mqtt5::PublishReceivedEventData &publishData)
+            [&clients, i](const Mqtt5::PublishReceivedEventData &publishData)
             {
                 AWS_LOGF_INFO(
                     AWS_LS_MQTT5_CANARY,
@@ -869,7 +869,7 @@ int main(int argc, char **argv)
             });
 
         mqtt5Options.withClientConnectionSuccessCallback(
-            [&clients, i](Mqtt5Client &, const Mqtt5::OnConnectionSuccessEventData &eventData)
+            [&clients, i](const Mqtt5::OnConnectionSuccessEventData &eventData)
             {
                 clients[i].isConnected = true;
                 clients[i].clientId = Aws::Crt::String(
@@ -882,7 +882,7 @@ int main(int argc, char **argv)
             });
 
         mqtt5Options.withClientConnectionFailureCallback(
-            [&clients,i](Mqtt5Client &, const OnConnectionFailureEventData &eventData)
+            [&clients,i](const OnConnectionFailureEventData &eventData)
             {
                 clients[i].isConnected = false;
                 AWS_LOGF_ERROR(
@@ -894,14 +894,14 @@ int main(int argc, char **argv)
             });
 
         mqtt5Options.withClientDisconnectionCallback(
-            [&clients,i](Mqtt5Client &, const OnDisconnectionEventData &)
+            [&clients,i](const OnDisconnectionEventData &)
             {
                 clients[i].isConnected = false;
                 AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Disconnect", clients[i].clientId.c_str());
             });
 
         mqtt5Options.withClientStoppedCallback(
-            [&clients,i](Mqtt5Client &, const OnStoppedEventData &)
+            [&clients,i](const OnStoppedEventData &)
             { AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Stopped", clients[i].clientId.c_str()); });
 
         clients[i].client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, appCtx.allocator);
