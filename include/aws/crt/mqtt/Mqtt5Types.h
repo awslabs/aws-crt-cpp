@@ -12,6 +12,17 @@ namespace Aws
     {
         namespace Mqtt5
         {
+            struct OnConnectionSuccessEventData;
+            struct OnConnectionFailureEventData;
+            struct OnConnectionSuccessEventData;
+            struct OnDisconnectionEventData;
+            struct OnStoppedEventData;
+            struct PublishReceivedEventData;
+            struct OnAttemptingConnectEventData;
+            class PublishResult;
+            class SubAckPacket;
+            class UnSubAckPacket;
+
             /**
              * MQTT message delivery quality of service.
              *
@@ -113,6 +124,70 @@ namespace Aws
              * https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901022
              */
             using PacketType = aws_mqtt5_packet_type;
+
+            /**
+             * Type signature of the callback invoked when connection succeed
+             * Mandatory event fields: client, connack_data, settings
+             */
+            using OnConnectionSuccessHandler = std::function<void(const OnConnectionSuccessEventData &)>;
+
+            /**
+             * Type signature of the callback invoked when connection failed
+             */
+            using OnConnectionFailureHandler = std::function<void(const OnConnectionFailureEventData &)>;
+
+            /**
+             * Type signature of the callback invoked when the internal connection is shutdown
+             */
+            using OnDisconnectionHandler = std::function<void(const OnDisconnectionEventData &)>;
+
+            /**
+             * Type signature of the callback invoked when attempting connect to client
+             * Mandatory event fields: client
+             */
+            using OnAttemptingConnectHandler = std::function<void(const OnAttemptingConnectEventData &)>;
+
+            /**
+             * Type signature of the callback invoked when client connection stopped
+             * Mandatory event fields: client
+             */
+            using OnStoppedHandler = std::function<void(const OnStoppedEventData &)>;
+
+            /**
+             * Type signature of the callback invoked when a Publish Complete
+             */
+            using OnPublishCompletionHandler = std::function<void(int, std::shared_ptr<PublishResult>)>;
+
+            /**
+             * Type signature of the callback invoked when a Subscribe Complete
+             */
+            using OnSubscribeCompletionHandler = std::function<void(int, std::shared_ptr<SubAckPacket>)>;
+
+            /**
+             * Type signature of the callback invoked when a Unsubscribe Complete
+             */
+            using OnUnsubscribeCompletionHandler = std::function<void(int, std::shared_ptr<UnSubAckPacket>)>;
+
+            /**
+             * Type signature of the callback invoked when a PacketPublish message received (OnMessageHandler)
+             */
+            using OnPublishReceivedHandler = std::function<void(const PublishReceivedEventData &)>;
+
+            /**
+             * Callback for users to invoke upon completion of, presumably asynchronous, OnWebSocketHandshakeIntercept
+             * callback's initiated process.
+             */
+            using OnWebSocketHandshakeInterceptComplete =
+                std::function<void(const std::shared_ptr<Http::HttpRequest> &, int)>;
+
+            /**
+             * Invoked during websocket handshake to give users opportunity to transform an http request for purposes
+             * such as signing/authorization etc... Returning from this function does not continue the websocket
+             * handshake since some work flows may be asynchronous. To accommodate that, onComplete must be invoked upon
+             * completion of the signing process.
+             */
+            using OnWebSocketHandshakeIntercept =
+                std::function<void(std::shared_ptr<Http::HttpRequest>, const OnWebSocketHandshakeInterceptComplete &)>;
 
         } // namespace Mqtt5
 

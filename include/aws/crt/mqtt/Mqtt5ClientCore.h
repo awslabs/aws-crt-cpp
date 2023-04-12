@@ -14,6 +14,12 @@ namespace Aws
     {
         namespace Mqtt5
         {
+            class Mqtt5Client;
+            class Mqtt5ClientOptions;
+            class PublishPacket;
+            class SubscribePacket;
+            class UnsubscribePacket;
+
             /**
              * An MQTT5 client. This is a move-only type. Unless otherwise specified,
              * all function arguments need only to live through the duration of the
