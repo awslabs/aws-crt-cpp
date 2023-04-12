@@ -12,11 +12,12 @@ static int s_TestAES_256_CBC_Generated_Materials_ResourceSafety(struct aws_alloc
 {
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
-        Aws::Crt::Crypto::SymmetricCipher cbcCipher = Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_CBC_Cipher(allocator);
+        Aws::Crt::Crypto::SymmetricCipher cbcCipher = 
+            Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_CBC_Cipher(allocator);
         ASSERT_TRUE(cbcCipher);
 
         auto input = aws_byte_cursor_from_c_str("abc");
-       
+
         uint8_t output[Aws::Crt::Crypto::AES_256_CIPHER_BLOCK_SIZE] = {0};
         auto outputBuf = Aws::Crt::ByteBufFromEmptyArray(output, sizeof(output));
 
@@ -170,4 +171,6 @@ static int s_TestAES_256_Keywrap_Generated_Materials_ResourceSafety(struct aws_a
     return AWS_OP_SUCCESS;
 }
 
-AWS_TEST_CASE(AES_256_Keywrap_Generated_Materials_ResourceSafety, s_TestAES_256_Keywrap_Generated_Materials_ResourceSafety)
+AWS_TEST_CASE(
+    AES_256_Keywrap_Generated_Materials_ResourceSafety,
+    s_TestAES_256_Keywrap_Generated_Materials_ResourceSafety)

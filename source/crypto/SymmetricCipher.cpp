@@ -110,20 +110,14 @@ namespace Aws
                 return true;
             }
 
-            const ByteCursor SymmetricCipher::GetKey() const noexcept
-            {
-                return aws_symmetric_cipher_get_key(m_cipher);
-            }
+            const ByteCursor SymmetricCipher::GetKey() const noexcept { return aws_symmetric_cipher_get_key(m_cipher); }
 
             const ByteCursor SymmetricCipher::GetIV() const noexcept
             {
                 return aws_symmetric_cipher_get_initialization_vector(m_cipher);
             }
 
-            const ByteCursor SymmetricCipher::GetTag() const noexcept
-            {
-                return aws_symmetric_cipher_get_tag(m_cipher);
-            }
+            const ByteCursor SymmetricCipher::GetTag() const noexcept { return aws_symmetric_cipher_get_tag(m_cipher); }
 
             SymmetricCipher SymmetricCipher::CreateAES_256_CBC_Cipher(Allocator *allocator) noexcept
             {
