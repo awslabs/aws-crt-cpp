@@ -29,10 +29,10 @@ namespace Aws
 
             Mqtt5Client::~Mqtt5Client()
             {
-                if(m_client_core != nullptr)
+                if (m_client_core != nullptr)
                 {
-                   m_client_core->Close();
-                   m_client_core.reset();
+                    m_client_core->Close();
+                    m_client_core.reset();
                 }
             }
 
