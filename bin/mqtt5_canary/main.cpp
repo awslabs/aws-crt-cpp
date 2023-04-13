@@ -527,7 +527,7 @@ static int s_AwsMqtt5CanaryOperationPublish(
 
     uint16_t payload_size = 1;
     uint8_t payload_data[AWS_MQTT5_CANARY_PAYLOAD_SIZE_MAX];
-    for (size_t i = 0; i < payload_size; i++)
+    for (i = 0; i < payload_size; i++)
     {
         payload_data[i] = rand() % 128 + 1;
     }
