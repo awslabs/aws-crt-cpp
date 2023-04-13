@@ -61,9 +61,9 @@ body:
       required: false
 
   - type: input
-    id: cpp-sdk-version
+    id: cpp-crt-version
     attributes:
-      label: AWS CPP SDK version used
+      label: AWS CRT CPP version used
     validations:
       required: true
 
