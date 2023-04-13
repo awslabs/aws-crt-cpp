@@ -29,8 +29,11 @@ namespace Aws
 
             Mqtt5Client::~Mqtt5Client()
             {
-                m_client_core->Close();
-                m_client_core.reset();
+                if (m_client_core != nullptr)
+                {
+                    m_client_core->Close();
+                    m_client_core.reset();
+                }
             }
 
             std::shared_ptr<Mqtt5Client> Mqtt5Client::NewMqtt5Client(
