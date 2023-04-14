@@ -63,7 +63,7 @@ namespace Aws
                 {
                     case AWS_MQTT5_CLET_STOPPED:
                         AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "Lifecycle event: Client Stopped!");
-                        if (client_core->onStopped)
+                        if (client_core->onStopped != nullptr)
                         {
                             OnStoppedEventData eventData;
                             client_core->onStopped(eventData);
@@ -72,7 +72,7 @@ namespace Aws
 
                     case AWS_MQTT5_CLET_ATTEMPTING_CONNECT:
                         AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "Lifecycle event: Attempting Connect!");
-                        if (client_core->onAttemptingConnect)
+                        if (client_core->onAttemptingConnect != nullptr)
                         {
                             OnAttemptingConnectEventData eventData;
                             client_core->onAttemptingConnect(eventData);
@@ -86,12 +86,12 @@ namespace Aws
                             "  Error Code: %d(%s)",
                             event->error_code,
                             aws_error_debug_str(event->error_code));
-                        if (client_core->onConnectionFailure)
+                        if (client_core->onConnectionFailure != nullptr)
                         {
                             OnConnectionFailureEventData eventData;
                             eventData.errorCode = event->error_code;
                             std::shared_ptr<ConnAckPacket> packet = nullptr;
-                            if (event->connack_data != NULL)
+                            if (event->connack_data != nullptr)
                             {
                                 packet = Aws::Crt::MakeShared<ConnAckPacket>(
                                     client_core->m_allocator, *event->connack_data, client_core->m_allocator);
@@ -103,18 +103,18 @@ namespace Aws
 
                     case AWS_MQTT5_CLET_CONNECTION_SUCCESS:
                         AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "Lifecycle event: Connection Success!");
-                        if (client_core->onConnectionSuccess)
+                        if (client_core->onConnectionSuccess != nullptr)
                         {
                             OnConnectionSuccessEventData eventData;
 
                             std::shared_ptr<ConnAckPacket> packet = nullptr;
-                            if (event->connack_data != NULL)
+                            if (event->connack_data != nullptr)
                             {
                                 packet = Aws::Crt::MakeShared<ConnAckPacket>(ApiAllocator(), *event->connack_data);
                             }
 
                             std::shared_ptr<NegotiatedSettings> neg_settings = nullptr;
-                            if (event->settings != NULL)
+                            if (event->settings != nullptr)
                             {
                                 neg_settings =
                                     Aws::Crt::MakeShared<NegotiatedSettings>(ApiAllocator(), *event->settings);
@@ -132,7 +132,7 @@ namespace Aws
                             "  Error Code: %d(%s)",
                             event->error_code,
                             aws_error_debug_str(event->error_code));
-                        if (client_core->onDisconnection)
+                        if (client_core->onDisconnection != nullptr)
                         {
                             OnDisconnectionEventData eventData;
                             std::shared_ptr<DisconnectPacket> disconnection = nullptr;
@@ -179,7 +179,7 @@ namespace Aws
 
                 if (client_core->onPublishReceived != nullptr)
                 {
-                    if (publish != NULL)
+                    if (publish != nullptr)
                     {
                         std::shared_ptr<PublishPacket> packet =
                             std::make_shared<PublishPacket>(*publish, client_core->m_allocator);
@@ -207,7 +207,7 @@ namespace Aws
                 AWS_ASSERT(callbackData->clientCore != nullptr);
 
                 /* callback not set */
-                if (callbackData->onPublishCompletion == NULL)
+                if (callbackData->onPublishCompletion == nullptr)
                 {
                     goto on_publishCompletionCleanup;
                 }
@@ -229,7 +229,7 @@ namespace Aws
                     {
                         case aws_mqtt5_packet_type::AWS_MQTT5_PT_PUBACK:
                         {
-                            if (publishCompletionPacket != NULL)
+                            if (publishCompletionPacket != nullptr)
                             {
                                 std::shared_ptr<PubAckPacket> packet = std::make_shared<PubAckPacket>(
                                     *(aws_mqtt5_packet_puback_view *)publishCompletionPacket, callbackData->allocator);
@@ -463,10 +463,7 @@ namespace Aws
                 m_client = aws_mqtt5_client_new(allocator, &clientOptions);
             }
 
-            Mqtt5ClientCore::~Mqtt5ClientCore()
-            {
-                // release lock
-            }
+            Mqtt5ClientCore::~Mqtt5ClientCore() {}
 
             std::shared_ptr<Mqtt5ClientCore> Mqtt5ClientCore::NewMqtt5ClientCore(
                 const Mqtt5ClientOptions &options,
@@ -529,7 +526,7 @@ namespace Aws
                     Crt::Delete(pubCallbackData, pubCallbackData->allocator);
                     return false;
                 }
-                return true;
+                return result == AWS_OP_SUCCESS;
             }
 
             bool Mqtt5ClientCore::Subscribe(
@@ -602,7 +599,7 @@ namespace Aws
             void Mqtt5ClientCore::Close() noexcept
             {
                 std::lock_guard<std::recursive_mutex> lock(m_callback_lock);
-                m_callbackFlag = CallbackFlag::REVOKE;
+                m_callbackFlag = CallbackFlag::IGNORE;
                 if (m_client != nullptr)
                 {
                     aws_mqtt5_client_release(m_client);

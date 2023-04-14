@@ -68,21 +68,30 @@ namespace Aws
             bool Mqtt5Client::Start() const noexcept
             {
                 if (m_client_core == nullptr)
+                {
+                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to start the client: Mqtt5 Client is invalid.");
                     return false;
+                }
                 return aws_mqtt5_client_start(m_client_core->m_client) == AWS_OP_SUCCESS;
             }
 
             bool Mqtt5Client::Stop() noexcept
             {
                 if (m_client_core == nullptr)
+                {
+                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to stop the client: Mqtt5 Client is invalid.");
                     return false;
+                }
                 return aws_mqtt5_client_stop(m_client_core->m_client, NULL, NULL) == AWS_OP_SUCCESS;
             }
 
             bool Mqtt5Client::Stop(std::shared_ptr<DisconnectPacket> disconnectOptions) noexcept
             {
                 if (m_client_core == nullptr)
+                {
+                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to stop the client: Mqtt5 Client is invalid.");
                     return false;
+                }
                 if (disconnectOptions == nullptr)
                 {
                     return Stop();
@@ -103,6 +112,8 @@ namespace Aws
             {
                 if (m_client_core == nullptr || publishOptions == nullptr)
                 {
+                    AWS_LOGF_DEBUG(
+                        AWS_LS_MQTT5_CLIENT, "Failed to publish: the Mqtt5 client or the publish option is invalid.");
                     return false;
                 }
 
@@ -116,6 +127,9 @@ namespace Aws
             {
                 if (m_client_core == nullptr || subscribeOptions == nullptr)
                 {
+                    AWS_LOGF_DEBUG(
+                        AWS_LS_MQTT5_CLIENT,
+                        "Failed to subscribe: the Mqtt5 client or the subscribe option is invalid.");
                     return false;
                 }
                 /* The callbacks should be handled by the client core*/
@@ -128,6 +142,9 @@ namespace Aws
             {
                 if (m_client_core == nullptr || unsubscribeOptions == nullptr)
                 {
+                    AWS_LOGF_DEBUG(
+                        AWS_LS_MQTT5_CLIENT,
+                        "Failed to unsubscribe: the Mqtt5 client or the unsubscribe option is invalid.");
                     return false;
                 }
 
@@ -216,38 +233,38 @@ namespace Aws
 
             Mqtt5ClientOptions::~Mqtt5ClientOptions() {}
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withHostName(Crt::String hostname)
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithHostName(Crt::String hostname)
             {
                 m_hostName = std::move(hostname);
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withPort(uint16_t port) noexcept
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithPort(uint16_t port) noexcept
             {
                 m_port = port;
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withBootstrap(Io::ClientBootstrap *bootStrap) noexcept
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithBootstrap(Io::ClientBootstrap *bootStrap) noexcept
             {
                 m_bootstrap = bootStrap;
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withSocketOptions(Io::SocketOptions socketOptions) noexcept
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithSocketOptions(Io::SocketOptions socketOptions) noexcept
             {
                 m_socketOptions = std::move(socketOptions);
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withTlsConnectionOptions(
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithTlsConnectionOptions(
                 const Io::TlsConnectionOptions &tslOptions) noexcept
             {
                 m_tlsConnectionOptions = tslOptions;
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withHttpProxyOptions(
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithHttpProxyOptions(
                 const Crt::Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept
             {
                 m_proxyOptions = proxyOptions;
@@ -255,7 +272,7 @@ namespace Aws
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withConnectOptions(
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithConnectOptions(
                 std::shared_ptr<ConnectPacket> packetConnect) noexcept
             {
                 m_connectOptions = packetConnect;
@@ -263,94 +280,94 @@ namespace Aws
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withSessionBehavior(
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithSessionBehavior(
                 ClientSessionBehaviorType sessionBehavior) noexcept
             {
                 m_sessionBehavior = sessionBehavior;
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withClientExtendedValidationAndFlowControl(
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithClientExtendedValidationAndFlowControl(
                 ClientExtendedValidationAndFlowControl clientExtendedValidationAndFlowControl) noexcept
             {
                 m_extendedValidationAndFlowControlOptions = clientExtendedValidationAndFlowControl;
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withOfflineQueueBehavior(
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithOfflineQueueBehavior(
                 ClientOperationQueueBehaviorType offlineQueueBehavior) noexcept
             {
                 m_offlineQueueBehavior = offlineQueueBehavior;
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withReconnectOptions(ReconnectOptions reconnectOptions) noexcept
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithReconnectOptions(ReconnectOptions reconnectOptions) noexcept
             {
                 m_reconnectionOptions = reconnectOptions;
 
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withPingTimeoutMs(uint32_t pingTimeoutMs) noexcept
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithPingTimeoutMs(uint32_t pingTimeoutMs) noexcept
             {
                 m_pingTimeoutMs = pingTimeoutMs;
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withConnackTimeoutMs(uint32_t connackTimeoutMs) noexcept
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithConnackTimeoutMs(uint32_t connackTimeoutMs) noexcept
             {
                 m_connackTimeoutMs = connackTimeoutMs;
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withAckTimeoutSeconds(uint32_t ackTimeoutSeconds) noexcept
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithAckTimeoutSeconds(uint32_t ackTimeoutSeconds) noexcept
             {
                 m_ackTimeoutSec = ackTimeoutSeconds;
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withWebsocketHandshakeTransformCallback(
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithWebsocketHandshakeTransformCallback(
                 OnWebSocketHandshakeIntercept callback) noexcept
             {
                 websocketHandshakeTransform = std::move(callback);
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withClientConnectionSuccessCallback(
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithClientConnectionSuccessCallback(
                 OnConnectionSuccessHandler callback) noexcept
             {
                 onConnectionSuccess = std::move(callback);
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withClientConnectionFailureCallback(
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithClientConnectionFailureCallback(
                 OnConnectionFailureHandler callback) noexcept
             {
                 onConnectionFailure = std::move(callback);
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withClientDisconnectionCallback(
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithClientDisconnectionCallback(
                 OnDisconnectionHandler callback) noexcept
             {
                 onDisconnection = std::move(callback);
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withClientStoppedCallback(OnStoppedHandler callback) noexcept
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithClientStoppedCallback(OnStoppedHandler callback) noexcept
             {
                 onStopped = std::move(callback);
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withClientAttemptingConnectCallback(
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithClientAttemptingConnectCallback(
                 OnAttemptingConnectHandler callback) noexcept
             {
                 onAttemptingConnect = std::move(callback);
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::withPublishReceivedCallback(
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithPublishReceivedCallback(
                 OnPublishReceivedHandler callback) noexcept
             {
                 onPublishReceived = std::move(callback);

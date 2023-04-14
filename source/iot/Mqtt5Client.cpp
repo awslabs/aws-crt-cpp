@@ -128,7 +128,7 @@ namespace Aws
                 result->m_lastError = result->m_tlsConnectionOptions->LastError();
                 return result;
             }
-            result->withHostName(hostName);
+            result->WithHostName(hostName);
             return result;
         }
 
@@ -145,7 +145,7 @@ namespace Aws
                 result->m_lastError = result->m_tlsConnectionOptions->LastError();
                 return result;
             }
-            result->withHostName(hostName);
+            result->WithHostName(hostName);
             return result;
         }
 
@@ -162,7 +162,7 @@ namespace Aws
                 result->m_lastError = result->m_tlsConnectionOptions->LastError();
                 return result;
             }
-            result->withHostName(hostName);
+            result->WithHostName(hostName);
             return result;
         }
 
@@ -179,7 +179,7 @@ namespace Aws
                 result->m_lastError = result->m_tlsConnectionOptions->LastError();
                 return result;
             }
-            result->withHostName(hostName);
+            result->WithHostName(hostName);
             return result;
         }
 
@@ -190,7 +190,7 @@ namespace Aws
         {
             Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
             result->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitDefaultClient();
-            result->withHostName(hostName);
+            result->WithHostName(hostName);
             result->m_websocketConfig = config;
             return result;
         }
@@ -202,7 +202,7 @@ namespace Aws
         {
             Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
             result->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitDefaultClient();
-            result->withHostName(hostName);
+            result->WithHostName(hostName);
             result->WithCustomAuthorizer(customAuthConfig);
             return result;
         }
@@ -215,19 +215,19 @@ namespace Aws
         {
             Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
             result->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitDefaultClient();
-            result->withHostName(hostName);
+            result->WithHostName(hostName);
             result->m_websocketConfig = config;
             result->WithCustomAuthorizer(customAuthConfig);
             return result;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::withHostName(const Crt::String hostName)
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithHostName(const Crt::String hostName)
         {
-            m_options->withHostName(hostName);
+            m_options->WithHostName(hostName);
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::withPort(uint16_t port) noexcept
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithPort(uint16_t port) noexcept
         {
             m_port = port;
             return *this;
@@ -257,7 +257,7 @@ namespace Aws
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::withHttpProxyOptions(
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithHttpProxyOptions(
             const Crt::Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept
         {
             m_proxyOptions = proxyOptions;
@@ -270,54 +270,54 @@ namespace Aws
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::withConnectOptions(
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithConnectOptions(
             std::shared_ptr<ConnectPacket> packetConnect) noexcept
         {
             m_connectOptions = packetConnect;
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::withSessionBehavior(ClientSessionBehaviorType sessionBehavior) noexcept
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithSessionBehavior(ClientSessionBehaviorType sessionBehavior) noexcept
         {
-            m_options->withSessionBehavior(sessionBehavior);
+            m_options->WithSessionBehavior(sessionBehavior);
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::withClientExtendedValidationAndFlowControl(
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithClientExtendedValidationAndFlowControl(
             ClientExtendedValidationAndFlowControl clientExtendedValidationAndFlowControl) noexcept
         {
-            m_options->withClientExtendedValidationAndFlowControl(clientExtendedValidationAndFlowControl);
+            m_options->WithClientExtendedValidationAndFlowControl(clientExtendedValidationAndFlowControl);
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::withOfflineQueueBehavior(
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithOfflineQueueBehavior(
             ClientOperationQueueBehaviorType operationQueueBehavior) noexcept
         {
-            m_options->withAckTimeoutSeconds(operationQueueBehavior);
+            m_options->WithAckTimeoutSeconds(operationQueueBehavior);
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::withReconnectOptions(ReconnectOptions reconnectOptions) noexcept
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithReconnectOptions(ReconnectOptions reconnectOptions) noexcept
         {
-            m_options->withReconnectOptions(reconnectOptions);
+            m_options->WithReconnectOptions(reconnectOptions);
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::withPingTimeoutMs(uint32_t pingTimeoutMs) noexcept
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithPingTimeoutMs(uint32_t pingTimeoutMs) noexcept
         {
-            m_options->withPingTimeoutMs(pingTimeoutMs);
+            m_options->WithPingTimeoutMs(pingTimeoutMs);
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::withConnackTimeoutMs(uint32_t connackTimeoutMs) noexcept
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithConnackTimeoutMs(uint32_t connackTimeoutMs) noexcept
         {
-            m_options->withConnackTimeoutMs(connackTimeoutMs);
+            m_options->WithConnackTimeoutMs(connackTimeoutMs);
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::withAckTimeoutSeconds(uint32_t ackTimeoutSeconds) noexcept
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithAckTimeoutSeconds(uint32_t ackTimeoutSeconds) noexcept
         {
-            m_options->withAckTimeoutSeconds(ackTimeoutSeconds);
+            m_options->WithAckTimeoutSeconds(ackTimeoutSeconds);
             return *this;
         }
 
@@ -333,43 +333,43 @@ namespace Aws
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::withClientConnectionSuccessCallback(
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithClientConnectionSuccessCallback(
             OnConnectionSuccessHandler callback) noexcept
         {
-            m_options->withClientConnectionSuccessCallback(std::move(callback));
+            m_options->WithClientConnectionSuccessCallback(std::move(callback));
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::withClientConnectionFailureCallback(
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithClientConnectionFailureCallback(
             OnConnectionFailureHandler callback) noexcept
         {
-            m_options->withClientConnectionFailureCallback(std::move(callback));
+            m_options->WithClientConnectionFailureCallback(std::move(callback));
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::withClientDisconnectionCallback(
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithClientDisconnectionCallback(
             OnDisconnectionHandler callback) noexcept
         {
-            m_options->withClientDisconnectionCallback(std::move(callback));
+            m_options->WithClientDisconnectionCallback(std::move(callback));
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::withClientStoppedCallback(OnStoppedHandler callback) noexcept
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithClientStoppedCallback(OnStoppedHandler callback) noexcept
         {
-            m_options->withClientStoppedCallback(std::move(callback));
+            m_options->WithClientStoppedCallback(std::move(callback));
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::withClientAttemptingConnectCallback(
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithClientAttemptingConnectCallback(
             OnAttemptingConnectHandler callback) noexcept
         {
-            m_options->withClientAttemptingConnectCallback(std::move(callback));
+            m_options->WithClientAttemptingConnectCallback(std::move(callback));
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::withPublishReceivedCallback(OnPublishReceivedHandler callback) noexcept
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithPublishReceivedCallback(OnPublishReceivedHandler callback) noexcept
         {
-            m_options->withPublishReceivedCallback(std::move(callback));
+            m_options->WithPublishReceivedCallback(std::move(callback));
             return *this;
         }
 
@@ -446,7 +446,7 @@ namespace Aws
                     }
                     if (m_customAuthConfig->GetPassword().has_value())
                     {
-                        m_connectOptions->withPassword(m_customAuthConfig->GetPassword().value());
+                        m_connectOptions->WithPassword(m_customAuthConfig->GetPassword().value());
                     }
                 }
 
@@ -455,7 +455,7 @@ namespace Aws
                     username = AddToUsernameParameter(username, "SDK", m_sdkName);
                     username = AddToUsernameParameter(username, "Version", m_sdkName);
                 }
-                m_connectOptions->withUserName(username);
+                m_connectOptions->WithUserName(username);
             }
 
             auto tlsContext =
@@ -465,11 +465,11 @@ namespace Aws
                 return nullptr;
             }
 
-            m_options->withPort(port).withTlsConnectionOptions(tlsContext.NewConnectionOptions());
+            m_options->WithPort(port).WithTlsConnectionOptions(tlsContext.NewConnectionOptions());
 
             if (m_connectOptions != nullptr)
             {
-                m_options->withConnectOptions(m_connectOptions);
+                m_options->WithConnectOptions(m_connectOptions);
             }
 
             if (m_websocketConfig.has_value())
@@ -490,16 +490,16 @@ namespace Aws
                     websocketConfig.Signer->SignRequest(req, *signerConfig, signingComplete);
                 };
 
-                m_options->withWebsocketHandshakeTransformCallback(signerTransform);
+                m_options->WithWebsocketHandshakeTransformCallback(signerTransform);
                 bool useWebsocketProxyOptions =
                     m_websocketConfig->ProxyOptions.has_value() && !m_proxyOptions.has_value();
                 if (useWebsocketProxyOptions)
                 {
-                    m_options->withHttpProxyOptions(m_websocketConfig->ProxyOptions.value());
+                    m_options->WithHttpProxyOptions(m_websocketConfig->ProxyOptions.value());
                 }
                 else if (m_proxyOptions.has_value())
                 {
-                    m_options->withHttpProxyOptions(m_proxyOptions.value());
+                    m_options->WithHttpProxyOptions(m_proxyOptions.value());
                 }
             }
 

@@ -402,22 +402,22 @@ static int s_AwsMqtt5CanaryOperationSubscribe(struct AwsMqtt5CanaryTestClient *t
     snprintf(topicArray, sizeof topicArray, "%s_%zu", testClient->clientId.c_str(), testClient->subscriptionCount);
 
     Mqtt5::Subscription subscription1;
-    subscription1.withTopicFilter(Aws::Crt::String(topicArray))
-        .withNoLocal(false)
-        .withQOS(Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE)
-        .withRetainHandlingType(Mqtt5::RetainHandlingType::AWS_MQTT5_RHT_SEND_ON_SUBSCRIBE)
-        .withRetain(false);
+    subscription1.WithTopicFilter(Aws::Crt::String(topicArray))
+        .WithNoLocal(false)
+        .WithQOS(Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE)
+        .WithRetainHandlingType(Mqtt5::RetainHandlingType::AWS_MQTT5_RHT_SEND_ON_SUBSCRIBE)
+        .WithRetain(false);
 
     Mqtt5::Subscription subscription2;
-    subscription2.withTopicFilter(testClient->sharedTopic)
-        .withNoLocal(false)
-        .withQOS(Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE)
-        .withRetainHandlingType(Mqtt5::RetainHandlingType::AWS_MQTT5_RHT_SEND_ON_SUBSCRIBE)
-        .withRetain(false);
+    subscription2.WithTopicFilter(testClient->sharedTopic)
+        .WithNoLocal(false)
+        .WithQOS(Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE)
+        .WithRetainHandlingType(Mqtt5::RetainHandlingType::AWS_MQTT5_RHT_SEND_ON_SUBSCRIBE)
+        .WithRetain(false);
 
     std::shared_ptr<Mqtt5::SubscribePacket> packet = std::make_shared<Mqtt5::SubscribePacket>(allocator);
-    packet->withSubscription(std::move(subscription1));
-    packet->withSubscription(std::move(subscription2));
+    packet->WithSubscription(std::move(subscription1));
+    packet->WithSubscription(std::move(subscription2));
 
     testClient->subscriptionCount++;
 
@@ -445,7 +445,7 @@ static int s_AwsMqtt5CanaryOperationUnsubscribeBad(struct AwsMqtt5CanaryTestClie
     topics.push_back(Aws::Crt::String(topicArray));
 
     std::shared_ptr<Mqtt5::UnsubscribePacket> unsubscription = std::make_shared<Mqtt5::UnsubscribePacket>(allocator);
-    unsubscription->withTopicFilters(topics);
+    unsubscription->WithTopicFilters(topics);
 
     if (testClient->client->Unsubscribe(
             unsubscription, [testClient](int, std::shared_ptr<Mqtt5::UnSubAckPacket> packet) {
@@ -489,7 +489,7 @@ static int s_AwsMqtt5CanaryOperationUnsubscribe(struct AwsMqtt5CanaryTestClient 
     topics.push_back(Aws::Crt::String(topicArray));
 
     std::shared_ptr<Mqtt5::UnsubscribePacket> unsubscription = std::make_shared<Mqtt5::UnsubscribePacket>(allocator);
-    unsubscription->withTopicFilters(topics);
+    unsubscription->WithTopicFilters(topics);
 
     if (testClient->client->Unsubscribe(unsubscription))
     {
@@ -532,13 +532,13 @@ static int s_AwsMqtt5CanaryOperationPublish(
     ByteCursor payload = ByteCursorFromArray(payload_data, payload_size);
 
     std::shared_ptr<Mqtt5::PublishPacket> packetPublish = std::make_shared<Mqtt5::PublishPacket>(allocator);
-    packetPublish->withTopic(topicFilter)
-        .withQOS(qos)
-        .withRetain(false)
-        .withPayload(payload)
-        .withUserProperty(std::move(up1))
-        .withUserProperty(std::move(up2))
-        .withUserProperty(std::move(up3));
+    packetPublish->WithTopic(topicFilter)
+        .WithQOS(qos)
+        .WithRetain(false)
+        .WithPayload(payload)
+        .WithUserProperty(std::move(up1))
+        .WithUserProperty(std::move(up2))
+        .WithUserProperty(std::move(up3));
 
     if (testClient->client->Publish(packetPublish))
     {
@@ -816,28 +816,28 @@ int main(int argc, char **argv)
     uint32_t maximum_packet_size = 128 * 1024;
 
     std::shared_ptr<Mqtt5::ConnectPacket> packetConnect = std::make_shared<Mqtt5::ConnectPacket>(allocator);
-    packetConnect->withKeepAliveIntervalSec(30)
-        .withMaximumPacketSizeBytes(maximum_packet_size)
-        .withReceiveMaximum(receive_maximum);
+    packetConnect->WithKeepAliveIntervalSec(30)
+        .WithMaximumPacketSizeBytes(maximum_packet_size)
+        .WithReceiveMaximum(receive_maximum);
 
     Aws::Crt::String namestring((const char *)hostName.ptr, hostName.len);
     Aws::Crt::Mqtt5::Mqtt5ClientOptions mqtt5Options(appCtx.allocator);
-    mqtt5Options.withHostName(namestring)
-        .withPort(appCtx.port)
-        .withConnectOptions(packetConnect)
-        .withSocketOptions(socketOptions)
-        .withBootstrap(&clientBootstrap)
-        .withPingTimeoutMs(10000)
-        .withReconnectOptions({AWS_EXPONENTIAL_BACKOFF_JITTER_NONE, 1000, 120000, 3000});
+    mqtt5Options.WithHostName(namestring)
+        .WithPort(appCtx.port)
+        .WithConnectOptions(packetConnect)
+        .WithSocketOptions(socketOptions)
+        .WithBootstrap(&clientBootstrap)
+        .WithPingTimeoutMs(10000)
+        .WithReconnectOptions({AWS_EXPONENTIAL_BACKOFF_JITTER_NONE, 1000, 120000, 3000});
 
     if (appCtx.use_tls)
     {
-        mqtt5Options.withTlsConnectionOptions(tlsConnectionOptions);
+        mqtt5Options.WithTlsConnectionOptions(tlsConnectionOptions);
     }
 
     if (appCtx.use_websockets)
     {
-        mqtt5Options.withWebsocketHandshakeTransformCallback(s_AwsMqtt5TransformWebsocketHandshakeFn);
+        mqtt5Options.WithWebsocketHandshakeTransformCallback(s_AwsMqtt5TransformWebsocketHandshakeFn);
     }
 
     std::vector<struct AwsMqtt5CanaryTestClient> clients;
@@ -856,8 +856,8 @@ int main(int argc, char **argv)
         client.sharedTopic = Aws::Crt::String(sharedTopicArray);
         client.isConnected = false;
         clients.push_back(client);
-        mqtt5Options.withAckTimeoutSeconds(10);
-        mqtt5Options.withPublishReceivedCallback([&clients, i](const Mqtt5::PublishReceivedEventData &publishData) {
+        mqtt5Options.WithAckTimeoutSeconds(10);
+        mqtt5Options.WithPublishReceivedCallback([&clients, i](const Mqtt5::PublishReceivedEventData &publishData) {
             AWS_LOGF_INFO(
                 AWS_LS_MQTT5_CANARY,
                 "Client:%s Publish Received on topic %s",
@@ -865,7 +865,7 @@ int main(int argc, char **argv)
                 publishData.publishPacket->getTopic().c_str());
         });
 
-        mqtt5Options.withClientConnectionSuccessCallback(
+        mqtt5Options.WithClientConnectionSuccessCallback(
             [&clients, i](const Mqtt5::OnConnectionSuccessEventData &eventData) {
                 clients[i].isConnected = true;
                 clients[i].clientId = Aws::Crt::String(
@@ -877,7 +877,7 @@ int main(int argc, char **argv)
                     AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Connection Success", clients[i].clientId.c_str());
             });
 
-        mqtt5Options.withClientConnectionFailureCallback([&clients, i](const OnConnectionFailureEventData &eventData) {
+        mqtt5Options.WithClientConnectionFailureCallback([&clients, i](const OnConnectionFailureEventData &eventData) {
             clients[i].isConnected = false;
             AWS_LOGF_ERROR(
                 AWS_LS_MQTT5_CANARY,
@@ -887,12 +887,12 @@ int main(int argc, char **argv)
                 aws_error_debug_str(eventData.errorCode));
         });
 
-        mqtt5Options.withClientDisconnectionCallback([&clients, i](const OnDisconnectionEventData &) {
+        mqtt5Options.WithClientDisconnectionCallback([&clients, i](const OnDisconnectionEventData &) {
             clients[i].isConnected = false;
             AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Disconnect", clients[i].clientId.c_str());
         });
 
-        mqtt5Options.withClientStoppedCallback([&clients, i](const OnStoppedEventData &) {
+        mqtt5Options.WithClientStoppedCallback([&clients, i](const OnStoppedEventData &) {
             AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Stopped", clients[i].clientId.c_str());
         });
 
