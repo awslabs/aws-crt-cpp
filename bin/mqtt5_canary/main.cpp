@@ -5,6 +5,7 @@
 
 #include <aws/crt/Api.h>
 #include <aws/crt/StlAllocator.h>
+#include <aws/crt/UUID.h>
 #include <aws/crt/crypto/Hash.h>
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/http/HttpRequestResponse.h>
@@ -852,7 +853,8 @@ int main(int argc, char **argv)
     {
         struct AwsMqtt5CanaryTestClient client;
         client = {};
-        client.clientId = String("TestClient") + std::to_string(i).c_str();
+        Aws::Crt::UUID uuid;
+        client.clientId = String("TestClient") + std::to_string(i).c_str() + "_" + uuid.ToString();
         client.sharedTopic = Aws::Crt::String(sharedTopicArray);
         client.isConnected = false;
         clients.push_back(client);
