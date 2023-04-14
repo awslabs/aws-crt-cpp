@@ -33,7 +33,7 @@ namespace Aws
                 static SymmetricCipher CreateAES_256_CBC_Cipher(
                     const Optional<ByteCursor> &key = Optional<ByteCursor>(),
                     const Optional<ByteCursor> &iv = Optional<ByteCursor>(),
-                    Allocator *allocator = DefaultAllocator()) noexcept;
+                    Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
                  * Creates an AES 256 CTR mode cipher using a provided key and iv.
@@ -42,7 +42,7 @@ namespace Aws
                 static SymmetricCipher CreateAES_256_CTR_Cipher(
                     const Optional<ByteCursor> &key = Optional<ByteCursor>(),
                     const Optional<ByteCursor> &iv = Optional<ByteCursor>(),
-                    Allocator *allocator = DefaultAllocator()) noexcept;
+                    Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
                  * Creates an AES 256 GCM mode cipher using a provided key, iv, tag, and aad if provided.
@@ -57,7 +57,7 @@ namespace Aws
                     const Optional<ByteCursor> &iv = Optional<ByteCursor>(),
                     const Optional<ByteCursor> &tag = Optional<ByteCursor>(),
                     const Optional<ByteCursor> &aad = Optional<ByteCursor>(),
-                    Allocator *allocator = DefaultAllocator()) noexcept;
+                    Allocator *allocator = ApiAllocator()) noexcept;
 
 
                 /**
@@ -66,7 +66,7 @@ namespace Aws
                  */
                 static SymmetricCipher CreateAES_256_KeyWrap_Cipher(
                     const Optional<ByteCursor> &key = Optional<ByteCursor>(),
-                    Allocator *allocator = DefaultAllocator()) noexcept;
+                    Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
                  * Returns true if the instance is in a valid state, false otherwise.
