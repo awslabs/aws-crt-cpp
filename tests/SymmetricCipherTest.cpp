@@ -12,8 +12,10 @@ static int s_TestAES_256_CBC_Generated_Materials_ResourceSafety(struct aws_alloc
 {
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
-        Aws::Crt::Crypto::SymmetricCipher cbcCipher =
-            Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_CBC_Cipher(allocator);
+
+        auto cbcCipher = 
+            Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_CBC_Cipher();
+
         ASSERT_TRUE(cbcCipher);
 
         auto input = aws_byte_cursor_from_c_str("abc");
@@ -42,6 +44,15 @@ static int s_TestAES_256_CBC_Generated_Materials_ResourceSafety(struct aws_alloc
         ASSERT_UINT_EQUALS(Aws::Crt::Crypto::AES_256_CIPHER_BLOCK_SIZE, cbcCipher.GetIV().len);
 
         ASSERT_FALSE(cbcCipher);
+
+        //check IV generates if a key is provided but iv is not
+        uint8_t key[Aws::Crt::Crypto::AES_256_KEY_SIZE_BYTES] = {0xDD};
+        auto keyCur = Aws::Crt::ByteCursorFromArray(key, sizeof(key));
+        cbcCipher = Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_CBC_Cipher(
+            keyCur);
+        ASSERT_TRUE(cbcCipher);
+        ASSERT_BIN_ARRAYS_EQUALS(keyCur.ptr, keyCur.len, cbcCipher.GetKey().ptr, cbcCipher.GetKey().len);
+        ASSERT_UINT_EQUALS(Aws::Crt::Crypto::AES_256_CIPHER_BLOCK_SIZE, cbcCipher.GetIV().len);
     }
 
     return AWS_OP_SUCCESS;
@@ -53,8 +64,8 @@ static int s_TestAES_256_CTR_Generated_Materials_ResourceSafety(struct aws_alloc
 {
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
-        Aws::Crt::Crypto::SymmetricCipher ctrCipher =
-            Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_CTR_Cipher(allocator);
+        auto ctrCipher =
+            Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_CTR_Cipher();
         ASSERT_TRUE(ctrCipher);
 
         auto input = aws_byte_cursor_from_c_str("abc");
@@ -83,6 +94,14 @@ static int s_TestAES_256_CTR_Generated_Materials_ResourceSafety(struct aws_alloc
         ASSERT_UINT_EQUALS(Aws::Crt::Crypto::AES_256_CIPHER_BLOCK_SIZE, ctrCipher.GetIV().len);
 
         ASSERT_FALSE(ctrCipher);
+
+        // check IV generates if a key is provided but iv is not
+        uint8_t key[Aws::Crt::Crypto::AES_256_KEY_SIZE_BYTES] = {0xDD};
+        auto keyCur = Aws::Crt::ByteCursorFromArray(key, sizeof(key));
+        ctrCipher = Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_CTR_Cipher(keyCur);
+        ASSERT_TRUE(ctrCipher);
+        ASSERT_BIN_ARRAYS_EQUALS(keyCur.ptr, keyCur.len, ctrCipher.GetKey().ptr, ctrCipher.GetKey().len);
+        ASSERT_UINT_EQUALS(Aws::Crt::Crypto::AES_256_CIPHER_BLOCK_SIZE, ctrCipher.GetIV().len);
     }
 
     return AWS_OP_SUCCESS;
@@ -94,8 +113,8 @@ static int s_TestAES_256_GCM_Generated_Materials_ResourceSafety(struct aws_alloc
 {
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
-        Aws::Crt::Crypto::SymmetricCipher gcmCipher =
-            Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_GCM_Cipher(allocator);
+        auto gcmCipher =
+            Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_GCM_Cipher();
         ASSERT_TRUE(gcmCipher);
 
         auto input = aws_byte_cursor_from_c_str("abc");
@@ -125,6 +144,14 @@ static int s_TestAES_256_GCM_Generated_Materials_ResourceSafety(struct aws_alloc
         ASSERT_UINT_EQUALS(Aws::Crt::Crypto::AES_256_CIPHER_BLOCK_SIZE, gcmCipher.GetTag().len);
 
         ASSERT_FALSE(gcmCipher);
+
+        // check IV generates if a key is provided but iv is not
+        uint8_t key[Aws::Crt::Crypto::AES_256_KEY_SIZE_BYTES] = {0xDD};
+        auto keyCur = Aws::Crt::ByteCursorFromArray(key, sizeof(key));
+        gcmCipher = Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_GCM_Cipher(keyCur);
+        ASSERT_TRUE(gcmCipher);
+        ASSERT_BIN_ARRAYS_EQUALS(keyCur.ptr, keyCur.len, gcmCipher.GetKey().ptr, gcmCipher.GetKey().len);
+        ASSERT_UINT_EQUALS(Aws::Crt::Crypto::AES_256_CIPHER_BLOCK_SIZE - 4, gcmCipher.GetIV().len);
     }
 
     return AWS_OP_SUCCESS;
@@ -136,8 +163,8 @@ static int s_TestAES_256_Keywrap_Generated_Materials_ResourceSafety(struct aws_a
 {
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
-        Aws::Crt::Crypto::SymmetricCipher keywrapCipher =
-            Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_KeyWrap_Cipher(allocator);
+        auto keywrapCipher =
+            Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_KeyWrap_Cipher();
         ASSERT_TRUE(keywrapCipher);
 
         auto input = aws_byte_cursor_from_c_str("abcdefghijklmnopqrstuvwxyz123456");

@@ -31,8 +31,15 @@ namespace Aws
             }
 
             SymmetricCipher::SymmetricCipher(SymmetricCipher &&toMove) noexcept
-                : m_cipher(toMove.m_cipher), m_lastError(toMove.m_lastError)
+                : m_lastError(toMove.m_lastError)
             {
+                if (m_cipher)
+                {
+                    aws_symmetric_cipher_destroy(m_cipher);
+                    m_cipher = nullptr;
+                }
+
+                m_cipher = toMove.m_cipher;
                 toMove.m_cipher = nullptr;
             }
 
@@ -40,6 +47,12 @@ namespace Aws
             {
                 if (this != &toMove)
                 {
+                    if (m_cipher)
+                    {
+                        aws_symmetric_cipher_destroy(m_cipher);
+                        m_cipher = nullptr;
+                    }
+
                     m_cipher = toMove.m_cipher;
                     m_lastError = toMove.m_lastError;
                     toMove.m_cipher = nullptr;
@@ -119,62 +132,44 @@ namespace Aws
 
             const ByteCursor SymmetricCipher::GetTag() const noexcept { return aws_symmetric_cipher_get_tag(m_cipher); }
 
-            SymmetricCipher SymmetricCipher::CreateAES_256_CBC_Cipher(Allocator *allocator) noexcept
-            {
-                return SymmetricCipher(aws_aes_cbc_256_new(allocator, nullptr, nullptr));
-            }
-
             SymmetricCipher SymmetricCipher::CreateAES_256_CBC_Cipher(
-                const ByteCursor &key,
-                const ByteCursor &iv,
+                const Optional<ByteCursor> &key,
+                const Optional<ByteCursor> &iv,
                 Allocator *allocator) noexcept
             {
-                return SymmetricCipher(aws_aes_cbc_256_new(allocator, &key, &iv));
-            }
-
-            SymmetricCipher SymmetricCipher::CreateAES_256_CTR_Cipher(Allocator *allocator) noexcept
-            {
-                return SymmetricCipher(aws_aes_ctr_256_new(allocator, nullptr, nullptr));
+                return SymmetricCipher(
+                    aws_aes_cbc_256_new(allocator, key.has_value() ? &key.value() : nullptr, iv.has_value() ? &iv.value() : nullptr));
             }
 
             SymmetricCipher SymmetricCipher::CreateAES_256_CTR_Cipher(
-                const ByteCursor &key,
-                const ByteCursor &iv,
+                const Optional<ByteCursor> &key,
+                const Optional<ByteCursor> &iv,
                 Allocator *allocator) noexcept
             {
-                return SymmetricCipher(aws_aes_ctr_256_new(allocator, &key, &iv));
-            }
-
-            SymmetricCipher SymmetricCipher::CreateAES_256_GCM_Cipher(Allocator *allocator) noexcept
-            {
-                return SymmetricCipher(aws_aes_gcm_256_new(allocator, nullptr, nullptr, nullptr, nullptr));
+                return SymmetricCipher(aws_aes_ctr_256_new(
+                    allocator, key.has_value() ? &key.value() : nullptr, iv.has_value() ? &iv.value() : nullptr));
             }
 
             SymmetricCipher SymmetricCipher::CreateAES_256_GCM_Cipher(
-                const ByteCursor &key,
-                const ByteCursor &iv,
+                const Optional<ByteCursor> &key,
+                const Optional<ByteCursor> &iv,
                 const Optional<ByteCursor> &tag,
                 const Optional<ByteCursor> &aad,
                 Allocator *allocator) noexcept
             {
                 return SymmetricCipher(aws_aes_gcm_256_new(
                     allocator,
-                    &key,
-                    &iv,
+                    key.has_value() ? &key.value() : nullptr,
+                    iv.has_value() ? &iv.value(): nullptr,
                     tag.has_value() ? &tag.value() : nullptr,
                     aad.has_value() ? &aad.value() : nullptr));
             }
 
-            SymmetricCipher SymmetricCipher::CreateAES_256_KeyWrap_Cipher(Allocator *allocator) noexcept
-            {
-                return SymmetricCipher(aws_aes_keywrap_256_new(allocator, nullptr));
-            }
-
             SymmetricCipher SymmetricCipher::CreateAES_256_KeyWrap_Cipher(
-                const ByteCursor &key,
+                const Optional<ByteCursor> &key,
                 Allocator *allocator) noexcept
             {
-                return SymmetricCipher(aws_aes_keywrap_256_new(allocator, &key));
+                return SymmetricCipher(aws_aes_keywrap_256_new(allocator, key.has_value() ? &key.value() : nullptr));
             }
         } // namespace Crypto
     }     // namespace Crt

@@ -27,61 +27,45 @@ namespace Aws
                 ~SymmetricCipher();
 
                 /**
-                 * Creates an AES 256 CBC mode cipher using a generated key and iv.
-                 */
-                static SymmetricCipher CreateAES_256_CBC_Cipher(Allocator *allocator = DefaultAllocator()) noexcept;
-
-                /**
-                 * Creates an AES 256 CBC mode cipher using a provided key and iv.
+                 * Creates an AES 256 CBC mode cipher using a provided key and iv. 
+                 * Key must be 32 bytes. If key or iv are not provided, they will be generated.
                  */
                 static SymmetricCipher CreateAES_256_CBC_Cipher(
-                    const ByteCursor &key,
-                    const ByteCursor &iv,
+                    const Optional<ByteCursor> &key = Optional<ByteCursor>(),
+                    const Optional<ByteCursor> &iv = Optional<ByteCursor>(),
                     Allocator *allocator = DefaultAllocator()) noexcept;
-
-                /**
-                 * Creates an AES 256 CTR mode cipher using a generated key and iv.
-                 */
-                static SymmetricCipher CreateAES_256_CTR_Cipher(Allocator *allocator = DefaultAllocator()) noexcept;
 
                 /**
                  * Creates an AES 256 CTR mode cipher using a provided key and iv.
+                 * If key and iv are not provided, they will be generated.
                  */
                 static SymmetricCipher CreateAES_256_CTR_Cipher(
-                    const ByteCursor &key,
-                    const ByteCursor &iv,
+                    const Optional<ByteCursor> &key = Optional<ByteCursor>(),
+                    const Optional<ByteCursor> &iv = Optional<ByteCursor>(),
                     Allocator *allocator = DefaultAllocator()) noexcept;
 
                 /**
-                 * Creates an AES 256 GCM mode cipher using a generated key and iv.
-                 * AAD will not be setup on the cipher.
-                 */
-                static SymmetricCipher CreateAES_256_GCM_Cipher(Allocator *allocator = DefaultAllocator()) noexcept;
-
-                /**
-                 * Creates an AES 256 GCM mode cipher using a provided key and iv.
-                 * Tag and AAD are optional. Provide tag if you're trying to decrypt
+                 * Creates an AES 256 GCM mode cipher using a provided key, iv, tag, and aad if provided.
+                 * Key and iv will be generated if not provided. 
+                 * Tag and AAD values are not generated. Provide tag if you're trying to decrypt
                  * a payload. The tag will be used to verify the payload has not been tampered with
                  * upon decryption operations.
                  * Provide AAD if you need to provide additional auth info.
                  */
                 static SymmetricCipher CreateAES_256_GCM_Cipher(
-                    const ByteCursor &key,
-                    const ByteCursor &iv,
-                    const Optional<ByteCursor> &tag,
-                    const Optional<ByteCursor> &aad,
+                    const Optional<ByteCursor> &key = Optional<ByteCursor>(),
+                    const Optional<ByteCursor> &iv = Optional<ByteCursor>(),
+                    const Optional<ByteCursor> &tag = Optional<ByteCursor>(),
+                    const Optional<ByteCursor> &aad = Optional<ByteCursor>(),
                     Allocator *allocator = DefaultAllocator()) noexcept;
 
-                /**
-                 * Creates an AES 256 Keywrap mode cipher using a generated key.
-                 */
-                static SymmetricCipher CreateAES_256_KeyWrap_Cipher(Allocator *allocator = DefaultAllocator()) noexcept;
 
                 /**
-                 * Creates an AES 256 Keywrap mode cipher using a provided key.
+                 * Creates an AES 256 Keywrap mode cipher using key if provided.
+                 * If a key is not provided, one will be generated.
                  */
                 static SymmetricCipher CreateAES_256_KeyWrap_Cipher(
-                    const ByteCursor &key,
+                    const Optional<ByteCursor> &key = Optional<ByteCursor>(),
                     Allocator *allocator = DefaultAllocator()) noexcept;
 
                 /**
