@@ -16,9 +16,10 @@ namespace Aws
         namespace Mqtt5
         {
             /**
-             * An MQTT5 client. This is a move-only type. Unless otherwise specified,
-             * all function arguments need only to live through the duration of the
-             * function call.
+             * The Mqtt5ClientCore is an internal class for Mqtt5Client. The class is used to handle communication
+             * between Mqtt5Client and underlying c mqtt5 client. This class should only be used internally by
+             * Mqtt5Client. This is a move-only type. Unless otherwise specified, all function arguments need only to
+             * live through the duration of the function call.
              */
             class AWS_CRT_CPP_API Mqtt5ClientCore final : public std::enable_shared_from_this<Mqtt5ClientCore>
             {
@@ -26,7 +27,7 @@ namespace Aws
 
               public:
                 /**
-                 * Factory function for mqtt5 client
+                 * Factory function for mqtt5 client core
                  *
                  * @param options: Mqtt5 Client Options
                  * @param allocator allocator to use
@@ -91,15 +92,12 @@ namespace Aws
                     OnUnsubscribeCompletionHandler onUnsubscribeCompletionCallback = NULL) noexcept;
 
                 /**
-                 * Tells the client to release the native client and clean up unhandled the resources
-                 * and operations before destroying the client. You MUST only call this function when you
-                 * want to destroy the client.
-                 * This is "an ugly and unfortunate necessity" before releasing the Mqtt5Client. And You
-                 * MUST call this function to avoid any future memory leaks or dead lock.
+                 * Tells the Mqtt5ClientCore to release the native client and clean up unhandled the resources
+                 * and operations before destroying it. You MUST only call this function when you
+                 * want to destroy the Mqtt5ClientCore.
                  *
-                 * IMPORTANT: After the function is invoked, the Mqtt5Client will become invalid. DO
-                 * NOT call the function unless you plan to destroy the client. If you would like to
-                 * reuse the client, please use `Start()` and `Stop()`.
+                 * IMPORTANT: After the function is invoked, the Mqtt5ClientCore will become invalid. DO
+                 * NOT call the function unless you plan to destroy the client.
                  *
                  */
                 void Close() noexcept;
@@ -182,7 +180,7 @@ namespace Aws
                 enum CallbackFlag
                 {
                     INVOKE,
-                    REVOKE
+                    IGNORE
                 } m_callbackFlag;
 
                 /*

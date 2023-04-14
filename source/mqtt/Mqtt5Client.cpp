@@ -68,21 +68,30 @@ namespace Aws
             bool Mqtt5Client::Start() const noexcept
             {
                 if (m_client_core == nullptr)
+                {
+                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to start the client: Mqtt5 Client is invalid.");
                     return false;
+                }
                 return aws_mqtt5_client_start(m_client_core->m_client) == AWS_OP_SUCCESS;
             }
 
             bool Mqtt5Client::Stop() noexcept
             {
                 if (m_client_core == nullptr)
+                {
+                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to stop the client: Mqtt5 Client is invalid.");
                     return false;
+                }
                 return aws_mqtt5_client_stop(m_client_core->m_client, NULL, NULL) == AWS_OP_SUCCESS;
             }
 
             bool Mqtt5Client::Stop(std::shared_ptr<DisconnectPacket> disconnectOptions) noexcept
             {
                 if (m_client_core == nullptr)
+                {
+                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to stop the client: Mqtt5 Client is invalid.");
                     return false;
+                }
                 if (disconnectOptions == nullptr)
                 {
                     return Stop();
@@ -103,6 +112,8 @@ namespace Aws
             {
                 if (m_client_core == nullptr || publishOptions == nullptr)
                 {
+                    AWS_LOGF_DEBUG(
+                        AWS_LS_MQTT5_CLIENT, "Failed to publish: the Mqtt5 client or the publish option is invalid.");
                     return false;
                 }
 
@@ -116,6 +127,9 @@ namespace Aws
             {
                 if (m_client_core == nullptr || subscribeOptions == nullptr)
                 {
+                    AWS_LOGF_DEBUG(
+                        AWS_LS_MQTT5_CLIENT,
+                        "Failed to subscribe: the Mqtt5 client or the subscribe option is invalid.");
                     return false;
                 }
                 /* The callbacks should be handled by the client core*/
@@ -128,6 +142,9 @@ namespace Aws
             {
                 if (m_client_core == nullptr || unsubscribeOptions == nullptr)
                 {
+                    AWS_LOGF_DEBUG(
+                        AWS_LS_MQTT5_CLIENT,
+                        "Failed to unsubscribe: the Mqtt5 client or the unsubscribe option is invalid.");
                     return false;
                 }
 
