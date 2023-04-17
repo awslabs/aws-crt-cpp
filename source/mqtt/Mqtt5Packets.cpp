@@ -202,87 +202,87 @@ namespace Aws
                 AWS_ZERO_STRUCT(m_willStorage);
             }
 
-            ConnectPacket &ConnectPacket::withKeepAliveIntervalSec(uint16_t second) noexcept
+            ConnectPacket &ConnectPacket::WithKeepAliveIntervalSec(uint16_t second) noexcept
             {
                 m_keepAliveIntervalSec = second;
                 return *this;
             }
 
-            ConnectPacket &ConnectPacket::withClientId(Crt::String client_id) noexcept
+            ConnectPacket &ConnectPacket::WithClientId(Crt::String client_id) noexcept
             {
                 m_clientId = std::move(client_id);
                 return *this;
             }
 
-            ConnectPacket &ConnectPacket::withUserName(Crt::String username) noexcept
+            ConnectPacket &ConnectPacket::WithUserName(Crt::String username) noexcept
             {
                 m_username = std::move(username);
                 m_usernameCursor = ByteCursorFromString(m_username.value());
                 return *this;
             }
 
-            ConnectPacket &ConnectPacket::withPassword(Crt::ByteCursor password) noexcept
+            ConnectPacket &ConnectPacket::WithPassword(Crt::ByteCursor password) noexcept
             {
                 setPacketByteBufOptional(m_password, m_passowrdStorage, m_allocator, &password);
                 return *this;
             }
 
-            ConnectPacket &ConnectPacket::withSessionExpiryIntervalSec(uint32_t sessionExpiryIntervalSec) noexcept
+            ConnectPacket &ConnectPacket::WithSessionExpiryIntervalSec(uint32_t sessionExpiryIntervalSec) noexcept
             {
                 m_sessionExpiryIntervalSec = sessionExpiryIntervalSec;
                 return *this;
             }
 
-            ConnectPacket &ConnectPacket::withRequestResponseInformation(bool requestResponseInformation) noexcept
+            ConnectPacket &ConnectPacket::WithRequestResponseInformation(bool requestResponseInformation) noexcept
             {
                 m_requestResponseInformation = requestResponseInformation;
                 return *this;
             }
 
-            ConnectPacket &ConnectPacket::withRequestProblemInformation(bool requestProblemInformation) noexcept
+            ConnectPacket &ConnectPacket::WithRequestProblemInformation(bool requestProblemInformation) noexcept
             {
                 m_requestProblemInformation = requestProblemInformation;
                 return *this;
             }
 
-            ConnectPacket &ConnectPacket::withReceiveMaximum(uint16_t receiveMaximum) noexcept
+            ConnectPacket &ConnectPacket::WithReceiveMaximum(uint16_t receiveMaximum) noexcept
             {
                 m_receiveMaximum = receiveMaximum;
                 return *this;
             }
 
-            ConnectPacket &ConnectPacket::withMaximumPacketSizeBytes(uint32_t maximumPacketSizeBytes) noexcept
+            ConnectPacket &ConnectPacket::WithMaximumPacketSizeBytes(uint32_t maximumPacketSizeBytes) noexcept
             {
                 m_maximumPacketSizeBytes = maximumPacketSizeBytes;
                 return *this;
             }
 
-            ConnectPacket &ConnectPacket::withWillDelayIntervalSec(uint32_t willDelayIntervalSec) noexcept
+            ConnectPacket &ConnectPacket::WithWillDelayIntervalSec(uint32_t willDelayIntervalSec) noexcept
             {
                 m_willDelayIntervalSeconds = willDelayIntervalSec;
                 return *this;
             }
 
-            ConnectPacket &ConnectPacket::withWill(std::shared_ptr<PublishPacket> will) noexcept
+            ConnectPacket &ConnectPacket::WithWill(std::shared_ptr<PublishPacket> will) noexcept
             {
                 m_will = will;
                 m_will.value()->initializeRawOptions(m_willStorage);
                 return *this;
             }
 
-            ConnectPacket &ConnectPacket::withUserProperties(const Vector<UserProperty> &userProperties) noexcept
+            ConnectPacket &ConnectPacket::WithUserProperties(const Vector<UserProperty> &userProperties) noexcept
             {
                 m_userProperties = userProperties;
                 return *this;
             }
 
-            ConnectPacket &ConnectPacket::withUserProperties(Vector<UserProperty> &&userProperties) noexcept
+            ConnectPacket &ConnectPacket::WithUserProperties(Vector<UserProperty> &&userProperties) noexcept
             {
                 m_userProperties = userProperties;
                 return *this;
             }
 
-            ConnectPacket &ConnectPacket::withUserProperty(UserProperty &&property) noexcept
+            ConnectPacket &ConnectPacket::WithUserProperty(UserProperty &&property) noexcept
             {
                 m_userProperties.push_back(std::move(property));
                 return *this;
@@ -455,7 +455,7 @@ namespace Aws
                 AWS_ZERO_STRUCT(m_correlationDataStorage);
                 AWS_ZERO_STRUCT(m_payload);
 
-                withPayload(packet.payload);
+                WithPayload(packet.payload);
 
                 setPacketOptional(m_payloadFormatIndicator, packet.payload_format);
                 setPacketOptional(m_messageExpiryIntervalSec, packet.message_expiry_interval_seconds);
@@ -492,13 +492,13 @@ namespace Aws
                 AWS_ZERO_STRUCT(m_correlationDataStorage);
                 AWS_ZERO_STRUCT(m_payload);
 
-                // Setup message payload, sync with PublishPacket::withPayload
+                // Setup message payload, sync with PublishPacket::WithPayload
                 aws_byte_buf_clean_up(&m_payloadStorage);
                 aws_byte_buf_init_copy_from_cursor(&m_payloadStorage, m_allocator, payload);
                 m_payload = aws_byte_cursor_from_buf(&m_payloadStorage);
             }
 
-            PublishPacket &PublishPacket::withPayload(ByteCursor payload) noexcept
+            PublishPacket &PublishPacket::WithPayload(ByteCursor payload) noexcept
             {
                 aws_byte_buf_clean_up(&m_payloadStorage);
                 aws_byte_buf_init_copy_from_cursor(&m_payloadStorage, m_allocator, payload);
@@ -506,61 +506,61 @@ namespace Aws
                 return *this;
             }
 
-            PublishPacket &PublishPacket::withQOS(Mqtt5::QOS qos) noexcept
+            PublishPacket &PublishPacket::WithQOS(Mqtt5::QOS qos) noexcept
             {
                 m_qos = qos;
                 return *this;
             }
 
-            PublishPacket &PublishPacket::withRetain(bool retain) noexcept
+            PublishPacket &PublishPacket::WithRetain(bool retain) noexcept
             {
                 m_retain = retain;
                 return *this;
             }
 
-            PublishPacket &PublishPacket::withTopic(Crt::String topic) noexcept
+            PublishPacket &PublishPacket::WithTopic(Crt::String topic) noexcept
             {
                 m_topicName = std::move(topic);
                 return *this;
             }
 
-            PublishPacket &PublishPacket::withPayloadFormatIndicator(PayloadFormatIndicator format) noexcept
+            PublishPacket &PublishPacket::WithPayloadFormatIndicator(PayloadFormatIndicator format) noexcept
             {
                 m_payloadFormatIndicator = format;
                 return *this;
             }
 
-            PublishPacket &PublishPacket::withMessageExpiryIntervalSec(uint32_t second) noexcept
+            PublishPacket &PublishPacket::WithMessageExpiryIntervalSec(uint32_t second) noexcept
             {
                 m_messageExpiryIntervalSec = second;
                 return *this;
             }
 
-            PublishPacket &PublishPacket::withResponseTopic(ByteCursor responseTopic) noexcept
+            PublishPacket &PublishPacket::WithResponseTopic(ByteCursor responseTopic) noexcept
             {
                 setPacketStringOptional(m_responseTopic, m_responseTopicString, &responseTopic);
                 return *this;
             }
 
-            PublishPacket &PublishPacket::withCorrelationData(ByteCursor correlationData) noexcept
+            PublishPacket &PublishPacket::WithCorrelationData(ByteCursor correlationData) noexcept
             {
                 setPacketByteBufOptional(m_correlationData, m_correlationDataStorage, m_allocator, &correlationData);
                 return *this;
             }
 
-            PublishPacket &PublishPacket::withUserProperties(const Vector<UserProperty> &userProperties) noexcept
+            PublishPacket &PublishPacket::WithUserProperties(const Vector<UserProperty> &userProperties) noexcept
             {
                 m_userProperties = userProperties;
                 return *this;
             }
 
-            PublishPacket &PublishPacket::withUserProperties(Vector<UserProperty> &&userProperties) noexcept
+            PublishPacket &PublishPacket::WithUserProperties(Vector<UserProperty> &&userProperties) noexcept
             {
                 m_userProperties = userProperties;
                 return *this;
             }
 
-            PublishPacket &PublishPacket::withUserProperty(UserProperty &&property) noexcept
+            PublishPacket &PublishPacket::WithUserProperty(UserProperty &&property) noexcept
             {
                 m_userProperties.push_back(std::move(property));
                 return *this;
@@ -688,43 +688,43 @@ namespace Aws
                 return true;
             }
 
-            DisconnectPacket &DisconnectPacket::withReasonCode(const DisconnectReasonCode code) noexcept
+            DisconnectPacket &DisconnectPacket::WithReasonCode(const DisconnectReasonCode code) noexcept
             {
                 m_reasonCode = code;
                 return *this;
             }
 
-            DisconnectPacket &DisconnectPacket::withSessionExpiryIntervalSec(const uint32_t second) noexcept
+            DisconnectPacket &DisconnectPacket::WithSessionExpiryIntervalSec(const uint32_t second) noexcept
             {
                 m_sessionExpiryIntervalSec = second;
                 return *this;
             }
 
-            DisconnectPacket &DisconnectPacket::withReasonString(Crt::String reason) noexcept
+            DisconnectPacket &DisconnectPacket::WithReasonString(Crt::String reason) noexcept
             {
                 m_reasonString = std::move(reason);
                 return *this;
             }
 
-            DisconnectPacket &DisconnectPacket::withServerReference(Crt::String server_reference) noexcept
+            DisconnectPacket &DisconnectPacket::WithServerReference(Crt::String server_reference) noexcept
             {
                 m_serverReference = std::move(server_reference);
                 return *this;
             }
 
-            DisconnectPacket &DisconnectPacket::withUserProperties(const Vector<UserProperty> &userProperties) noexcept
+            DisconnectPacket &DisconnectPacket::WithUserProperties(const Vector<UserProperty> &userProperties) noexcept
             {
                 m_userProperties = userProperties;
                 return *this;
             }
 
-            DisconnectPacket &DisconnectPacket::withUserProperties(Vector<UserProperty> &&userProperties) noexcept
+            DisconnectPacket &DisconnectPacket::WithUserProperties(Vector<UserProperty> &&userProperties) noexcept
             {
                 m_userProperties = userProperties;
                 return *this;
             }
 
-            DisconnectPacket &DisconnectPacket::withUserProperty(UserProperty &&property) noexcept
+            DisconnectPacket &DisconnectPacket::WithUserProperty(UserProperty &&property) noexcept
             {
                 m_userProperties.push_back(std::move(property));
                 return *this;
@@ -892,28 +892,28 @@ namespace Aws
             {
             }
 
-            Subscription &Subscription::withTopicFilter(Crt::String topicFilter) noexcept
+            Subscription &Subscription::WithTopicFilter(Crt::String topicFilter) noexcept
             {
                 m_topicFilter = std::move(topicFilter);
                 return *this;
             }
 
-            Subscription &Subscription::withQOS(Mqtt5::QOS qos) noexcept
+            Subscription &Subscription::WithQOS(Mqtt5::QOS qos) noexcept
             {
                 m_qos = qos;
                 return *this;
             }
-            Subscription &Subscription::withNoLocal(bool noLocal) noexcept
+            Subscription &Subscription::WithNoLocal(bool noLocal) noexcept
             {
                 m_noLocal = noLocal;
                 return *this;
             }
-            Subscription &Subscription::withRetain(bool retain) noexcept
+            Subscription &Subscription::WithRetain(bool retain) noexcept
             {
                 m_retain = retain;
                 return *this;
             }
-            Subscription &Subscription::withRetainHandlingType(RetainHandlingType retainHandlingType) noexcept
+            Subscription &Subscription::WithRetainHandlingType(RetainHandlingType retainHandlingType) noexcept
             {
                 m_retainHnadlingType = retainHandlingType;
                 return *this;
@@ -977,44 +977,44 @@ namespace Aws
             {
             }
 
-            SubscribePacket &SubscribePacket::withUserProperties(const Vector<UserProperty> &userProperties) noexcept
+            SubscribePacket &SubscribePacket::WithUserProperties(const Vector<UserProperty> &userProperties) noexcept
             {
                 m_userProperties = userProperties;
                 return *this;
             }
 
-            SubscribePacket &SubscribePacket::withUserProperties(Vector<UserProperty> &&userProperties) noexcept
+            SubscribePacket &SubscribePacket::WithUserProperties(Vector<UserProperty> &&userProperties) noexcept
             {
                 m_userProperties = userProperties;
                 return *this;
             }
 
-            SubscribePacket &SubscribePacket::withUserProperty(UserProperty &&property) noexcept
+            SubscribePacket &SubscribePacket::WithUserProperty(UserProperty &&property) noexcept
             {
                 m_userProperties.push_back(std::move(property));
                 return *this;
             }
 
-            SubscribePacket &SubscribePacket::withSubscriptionIdentifier(uint32_t identifier) noexcept
+            SubscribePacket &SubscribePacket::WithSubscriptionIdentifier(uint32_t identifier) noexcept
             {
                 m_subscriptionIdentifier = identifier;
                 return *this;
             }
 
-            SubscribePacket &SubscribePacket::withSubscriptions(const Crt::Vector<Subscription> &subscriptions) noexcept
+            SubscribePacket &SubscribePacket::WithSubscriptions(const Crt::Vector<Subscription> &subscriptions) noexcept
             {
                 m_subscriptions = subscriptions;
 
                 return *this;
             }
 
-            SubscribePacket &SubscribePacket::withSubscriptions(Vector<Subscription> &&subscriptions) noexcept
+            SubscribePacket &SubscribePacket::WithSubscriptions(Vector<Subscription> &&subscriptions) noexcept
             {
                 m_subscriptions = subscriptions;
                 return *this;
             }
 
-            SubscribePacket &SubscribePacket::withSubscription(Subscription &&subscription) noexcept
+            SubscribePacket &SubscribePacket::WithSubscription(Subscription &&subscription) noexcept
             {
                 m_subscriptions.push_back(subscription);
                 return *this;
@@ -1075,33 +1075,33 @@ namespace Aws
                 AWS_ZERO_STRUCT(m_topicFiltersList);
             }
 
-            UnsubscribePacket &UnsubscribePacket::withTopicFilter(Crt::String topicFilter) noexcept
+            UnsubscribePacket &UnsubscribePacket::WithTopicFilter(Crt::String topicFilter) noexcept
             {
                 m_topicFilters.push_back(std::move(topicFilter));
                 return *this;
             }
 
-            UnsubscribePacket &UnsubscribePacket::withTopicFilters(Crt::Vector<String> topicFilters) noexcept
+            UnsubscribePacket &UnsubscribePacket::WithTopicFilters(Crt::Vector<String> topicFilters) noexcept
             {
                 m_topicFilters = std::move(topicFilters);
 
                 return *this;
             }
 
-            UnsubscribePacket &UnsubscribePacket::withUserProperties(
+            UnsubscribePacket &UnsubscribePacket::WithUserProperties(
                 const Vector<UserProperty> &userProperties) noexcept
             {
                 m_userProperties = userProperties;
                 return *this;
             }
 
-            UnsubscribePacket &UnsubscribePacket::withUserProperties(Vector<UserProperty> &&userProperties) noexcept
+            UnsubscribePacket &UnsubscribePacket::WithUserProperties(Vector<UserProperty> &&userProperties) noexcept
             {
                 m_userProperties = userProperties;
                 return *this;
             }
 
-            UnsubscribePacket &UnsubscribePacket::withUserProperty(UserProperty &&property) noexcept
+            UnsubscribePacket &UnsubscribePacket::WithUserProperty(UserProperty &&property) noexcept
             {
                 m_userProperties.push_back(std::move(property));
                 return *this;

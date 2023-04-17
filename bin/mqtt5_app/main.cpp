@@ -295,23 +295,23 @@ int main(int argc, char **argv)
     std::cout << "MQTT5: Start ConnectPacket...." << std::endl;
     std::cout << "**********************************************************" << std::endl;
     std::shared_ptr<Mqtt5::ConnectPacket> packet_connect = std::make_shared<Mqtt5::ConnectPacket>();
-    packet_connect->withReceiveMaximum(9);
-    packet_connect->withMaximumPacketSizeBytes(128 * 1024);
+    packet_connect->WithReceiveMaximum(9);
+    packet_connect->WithMaximumPacketSizeBytes(128 * 1024);
 
     std::cout << "**********************************************************" << std::endl;
     std::cout << "MQTT5: Start Option Builder...." << std::endl;
     std::cout << "**********************************************************" << std::endl;
     Aws::Crt::String namestring((const char *)hostName.ptr, hostName.len);
     Aws::Crt::Mqtt5::Mqtt5ClientOptions mqtt5OptionsBuilder(app_ctx.allocator);
-    mqtt5OptionsBuilder.withHostName(namestring).withPort(app_ctx.port);
+    mqtt5OptionsBuilder.WithHostName(namestring).WithPort(app_ctx.port);
 
-    mqtt5OptionsBuilder.withConnectOptions(packet_connect)
-        .withSocketOptions(socketOptions)
-        .withBootstrap(&clientBootstrap);
+    mqtt5OptionsBuilder.WithConnectOptions(packet_connect)
+        .WithSocketOptions(socketOptions)
+        .WithBootstrap(&clientBootstrap);
 
     if (useTls)
     {
-        mqtt5OptionsBuilder.withTlsConnectionOptions(tlsConnectionOptions);
+        mqtt5OptionsBuilder.WithTlsConnectionOptions(tlsConnectionOptions);
     }
 
     std::promise<bool> connectionPromise;
@@ -322,9 +322,8 @@ int main(int argc, char **argv)
     std::promise<void> publishReceivedPromise2;
     std::promise<void> publishReceivedPromise3;
 
-    mqtt5OptionsBuilder.withClientConnectionSuccessCallback(
-        [&connectionPromise](
-            Mqtt5Client &,const OnConnectionSuccessEventData& eventData)
+    mqtt5OptionsBuilder.WithClientConnectionSuccessCallback(
+        [&connectionPromise](const OnConnectionSuccessEventData &eventData)
         {
             std::cout << "**********************************************************" << std::endl;
             std::cout << "MQTT5:Connected:: " << eventData.negotiatedSettings->getClientId().c_str() << std::endl;
@@ -332,8 +331,8 @@ int main(int argc, char **argv)
             connectionPromise.set_value(true);
         });
 
-    mqtt5OptionsBuilder.withClientConnectionFailureCallback(
-        [&connectionPromise](Mqtt5Client &,const OnConnectionFailureEventData& eventData)
+    mqtt5OptionsBuilder.WithClientConnectionFailureCallback(
+        [&connectionPromise](const OnConnectionFailureEventData &eventData)
         {
             std::cout << "**********************************************************" << std::endl;
             std::cout << "MQTT5:Connection failed with error " << aws_error_debug_str(eventData.errorCode) << std::endl;
@@ -341,8 +340,8 @@ int main(int argc, char **argv)
             connectionPromise.set_value(false);
         });
 
-    mqtt5OptionsBuilder.withClientStoppedCallback(
-        [&stoppedPromise](Mqtt5Client &, const OnStoppedEventData&)
+    mqtt5OptionsBuilder.WithClientStoppedCallback(
+        [&stoppedPromise](const OnStoppedEventData &)
         {
             std::cout << "**********************************************************" << std::endl;
             std::cout << "MQTT5:client stopped." << std::endl;
@@ -350,12 +349,12 @@ int main(int argc, char **argv)
             stoppedPromise.set_value();
         });
 
-    mqtt5OptionsBuilder.withClientAttemptingConnectCallback(
-        [](Mqtt5Client &, const OnAttemptingConnectEventData&) { std::cout << "MQTT5:client attempting connect." << std::endl; });
+    mqtt5OptionsBuilder.WithClientAttemptingConnectCallback(
+        [](const OnAttemptingConnectEventData &) { std::cout << "MQTT5:client attempting connect." << std::endl; });
 
-    mqtt5OptionsBuilder.withClientDisconnectionCallback(
-        [&disconnectionPromise](
-            Mqtt5Client &, const OnDisconnectionEventData& eventData) {
+    mqtt5OptionsBuilder.WithClientDisconnectionCallback(
+        [&disconnectionPromise](const OnDisconnectionEventData &eventData)
+        {
             if (eventData.errorCode == 0)
             {
                 std::cout << "**********************************************************" << std::endl;
@@ -379,9 +378,9 @@ int main(int argc, char **argv)
             disconnectionPromise.set_value();
         });
 
-    mqtt5OptionsBuilder.withPublishReceivedCallback(
+    mqtt5OptionsBuilder.WithPublishReceivedCallback(
         [&publishReceivedPromise1, &publishReceivedPromise2, &publishReceivedPromise3, &publishReceivedPromise0](
-            Mqtt5Client &, const PublishReceivedEventData & eventData)
+            const PublishReceivedEventData &eventData)
         {
             ByteCursor payload = eventData.publishPacket->getPayload();
             String msg = String((const char *)payload.ptr, payload.len);
@@ -434,11 +433,11 @@ int main(int argc, char **argv)
          * MQTT5 CLIENT SUBSCRIPTION
          **********************************************************/
         Mqtt5::Subscription data1(app_ctx.allocator);
-        data1.withNoLocal(false).withTopicFilter("test/topic/test1").withQOS(Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE);
+        data1.WithNoLocal(false).WithTopicFilter("test/topic/test1").WithQOS(Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE);
         Mqtt5::Subscription data2(app_ctx.allocator);
-        data2.withTopicFilter("test/topic/test2").withQOS(Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE);
+        data2.WithTopicFilter("test/topic/test2").WithQOS(Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE);
         Mqtt5::Subscription data3(app_ctx.allocator);
-        data3.withTopicFilter("test/topic/test3").withQOS(Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE);
+        data3.WithTopicFilter("test/topic/test3").WithQOS(Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE);
 
         Vector<Mqtt5::Subscription> subscriptionList;
         subscriptionList.push_back(data1);
@@ -446,11 +445,12 @@ int main(int argc, char **argv)
         subscriptionList.push_back(data3);
 
         std::shared_ptr<Mqtt5::SubscribePacket> subscribe = std::make_shared<Mqtt5::SubscribePacket>(app_ctx.allocator);
-        subscribe->withSubscriptions(subscriptionList);
+        subscribe->WithSubscriptions(subscriptionList);
         bool subscribeSuccess = mqtt5Client->Subscribe(
             subscribe,
-            [](std::shared_ptr<Mqtt5::Mqtt5Client>, int, std::shared_ptr<Mqtt5::SubAckPacket> packet)
+            [](int, std::shared_ptr<Mqtt5::SubAckPacket> packet)
             {
+                if(packet == nullptr) return;
                 std::cout << "**********************************************************" << std::endl;
                 std::cout << "MQTT5: check suback packet : " << std::endl;
                 for (auto code : packet->getReasonCodes())
@@ -489,9 +489,9 @@ int main(int argc, char **argv)
 
         std::shared_ptr<Mqtt5::PublishPacket> publish = std::make_shared<Mqtt5::PublishPacket>(app_ctx.allocator);
 
-        publish->withTopic("test/topic/test1");
-        publish->withPayload(payload);
-        publish->withQOS(Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE);
+        publish->WithTopic("test/topic/test1");
+        publish->WithPayload(payload);
+        publish->WithQOS(Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE);
         Mqtt5::UserProperty p1("propName1", "propValue1");
         Mqtt5::UserProperty p2("propName2", "propValue2");
         Mqtt5::UserProperty p3("propName3", "propValue3");
@@ -500,10 +500,10 @@ int main(int argc, char **argv)
         props.push_back(p2);
         props.push_back(p3);
         Vector<Mqtt5::UserProperty> emptyprops;
-        publish->withUserProperties(props);
-        publish->withUserProperty(std::move(p1));
-        publish->withUserProperties(emptyprops); // test to reset the user properties
-        publish->withResponseTopic(ByteCursorFromCString("test/*"));
+        publish->WithUserProperties(props);
+        publish->WithUserProperty(std::move(p1));
+        publish->WithUserProperties(emptyprops); // test to reset the user properties
+        publish->WithResponseTopic(ByteCursorFromCString("test/*"));
 
         std::cout << "**********************************************************" << std::endl;
         std::cout << "Publish Start:" << std::endl;
@@ -544,7 +544,7 @@ int main(int argc, char **argv)
         topics.push_back(topic1);
         topics.push_back(topic2);
         std::shared_ptr<Mqtt5::UnsubscribePacket> unsub = std::make_shared<Mqtt5::UnsubscribePacket>(app_ctx.allocator);
-        unsub->withTopicFilters(topics);
+        unsub->WithTopicFilters(topics);
         if (!mqtt5Client->Unsubscribe(unsub))
         {
             std::cout << "[ERROR]Unsubscribe Failed." << std::endl;
@@ -567,7 +567,7 @@ int main(int argc, char **argv)
 
         publishReceivedPromise3.get_future().get();
         Mqtt5::DisconnectPacket disconnect(app_ctx.allocator);
-        disconnect.withReasonString("disconnect test string");
+        disconnect.WithReasonString("disconnect test string");
         if (mqtt5Client->Stop())
         {
             stoppedPromise.get_future().get();

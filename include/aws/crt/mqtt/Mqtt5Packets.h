@@ -72,7 +72,7 @@ namespace Aws
                  * @param payload The payload for the publish message.
                  * @return The PublishPacket Object after setting the payload.
                  */
-                PublishPacket &withPayload(ByteCursor payload) noexcept;
+                PublishPacket &WithPayload(ByteCursor payload) noexcept;
 
                 /**
                  * Sets the MQTT quality of service level the message should be delivered with.
@@ -82,7 +82,7 @@ namespace Aws
                  * @param packetQOS The MQTT quality of service level the message should be delivered with.
                  * @return The PublishPacket Object after setting the QOS.
                  */
-                PublishPacket &withQOS(Mqtt5::QOS packetQOS) noexcept;
+                PublishPacket &WithQOS(Mqtt5::QOS packetQOS) noexcept;
 
                 /**
                  * Sets if this should be a retained message.
@@ -92,7 +92,7 @@ namespace Aws
                  * @param retain if this is a retained message.
                  * @return The PublishPacket Object after setting the retain setting.
                  */
-                PublishPacket &withRetain(bool retain) noexcept;
+                PublishPacket &WithRetain(bool retain) noexcept;
 
                 /**
                  * Sets the topic this message should be published to.
@@ -101,7 +101,7 @@ namespace Aws
                  * @param topic The topic this message should be published to.
                  * @return The PublishPacket Object after setting the topic.
                  */
-                PublishPacket &withTopic(Crt::String topic) noexcept;
+                PublishPacket &WithTopic(Crt::String topic) noexcept;
 
                 /**
                  * Sets the property specifying the format of the payload data. The mqtt5 client does not enforce or use
@@ -113,7 +113,7 @@ namespace Aws
                  * @param payloadFormat Property specifying the format of the payload data
                  * @return The PublishPacket Object after setting the payload format.
                  */
-                PublishPacket &withPayloadFormatIndicator(PayloadFormatIndicator payloadFormat) noexcept;
+                PublishPacket &WithPayloadFormatIndicator(PayloadFormatIndicator payloadFormat) noexcept;
 
                 /**
                  * Sets the maximum amount of time allowed to elapse for message delivery before the server
@@ -126,7 +126,7 @@ namespace Aws
                  * before the server should instead delete the message (relative to a recipient).
                  * @return The PublishPacket Object after setting the message expiry interval.
                  */
-                PublishPacket &withMessageExpiryIntervalSec(uint32_t second) noexcept;
+                PublishPacket &WithMessageExpiryIntervalSec(uint32_t second) noexcept;
 
                 /**
                  * Sets the opaque topic string intended to assist with request/response implementations.  Not
@@ -137,7 +137,7 @@ namespace Aws
                  * @param responseTopic
                  * @return The PublishPacket Object after setting the response topic.
                  */
-                PublishPacket &withResponseTopic(ByteCursor responseTopic) noexcept;
+                PublishPacket &WithResponseTopic(ByteCursor responseTopic) noexcept;
 
                 /**
                  * Sets the opaque binary data used to correlate between publish messages, as a potential method for
@@ -149,7 +149,7 @@ namespace Aws
                  * @param correlationData Opaque binary data used to correlate between publish messages
                  * @return The PublishPacket Object after setting the correlation data.
                  */
-                PublishPacket &withCorrelationData(ByteCursor correlationData) noexcept;
+                PublishPacket &WithCorrelationData(ByteCursor correlationData) noexcept;
 
                 /**
                  * Sets the list of MQTT5 user properties included with the packet.
@@ -160,7 +160,7 @@ namespace Aws
                  * @param userProperties List of MQTT5 user properties included with the packet.
                  * @return The PublishPacket Object after setting the user properties
                  */
-                PublishPacket &withUserProperties(const Vector<UserProperty> &userProperties) noexcept;
+                PublishPacket &WithUserProperties(const Vector<UserProperty> &userProperties) noexcept;
 
                 /**
                  * Sets the list of MQTT5 user properties included with the packet.
@@ -171,7 +171,7 @@ namespace Aws
                  * @param userProperties List of MQTT5 user properties included with the packet.
                  * @return The PublishPacket Object after setting the user properties
                  */
-                PublishPacket &withUserProperties(Vector<UserProperty> &&userProperties) noexcept;
+                PublishPacket &WithUserProperties(Vector<UserProperty> &&userProperties) noexcept;
 
                 /**
                  * Put a MQTT5 user property to the back of the packet user property vector/list
@@ -182,7 +182,7 @@ namespace Aws
                  * @param property set of userProperty of MQTT5 user properties included with the packet.
                  * @return The PublishPacket Object after setting the user property
                  */
-                PublishPacket &withUserProperty(UserProperty &&property) noexcept;
+                PublishPacket &WithUserProperty(UserProperty &&property) noexcept;
 
                 bool initializeRawOptions(aws_mqtt5_packet_publish_view &raw_options) noexcept;
 
@@ -617,7 +617,7 @@ namespace Aws
                  * sending the next.
                  * @return The ConnectPacket Object after setting the keep alive interval.
                  */
-                ConnectPacket &withKeepAliveIntervalSec(uint16_t keepAliveInteralSeconds) noexcept;
+                ConnectPacket &WithKeepAliveIntervalSec(uint16_t keepAliveInteralSeconds) noexcept;
 
                 /**
                  * Sets the unique string identifying the client to the server.  Used to restore session state between
@@ -632,7 +632,7 @@ namespace Aws
                  * @param clientId A unique string identifying the client to the server.
                  * @return The ConnectPacket Object after setting the client ID.
                  */
-                ConnectPacket &withClientId(Crt::String clientId) noexcept;
+                ConnectPacket &WithClientId(Crt::String clientId) noexcept;
 
                 /**
                  * Sets the string value that the server may use for client authentication and authorization.
@@ -642,7 +642,7 @@ namespace Aws
                  * @param username The string value that the server may use for client authentication and authorization.
                  * @return The ConnectPacket Object after setting the username.
                  */
-                ConnectPacket &withUserName(Crt::String username) noexcept;
+                ConnectPacket &WithUserName(Crt::String username) noexcept;
 
                 /**
                  * Sets the opaque binary data that the server may use for client authentication and authorization.
@@ -653,7 +653,7 @@ namespace Aws
                  * authorization.
                  * @return The ConnectPacket Object after setting the password.
                  */
-                ConnectPacket &withPassword(ByteCursor password) noexcept;
+                ConnectPacket &WithPassword(ByteCursor password) noexcept;
 
                 /**
                  * Sets the time interval, in seconds, that the client requests the server to persist this connection's
@@ -670,7 +670,7 @@ namespace Aws
                  * to persist this connection's MQTT session state for.
                  * @return The ConnectPacket Object after setting the session expiry interval.
                  */
-                ConnectPacket &withSessionExpiryIntervalSec(uint32_t sessionExpiryIntervalSeconds) noexcept;
+                ConnectPacket &WithSessionExpiryIntervalSec(uint32_t sessionExpiryIntervalSeconds) noexcept;
 
                 /**
                  * Sets whether requests that the server send response information in the subsequent CONNACK.  This
@@ -684,7 +684,7 @@ namespace Aws
                  * subsequent CONNACK.
                  * @return The ConnectPacket Object after setting the request response information.
                  */
-                ConnectPacket &withRequestResponseInformation(bool requestResponseInformation) noexcept;
+                ConnectPacket &WithRequestResponseInformation(bool requestResponseInformation) noexcept;
 
                 /**
                  * Sets whether requests that the server send additional diagnostic information (via response string or
@@ -698,7 +698,7 @@ namespace Aws
                  * server.
                  * @return The ConnectPacket Object after setting the request problem information.
                  */
-                ConnectPacket &withRequestProblemInformation(bool requestProblemInformation) noexcept;
+                ConnectPacket &WithRequestProblemInformation(bool requestProblemInformation) noexcept;
 
                 /**
                  * Sets the maximum number of in-flight QoS 1 and 2 messages the client is willing to handle.  If
@@ -711,7 +711,7 @@ namespace Aws
                  * handle.
                  * @return The ConnectPacket Object after setting the receive maximum.
                  */
-                ConnectPacket &withReceiveMaximum(uint16_t receiveMaximum) noexcept;
+                ConnectPacket &WithReceiveMaximum(uint16_t receiveMaximum) noexcept;
 
                 /**
                  * Sets the maximum packet size the client is willing to handle.  If
@@ -723,7 +723,7 @@ namespace Aws
                  * @param maximumPacketSizeBytes The maximum packet size the client is willing to handle
                  * @return The ConnectPacket Object after setting the maximum packet size.
                  */
-                ConnectPacket &withMaximumPacketSizeBytes(uint32_t maximumPacketSizeBytes) noexcept;
+                ConnectPacket &WithMaximumPacketSizeBytes(uint32_t maximumPacketSizeBytes) noexcept;
 
                 /**
                  * Sets the time interval, in seconds, that the server should wait (for a session reconnection) before
@@ -738,7 +738,7 @@ namespace Aws
                  * session reconnection) before sending the will message associated with the connection's session.
                  * @return The ConnectPacket Object after setting the will message delay interval.
                  */
-                ConnectPacket &withWillDelayIntervalSec(uint32_t willDelayIntervalSeconds) noexcept;
+                ConnectPacket &WithWillDelayIntervalSec(uint32_t willDelayIntervalSeconds) noexcept;
 
                 /**
                  * Sets the definition of a message to be published when the connection's session is destroyed by the
@@ -751,7 +751,7 @@ namespace Aws
                  * when the will delay interval has elapsed, whichever comes first.
                  * @return The ConnectPacket Object after setting the will message.
                  */
-                ConnectPacket &withWill(std::shared_ptr<PublishPacket> will) noexcept;
+                ConnectPacket &WithWill(std::shared_ptr<PublishPacket> will) noexcept;
 
                 /**
                  * Sets the list of MQTT5 user properties included with the packet.
@@ -762,7 +762,7 @@ namespace Aws
                  * @param userProperties List of MQTT5 user properties included with the packet.
                  * @return The ConnectPacket Object after setting the user properties.
                  */
-                ConnectPacket &withUserProperties(const Vector<UserProperty> &userProperties) noexcept;
+                ConnectPacket &WithUserProperties(const Vector<UserProperty> &userProperties) noexcept;
 
                 /**
                  * Sets the list of MQTT5 user properties included with the packet.
@@ -773,7 +773,7 @@ namespace Aws
                  * @param userProperties List of MQTT5 user properties included with the packet.
                  * @return The ConnectPacket Object after setting the user properties.
                  */
-                ConnectPacket &withUserProperties(Vector<UserProperty> &&userProperties) noexcept;
+                ConnectPacket &WithUserProperties(Vector<UserProperty> &&userProperties) noexcept;
 
                 /**
                  * Put a MQTT5 user property to the back of the packet user property vector/list
@@ -784,7 +784,7 @@ namespace Aws
                  * @param property set of userProperty of MQTT5 user properties included with the packet.
                  * @return The ConnectPacket Object after setting the user property
                  */
-                ConnectPacket &withUserProperty(UserProperty &&property) noexcept;
+                ConnectPacket &WithUserProperty(UserProperty &&property) noexcept;
 
                 /********************************************
                  * Access Functions
@@ -1460,7 +1460,7 @@ namespace Aws
                  * @param reasonCode Value indicating the reason that the sender is closing the connection
                  * @return The DisconnectPacket Object after setting the reason code.
                  */
-                DisconnectPacket &withReasonCode(const DisconnectReasonCode reasonCode) noexcept;
+                DisconnectPacket &WithReasonCode(const DisconnectReasonCode reasonCode) noexcept;
 
                 /**
                  * Sets the change to the session expiry interval negotiated at connection time as part of the
@@ -1473,7 +1473,7 @@ namespace Aws
                  * @param sessionExpiryIntervalSeconds
                  * @return The DisconnectPacket Object after setting the session expiry interval.
                  */
-                DisconnectPacket &withSessionExpiryIntervalSec(const uint32_t sessionExpiryIntervalSeconds) noexcept;
+                DisconnectPacket &WithSessionExpiryIntervalSec(const uint32_t sessionExpiryIntervalSeconds) noexcept;
 
                 /**
                  * Sets the additional diagnostic information about the reason that the sender is closing the connection
@@ -1485,7 +1485,7 @@ namespace Aws
                  * connection
                  * @return The DisconnectPacket Object after setting the reason string.
                  */
-                DisconnectPacket &withReasonString(Crt::String reasonString) noexcept;
+                DisconnectPacket &WithReasonString(Crt::String reasonString) noexcept;
 
                 /**
                  * Sets the property indicating an alternate server that the client may temporarily or permanently
@@ -1499,7 +1499,7 @@ namespace Aws
                  * permanently attempt to connect to instead of the configured endpoint.
                  * @return The DisconnectPacket Object after setting the server reference.
                  */
-                DisconnectPacket &withServerReference(Crt::String serverReference) noexcept;
+                DisconnectPacket &WithServerReference(Crt::String serverReference) noexcept;
 
                 /**
                  * Sets the list of MQTT5 user properties included with the packet.
@@ -1510,7 +1510,7 @@ namespace Aws
                  * @param userProperties List of MQTT5 user properties included with the packet.
                  * @return The DisconnectPacket Object after setting the user properties.
                  */
-                DisconnectPacket &withUserProperties(const Vector<UserProperty> &userProperties) noexcept;
+                DisconnectPacket &WithUserProperties(const Vector<UserProperty> &userProperties) noexcept;
 
                 /**
                  * Sets the list of MQTT5 user properties included with the packet.
@@ -1521,7 +1521,7 @@ namespace Aws
                  * @param userProperties List of MQTT5 user properties included with the packet.
                  * @return The DisconnectPacket Object after setting the user properties.
                  */
-                DisconnectPacket &withUserProperties(Vector<UserProperty> &&userProperties) noexcept;
+                DisconnectPacket &WithUserProperties(Vector<UserProperty> &&userProperties) noexcept;
 
                 /**
                  * Put a MQTT5 user property to the back of the packet user property vector/list
@@ -1532,7 +1532,7 @@ namespace Aws
                  * @param property set of userProperty of MQTT5 user properties included with the packet.
                  * @return The ConnectPacket Object after setting the user property
                  */
-                DisconnectPacket &withUserProperty(UserProperty &&property) noexcept;
+                DisconnectPacket &WithUserProperty(UserProperty &&property) noexcept;
 
                 /**
                  * Value indicating the reason that the sender is closing the connection
@@ -1794,7 +1794,7 @@ namespace Aws
                  * @param topicFilter string
                  * @return The Subscription Object after setting the reason string.
                  */
-                Subscription &withTopicFilter(Crt::String topicFilter) noexcept;
+                Subscription &WithTopicFilter(Crt::String topicFilter) noexcept;
 
                 /**
                  * Sets Maximum QoS on which the subscriber will accept publish messages.  Negotiated QoS may be
@@ -1806,7 +1806,7 @@ namespace Aws
                  * @param QOS
                  * @return The Subscription Object after setting the reason string.
                  */
-                Subscription &withQOS(Mqtt5::QOS QOS) noexcept;
+                Subscription &WithQOS(Mqtt5::QOS QOS) noexcept;
 
                 /**
                  * Sets should the server not send publishes to a client when that client was the one who sent the
@@ -1818,7 +1818,7 @@ namespace Aws
                  * @param noLocal bool
                  * @return The Subscription Object after setting the reason string.
                  */
-                Subscription &withNoLocal(bool noLocal) noexcept;
+                Subscription &WithNoLocal(bool noLocal) noexcept;
 
                 /**
                  * Sets should the server not send publishes to a client when that client was the one who sent the
@@ -1830,7 +1830,7 @@ namespace Aws
                  * @param retain bool
                  * @return The Subscription Object after setting the reason string.
                  */
-                Subscription &withRetain(bool retain) noexcept;
+                Subscription &WithRetain(bool retain) noexcept;
 
                 /**
                  * Sets should messages sent due to this subscription keep the retain flag preserved on the message?
@@ -1842,7 +1842,7 @@ namespace Aws
                  * @param retainHandlingType
                  * @return The Subscription Object after setting the reason string.
                  */
-                Subscription &withRetainHandlingType(RetainHandlingType retainHandlingType) noexcept;
+                Subscription &WithRetainHandlingType(RetainHandlingType retainHandlingType) noexcept;
 
                 bool initializeRawOptions(aws_mqtt5_subscription_view &raw_options) const noexcept;
 
@@ -1920,7 +1920,7 @@ namespace Aws
                  * @param userProperties List of MQTT5 user properties included with the packet.
                  * @return the SubscribePacket Object after setting the reason string.
                  */
-                SubscribePacket &withUserProperties(const Vector<UserProperty> &userProperties) noexcept;
+                SubscribePacket &WithUserProperties(const Vector<UserProperty> &userProperties) noexcept;
 
                 /**
                  * Sets the list of MQTT5 user properties included with the packet.
@@ -1931,7 +1931,7 @@ namespace Aws
                  * @param userProperties List of MQTT5 user properties included with the packet.
                  * @return the SubscribePacket Object after setting the reason string.
                  */
-                SubscribePacket &withUserProperties(Vector<UserProperty> &&userProperties) noexcept;
+                SubscribePacket &WithUserProperties(Vector<UserProperty> &&userProperties) noexcept;
 
                 /**
                  * Put a MQTT5 user property to the back of the packet user property vector/list
@@ -1942,7 +1942,7 @@ namespace Aws
                  * @param property userProperty of MQTT5 user properties included with the packet.
                  * @return The SubscribePacket Object after setting the user property
                  */
-                SubscribePacket &withUserProperty(UserProperty &&property) noexcept;
+                SubscribePacket &WithUserProperty(UserProperty &&property) noexcept;
 
                 /**
                  * Sets the value to associate with all subscriptions in this request.  Publish packets that
@@ -1954,7 +1954,7 @@ namespace Aws
                  * @param subscriptionIdentifier A positive long to associate with all subscriptions in this request.
                  * @return The SubscribePacket Object after setting the subscription identifier.
                  */
-                SubscribePacket &withSubscriptionIdentifier(uint32_t subscriptionIdentifier) noexcept;
+                SubscribePacket &WithSubscriptionIdentifier(uint32_t subscriptionIdentifier) noexcept;
 
                 /**
                  * Sets a list of subscriptions within the SUBSCRIBE packet.
@@ -1963,7 +1963,7 @@ namespace Aws
                  *
                  * @return The SubscribePacket Object after setting the subscription.
                  */
-                SubscribePacket &withSubscriptions(const Vector<Subscription> &subscriptions) noexcept;
+                SubscribePacket &WithSubscriptions(const Vector<Subscription> &subscriptions) noexcept;
 
                 /**
                  * Sets a list of subscriptions within the SUBSCRIBE packet.
@@ -1972,7 +1972,7 @@ namespace Aws
                  *
                  * @return The SubscribePacket Object after setting the subscription.
                  */
-                SubscribePacket &withSubscriptions(Crt::Vector<Subscription> &&subscriptions) noexcept;
+                SubscribePacket &WithSubscriptions(Crt::Vector<Subscription> &&subscriptions) noexcept;
 
                 /**
                  * Sets a single subscription within the SUBSCRIBE packet.
@@ -1981,7 +1981,7 @@ namespace Aws
                  *
                  * @return The SubscribePacket Object after setting the subscription.
                  */
-                SubscribePacket &withSubscription(Subscription &&subscription) noexcept;
+                SubscribePacket &WithSubscription(Subscription &&subscription) noexcept;
 
                 bool initializeRawOptions(aws_mqtt5_packet_subscribe_view &raw_options) noexcept;
 
@@ -2124,7 +2124,7 @@ namespace Aws
                  *
                  * @return The UnsubscribePacket Object after setting the subscription.
                  */
-                UnsubscribePacket &withTopicFilter(Crt::String topicFilter) noexcept;
+                UnsubscribePacket &WithTopicFilter(Crt::String topicFilter) noexcept;
 
                 /**
                  * Sets list of topic filter that the client wishes to unsubscribe from.
@@ -2133,7 +2133,7 @@ namespace Aws
                  *
                  * @return The UnsubscribePacket Object after setting the subscription.
                  */
-                UnsubscribePacket &withTopicFilters(Crt::Vector<String> topicFilters) noexcept;
+                UnsubscribePacket &WithTopicFilters(Crt::Vector<String> topicFilters) noexcept;
 
                 /**
                  * Sets the list of MQTT5 user properties included with the packet.
@@ -2144,7 +2144,7 @@ namespace Aws
                  * @param userProperties List of MQTT5 user properties included with the packet.
                  * @return The UnsubscribePacketBuilder after setting the user properties.
                  */
-                UnsubscribePacket &withUserProperties(const Vector<UserProperty> &userProperties) noexcept;
+                UnsubscribePacket &WithUserProperties(const Vector<UserProperty> &userProperties) noexcept;
 
                 /**
                  * Sets the list of MQTT5 user properties included with the packet.
@@ -2155,7 +2155,7 @@ namespace Aws
                  * @param userProperties List of MQTT5 user properties included with the packet.
                  * @return The UnsubscribePacketBuilder after setting the user properties.
                  */
-                UnsubscribePacket &withUserProperties(Vector<UserProperty> &&userProperties) noexcept;
+                UnsubscribePacket &WithUserProperties(Vector<UserProperty> &&userProperties) noexcept;
 
                 /**
                  * Put a MQTT5 user property to the back of the packet user property vector/list
@@ -2166,7 +2166,7 @@ namespace Aws
                  * @param property set of userProperty of MQTT5 user properties included with the packet.
                  * @return The PublishPacket Object after setting the user property
                  */
-                UnsubscribePacket &withUserProperty(UserProperty &&property) noexcept;
+                UnsubscribePacket &WithUserProperty(UserProperty &&property) noexcept;
 
                 bool initializeRawOptions(aws_mqtt5_packet_unsubscribe_view &raw_options) noexcept;
 
