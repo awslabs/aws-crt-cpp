@@ -348,7 +348,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withHostName(Crt::String hostname);
+                Mqtt5ClientOptions &WithHostName(Crt::String hostname);
 
                 /**
                  * Set port to connect to
@@ -357,7 +357,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withPort(uint16_t port) noexcept;
+                Mqtt5ClientOptions &WithPort(uint16_t port) noexcept;
 
                 /**
                  * Set booststrap for mqtt5 client
@@ -367,7 +367,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withBootstrap(Io::ClientBootstrap *bootStrap) noexcept;
+                Mqtt5ClientOptions &WithBootstrap(Io::ClientBootstrap *bootStrap) noexcept;
 
                 /**
                  * Sets the aws socket options
@@ -376,7 +376,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withSocketOptions(Io::SocketOptions socketOptions) noexcept;
+                Mqtt5ClientOptions &WithSocketOptions(Io::SocketOptions socketOptions) noexcept;
 
                 /**
                  * Sets the tls connection options
@@ -385,7 +385,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withTlsConnectionOptions(const Io::TlsConnectionOptions &tslOptions) noexcept;
+                Mqtt5ClientOptions &WithTlsConnectionOptions(const Io::TlsConnectionOptions &tslOptions) noexcept;
 
                 /**
                  * Sets http proxy options.
@@ -394,7 +394,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withHttpProxyOptions(
+                Mqtt5ClientOptions &WithHttpProxyOptions(
                     const Crt::Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
 
                 /**
@@ -404,7 +404,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withConnectOptions(std::shared_ptr<ConnectPacket> packetConnect) noexcept;
+                Mqtt5ClientOptions &WithConnectOptions(std::shared_ptr<ConnectPacket> packetConnect) noexcept;
 
                 /**
                  * Sets session behavior. Overrides how the MQTT5 client should behave with respect to MQTT sessions.
@@ -413,7 +413,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withSessionBehavior(ClientSessionBehaviorType sessionBehavior) noexcept;
+                Mqtt5ClientOptions &WithSessionBehavior(ClientSessionBehaviorType sessionBehavior) noexcept;
 
                 /**
                  * Sets client extended validation and flow control, additional controls for client behavior with
@@ -424,7 +424,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withClientExtendedValidationAndFlowControl(
+                Mqtt5ClientOptions &WithClientExtendedValidationAndFlowControl(
                     ClientExtendedValidationAndFlowControl clientExtendedValidationAndFlowControl) noexcept;
 
                 /**
@@ -437,7 +437,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withOfflineQueueBehavior(
+                Mqtt5ClientOptions &WithOfflineQueueBehavior(
                     ClientOperationQueueBehaviorType offlineQueueBehavior) noexcept;
 
                 /**
@@ -448,7 +448,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withReconnectOptions(ReconnectOptions reconnectOptions) noexcept;
+                Mqtt5ClientOptions &WithReconnectOptions(ReconnectOptions reconnectOptions) noexcept;
 
                 /**
                  * Sets ping timeout (ms). Time interval to wait after sending a PINGREQ for a PINGRESP to arrive.
@@ -458,7 +458,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withPingTimeoutMs(uint32_t pingTimeoutMs) noexcept;
+                Mqtt5ClientOptions &WithPingTimeoutMs(uint32_t pingTimeoutMs) noexcept;
 
                 /**
                  * Sets Connack Timeout (ms). Time interval to wait after sending a CONNECT request for a CONNACK
@@ -468,7 +468,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withConnackTimeoutMs(uint32_t connackTimeoutMs) noexcept;
+                Mqtt5ClientOptions &WithConnackTimeoutMs(uint32_t connackTimeoutMs) noexcept;
 
                 /**
                  * Sets Operation Timeout(Seconds). Time interval to wait for an ack after sending a QoS 1+ PUBLISH,
@@ -478,7 +478,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withAckTimeoutSeconds(uint32_t ackTimeoutSeconds) noexcept;
+                Mqtt5ClientOptions &WithAckTimeoutSeconds(uint32_t ackTimeoutSeconds) noexcept;
 
                 /**
                  * Sets callback for transform HTTP request.
@@ -491,7 +491,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withWebsocketHandshakeTransformCallback(
+                Mqtt5ClientOptions &WithWebsocketHandshakeTransformCallback(
                     OnWebSocketHandshakeIntercept callback) noexcept;
 
                 /**
@@ -501,7 +501,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withClientConnectionSuccessCallback(OnConnectionSuccessHandler callback) noexcept;
+                Mqtt5ClientOptions &WithClientConnectionSuccessCallback(OnConnectionSuccessHandler callback) noexcept;
 
                 /**
                  * Sets callback trigged when client fails to establish an MQTT connection
@@ -510,7 +510,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withClientConnectionFailureCallback(OnConnectionFailureHandler callback) noexcept;
+                Mqtt5ClientOptions &WithClientConnectionFailureCallback(OnConnectionFailureHandler callback) noexcept;
 
                 /**
                  * Sets callback trigged when client's current MQTT connection is closed
@@ -519,7 +519,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withClientDisconnectionCallback(OnDisconnectionHandler callback) noexcept;
+                Mqtt5ClientOptions &WithClientDisconnectionCallback(OnDisconnectionHandler callback) noexcept;
 
                 /**
                  * Sets callback trigged when client reaches the "Stopped" state
@@ -528,7 +528,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withClientStoppedCallback(OnStoppedHandler callback) noexcept;
+                Mqtt5ClientOptions &WithClientStoppedCallback(OnStoppedHandler callback) noexcept;
 
                 /**
                  * Sets callback trigged when client begins an attempt to connect to the remote endpoint.
@@ -537,7 +537,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withClientAttemptingConnectCallback(OnAttemptingConnectHandler callback) noexcept;
+                Mqtt5ClientOptions &WithClientAttemptingConnectCallback(OnAttemptingConnectHandler callback) noexcept;
 
                 /**
                  * Sets callback trigged when a PUBLISH packet is received by the client
@@ -546,7 +546,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &withPublishReceivedCallback(OnPublishReceivedHandler callback) noexcept;
+                Mqtt5ClientOptions &WithPublishReceivedCallback(OnPublishReceivedHandler callback) noexcept;
 
                 /**
                  * Initializes the C aws_mqtt5_client_options from Mqtt5ClientOptions. For internal use
