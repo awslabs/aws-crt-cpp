@@ -2181,7 +2181,7 @@ static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *)
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
     ASSERT_FALSE(*mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->LastError() == AWS_ERROR_MQTT5_CONNECT_OPTIONS_VALIDATION);
+    ASSERT_TRUE(mqtt5Client->LastError() == AWS_ERROR_MQTT5_CLIENT_OPTIONS_VALIDATION);
 
     return AWS_OP_SUCCESS;
 }
