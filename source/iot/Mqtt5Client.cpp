@@ -408,7 +408,7 @@ namespace Aws
                 if (port != 443)
                 {
                     AWS_LOGF_WARN(
-                        AWS_LS_MQTT_GENERAL,
+                        AWS_LS_MQTT5_GENERAL,
                         "Attempting to connect to authorizer with unsupported port. Port is not 443...");
                 }
                 if (!m_websocketConfig)
@@ -439,7 +439,7 @@ namespace Aws
                     if (!buildMqtt5FinalUsername(m_customAuthConfig, username))
                     {
                         AWS_LOGF_ERROR(
-                            AWS_LS_MQTT5_CLIENT,
+                            AWS_LS_MQTT5_GENERAL,
                             "Failed to setup CustomAuthorizerConfig, please check if the parameters are set "
                             "correctly.");
                         return nullptr;
