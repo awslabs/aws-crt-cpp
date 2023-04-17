@@ -416,10 +416,16 @@ int main(int argc, char **argv)
 
     if (mqtt5Client == nullptr)
     {
+        std::cerr << "Failed to allocate memory for mqtt5 client." << std::endl;
+        return -1;
+    }
+    if (!*mqtt5Client)
+    {
         std::cerr << "Failed to Init Mqtt5Client with error code: %d." << aws_error_debug_str(mqtt5Client->LastError())
                   << std::endl;
         return -1;
     }
+
     std::cout << "MQTT5: Finish Init Client ...." << std::endl;
     std::cout << "**********************************************************" << std::endl;
 
