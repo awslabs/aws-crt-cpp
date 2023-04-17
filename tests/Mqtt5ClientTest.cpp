@@ -413,7 +413,6 @@ static int s_TestMqtt5NewClientMin(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
 
     return AWS_OP_SUCCESS;
 }
@@ -487,7 +486,7 @@ static int s_TestMqtt5NewClientFull(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     return AWS_OP_SUCCESS;
 }
 
@@ -522,7 +521,7 @@ static int s_TestMqtt5DirectConnectionMinimal(Aws::Crt::Allocator *allocator, vo
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
@@ -562,7 +561,6 @@ static int s_TestMqtt5DirectConnectionWithBasicAuth(Aws::Crt::Allocator *allocat
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
 
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
@@ -609,7 +607,7 @@ static int s_TestMqtt5DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, vo
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     connectionPromise.get_future().get();
     ASSERT_TRUE(mqtt5Client->Stop());
@@ -655,7 +653,7 @@ static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocat
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     connectionPromise.get_future().get();
     ASSERT_TRUE(mqtt5Client->Stop());
@@ -710,7 +708,6 @@ static int s_TestMqtt5DirectConnectionWithHttpProxy(Aws::Crt::Allocator *allocat
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
 
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
@@ -795,7 +792,7 @@ static int s_TestMqtt5DirectConnectionFull(Aws::Crt::Allocator *allocator, void 
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
@@ -855,7 +852,7 @@ static int s_TestMqtt5WSConnectionMinimal(Aws::Crt::Allocator *allocator, void *
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     connectionPromise.get_future().get();
     ASSERT_TRUE(mqtt5Client->Stop());
@@ -917,7 +914,6 @@ static int s_TestMqtt5WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, 
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
 
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
@@ -985,7 +981,7 @@ static int s_TestMqtt5WSConnectionWithTLS(Aws::Crt::Allocator *allocator, void *
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     connectionPromise.get_future().get();
     ASSERT_TRUE(mqtt5Client->Stop());
@@ -1054,7 +1050,7 @@ static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, 
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     connectionPromise.get_future().get();
     ASSERT_TRUE(mqtt5Client->Stop());
@@ -1136,7 +1132,6 @@ static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, 
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
 
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
@@ -1244,7 +1239,7 @@ static int s_TestMqtt5WSConnectionFull(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
@@ -1282,7 +1277,7 @@ static int s_TestMqtt5DirectInvalidHostname(Aws::Crt::Allocator *allocator, void
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_FALSE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
@@ -1316,7 +1311,7 @@ static int s_TestMqtt5DirectInvalidPort(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_FALSE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
@@ -1372,7 +1367,7 @@ static int s_TestMqtt5WSInvalidPort(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_FALSE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
@@ -1419,7 +1414,6 @@ static int s_TestMqtt5SocketTimeout(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
 
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_FALSE(connectionPromise.get_future().get());
@@ -1459,7 +1453,6 @@ static int s_TestMqtt5IncorrectBasicAuth(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
 
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_FALSE(connectionPromise.get_future().get());
@@ -1508,7 +1501,7 @@ static int s_TestMqtt5IncorrectWSConnect(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_FALSE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
@@ -1559,13 +1552,11 @@ static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client1 = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client1);
-    ASSERT_TRUE(*mqtt5Client1);
 
     s_setupConnectionLifeCycle(mqtt5Options, connection2Promise, stopped2Promise, "Client2");
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client2 = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client2);
-    ASSERT_TRUE(*mqtt5Client2);
 
     ASSERT_TRUE(mqtt5Client1->Start());
     // Client 1 is connected.
@@ -1636,7 +1627,6 @@ static int s_TestMqtt5NegotiatedSettingsHappy(Aws::Crt::Allocator *allocator, vo
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
 
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
@@ -1697,7 +1687,6 @@ static int s_TestMqtt5NegotiatedSettingsFull(Aws::Crt::Allocator *allocator, voi
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
 
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
@@ -1757,7 +1746,6 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
 
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
@@ -1809,7 +1797,6 @@ static int s_TestMqtt5NegotiatedSettingsRejoinAlways(Aws::Crt::Allocator *alloca
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
 
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
@@ -1884,7 +1871,7 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
 
@@ -1965,7 +1952,6 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Mqtt5::Mqtt5Client> subscriber = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(subscriber);
-    ASSERT_TRUE(*subscriber);
 
     /* Set will for client option */
     std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect = std::make_shared<Aws::Crt::Mqtt5::ConnectPacket>();
@@ -1979,7 +1965,6 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Mqtt5::Mqtt5Client> publisher = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(publisher);
-    ASSERT_TRUE(*publisher);
 
     ASSERT_TRUE(publisher->Start());
     publisherConnectionPromise.get_future().get();
@@ -2043,7 +2028,7 @@ static int s_TestMqtt5NullPublish(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
 
@@ -2089,7 +2074,7 @@ static int s_TestMqtt5NullSubscribe(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
 
@@ -2134,7 +2119,6 @@ static int s_TestMqtt5NullUnsubscribe(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
 
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
@@ -2179,9 +2163,8 @@ static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *)
     mqtt5Options.WithConnectOptions(packetConnect);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
-    ASSERT_TRUE(mqtt5Client);
-    ASSERT_FALSE(*mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->LastError() == AWS_ERROR_MQTT5_CLIENT_OPTIONS_VALIDATION);
+    ASSERT_FALSE(mqtt5Client);
+    ASSERT_TRUE(LastError() == AWS_ERROR_MQTT5_CLIENT_OPTIONS_VALIDATION);
 
     return AWS_OP_SUCCESS;
 }
@@ -2240,13 +2223,11 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Mqtt5::Mqtt5Client> subscriber = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(subscriber);
-    ASSERT_TRUE(*subscriber);
 
     s_setupConnectionLifeCycle(mqtt5Options, publisherConnectionPromise, publisherStoppedPromise, "Publisher");
 
     std::shared_ptr<Mqtt5::Mqtt5Client> publisher = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(publisher);
-    ASSERT_TRUE(*publisher);
 
     ASSERT_TRUE(publisher->Start());
     ASSERT_TRUE(publisherConnectionPromise.get_future().get());
@@ -2332,7 +2313,6 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client1 = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client1);
-    ASSERT_TRUE(*mqtt5Client1);
 
     s_setupConnectionLifeCycle(mqtt5Options, connection2Promise, stopped2Promise, "Client2");
 
@@ -2347,7 +2327,6 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client2 = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client2);
-    ASSERT_TRUE(*mqtt5Client2);
 
     s_setupConnectionLifeCycle(mqtt5Options, connection3Promise, stopped3Promise, "Client3");
 
@@ -2363,7 +2342,6 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client3 = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client3);
-    ASSERT_TRUE(*mqtt5Client3);
 
     // 1. client1 start and publish a retian message
     ASSERT_TRUE(mqtt5Client1->Start());
@@ -2430,6 +2408,8 @@ static int s_TestIoTMqtt5ConnectWithmTLS(Aws::Crt::Allocator *allocator, void *)
         mqtt5TestVars.m_private_key_path_string.c_str(),
         allocator);
 
+    ASSERT_TRUE(builder);
+
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
@@ -2438,7 +2418,7 @@ static int s_TestIoTMqtt5ConnectWithmTLS(Aws::Crt::Allocator *allocator, void *)
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
@@ -2476,6 +2456,7 @@ static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, vo
 
     Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWebsocket(
         mqtt5TestVars.m_hostname_string, websocketConfig, allocator);
+    ASSERT_TRUE(builder);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -2485,7 +2466,7 @@ static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, vo
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
@@ -2542,6 +2523,8 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuth(Aws::Crt::Allocator *alloc
 
     Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizer(
         mqtt5TestVars.m_hostname_string, authConfig, allocator);
+    ASSERT_TRUE(builder);
+
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
@@ -2550,7 +2533,7 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuth(Aws::Crt::Allocator *alloc
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
@@ -2602,6 +2585,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *all
 
     Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizer(
         mqtt5TestVars.m_hostname_string, authConfig, allocator);
+    ASSERT_TRUE(builder);
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
@@ -2610,7 +2594,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *all
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
@@ -2662,6 +2646,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets(Aws::Crt::Allo
     Aws::Iot::Mqtt5ClientBuilder *builder =
         Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
             mqtt5TestVars.m_hostname_string, authConfig, websocketConfig, allocator);
+    ASSERT_TRUE(builder);
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
@@ -2670,7 +2655,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets(Aws::Crt::Allo
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
@@ -2733,6 +2718,7 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Alloca
     Aws::Iot::Mqtt5ClientBuilder *builder =
         Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
             mqtt5TestVars.m_hostname_string, authConfig, websocketConfig, allocator);
+    ASSERT_TRUE(builder);
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
@@ -2741,7 +2727,7 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Alloca
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
@@ -2782,6 +2768,7 @@ static int s_TestMqtt5InterruptSub(Aws::Crt::Allocator *allocator, void *)
         mqtt5TestVars.m_certificate_path_string.c_str(),
         mqtt5TestVars.m_private_key_path_string.c_str(),
         allocator);
+    ASSERT_TRUE(builder);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -2791,7 +2778,7 @@ static int s_TestMqtt5InterruptSub(Aws::Crt::Allocator *allocator, void *)
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
 
@@ -2831,7 +2818,7 @@ static int s_TestMqtt5InterruptUnsub(Aws::Crt::Allocator *allocator, void *)
         mqtt5TestVars.m_certificate_path_string.c_str(),
         mqtt5TestVars.m_private_key_path_string.c_str(),
         allocator);
-
+    ASSERT_TRUE(builder);
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
@@ -2840,7 +2827,7 @@ static int s_TestMqtt5InterruptUnsub(Aws::Crt::Allocator *allocator, void *)
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
 
@@ -2882,6 +2869,7 @@ static int s_TestMqtt5InterruptPublishQoS1(Aws::Crt::Allocator *allocator, void 
         mqtt5TestVars.m_certificate_path_string.c_str(),
         mqtt5TestVars.m_private_key_path_string.c_str(),
         allocator);
+    ASSERT_TRUE(builder);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -2891,7 +2879,7 @@ static int s_TestMqtt5InterruptPublishQoS1(Aws::Crt::Allocator *allocator, void 
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
 
@@ -2943,7 +2931,7 @@ static int s_TestMqtt5OperationStatisticsSimple(Aws::Crt::Allocator *allocator, 
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(*mqtt5Client);
+
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
 

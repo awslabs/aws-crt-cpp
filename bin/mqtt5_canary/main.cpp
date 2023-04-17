@@ -899,7 +899,7 @@ int main(int argc, char **argv)
         });
 
         clients[i].client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, appCtx.allocator);
-        if (clients[i].client == nullptr || !*(clients[i].client))
+        if (clients[i].client == nullptr)
         {
             AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Client Creation Failed.", client.clientId.c_str());
             continue;
