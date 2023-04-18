@@ -73,7 +73,7 @@ namespace Aws
                 const Mqtt5ListenerOptions &options,
                 const std::shared_ptr<Mqtt5Client> &client,
                 Allocator *allocator) noexcept
-                : m_listener(nullptr), m_callbackFlag(Mqtt5ListenerCore::CallbackFlag::INVOKE), m_allocator(allocator)
+                : m_callbackFlag(Mqtt5ListenerCore::CallbackFlag::INVOKE), m_listener(nullptr), m_allocator(allocator)
             {
 
                 if (client == nullptr)
