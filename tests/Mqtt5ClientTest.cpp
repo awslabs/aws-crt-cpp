@@ -7,6 +7,7 @@
 #include <aws/crt/UUID.h>
 #include <aws/crt/auth/Credentials.h>
 #include <aws/crt/http/HttpProxyStrategy.h>
+#include <aws/crt/mqtt/Mqtt5Listener.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
 #include <aws/iot/Mqtt5Client.h>
 #include <aws/iot/MqttCommon.h>
@@ -306,18 +307,22 @@ static void s_setupConnectionLifeCycle(
 {
     mqtt5Options.WithClientConnectionSuccessCallback(
         [&connectionPromise, clientName](const OnConnectionSuccessEventData &) {
-            printf("[MQTT5]%s Connection Success.", clientName);
+            AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "[MQTT5]%s Connection Success.", clientName);
             connectionPromise.set_value(true);
         });
 
     mqtt5Options.WithClientConnectionFailureCallback(
         [&connectionPromise, clientName](const OnConnectionFailureEventData &eventData) {
-            printf("[MQTT5]%s Connection failed with error : %s", clientName, aws_error_debug_str(eventData.errorCode));
+            AWS_LOGF_INFO(
+                AWS_LS_MQTT5_GENERAL,
+                "[MQTT5]%s Connection failed with error : %s",
+                clientName,
+                aws_error_debug_str(eventData.errorCode));
             connectionPromise.set_value(false);
         });
 
     mqtt5Options.WithClientStoppedCallback([&stoppedPromise, clientName](const OnStoppedEventData &) {
-        printf("[MQTT5]%s Stopped", clientName);
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "[MQTT5]%s Stopped", clientName);
         stoppedPromise.set_value();
     });
 }
@@ -330,19 +335,60 @@ static void s_setupConnectionLifeCycle(
 {
     mqtt5Builder->WithClientConnectionSuccessCallback(
         [&connectionPromise, clientName](const OnConnectionSuccessEventData &) {
-            printf("[MQTT5]%s Connection Success.", clientName);
+            AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "[MQTT5]%s Connection Success.", clientName);
             connectionPromise.set_value(true);
         });
 
     mqtt5Builder->WithClientConnectionFailureCallback(
         [&connectionPromise, clientName](const OnConnectionFailureEventData &eventData) {
-            printf("[MQTT5]%s Connection failed with error : %s", clientName, aws_error_debug_str(eventData.errorCode));
+            AWS_LOGF_INFO(
+                AWS_LS_MQTT5_GENERAL,
+                "[MQTT5]%s Connection failed with error : %s",
+                clientName,
+                aws_error_debug_str(eventData.errorCode));
             connectionPromise.set_value(false);
         });
 
     mqtt5Builder->WithClientStoppedCallback([&stoppedPromise, clientName](const OnStoppedEventData &) {
-        printf("[MQTT5]%s Stopped", clientName);
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "[MQTT5]%s Stopped", clientName);
         stoppedPromise.set_value();
+    });
+}
+
+static void s_setupListenerLifeCycle(
+    Aws::Crt::Mqtt5::Mqtt5ListenerOptions *listenerOptions,
+    std::promise<bool> &connectionPromise,
+    std::promise<void> &stoppedPromise,
+    const char *identity = "Listener")
+{
+
+    listenerOptions->WithListenerAttemptingConnectCallback([identity](const OnAttemptingConnectEventData &) {
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "[MQTT5Listener]%s attempting connection Success.", identity);
+    });
+
+    listenerOptions->WithListenerConnectionSuccessCallback(
+        [&connectionPromise, identity](const OnConnectionSuccessEventData &) {
+            AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "[MQTT5Listener]%s Connection Success.", identity);
+            connectionPromise.set_value(true);
+        });
+
+    listenerOptions->WithListenerConnectionFailureCallback(
+        [&connectionPromise, identity](const OnConnectionFailureEventData &eventData) {
+            AWS_LOGF_INFO(
+                AWS_LS_MQTT5_GENERAL,
+                "[MQTT5Listener]%s Connection failed with error : %s",
+                identity,
+                aws_error_debug_str(eventData.errorCode));
+            connectionPromise.set_value(false);
+        });
+
+    listenerOptions->WithListenerStoppedCallback([&stoppedPromise, identity](const OnStoppedEventData &) {
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "[MQTT5]%s Stopped", identity);
+        stoppedPromise.set_value();
+    });
+
+    listenerOptions->WithListenerDisconnectionCallback([identity](const OnDisconnectionEventData &) {
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "[MQTT5Listener]%s disconnecting Success.", identity);
     });
 }
 
@@ -453,7 +499,7 @@ static int s_TestMqtt5DirectConnectionMinimal(Aws::Crt::Allocator *allocator, vo
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -486,7 +532,7 @@ static int s_TestMqtt5DirectConnectionWithBasicAuth(Aws::Crt::Allocator *allocat
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_BASIC_AUTH);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -525,7 +571,7 @@ static int s_TestMqtt5DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, vo
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_TLS);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -570,7 +616,7 @@ static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocat
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -613,7 +659,7 @@ static int s_TestMqtt5DirectConnectionWithHttpProxy(Aws::Crt::Allocator *allocat
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_TLS);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -662,7 +708,7 @@ static int s_TestMqtt5DirectConnectionFull(Aws::Crt::Allocator *allocator, void 
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -747,7 +793,7 @@ static int s_TestMqtt5WSConnectionMinimal(Aws::Crt::Allocator *allocator, void *
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -802,7 +848,7 @@ static int s_TestMqtt5WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, 
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS_BASIC_AUTH);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -863,7 +909,7 @@ static int s_TestMqtt5WSConnectionWithTLS(Aws::Crt::Allocator *allocator, void *
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS_TLS);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -929,7 +975,7 @@ static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, 
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -996,7 +1042,7 @@ static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, 
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS_TLS);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -1071,7 +1117,7 @@ static int s_TestMqtt5WSConnectionFull(Aws::Crt::Allocator *allocator, void *)
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -1179,7 +1225,7 @@ static int s_TestMqtt5DirectInvalidHostname(Aws::Crt::Allocator *allocator, void
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -1211,7 +1257,7 @@ static int s_TestMqtt5DirectInvalidPort(Aws::Crt::Allocator *allocator, void *)
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -1243,7 +1289,7 @@ static int s_TestMqtt5WSInvalidPort(Aws::Crt::Allocator *allocator, void *)
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -1297,7 +1343,7 @@ static int s_TestMqtt5SocketTimeout(Aws::Crt::Allocator *allocator, void *)
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -1318,7 +1364,10 @@ static int s_TestMqtt5SocketTimeout(Aws::Crt::Allocator *allocator, void *)
     // Override connection failed callback
     mqtt5Options.WithClientConnectionFailureCallback(
         [&connectionPromise](const OnConnectionFailureEventData &eventData) {
-            printf("[MQTT5]Client Connection failed with error : %s", aws_error_debug_str(eventData.errorCode));
+            AWS_LOGF_INFO(
+                AWS_LS_MQTT5_GENERAL,
+                "[MQTT5]Client Connection failed with error : %s",
+                aws_error_debug_str(eventData.errorCode));
             ASSERT_TRUE(eventData.errorCode == AWS_IO_SOCKET_TIMEOUT);
             connectionPromise.set_value(false);
             return 0;
@@ -1343,7 +1392,7 @@ static int s_TestMqtt5IncorrectBasicAuth(Aws::Crt::Allocator *allocator, void *)
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_BASIC_AUTH);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -1380,7 +1429,7 @@ static int s_TestMqtt5IncorrectWSConnect(Aws::Crt::Allocator *allocator, void *)
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -1428,7 +1477,7 @@ static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -1452,7 +1501,10 @@ static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void
     mqtt5Options.WithClientDisconnectionCallback([&disconnectionPromise](const OnDisconnectionEventData &eventData) {
         if (eventData.errorCode != 0)
         {
-            printf("[MQTT5]Client1 disconnected with error : %s", aws_error_debug_str(eventData.errorCode));
+            AWS_LOGF_INFO(
+                AWS_LS_MQTT5_GENERAL,
+                "[MQTT5]Client1 disconnected with error : %s",
+                aws_error_debug_str(eventData.errorCode));
             disconnectionPromise.set_value();
         }
         return 0;
@@ -1504,7 +1556,7 @@ static int s_TestMqtt5NegotiatedSettingsHappy(Aws::Crt::Allocator *allocator, vo
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -1526,7 +1578,7 @@ static int s_TestMqtt5NegotiatedSettingsHappy(Aws::Crt::Allocator *allocator, vo
 
     // Override the ConnectionSuccessCallback to validate the negotiatedSettings
     mqtt5Options.WithClientConnectionSuccessCallback([&](const OnConnectionSuccessEventData &eventData) {
-        printf("[MQTT5]Client Connection Success.");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "[MQTT5]Client Connection Success.");
         ASSERT_TRUE(eventData.negotiatedSettings->getSessionExpiryIntervalSec() == SESSION_EXPIRY_INTERVAL_SEC);
         connectionPromise.set_value(true);
         return 0;
@@ -1557,7 +1609,7 @@ static int s_TestMqtt5NegotiatedSettingsFull(Aws::Crt::Allocator *allocator, voi
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -1582,7 +1634,7 @@ static int s_TestMqtt5NegotiatedSettingsFull(Aws::Crt::Allocator *allocator, voi
 
     // Override the ConnectionSuccessCallback to validate the negotiatedSettings
     mqtt5Options.WithClientConnectionSuccessCallback([&](const OnConnectionSuccessEventData &eventData) {
-        printf("[MQTT5]Client Connection Success.");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "[MQTT5]Client Connection Success.");
         std::shared_ptr<NegotiatedSettings> settings = eventData.negotiatedSettings;
         ASSERT_TRUE(settings->getSessionExpiryIntervalSec() == SESSION_EXPIRY_INTERVAL_SEC);
         ASSERT_TRUE(settings->getClientId() == CLIENT_ID);
@@ -1616,7 +1668,7 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -1743,7 +1795,7 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -1820,7 +1872,7 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *)
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -1907,7 +1959,7 @@ static int s_TestMqtt5NullPublish(Aws::Crt::Allocator *allocator, void *)
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -1951,7 +2003,7 @@ static int s_TestMqtt5NullSubscribe(Aws::Crt::Allocator *allocator, void *)
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -1994,7 +2046,7 @@ static int s_TestMqtt5NullUnsubscribe(Aws::Crt::Allocator *allocator, void *)
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -2035,7 +2087,7 @@ static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *)
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -2074,7 +2126,7 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *)
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -2177,7 +2229,7 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *)
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -2284,7 +2336,7 @@ static int s_TestIoTMqtt5ConnectWithmTLS(Aws::Crt::Allocator *allocator, void *)
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
         return AWS_ERROR_SUCCESS;
     }
 
@@ -2322,7 +2374,7 @@ static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, vo
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
         return AWS_ERROR_SUCCESS;
     }
 
@@ -2334,7 +2386,7 @@ static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, vo
         Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(defaultConfig);
     if (!provider)
     {
-        fprintf(stderr, "Failure to create credentials provider!\n");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Failure to create credentials provider!\n");
         exit(-1);
     }
     Aws::Iot::WebsocketConfig websocketConfig("us-east-1", provider);
@@ -2369,7 +2421,7 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuth(Aws::Crt::Allocator *alloc
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
         return AWS_ERROR_SUCCESS;
     }
 
@@ -2392,7 +2444,7 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuth(Aws::Crt::Allocator *alloc
 
     if (error != AWS_OP_SUCCESS)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
         return AWS_ERROR_SUCCESS;
     }
 
@@ -2439,7 +2491,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *all
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     struct aws_string *authname = NULL;
@@ -2452,7 +2504,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *all
 
     if (error != AWS_OP_SUCCESS)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
         return AWS_ERROR_SUCCESS;
     }
 
@@ -2494,7 +2546,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets(Aws::Crt::Allo
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     struct aws_string *authname = NULL;
@@ -2507,7 +2559,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets(Aws::Crt::Allo
 
     if (error != AWS_OP_SUCCESS)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
         return AWS_ERROR_SUCCESS;
     }
 
@@ -2552,7 +2604,7 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Alloca
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
         return AWS_ERROR_SUCCESS;
     }
 
@@ -2575,7 +2627,7 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Alloca
 
     if (error != AWS_OP_SUCCESS)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
         return AWS_ERROR_SUCCESS;
     }
 
@@ -2629,7 +2681,7 @@ static int s_TestMqtt5InterruptSub(Aws::Crt::Allocator *allocator, void *)
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
         return AWS_ERROR_SUCCESS;
     }
 
@@ -2677,7 +2729,7 @@ static int s_TestMqtt5InterruptUnsub(Aws::Crt::Allocator *allocator, void *)
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
         return AWS_ERROR_SUCCESS;
     }
 
@@ -2727,7 +2779,7 @@ static int s_TestMqtt5InterruptPublishQoS1(Aws::Crt::Allocator *allocator, void 
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
         return AWS_ERROR_SUCCESS;
     }
 
@@ -2780,7 +2832,7 @@ static int s_TestMqtt5OperationStatisticsSimple(Aws::Crt::Allocator *allocator, 
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
     {
-        printf("Environment Variables are not set for the test, skip the test");
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
     }
 
     ApiHandle apiHandle(allocator);
@@ -2826,9 +2878,452 @@ static int s_TestMqtt5OperationStatisticsSimple(Aws::Crt::Allocator *allocator, 
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
 
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5OperationStatisticsSimple, s_TestMqtt5OperationStatisticsSimple)
+
+//////////////////////////////////////////////////////////
+// Mqtt5 Listener Tests
+//////////////////////////////////////////////////////////
+
+/*
+ * [LNew-UC1] Happy path. Minimal creation and cleanup
+ */
+static int s_TestMqtt5NewListenerMin(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    // Hardcoded the host name and port for creation test
+    mqtt5Options.WithHostName("localhost").WithPort(1883);
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(mqtt5Client);
+
+    Mqtt5::Mqtt5ListenerOptions listenerOptions;
+    std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
+        Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, mqtt5Client, allocator);
+    ASSERT_TRUE(mqtt5Listener);
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(Mqtt5NewListenerMinimal, s_TestMqtt5NewListenerMin)
+
+/*
+ * [LNEW-UC2] Happy Path. Full setup and cleanup
+ */
+static int s_TestMqtt5NewListenerFull(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    // Hardcoded the host name and port for creation test
+    mqtt5Options.WithHostName("localhost").WithPort(1883);
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(mqtt5Client);
+
+    Mqtt5::Mqtt5ListenerOptions listenerOptions;
+
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+
+    s_setupListenerLifeCycle(&listenerOptions, connectionPromise, stoppedPromise);
+
+    listenerOptions.WithListenerPublishReceivedCallback([](const PublishReceivedEventData &eventData) {
+        String topic = eventData.publishPacket->getTopic();
+        AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "[MQTT5Listener] message received on topic: %s.", topic.c_str());
+        return false;
+    });
+
+    std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
+        Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, mqtt5Client, allocator);
+    ASSERT_TRUE(mqtt5Listener);
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(Mqtt5NewListenerFull, s_TestMqtt5NewListenerFull)
+
+/* [LNEW-UC4] Invalid Mqtt5Client */
+static int s_TestMqtt5NewListenerNullClient(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+
+    Mqtt5::Mqtt5ListenerOptions listenerOptions;
+    std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
+        Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, nullptr, allocator);
+    ASSERT_FALSE(mqtt5Listener);
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(Mqtt5NewListenerNullClient, s_TestMqtt5NewListenerNullClient)
+
+/*
+ * [LFT-UC1] LifecycleEvent Callback Test
+ */
+static int s_TestMqtt5ListenerLifecycleEvent(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    /* Setup Mqtt5 Client */
+    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+        mqtt5TestVars.m_hostname_string,
+        mqtt5TestVars.m_certificate_path_string.c_str(),
+        mqtt5TestVars.m_private_key_path_string.c_str(),
+        allocator);
+
+    std::promise<bool> clientConnectionPromise;
+    std::promise<void> clientStoppedPromise;
+
+    s_setupConnectionLifeCycle(builder, clientConnectionPromise, clientStoppedPromise);
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
+    ASSERT_TRUE(mqtt5Client);
+    delete builder;
+
+    /* Setup Mqtt5 Listener */
+    Mqtt5::Mqtt5ListenerOptions listenerOptions;
+
+    std::promise<bool> listenerConnectionPromise;
+    std::promise<void> listenerStoppedPromise;
+
+    s_setupListenerLifeCycle(&listenerOptions, listenerConnectionPromise, listenerStoppedPromise);
+
+    std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
+        Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, mqtt5Client, allocator);
+    ASSERT_TRUE(mqtt5Listener);
+
+    ASSERT_TRUE(mqtt5Client->Start());
+
+    ASSERT_TRUE(clientConnectionPromise.get_future().get());
+    ASSERT_TRUE(listenerConnectionPromise.get_future().get());
+
+    ASSERT_TRUE(mqtt5Client->Stop());
+
+    clientStoppedPromise.get_future().get();
+    listenerStoppedPromise.get_future().get();
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(Mqtt5ListenerLifecycleEvent, s_TestMqtt5ListenerLifecycleEvent)
+
+/*
+ * [LFT-UC2] Remove Mqtt5Listener for LifecycleEvent
+ */
+static int s_TestMqtt5ListenerRemoveLifecycleEvent(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    /* Setup Mqtt5 Client */
+    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+        mqtt5TestVars.m_hostname_string,
+        mqtt5TestVars.m_certificate_path_string.c_str(),
+        mqtt5TestVars.m_private_key_path_string.c_str(),
+        allocator);
+
+    std::promise<bool> clientConnectionPromise;
+    std::promise<void> clientStoppedPromise;
+
+    s_setupConnectionLifeCycle(builder, clientConnectionPromise, clientStoppedPromise);
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
+    ASSERT_TRUE(mqtt5Client);
+    delete builder;
+
+    /* Setup Mqtt5 Listener */
+    Mqtt5::Mqtt5ListenerOptions listenerOptions;
+
+    std::promise<bool> listenerConnectionPromise;
+    bool listenerStopped = false;
+
+    listenerOptions.WithListenerConnectionSuccessCallback(
+        [&listenerConnectionPromise](const OnConnectionSuccessEventData &) {
+            AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "[MQTT5Listener]Listener Connection Success.");
+            listenerConnectionPromise.set_value(true);
+        });
+
+    listenerOptions.WithListenerConnectionFailureCallback(
+        [&listenerConnectionPromise](const OnConnectionFailureEventData &eventData) {
+            AWS_LOGF_INFO(
+                AWS_LS_MQTT5_GENERAL,
+                "[MQTT5Listener]Listener Connection failed with error : %s",
+                aws_error_debug_str(eventData.errorCode));
+            listenerConnectionPromise.set_value(false);
+        });
+
+    listenerOptions.WithListenerStoppedCallback([&listenerStopped](const OnStoppedEventData &) {
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "[MQTT5]Listener Stopped");
+        listenerStopped = true;
+    });
+
+    std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
+        Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, mqtt5Client, allocator);
+    ASSERT_TRUE(mqtt5Listener);
+
+    ASSERT_TRUE(mqtt5Client->Start());
+
+    ASSERT_TRUE(clientConnectionPromise.get_future().get());
+    ASSERT_TRUE(listenerConnectionPromise.get_future().get());
+
+    /* Wait 5s for mqtt5Listener closed */
+    aws_thread_current_sleep(5000ULL * 1000 * 1000);
+    ASSERT_TRUE(mqtt5Client->Stop());
+
+    clientStoppedPromise.get_future().get();
+    // When client stop promise get set, the listener stop callback should already invoked.
+    ASSERT_FALSE(listenerStopped);
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(Mqtt5ListenerRemoveLifecycleEvent, s_TestMqtt5ListenerRemoveLifecycleEvent)
+
+/*
+ * [LFT-UC3] ListenerPublishReceived Callback Test
+ */
+static int s_TestMqtt5ListenerPublishReceivedCallback(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    const String TEST_TOPIC = "test/MQTT5_Binding_CPP" + Aws::Crt::UUID().ToString();
+    const String LISTENER_TOPIC = "test/Listener/MQTT5_Binding_CPP" + Aws::Crt::UUID().ToString();
+
+    /* Setup Mqtt5 Client */
+    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+        mqtt5TestVars.m_hostname_string,
+        mqtt5TestVars.m_certificate_path_string.c_str(),
+        mqtt5TestVars.m_private_key_path_string.c_str(),
+        allocator);
+
+    /* Setup subscriber */
+    std::promise<bool> clientConnectionPromise;
+    std::promise<void> clientStoppedPromise;
+    s_setupConnectionLifeCycle(builder, clientConnectionPromise, clientStoppedPromise);
+
+    std::promise<void> clientMessageReceived;
+    std::promise<void> listenerMessageReceived;
+
+    /* Mqtt5Client setup publish received callback for subscriber */
+    int clientTestMessageCount = 0;
+    int clientListenerMessageCount = 0;
+    builder->WithPublishReceivedCallback(
+        [&clientMessageReceived, &clientTestMessageCount, &clientListenerMessageCount, TEST_TOPIC, LISTENER_TOPIC](
+            const PublishReceivedEventData &eventData) {
+            String topic = eventData.publishPacket->getTopic();
+            if (topic == TEST_TOPIC)
+            {
+                ++clientTestMessageCount;
+            }
+            if (topic == LISTENER_TOPIC)
+            {
+                ++clientListenerMessageCount;
+            }
+            clientMessageReceived.set_value();
+        });
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
+    ASSERT_TRUE(mqtt5Client);
+
+    delete builder;
+
+    /* Setup Mqtt5 Listener */
+    Mqtt5::Mqtt5ListenerOptions listenerOptions;
+
+    int listenerTestMessageCount = 0;
+    int listenerListenerMessageCount = 0;
+    listenerOptions.WithListenerPublishReceivedCallback([&listenerMessageReceived,
+                                                         &listenerListenerMessageCount,
+                                                         LISTENER_TOPIC](const PublishReceivedEventData &eventData) {
+        String topic = eventData.publishPacket->getTopic();
+        if (topic == LISTENER_TOPIC)
+        {
+            ++listenerListenerMessageCount;
+            listenerMessageReceived.set_value();
+            return true;
+        }
+        return false;
+    });
+
+    std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
+        Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, mqtt5Client, allocator);
+    ASSERT_TRUE(mqtt5Listener);
+
+    /* Start client*/
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(clientConnectionPromise.get_future().get());
+
+    /* Subscribe to test topic and listener topic */
+    Mqtt5::Subscription subscription1(TEST_TOPIC, Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+    subscription1.WithNoLocal(false);
+    Mqtt5::Subscription subscription2(LISTENER_TOPIC, Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+    subscription1.WithNoLocal(false);
+    std::shared_ptr<Mqtt5::SubscribePacket> subscribe = std::make_shared<Mqtt5::SubscribePacket>(allocator);
+    subscribe->WithSubscription(std::move(subscription1));
+    subscribe->WithSubscription(std::move(subscription2));
+    std::promise<void> subscribed;
+    ASSERT_TRUE(mqtt5Client->Subscribe(
+        subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
+    subscribed.get_future().get();
+
+    /* Publish message 1 to test topic */
+    ByteBuf payload = Aws::Crt::ByteBufFromCString("Hello World");
+    std::shared_ptr<Mqtt5::PublishPacket> test_publish = std::make_shared<Mqtt5::PublishPacket>(
+        TEST_TOPIC, ByteCursorFromByteBuf(payload), Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+    ASSERT_TRUE(mqtt5Client->Publish(test_publish));
+
+    std::shared_ptr<Mqtt5::PublishPacket> listener_publish = std::make_shared<Mqtt5::PublishPacket>(
+        LISTENER_TOPIC, ByteCursorFromByteBuf(payload), Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+    ASSERT_TRUE(mqtt5Client->Publish(listener_publish));
+
+    /* Wait for message processing. If we failed to get the future
+     * successfully, it usually means the test failed. */
+    clientMessageReceived.get_future().get();
+    listenerMessageReceived.get_future().get();
+
+    ASSERT_TRUE(clientTestMessageCount > 0);
+    ASSERT_TRUE(clientListenerMessageCount == 0);
+    ASSERT_TRUE(listenerTestMessageCount == 0);
+    ASSERT_TRUE(listenerListenerMessageCount > 0);
+
+    /* Stop the session */
+    ASSERT_TRUE(mqtt5Client->Stop());
+    clientStoppedPromise.get_future().get();
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(Mqtt5ListenerPublishReceivedCallback, s_TestMqtt5ListenerPublishReceivedCallback)
+
+/*
+ * [LFT-UC4] Remove Mqtt5Listener for ListenerPublishReceived
+ */
+static int s_TestMqtt5ListenerRemovePublishReceived(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    const String TEST_TOPIC = "test/MQTT5_Binding_CPP" + Aws::Crt::UUID().ToString();
+
+    /* Setup Mqtt5 Client */
+    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+        mqtt5TestVars.m_hostname_string,
+        mqtt5TestVars.m_certificate_path_string.c_str(),
+        mqtt5TestVars.m_private_key_path_string.c_str(),
+        allocator);
+
+    /* Setup subscriber */
+    std::promise<bool> clientConnectionPromise;
+    std::promise<void> clientStoppedPromise;
+    s_setupConnectionLifeCycle(builder, clientConnectionPromise, clientStoppedPromise);
+
+    std::promise<void> clientMessageReceived;
+    std::promise<void> listenerMessageReceived;
+
+    /* Mqtt5Client setup publish received callback for subscriber */
+    int clientTestMessageCount = 0;
+    builder->WithPublishReceivedCallback(
+        [&clientMessageReceived, &clientTestMessageCount](const PublishReceivedEventData &) {
+            ++clientTestMessageCount;
+            clientMessageReceived.set_value();
+        });
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
+    ASSERT_TRUE(mqtt5Client);
+
+    delete builder;
+
+    /* Setup Mqtt5 Listener */
+    Mqtt5::Mqtt5ListenerOptions listenerOptions;
+
+    int listenerTestMessageCount = 0;
+    listenerOptions.WithListenerPublishReceivedCallback(
+        [&listenerMessageReceived, &listenerTestMessageCount](const PublishReceivedEventData &) {
+            ++listenerTestMessageCount;
+            listenerMessageReceived.set_value();
+            return true;
+        });
+
+    std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
+        Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, mqtt5Client, allocator);
+    ASSERT_TRUE(mqtt5Listener);
+
+    /* Start client */
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(clientConnectionPromise.get_future().get());
+
+    /* Subscribe to test topic and listener topic */
+    Mqtt5::Subscription subscription1(TEST_TOPIC, Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+    subscription1.WithNoLocal(false);
+    std::shared_ptr<Mqtt5::SubscribePacket> subscribe = std::make_shared<Mqtt5::SubscribePacket>(allocator);
+    subscribe->WithSubscription(std::move(subscription1));
+    std::promise<void> subscribed;
+    ASSERT_TRUE(mqtt5Client->Subscribe(
+        subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
+    subscribed.get_future().get();
+
+    /* Publish 1st message */
+    ByteBuf payload = Aws::Crt::ByteBufFromCString("Hello World");
+    std::shared_ptr<Mqtt5::PublishPacket> test_publish = std::make_shared<Mqtt5::PublishPacket>(
+        TEST_TOPIC, ByteCursorFromByteBuf(payload), Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+    ASSERT_TRUE(mqtt5Client->Publish(test_publish));
+
+    /* Wait for message processing */
+    listenerMessageReceived.get_future().get();
+
+    ASSERT_TRUE(clientTestMessageCount == 0);
+    ASSERT_TRUE(listenerTestMessageCount == 1);
+
+    /* Wait for listener closed */
+    aws_thread_current_sleep(5000ULL * 1000 * 1000);
+
+    /* Publish 2nd message */
+    ASSERT_TRUE(mqtt5Client->Publish(test_publish));
+
+    /* Wait for message processing */
+    clientMessageReceived.get_future().get();
+
+    ASSERT_TRUE(clientTestMessageCount == 1);
+    ASSERT_TRUE(listenerTestMessageCount == 1);
+
+    /* Stop the session */
+    ASSERT_TRUE(mqtt5Client->Stop());
+    clientStoppedPromise.get_future().get();
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(Mqtt5ListenerRemovePublishReceived, s_TestMqtt5ListenerRemovePublishReceived)
 
 #endif // !BYO_CRYPTO

@@ -133,6 +133,9 @@ endif()
 #MQTT5 related tests
 add_test_case(Mqtt5NewClientMinimal)
 add_test_case(Mqtt5NewClientFull)
+add_test_case(Mqtt5NewListenerMinimal)
+add_test_case(Mqtt5NewListenerFull)
+add_test_case(Mqtt5NewListenerNullClient)
 if(ENABLE_MQTT5_TEST AND NOT BYO_CRYPTO)
     add_net_test_case(Mqtt5DirectConnectionMinimal)
     add_net_test_case(Mqtt5DirectConnectionWithBasicAuth)
@@ -178,6 +181,12 @@ if(ENABLE_MQTT5_TEST AND NOT BYO_CRYPTO)
     add_net_test_case(Mqtt5InterruptUnsub)
     add_net_test_case(Mqtt5InterruptPublishQoS1)
     add_net_test_case(Mqtt5OperationStatisticsSimple)
+
+    # MQTT5 LISTENER TEST
+    add_net_test_case(Mqtt5ListenerLifecycleEvent)
+    add_net_test_case(Mqtt5ListenerRemoveLifecycleEvent)
+    add_net_test_case(Mqtt5ListenerPublishReceivedCallback)
+    add_net_test_case(Mqtt5ListenerRemovePublishReceived)
 endif()
 
 add_test_case(RuleEngine)

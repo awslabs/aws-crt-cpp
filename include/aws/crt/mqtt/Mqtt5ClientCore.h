@@ -24,6 +24,7 @@ namespace Aws
             class AWS_CRT_CPP_API Mqtt5ClientCore final : public std::enable_shared_from_this<Mqtt5ClientCore>
             {
                 friend Mqtt5Client;
+                friend Mqtt5ListenerCore;
 
               public:
                 /**

@@ -26,6 +26,7 @@ namespace Aws
             class UnsubscribePacket;
             class UnSubAckPacket;
             class Mqtt5ClientCore;
+            class Mqtt5ListenerCore;
 
             struct AWS_CRT_CPP_API ReconnectOptions
             {
@@ -214,6 +215,8 @@ namespace Aws
              */
             class AWS_CRT_CPP_API Mqtt5Client final : public std::enable_shared_from_this<Mqtt5Client>
             {
+                friend Mqtt5ListenerCore;
+
               public:
                 /**
                  * Factory function for mqtt5 client
