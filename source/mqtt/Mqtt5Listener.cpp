@@ -46,15 +46,9 @@ namespace Aws
                 return shared_listener;
             }
 
-            Mqtt5ListenerCore::operator bool() const noexcept
-            {
-                return m_listener != nullptr;
-            }
+            Mqtt5ListenerCore::operator bool() const noexcept { return m_listener != nullptr; }
 
-            int Mqtt5ListenerCore::LastError() const noexcept
-            {
-                return aws_last_error();
-            }
+            int Mqtt5ListenerCore::LastError() const noexcept { return aws_last_error(); }
 
             void Mqtt5ListenerCore::Close() noexcept
             {
