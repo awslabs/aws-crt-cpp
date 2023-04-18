@@ -323,7 +323,7 @@ namespace Aws
                 Allocator *allocator) noexcept
                 : m_allocator(allocator)
             {
-                m_listener_core = Mqtt5ListenerCore::NewMqtt5ListenerCore(options, client, allocator);
+                m_listener_core = Mqtt5ListenerCore::NewMqtt5ListenerCore(options, client, m_allocator);
             }
 
             Mqtt5::Mqtt5Listener::~Mqtt5Listener()
