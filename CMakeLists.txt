@@ -57,7 +57,7 @@ option(AWS_IOT_SDK_VERSION "Set the version reported by Aws::Iot::MqttClientConn
 # ToDo: Scripts to populate environment variables via the CLI and IoT, SecretsManager calls
 #
 option(ENABLE_PROXY_INTEGRATION_TESTS "Whether or not to build and run the proxy integration tests that rely on a proxy server installed and running locally" OFF)
-option(ENABLE_MQTT5_TEST "Whether or not to build and run the mqtt5 integration reply on a proxy server running locally" OFF)
+option(ENABLE_MQTT5_TEST "Whether or not to build and run the mqtt5 integration reply on a proxy server running locally" ON)
 
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")

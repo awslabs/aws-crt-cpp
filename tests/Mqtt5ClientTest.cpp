@@ -102,11 +102,17 @@ struct Mqtt5TestEnvVars
             {
                 m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_direct_hostName, &m_hostname);
                 m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_direct_port, &m_port);
-                if (m_error == AWS_OP_SUCCESS)
+                if (m_error != AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = aws_string_c_str(m_hostname);
-                    m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
+                    return;
                 }
+                if (m_hostname == NULL || m_port == NULL)
+                {
+                    m_error = AWS_OP_ERR;
+                    return;
+                }
+                m_hostname_string = aws_string_c_str(m_hostname);
+                m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
                 break;
             }
             case MQTT5CONNECT_DIRECT_BASIC_AUTH:
@@ -117,13 +123,19 @@ struct Mqtt5TestEnvVars
                 m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_basic_username, &m_username);
                 m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_basic_password, &m_password);
 
-                if (m_error == AWS_OP_SUCCESS)
+                if (m_error != AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = aws_string_c_str(m_hostname);
-                    m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
-                    m_username_string = aws_string_c_str(m_username);
-                    m_password_cursor = ByteCursorFromArray(m_password->bytes, m_password->len);
+                    return;
                 }
+                if (m_hostname == NULL || m_port == NULL || m_username == NULL || m_password == NULL)
+                {
+                    m_error = AWS_OP_ERR;
+                    return;
+                }
+                m_hostname_string = aws_string_c_str(m_hostname);
+                m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
+                m_username_string = aws_string_c_str(m_username);
+                m_password_cursor = ByteCursorFromArray(m_password->bytes, m_password->len);
                 break;
             }
             case MQTT5CONNECT_DIRECT_TLS:
@@ -133,13 +145,19 @@ struct Mqtt5TestEnvVars
                 m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_certificate, &m_certificate_path);
                 m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_private_key, &m_private_key_path);
 
-                if (m_error == AWS_OP_SUCCESS)
+                if (m_error != AWS_OP_SUCCESS)
                 {
-                    m_hostname_string = aws_string_c_str(m_hostname);
-                    m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
-                    m_certificate_path_string = aws_string_c_str(m_certificate_path);
-                    m_private_key_path_string = aws_string_c_str(m_private_key_path);
+                    return;
                 }
+                if (m_hostname == NULL || m_port == NULL || m_certificate_path == NULL || m_private_key_path == NULL)
+                {
+                    m_error = AWS_OP_ERR;
+                    return;
+                }
+                m_hostname_string = aws_string_c_str(m_hostname);
+                m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
+                m_certificate_path_string = aws_string_c_str(m_certificate_path);
+                m_private_key_path_string = aws_string_c_str(m_private_key_path);
                 break;
             }
             case MQTT5CONNECT_WS:
@@ -147,7 +165,15 @@ struct Mqtt5TestEnvVars
                 m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_websocket_hostName, &m_hostname);
                 m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_websocket_port, &m_port);
 
-                if (m_error == AWS_OP_SUCCESS)
+                if (m_error != AWS_OP_SUCCESS)
+                {
+                    return;
+                }
+                if (m_hostname == NULL || m_port == NULL)
+                {
+                    m_error = AWS_OP_ERR;
+                    return;
+                }
                 {
                     m_hostname_string = aws_string_c_str(m_hostname);
                     m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
@@ -163,7 +189,15 @@ struct Mqtt5TestEnvVars
                 m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_basic_username, &m_username);
                 m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_basic_password, &m_password);
 
-                if (m_error == AWS_OP_SUCCESS)
+                if (m_error != AWS_OP_SUCCESS)
+                {
+                    return;
+                }
+                if (m_hostname == NULL || m_port == NULL || m_username == NULL || m_password == NULL)
+                {
+                    m_error = AWS_OP_ERR;
+                    return;
+                }
                 {
                     m_hostname_string = aws_string_c_str(m_hostname);
                     m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
@@ -180,7 +214,15 @@ struct Mqtt5TestEnvVars
                 m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_certificate, &m_certificate_path);
                 m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_private_key, &m_private_key_path);
 
-                if (m_error == AWS_OP_SUCCESS)
+                if (m_error != AWS_OP_SUCCESS)
+                {
+                    return;
+                }
+                if (m_hostname == NULL || m_port == NULL || m_certificate_path == NULL || m_private_key_path == NULL)
+                {
+                    m_error = AWS_OP_ERR;
+                    return;
+                }
                 {
                     m_hostname_string = aws_string_c_str(m_hostname);
                     m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
@@ -196,7 +238,15 @@ struct Mqtt5TestEnvVars
                     aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_certificate, &m_certificate_path);
                 m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_key, &m_private_key_path);
 
-                if (m_error == AWS_OP_SUCCESS)
+                if (m_error != AWS_OP_SUCCESS)
+                {
+                    return;
+                }
+                if (m_hostname == NULL || m_certificate_path == NULL || m_private_key_path == NULL)
+                {
+                    m_error = AWS_OP_ERR;
+                    return;
+                }
                 {
                     m_hostname_string = aws_string_c_str(m_hostname);
                     m_certificate_path_string = aws_string_c_str(m_certificate_path);
@@ -214,7 +264,7 @@ struct Mqtt5TestEnvVars
         m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_proxy_hostname, &m_httpproxy_hostname);
         m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_proxy_port, &m_httpproxy_port);
 
-        if (m_error == AWS_OP_SUCCESS)
+        if (m_error == AWS_OP_SUCCESS && m_httpproxy_hostname != NULL && m_httpproxy_port != NULL)
         {
             m_httpproxy_hostname_string = aws_string_c_str(m_httpproxy_hostname);
             m_httpproxy_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_httpproxy_port)));
@@ -410,7 +460,7 @@ static int s_TestMqtt5NewClientMin(Aws::Crt::Allocator *allocator, void *)
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
 
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5NewClientMinimal, s_TestMqtt5NewClientMin)
@@ -482,7 +532,7 @@ static int s_TestMqtt5NewClientFull(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5NewClientFull, s_TestMqtt5NewClientFull)
@@ -500,6 +550,7 @@ static int s_TestMqtt5DirectConnectionMinimal(Aws::Crt::Allocator *allocator, vo
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -519,7 +570,7 @@ static int s_TestMqtt5DirectConnectionMinimal(Aws::Crt::Allocator *allocator, vo
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5DirectConnectionMinimal, s_TestMqtt5DirectConnectionMinimal)
@@ -533,6 +584,7 @@ static int s_TestMqtt5DirectConnectionWithBasicAuth(Aws::Crt::Allocator *allocat
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -558,7 +610,7 @@ static int s_TestMqtt5DirectConnectionWithBasicAuth(Aws::Crt::Allocator *allocat
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5DirectConnectionWithBasicAuth, s_TestMqtt5DirectConnectionWithBasicAuth)
@@ -572,6 +624,7 @@ static int s_TestMqtt5DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, vo
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -602,7 +655,7 @@ static int s_TestMqtt5DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, vo
     connectionPromise.get_future().get();
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5DirectConnectionWithTLS, s_TestMqtt5DirectConnectionWithTLS)
@@ -617,6 +670,7 @@ static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocat
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -646,7 +700,7 @@ static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocat
     connectionPromise.get_future().get();
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5DirectConnectionWithMutualTLS, s_TestMqtt5DirectConnectionWithMutualTLS)
@@ -660,6 +714,7 @@ static int s_TestMqtt5DirectConnectionWithHttpProxy(Aws::Crt::Allocator *allocat
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -668,6 +723,11 @@ static int s_TestMqtt5DirectConnectionWithHttpProxy(Aws::Crt::Allocator *allocat
     mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string).WithPort(mqtt5TestVars.m_port_value);
 
     // HTTP PROXY
+    if (mqtt5TestVars.m_httpproxy_hostname->len == 0)
+    {
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "HTTP PROXY Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SUCCESS;
+    }
     Aws::Crt::Http::HttpClientConnectionProxyOptions proxyOptions;
     proxyOptions.HostName = mqtt5TestVars.m_httpproxy_hostname_string;
     proxyOptions.Port = mqtt5TestVars.m_httpproxy_port_value;
@@ -695,7 +755,7 @@ static int s_TestMqtt5DirectConnectionWithHttpProxy(Aws::Crt::Allocator *allocat
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5DirectConnectionWithHttpProxy, s_TestMqtt5DirectConnectionWithHttpProxy)
@@ -709,6 +769,7 @@ static int s_TestMqtt5DirectConnectionFull(Aws::Crt::Allocator *allocator, void 
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -777,7 +838,7 @@ static int s_TestMqtt5DirectConnectionFull(Aws::Crt::Allocator *allocator, void 
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5DirectConnectionFull, s_TestMqtt5DirectConnectionFull)
 
@@ -794,6 +855,7 @@ static int s_TestMqtt5WSConnectionMinimal(Aws::Crt::Allocator *allocator, void *
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -835,7 +897,7 @@ static int s_TestMqtt5WSConnectionMinimal(Aws::Crt::Allocator *allocator, void *
     connectionPromise.get_future().get();
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5WSConnectionMinimal, s_TestMqtt5WSConnectionMinimal)
@@ -849,6 +911,7 @@ static int s_TestMqtt5WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, 
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -896,7 +959,7 @@ static int s_TestMqtt5WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, 
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5WSConnectionWithBasicAuth, s_TestMqtt5WSConnectionWithBasicAuth)
@@ -910,6 +973,7 @@ static int s_TestMqtt5WSConnectionWithTLS(Aws::Crt::Allocator *allocator, void *
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -961,7 +1025,7 @@ static int s_TestMqtt5WSConnectionWithTLS(Aws::Crt::Allocator *allocator, void *
     connectionPromise.get_future().get();
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5WSConnectionWithTLS, s_TestMqtt5WSConnectionWithTLS)
@@ -976,6 +1040,7 @@ static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, 
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1028,7 +1093,7 @@ static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, 
     connectionPromise.get_future().get();
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5WSConnectionWithMutualTLS, s_TestMqtt5WSConnectionWithMutualTLS)
@@ -1043,6 +1108,7 @@ static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, 
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1052,6 +1118,11 @@ static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, 
     mqtt5Options.WithPort(443);
 
     // HTTP PROXY
+    if (mqtt5TestVars.m_httpproxy_hostname->len == 0)
+    {
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "HTTP PROXY Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SUCCESS;
+    }
     Aws::Crt::Http::HttpClientConnectionProxyOptions proxyOptions;
     proxyOptions.HostName = mqtt5TestVars.m_httpproxy_hostname_string;
     proxyOptions.Port = mqtt5TestVars.m_httpproxy_port_value;
@@ -1104,7 +1175,7 @@ static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, 
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5WSConnectionWithHttpProxy, s_TestMqtt5WSConnectionWithHttpProxy)
@@ -1118,6 +1189,7 @@ static int s_TestMqtt5WSConnectionFull(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1209,7 +1281,7 @@ static int s_TestMqtt5WSConnectionFull(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5WSConnectionFull, s_TestMqtt5WSConnectionFull)
 
@@ -1226,6 +1298,7 @@ static int s_TestMqtt5DirectInvalidHostname(Aws::Crt::Allocator *allocator, void
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1245,7 +1318,7 @@ static int s_TestMqtt5DirectInvalidHostname(Aws::Crt::Allocator *allocator, void
     ASSERT_FALSE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5InvalidHostname, s_TestMqtt5DirectInvalidHostname)
 
@@ -1258,6 +1331,7 @@ static int s_TestMqtt5DirectInvalidPort(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1277,7 +1351,7 @@ static int s_TestMqtt5DirectInvalidPort(Aws::Crt::Allocator *allocator, void *)
     ASSERT_FALSE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5InvalidPort, s_TestMqtt5DirectInvalidPort)
 
@@ -1290,6 +1364,7 @@ static int s_TestMqtt5WSInvalidPort(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1331,7 +1406,7 @@ static int s_TestMqtt5WSInvalidPort(Aws::Crt::Allocator *allocator, void *)
     ASSERT_FALSE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5WSInvalidPort, s_TestMqtt5WSInvalidPort)
 
@@ -1344,6 +1419,7 @@ static int s_TestMqtt5SocketTimeout(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1380,7 +1456,7 @@ static int s_TestMqtt5SocketTimeout(Aws::Crt::Allocator *allocator, void *)
     ASSERT_FALSE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5SocketTimeout, s_TestMqtt5SocketTimeout)
 
@@ -1393,6 +1469,7 @@ static int s_TestMqtt5IncorrectBasicAuth(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1418,7 +1495,7 @@ static int s_TestMqtt5IncorrectBasicAuth(Aws::Crt::Allocator *allocator, void *)
     ASSERT_FALSE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5IncorrectBasicAuth, s_TestMqtt5IncorrectBasicAuth)
@@ -1430,6 +1507,7 @@ static int s_TestMqtt5IncorrectWSConnect(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1464,7 +1542,7 @@ static int s_TestMqtt5IncorrectWSConnect(Aws::Crt::Allocator *allocator, void *)
     ASSERT_FALSE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5IncorrectWSConnect, s_TestMqtt5IncorrectWSConnect)
@@ -1478,6 +1556,7 @@ static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1535,7 +1614,7 @@ static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void
     stopped2Promise.get_future().get();
     ASSERT_TRUE(mqtt5Client1->Stop());
     stopped1Promise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5DoubleClientIDFailure, s_TestMqtt5DoubleClientIDFailure)
@@ -1557,6 +1636,7 @@ static int s_TestMqtt5NegotiatedSettingsHappy(Aws::Crt::Allocator *allocator, vo
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1591,7 +1671,7 @@ static int s_TestMqtt5NegotiatedSettingsHappy(Aws::Crt::Allocator *allocator, vo
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5NegotiatedSettingsHappy, s_TestMqtt5NegotiatedSettingsHappy)
@@ -1610,6 +1690,7 @@ static int s_TestMqtt5NegotiatedSettingsFull(Aws::Crt::Allocator *allocator, voi
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1650,7 +1731,7 @@ static int s_TestMqtt5NegotiatedSettingsFull(Aws::Crt::Allocator *allocator, voi
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5NegotiatedSettingsFull, s_TestMqtt5NegotiatedSettingsFull)
@@ -1669,6 +1750,7 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1709,7 +1791,7 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
 
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5NegotiatedSettingsLimit, s_TestMqtt5NegotiatedSettingsLimit)
@@ -1722,6 +1804,11 @@ static int s_TestMqtt5NegotiatedSettingsRejoinAlways(Aws::Crt::Allocator *alloca
     static const uint32_t SESSION_EXPIRY_INTERVAL_SEC = 3600;
 
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    if (!mqtt5TestVars)
+    {
+        AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
 
     ApiHandle apiHandle(allocator);
 
@@ -1778,7 +1865,7 @@ static int s_TestMqtt5NegotiatedSettingsRejoinAlways(Aws::Crt::Allocator *alloca
     ASSERT_TRUE(sessionMqtt5Client->Stop());
     sessionStoppedPromise.get_future().get();
 
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5NegotiatedSettingsRejoinAlways, s_TestMqtt5NegotiatedSettingsRejoinAlways)
@@ -1796,6 +1883,7 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1859,7 +1947,7 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
 
     ASSERT_TRUE(receivedCount == 1);
 
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5SubUnsub, s_TestMqtt5SubUnsub)
@@ -1873,6 +1961,7 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1942,7 +2031,7 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(subscriber->Stop());
     subscriberStoppedPromise.get_future().get();
 
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5WillTest, s_TestMqtt5WillTest)
@@ -1960,6 +2049,7 @@ static int s_TestMqtt5NullPublish(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -1990,7 +2080,7 @@ static int s_TestMqtt5NullPublish(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
 
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5NullPublish, s_TestMqtt5NullPublish)
@@ -2004,6 +2094,7 @@ static int s_TestMqtt5NullSubscribe(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -2033,7 +2124,7 @@ static int s_TestMqtt5NullSubscribe(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
 
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5NullSubscribe, s_TestMqtt5NullSubscribe)
@@ -2047,6 +2138,7 @@ static int s_TestMqtt5NullUnsubscribe(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -2077,7 +2169,7 @@ static int s_TestMqtt5NullUnsubscribe(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
 
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5NullUnsubscribe, s_TestMqtt5NullUnsubscribe)
@@ -2088,6 +2180,7 @@ static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -2107,8 +2200,9 @@ static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_FALSE(mqtt5Client);
+    ASSERT_TRUE(LastError() == AWS_ERROR_MQTT5_CLIENT_OPTIONS_VALIDATION);
 
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5NullConnectPacket, s_TestMqtt5NullConnectPacket)
@@ -2127,6 +2221,7 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -2209,7 +2304,7 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(publisher->Stop());
     publisherStoppedPromise.get_future().get();
 
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5QoS1SubPub, s_TestMqtt5QoS1SubPub)
@@ -2230,6 +2325,7 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -2322,7 +2418,7 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *)
     stopped3Promise.get_future().get();
     ASSERT_TRUE(mqtt5Client1->Stop());
     stopped1Promise.get_future().get();
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5RetainSetAndClear, s_TestMqtt5RetainSetAndClear)
@@ -2337,7 +2433,7 @@ static int s_TestIoTMqtt5ConnectWithmTLS(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
-        return AWS_ERROR_SUCCESS;
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -2347,6 +2443,8 @@ static int s_TestIoTMqtt5ConnectWithmTLS(Aws::Crt::Allocator *allocator, void *)
         mqtt5TestVars.m_certificate_path_string.c_str(),
         mqtt5TestVars.m_private_key_path_string.c_str(),
         allocator);
+
+    ASSERT_TRUE(builder);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -2362,7 +2460,7 @@ static int s_TestIoTMqtt5ConnectWithmTLS(Aws::Crt::Allocator *allocator, void *)
     stoppedPromise.get_future().get();
 
     delete builder;
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt5ConnectWithmTLS, s_TestIoTMqtt5ConnectWithmTLS)
 
@@ -2375,7 +2473,7 @@ static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, vo
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
-        return AWS_ERROR_SUCCESS;
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -2393,6 +2491,7 @@ static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, vo
 
     Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWebsocket(
         mqtt5TestVars.m_hostname_string, websocketConfig, allocator);
+    ASSERT_TRUE(builder);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -2408,7 +2507,7 @@ static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, vo
     stoppedPromise.get_future().get();
 
     delete builder;
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(IoTMqtt5ConnectWithWebsocket, s_TestIoTMqtt5ConnectWithWebsocket)
@@ -2422,7 +2521,7 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuth(Aws::Crt::Allocator *alloc
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
-        return AWS_ERROR_SUCCESS;
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -2445,7 +2544,7 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuth(Aws::Crt::Allocator *alloc
     if (error != AWS_OP_SUCCESS)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
-        return AWS_ERROR_SUCCESS;
+        return AWS_OP_SKIP;
     }
 
     Aws::Iot::Mqtt5CustomAuthConfig authConfig(allocator);
@@ -2458,6 +2557,8 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuth(Aws::Crt::Allocator *alloc
 
     Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizer(
         mqtt5TestVars.m_hostname_string, authConfig, allocator);
+    ASSERT_TRUE(builder);
+
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
@@ -2479,7 +2580,7 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuth(Aws::Crt::Allocator *alloc
     aws_string_destroy(tokenSignature);
 
     delete builder;
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt5ConnectWithSigningCustomAuth, s_TestIoTMqtt5ConnectWithSigningCustomAuth)
 
@@ -2492,6 +2593,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *all
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     struct aws_string *authname = NULL;
@@ -2505,7 +2607,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *all
     if (error != AWS_OP_SUCCESS)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
-        return AWS_ERROR_SUCCESS;
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -2516,6 +2618,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *all
 
     Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizer(
         mqtt5TestVars.m_hostname_string, authConfig, allocator);
+    ASSERT_TRUE(builder);
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
@@ -2534,7 +2637,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *all
     aws_string_destroy(password);
 
     delete builder;
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt5ConnectWithNoSigningCustomAuth, s_TestIoTMqtt5ConnectWithNoSigningCustomAuth)
 
@@ -2547,6 +2650,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets(Aws::Crt::Allo
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     struct aws_string *authname = NULL;
@@ -2560,7 +2664,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets(Aws::Crt::Allo
     if (error != AWS_OP_SUCCESS)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
-        return AWS_ERROR_SUCCESS;
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -2574,6 +2678,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets(Aws::Crt::Allo
     Aws::Iot::Mqtt5ClientBuilder *builder =
         Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
             mqtt5TestVars.m_hostname_string, authConfig, websocketConfig, allocator);
+    ASSERT_TRUE(builder);
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
@@ -2592,7 +2697,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets(Aws::Crt::Allo
     aws_string_destroy(password);
 
     delete builder;
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt5ConnectWithNoSigningCustomAuthWebsockets, s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets)
 
@@ -2605,7 +2710,7 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Alloca
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
-        return AWS_ERROR_SUCCESS;
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -2628,7 +2733,7 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Alloca
     if (error != AWS_OP_SUCCESS)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
-        return AWS_ERROR_SUCCESS;
+        return AWS_OP_SKIP;
     }
 
     Aws::Iot::Mqtt5CustomAuthConfig authConfig(allocator);
@@ -2644,6 +2749,7 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Alloca
     Aws::Iot::Mqtt5ClientBuilder *builder =
         Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
             mqtt5TestVars.m_hostname_string, authConfig, websocketConfig, allocator);
+    ASSERT_TRUE(builder);
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
@@ -2665,7 +2771,7 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Alloca
     aws_string_destroy(tokenSignature);
 
     delete builder;
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt5ConnectWithSigningCustomAuthWebsockets, s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets)
 
@@ -2682,7 +2788,7 @@ static int s_TestMqtt5InterruptSub(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
-        return AWS_ERROR_SUCCESS;
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -2692,6 +2798,7 @@ static int s_TestMqtt5InterruptSub(Aws::Crt::Allocator *allocator, void *)
         mqtt5TestVars.m_certificate_path_string.c_str(),
         mqtt5TestVars.m_private_key_path_string.c_str(),
         allocator);
+    ASSERT_TRUE(builder);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -2716,7 +2823,7 @@ static int s_TestMqtt5InterruptSub(Aws::Crt::Allocator *allocator, void *)
     stoppedPromise.get_future().get();
 
     delete builder;
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5InterruptSub, s_TestMqtt5InterruptSub)
@@ -2730,7 +2837,7 @@ static int s_TestMqtt5InterruptUnsub(Aws::Crt::Allocator *allocator, void *)
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
-        return AWS_ERROR_SUCCESS;
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -2740,7 +2847,7 @@ static int s_TestMqtt5InterruptUnsub(Aws::Crt::Allocator *allocator, void *)
         mqtt5TestVars.m_certificate_path_string.c_str(),
         mqtt5TestVars.m_private_key_path_string.c_str(),
         allocator);
-
+    ASSERT_TRUE(builder);
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
@@ -2766,7 +2873,7 @@ static int s_TestMqtt5InterruptUnsub(Aws::Crt::Allocator *allocator, void *)
     stoppedPromise.get_future().get();
 
     delete builder;
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5InterruptUnsub, s_TestMqtt5InterruptUnsub)
@@ -2780,7 +2887,7 @@ static int s_TestMqtt5InterruptPublishQoS1(Aws::Crt::Allocator *allocator, void 
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
-        return AWS_ERROR_SUCCESS;
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
@@ -2790,6 +2897,7 @@ static int s_TestMqtt5InterruptPublishQoS1(Aws::Crt::Allocator *allocator, void 
         mqtt5TestVars.m_certificate_path_string.c_str(),
         mqtt5TestVars.m_private_key_path_string.c_str(),
         allocator);
+    ASSERT_TRUE(builder);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -2815,7 +2923,7 @@ static int s_TestMqtt5InterruptPublishQoS1(Aws::Crt::Allocator *allocator, void 
     stoppedPromise.get_future().get();
 
     delete builder;
-    return AWS_ERROR_SUCCESS;
+    return AWS_OP_SUCCESS;
 }
 
 AWS_TEST_CASE(Mqtt5InterruptPublishQoS1, s_TestMqtt5InterruptPublishQoS1)
@@ -2833,6 +2941,7 @@ static int s_TestMqtt5OperationStatisticsSimple(Aws::Crt::Allocator *allocator, 
     if (!mqtt5TestVars)
     {
         AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
     }
 
     ApiHandle apiHandle(allocator);
