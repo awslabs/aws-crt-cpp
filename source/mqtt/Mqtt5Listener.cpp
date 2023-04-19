@@ -349,14 +349,16 @@ namespace Aws
                 m_listener_core = Mqtt5ListenerCore::NewMqtt5ListenerCore(options, client, m_allocator);
             }
 
-            void Mqtt5Listener::Subscribe(Crt::String topic, Crt::Mqtt5::OnPublishReceivedHandler callback) noexcept {
-                if(m_listener_core!=nullptr)
+            void Mqtt5Listener::Subscribe(Crt::String topic, Crt::Mqtt5::OnPublishReceivedHandler callback) noexcept
+            {
+                if (m_listener_core != nullptr)
                 {
                     m_listener_core->Subscribe(topic, callback);
                 }
             }
-            void Mqtt5Listener::Unsubscribe(Crt::String topic) noexcept {
-                if(m_listener_core != nullptr)
+            void Mqtt5Listener::Unsubscribe(Crt::String topic) noexcept
+            {
+                if (m_listener_core != nullptr)
                 {
                     m_listener_core->Unsubscribe(topic);
                 }
