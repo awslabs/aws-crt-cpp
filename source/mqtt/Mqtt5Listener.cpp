@@ -2,6 +2,7 @@
 #include <aws/crt/mqtt/Mqtt5Listener.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
+#include "Mqtt5Listener.h"
 
 namespace Aws
 {
@@ -350,6 +351,18 @@ namespace Aws
                 m_listener_core = Mqtt5ListenerCore::NewMqtt5ListenerCore(options, client, m_allocator);
             }
 
+            void Mqtt5Listener::Subscribe(Crt::String topic, Crt::Mqtt5::OnPublishReceivedHandler callback) noexcept {
+                if(m_listener_core!=nullptr)
+                {
+                    m_listener_core->Subscribe(topic, callback);
+                }
+            }
+            void Mqtt5Listener::Unsubscribe(Crt::String topic) noexcept {
+                if(m_listener_core != nullptr)
+                {
+                    m_listener_core->Unsubscribe(topic);
+                }
+            }
             Mqtt5::Mqtt5Listener::~Mqtt5Listener()
             {
                 if (m_listener_core != nullptr)

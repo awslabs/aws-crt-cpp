@@ -202,6 +202,16 @@ namespace Aws
                  */
                 int LastError() const noexcept { return aws_last_error(); };
 
+                /*
+                 * Insert the topic and callback in the map
+                 */
+                void Subscribe(Crt::String topic, Crt::Mqtt5::OnPublishReceivedHandler callback) noexcept;
+
+                /*
+                 * Remove the topic and callback in the map
+                 */
+                void Unsubscribe(Crt::String) noexcept;
+
                 virtual ~Mqtt5Listener();
 
               private:
