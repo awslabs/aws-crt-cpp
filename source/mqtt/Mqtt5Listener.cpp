@@ -2,7 +2,6 @@
 #include <aws/crt/mqtt/Mqtt5Listener.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
-#include "Mqtt5Listener.h"
 
 namespace Aws
 {
