@@ -63,6 +63,16 @@ namespace Aws
                  */
                 int LastError() const noexcept;
 
+                /*
+                 * Insert the topic and callback in the map
+                 */
+                void Subscribe(Crt::String topic, Crt::Mqtt5::OnPublishReceivedHandler callback) noexcept;
+
+                /*
+                 * Remove the topic and callback in the map
+                 */
+                void Unsubscribe(Crt::String) noexcept;
+
                 /**
                  * Tells the listener to release the native listener and clean up unhandled the resources
                  * and operations before destroying it. You MUST only call this function when you want to
@@ -146,6 +156,8 @@ namespace Aws
                  * Underlying c classes for data storage and operational members
                  */
                 aws_mqtt5_listener *m_listener;
+
+                std::map<Crt::String, Crt::Mqtt5::OnPublishReceivedHandler> m_subscriptionMap;
 
                 Allocator *m_allocator;
             };

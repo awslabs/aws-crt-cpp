@@ -50,6 +50,19 @@ namespace Aws
 
             int Mqtt5ListenerCore::LastError() const noexcept { return aws_last_error(); }
 
+            void Mqtt5ListenerCore::Subscribe(Crt::String topic, Crt::Mqtt5::OnPublishReceivedHandler callback) noexcept
+            {
+                m_subscriptionMap[topic] = callback;
+            }
+
+            void Mqtt5ListenerCore::Unsubscribe(Crt::String topic) noexcept
+            {
+                if (m_subscriptionMap.find(topic) != m_subscriptionMap.end())
+                {
+                    m_subscriptionMap.erase(topic);
+                }
+            }
+
             void Mqtt5ListenerCore::Close() noexcept
             {
                 std::lock_guard<std::recursive_mutex> lk(m_callback_lock);
@@ -244,12 +257,6 @@ namespace Aws
                     return false;
                 }
 
-                /* Callback not set */
-                if (listener->onListenerPublishReceived == nullptr)
-                {
-                    return false;
-                }
-
                 std::lock_guard<std::recursive_mutex> lock(listener->m_callback_lock);
                 if (listener->m_callbackFlag != Mqtt5ListenerCore::CallbackFlag::INVOKE)
                 {
@@ -259,18 +266,35 @@ namespace Aws
                     return false;
                 }
 
+                PublishReceivedEventData eventData;
                 if (publish != nullptr)
                 {
                     std::shared_ptr<PublishPacket> packet =
                         std::make_shared<PublishPacket>(*publish, listener->m_allocator);
                     PublishReceivedEventData eventData;
                     eventData.publishPacket = packet;
-                    return listener->onListenerPublishReceived(eventData);
                 }
                 else
                 {
                     AWS_LOGF_ERROR(AWS_LS_MQTT5_GENERAL, "Failed to access Publish packet view.");
+                    return false;
                 }
+
+                /* If the listener publish received is overwritten, then call the overwritten function. */
+                if (listener->onListenerPublishReceived != nullptr)
+                {
+                    return listener->onListenerPublishReceived(eventData);
+                }
+                else // Default mechanism. Look up the topic map and invoke callbacks
+                {
+                    Crt::String topic = eventData.publishPacket->getTopic();
+                    if (listener->m_subscriptionMap.find(topic) != listener->m_subscriptionMap.end())
+                    {
+                        listener->m_subscriptionMap[topic](eventData);
+                        return true;
+                    }
+                }
+
                 return false;
             }
 
