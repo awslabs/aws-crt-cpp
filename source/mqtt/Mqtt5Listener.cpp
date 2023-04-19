@@ -271,7 +271,6 @@ namespace Aws
                 {
                     std::shared_ptr<PublishPacket> packet =
                         std::make_shared<PublishPacket>(*publish, listener->m_allocator);
-                    PublishReceivedEventData eventData;
                     eventData.publishPacket = packet;
                 }
                 else
