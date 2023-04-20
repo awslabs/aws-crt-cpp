@@ -457,8 +457,8 @@ namespace Aws
             }
 
             Mqtt5ListenerOptions::Mqtt5ListenerOptions() noexcept
-                : onAttemptingConnect(nullptr), onConnectionFailure(nullptr), onConnectionSuccess(nullptr),
-                  onDisconnection(nullptr), onStopped(nullptr), onListenerPublishReceived(nullptr),
+                : onConnectionSuccess(nullptr), onConnectionFailure(nullptr), onDisconnection(nullptr),
+                  onStopped(nullptr), onAttemptingConnect(nullptr), onListenerPublishReceived(nullptr),
                   onListenerTermination(nullptr), termination_userdata(nullptr)
             {
             }
