@@ -30,8 +30,7 @@ namespace Aws
                 }
             }
 
-            SymmetricCipher::SymmetricCipher(SymmetricCipher &&toMove) noexcept
-                : m_lastError(toMove.m_lastError)
+            SymmetricCipher::SymmetricCipher(SymmetricCipher &&toMove) noexcept : m_lastError(toMove.m_lastError)
             {
                 if (m_cipher)
                 {
@@ -123,22 +122,28 @@ namespace Aws
                 return true;
             }
 
-            const ByteCursor SymmetricCipher::GetKey() const noexcept { return aws_symmetric_cipher_get_key(m_cipher); }
+            const ByteCursor SymmetricCipher::GetKey() const noexcept
+            {
+                return aws_symmetric_cipher_get_key(m_cipher);
+            }
 
             const ByteCursor SymmetricCipher::GetIV() const noexcept
             {
                 return aws_symmetric_cipher_get_initialization_vector(m_cipher);
             }
 
-            const ByteCursor SymmetricCipher::GetTag() const noexcept { return aws_symmetric_cipher_get_tag(m_cipher); }
+            const ByteCursor SymmetricCipher::GetTag() const noexcept
+            {
+                return aws_symmetric_cipher_get_tag(m_cipher);
+            }
 
             SymmetricCipher SymmetricCipher::CreateAES_256_CBC_Cipher(
                 const Optional<ByteCursor> &key,
                 const Optional<ByteCursor> &iv,
                 Allocator *allocator) noexcept
             {
-                return SymmetricCipher(
-                    aws_aes_cbc_256_new(allocator, key.has_value() ? &key.value() : nullptr, iv.has_value() ? &iv.value() : nullptr));
+                return SymmetricCipher(aws_aes_cbc_256_new(
+                    allocator, key.has_value() ? &key.value() : nullptr, iv.has_value() ? &iv.value() : nullptr));
             }
 
             SymmetricCipher SymmetricCipher::CreateAES_256_CTR_Cipher(
@@ -160,7 +165,7 @@ namespace Aws
                 return SymmetricCipher(aws_aes_gcm_256_new(
                     allocator,
                     key.has_value() ? &key.value() : nullptr,
-                    iv.has_value() ? &iv.value(): nullptr,
+                    iv.has_value() ? &iv.value() : nullptr,
                     tag.has_value() ? &tag.value() : nullptr,
                     aad.has_value() ? &aad.value() : nullptr));
             }
