@@ -3193,6 +3193,8 @@ static int s_TestMqtt5ListenerRemoveLifecycleEvent(Aws::Crt::Allocator *allocato
     ASSERT_TRUE(clientConnectionPromise.get_future().get());
     ASSERT_TRUE(listenerConnectionPromise.get_future().get());
 
+    /* Delete listener */
+    mqtt5Listener.reset();
     /* Wait 5s for mqtt5Listener closed */
     aws_thread_current_sleep(5000ULL * 1000 * 1000);
     ASSERT_TRUE(mqtt5Client->Stop());
@@ -3414,6 +3416,8 @@ static int s_TestMqtt5ListenerRemovePublishReceived(Aws::Crt::Allocator *allocat
     ASSERT_TRUE(clientTestMessageCount == 0);
     ASSERT_TRUE(listenerTestMessageCount == 1);
 
+    /* Delete listener */
+    mqtt5Listener.reset();
     /* Wait for listener closed */
     aws_thread_current_sleep(5000ULL * 1000 * 1000);
 
