@@ -23,6 +23,11 @@ namespace Aws
             using OnListenerPublishReceivedHandler = std::function<bool(const PublishReceivedEventData &)>;
 
             /**
+             * Type signature of the callback invoked when a termination callback invoked.
+             */
+            using OnListenerTerminationHandler = std::function<void(void *)>;
+
+            /**
              * An MQTT5 listener core. The core is only internally used by Mqtt5Listener to manage the callbacks and
              * underlying c objects.
              *
@@ -62,16 +67,6 @@ namespace Aws
                  * @return the value of the last aws error encountered by operations on this instance.
                  */
                 int LastError() const noexcept;
-
-                /*
-                 * Insert the topic and callback in the map
-                 */
-                void Subscribe(Crt::String topic, Crt::Mqtt5::OnPublishReceivedHandler callback) noexcept;
-
-                /*
-                 * Remove the topic and callback in the map
-                 */
-                void Unsubscribe(Crt::String) noexcept;
 
                 /**
                  * Tells the listener to release the native listener and clean up unhandled the resources
@@ -127,6 +122,13 @@ namespace Aws
                  */
                 OnListenerPublishReceivedHandler onListenerPublishReceived;
 
+                /**
+                 * Callback handler triggered when listener terminated
+                 */
+                OnListenerTerminationHandler onListenerTermination;
+
+                void *termination_userdata;
+
                 /*
                  * Reference to Mqtt5Client. As the listener has a dependency on mqtt5_client, we would like to keep the
                  * Mqtt5Client alive.
@@ -157,8 +159,6 @@ namespace Aws
                  */
                 aws_mqtt5_listener *m_listener;
 
-                std::map<Crt::String, Crt::Mqtt5::OnPublishReceivedHandler> m_subscriptionMap;
-
                 Allocator *m_allocator;
             };
 
@@ -168,7 +168,7 @@ namespace Aws
              * This is a move-only type. Unless otherwise specified, all function arguments need only to live through
              * the duration of the function call.
              */
-            class AWS_CRT_CPP_API Mqtt5Listener final : public std::enable_shared_from_this<Mqtt5Listener>
+            class AWS_CRT_CPP_API Mqtt5Listener : public std::enable_shared_from_this<Mqtt5Listener>
             {
               public:
                 /**
@@ -201,16 +201,6 @@ namespace Aws
                  * @return the value of the last aws error encountered by operations on this instance.
                  */
                 int LastError() const noexcept { return aws_last_error(); };
-
-                /*
-                 * Insert the topic and callback in the map
-                 */
-                void Subscribe(Crt::String topic, Crt::Mqtt5::OnPublishReceivedHandler callback) noexcept;
-
-                /*
-                 * Remove the topic and callback in the map
-                 */
-                void Unsubscribe(Crt::String) noexcept;
 
                 virtual ~Mqtt5Listener();
 
@@ -299,6 +289,18 @@ namespace Aws
                 Mqtt5ListenerOptions &WithListenerPublishReceivedCallback(
                     OnListenerPublishReceivedHandler callback) noexcept;
 
+                /**
+                 * Sets callback triggered when the termination process ends
+                 *
+                 * @param callback
+                 * @param user_data
+                 *
+                 * @return this option object
+                 */
+                Mqtt5ListenerOptions &WithListenerTerminationCallback(
+                    OnListenerTerminationHandler callback,
+                    void *user_data) noexcept;
+
                 virtual ~Mqtt5ListenerOptions();
                 Mqtt5ListenerOptions(const Mqtt5ListenerOptions &) = delete;
                 Mqtt5ListenerOptions(Mqtt5ListenerOptions &&) = delete;
@@ -330,6 +332,12 @@ namespace Aws
                  * Callback handler triggered when client begins an attempt to connect to the remote endpoint.
                  */
                 OnAttemptingConnectHandler onAttemptingConnect;
+
+                /**
+                 * Callback handler triggered when the listener terminated
+                 */
+                OnListenerTerminationHandler onListenerTermination;
+                void *termination_userdata;
 
                 /**
                  * Callback handler triggered when an MQTT PUBLISH packet is received by the client

@@ -50,19 +50,6 @@ namespace Aws
 
             int Mqtt5ListenerCore::LastError() const noexcept { return aws_last_error(); }
 
-            void Mqtt5ListenerCore::Subscribe(Crt::String topic, Crt::Mqtt5::OnPublishReceivedHandler callback) noexcept
-            {
-                m_subscriptionMap[topic] = callback;
-            }
-
-            void Mqtt5ListenerCore::Unsubscribe(Crt::String topic) noexcept
-            {
-                if (m_subscriptionMap.find(topic) != m_subscriptionMap.end())
-                {
-                    m_subscriptionMap.erase(topic);
-                }
-            }
-
             void Mqtt5ListenerCore::Close() noexcept
             {
                 std::lock_guard<std::recursive_mutex> lk(m_callback_lock);
@@ -119,6 +106,12 @@ namespace Aws
                 if (options.onAttemptingConnect)
                 {
                     this->onAttemptingConnect = options.onAttemptingConnect;
+                }
+
+                if (options.onListenerTermination)
+                {
+                    this->onListenerTermination = options.onListenerTermination;
+                    this->termination_userdata = options.termination_userdata;
                 }
 
                 aws_mqtt5_listener_config listener_config;
@@ -253,7 +246,8 @@ namespace Aws
                 Mqtt5ListenerCore *listener = reinterpret_cast<Mqtt5ListenerCore *>(user_data);
                 if (listener == nullptr)
                 {
-                    AWS_LOGF_INFO(AWS_LS_MQTT5_GENERAL, "Lifecycle event: error retrieving callback userdata. ");
+                    AWS_LOGF_INFO(
+                        AWS_LS_MQTT5_GENERAL, "Listener Publish Received Event: Error retrieving callback userdata. ");
                     return false;
                 }
 
@@ -262,7 +256,7 @@ namespace Aws
                 {
                     AWS_LOGF_INFO(
                         AWS_LS_MQTT5_GENERAL,
-                        "Publish Received Event: mqtt5 client is not valid, revoke the callbacks.");
+                        "Listener Publish Received Event: Mqtt5 client is not valid, revoke the callbacks.");
                     return false;
                 }
 
@@ -275,7 +269,8 @@ namespace Aws
                 }
                 else
                 {
-                    AWS_LOGF_ERROR(AWS_LS_MQTT5_GENERAL, "Failed to access Publish packet view.");
+                    AWS_LOGF_ERROR(
+                        AWS_LS_MQTT5_GENERAL, "Listener Publish Received Event: Failed to access Publish packet view.");
                     return false;
                 }
 
@@ -284,15 +279,6 @@ namespace Aws
                 {
                     return listener->onListenerPublishReceived(eventData);
                 }
-                else // Default mechanism. Look up the topic map and invoke callbacks
-                {
-                    Crt::String topic = eventData.publishPacket->getTopic();
-                    if (listener->m_subscriptionMap.find(topic) != listener->m_subscriptionMap.end())
-                    {
-                        listener->m_subscriptionMap[topic](eventData);
-                        return true;
-                    }
-                }
 
                 return false;
             }
@@ -300,6 +286,10 @@ namespace Aws
             void Mqtt5ListenerCore::s_listenerTerminationCompletion(void *complete_ctx)
             {
                 Mqtt5ListenerCore *listener = reinterpret_cast<Mqtt5ListenerCore *>(complete_ctx);
+                if (listener->onListenerTermination)
+                {
+                    listener->onListenerTermination(listener->termination_userdata);
+                }
                 /* release mqtt5Client */
                 listener->m_mqtt5Client.reset();
                 /* release Mqtt5ListenerCore reference */
@@ -349,20 +339,6 @@ namespace Aws
                 m_listener_core = Mqtt5ListenerCore::NewMqtt5ListenerCore(options, client, m_allocator);
             }
 
-            void Mqtt5Listener::Subscribe(Crt::String topic, Crt::Mqtt5::OnPublishReceivedHandler callback) noexcept
-            {
-                if (m_listener_core != nullptr)
-                {
-                    m_listener_core->Subscribe(topic, callback);
-                }
-            }
-            void Mqtt5Listener::Unsubscribe(Crt::String topic) noexcept
-            {
-                if (m_listener_core != nullptr)
-                {
-                    m_listener_core->Unsubscribe(topic);
-                }
-            }
             Mqtt5::Mqtt5Listener::~Mqtt5Listener()
             {
                 if (m_listener_core != nullptr)
@@ -424,6 +400,14 @@ namespace Aws
 
             Mqtt5ListenerOptions::~Mqtt5ListenerOptions() {}
 
+            Mqtt5ListenerOptions &Mqtt5ListenerOptions::WithListenerTerminationCallback(
+                OnListenerTerminationHandler callback,
+                void *user_data) noexcept
+            {
+                onListenerTermination = callback;
+                termination_userdata = user_data;
+                return *this;
+            }
         } // namespace Mqtt5
 
     } // namespace Crt
