@@ -3011,7 +3011,7 @@ static int s_TestMqtt5NewListenerMin(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(mqtt5Client);
 
     Mqtt5::Mqtt5ListenerOptions listenerOptions;
-    std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
+    ScopedResource<Mqtt5::Mqtt5Listener> mqtt5Listener =
         Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, mqtt5Client, allocator);
     ASSERT_TRUE(mqtt5Listener);
 
@@ -3047,7 +3047,7 @@ static int s_TestMqtt5NewListenerFull(Aws::Crt::Allocator *allocator, void *)
         return false;
     });
 
-    std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
+    ScopedResource<Mqtt5::Mqtt5Listener> mqtt5Listener =
         Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, mqtt5Client, allocator);
     ASSERT_TRUE(mqtt5Listener);
 
@@ -3062,7 +3062,7 @@ static int s_TestMqtt5NewListenerNullClient(Aws::Crt::Allocator *allocator, void
     ApiHandle apiHandle(allocator);
 
     Mqtt5::Mqtt5ListenerOptions listenerOptions;
-    std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
+    ScopedResource<Mqtt5::Mqtt5Listener> mqtt5Listener =
         Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, nullptr, allocator);
     ASSERT_FALSE(mqtt5Listener);
 
@@ -3109,7 +3109,7 @@ static int s_TestMqtt5ListenerLifecycleEvent(Aws::Crt::Allocator *allocator, voi
 
     s_setupListenerLifeCycle(&listenerOptions, listenerConnectionPromise, listenerStoppedPromise);
 
-    std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
+    ScopedResource<Mqtt5::Mqtt5Listener> mqtt5Listener =
         Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, mqtt5Client, allocator);
     ASSERT_TRUE(mqtt5Listener);
 
@@ -3184,7 +3184,7 @@ static int s_TestMqtt5ListenerRemoveLifecycleEvent(Aws::Crt::Allocator *allocato
         listenerStopped = true;
     });
 
-    std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
+    ScopedResource<Mqtt5::Mqtt5Listener> mqtt5Listener =
         Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, mqtt5Client, allocator);
     ASSERT_TRUE(mqtt5Listener);
 
@@ -3279,7 +3279,7 @@ static int s_TestMqtt5ListenerPublishReceivedCallback(Aws::Crt::Allocator *alloc
         return false;
     });
 
-    std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
+    ScopedResource<Mqtt5::Mqtt5Listener> mqtt5Listener =
         Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, mqtt5Client, allocator);
     ASSERT_TRUE(mqtt5Listener);
 
@@ -3384,7 +3384,7 @@ static int s_TestMqtt5ListenerRemovePublishReceived(Aws::Crt::Allocator *allocat
             return true;
         });
 
-    std::shared_ptr<Mqtt5::Mqtt5Listener> mqtt5Listener =
+    ScopedResource<Mqtt5::Mqtt5Listener> mqtt5Listener =
         Mqtt5::Mqtt5Listener::NewMqtt5Listener(listenerOptions, mqtt5Client, allocator);
     ASSERT_TRUE(mqtt5Listener);
 
