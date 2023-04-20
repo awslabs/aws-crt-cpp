@@ -192,17 +192,17 @@ namespace Aws
                 OnAttemptingConnectHandler onAttemptingConnect;
 
                 /**
-                 * Callback handler triggered when the listener terminated
-                 */
-                OnListenerTerminationHandler onListenerTermination;
-                void *termination_userdata;
-
-                /**
                  * Callback handler triggered when an MQTT PUBLISH packet is received by the client
                  *
                  * @param PublishPacket: received Publish Packet
                  */
                 OnListenerPublishReceivedHandler onListenerPublishReceived;
+
+                /**
+                 * Callback handler triggered when the listener terminated
+                 */
+                OnListenerTerminationHandler onListenerTermination;
+                void *termination_userdata;
             };
 
         } // namespace Mqtt5

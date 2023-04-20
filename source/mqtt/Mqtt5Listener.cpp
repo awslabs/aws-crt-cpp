@@ -425,13 +425,6 @@ namespace Aws
                     Crt::Delete(toSeat, allocator);
                     return nullptr;
                 }
-                // //Custom Resource deleter
-                // struct Deleter {
-                //     //Called by unique_ptr to destroy/free the Resource
-                //     void operator()(Mqtt5Listener* listener) {
-                //         Crt::Delete(listener, allocator);
-                //     }
-                // };
 
                 ScopedResource<Mqtt5Listener> uniq_listener(
                     toSeat, [allocator](Mqtt5Listener *listener) { Crt::Delete(listener, allocator); });
