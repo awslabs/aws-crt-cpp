@@ -32,12 +32,6 @@ namespace Aws
 
             SymmetricCipher::SymmetricCipher(SymmetricCipher &&toMove) noexcept : m_lastError(toMove.m_lastError)
             {
-                if (m_cipher)
-                {
-                    aws_symmetric_cipher_destroy(m_cipher);
-                    m_cipher = nullptr;
-                }
-
                 m_cipher = toMove.m_cipher;
                 toMove.m_cipher = nullptr;
             }
@@ -122,20 +116,14 @@ namespace Aws
                 return true;
             }
 
-            const ByteCursor SymmetricCipher::GetKey() const noexcept
-            {
-                return aws_symmetric_cipher_get_key(m_cipher);
-            }
+            ByteCursor SymmetricCipher::GetKey() const noexcept { return aws_symmetric_cipher_get_key(m_cipher); }
 
-            const ByteCursor SymmetricCipher::GetIV() const noexcept
+            ByteCursor SymmetricCipher::GetIV() const noexcept
             {
                 return aws_symmetric_cipher_get_initialization_vector(m_cipher);
             }
 
-            const ByteCursor SymmetricCipher::GetTag() const noexcept
-            {
-                return aws_symmetric_cipher_get_tag(m_cipher);
-            }
+            ByteCursor SymmetricCipher::GetTag() const noexcept { return aws_symmetric_cipher_get_tag(m_cipher); }
 
             SymmetricCipher SymmetricCipher::CreateAES_256_CBC_Cipher(
                 const Optional<ByteCursor> &key,

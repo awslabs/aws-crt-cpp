@@ -48,8 +48,7 @@ static int s_TestAES_256_CBC_Generated_Materials_ResourceSafety(struct aws_alloc
         //check IV generates if a key is provided but iv is not
         uint8_t key[Aws::Crt::Crypto::AES_256_KEY_SIZE_BYTES] = {0xDD};
         auto keyCur = Aws::Crt::ByteCursorFromArray(key, sizeof(key));
-        cbcCipher = Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_CBC_Cipher(
-            keyCur);
+        cbcCipher = Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_CBC_Cipher(keyCur);
         ASSERT_TRUE(cbcCipher);
         ASSERT_BIN_ARRAYS_EQUALS(keyCur.ptr, keyCur.len, cbcCipher.GetKey().ptr, cbcCipher.GetKey().len);
         ASSERT_UINT_EQUALS(Aws::Crt::Crypto::AES_256_CIPHER_BLOCK_SIZE, cbcCipher.GetIV().len);

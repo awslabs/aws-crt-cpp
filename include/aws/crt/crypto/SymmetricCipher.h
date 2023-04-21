@@ -121,21 +121,21 @@ namespace Aws
                  * Returns the key used for this cipher. This key is not copied from the cipher so do not mutate this
                  * data. Copy if if you need to pass it around anywhere.
                  */
-                const ByteCursor GetKey() const noexcept;
+                ByteCursor GetKey() const noexcept;
 
                 /**
                  * Returns the initialization vector used for this cipher.
                  * This IV is not copied from the cipher so do not mutate this
                  * data. Copy if if you need to pass it around anywhere.
                  */
-                const ByteCursor GetIV() const noexcept;
+                ByteCursor GetIV() const noexcept;
 
                 /**
                  * Returns the encryption tag generated during encryption operations for this cipher in GCM mode.
                  * This tag is not copied from the cipher so do not mutate this
                  * data. Copy if if you need to pass it around anywhere.
                  */
-                const ByteCursor GetTag() const noexcept;
+                ByteCursor GetTag() const noexcept;
 
               private:
                 SymmetricCipher(aws_symmetric_cipher *cipher) noexcept;
