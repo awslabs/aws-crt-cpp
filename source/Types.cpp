@@ -60,7 +60,7 @@ namespace Aws
             if (aws_base64_compute_decoded_len(&toDecode, &allocation_size) == AWS_OP_SUCCESS)
             {
                 Vector<uint8_t> output(allocation_size, 0x00);
-                ByteBuf tempBuf = aws_byte_buf_from_array(output.data(), output.size());
+                ByteBuf tempBuf = aws_byte_buf_from_empty_array(output.data(), output.capacity());
                 tempBuf.len = 0;
 
                 if (aws_base64_decode(&toDecode, &tempBuf) == AWS_OP_SUCCESS)
@@ -81,8 +81,7 @@ namespace Aws
             if (aws_base64_compute_encoded_len(encode.size(), &allocation_size) == AWS_OP_SUCCESS)
             {
                 String output(allocation_size, 0x00);
-                ByteBuf tempBuf = aws_byte_buf_from_array(output.data(), output.size());
-                tempBuf.len = 0;
+                ByteBuf tempBuf = aws_byte_buf_from_empty_array(output.data(), output.capacity());
 
                 if (aws_base64_encode(&toEncode, &tempBuf) == AWS_OP_SUCCESS)
                 {
