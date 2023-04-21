@@ -13,8 +13,7 @@ static int s_TestAES_256_CBC_Generated_Materials_ResourceSafety(struct aws_alloc
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
 
-        auto cbcCipher = 
-            Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_CBC_Cipher();
+        auto cbcCipher = Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_CBC_Cipher();
 
         ASSERT_TRUE(cbcCipher);
 
@@ -63,8 +62,7 @@ static int s_TestAES_256_CTR_Generated_Materials_ResourceSafety(struct aws_alloc
 {
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
-        auto ctrCipher =
-            Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_CTR_Cipher();
+        auto ctrCipher = Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_CTR_Cipher();
         ASSERT_TRUE(ctrCipher);
 
         auto input = aws_byte_cursor_from_c_str("abc");
@@ -112,8 +110,7 @@ static int s_TestAES_256_GCM_Generated_Materials_ResourceSafety(struct aws_alloc
 {
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
-        auto gcmCipher =
-            Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_GCM_Cipher();
+        auto gcmCipher = Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_GCM_Cipher();
         ASSERT_TRUE(gcmCipher);
 
         auto input = aws_byte_cursor_from_c_str("abc");
@@ -162,8 +159,7 @@ static int s_TestAES_256_Keywrap_Generated_Materials_ResourceSafety(struct aws_a
 {
     {
         Aws::Crt::ApiHandle apiHandle(allocator);
-        auto keywrapCipher =
-            Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_KeyWrap_Cipher();
+        auto keywrapCipher = Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_KeyWrap_Cipher();
         ASSERT_TRUE(keywrapCipher);
 
         auto input = aws_byte_cursor_from_c_str("abcdefghijklmnopqrstuvwxyz123456");
