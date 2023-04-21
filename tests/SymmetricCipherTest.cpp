@@ -44,7 +44,7 @@ static int s_TestAES_256_CBC_Generated_Materials_ResourceSafety(struct aws_alloc
 
         ASSERT_FALSE(cbcCipher);
 
-        //check IV generates if a key is provided but iv is not
+        // check IV generates if a key is provided but iv is not
         uint8_t key[Aws::Crt::Crypto::AES_256_KEY_SIZE_BYTES] = {0xDD};
         auto keyCur = Aws::Crt::ByteCursorFromArray(key, sizeof(key));
         cbcCipher = Aws::Crt::Crypto::SymmetricCipher::CreateAES_256_CBC_Cipher(keyCur);
