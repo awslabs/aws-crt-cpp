@@ -6,6 +6,7 @@
 
 #include <aws/common/common.h>
 #include <aws/common/environment.h>
+#include <aws/common/string.h>
 #include <aws/iot/MqttClient.h>
 #include <aws/iot/MqttCommon.h>
 
@@ -141,7 +142,7 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     struct aws_string *authname = NULL;
     struct aws_string *username = NULL;
     struct aws_string *password = NULL;
-    struct aws_string empty_string = "";
+    struct aws_string *empty_string = aws_string_c_str("");
 
     int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
     error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_name, &authname);
@@ -164,13 +165,13 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     if (!clientConfig)
     {
         printf("Failed to create MQTT311 client from config");
-        return AWS_OP_ERROR;
+        ASSERT_TRUE(false);
     }
     auto connection = client.NewConnection(clientConfig);
     if (!*connection)
     {
         printf("Failed to create MQTT311 connection from config");
-        return AWS_OP_ERROR;
+        ASSERT_TRUE(false);
     }
 
     std::promise<bool> connectionCompletedPromise;
@@ -193,12 +194,12 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     if (!connection->Connect(*endpoint, false /*cleanSession*/, 1000 /*keepAliveTimeSecs*/))
     {
         printf("Failed to connect");
-        return AWS_OP_ERROR;
+        ASSERT_TRUE(false);
     }
     if (connectionCompletedPromise.get_future().get() == false)
     {
         printf("Connection failed");
-        return AWS_OP_ERROR;
+        ASSERT_TRUE(false);
     }
     if (connection->Disconnect())
     {
@@ -244,19 +245,19 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
 
     Aws::Iot::MqttClient client;
     auto clientConfigBuilder = Aws::Iot::MqttClientConnectionConfigBuilder::NewDefaultBuilder();
-    clientConfigBuilder.WithEndpoint(*endpoint);
-    clientConfigBuilder.WithCustomAuthorizer(username, authname, signature, password, tokenKeyName, *okenValue);
+    clientConfigBuilder.WithEndpoint(endpoint);
+    clientConfigBuilder.WithCustomAuthorizer(username, authname, signature, password, tokenKeyName, tokenValue);
     auto clientConfig = clientConfigBuilder.Build();
     if (!clientConfig)
     {
         printf("Failed to create MQTT311 client from config");
-        return AWS_OP_ERROR;
+        ASSERT_TRUE(false);
     }
     auto connection = client.NewConnection(clientConfig);
     if (!*connection)
     {
         printf("Failed to create MQTT311 connection from config");
-        return AWS_OP_ERROR;
+        ASSERT_TRUE(false);
     }
 
     std::promise<bool> connectionCompletedPromise;
@@ -279,12 +280,12 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
     if (!connection->Connect(*endpoint, false /*cleanSession*/, 1000 /*keepAliveTimeSecs*/))
     {
         printf("Failed to connect");
-        return AWS_OP_ERROR;
+        ASSERT_TRUE(false);
     }
     if (connectionCompletedPromise.get_future().get() == false)
     {
         printf("Connection failed");
-        return AWS_OP_ERROR;
+        ASSERT_TRUE(false);
     }
     if (connection->Disconnect())
     {
