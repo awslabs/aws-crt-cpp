@@ -159,8 +159,12 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
 
     Aws::Iot::MqttClient client;
     auto clientConfigBuilder = Aws::Iot::MqttClientConnectionConfigBuilder::NewDefaultBuilder();
-    clientConfigBuilder.WithEndpoint(endpoint);
-    clientConfigBuilder.WithCustomAuthorizer(username, authname, empty_string, password);
+    clientConfigBuilder.WithEndpoint(aws_string_c_str(endpoint));
+    clientConfigBuilder.WithCustomAuthorizer(
+        aws_string_c_str(username),
+        aws_string_c_str(authname),
+        aws_string_c_str(empty_string),
+        aws_string_c_str(password));
     auto clientConfig = clientConfigBuilder.Build();
     if (!clientConfig)
     {
@@ -191,7 +195,7 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
 
-    if (!connection->Connect(endpoint, false /*cleanSession*/, 1000 /*keepAliveTimeSecs*/))
+    if (!connection->Connect(aws_string_c_str(endpoint), false /*cleanSession*/, 1000 /*keepAliveTimeSecs*/))
     {
         printf("Failed to connect");
         ASSERT_TRUE(false);
@@ -245,8 +249,14 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
 
     Aws::Iot::MqttClient client;
     auto clientConfigBuilder = Aws::Iot::MqttClientConnectionConfigBuilder::NewDefaultBuilder();
-    clientConfigBuilder.WithEndpoint(endpoint);
-    clientConfigBuilder.WithCustomAuthorizer(username, authname, signature, password, tokenKeyName, tokenValue);
+    clientConfigBuilder.WithEndpoint(aws_string_c_str(endpoint));
+    clientConfigBuilder.WithCustomAuthorizer(
+        aws_string_c_str(username),
+        aws_string_c_str(authname),
+        aws_string_c_str(signature),
+        aws_string_c_str(password),
+        aws_string_c_str(tokenKeyName),
+        aws_string_c_str(tokenValue));
     auto clientConfig = clientConfigBuilder.Build();
     if (!clientConfig)
     {
@@ -277,7 +287,7 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
 
-    if (!connection->Connect(endpoint, false /*cleanSession*/, 1000 /*keepAliveTimeSecs*/))
+    if (!connection->Connect(aws_string_c_str(endpoint), false /*cleanSession*/, 1000 /*keepAliveTimeSecs*/))
     {
         printf("Failed to connect");
         ASSERT_TRUE(false);
