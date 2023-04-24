@@ -142,7 +142,7 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     struct aws_string *authname = NULL;
     struct aws_string *username = NULL;
     struct aws_string *password = NULL;
-    struct aws_string *empty_string = aws_string_c_str("");
+    struct aws_string *empty_string = aws_string_new_from_c_str(allocator, "");
 
     int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
     error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_name, &authname);
@@ -191,7 +191,7 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
 
-    if (!connection->Connect(*endpoint, false /*cleanSession*/, 1000 /*keepAliveTimeSecs*/))
+    if (!connection->Connect(endpoint, false /*cleanSession*/, 1000 /*keepAliveTimeSecs*/))
     {
         printf("Failed to connect");
         ASSERT_TRUE(false);
@@ -277,7 +277,7 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
 
-    if (!connection->Connect(*endpoint, false /*cleanSession*/, 1000 /*keepAliveTimeSecs*/))
+    if (!connection->Connect(endpoint, false /*cleanSession*/, 1000 /*keepAliveTimeSecs*/))
     {
         printf("Failed to connect");
         ASSERT_TRUE(false);
