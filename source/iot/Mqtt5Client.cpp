@@ -184,6 +184,30 @@ namespace Aws
             return result;
         }
 
+        Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsPkcs12(
+            const Crt::String hostName,
+            const char* pkcs12_file,
+            const char* pkcs12_password,
+            Crt::Allocator *allocator) noexcept
+        {
+            Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
+            result->m_tlsConnectionOptions =
+                Crt::Io::TlsContextOptions::InitClientWithMtlsPkcs12(pkcs12_file, pkcs12_password, allocator);
+            if (!result->m_tlsConnectionOptions.value())
+            {
+                int error_code = result->m_tlsConnectionOptions->LastError();
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT5_GENERAL,
+                    "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
+                    error_code,
+                    aws_error_debug_str(error_code));
+                delete result;
+                return nullptr;
+            }
+            result->WithHostName(hostName);
+            return result;
+        }
+
         Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWindowsCertStorePath(
             const Crt::String hostName,
             const char *windowsCertStorePath,

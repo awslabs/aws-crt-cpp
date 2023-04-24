@@ -101,6 +101,16 @@ namespace Aws
         };
 
         /**
+         * A simple struct to hold the options for creating a PKCS12 builder. Used to differentiate the
+         * PKCS12 builder from the mTLS builder, which would use the exact sample input types without this struct.
+         */
+        struct pkcs12Options
+        {
+            const char *pkcs12_file;
+            const char *pkcs12_password;
+        };
+
+        /**
          * Represents configuration parameters for building a MqttClientConnectionConfig object. You can use a single
          * instance of this class PER MqttClientConnectionConfig you want to generate. If you want to generate a config
          * for a different endpoint or port etc... you need a new instance of this class.
@@ -146,6 +156,19 @@ namespace Aws
              */
             MqttClientConnectionConfigBuilder(
                 const Crt::Io::TlsContextPkcs11Options &pkcs11Options,
+                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
+
+            /**
+             * Sets the builder up for MTLS using a PKCS12 file and password. These are files on disk and must be in the
+             * PEM format.
+             *
+             * NOTE: This only works on MacOS devices.
+             *
+             * @param options The PKCS12 options to use. Has to contain a PKCS12 filepath and password.
+             * @param allocator memory allocator to use
+             */
+            MqttClientConnectionConfigBuilder(
+                const struct pkcs12Options &options,
                 Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**

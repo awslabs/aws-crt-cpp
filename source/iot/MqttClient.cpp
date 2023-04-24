@@ -120,6 +120,19 @@ namespace Aws
         }
 
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
+            const struct pkcs12Options &options,
+            Crt::Allocator *allocator) noexcept
+            : MqttClientConnectionConfigBuilder(allocator)
+        {
+            m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtlsPkcs12(options.pkcs12_file, options.pkcs12_password, allocator);
+            if (!m_contextOptions)
+            {
+                m_lastError = m_contextOptions.LastError();
+                return;
+            }
+        }
+
+        MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
             const char *windowsCertStorePath,
             Crt::Allocator *allocator) noexcept
             : MqttClientConnectionConfigBuilder(allocator)
