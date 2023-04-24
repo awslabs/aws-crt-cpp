@@ -4,6 +4,7 @@
  */
 #include <aws/crt/Api.h>
 
+#include <aws/common/common.h>
 #include <aws/common/environment.h>
 #include <aws/iot/MqttClient.h>
 #include <aws/iot/MqttCommon.h>
@@ -140,6 +141,7 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     struct aws_string *authname = NULL;
     struct aws_string *username = NULL;
     struct aws_string *password = NULL;
+    struct aws_string empty_string = "";
 
     int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
     error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_name, &authname);
@@ -152,12 +154,12 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
         return AWS_OP_SKIP;
     }
 
-    ApiHandle apiHandle(allocator);
+    Aws::Crt::ApiHandle apiHandle(allocator);
 
     Aws::Iot::MqttClient client;
     auto clientConfigBuilder = Aws::Iot::MqttClientConnectionConfigBuilder::NewDefaultBuilder();
-    clientConfigBuilder.WithEndpoint(cmdData.input_endpoint);
-    clientConfigBuilder.WithCustomAuthorizer(*username, *authname, "", *password);
+    clientConfigBuilder.WithEndpoint(endpoint);
+    clientConfigBuilder.WithCustomAuthorizer(username, authname, empty_string, password);
     auto clientConfig = clientConfigBuilder.Build();
     if (!clientConfig)
     {
@@ -207,6 +209,7 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     aws_string_destroy(authname);
     aws_string_destroy(username);
     aws_string_destroy(password);
+    aws_string_destroy(empty_string);
 }
 AWS_TEST_CASE(IoTMqtt311ConnectWithNoSigningCustomAuth, s_TestIoTMqtt311ConnectWithNoSigningCustomAuth)
 
@@ -237,12 +240,12 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
         return AWS_OP_SKIP;
     }
 
-    ApiHandle apiHandle(allocator);
+    Aws::Crt::ApiHandle apiHandle(allocator);
 
     Aws::Iot::MqttClient client;
     auto clientConfigBuilder = Aws::Iot::MqttClientConnectionConfigBuilder::NewDefaultBuilder();
-    clientConfigBuilder.WithEndpoint(cmdData.input_endpoint);
-    clientConfigBuilder.WithCustomAuthorizer(*username, *authname, *signature, *password, *tokenKeyName, *tokenValue);
+    clientConfigBuilder.WithEndpoint(*endpoint);
+    clientConfigBuilder.WithCustomAuthorizer(username, authname, signature, password, tokenKeyName, *okenValue);
     auto clientConfig = clientConfigBuilder.Build();
     if (!clientConfig)
     {
