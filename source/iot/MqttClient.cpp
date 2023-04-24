@@ -124,7 +124,8 @@ namespace Aws
             Crt::Allocator *allocator) noexcept
             : MqttClientConnectionConfigBuilder(allocator)
         {
-            m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtlsPkcs12(options.pkcs12_file, options.pkcs12_password, allocator);
+            m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtlsPkcs12(
+                options.pkcs12_file, options.pkcs12_password, allocator);
             if (!m_contextOptions)
             {
                 m_lastError = m_contextOptions.LastError();

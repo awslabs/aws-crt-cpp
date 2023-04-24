@@ -185,8 +185,8 @@ namespace Aws
              */
             static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithMtlsPkcs12(
                 const Crt::String hostName,
-                const char* pkcs12_file,
-                const char* pkcs12_password,
+                const char *pkcs12_file,
+                const char *pkcs12_password,
                 Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
