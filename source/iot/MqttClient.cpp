@@ -355,9 +355,14 @@ namespace Aws
             {
                 usernameString = AddToUsernameParameter(usernameString, authorizerName, "x-amz-customauthorizer-name=");
             }
-            if (!authorizerSignature.empty() || !tokenKeyName.empty() || !tokenValue.empty())
+            if (!authorizerSignature.empty())
             {
-                if (authorizerSignature.empty() || tokenKeyName.empty() || tokenValue.empty())
+                usernameString =
+                    AddToUsernameParameter(usernameString, authorizerSignature, "x-amz-customauthorizer-signature=");
+            }
+            if (!tokenKeyName.empty() || !tokenValue.empty())
+            {
+                if (tokenKeyName.empty() || tokenValue.empty())
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_MQTT_CLIENT,
@@ -366,8 +371,6 @@ namespace Aws
                     m_lastError = AWS_ERROR_INVALID_ARGUMENT;
                     return *this;
                 }
-                usernameString =
-                    AddToUsernameParameter(usernameString, authorizerSignature, "x-amz-customauthorizer-signature=");
                 usernameString = AddToUsernameParameter(usernameString, tokenValue, tokenKeyName + "=");
             }
 
