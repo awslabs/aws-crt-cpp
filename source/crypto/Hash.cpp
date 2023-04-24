@@ -113,10 +113,10 @@ namespace Aws
             {
                 if (*this)
                 {
-                    m_good = false;
                     if (aws_hash_finalize(m_hash, &output, truncateTo) != AWS_OP_SUCCESS)
                     {
                         m_lastError = aws_last_error();
+                        m_good = false;
                         return false;
                     }
                     return true;
@@ -131,6 +131,7 @@ namespace Aws
                 {
                     if (!Update(input))
                     {
+                        m_good = false;
                         return false;
                     }
 
