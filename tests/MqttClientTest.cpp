@@ -149,7 +149,7 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_username, &username);
     error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_password, &password);
 
-    if (error != AWS_OP_SUCCESS)
+    if (error != AWS_OP_SUCCESS || endpoint == NULL || authname == NULL || username == NULL || password == NULL)
     {
         printf("Environment Variables are not set for the test, skip the test");
         return AWS_OP_SKIP;
@@ -182,6 +182,7 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     std::promise<void> connectionClosedPromise;
     auto onConnectionCompleted =
         [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
+            (void)returnCode;
             if (errorCode)
             {
                 connectionCompletedPromise.set_value(false);
@@ -275,6 +276,7 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
     std::promise<void> connectionClosedPromise;
     auto onConnectionCompleted =
         [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
+            (void)returnCode;
             if (errorCode)
             {
                 connectionCompletedPromise.set_value(false);
