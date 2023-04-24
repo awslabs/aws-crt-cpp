@@ -97,7 +97,7 @@ namespace Aws
                 /**
                  * Returns true if the instance is in a valid state, false otherwise.
                  */
-                inline operator bool() const noexcept { return m_good; }
+                operator bool() const noexcept;
 
                 /**
                  * Returns the value of the last aws error encountered by operations on this instance.
@@ -157,7 +157,6 @@ namespace Aws
                 Hash() = delete;
 
                 aws_hash *m_hash;
-                bool m_good;
                 int m_lastError;
             };
 
