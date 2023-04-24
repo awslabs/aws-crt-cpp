@@ -90,7 +90,7 @@ namespace Aws
                 AWS_LOGF_ERROR(
                     AWS_LS_MQTT_CLIENT,
                     "id=%p: Error initializing TLS context from certificate and private key filepaths",
-                    this);
+                    (void *)this);
                 m_lastError = m_contextOptions.LastError();
                 return;
             }
@@ -108,7 +108,7 @@ namespace Aws
                 AWS_LOGF_ERROR(
                     AWS_LS_MQTT_CLIENT,
                     "id=%p: Error initializing TLS context from certificate and private key data",
-                    this);
+                    (void *)this);
                 m_lastError = m_contextOptions.LastError();
                 return;
             }
@@ -122,7 +122,8 @@ namespace Aws
             m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtlsPkcs11(pkcs11Options, allocator);
             if (!m_contextOptions)
             {
-                AWS_LOGF_ERROR(AWS_LS_MQTT_CLIENT, "id=%p: Error initializing TLS context from PKCS11 options", this);
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT_CLIENT, "id=%p: Error initializing TLS context from PKCS11 options", (void *)this);
                 m_lastError = m_contextOptions.LastError();
                 return;
             }
@@ -140,7 +141,7 @@ namespace Aws
                 AWS_LOGF_ERROR(
                     AWS_LS_MQTT_CLIENT,
                     "id=%p: Error initializing TLS context from Windows Certificate Store data",
-                    this);
+                    (void *)this);
                 m_lastError = m_contextOptions.LastError();
                 return;
             }
@@ -154,7 +155,8 @@ namespace Aws
             m_contextOptions = Crt::Io::TlsContextOptions::InitDefaultClient(allocator);
             if (!m_contextOptions)
             {
-                AWS_LOGF_ERROR(AWS_LS_MQTT_CLIENT, "id=%p: Error initializing default client TLS context", this);
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT_CLIENT, "id=%p: Error initializing default client TLS context", (void *)this);
                 m_lastError = m_contextOptions.LastError();
                 return;
             }
@@ -214,7 +216,7 @@ namespace Aws
             {
                 if (!m_contextOptions.OverrideDefaultTrustStore(nullptr, caPath))
                 {
-                    AWS_LOGF_WARN(AWS_LS_MQTT_CLIENT, "id=%p: Error overriding default trust store", this);
+                    AWS_LOGF_WARN(AWS_LS_MQTT_CLIENT, "id=%p: Error overriding default trust store", (void *)this);
                     m_lastError = m_contextOptions.LastError();
                 }
             }
@@ -228,7 +230,7 @@ namespace Aws
             {
                 if (!m_contextOptions.OverrideDefaultTrustStore(cert))
                 {
-                    AWS_LOGF_WARN(AWS_LS_MQTT_CLIENT, "id=%p: Error overriding default trust store", this);
+                    AWS_LOGF_WARN(AWS_LS_MQTT_CLIENT, "id=%p: Error overriding default trust store", (void *)this);
                     m_lastError = m_contextOptions.LastError();
                 }
             }
@@ -329,7 +331,7 @@ namespace Aws
                 AWS_LOGF_ERROR(
                     AWS_LS_MQTT_CLIENT,
                     "id=%p: Alpn is not supported on this platform and therefore cannot use custom authentication",
-                    this);
+                    (void *)this);
                 m_lastError = AWS_ERROR_INVALID_STATE;
                 return *this;
             }
@@ -360,7 +362,7 @@ namespace Aws
                     AWS_LOGF_ERROR(
                         AWS_LS_MQTT_CLIENT,
                         "id=%p: Token-based custom authentication requires all token-related properties to be set",
-                        this);
+                        (void *)this);
                     m_lastError = AWS_ERROR_INVALID_ARGUMENT;
                     return *this;
                 }

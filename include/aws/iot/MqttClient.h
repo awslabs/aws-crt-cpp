@@ -338,7 +338,8 @@ namespace Aws
              * @param password The password to use with the custom authorizer. If null is passed, then no password will
              *                 be set.
              *
-             * @deprecated Please use the full WithCustomAuthorizer function call that includes `tokenKeyName` and `tokenValue`.
+             * @deprecated Please use the full WithCustomAuthorizer function that includes `tokenKeyName` and
+             *             `tokenValue`. This version is left for backwards compatibility purposes.
              *
              * @return this builder object
              */
@@ -363,12 +364,12 @@ namespace Aws
              *                            to URL-encode this value; the SDK will not do so for you.
              * @param password The password to use with the custom authorizer. If null is passed, then no password will
              *                 be set.
-             * @param tokenKeyName Used to extract the custom authorizer token from MQTT username query-string properties.
-             *                     Required if the custom authorizer has signing enabled. It is strongly suggested to URL
-             *                     encode this value; the SDK will not do so for you.
-             * @param tokenValue An opaque token value. Required if the custom authorizer has signing enabled. This value
-             *                   must be signed by the private key associated with the custom authorizer and the result
-             *                   placed in the authorizerSignature argument.
+             * @param tokenKeyName Used to extract the custom authorizer token from MQTT username query-string
+             *                     properties. Required if the custom authorizer has signing enabled. It is strongly
+             *                     suggested to URL encode this value; the SDK will not do so for you.
+             * @param tokenValue An opaque token value. Required if the custom authorizer has signing enabled. This
+             *                   value must be signed by the private key associated with the custom authorizer and
+             *                   the result placed in the authorizerSignature argument.
              * @return this builder object
              */
             MqttClientConnectionConfigBuilder &WithCustomAuthorizer(
