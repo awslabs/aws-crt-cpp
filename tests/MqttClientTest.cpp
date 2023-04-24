@@ -307,6 +307,9 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
     aws_string_destroy(authname);
     aws_string_destroy(username);
     aws_string_destroy(password);
+    aws_string_destroy(signature);
+    aws_string_destroy(tokenKeyName);
+    aws_string_destroy(tokenValue);
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt311ConnectWithSigningCustomAuth, s_TestIoTMqtt311ConnectWithSigningCustomAuth)
