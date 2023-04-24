@@ -355,8 +355,14 @@ namespace Aws
              *                       'x-amz-customauthorizer-name' will not be added with the MQTT connection.
              * @param authorizerSignature The signature of the custom authorizer. If an empty string is passed, then
              *                            'x-amz-customauthorizer-signature' will not be added with the MQTT connection.
+             *                            The signature must be based on the private key associated with the custom
+             *                            authorizer. The signature must be base64 encoded. It is strongly suggested
+             *                            to URL-encode this value; the SDK will not do so for you.
              * @param password The password to use with the custom authorizer. If null is passed, then no password will
              *                 be set.
+             *
+             * @deprecated Please use the full WithCustomAuthorizer function that includes `tokenKeyName` and
+             *             `tokenValue`. This version is left for backwards compatibility purposes.
              *
              * @return this builder object
              */
@@ -365,6 +371,37 @@ namespace Aws
                 const Crt::String &authorizerName,
                 const Crt::String &authorizerSignature,
                 const Crt::String &password) noexcept;
+
+            /**
+             * Sets the custom authorizer settings. This function will modify the username, port, and TLS options.
+             *
+             * @param username The username to use with the custom authorizer. If an empty string is passed, it will
+             *                 check to see if a username has already been set (via WithUsername function). If no
+             *                 username is set then no username will be passed with the MQTT connection.
+             * @param authorizerName The name of the custom authorizer. If an empty string is passed, then
+             *                       'x-amz-customauthorizer-name' will not be added with the MQTT connection.
+             * @param authorizerSignature The signature of the custom authorizer. If an empty string is passed, then
+             *                            'x-amz-customauthorizer-signature' will not be added with the MQTT connection.
+             *                            The signature must be based on the private key associated with the custom
+             *                            authorizer. The signature must be base64 encoded. It is strongly suggested
+             *                            to URL-encode this value; the SDK will not do so for you.
+             * @param password The password to use with the custom authorizer. If null is passed, then no password will
+             *                 be set.
+             * @param tokenKeyName Used to extract the custom authorizer token from MQTT username query-string
+             *                     properties. Required if the custom authorizer has signing enabled. It is strongly
+             *                     suggested to URL encode this value; the SDK will not do so for you.
+             * @param tokenValue An opaque token value. Required if the custom authorizer has signing enabled. This
+             *                   value must be signed by the private key associated with the custom authorizer and
+             *                   the result placed in the authorizerSignature argument.
+             * @return this builder object
+             */
+            MqttClientConnectionConfigBuilder &WithCustomAuthorizer(
+                const Crt::String &username,
+                const Crt::String &authorizerName,
+                const Crt::String &authorizerSignature,
+                const Crt::String &password,
+                const Crt::String &tokenKeyName,
+                const Crt::String &tokenValue) noexcept;
 
             /**
              * Sets username for the connection
