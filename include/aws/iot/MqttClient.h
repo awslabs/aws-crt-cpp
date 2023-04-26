@@ -332,7 +332,7 @@ namespace Aws
              *                       'x-amz-customauthorizer-name' will not be added with the MQTT connection.
              * @param authorizerSignature The signature of the custom authorizer.
              *                            NOTE: This will NOT work without the token key name and token value, which
-             * requires using the non-depreciated API. This will always fail if set.
+             * requires using the non-depreciated API.
              * @param password The password to use with the custom authorizer. If null is passed, then no password will
              *                 be set.
              *
