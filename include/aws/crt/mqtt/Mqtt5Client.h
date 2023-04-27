@@ -55,6 +55,43 @@ namespace Aws
                 uint64_t m_minConnectedTimeToResetReconnectDelayMs;
             };
 
+            struct AWS_CRT_CPP_API TopicAliasOptions
+            {
+                /**
+                 * Controls what kind of outbound topic aliasing behavior the client should attempt to use.
+                 */
+                OutboundTopicAliasBehaviorType m_outboundTopicAliasBehaviorType;
+
+                /**
+                 * If outbound topic aliasing is set to LRU, this controls the maximum size of the cache.  If outbound
+                 * topic aliasing is set to LRU and this is zero, a sensible default is used (25).  If outbound topic
+                 * aliasing is not set to LRU, then this setting has no effect.
+                 *
+                 * The final size of the cache is determined by the minimum of this setting and the value of the
+                 * topic_alias_maximum property of the received CONNACK.  If the received CONNACK does not have an
+                 * explicit positive value for that field, outbound topic aliasing is disabled for the duration of that
+                 * connection.
+                 */
+                uint16_t m_outboundAliasCacheMaxSize;
+
+                /**
+                 * Controls what kind of inbound topic aliasing behavior the client should use.
+                 *
+                 * Even if inbound topic aliasing is enabled, it is up to the server to choose whether or not to use it.
+                 */
+                InboundTopicAliasBehaviorType m_inboundTopicAliasBehaviorType;
+
+                /**
+                 * If inbound topic aliasing is enabled, this will control the size of the inbound alias cache.  If
+                 * inbound aliases are enabled and this is zero, then a sensible default will be used (25).  If inbound
+                 * aliases are disabled, this setting has no effect.
+                 *
+                 * Behaviorally, this value overrides anything present in the topic_alias_maximum field of
+                 * the CONNECT packet options.  We intentionally don't bind that field to managed clients to reduce
+                 */
+                uint16_t m_inboundAliasCacheSize;
+            };
+
             /* Simple statistics about the current state of the client's queue of operations */
             struct AWS_CRT_CPP_API Mqtt5ClientOperationStatistics
             {
@@ -481,6 +518,14 @@ namespace Aws
                 Mqtt5ClientOptions &WithAckTimeoutSeconds(uint32_t ackTimeoutSeconds) noexcept;
 
                 /**
+                 * Sets TopicAliasOptions. Topic alias options, includes outbound topic alias behavior, outbound max
+                 * cache size, inbount topic alias behavior, and inbound max cache size
+                 *
+                 * @return this option object
+                 */
+                Mqtt5ClientOptions &WithTopicAliasOptions(TopicAliasOptions topicAliasOptions) noexcept;
+
+                /**
                  * Sets callback for transform HTTP request.
                  * This callback allows a custom transformation of the HTTP request that acts as the websocket
                  * handshake. Websockets will be used if this is set to a valid transformation callback.  To use
@@ -648,6 +693,12 @@ namespace Aws
                 std::shared_ptr<ConnectPacket> m_connectOptions;
 
                 /**
+                 * Topic alias options, includes outbound topic alias behavior, outbound max cache size, inbount topic
+                 * alias behavior, and inbound max cache size
+                 */
+                TopicAliasOptions m_topicAliasOptions;
+
+                /**
                  * Controls how the MQTT5 client should behave with respect to MQTT sessions.
                  */
                 ClientSessionBehaviorType m_sessionBehavior;
@@ -693,6 +744,7 @@ namespace Aws
                 Crt::Allocator *m_allocator;
                 aws_http_proxy_options m_httpProxyOptionsStorage;
                 aws_mqtt5_packet_connect_view m_packetConnectViewStorage;
+                aws_mqtt5_client_topic_alias_options m_topicAliasOptionsStorage;
             };
 
         } // namespace Mqtt5

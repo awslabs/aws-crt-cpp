@@ -181,12 +181,14 @@ namespace Aws
                 : m_bootstrap(nullptr), m_sessionBehavior(ClientSessionBehaviorType::AWS_MQTT5_CSBT_DEFAULT),
                   m_extendedValidationAndFlowControlOptions(AWS_MQTT5_EVAFCO_AWS_IOT_CORE_DEFAULTS),
                   m_offlineQueueBehavior(AWS_MQTT5_COQBT_DEFAULT),
+                  m_topicAliasOptions({AWS_MQTT5_COTABT_DEFAULT, 0, AWS_MQTT5_CITABT_DEFAULT, 0}),
                   m_reconnectionOptions({AWS_EXPONENTIAL_BACKOFF_JITTER_DEFAULT, 0, 0, 0}), m_pingTimeoutMs(0),
                   m_connackTimeoutMs(0), m_ackTimeoutSec(0), m_allocator(allocator)
             {
                 m_socketOptions.SetSocketType(Io::SocketType::Stream);
                 AWS_ZERO_STRUCT(m_packetConnectViewStorage);
                 AWS_ZERO_STRUCT(m_httpProxyOptionsStorage);
+                AWS_ZERO_STRUCT(m_topicAliasOptionsStorage);
             }
 
             bool Mqtt5ClientOptions::initializeRawOptions(aws_mqtt5_client_options &raw_options) const noexcept
@@ -227,6 +229,7 @@ namespace Aws
                 raw_options.ping_timeout_ms = m_pingTimeoutMs;
                 raw_options.connack_timeout_ms = m_connackTimeoutMs;
                 raw_options.ack_timeout_seconds = m_ackTimeoutSec;
+                raw_options.topic_aliasing_options = &m_topicAliasOptionsStorage;
 
                 return true;
             }
@@ -277,6 +280,20 @@ namespace Aws
             {
                 m_connectOptions = packetConnect;
                 m_connectOptions->initializeRawOptions(m_packetConnectViewStorage, m_allocator);
+                return *this;
+            }
+
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithTopicAliasOptions(TopicAliasOptions topicAliasOptions) noexcept
+            {
+                m_topicAliasOptions = topicAliasOptions;
+                m_topicAliasOptionsStorage.outbound_topic_alias_behavior =
+                    m_topicAliasOptions.m_outboundTopicAliasBehaviorType;
+                m_topicAliasOptionsStorage.outbound_alias_cache_max_size =
+                    m_topicAliasOptions.m_outboundAliasCacheMaxSize;
+                m_topicAliasOptionsStorage.inbound_topic_alias_behavior =
+                    m_topicAliasOptions.m_inboundTopicAliasBehaviorType;
+                m_topicAliasOptionsStorage.inbound_alias_cache_size = m_topicAliasOptions.m_inboundAliasCacheSize;
+
                 return *this;
             }
 

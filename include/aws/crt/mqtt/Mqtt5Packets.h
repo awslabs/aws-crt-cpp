@@ -474,6 +474,20 @@ namespace Aws
                  */
                 uint32_t getMaximumPacketSizeBytes() const noexcept;
 
+                // STEVE TODO implement these in cpp
+                // STEVE NOTE I think we need to surface these values if they are able to be set by the customer.
+                // They could potentially be hidden since the customer will not be interacting with them in any way but
+                // they may want to know this information? Debatable?
+                /**
+                 * @return The highest value that the server will accept as a Topic Alias sent by the client
+                 */
+                uint16_t getTopicAliasMaximumToServer() const noexcept;
+
+                /**
+                 * @return The highest value that the client will accept as a Topic Alias sent by the server
+                 */
+                uint16_t getTopicaliasMaximumToClient() const noexcept;
+
                 /**
                  * The maximum amount of time in seconds between client packets. The client should use PINGREQs to
                  * ensure this limit is not breached.  The server will disconnect the client for inactivity if no MQTT
