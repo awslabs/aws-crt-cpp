@@ -178,6 +178,7 @@ namespace Aws
              *
              * NOTE: This only works on MacOS devices.
              *
+             * @param hostName - AWS IoT endpoint to connect to
              * @param options The PKCS12 options to use.
              * @param allocator - memory allocator to use
              *
