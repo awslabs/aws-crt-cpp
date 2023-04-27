@@ -9,6 +9,7 @@
 #include <aws/common/string.h>
 #include <aws/iot/MqttClient.h>
 #include <aws/iot/MqttCommon.h>
+#include <aws/crt/UUID.h>
 
 #include <utility>
 
@@ -208,7 +209,10 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
 
-    if (!connection->Connect(aws_string_c_str(endpoint), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
+    Aws::Crt::UUID Uuid;
+    Aws::Crt::String uuidStr = Uuid.ToString();
+
+    if (!connection->Connect(aws_string_c_str(uuidStr), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
         printf("Failed to connect");
         ASSERT_TRUE(false);
@@ -317,7 +321,10 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
 
-    if (!connection->Connect(aws_string_c_str(endpoint), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
+    Aws::Crt::UUID Uuid;
+    Aws::Crt::String uuidStr = Uuid.ToString();
+
+    if (!connection->Connect(aws_string_c_str(uuidStr), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
         printf("Failed to connect");
         ASSERT_TRUE(false);
