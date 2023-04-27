@@ -355,9 +355,24 @@ namespace Aws
             {
                 usernameString = AddToUsernameParameter(usernameString, authorizerName, "x-amz-customauthorizer-name=");
             }
-            if (!authorizerSignature.empty() || !tokenKeyName.empty() || !tokenValue.empty())
+            if (!authorizerSignature.empty())
             {
-                if (authorizerSignature.empty() || tokenKeyName.empty() || tokenValue.empty())
+                if (tokenKeyName.empty() || tokenValue.empty())
+                {
+                    AWS_LOGF_WARN(
+                        AWS_LS_MQTT_CLIENT,
+                        "id=%p: Signed custom authorizers with signature will not work without a token key name and "
+                        "token value. Your connection may be rejected/stalled on the IoT Core side due to this. Please "
+                        "use the non-deprecated API and pass both the token key name and token value to connect to a "
+                        "signed custom authorizer.",
+                        (void *)this);
+                }
+                usernameString =
+                    AddToUsernameParameter(usernameString, authorizerSignature, "x-amz-customauthorizer-signature=");
+            }
+            if (!tokenKeyName.empty() || !tokenValue.empty())
+            {
+                if (tokenKeyName.empty() || tokenValue.empty())
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_MQTT_CLIENT,
@@ -366,8 +381,6 @@ namespace Aws
                     m_lastError = AWS_ERROR_INVALID_ARGUMENT;
                     return *this;
                 }
-                usernameString =
-                    AddToUsernameParameter(usernameString, authorizerSignature, "x-amz-customauthorizer-signature=");
                 usernameString = AddToUsernameParameter(usernameString, tokenValue, tokenKeyName + "=");
             }
 
