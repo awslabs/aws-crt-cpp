@@ -212,7 +212,7 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     Aws::Crt::UUID Uuid;
     Aws::Crt::String uuidStr = Uuid.ToString();
 
-    if (!connection->Connect(aws_string_c_str(&uuidStr), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
+    if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
         printf("Failed to connect");
         ASSERT_TRUE(false);
@@ -324,7 +324,7 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
     Aws::Crt::UUID Uuid;
     Aws::Crt::String uuidStr = Uuid.ToString();
 
-    if (!connection->Connect(aws_string_c_str(&uuidStr), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
+    if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
         printf("Failed to connect");
         ASSERT_TRUE(false);
