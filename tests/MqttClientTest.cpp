@@ -208,7 +208,7 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
 
-    if (!connection->Connect(aws_string_c_str(endpoint), false /*cleanSession*/, 1000 /*keepAliveTimeSecs*/))
+    if (!connection->Connect(aws_string_c_str(endpoint), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
         printf("Failed to connect");
         ASSERT_TRUE(false);
@@ -317,7 +317,7 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
 
-    if (!connection->Connect(aws_string_c_str(endpoint), false /*cleanSession*/, 1000 /*keepAliveTimeSecs*/))
+    if (!connection->Connect(aws_string_c_str(endpoint), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
         printf("Failed to connect");
         ASSERT_TRUE(false);
