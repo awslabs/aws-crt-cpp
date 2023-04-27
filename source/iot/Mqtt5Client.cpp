@@ -186,13 +186,12 @@ namespace Aws
 
         Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsPkcs12(
             const Crt::String hostName,
-            const char *pkcs12_file,
-            const char *pkcs12_password,
+            const struct Pkcs12Options &options,
             Crt::Allocator *allocator) noexcept
         {
             Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
-            result->m_tlsConnectionOptions =
-                Crt::Io::TlsContextOptions::InitClientWithMtlsPkcs12(pkcs12_file, pkcs12_password, allocator);
+            result->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitClientWithMtlsPkcs12(
+                options.pkcs12_file.c_str(), options.pkcs12_password.c_str(), allocator);
             if (!result->m_tlsConnectionOptions.value())
             {
                 int error_code = result->m_tlsConnectionOptions->LastError();
