@@ -149,8 +149,8 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_username, &username);
     error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_password, &password);
 
-    bool env_vars_set = (endpoint && authname && username && password);
-    if (error != AWS_OP_SUCCESS || !env_vars_set)
+    bool isEveryEnvVarSet = (endpoint && authname && username && password);
+    if (error != AWS_OP_SUCCESS || !isEveryEnvVarSet)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(empty_string);
@@ -243,9 +243,9 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
     error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenkey, &tokenKeyName);
     error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenvalue, &tokenValue);
 
-    bool env_vars_set = (endpoint && authname && username && password && signature
+    bool isEveryEnvVarSet = (endpoint && authname && username && password && signature
             && tokenKeyName && tokenValue);
-    if (error != AWS_OP_SUCCESS || !env_vars_set)
+    if (error != AWS_OP_SUCCESS || !isEveryEnvVarSet)
     {
         printf("Environment Variables are not set for the test, skip the test");
         return AWS_OP_SKIP;
