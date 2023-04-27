@@ -353,11 +353,9 @@ namespace Aws
              *                 username is set then no username will be passed with the MQTT connection.
              * @param authorizerName The name of the custom authorizer. If an empty string is passed, then
              *                       'x-amz-customauthorizer-name' will not be added with the MQTT connection.
-             * @param authorizerSignature The signature of the custom authorizer. If an empty string is passed, then
-             *                            'x-amz-customauthorizer-signature' will not be added with the MQTT connection.
-             *                            The signature must be based on the private key associated with the custom
-             *                            authorizer. The signature must be base64 encoded. It is strongly suggested
-             *                            to URL-encode this value; the SDK will not do so for you.
+             * @param authorizerSignature The signature of the custom authorizer.
+             *                            NOTE: This will NOT work without the token key name and token value, which
+             * requires using the non-depreciated API.
              * @param password The password to use with the custom authorizer. If null is passed, then no password will
              *                 be set.
              *

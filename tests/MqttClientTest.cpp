@@ -7,6 +7,7 @@
 #include <aws/common/common.h>
 #include <aws/common/environment.h>
 #include <aws/common/string.h>
+#include <aws/crt/UUID.h>
 #include <aws/iot/MqttClient.h>
 #include <aws/iot/MqttCommon.h>
 
@@ -149,9 +150,21 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_username, &username);
     error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_password, &password);
 
-    if (error != AWS_OP_SUCCESS || endpoint == NULL || authname == NULL || username == NULL || password == NULL)
+    bool isEveryEnvVarSet = (endpoint && authname && username && password);
+    if (isEveryEnvVarSet == true)
+    {
+        isEveryEnvVarSet =
+            (aws_string_is_valid(endpoint) && aws_string_is_valid(authname) && aws_string_is_valid(username) &&
+             aws_string_is_valid(password));
+    }
+    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        aws_string_destroy(endpoint);
+        aws_string_destroy(authname);
+        aws_string_destroy(username);
+        aws_string_destroy(password);
+        aws_string_destroy(empty_string);
         return AWS_OP_SKIP;
     }
 
@@ -196,7 +209,10 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
 
-    if (!connection->Connect(aws_string_c_str(endpoint), false /*cleanSession*/, 1000 /*keepAliveTimeSecs*/))
+    Aws::Crt::UUID Uuid;
+    Aws::Crt::String uuidStr = Uuid.ToString();
+
+    if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
         printf("Failed to connect");
         ASSERT_TRUE(false);
@@ -241,9 +257,24 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
     error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenkey, &tokenKeyName);
     error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenvalue, &tokenValue);
 
-    if (error != AWS_OP_SUCCESS)
+    bool isEveryEnvVarSet = (endpoint && authname && username && password && signature && tokenKeyName && tokenValue);
+    if (isEveryEnvVarSet == true)
+    {
+        isEveryEnvVarSet =
+            (aws_string_is_valid(endpoint) && aws_string_is_valid(authname) && aws_string_is_valid(username) &&
+             aws_string_is_valid(password) && aws_string_is_valid(signature) && aws_string_is_valid(tokenKeyName) &&
+             aws_string_is_valid(tokenValue));
+    }
+    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
     {
         printf("Environment Variables are not set for the test, skip the test");
+        aws_string_destroy(endpoint);
+        aws_string_destroy(authname);
+        aws_string_destroy(username);
+        aws_string_destroy(password);
+        aws_string_destroy(signature);
+        aws_string_destroy(tokenKeyName);
+        aws_string_destroy(tokenValue);
         return AWS_OP_SKIP;
     }
 
@@ -290,7 +321,10 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
 
-    if (!connection->Connect(aws_string_c_str(endpoint), false /*cleanSession*/, 1000 /*keepAliveTimeSecs*/))
+    Aws::Crt::UUID Uuid;
+    Aws::Crt::String uuidStr = Uuid.ToString();
+
+    if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
         printf("Failed to connect");
         ASSERT_TRUE(false);
