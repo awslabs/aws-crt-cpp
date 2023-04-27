@@ -56,9 +56,7 @@ AWS_STATIC_STRING_FROM_LITERAL(
     "AWS_TEST_MQTT311_IOT_CORE_PKCS12_KEY_PASSWORD");
 
 // Needed to return "success" instead of skip in Codebuild so it doesn't count as a failure
-AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt311_test_envName_codebuild,
-    "CODEBUILD_BUILD_ID");
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_codebuild, "CODEBUILD_BUILD_ID");
 
 #if !BYO_CRYPTO
 static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator *allocator, void *ctx)
@@ -389,7 +387,8 @@ static int s_TestIoTMqtt311ConnectWithPKCS12(Aws::Crt::Allocator *allocator, voi
         aws_string_destroy(pkcs12_password);
 
         // If in Codebuild, return as a 'success' even though it is a skip
-        if (codebuild_buildID && aws_string_is_valid(codebuild_buildID)) {
+        if (codebuild_buildID && aws_string_is_valid(codebuild_buildID))
+        {
             aws_string_destroy(codebuild_buildID);
             return AWS_OP_SUCCESS;
         }
