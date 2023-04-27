@@ -138,6 +138,7 @@ AWS_TEST_CASE(MqttClientNewConnectionUninitializedTlsContext, s_TestMqttClientNe
  */
 static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *allocator, void *)
 {
+    int returnResult = AWS_OP_SUCCESS;
     struct aws_string *endpoint = NULL;
     struct aws_string *authname = NULL;
     struct aws_string *username = NULL;
@@ -152,12 +153,15 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     bool isEveryEnvVarSet = (endpoint && authname && username && password);
     if (isEveryEnvVarSet == true)
     {
-        isEveryEnvVarSet = (!endpoint->empty() && !authname->empty() && !username->empty() && !password->empty());
+        isEveryEnvVarSet =
+            (aws_string_is_valid(endpoint) && aws_string_is_valid(authname) && aws_string_is_valid(username) &&
+             aws_string_is_valid(password));
     }
     if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
     {
         printf("Environment Variables are not set for the test, skip the test");
-        return AWS_OP_SKIP;
+        returnResult = AWS_OP_SKIP;
+        goto cleanup;
     }
 
     Aws::Crt::ApiHandle apiHandle(allocator);
@@ -215,13 +219,15 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     {
         connectionClosedPromise.get_future().wait();
     }
+    goto cleanup;
 
+cleanup:
     aws_string_destroy(endpoint);
     aws_string_destroy(authname);
     aws_string_destroy(username);
     aws_string_destroy(password);
     aws_string_destroy(empty_string);
-    return AWS_OP_SUCCESS;
+    return returnResult;
 }
 AWS_TEST_CASE(IoTMqtt311ConnectWithNoSigningCustomAuth, s_TestIoTMqtt311ConnectWithNoSigningCustomAuth)
 
@@ -230,6 +236,7 @@ AWS_TEST_CASE(IoTMqtt311ConnectWithNoSigningCustomAuth, s_TestIoTMqtt311ConnectW
  */
 static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *allocator, void *)
 {
+    int returnResult = AWS_OP_SUCCESS;
     struct aws_string *endpoint = NULL;
     struct aws_string *authname = NULL;
     struct aws_string *username = NULL;
@@ -250,13 +257,15 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
     if (isEveryEnvVarSet == true)
     {
         isEveryEnvVarSet =
-            (!endpoint->empty() && !authname->empty() && !username->empty() && !password->empty() &&
-             !signature->empty() && !tokenKeyName->empty() && !tokenValue->empty());
+            (aws_string_is_valid(endpoint) && aws_string_is_valid(authname) && aws_string_is_valid(username) &&
+             aws_string_is_valid(password) && aws_string_is_valid(signature) && aws_string_is_valid(tokenKeyName) &&
+             aws_string_is_valid(tokenValue));
     }
     if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
     {
         printf("Environment Variables are not set for the test, skip the test");
-        return AWS_OP_SKIP;
+        returnResult = AWS_OP_SKIP;
+        goto cleanup;
     }
 
     Aws::Crt::ApiHandle apiHandle(allocator);
@@ -316,7 +325,9 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
     {
         connectionClosedPromise.get_future().wait();
     }
+    goto cleanup;
 
+cleanup:
     aws_string_destroy(endpoint);
     aws_string_destroy(authname);
     aws_string_destroy(username);
@@ -324,6 +335,6 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
     aws_string_destroy(signature);
     aws_string_destroy(tokenKeyName);
     aws_string_destroy(tokenValue);
-    return AWS_OP_SUCCESS;
+    return returnResult;
 }
 AWS_TEST_CASE(IoTMqtt311ConnectWithSigningCustomAuth, s_TestIoTMqtt311ConnectWithSigningCustomAuth)
