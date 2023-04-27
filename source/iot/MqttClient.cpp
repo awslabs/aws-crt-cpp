@@ -363,7 +363,7 @@ namespace Aws
                         AWS_LS_MQTT_CLIENT,
                         "id=%p: Signed custom authorizers with signature will not work without a token key name and "
                         "token value. Your connection may be rejected/stalled on the IoT Core side due to this. Please "
-                        "use the non-deprecate API and pass both the token key name and token value to connect to a "
+                        "use the non-deprecated API and pass both the token key name and token value to connect to a "
                         "signed custom authorizer.",
                         (void *)this);
                 }
