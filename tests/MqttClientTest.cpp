@@ -385,12 +385,12 @@ static int s_TestIoTMqtt311ConnectWithPKCS12(Aws::Crt::Allocator *allocator, voi
 
     Aws::Crt::ApiHandle apiHandle(allocator);
 
-    Aws::IoT::Pkcs12Options pkcs12Options = {.pkcs12_file = aws_string_c_str(pkcs12_key),
-                                             .pkcs12_password = aws_string_c_str(pkcs12_password)}
+    Aws::Iot::Pkcs12Options testPkcs12Options =
+        {.pkcs12_file = aws_string_c_str(pkcs12_key), .pkcs12_password = aws_string_c_str(pkcs12_password)}
 
     Aws::Iot::MqttClient client;
     auto clientConfigBuilder =
-        Aws::Iot::MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(pkcs12Options, allocator);
+        Aws::Iot::MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(testPkcs12Options, allocator);
     clientConfigBuilder.WithEndpoint(aws_string_c_str(endpoint));
     auto clientConfig = clientConfigBuilder.Build();
     if (!clientConfig)
@@ -444,7 +444,6 @@ static int s_TestIoTMqtt311ConnectWithPKCS12(Aws::Crt::Allocator *allocator, voi
     aws_string_destroy(endpoint);
     aws_string_destroy(pkcs12_key);
     aws_string_destroy(pkcs12_password);
-    aws_string_destroy(empty_string);
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt311ConnectWithPKCS12, s_TestIoTMqtt311ConnectWithPKCS12)
