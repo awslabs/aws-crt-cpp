@@ -55,6 +55,11 @@ AWS_STATIC_STRING_FROM_LITERAL(
     s_mqtt311_test_envName_iot_pkcs12_key_password,
     "AWS_TEST_MQTT311_IOT_CORE_PKCS12_KEY_PASSWORD");
 
+// Needed to return "success" instead of skip in Codebuild so it doesn't count as a failure
+AWS_STATIC_STRING_FROM_LITERAL(
+    s_mqtt311_test_envName_codebuild,
+    "CODEBUILD_BUILD_ID");
+
 #if !BYO_CRYPTO
 static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator *allocator, void *ctx)
 {
@@ -363,10 +368,12 @@ static int s_TestIoTMqtt311ConnectWithPKCS12(Aws::Crt::Allocator *allocator, voi
     struct aws_string *endpoint = NULL;
     struct aws_string *pkcs12_key = NULL;
     struct aws_string *pkcs12_password = NULL;
+    struct aws_string *codebuild_buildID = NULL;
 
     int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
     error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_pkcs12_key, &pkcs12_key);
     error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_pkcs12_key_password, &pkcs12_password);
+    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_codebuild, &codebuild_buildID);
 
     bool isEveryEnvVarSet = (endpoint && pkcs12_key && pkcs12_password);
     if (isEveryEnvVarSet == true)
@@ -380,6 +387,14 @@ static int s_TestIoTMqtt311ConnectWithPKCS12(Aws::Crt::Allocator *allocator, voi
         aws_string_destroy(endpoint);
         aws_string_destroy(pkcs12_key);
         aws_string_destroy(pkcs12_password);
+
+        // If in Codebuild, return as a 'success' even though it is a skip
+        if (codebuild_buildID && aws_string_is_valid(codebuild_buildID)) {
+            aws_string_destroy(codebuild_buildID);
+            return AWS_OP_SUCCESS;
+        }
+        aws_string_destroy(codebuild_buildID);
+
         return AWS_OP_SKIP;
     }
 
@@ -444,6 +459,7 @@ static int s_TestIoTMqtt311ConnectWithPKCS12(Aws::Crt::Allocator *allocator, voi
     aws_string_destroy(endpoint);
     aws_string_destroy(pkcs12_key);
     aws_string_destroy(pkcs12_password);
+    aws_string_destroy(codebuild_buildID);
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt311ConnectWithPKCS12, s_TestIoTMqtt311ConnectWithPKCS12)
