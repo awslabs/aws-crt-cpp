@@ -149,6 +149,19 @@ namespace Aws
                 Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
+             * Sets the builder up for MTLS using a PKCS12 file and password. These are files on disk and must be in the
+             * PEM format.
+             *
+             * NOTE: This only works on MacOS devices.
+             *
+             * @param options The PKCS12 options to use. Has to contain a PKCS12 filepath and password.
+             * @param allocator memory allocator to use
+             */
+            MqttClientConnectionConfigBuilder(
+                const struct Pkcs12Options &options,
+                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
+
+            /**
              * Sets the builder up for MTLS, using a certificate in a Windows certificate store.
              *
              * NOTE: This only works on Windows.

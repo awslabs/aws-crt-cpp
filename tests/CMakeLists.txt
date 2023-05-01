@@ -22,6 +22,7 @@ if(NOT BYO_CRYPTO)
     add_test_case(Sigv4aSigningTestCredentials)
     add_net_test_case(IoTMqtt311ConnectWithNoSigningCustomAuth)
     add_net_test_case(IoTMqtt311ConnectWithSigningCustomAuth)
+    add_net_test_case(IoTMqtt311ConnectWithPKCS12)
 endif()
 
 add_test_case(Base64RoundTrip)

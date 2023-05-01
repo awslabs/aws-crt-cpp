@@ -174,6 +174,22 @@ namespace Aws
                 Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
+             * Sets the builder up for MTLS, using a PKCS#12 file for private key operations.
+             *
+             * NOTE: This only works on MacOS devices.
+             *
+             * @param hostName - AWS IoT endpoint to connect to
+             * @param options The PKCS12 options to use.
+             * @param allocator - memory allocator to use
+             *
+             * @return Mqtt5ClientBuilder
+             */
+            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithMtlsPkcs12(
+                const Crt::String hostName,
+                const struct Pkcs12Options &options,
+                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
+
+            /**
              * Sets the builder up for MTLS, using a certificate in a Windows certificate store.
              *
              * NOTE: This only works on Windows.
