@@ -312,7 +312,7 @@ namespace Aws
                     raw_options.session_expiry_interval_seconds = &m_sessionExpiryIntervalSec.value();
                 }
 
-                if (m_requestProblemInformation.has_value())
+                if (m_requestResponseInformation.has_value())
                 {
                     m_requestResponseInformationStorage = m_requestResponseInformation.value() ? 1 : 0;
                     raw_options.request_response_information = &m_requestResponseInformationStorage;
