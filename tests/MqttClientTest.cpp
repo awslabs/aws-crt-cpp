@@ -15,40 +15,35 @@
 
 #include <aws/testing/aws_test_harness.h>
 
-/**
- * NOTE: Will later add more testing and split MQTT5 testing setup from MQTT311 testing setup.
- * In the short term, the MQTT311 tests will reuse the majority of MQTT5 material.
- */
-
-AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_hostname, "AWS_TEST_MQTT5_IOT_CORE_HOST");
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_hostname, "AWS_TEST_MQTT311_IOT_CORE_HOST");
 AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_nosign_custom_auth_name,
-    "AWS_TEST_MQTT5_IOT_CORE_NO_SIGNING_AUTHORIZER_NAME");
+    s_mqtt311_test_envName_iot_nosign_custom_auth_name,
+    "AWS_TEST_MQTT311_IOT_CORE_NO_SIGNING_AUTHORIZER_NAME");
 AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_nosign_custom_auth_username,
-    "AWS_TEST_MQTT5_IOT_CORE_NO_SIGNING_AUTHORIZER_USERNAME");
+    s_mqtt311_test_envName_iot_nosign_custom_auth_username,
+    "AWS_TEST_MQTT311_IOT_CORE_NO_SIGNING_AUTHORIZER_USERNAME");
 AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_nosign_custom_auth_password,
-    "AWS_TEST_MQTT5_IOT_CORE_NO_SIGNING_AUTHORIZER_PASSWORD");
+    s_mqtt311_test_envName_iot_nosign_custom_auth_password,
+    "AWS_TEST_MQTT311_IOT_CORE_NO_SIGNING_AUTHORIZER_PASSWORD");
 
 AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_sign_custom_auth_name,
-    "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_NAME");
+    s_mqtt311_test_envName_iot_sign_custom_auth_name,
+    "AWS_TEST_MQTT311_IOT_CORE_SIGNING_AUTHORIZER_NAME");
 AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_sign_custom_auth_username,
-    "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_USERNAME");
+    s_mqtt311_test_envName_iot_sign_custom_auth_username,
+    "AWS_TEST_MQTT311_IOT_CORE_SIGNING_AUTHORIZER_USERNAME");
 AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_sign_custom_auth_password,
-    "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_PASSWORD");
+    s_mqtt311_test_envName_iot_sign_custom_auth_password,
+    "AWS_TEST_MQTT311_IOT_CORE_SIGNING_AUTHORIZER_PASSWORD");
 AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_sign_custom_auth_tokenvalue,
-    "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_TOKEN");
+    s_mqtt311_test_envName_iot_sign_custom_auth_tokenvalue,
+    "AWS_TEST_MQTT311_IOT_CORE_SIGNING_AUTHORIZER_TOKEN");
 AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_sign_custom_auth_tokenkey,
-    "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_TOKEN_KEY_NAME");
+    s_mqtt311_test_envName_iot_sign_custom_auth_tokenkey,
+    "AWS_TEST_MQTT311_IOT_CORE_SIGNING_AUTHORIZER_TOKEN_KEY_NAME");
 AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_sign_custom_auth_tokensignature,
-    "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_TOKEN_SIGNATURE");
+    s_mqtt311_test_envName_iot_sign_custom_auth_tokensignature,
+    "AWS_TEST_MQTT311_IOT_CORE_SIGNING_AUTHORIZER_TOKEN_SIGNATURE");
 
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_pkcs12_key, "AWS_TEST_MQTT311_IOT_CORE_PKCS12_KEY");
 AWS_STATIC_STRING_FROM_LITERAL(
@@ -153,10 +148,10 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     struct aws_string *password = NULL;
     struct aws_string *empty_string = aws_string_new_from_c_str(allocator, "");
 
-    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_name, &authname);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_username, &username);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_password, &password);
+    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
+    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_nosign_custom_auth_name, &authname);
+    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_nosign_custom_auth_username, &username);
+    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_nosign_custom_auth_password, &password);
 
     bool isEveryEnvVarSet = (endpoint && authname && username && password);
     if (isEveryEnvVarSet == true)
@@ -257,13 +252,14 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
     struct aws_string *tokenKeyName = NULL;
     struct aws_string *tokenValue = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_name, &authname);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_username, &username);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_password, &password);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokensignature, &signature);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenkey, &tokenKeyName);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenvalue, &tokenValue);
+    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
+    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_name, &authname);
+    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_username, &username);
+    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_password, &password);
+    error |=
+        aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_tokensignature, &signature);
+    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_tokenkey, &tokenKeyName);
+    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_tokenvalue, &tokenValue);
 
     bool isEveryEnvVarSet = (endpoint && authname && username && password && signature && tokenKeyName && tokenValue);
     if (isEveryEnvVarSet == true)
@@ -368,7 +364,7 @@ static int s_TestIoTMqtt311ConnectWithPKCS12(Aws::Crt::Allocator *allocator, voi
     struct aws_string *pkcs12_password = NULL;
     struct aws_string *codebuild_buildID = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
+    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
     error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_pkcs12_key, &pkcs12_key);
     error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_pkcs12_key_password, &pkcs12_password);
     error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_codebuild, &codebuild_buildID);

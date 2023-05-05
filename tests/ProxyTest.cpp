@@ -701,12 +701,12 @@ static int s_TestDirectConnectionTunnelingProxyBasicAuth(struct aws_allocator *a
 
 AWS_TEST_CASE(DirectConnectionTunnelingProxyBasicAuth, s_TestDirectConnectionTunnelingProxyBasicAuth)
 
-AWS_STATIC_STRING_FROM_LITERAL(s_x509EndpointVariable, "AWS_TEST_X509_ENDPOINT");
-AWS_STATIC_STRING_FROM_LITERAL(s_x509RoleAliasVariable, "AWS_TEST_X509_ROLE_ALIAS");
-AWS_STATIC_STRING_FROM_LITERAL(s_x509ThingNameVariable, "AWS_TEST_X509_THING_NAME");
-AWS_STATIC_STRING_FROM_LITERAL(s_CertificatePathVariable, "AWS_TEST_TLS_CERT_PATH");
-AWS_STATIC_STRING_FROM_LITERAL(s_KeyPathVariable, "AWS_TEST_TLS_KEY_PATH");
-AWS_STATIC_STRING_FROM_LITERAL(s_RootCAPathVariable, "AWS_TEST_TLS_ROOT_CERT_PATH");
+AWS_STATIC_STRING_FROM_LITERAL(s_x509EndpointVariable, "AWS_TEST_MQTT311_IOT_CORE_X509_ENDPOINT");
+AWS_STATIC_STRING_FROM_LITERAL(s_x509RoleAliasVariable, "AWS_TEST_MQTT311_IOT_CORE_X509_ROLE_ALIAS");
+AWS_STATIC_STRING_FROM_LITERAL(s_x509ThingNameVariable, "AWS_TEST_MQTT311_IOT_CORE_X509_THING_NAME");
+AWS_STATIC_STRING_FROM_LITERAL(s_CertificatePathVariable, "AWS_TEST_MQTT311_IOT_CORE_X509_CERT");
+AWS_STATIC_STRING_FROM_LITERAL(s_KeyPathVariable, "AWS_TEST_MQTT311_IOT_CORE_X509_KEY");
+AWS_STATIC_STRING_FROM_LITERAL(s_RootCAPathVariable, "AWS_TEST_MQTT311_IOT_CORE_X509_CA");
 
 static int s_InitializeX509Provider(ProxyIntegrationTestState &testState)
 {
@@ -884,8 +884,8 @@ static int s_TestX509ProxyBasicAuthGetCredentials(struct aws_allocator *allocato
 
 AWS_TEST_CASE(X509ProxyBasicAuthGetCredentials, s_TestX509ProxyBasicAuthGetCredentials)
 
-AWS_STATIC_STRING_FROM_LITERAL(s_AwsIotSigningRegionVariable, "AWS_TEST_IOT_SIGNING_REGION");
-AWS_STATIC_STRING_FROM_LITERAL(s_AwsIotMqttEndpointVariable, "AWS_TEST_IOT_MQTT_ENDPOINT");
+AWS_STATIC_STRING_FROM_LITERAL(s_AwsIotSigningRegionVariable, "AWS_TEST_MQTT311_IOT_CORE_REGION");
+AWS_STATIC_STRING_FROM_LITERAL(s_AwsIotMqttEndpointVariable, "AWS_TEST_MQTT311_IOT_CORE_HOST");
 
 static int s_BuildMqttConnection(ProxyIntegrationTestState &testState)
 {
