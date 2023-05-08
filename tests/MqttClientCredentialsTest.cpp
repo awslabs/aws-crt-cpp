@@ -481,6 +481,7 @@ static int s_TestIoTMqtt311ConnectWithPKCS11(Aws::Crt::Allocator *allocator, voi
     Aws::Iot::MqttClient client;
     auto clientConfigBuilder = Aws::Iot::MqttClientConnectionConfigBuilder(pkcs11Options, allocator);
     clientConfigBuilder.WithEndpoint(aws_string_c_str(endpoint));
+    clientConfigBuilder.WithPortOverride(443);
     auto clientConfig = clientConfigBuilder.Build();
     if (!clientConfig)
     {
