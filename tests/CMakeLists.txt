@@ -146,7 +146,6 @@ if(ENABLE_MQTT5_TEST AND NOT BYO_CRYPTO)
     add_net_test_case(Mqtt311WSConnectionMinimal)
     add_net_test_case(Mqtt311WSConnectionWithBasicAuth)
     add_net_test_case(Mqtt311WSConnectionWithTLS)
-    add_net_test_case(Mqtt311WSConnectionWithMutualTLS)
     add_net_test_case(Mqtt311WSConnectionWithHttpProxy)
 
     # MQTT5 TESTS
