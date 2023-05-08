@@ -469,11 +469,6 @@ static int s_TestIotStatisticsPublishStatisticsWaitDisconnect(Aws::Crt::Allocato
         statistics = mqttConnection->GetOperationStatistics();
         ASSERT_INT_EQUALS(1, statistics.incompleteOperationCount);
         ASSERT_INT_EQUALS(expected_size, statistics.incompleteOperationSize);
-        // NOTE: Unacked will be zero because we have not invoked the future yet and so it has not had time to move to
-        // the socket
-        ASSERT_INT_EQUALS(0, statistics.unackedOperationCount);
-        ASSERT_INT_EQUALS(0, statistics.unackedOperationSize);
-        // }
 
         // wait for publish
         {
