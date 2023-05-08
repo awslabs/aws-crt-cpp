@@ -8,6 +8,8 @@
 #include <aws/testing/aws_test_harness.h>
 
 #include <aws/common/environment.h>
+#include <aws/common/string.h>
+#include <aws/crt/UUID.h>
 
 #include <condition_variable>
 #include <fstream>
@@ -141,9 +143,9 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
 
             mqttConnection->OnConnectionCompleted = onConnectionCompleted;
             mqttConnection->OnDisconnect = onDisconnect;
-            char clientId[32];
-            snprintf(clientId, sizeof(clientId), "aws-crt-cpp-v2-%d", tries);
-            mqttConnection->Connect(clientId, true);
+            Aws::Crt::UUID Uuid;
+            Aws::Crt::String uuidStr = Uuid.ToString();
+            mqttConnection->Connect(uuidStr.c_str(), true);
 
             {
                 std::unique_lock<std::mutex> lock(mutex);
@@ -292,9 +294,9 @@ static int s_TestIotStatisticsPublishWaitStatisticsDisconnect(Aws::Crt::Allocato
 
         mqttConnection->OnConnectionCompleted = onConnectionCompleted;
         mqttConnection->OnDisconnect = onDisconnect;
-        char clientId[32];
-        snprintf(clientId, sizeof(clientId), "aws-crt-cpp-v2-test");
-        mqttConnection->Connect(clientId, true);
+        Aws::Crt::UUID Uuid;
+        Aws::Crt::String uuidStr = Uuid.ToString();
+        mqttConnection->Connect(uuidStr.c_str(), true);
 
         {
             std::unique_lock<std::mutex> lock(mutex);
@@ -443,9 +445,9 @@ static int s_TestIotStatisticsPublishStatisticsWaitDisconnect(Aws::Crt::Allocato
 
         mqttConnection->OnConnectionCompleted = onConnectionCompleted;
         mqttConnection->OnDisconnect = onDisconnect;
-        char clientId[32];
-        snprintf(clientId, sizeof(clientId), "aws-crt-cpp-v2-test2");
-        mqttConnection->Connect(clientId, true);
+        Aws::Crt::UUID Uuid;
+        Aws::Crt::String uuidStr = Uuid.ToString();
+        mqttConnection->Connect(uuidStr.c_str(), true);
         {
             std::unique_lock<std::mutex> lock(mutex);
             cv.wait(lock, [&]() { return connected; });
