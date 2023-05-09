@@ -279,6 +279,9 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
         bool willConnected = false;
         auto willOnConnectionCompleted =
             [&](MqttConnection &, int errorCode, ReturnCode returnCode, bool sessionPresent) {
+                (void)errorCode;
+                (void)returnCode;
+                (void)sessionPresent;
                 willConnected = true;
                 willCv.notify_one();
             };
@@ -303,6 +306,9 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
         bool subscriberReceived = false;
         auto subscriberOnConnectionCompleted =
             [&](MqttConnection &, int errorCode, ReturnCode returnCode, bool sessionPresent) {
+                (void)errorCode;
+                (void)returnCode;
+                (void)sessionPresent;
                 subscriberConnected = true;
                 subscriberCv.notify_one();
             };
@@ -311,10 +317,15 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
             subscriberCv.notify_one();
         };
         auto subscriberOnSubAck = [&](MqttConnection &, uint16_t packetId, const String &topic, QOS qos, int) {
+            (void)packetId;
+            (void)topic;
+            (void)qos;
             subscriberSubscribed = true;
             subscriberCv.notify_one();
         };
         auto subscriberOnTest = [&](MqttConnection &, const String &topic, const ByteBuf &payload) {
+            (void)topic;
+            (void)payload;
             subscriberReceived = true;
             subscriberCv.notify_one();
         };
@@ -342,6 +353,9 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
         bool interruptConnected = false;
         auto interruptOnConnectionCompleted =
             [&](MqttConnection &, int errorCode, ReturnCode returnCode, bool sessionPresent) {
+                (void)errorCode;
+                (void)returnCode;
+                (void)sessionPresent;
                 interruptConnected = true;
                 interruptCv.notify_one();
             };
