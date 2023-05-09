@@ -466,7 +466,8 @@ static int s_TestIoTMqtt311ConnectWithPKCS11(Aws::Crt::Allocator *allocator, voi
 
     Aws::Crt::ApiHandle apiHandle(allocator);
 
-    std::shared_ptr<Aws::Crt::Io::Pkcs11Lib> pkcs11Lib = Aws::Crt::Io::Pkcs11Lib::Create(aws_string_c_str(pkcs11_lib));
+    std::shared_ptr<Aws::Crt::Io::Pkcs11Lib> pkcs11Lib = Aws::Crt::Io::Pkcs11Lib::Create(
+        aws_string_c_str(pkcs11_lib), Aws::Crt::Io::Pkcs11Lib::InitializeFinalizeBehavior::Strict, allocator);
     if (!pkcs11Lib)
     {
         fprintf(stderr, "Pkcs11Lib failed: %s\n", Aws::Crt::ErrorDebugString(Aws::Crt::LastError()));
