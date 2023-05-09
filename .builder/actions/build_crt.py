@@ -34,17 +34,12 @@ class BuildCrt(Builder.Action):
                 Builder.InstallPackages(['libssl-dev']).run(env)
                 print("Installed/Updated libssl-dev")
             except:
-                # Try installing openssl11 first
                 try:
-                    Builder.InstallPackages(['openssl11-devel']).run(env)
-                    print("Installed/Updated openssl11-devel")
+                    Builder.InstallPackages(['openssl-devel']).run(env)
+                    print("Installed/Updated openssl-devel")
                 except:
-                    try:
-                        Builder.InstallPackages(['openssl-devel']).run(env)
-                        print("Installed/Updated openssl-devel")
-                    except:
-                        print(
-                            "ERROR - could not install either libssl-devel or openssl-devel. Skipping setting '-DUSE_OPENSSL=ON'")
+                    print(
+                        "ERROR - could not install either libssl-devel or openssl-devel. Skipping setting '-DUSE_OPENSSL=ON'")
                     did_install_openssl = False
             if (did_install_openssl):
                 new_args.append("-DUSE_OPENSSL=ON")
