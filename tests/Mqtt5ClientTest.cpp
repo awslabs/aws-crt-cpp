@@ -50,35 +50,6 @@ AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_hostname, "AWS_TEST_MQTT
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_certificate, "AWS_TEST_MQTT5_IOT_CORE_RSA_CERT");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_key, "AWS_TEST_MQTT5_IOT_CORE_RSA_KEY");
 
-AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_nosign_custom_auth_name,
-    "AWS_TEST_MQTT5_IOT_CORE_NO_SIGNING_AUTHORIZER_NAME");
-AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_nosign_custom_auth_username,
-    "AWS_TEST_MQTT5_IOT_CORE_NO_SIGNING_AUTHORIZER_USERNAME");
-AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_nosign_custom_auth_password,
-    "AWS_TEST_MQTT5_IOT_CORE_NO_SIGNING_AUTHORIZER_PASSWORD");
-
-AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_sign_custom_auth_name,
-    "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_NAME");
-AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_sign_custom_auth_username,
-    "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_USERNAME");
-AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_sign_custom_auth_password,
-    "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_PASSWORD");
-AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_sign_custom_auth_tokenvalue,
-    "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_TOKEN");
-AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_sign_custom_auth_tokenkey,
-    "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_TOKEN_KEY_NAME");
-AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_sign_custom_auth_tokensignature,
-    "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_TOKEN_SIGNATURE");
-
 enum Mqtt5TestType
 {
     MQTT5CONNECT_DIRECT,
