@@ -159,10 +159,8 @@ if(ENABLE_PROXY_INTEGRATION_TESTS AND NOT BYO_CRYPTO)
     add_test_case(MqttViaHttpProxyAlpnBasicAuth)
 endif()
 
-#MQTT5 related tests
-add_test_case(Mqtt5NewClientMinimal)
-add_test_case(Mqtt5NewClientFull)
-if(ENABLE_MQTT5_TEST AND NOT BYO_CRYPTO)
+#MQTT311 related tests
+if (NOT BYO_CRYPTO)
     # MQTT311 TESTS
     add_net_test_case(Mqtt311DirectConnectionMinimal)
     add_net_test_case(Mqtt311DirectConnectionWithBasicAuth)
@@ -173,7 +171,12 @@ if(ENABLE_MQTT5_TEST AND NOT BYO_CRYPTO)
     add_net_test_case(Mqtt311WSConnectionWithBasicAuth)
     add_net_test_case(Mqtt311WSConnectionWithTLS)
     add_net_test_case(Mqtt311WSConnectionWithHttpProxy)
+endif()
 
+#MQTT5 related tests
+add_test_case(Mqtt5NewClientMinimal)
+add_test_case(Mqtt5NewClientFull)
+if(ENABLE_MQTT5_TEST AND NOT BYO_CRYPTO)
     # MQTT5 TESTS
     add_net_test_case(Mqtt5DirectConnectionMinimal)
     add_net_test_case(Mqtt5DirectConnectionWithBasicAuth)

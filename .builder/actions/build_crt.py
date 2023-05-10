@@ -1,5 +1,4 @@
 import Builder
-import sys
 
 
 class BuildCrt(Builder.Action):
@@ -8,6 +7,14 @@ class BuildCrt(Builder.Action):
     It was proving impossible to tweak them exactly how we wanted via the existing
     technique of overlaying data from json files.
     """
+
+    def _setenv(self, env, var, value):
+        """
+        Set environment variable now,
+        and ensure the environment variable is set again when tests run
+        """
+        env.shell.setenv(var, value)
+        env.project.config['test_env'][var] = value
 
     def run(self, env):
         project = Builder.Project.find_project('aws-crt-cpp')
@@ -30,19 +37,18 @@ class BuildCrt(Builder.Action):
         # If we are using OpenSSL on Linux, then we want to make sure our CI container has the latest version
         # for that platform, therefore we need to update
         if (is_using_openssl):
+            self._setenv(env, "AWS_TEST_PKCS11_USE_OPENSSL_SET", "true")
             print(
                 "Trying to install a SSL development library (either libssl-dev or openssl-devel)")
             # Make sure libssl-dev is installed
             try:
                 Builder.InstallPackages(['libssl-dev']).run(env)
                 print("Installed/Updated libssl-dev")
-                env.shell.setenv("AWS_TEST_PKCS11_USE_OPENSSL_SET", "true")
             except:
                 try:
                     Builder.InstallPackages(['openssl-devel']).run(env)
                     print("Installed/Updated openssl-devel")
-                    env.shell.setenv("AWS_TEST_PKCS11_USE_OPENSSL_SET", "true")
                 except:
                     print(
-                        "ERROR - could not install either libssl-devel or openssl-devel. Skipping setting '-DUSE_OPENSSL=ON'")
+                        "ERROR - could not install either libssl-devel or openssl-devel")
         return new_args
