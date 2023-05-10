@@ -6,7 +6,7 @@ env:
     BUILDER_SOURCE: channels
     BUILDER_HOST: https://d19elf31gohf1l.cloudfront.net
     PACKAGE_NAME: aws-crt-cpp
-#this buildspec assumes the ubuntu 14 image
+#this buildspec assumes usage of an Ubuntu image
 phases:
   install:
     commands:
@@ -14,15 +14,13 @@ phases:
       - sudo add-apt-repository ppa:ubuntu-toolchain-r/test
       - sudo apt-add-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-6.0 main"
       - sudo apt-get update -y
-      - sudo apt-get install clang-6.0 cmake3 clang-tidy-6.0 clang-format-6.0 python3 python3-pip -y -f
+      - sudo apt-get install gcc-7 cmake python3 python3-pip -y -f
       - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
       - unzip -q -d /tmp /tmp/awscliv2.zip
       - sudo /tmp/aws/install
-
   pre_build:
     commands:
-      - export CC=clang-6.0
-      - export CXX=clang++-6.0
+      - export CC=gcc-7
   build:
     commands:
       - echo Build started on `date`
