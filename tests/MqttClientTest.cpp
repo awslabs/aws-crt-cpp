@@ -180,6 +180,19 @@ static int s_TestMqtt311DirectConnectionMinimal(Aws::Crt::Allocator *allocator, 
     int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_direct_hostname, &endpoint);
     error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_direct_port, &port);
 
+    if (endpoint == NULL) {
+        fprintf(stdout, "\n ENDPOINT IS NULL \n");
+    }
+    if (port == NULL) {
+        fprintf(stdout, "\n PORT IS NULL \n");
+    }
+    if (!aws_string_is_valid(endpoint)) {
+        fprintf(stdout, "\n ENDPOINT IS NOT VALID");
+    }
+    if (!aws_string_is_valid(port)) {
+        fprintf(stdout, "\n PORT IS NOT VALID");
+    }
+
     bool isEveryEnvVarSet = (endpoint && port);
     if (isEveryEnvVarSet == true)
     {
@@ -190,7 +203,7 @@ static int s_TestMqtt311DirectConnectionMinimal(Aws::Crt::Allocator *allocator, 
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
         aws_string_destroy(port);
-        return AWS_OP_SKIP;
+        return AWS_OP_ERR;
     }
 
     Aws::Crt::ApiHandle apiHandle(allocator);
