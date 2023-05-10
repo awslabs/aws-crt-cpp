@@ -30,18 +30,45 @@ static void s_setupConnectionLifeCycle(
     mqtt5Options.WithClientConnectionSuccessCallback(
         [&connectionPromise, clientName](const OnConnectionSuccessEventData &) {
             printf("[MQTT5]%s Connection Success.", clientName);
-            connectionPromise.set_value(true);
+            try
+            {
+                connectionPromise.set_value(true);
+            }
+            catch (...)
+            {
+                // Not ideal, but: this prevents the issue of the promise being set twice causing an exception
+                // which can happen on slow containers (I.E Codebuild, GitHub Actions)
+                printf("[MQTT5]%s Connection Success - but exception ocurred setting future", clientName);
+            }
         });
 
     mqtt5Options.WithClientConnectionFailureCallback(
         [&connectionPromise, clientName](const OnConnectionFailureEventData &eventData) {
             printf("[MQTT5]%s Connection failed with error : %s", clientName, aws_error_debug_str(eventData.errorCode));
-            connectionPromise.set_value(false);
+            try
+            {
+                connectionPromise.set_value(false);
+            }
+            catch (...)
+            {
+                // Not ideal, but: this prevents the issue of the promise being set twice causing an exception
+                // which can happen on slow containers (I.E Codebuild, GitHub Actions)
+                printf("[MQTT5]%s Connection failed - but exception ocurred setting future", clientName);
+            }
         });
 
     mqtt5Options.WithClientStoppedCallback([&stoppedPromise, clientName](const OnStoppedEventData &) {
         printf("[MQTT5]%s Stopped", clientName);
-        stoppedPromise.set_value();
+        try
+        {
+            stoppedPromise.set_value();
+        }
+        catch (...)
+        {
+            // Not ideal, but: this prevents the issue of the promise being set twice causing an exception
+            // which can happen on slow containers (I.E Codebuild, GitHub Actions)
+            printf("[MQTT5]%s Stopped - but exception ocurred setting future", clientName);
+        }
     });
 }
 

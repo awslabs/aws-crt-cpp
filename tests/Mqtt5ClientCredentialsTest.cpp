@@ -564,19 +564,17 @@ static int s_TestIoTMqtt5ConnectWithPKCS11(Aws::Crt::Allocator *allocator, void 
     error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_pkcs11_token_label, &pkcs11_tokenLabel);
     error |= aws_get_environment_value(
         allocator, s_mqtt5_test_envName_iot_pkcs11_private_key_label, &pkcs11_privateKeyLabel);
-    error |= aws_get_environment_value(allocator, s_test_envName_iot_pkcs11_use_openssl, &pkcs11_use_openssl);
+    aws_get_environment_value(allocator, s_test_envName_iot_pkcs11_use_openssl, &pkcs11_use_openssl);
 
     bool isEveryEnvVarSet =
-        (endpoint && pkcs11_lib && pkcs11_cert && pkcs11_userPin && pkcs11_tokenLabel && pkcs11_privateKeyLabel &&
-         pkcs11_use_openssl);
+        (endpoint && pkcs11_lib && pkcs11_cert && pkcs11_userPin && pkcs11_tokenLabel && pkcs11_privateKeyLabel);
     if (isEveryEnvVarSet == true)
     {
         isEveryEnvVarSet =
             (aws_string_is_valid(endpoint) && aws_string_is_valid(pkcs11_cert) && aws_string_is_valid(pkcs11_userPin) &&
-             aws_string_is_valid(pkcs11_tokenLabel) && aws_string_is_valid(pkcs11_privateKeyLabel) &&
-             aws_string_is_valid(pkcs11_use_openssl));
+             aws_string_is_valid(pkcs11_tokenLabel) && aws_string_is_valid(pkcs11_privateKeyLabel));
     }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false || pkcs11_use_openssl == NULL)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -647,7 +645,7 @@ static int s_TestIoTMqtt5ConnectWithPKCS12(Aws::Crt::Allocator *allocator, void 
     int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
     error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_pkcs12_key, &pkcs12_key);
     error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_pkcs12_key_password, &pkcs12_password);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_codebuild, &codebuild_buildID);
+    aws_get_environment_value(allocator, s_mqtt5_test_envName_codebuild, &codebuild_buildID);
 
     bool isEveryEnvVarSet = (endpoint && pkcs12_key && pkcs12_password);
     if (isEveryEnvVarSet == true)
@@ -717,7 +715,7 @@ static int s_TestIoTMqtt5ConnectWithWindowsCert(Aws::Crt::Allocator *allocator, 
 
     int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
     error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_windows_cert, &windows_cert);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_codebuild, &codebuild_buildID);
+    aws_get_environment_value(allocator, s_mqtt5_test_envName_codebuild, &codebuild_buildID);
 
     bool isEveryEnvVarSet = (endpoint && windows_cert);
     if (isEveryEnvVarSet == true)
