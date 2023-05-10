@@ -25,7 +25,6 @@ jobs:
         image:
           - manylinux2014-x64
           - manylinux2014-x86
-          - al2-x64
           - fedora-34-x64
           - opensuse-leap
           - rhel8-x64
@@ -37,13 +36,14 @@ jobs:
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
         ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ matrix.image }} build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DUSE_OPENSSL=ON
 
-  # Split alpine out from the other linux-compat images so we can test PKCS11 on the others
-  # without testing it on alpine.
-  linux-compat-apline:
+  # The following containers need to run without -DUSE_OPENSSL because they do not have OpenSSL packages
+  # that are up-to-date (AL2) or don't provide OpenSSL development packages that is found in CMake (alpine)
+  linux-compat-no-byo:
     runs-on: ubuntu-20.04 # latest
     strategy:
       matrix:
         image:
+          - al2-x64
           - alpine-3.16-x64
           - alpine-3.16-x86
           - alpine-3.16-armv6
