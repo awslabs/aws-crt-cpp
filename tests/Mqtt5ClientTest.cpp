@@ -21,6 +21,30 @@ using namespace Aws::Crt::Mqtt5;
 // Creation Test Cases [New-UC] (runs regardless of byo-crypto)
 //////////////////////////////////////////////////////////
 
+static void s_setupConnectionLifeCycle(
+    Mqtt5::Mqtt5ClientOptions &mqtt5Options,
+    std::promise<bool> &connectionPromise,
+    std::promise<void> &stoppedPromise,
+    const char *clientName = "Client")
+{
+    mqtt5Options.WithClientConnectionSuccessCallback(
+        [&connectionPromise, clientName](const OnConnectionSuccessEventData &) {
+            printf("[MQTT5]%s Connection Success.", clientName);
+            connectionPromise.set_value(true);
+        });
+
+    mqtt5Options.WithClientConnectionFailureCallback(
+        [&connectionPromise, clientName](const OnConnectionFailureEventData &eventData) {
+            printf("[MQTT5]%s Connection failed with error : %s", clientName, aws_error_debug_str(eventData.errorCode));
+            connectionPromise.set_value(false);
+        });
+
+    mqtt5Options.WithClientStoppedCallback([&stoppedPromise, clientName](const OnStoppedEventData &) {
+        printf("[MQTT5]%s Stopped", clientName);
+        stoppedPromise.set_value();
+    });
+}
+
 /*
  * [New-UC1] Happy path. Minimal creation and cleanup
  */
@@ -417,30 +441,6 @@ struct Mqtt5TestEnvVars
 //////////////////////////////////////////////////////////
 // Test Helper
 //////////////////////////////////////////////////////////
-static void s_setupConnectionLifeCycle(
-    Mqtt5::Mqtt5ClientOptions &mqtt5Options,
-    std::promise<bool> &connectionPromise,
-    std::promise<void> &stoppedPromise,
-    const char *clientName = "Client")
-{
-    mqtt5Options.WithClientConnectionSuccessCallback(
-        [&connectionPromise, clientName](const OnConnectionSuccessEventData &) {
-            printf("[MQTT5]%s Connection Success.", clientName);
-            connectionPromise.set_value(true);
-        });
-
-    mqtt5Options.WithClientConnectionFailureCallback(
-        [&connectionPromise, clientName](const OnConnectionFailureEventData &eventData) {
-            printf("[MQTT5]%s Connection failed with error : %s", clientName, aws_error_debug_str(eventData.errorCode));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.WithClientStoppedCallback([&stoppedPromise, clientName](const OnStoppedEventData &) {
-        printf("[MQTT5]%s Stopped", clientName);
-        stoppedPromise.set_value();
-    });
-}
-
 static void s_setupConnectionLifeCycle(
     Aws::Iot::Mqtt5ClientBuilder *mqtt5Builder,
     std::promise<bool> &connectionPromise,
