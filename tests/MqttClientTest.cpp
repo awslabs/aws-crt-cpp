@@ -11,9 +11,10 @@
 #include <aws/iot/MqttClient.h>
 #include <aws/iot/MqttCommon.h>
 
+#include <aws/testing/aws_test_harness.h>
 #include <utility>
 
-#include <aws/testing/aws_test_harness.h>
+#if !BYO_CRYPTO
 
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_direct_hostname, "AWS_TEST_MQTT311_DIRECT_MQTT_HOST");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_direct_port, "AWS_TEST_MQTT311_DIRECT_MQTT_PORT");
@@ -48,7 +49,6 @@ AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_ws_basicauth_port, "AWS_TE
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_ws_tls_hostname, "AWS_TEST_MQTT311_WS_MQTT_TLS_HOST");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_ws_tls_port, "AWS_TEST_MQTT311_WS_MQTT_TLS_PORT");
 
-#if !BYO_CRYPTO
 static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator *allocator, void *ctx)
 {
     (void)ctx;
@@ -91,7 +91,6 @@ static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator *allocator, void *
 
     return AWS_ERROR_SUCCESS;
 }
-
 AWS_TEST_CASE(MqttClientResourceSafety, s_TestMqttClientResourceSafety)
 
 static int s_TestMqttClientNewConnectionUninitializedTlsContext(Aws::Crt::Allocator *allocator, void *ctx)
@@ -128,9 +127,7 @@ static int s_TestMqttClientNewConnectionUninitializedTlsContext(Aws::Crt::Alloca
 
     return AWS_ERROR_SUCCESS;
 }
-
 AWS_TEST_CASE(MqttClientNewConnectionUninitializedTlsContext, s_TestMqttClientNewConnectionUninitializedTlsContext)
-#endif // !BYO_CRYPTO
 
 static int s_ConnectAndDisconnect(std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection)
 {
@@ -210,7 +207,6 @@ static int s_TestMqtt311DirectConnectionMinimal(Aws::Crt::Allocator *allocator, 
     aws_string_destroy(port);
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt311DirectConnectionMinimal, s_TestMqtt311DirectConnectionMinimal)
 
 /*
@@ -262,7 +258,6 @@ static int s_TestMqtt311DirectConnectionWithBasicAuth(Aws::Crt::Allocator *alloc
     aws_string_destroy(password);
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt311DirectConnectionWithBasicAuth, s_TestMqtt311DirectConnectionWithBasicAuth)
 
 /*
@@ -289,13 +284,14 @@ static int s_TestMqtt311DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, 
         return AWS_OP_SKIP;
     }
 
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
     ASSERT_TRUE(tlsCtxOptions);
     tlsCtxOptions.SetVerifyPeer(false);
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
 
-    Aws::Crt::ApiHandle apiHandle(allocator);
     Aws::Crt::Mqtt::MqttClient client;
     Aws::Crt::Io::SocketOptions socketOptions;
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
@@ -309,7 +305,6 @@ static int s_TestMqtt311DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, 
     aws_string_destroy(port);
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt311DirectConnectionWithTLS, s_TestMqtt311DirectConnectionWithTLS)
 
 /*
@@ -361,7 +356,6 @@ static int s_TestMqtt311DirectConnectionWithMutualTLS(Aws::Crt::Allocator *alloc
     aws_string_destroy(key_path);
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt311DirectConnectionWithMutualTLS, s_TestMqtt311DirectConnectionWithMutualTLS)
 
 /*
@@ -425,7 +419,6 @@ static int s_TestMqtt311DirectConnectionWithHttpProxy(Aws::Crt::Allocator *alloc
     aws_string_destroy(proxy_port);
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt311DirectConnectionWithHttpProxy, s_TestMqtt311DirectConnectionWithHttpProxy)
 
 //////////////////////////////////////////////////////////
@@ -547,13 +540,14 @@ static int s_TestMqtt311WSConnectionWithTLS(Aws::Crt::Allocator *allocator, void
         return AWS_OP_SKIP;
     }
 
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
     ASSERT_TRUE(tlsCtxOptions);
     tlsCtxOptions.SetVerifyPeer(false);
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
 
-    Aws::Crt::ApiHandle apiHandle(allocator);
     Aws::Crt::Mqtt::MqttClient client;
     Aws::Crt::Io::SocketOptions socketOptions;
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
@@ -600,6 +594,8 @@ static int s_TestMqtt311WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator
         return AWS_OP_SKIP;
     }
 
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
     ASSERT_TRUE(tlsCtxOptions);
     tlsCtxOptions.SetVerifyPeer(false);
@@ -611,7 +607,6 @@ static int s_TestMqtt311WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator
     proxyOptions.Port = (uint16_t)std::stoi(aws_string_c_str(proxy_port));
     proxyOptions.ProxyConnectionType = Aws::Crt::Http::AwsHttpProxyConnectionType::Tunneling;
 
-    Aws::Crt::ApiHandle apiHandle(allocator);
     Aws::Crt::Mqtt::MqttClient client;
     Aws::Crt::Io::SocketOptions socketOptions;
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
@@ -629,3 +624,5 @@ static int s_TestMqtt311WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt311WSConnectionWithHttpProxy, s_TestMqtt311WSConnectionWithHttpProxy)
+
+#endif // !BYO_CRYPTO

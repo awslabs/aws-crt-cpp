@@ -18,12 +18,12 @@
 
 #include <aws/io/logging.h>
 
+#if !BYO_CRYPTO
+
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_core_host, "AWS_TEST_MQTT311_IOT_CORE_HOST");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_core_cert, "AWS_TEST_MQTT311_IOT_CORE_RSA_CERT");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_core_key, "AWS_TEST_MQTT311_IOT_CORE_RSA_KEY");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_core_ca, "AWS_TEST_MQTT311_ROOT_CA");
-
-#if !BYO_CRYPTO
 
 static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
 {

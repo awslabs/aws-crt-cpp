@@ -387,7 +387,6 @@ static int s_TestMqtt5NewClientMin(Aws::Crt::Allocator *allocator, void *)
 
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5NewClientMinimal, s_TestMqtt5NewClientMin)
 
 /*
@@ -459,7 +458,6 @@ static int s_TestMqtt5NewClientFull(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(mqtt5Client);
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5NewClientFull, s_TestMqtt5NewClientFull)
 
 //////////////////////////////////////////////////////////
@@ -497,7 +495,6 @@ static int s_TestMqtt5DirectConnectionMinimal(Aws::Crt::Allocator *allocator, vo
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5DirectConnectionMinimal, s_TestMqtt5DirectConnectionMinimal)
 
 /*
@@ -537,7 +534,6 @@ static int s_TestMqtt5DirectConnectionWithBasicAuth(Aws::Crt::Allocator *allocat
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5DirectConnectionWithBasicAuth, s_TestMqtt5DirectConnectionWithBasicAuth)
 
 /*
@@ -582,13 +578,11 @@ static int s_TestMqtt5DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, vo
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5DirectConnectionWithTLS, s_TestMqtt5DirectConnectionWithTLS)
 
 /*
  * [ConnDC-UC4] Direct connection with mutual TLS
  */
-
 static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
@@ -627,12 +621,11 @@ static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocat
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5DirectConnectionWithMutualTLS, s_TestMqtt5DirectConnectionWithMutualTLS)
 
-///*
-// * [ConnDC-UC5] Direct connection with HttpProxy options
-// */
+/*
+ * [ConnDC-UC5] Direct connection with HttpProxy options
+ */
 static int s_TestMqtt5DirectConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_TLS);
@@ -682,7 +675,6 @@ static int s_TestMqtt5DirectConnectionWithHttpProxy(Aws::Crt::Allocator *allocat
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5DirectConnectionWithHttpProxy, s_TestMqtt5DirectConnectionWithHttpProxy)
 
 /*
@@ -824,7 +816,6 @@ static int s_TestMqtt5WSConnectionMinimal(Aws::Crt::Allocator *allocator, void *
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5WSConnectionMinimal, s_TestMqtt5WSConnectionMinimal)
 
 /*
@@ -886,7 +877,6 @@ static int s_TestMqtt5WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, 
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5WSConnectionWithBasicAuth, s_TestMqtt5WSConnectionWithBasicAuth)
 
 /*
@@ -952,13 +942,11 @@ static int s_TestMqtt5WSConnectionWithTLS(Aws::Crt::Allocator *allocator, void *
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5WSConnectionWithTLS, s_TestMqtt5WSConnectionWithTLS)
 
 /*
  * [ConnDC-UC4] Websocket connection with mutual TLS
  */
-
 static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
@@ -1020,12 +1008,10 @@ static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, 
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5WSConnectionWithMutualTLS, s_TestMqtt5WSConnectionWithMutualTLS)
 
 /*
  * ConnWS-UC5] Websocket connection with HttpProxy options
- *
  */
 static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, void *)
 {
@@ -1102,7 +1088,6 @@ static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, 
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5WSConnectionWithHttpProxy, s_TestMqtt5WSConnectionWithHttpProxy)
 
 /*
@@ -1211,7 +1196,7 @@ static int s_TestMqtt5WSConnectionFull(Aws::Crt::Allocator *allocator, void *)
 AWS_TEST_CASE(Mqtt5WSConnectionFull, s_TestMqtt5WSConnectionFull)
 
 ////////////////////////////////////////////////////////////
-//// Negative Connect Tests with Incorrect Data [ConnNegativeID-UC]
+// Negative Connect Tests with Incorrect Data [ConnNegativeID-UC]
 ////////////////////////////////////////////////////////////
 
 /*
@@ -1419,7 +1404,6 @@ static int s_TestMqtt5IncorrectBasicAuth(Aws::Crt::Allocator *allocator, void *)
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5IncorrectBasicAuth, s_TestMqtt5IncorrectBasicAuth)
 
 // [ConnNegativeID-UC6] Client Websocket Handshake Failure test
@@ -1466,7 +1450,6 @@ static int s_TestMqtt5IncorrectWSConnect(Aws::Crt::Allocator *allocator, void *)
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5IncorrectWSConnect, s_TestMqtt5IncorrectWSConnect)
 
 /*
@@ -1535,7 +1518,6 @@ static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void
     stopped1Promise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5DoubleClientIDFailure, s_TestMqtt5DoubleClientIDFailure)
 
 //////////////////////////////////////////////////////////
@@ -1592,7 +1574,6 @@ static int s_TestMqtt5NegotiatedSettingsHappy(Aws::Crt::Allocator *allocator, vo
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5NegotiatedSettingsHappy, s_TestMqtt5NegotiatedSettingsHappy)
 
 /*
@@ -1652,7 +1633,6 @@ static int s_TestMqtt5NegotiatedSettingsFull(Aws::Crt::Allocator *allocator, voi
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5NegotiatedSettingsFull, s_TestMqtt5NegotiatedSettingsFull)
 
 /*
@@ -1712,7 +1692,6 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
 
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5NegotiatedSettingsLimit, s_TestMqtt5NegotiatedSettingsLimit)
 
 /*
@@ -1786,7 +1765,6 @@ static int s_TestMqtt5NegotiatedSettingsRejoinAlways(Aws::Crt::Allocator *alloca
 
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5NegotiatedSettingsRejoinAlways, s_TestMqtt5NegotiatedSettingsRejoinAlways)
 
 //////////////////////////////////////////////////////////
@@ -1868,7 +1846,6 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
 
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5SubUnsub, s_TestMqtt5SubUnsub)
 
 /*
@@ -1952,7 +1929,6 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *)
 
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5WillTest, s_TestMqtt5WillTest)
 
 //////////////////////////////////////////////////////////
@@ -2001,7 +1977,6 @@ static int s_TestMqtt5NullPublish(Aws::Crt::Allocator *allocator, void *)
 
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5NullPublish, s_TestMqtt5NullPublish)
 
 /*
@@ -2045,7 +2020,6 @@ static int s_TestMqtt5NullSubscribe(Aws::Crt::Allocator *allocator, void *)
 
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5NullSubscribe, s_TestMqtt5NullSubscribe)
 
 /*
@@ -2090,7 +2064,6 @@ static int s_TestMqtt5NullUnsubscribe(Aws::Crt::Allocator *allocator, void *)
 
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5NullUnsubscribe, s_TestMqtt5NullUnsubscribe)
 
 static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *)
@@ -2123,7 +2096,6 @@ static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *)
 
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5NullConnectPacket, s_TestMqtt5NullConnectPacket)
 
 //////////////////////////////////////////////////////////
@@ -2225,7 +2197,6 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *)
 
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5QoS1SubPub, s_TestMqtt5QoS1SubPub)
 
 ///*
@@ -2339,7 +2310,6 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *)
     stopped1Promise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5RetainSetAndClear, s_TestMqtt5RetainSetAndClear)
 
 //////////////////////////////////////////////////////////
@@ -2392,7 +2362,6 @@ static int s_TestMqtt5InterruptSub(Aws::Crt::Allocator *allocator, void *)
     delete builder;
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5InterruptSub, s_TestMqtt5InterruptSub)
 
 /*
@@ -2442,7 +2411,6 @@ static int s_TestMqtt5InterruptUnsub(Aws::Crt::Allocator *allocator, void *)
     delete builder;
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5InterruptUnsub, s_TestMqtt5InterruptUnsub)
 
 /*
@@ -2492,7 +2460,6 @@ static int s_TestMqtt5InterruptPublishQoS1(Aws::Crt::Allocator *allocator, void 
     delete builder;
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5InterruptPublishQoS1, s_TestMqtt5InterruptPublishQoS1)
 
 //////////////////////////////////////////////////////////
@@ -2556,7 +2523,6 @@ static int s_TestMqtt5OperationStatisticsSimple(Aws::Crt::Allocator *allocator, 
 
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5OperationStatisticsSimple, s_TestMqtt5OperationStatisticsSimple)
 
 #endif // !BYO_CRYPTO

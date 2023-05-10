@@ -13,9 +13,10 @@
 #include <aws/iot/MqttClient.h>
 #include <aws/iot/MqttCommon.h>
 
+#include <aws/testing/aws_test_harness.h>
 #include <utility>
 
-#include <aws/testing/aws_test_harness.h>
+#if !BYO_CRYPTO
 
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_hostname, "AWS_TEST_MQTT311_IOT_CORE_HOST");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_region, "AWS_TEST_MQTT311_IOT_CORE_REGION");
@@ -1264,3 +1265,5 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt311ConnectWSEnvironment, s_TestIoTMqtt311ConnectWSEnvironment)
+
+#endif // !BYO_CRYPTO
