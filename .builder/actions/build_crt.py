@@ -15,18 +15,21 @@ class BuildCrt(Builder.Action):
 
     def _transform_cmake_args(self, env, project, cmake_args):
         new_args = []
+        is_using_openssl = False
 
         # remove or swap out flags that we don't want for C++
         for arg in cmake_args:
             # we want to use PERFORM_HEADER_CHECK_CXX instead of PERFORM_HEADER_CHECK
             if arg == "-DPERFORM_HEADER_CHECK=ON":
                 arg = "-DPERFORM_HEADER_CHECK_CXX=ON"
+            if (arg == "-DUSE_OPENSSL=ON"):
+                is_using_openssl = True
 
             new_args.append(arg)
 
-        # If on Linux, we want to use the OS crypto library so we can run PKCS11 tests in CI
-        if (sys.platform.startswith("linux") or sys.platform.startswith("freebsd")):
-            did_install_openssl = True
+        # If we are using OpenSSL on Linux, then we want to make sure our CI container has the latest version
+        # for that platform, therefore we need to update
+        if (is_using_openssl):
             print(
                 "Trying to install a SSL development library (either libssl-dev or openssl-devel)")
             # Make sure libssl-dev is installed
@@ -40,7 +43,4 @@ class BuildCrt(Builder.Action):
                 except:
                     print(
                         "ERROR - could not install either libssl-devel or openssl-devel. Skipping setting '-DUSE_OPENSSL=ON'")
-                    did_install_openssl = False
-            if (did_install_openssl):
-                new_args.append("-DUSE_OPENSSL=ON")
         return new_args
