@@ -54,6 +54,8 @@ AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_pkcs11_token_label, "A
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_pkcs11_pin, "AWS_TEST_PKCS11_PIN");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_pkcs11_private_key_label, "AWS_TEST_PKCS11_PKEY_LABEL");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_pkcs11_cert, "AWS_TEST_PKCS11_CERT_FILE");
+// C++ specific PKCS11 check: only runs PKCS11 if 'DUSE_OPENSSL=ON' is set in the builder
+AWS_STATIC_STRING_FROM_LITERAL(s_test_envName_iot_pkcs11_use_openssl, "AWS_TEST_PKCS11_USE_OPENSSL_SET");
 
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_pkcs12_key, "AWS_TEST_MQTT311_IOT_CORE_PKCS12_KEY");
 AWS_STATIC_STRING_FROM_LITERAL(
@@ -435,6 +437,7 @@ static int s_TestIoTMqtt311ConnectWithPKCS11(Aws::Crt::Allocator *allocator, voi
     struct aws_string *pkcs11_userPin = NULL;
     struct aws_string *pkcs11_tokenLabel = NULL;
     struct aws_string *pkcs11_privateKeyLabel = NULL;
+    struct aws_string *pkcs11_use_openssl = NULL;
 
     int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
     error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_pkcs11_lib, &pkcs11_lib);
@@ -443,14 +446,17 @@ static int s_TestIoTMqtt311ConnectWithPKCS11(Aws::Crt::Allocator *allocator, voi
     error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_pkcs11_token_label, &pkcs11_tokenLabel);
     error |= aws_get_environment_value(
         allocator, s_mqtt311_test_envName_iot_pkcs11_private_key_label, &pkcs11_privateKeyLabel);
+    error |= aws_get_environment_value(allocator, s_test_envName_iot_pkcs11_use_openssl, &pkcs11_use_openssl);
 
     bool isEveryEnvVarSet =
-        (endpoint && pkcs11_lib && pkcs11_cert && pkcs11_userPin && pkcs11_tokenLabel && pkcs11_privateKeyLabel);
+        (endpoint && pkcs11_lib && pkcs11_cert && pkcs11_userPin && pkcs11_tokenLabel && pkcs11_privateKeyLabel &&
+         pkcs11_use_openssl);
     if (isEveryEnvVarSet == true)
     {
         isEveryEnvVarSet =
             (aws_string_is_valid(endpoint) && aws_string_is_valid(pkcs11_cert) && aws_string_is_valid(pkcs11_userPin) &&
-             aws_string_is_valid(pkcs11_tokenLabel) && aws_string_is_valid(pkcs11_privateKeyLabel));
+             aws_string_is_valid(pkcs11_tokenLabel) && aws_string_is_valid(pkcs11_privateKeyLabel) &&
+             aws_string_is_valid(pkcs11_use_openssl));
     }
     if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
     {
@@ -461,6 +467,7 @@ static int s_TestIoTMqtt311ConnectWithPKCS11(Aws::Crt::Allocator *allocator, voi
         aws_string_destroy(pkcs11_userPin);
         aws_string_destroy(pkcs11_tokenLabel);
         aws_string_destroy(pkcs11_privateKeyLabel);
+        aws_string_destroy(pkcs11_use_openssl);
         return AWS_OP_SKIP;
     }
 
@@ -482,7 +489,7 @@ static int s_TestIoTMqtt311ConnectWithPKCS11(Aws::Crt::Allocator *allocator, voi
     Aws::Iot::MqttClient client;
     auto clientConfigBuilder = Aws::Iot::MqttClientConnectionConfigBuilder(pkcs11Options, allocator);
     clientConfigBuilder.WithEndpoint(aws_string_c_str(endpoint));
-    clientConfigBuilder.WithPortOverride(443);
+
     auto clientConfig = clientConfigBuilder.Build();
     if (!clientConfig)
     {
@@ -538,6 +545,7 @@ static int s_TestIoTMqtt311ConnectWithPKCS11(Aws::Crt::Allocator *allocator, voi
     aws_string_destroy(pkcs11_userPin);
     aws_string_destroy(pkcs11_tokenLabel);
     aws_string_destroy(pkcs11_privateKeyLabel);
+    aws_string_destroy(pkcs11_use_openssl);
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt311ConnectWithPKCS11, s_TestIoTMqtt311ConnectWithPKCS11)

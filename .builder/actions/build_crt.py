@@ -36,10 +36,12 @@ class BuildCrt(Builder.Action):
             try:
                 Builder.InstallPackages(['libssl-dev']).run(env)
                 print("Installed/Updated libssl-dev")
+                env.shell.setenv("AWS_TEST_PKCS11_USE_OPENSSL_SET", "true")
             except:
                 try:
                     Builder.InstallPackages(['openssl-devel']).run(env)
                     print("Installed/Updated openssl-devel")
+                    env.shell.setenv("AWS_TEST_PKCS11_USE_OPENSSL_SET", "true")
                 except:
                     print(
                         "ERROR - could not install either libssl-devel or openssl-devel. Skipping setting '-DUSE_OPENSSL=ON'")
