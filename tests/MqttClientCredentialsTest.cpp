@@ -577,7 +577,7 @@ static int s_TestIoTMqtt311ConnectWithPKCS12(Aws::Crt::Allocator *allocator, voi
         aws_string_destroy(pkcs12_key);
         aws_string_destroy(pkcs12_password);
 
-        // If in Codebuild, return as a 'success' even though it is a skip
+        // If this is in Codebuild, return as a 'success' even though it is a skip
         if (codebuild_buildID && aws_string_is_valid(codebuild_buildID))
         {
             aws_string_destroy(codebuild_buildID);
