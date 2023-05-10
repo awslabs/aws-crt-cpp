@@ -29,6 +29,21 @@ jobs:
           - fedora-34-x64
           - opensuse-leap
           - rhel8-x64
+    steps:
+    - name: Install qemu/docker
+      run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    - name: Build ${{ env.PACKAGE_NAME }}
+      run: |
+        aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ matrix.image }} build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DUSE_OPENSSL=ON
+
+  # Split alpine out from the other linux-compat images so we can test PKCS11 on the others
+  # without testing it on alpine.
+  linux-compat-apline:
+    runs-on: ubuntu-20.04 # latest
+    strategy:
+      matrix:
+        image:
           - alpine-3.16-x64
           - alpine-3.16-x86
           - alpine-3.16-armv6
@@ -40,7 +55,7 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ matrix.image }} build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DUSE_OPENSSL=ON
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ matrix.image }} build -p ${{ env.PACKAGE_NAME }}
 
   linux-compiler-compat:
     runs-on: ubuntu-20.04 # latest
