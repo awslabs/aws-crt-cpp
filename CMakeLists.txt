@@ -87,6 +87,14 @@ elseif(NOT DEFINED CMAKE_INSTALL_LIBDIR)
     set(CMAKE_INSTALL_LIBDIR "lib")
 endif()
 
+# Cross compiling iOS will not compile without a bundle identifier, so we need to add one here.
+if (APPLE)
+    if (CMAKE_CROSSCOMPILING)
+        set(APP_BUNDLE_IDENTIFIER "com.aws.aws-crt-cpp")
+        set(TEST_BUNDLE_IDENTIFIER "com.aws.aws-crt-cpp.test")
+    endif()
+endif()
+
 if(${CMAKE_INSTALL_LIBDIR} STREQUAL "lib64")
     set(FIND_LIBRARY_USE_LIB64_PATHS true)
 endif()
