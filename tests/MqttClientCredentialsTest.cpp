@@ -1211,7 +1211,8 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
     if (!provider)
     {
         fprintf(stderr, "Failure to create credentials provider!\n");
-        ASSERT_TRUE(false);
+        return 9999; // I have a theory - returning anything negative is being treated as skip, so -1 = skip
+        // ASSERT_TRUE(false);
     }
     Aws::Iot::WebsocketConfig config(aws_string_c_str(region), provider);
 
@@ -1222,13 +1223,13 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
     if (!clientConfig)
     {
         printf("Failed to create MQTT311 client from config");
-        ASSERT_TRUE(false);
+        return 9999; // I have a theory - returning anything negative is being treated as skip, so -1 = skip
     }
     auto connection = client.NewConnection(clientConfig);
     if (!*connection)
     {
         printf("Failed to create MQTT311 connection from config");
-        ASSERT_TRUE(false);
+        return 9999; // I have a theory - returning anything negative is being treated as skip, so -1 = skip
     }
 
     std::promise<bool> connectionCompletedPromise;
@@ -1255,12 +1256,14 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
     if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
         printf("Failed to connect");
-        ASSERT_TRUE(false);
+        return 9999; // I have a theory - returning anything negative is being treated as skip, so -1 = skip
+        // ASSERT_TRUE(false);
     }
     if (connectionCompletedPromise.get_future().get() == false)
     {
         printf("Connection failed");
-        ASSERT_TRUE(false);
+        return 9999; // I have a theory - returning anything negative is being treated as skip, so -1 = skip
+        // ASSERT_TRUE(false);
     }
     if (connection->Disconnect())
     {
