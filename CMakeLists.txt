@@ -317,25 +317,16 @@ endif()
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
 
-# We have to 'sign' the bundle on iOS to compile, otherwise we cannot compile in CI
-if (APPLE)
+# Skip signing the code - otherwise iOS will not compile in CI at all! Newer versions
+# of XCode require code signing by default and M1 binaries require it, but we're just
+# a library, so skip code signing.
+# This only really applies to iOS currently, as MacOS isn't as picky about it
+if (IOS)
     set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO")
     set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "")
     set(XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "")
     set(XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO")
-    set(MACOSX_BUNDLE_BUNDLE_NAME "AWS-CRT-CPP-Bundle")
-    set(MACOSX_BUNDLE_BUNDLE_VERSION ${FULL_VERSION})
-    set(MACOSX_BUNDLE_LONG_VERSION_STRING "AWS-CRT-CPP-Bundle version ${FULL_VERSION}")
-    set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${FULL_VERSION}")
-    set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.aws.aws-crt-cpp")
-    set(MACOSX_BUNDLE_COPYRIGHT "(C) 2023 Amazon AWS")
-    set(MACOSX_FRAMEWORK_IDENTIFIER "com.aws.aws-crt-cpp.ios-bundle")
-    set(XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "")
-    set(XCODE_ATTRIBUTE_CODE_SIGN_STYLE Manual)
-
     set_target_properties(${PROJECT_NAME} PROPERTIES
-        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ""
-        XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO"
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/plist.in)
 endif()
 
