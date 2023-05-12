@@ -18,7 +18,7 @@ env:
   AWS_REGION: us-east-1
 
 jobs:
-  linux-compat:
+  linux-compat-use-openssl:
     runs-on: ubuntu-20.04 # latest
     strategy:
       matrix:
@@ -37,7 +37,7 @@ jobs:
   # The following containers need to run without -DUSE_OPENSSL because they do not have OpenSSL packages
   # that are up-to-date (AL2) or don't provide OpenSSL development packages that is found in CMake (alpine)
   # or are not able to connect on the socket even with the correct setup (manylinux2014)
-  linux-compat-no-byo:
+  linux-compat:
     runs-on: ubuntu-20.04 # latest
     strategy:
       matrix:
@@ -245,7 +245,7 @@ jobs:
       run: |
         python3 -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder')"
         chmod a+x builder
-        ./builder build -p ${{ env.PACKAGE_NAME }} --target=ios-arm64
+        ./builder build -p ${{ env.PACKAGE_NAME }} --target=ios-armv8
 
   cross_compile:
     name: Cross Compile ${{matrix.arch}}
