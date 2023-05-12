@@ -139,13 +139,11 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     if (!clientConfig)
     {
         throw std::runtime_error("Failed to create MQTT311 client from config");
-        ASSERT_TRUE(false);
     }
     auto connection = client.NewConnection(clientConfig);
     if (!*connection)
     {
         throw std::runtime_error("Failed to create MQTT311 connection from config");
-        ASSERT_TRUE(false);
     }
 
     std::promise<bool> connectionCompletedPromise;
@@ -250,13 +248,11 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
     if (!clientConfig)
     {
         throw std::runtime_error("Failed to create MQTT311 connection from config");
-        ASSERT_TRUE(false);
     }
     auto connection = client.NewConnection(clientConfig);
     if (!*connection)
     {
         throw std::runtime_error("Failed to create MQTT311 connection from config");
-        ASSERT_TRUE(false);
     }
 
     std::promise<bool> connectionCompletedPromise;
