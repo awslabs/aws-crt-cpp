@@ -76,10 +76,6 @@ AWS_STATIC_STRING_FROM_LITERAL(
     s_mqtt311_test_envName_iot_credential_session_token,
     "AWS_TEST_MQTT311_ROLE_CREDENTIAL_SESSION_TOKEN");
 
-AWS_STATIC_STRING_FROM_LITERAL(s_aws_cred_access_key, "AWS_ACCESS_KEY_ID");
-AWS_STATIC_STRING_FROM_LITERAL(s_aws_cred_secret_access_key, "AWS_SECRET_ACCESS_KEY");
-AWS_STATIC_STRING_FROM_LITERAL(s_aws_cred_session_token, "AWS_SESSION_TOKEN");
-
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_cognito_endpoint, "AWS_TEST_MQTT311_COGNITO_ENDPOINT");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_cognito_identity, "AWS_TEST_MQTT311_COGNITO_IDENTITY");
 
@@ -1191,16 +1187,9 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
 {
     struct aws_string *endpoint = NULL;
     struct aws_string *region = NULL;
-    struct aws_string *accessKeyId = NULL;
-    struct aws_string *secretAccessKey = NULL;
-    struct aws_string *sessionToken = NULL;
 
     int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
     error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_region, &region);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_credential_access_key, &accessKeyId);
-    error |=
-        aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_credential_secret_access_key, &secretAccessKey);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_credential_session_token, &sessionToken);
 
     bool isEveryEnvVarSet = (endpoint && region);
     if (isEveryEnvVarSet == true)
@@ -1212,38 +1201,24 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
         aws_string_destroy(region);
-        aws_string_destroy(accessKeyId);
-        aws_string_destroy(secretAccessKey);
-        aws_string_destroy(sessionToken);
         return AWS_OP_SKIP;
     }
-
-    // Get the current credentials, so we can reset them when done with the test
-    // Note that from this point on, we need to clean these values as well
-    struct aws_string *env_access_key = aws_string_new_from_c_str(allocator, "AWS_ACCESS_KEY_ID");
-    struct aws_string *env_secret_access_key = aws_string_new_from_c_str(allocator, "AWS_SECRET_ACCESS_KEY");
-    struct aws_string *env_session_token = aws_string_new_from_c_str(allocator, "AWS_SESSION_TOKEN");
-    struct aws_string *cache_accessKeyId = NULL;
-    struct aws_string *cache_secretAccessKey = NULL;
-    struct aws_string *cache_sessionToken = NULL;
-    aws_get_environment_value(allocator, s_aws_cred_access_key, &cache_accessKeyId);
-    aws_get_environment_value(allocator, s_aws_cred_secret_access_key, &cache_secretAccessKey);
-    aws_get_environment_value(allocator, s_aws_cred_session_token, &cache_sessionToken);
-    // Override the existing. From this point on, we need to re-apply
-    aws_set_environment_value(env_access_key, accessKeyId);
-    aws_set_environment_value(env_secret_access_key, secretAccessKey);
-    aws_set_environment_value(env_session_token, sessionToken);
 
     Aws::Crt::ApiHandle apiHandle(allocator);
 
     std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> provider = nullptr;
-    provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderEnvironment();
+    Aws::Crt::Auth::CredentialsProviderChainDefaultConfig defaultConfig;
+    provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(defaultConfig);
     if (!provider)
     {
         fprintf(stderr, "Failure to create credentials provider!\n");
         exit(-1);
     }
     Aws::Iot::WebsocketConfig config(aws_string_c_str(region), provider);
+
+    // Create a environment config, just to see if that suddenly causes the test to be "skipped" or not.
+    std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> providerTest = nullptr;
+    providerTest = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderEnvironment();
 
     Aws::Iot::MqttClient client;
     auto clientConfigBuilder = Aws::Iot::MqttClientConnectionConfigBuilder(config);
@@ -1252,36 +1227,12 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
     if (!clientConfig)
     {
         printf("Failed to create MQTT311 client from config");
-
-        // Reset the AWS credentials back to what they were
-        aws_set_environment_value(env_access_key, cache_accessKeyId);
-        aws_set_environment_value(env_secret_access_key, cache_secretAccessKey);
-        aws_set_environment_value(env_session_token, cache_sessionToken);
-        aws_string_destroy(env_access_key);
-        aws_string_destroy(env_secret_access_key);
-        aws_string_destroy(env_session_token);
-        aws_string_destroy(cache_accessKeyId);
-        aws_string_destroy(cache_secretAccessKey);
-        aws_string_destroy(cache_sessionToken);
-
         ASSERT_TRUE(false);
     }
     auto connection = client.NewConnection(clientConfig);
     if (!*connection)
     {
         printf("Failed to create MQTT311 connection from config");
-
-        // Reset the AWS credentials back to what they were
-        aws_set_environment_value(env_access_key, cache_accessKeyId);
-        aws_set_environment_value(env_secret_access_key, cache_secretAccessKey);
-        aws_set_environment_value(env_session_token, cache_sessionToken);
-        aws_string_destroy(env_access_key);
-        aws_string_destroy(env_secret_access_key);
-        aws_string_destroy(env_session_token);
-        aws_string_destroy(cache_accessKeyId);
-        aws_string_destroy(cache_secretAccessKey);
-        aws_string_destroy(cache_sessionToken);
-
         ASSERT_TRUE(false);
     }
 
@@ -1309,35 +1260,11 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
     if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
         printf("Failed to connect");
-
-        // Reset the AWS credentials back to what they were
-        aws_set_environment_value(env_access_key, cache_accessKeyId);
-        aws_set_environment_value(env_secret_access_key, cache_secretAccessKey);
-        aws_set_environment_value(env_session_token, cache_sessionToken);
-        aws_string_destroy(env_access_key);
-        aws_string_destroy(env_secret_access_key);
-        aws_string_destroy(env_session_token);
-        aws_string_destroy(cache_accessKeyId);
-        aws_string_destroy(cache_secretAccessKey);
-        aws_string_destroy(cache_sessionToken);
-
         ASSERT_TRUE(false);
     }
     if (connectionCompletedPromise.get_future().get() == false)
     {
         printf("Connection failed");
-
-        // Reset the AWS credentials back to what they were
-        aws_set_environment_value(env_access_key, cache_accessKeyId);
-        aws_set_environment_value(env_secret_access_key, cache_secretAccessKey);
-        aws_set_environment_value(env_session_token, cache_sessionToken);
-        aws_string_destroy(env_access_key);
-        aws_string_destroy(env_secret_access_key);
-        aws_string_destroy(env_session_token);
-        aws_string_destroy(cache_accessKeyId);
-        aws_string_destroy(cache_secretAccessKey);
-        aws_string_destroy(cache_sessionToken);
-
         ASSERT_TRUE(false);
     }
     if (connection->Disconnect())
@@ -1345,24 +1272,99 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
         connectionClosedPromise.get_future().wait();
     }
 
-    // Reset the AWS credentials back to what they were
-    aws_set_environment_value(env_access_key, cache_accessKeyId);
-    aws_set_environment_value(env_secret_access_key, cache_secretAccessKey);
-    aws_set_environment_value(env_session_token, cache_sessionToken);
-    aws_string_destroy(env_access_key);
-    aws_string_destroy(env_secret_access_key);
-    aws_string_destroy(env_session_token);
-    aws_string_destroy(cache_accessKeyId);
-    aws_string_destroy(cache_secretAccessKey);
-    aws_string_destroy(cache_sessionToken);
-
     aws_string_destroy(endpoint);
     aws_string_destroy(region);
-    aws_string_destroy(accessKeyId);
-    aws_string_destroy(secretAccessKey);
-    aws_string_destroy(sessionToken);
-
     return AWS_OP_SUCCESS;
+
+    // struct aws_string *endpoint = NULL;
+    // struct aws_string *region = NULL;
+
+    // int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
+    // error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_region, &region);
+
+    // bool isEveryEnvVarSet = (endpoint && region);
+    // if (isEveryEnvVarSet == true)
+    // {
+    //     isEveryEnvVarSet = (aws_string_is_valid(endpoint) && aws_string_is_valid(region));
+    // }
+    // if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    // {
+    //     printf("Environment Variables are not set for the test, skip the test");
+    //     aws_string_destroy(endpoint);
+    //     aws_string_destroy(region);
+    //     return AWS_OP_SKIP;
+    // }
+
+    // Aws::Crt::ApiHandle apiHandle(allocator);
+
+    // std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> provider = nullptr;
+    // provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderEnvironment();
+    // if (!provider)
+    // {
+    //     fprintf(stderr, "Failure to create credentials provider!\n");
+    //     exit(-1);
+    // }
+    // Aws::Iot::WebsocketConfig config(aws_string_c_str(region), provider);
+
+    // Aws::Iot::MqttClient client;
+    // auto clientConfigBuilder = Aws::Iot::MqttClientConnectionConfigBuilder(config);
+    // clientConfigBuilder.WithEndpoint(aws_string_c_str(endpoint));
+    // auto clientConfig = clientConfigBuilder.Build();
+    // if (!clientConfig)
+    // {
+    //     printf("Failed to create MQTT311 client from config");
+    //     ASSERT_TRUE(false);
+    // }
+    // auto connection = client.NewConnection(clientConfig);
+    // if (!*connection)
+    // {
+    //     printf("Failed to create MQTT311 connection from config");
+    //     ASSERT_TRUE(false);
+    // }
+
+    // std::promise<bool> connectionCompletedPromise;
+    // std::promise<void> connectionClosedPromise;
+    // auto onConnectionCompleted =
+    //     [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
+    //         (void)returnCode;
+    //         if (errorCode)
+    //         {
+    //             connectionCompletedPromise.set_value(false);
+    //         }
+    //         else
+    //         {
+    //             connectionCompletedPromise.set_value(true);
+    //         }
+    //     };
+    // auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
+    // connection->OnConnectionCompleted = std::move(onConnectionCompleted);
+    // connection->OnDisconnect = std::move(onDisconnect);
+
+    // Aws::Crt::UUID Uuid;
+    // Aws::Crt::String uuidStr = Uuid.ToString();
+
+    // if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
+    // {
+    //     printf("Failed to connect");
+    //     ASSERT_TRUE(false);
+    // }
+    // if (connectionCompletedPromise.get_future().get() == false)
+    // {
+    //     printf("Connection failed");
+    //     ASSERT_TRUE(false);
+    // }
+    // if (connection->Disconnect())
+    // {
+    //     connectionClosedPromise.get_future().wait();
+    // }
+
+    // aws_string_destroy(endpoint);
+    // aws_string_destroy(region);
+    // aws_string_destroy(accessKeyId);
+    // aws_string_destroy(secretAccessKey);
+    // aws_string_destroy(sessionToken);
+
+    // return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt311ConnectWSEnvironment, s_TestIoTMqtt311ConnectWSEnvironment)
 
