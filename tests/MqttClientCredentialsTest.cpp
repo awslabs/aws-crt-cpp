@@ -1199,10 +1199,9 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
     if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
     {
         printf("Environment Variables are not set for the test, skip the test");
-        // TEST - since this test seems to always be skipped, let's see if commenting this out helps
-        // aws_string_destroy(endpoint);
-        // aws_string_destroy(region);
-        // return AWS_OP_SKIP;
+        aws_string_destroy(endpoint);
+        aws_string_destroy(region);
+        return AWS_OP_SKIP;
     }
 
     Aws::Crt::ApiHandle apiHandle(allocator);
