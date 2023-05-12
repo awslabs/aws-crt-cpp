@@ -1219,17 +1219,17 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
     auto clientConfigBuilder = Aws::Iot::MqttClientConnectionConfigBuilder(config);
     clientConfigBuilder.WithEndpoint(aws_string_c_str(endpoint));
     auto clientConfig = clientConfigBuilder.Build();
-    // if (!clientConfig)
-    // {
-    //     printf("Failed to create MQTT311 client from config");
-    //     ASSERT_TRUE(false);
-    // }
+    if (!clientConfig)
+    {
+        printf("Failed to create MQTT311 client from config");
+        ASSERT_TRUE(false);
+    }
     auto connection = client.NewConnection(clientConfig);
-    // if (!*connection)
-    // {
-    //     printf("Failed to create MQTT311 connection from config");
-    //     ASSERT_TRUE(false);
-    // }
+    if (!*connection)
+    {
+        printf("Failed to create MQTT311 connection from config");
+        ASSERT_TRUE(false);
+    }
 
     std::promise<bool> connectionCompletedPromise;
     std::promise<void> connectionClosedPromise;
