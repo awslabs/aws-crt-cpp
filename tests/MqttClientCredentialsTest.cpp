@@ -1254,12 +1254,11 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
 
     if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
-        printf("Failed to connect");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to connect!");
     }
     if (connectionCompletedPromise.get_future().get() == false)
     {
-        return -1; // AWS_OP_ERR
+        throw std::runtime_error("Connection failed!");
     }
     if (connection->Disconnect())
     {
