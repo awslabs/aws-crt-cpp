@@ -483,7 +483,7 @@ static int s_TestIoTMqtt311ConnectWithPKCS11(Aws::Crt::Allocator *allocator, voi
     if (!pkcs11Lib)
     {
         fprintf(stderr, "Pkcs11Lib failed: %s\n", Aws::Crt::ErrorDebugString(Aws::Crt::LastError()));
-        exit(-1);
+        ASSERT_TRUE(false);
     }
     Aws::Crt::Io::TlsContextPkcs11Options pkcs11Options(pkcs11Lib);
     pkcs11Options.SetCertificateFilePath(aws_string_c_str(pkcs11_cert));
@@ -791,7 +791,7 @@ static int s_TestIoTMqtt311ConnectWSDefault(Aws::Crt::Allocator *allocator, void
     if (!provider)
     {
         fprintf(stderr, "Failure to create credentials provider!\n");
-        exit(-1);
+        ASSERT_TRUE(false);
     }
     Aws::Iot::WebsocketConfig config(aws_string_c_str(region), provider);
 
@@ -900,7 +900,7 @@ static int s_TestIoTMqtt311ConnectWSStatic(Aws::Crt::Allocator *allocator, void 
     if (!provider)
     {
         fprintf(stderr, "Failure to create credentials provider!\n");
-        exit(-1);
+        ASSERT_TRUE(false);
     }
     Aws::Iot::WebsocketConfig config(aws_string_c_str(region), provider);
 
@@ -1010,7 +1010,7 @@ static int s_TestIoTMqtt311ConnectWSCognito(Aws::Crt::Allocator *allocator, void
     if (!provider)
     {
         fprintf(stderr, "Failure to create credentials provider!\n");
-        exit(-1);
+        ASSERT_TRUE(false);
     }
     Aws::Iot::WebsocketConfig config(aws_string_c_str(region), provider);
 
@@ -1116,7 +1116,7 @@ static int s_TestIoTMqtt311ConnectWSProfile(Aws::Crt::Allocator *allocator, void
     if (!provider)
     {
         fprintf(stderr, "Failure to create credentials provider!\n");
-        exit(-1);
+        ASSERT_TRUE(false);
     }
     Aws::Iot::WebsocketConfig config(aws_string_c_str(region), provider);
 
@@ -1207,12 +1207,11 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
     Aws::Crt::ApiHandle apiHandle(allocator);
 
     std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> provider = nullptr;
-    Aws::Crt::Auth::CredentialsProviderChainDefaultConfig defaultConfig;
-    provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(defaultConfig);
+    provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderEnvironment();
     if (!provider)
     {
         fprintf(stderr, "Failure to create credentials provider!\n");
-        exit(-1);
+        ASSERT_TRUE(false);
     }
     Aws::Iot::WebsocketConfig config(aws_string_c_str(region), provider);
 
@@ -1271,92 +1270,6 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
     aws_string_destroy(endpoint);
     aws_string_destroy(region);
     return AWS_OP_SUCCESS;
-
-    // struct aws_string *endpoint = NULL;
-    // struct aws_string *region = NULL;
-
-    // int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
-    // error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_region, &region);
-
-    // bool isEveryEnvVarSet = (endpoint && region);
-    // if (isEveryEnvVarSet == true)
-    // {
-    //     isEveryEnvVarSet = (aws_string_is_valid(endpoint) && aws_string_is_valid(region));
-    // }
-    // if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
-    // {
-    //     printf("Environment Variables are not set for the test, skip the test");
-    //     aws_string_destroy(endpoint);
-    //     aws_string_destroy(region);
-    //     return AWS_OP_SKIP;
-    // }
-
-    // Aws::Crt::ApiHandle apiHandle(allocator);
-
-    // std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> provider = nullptr;
-    // provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderEnvironment();
-    // if (!provider)
-    // {
-    //     fprintf(stderr, "Failure to create credentials provider!\n");
-    //     exit(-1);
-    // }
-    // Aws::Iot::WebsocketConfig config(aws_string_c_str(region), provider);
-
-    // Aws::Iot::MqttClient client;
-    // auto clientConfigBuilder = Aws::Iot::MqttClientConnectionConfigBuilder(config);
-    // clientConfigBuilder.WithEndpoint(aws_string_c_str(endpoint));
-    // auto clientConfig = clientConfigBuilder.Build();
-    // if (!clientConfig)
-    // {
-    //     printf("Failed to create MQTT311 client from config");
-    //     ASSERT_TRUE(false);
-    // }
-    // auto connection = client.NewConnection(clientConfig);
-    // if (!*connection)
-    // {
-    //     printf("Failed to create MQTT311 connection from config");
-    //     ASSERT_TRUE(false);
-    // }
-
-    // std::promise<bool> connectionCompletedPromise;
-    // std::promise<void> connectionClosedPromise;
-    // auto onConnectionCompleted =
-    //     [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
-    //         (void)returnCode;
-    //         if (errorCode)
-    //         {
-    //             connectionCompletedPromise.set_value(false);
-    //         }
-    //         else
-    //         {
-    //             connectionCompletedPromise.set_value(true);
-    //         }
-    //     };
-    // auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
-    // connection->OnConnectionCompleted = std::move(onConnectionCompleted);
-    // connection->OnDisconnect = std::move(onDisconnect);
-
-    // Aws::Crt::UUID Uuid;
-    // Aws::Crt::String uuidStr = Uuid.ToString();
-
-    // if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
-    // {
-    //     printf("Failed to connect");
-    //     ASSERT_TRUE(false);
-    // }
-    // if (connectionCompletedPromise.get_future().get() == false)
-    // {
-    //     printf("Connection failed");
-    //     ASSERT_TRUE(false);
-    // }
-    // if (connection->Disconnect())
-    // {
-    //     connectionClosedPromise.get_future().wait();
-    // }
-
-    // aws_string_destroy(endpoint);
-    // aws_string_destroy(region);
-    // return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt311ConnectWSEnvironment, s_TestIoTMqtt311ConnectWSEnvironment)
 

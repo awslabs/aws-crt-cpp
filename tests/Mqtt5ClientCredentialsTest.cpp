@@ -209,7 +209,7 @@ static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, vo
     if (!provider)
     {
         fprintf(stderr, "Failure to create credentials provider!\n");
-        exit(-1);
+        ASSERT_TRUE(false);
     }
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
@@ -600,7 +600,7 @@ static int s_TestIoTMqtt5ConnectWithPKCS11(Aws::Crt::Allocator *allocator, void 
     if (!pkcs11Lib)
     {
         fprintf(stderr, "Pkcs11Lib failed: %s\n", Aws::Crt::ErrorDebugString(Aws::Crt::LastError()));
-        exit(-1);
+        ASSERT_TRUE(false);
     }
     Aws::Crt::Io::TlsContextPkcs11Options pkcs11Options(pkcs11Lib);
     pkcs11Options.SetCertificateFilePath(aws_string_c_str(pkcs11_cert));
@@ -824,7 +824,7 @@ static int s_TestIoTMqtt5ConnectWSStatic(Aws::Crt::Allocator *allocator, void *)
     if (!provider)
     {
         fprintf(stderr, "Failure to create credentials provider!\n");
-        exit(-1);
+        ASSERT_TRUE(false);
     }
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
@@ -899,7 +899,7 @@ static int s_TestIoTMqtt5ConnectWSCognito(Aws::Crt::Allocator *allocator, void *
     if (!provider)
     {
         fprintf(stderr, "Failure to create credentials provider!\n");
-        exit(-1);
+        ASSERT_TRUE(false);
     }
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
@@ -970,7 +970,7 @@ static int s_TestIoTMqtt5ConnectWSProfile(Aws::Crt::Allocator *allocator, void *
     if (!provider)
     {
         fprintf(stderr, "Failure to create credentials provider!\n");
-        exit(-1);
+        ASSERT_TRUE(false);
     }
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
@@ -1030,7 +1030,7 @@ static int s_TestIoTMqtt5ConnectWSEnvironment(Aws::Crt::Allocator *allocator, vo
     if (!provider)
     {
         fprintf(stderr, "Failure to create credentials provider!\n");
-        exit(-1);
+        ASSERT_TRUE(false);
     }
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
@@ -1136,7 +1136,7 @@ static int s_TestIoTMqtt5ConnectWSX509(Aws::Crt::Allocator *allocator, void *)
     if (!provider)
     {
         fprintf(stderr, "Failure to create credentials provider!\n");
-        exit(-1);
+        ASSERT_TRUE(false);
     }
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
