@@ -76,6 +76,10 @@ AWS_STATIC_STRING_FROM_LITERAL(
     s_mqtt311_test_envName_iot_credential_session_token,
     "AWS_TEST_MQTT311_ROLE_CREDENTIAL_SESSION_TOKEN");
 
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt_cred_access_key, "AWS_ACCESS_KEY_ID");
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt_cred_secret_access_key, "AWS_SECRET_ACCESS_KEY");
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt_cred_session_token, "AWS_SESSION_TOKEN");
+
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_cognito_endpoint, "AWS_TEST_MQTT311_COGNITO_ENDPOINT");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_cognito_identity, "AWS_TEST_MQTT311_COGNITO_IDENTITY");
 
@@ -134,13 +138,13 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     auto clientConfig = clientConfigBuilder.Build();
     if (!clientConfig)
     {
-        printf("Failed to create MQTT311 client from config");
+        throw std::runtime_error("Failed to create MQTT311 client from config");
         ASSERT_TRUE(false);
     }
     auto connection = client.NewConnection(clientConfig);
     if (!*connection)
     {
-        printf("Failed to create MQTT311 connection from config");
+        throw std::runtime_error("Failed to create MQTT311 connection from config");
         ASSERT_TRUE(false);
     }
 
@@ -167,13 +171,11 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
 
     if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
-        printf("Failed to connect");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to connect");
     }
     if (connectionCompletedPromise.get_future().get() == false)
     {
-        printf("Connection failed");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Connection failed");
     }
     if (connection->Disconnect())
     {
@@ -247,13 +249,13 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
     auto clientConfig = clientConfigBuilder.Build();
     if (!clientConfig)
     {
-        printf("Failed to create MQTT311 client from config");
+        throw std::runtime_error("Failed to create MQTT311 connection from config");
         ASSERT_TRUE(false);
     }
     auto connection = client.NewConnection(clientConfig);
     if (!*connection)
     {
-        printf("Failed to create MQTT311 connection from config");
+        throw std::runtime_error("Failed to create MQTT311 connection from config");
         ASSERT_TRUE(false);
     }
 
@@ -280,13 +282,11 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
 
     if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
-        printf("Failed to connect");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to connect");
     }
     if (connectionCompletedPromise.get_future().get() == false)
     {
-        printf("Connection failed");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Connection failed");
     }
     if (connection->Disconnect())
     {
@@ -370,14 +370,12 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Allo
     auto clientConfig = clientConfigBuilder.Build();
     if (!clientConfig)
     {
-        printf("Failed to create MQTT311 client from config");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to create MQTT311 connection from config");
     }
     auto connection = client.NewConnection(clientConfig);
     if (!*connection)
     {
-        printf("Failed to create MQTT311 connection from config");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to create MQTT311 connection from config");
     }
 
     std::promise<bool> connectionCompletedPromise;
@@ -403,13 +401,11 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Allo
 
     if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
-        printf("Failed to connect");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to connect");
     }
     if (connectionCompletedPromise.get_future().get() == false)
     {
-        printf("Connection failed");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Connection failed");
     }
     if (connection->Disconnect())
     {
@@ -483,7 +479,7 @@ static int s_TestIoTMqtt311ConnectWithPKCS11(Aws::Crt::Allocator *allocator, voi
     if (!pkcs11Lib)
     {
         fprintf(stderr, "Pkcs11Lib failed: %s\n", Aws::Crt::ErrorDebugString(Aws::Crt::LastError()));
-        exit(-1);
+        throw std::runtime_error("Pkcs11Lib failed");
     }
     Aws::Crt::Io::TlsContextPkcs11Options pkcs11Options(pkcs11Lib);
     pkcs11Options.SetCertificateFilePath(aws_string_c_str(pkcs11_cert));
@@ -500,14 +496,12 @@ static int s_TestIoTMqtt311ConnectWithPKCS11(Aws::Crt::Allocator *allocator, voi
     auto clientConfig = clientConfigBuilder.Build();
     if (!clientConfig)
     {
-        printf("Failed to create MQTT311 client from config");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to create MQTT311 connection from config");
     }
     auto connection = client.NewConnection(clientConfig);
     if (!*connection)
     {
-        printf("Failed to create MQTT311 connection from config");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to create MQTT311 connection from config");
     }
 
     std::promise<bool> connectionCompletedPromise;
@@ -533,13 +527,11 @@ static int s_TestIoTMqtt311ConnectWithPKCS11(Aws::Crt::Allocator *allocator, voi
 
     if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
-        printf("Failed to connect");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to connect");
     }
     if (connectionCompletedPromise.get_future().get() == false)
     {
-        printf("Connection failed");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Connection failed");
     }
     if (connection->Disconnect())
     {
@@ -609,14 +601,12 @@ static int s_TestIoTMqtt311ConnectWithPKCS12(Aws::Crt::Allocator *allocator, voi
     auto clientConfig = clientConfigBuilder.Build();
     if (!clientConfig)
     {
-        printf("Failed to create MQTT311 client from config");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to create MQTT311 connection from config");
     }
     auto connection = client.NewConnection(clientConfig);
     if (!*connection)
     {
-        printf("Failed to create MQTT311 connection from config");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to create MQTT311 connection from config");
     }
 
     std::promise<bool> connectionCompletedPromise;
@@ -642,13 +632,11 @@ static int s_TestIoTMqtt311ConnectWithPKCS12(Aws::Crt::Allocator *allocator, voi
 
     if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
-        printf("Failed to connect");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to connect");
     }
     if (connectionCompletedPromise.get_future().get() == false)
     {
-        printf("Connection failed");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Connection failed");
     }
     if (connection->Disconnect())
     {
@@ -706,14 +694,12 @@ static int s_TestIoTMqtt311ConnectWithWindowsCert(Aws::Crt::Allocator *allocator
     auto clientConfig = clientConfigBuilder.Build();
     if (!clientConfig)
     {
-        printf("Failed to create MQTT311 client from config");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to create MQTT311 connection from config");
     }
     auto connection = client.NewConnection(clientConfig);
     if (!*connection)
     {
-        printf("Failed to create MQTT311 connection from config");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to create MQTT311 connection from config");
     }
 
     std::promise<bool> connectionCompletedPromise;
@@ -739,13 +725,11 @@ static int s_TestIoTMqtt311ConnectWithWindowsCert(Aws::Crt::Allocator *allocator
 
     if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
-        printf("Failed to connect");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to connect");
     }
     if (connectionCompletedPromise.get_future().get() == false)
     {
-        printf("Connection failed");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Connection failed");
     }
     if (connection->Disconnect())
     {
@@ -790,8 +774,7 @@ static int s_TestIoTMqtt311ConnectWSDefault(Aws::Crt::Allocator *allocator, void
     provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(defaultConfig);
     if (!provider)
     {
-        fprintf(stderr, "Failure to create credentials provider!\n");
-        exit(-1);
+        throw std::runtime_error("Failure to create credentials provider!");
     }
     Aws::Iot::WebsocketConfig config(aws_string_c_str(region), provider);
 
@@ -801,14 +784,12 @@ static int s_TestIoTMqtt311ConnectWSDefault(Aws::Crt::Allocator *allocator, void
     auto clientConfig = clientConfigBuilder.Build();
     if (!clientConfig)
     {
-        printf("Failed to create MQTT311 client from config");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to create MQTT311 connection from config");
     }
     auto connection = client.NewConnection(clientConfig);
     if (!*connection)
     {
-        printf("Failed to create MQTT311 connection from config");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to create MQTT311 connection from config");
     }
 
     std::promise<bool> connectionCompletedPromise;
@@ -834,13 +815,11 @@ static int s_TestIoTMqtt311ConnectWSDefault(Aws::Crt::Allocator *allocator, void
 
     if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
-        printf("Failed to connect");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to connect");
     }
     if (connectionCompletedPromise.get_future().get() == false)
     {
-        printf("Connection failed");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Connection failed");
     }
     if (connection->Disconnect())
     {
@@ -899,8 +878,7 @@ static int s_TestIoTMqtt311ConnectWSStatic(Aws::Crt::Allocator *allocator, void 
     provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderStatic(providerConfig);
     if (!provider)
     {
-        fprintf(stderr, "Failure to create credentials provider!\n");
-        exit(-1);
+        throw std::runtime_error("Failure to create credentials provider!");
     }
     Aws::Iot::WebsocketConfig config(aws_string_c_str(region), provider);
 
@@ -910,14 +888,12 @@ static int s_TestIoTMqtt311ConnectWSStatic(Aws::Crt::Allocator *allocator, void 
     auto clientConfig = clientConfigBuilder.Build();
     if (!clientConfig)
     {
-        printf("Failed to create MQTT311 client from config");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to create MQTT311 connection from config");
     }
     auto connection = client.NewConnection(clientConfig);
     if (!*connection)
     {
-        printf("Failed to create MQTT311 connection from config");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to create MQTT311 connection from config");
     }
 
     std::promise<bool> connectionCompletedPromise;
@@ -943,13 +919,11 @@ static int s_TestIoTMqtt311ConnectWSStatic(Aws::Crt::Allocator *allocator, void 
 
     if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
-        printf("Failed to connect");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to connect");
     }
     if (connectionCompletedPromise.get_future().get() == false)
     {
-        printf("Connection failed");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Connection failed");
     }
     if (connection->Disconnect())
     {
@@ -1009,8 +983,7 @@ static int s_TestIoTMqtt311ConnectWSCognito(Aws::Crt::Allocator *allocator, void
     provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderCognito(providerConfig);
     if (!provider)
     {
-        fprintf(stderr, "Failure to create credentials provider!\n");
-        exit(-1);
+        throw std::runtime_error("Failure to create credentials provider!");
     }
     Aws::Iot::WebsocketConfig config(aws_string_c_str(region), provider);
 
@@ -1020,14 +993,12 @@ static int s_TestIoTMqtt311ConnectWSCognito(Aws::Crt::Allocator *allocator, void
     auto clientConfig = clientConfigBuilder.Build();
     if (!clientConfig)
     {
-        printf("Failed to create MQTT311 client from config");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to create MQTT311 connection from config");
     }
     auto connection = client.NewConnection(clientConfig);
     if (!*connection)
     {
-        printf("Failed to create MQTT311 connection from config");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to create MQTT311 connection from config");
     }
 
     std::promise<bool> connectionCompletedPromise;
@@ -1053,13 +1024,11 @@ static int s_TestIoTMqtt311ConnectWSCognito(Aws::Crt::Allocator *allocator, void
 
     if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
-        printf("Failed to connect");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to connect");
     }
     if (connectionCompletedPromise.get_future().get() == false)
     {
-        printf("Connection failed");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Connection failed");
     }
     if (connection->Disconnect())
     {
@@ -1115,8 +1084,7 @@ static int s_TestIoTMqtt311ConnectWSProfile(Aws::Crt::Allocator *allocator, void
     provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderProfile(providerConfig);
     if (!provider)
     {
-        fprintf(stderr, "Failure to create credentials provider!\n");
-        exit(-1);
+        throw std::runtime_error("Failure to create credentials provider!");
     }
     Aws::Iot::WebsocketConfig config(aws_string_c_str(region), provider);
 
@@ -1126,14 +1094,12 @@ static int s_TestIoTMqtt311ConnectWSProfile(Aws::Crt::Allocator *allocator, void
     auto clientConfig = clientConfigBuilder.Build();
     if (!clientConfig)
     {
-        printf("Failed to create MQTT311 client from config");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to create MQTT311 connection from config");
     }
     auto connection = client.NewConnection(clientConfig);
     if (!*connection)
     {
-        printf("Failed to create MQTT311 connection from config");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to create MQTT311 connection from config");
     }
 
     std::promise<bool> connectionCompletedPromise;
@@ -1159,13 +1125,11 @@ static int s_TestIoTMqtt311ConnectWSProfile(Aws::Crt::Allocator *allocator, void
 
     if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
-        printf("Failed to connect");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to connect");
     }
     if (connectionCompletedPromise.get_future().get() == false)
     {
-        printf("Connection failed");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Connection failed");
     }
     if (connection->Disconnect())
     {
@@ -1188,19 +1152,31 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
     struct aws_string *endpoint = NULL;
     struct aws_string *region = NULL;
 
+    struct aws_string *accessKey = NULL;
+    struct aws_string *secretAccessKey = NULL;
+    struct aws_string *sessionToken = NULL;
+
     int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
     error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_region, &region);
+    error |= aws_get_environment_value(allocator, s_mqtt_cred_access_key, &accessKey);
+    error |= aws_get_environment_value(allocator, s_mqtt_cred_secret_access_key, &secretAccessKey);
+    error |= aws_get_environment_value(allocator, s_mqtt_cred_session_token, &sessionToken);
 
-    bool isEveryEnvVarSet = (endpoint && region);
+    bool isEveryEnvVarSet = (endpoint && region && accessKey && secretAccessKey && sessionToken);
     if (isEveryEnvVarSet == true)
     {
-        isEveryEnvVarSet = (aws_string_is_valid(endpoint) && aws_string_is_valid(region));
+        isEveryEnvVarSet =
+            (aws_string_is_valid(endpoint) && aws_string_is_valid(region) && aws_string_is_valid(accessKey) &&
+             aws_string_is_valid(secretAccessKey) && aws_string_is_valid(sessionToken));
     }
     if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
         aws_string_destroy(region);
+        aws_string_destroy(accessKey);
+        aws_string_destroy(secretAccessKey);
+        aws_string_destroy(sessionToken);
         return AWS_OP_SKIP;
     }
 
@@ -1210,8 +1186,7 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
     provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderEnvironment();
     if (!provider)
     {
-        fprintf(stderr, "Failure to create credentials provider!\n");
-        exit(-1);
+        throw std::runtime_error("Failure to create credentials provider!");
     }
     Aws::Iot::WebsocketConfig config(aws_string_c_str(region), provider);
 
@@ -1221,14 +1196,12 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
     auto clientConfig = clientConfigBuilder.Build();
     if (!clientConfig)
     {
-        printf("Failed to create MQTT311 client from config");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to create MQTT311 client from config");
     }
     auto connection = client.NewConnection(clientConfig);
     if (!*connection)
     {
-        printf("Failed to create MQTT311 connection from config");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failed to create MQTT311 connection from config");
     }
 
     std::promise<bool> connectionCompletedPromise;
@@ -1267,6 +1240,9 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
 
     aws_string_destroy(endpoint);
     aws_string_destroy(region);
+    aws_string_destroy(accessKey);
+    aws_string_destroy(secretAccessKey);
+    aws_string_destroy(sessionToken);
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt311ConnectWSEnvironment, s_TestIoTMqtt311ConnectWSEnvironment)

@@ -80,6 +80,10 @@ AWS_STATIC_STRING_FROM_LITERAL(
     s_mqtt5_test_envName_iot_credential_session_token,
     "AWS_TEST_MQTT5_ROLE_CREDENTIAL_SESSION_TOKEN");
 
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt_cred_access_key, "AWS_ACCESS_KEY_ID");
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt_cred_secret_access_key, "AWS_SECRET_ACCESS_KEY");
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt_cred_session_token, "AWS_SESSION_TOKEN");
+
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_cognito_endpoint, "AWS_TEST_MQTT5_COGNITO_ENDPOINT");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_cognito_identity, "AWS_TEST_MQTT5_COGNITO_IDENTITY");
 
@@ -208,8 +212,7 @@ static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, vo
         Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(defaultConfig);
     if (!provider)
     {
-        fprintf(stderr, "Failure to create credentials provider!\n");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failure to create credentials provider!");
     }
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
@@ -823,8 +826,7 @@ static int s_TestIoTMqtt5ConnectWSStatic(Aws::Crt::Allocator *allocator, void *)
     provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderStatic(providerConfig);
     if (!provider)
     {
-        fprintf(stderr, "Failure to create credentials provider!\n");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failure to create credentials provider!");
     }
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
@@ -898,8 +900,7 @@ static int s_TestIoTMqtt5ConnectWSCognito(Aws::Crt::Allocator *allocator, void *
     provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderCognito(providerConfig);
     if (!provider)
     {
-        fprintf(stderr, "Failure to create credentials provider!\n");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failure to create credentials provider!");
     }
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
@@ -969,8 +970,7 @@ static int s_TestIoTMqtt5ConnectWSProfile(Aws::Crt::Allocator *allocator, void *
     provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderProfile(providerConfig);
     if (!provider)
     {
-        fprintf(stderr, "Failure to create credentials provider!\n");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failure to create credentials provider!");
     }
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
@@ -1007,19 +1007,31 @@ static int s_TestIoTMqtt5ConnectWSEnvironment(Aws::Crt::Allocator *allocator, vo
     struct aws_string *endpoint = NULL;
     struct aws_string *region = NULL;
 
+    struct aws_string *accessKey = NULL;
+    struct aws_string *secretAccessKey = NULL;
+    struct aws_string *sessionToken = NULL;
+
     int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
     error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_region, &region);
+    error |= aws_get_environment_value(allocator, s_mqtt_cred_access_key, &accessKey);
+    error |= aws_get_environment_value(allocator, s_mqtt_cred_secret_access_key, &secretAccessKey);
+    error |= aws_get_environment_value(allocator, s_mqtt_cred_session_token, &sessionToken);
 
-    bool isEveryEnvVarSet = (endpoint && region);
+    bool isEveryEnvVarSet = (endpoint && region && accessKey && secretAccessKey && sessionToken);
     if (isEveryEnvVarSet == true)
     {
-        isEveryEnvVarSet = (aws_string_is_valid(endpoint) && aws_string_is_valid(region));
+        isEveryEnvVarSet =
+            (aws_string_is_valid(endpoint) && aws_string_is_valid(region) && aws_string_is_valid(accessKey) &&
+             aws_string_is_valid(secretAccessKey) && aws_string_is_valid(sessionToken));
     }
     if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
         aws_string_destroy(region);
+        aws_string_destroy(accessKey);
+        aws_string_destroy(secretAccessKey);
+        aws_string_destroy(sessionToken);
         return AWS_OP_SKIP;
     }
 
@@ -1029,8 +1041,7 @@ static int s_TestIoTMqtt5ConnectWSEnvironment(Aws::Crt::Allocator *allocator, vo
     provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderEnvironment();
     if (!provider)
     {
-        fprintf(stderr, "Failure to create credentials provider!\n");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failure to create credentials provider!");
     }
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
@@ -1053,6 +1064,9 @@ static int s_TestIoTMqtt5ConnectWSEnvironment(Aws::Crt::Allocator *allocator, vo
     delete builder;
     aws_string_destroy(endpoint);
     aws_string_destroy(region);
+    aws_string_destroy(accessKey);
+    aws_string_destroy(secretAccessKey);
+    aws_string_destroy(sessionToken);
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt5ConnectWSEnvironment, s_TestIoTMqtt5ConnectWSEnvironment)
@@ -1135,8 +1149,7 @@ static int s_TestIoTMqtt5ConnectWSX509(Aws::Crt::Allocator *allocator, void *)
         Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderX509(providerConfig, allocator);
     if (!provider)
     {
-        fprintf(stderr, "Failure to create credentials provider!\n");
-        ASSERT_TRUE(false);
+        throw std::runtime_error("Failure to create credentials provider!");
     }
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 

@@ -201,7 +201,7 @@ static int s_TestMqtt311DirectConnectionMinimal(Aws::Crt::Allocator *allocator, 
     int connectResult = s_ConnectAndDisconnect(connection);
     if (connectResult != AWS_OP_SUCCESS)
     {
-        ASSERT_TRUE(false);
+        throw std::runtime_error("ConnectAndDisconnect failed");
     }
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
@@ -250,7 +250,7 @@ static int s_TestMqtt311DirectConnectionWithBasicAuth(Aws::Crt::Allocator *alloc
     int connectResult = s_ConnectAndDisconnect(connection);
     if (connectResult != AWS_OP_SUCCESS)
     {
-        ASSERT_TRUE(false);
+        throw std::runtime_error("ConnectAndDisconnect failed");
     }
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
@@ -299,7 +299,7 @@ static int s_TestMqtt311DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, 
     int connectResult = s_ConnectAndDisconnect(connection);
     if (connectResult != AWS_OP_SUCCESS)
     {
-        ASSERT_TRUE(false);
+        throw std::runtime_error("ConnectAndDisconnect failed");
     }
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
@@ -349,7 +349,7 @@ static int s_TestMqtt311DirectConnectionWithMutualTLS(Aws::Crt::Allocator *alloc
     int connectResult = s_ConnectAndDisconnect(connection);
     if (connectResult != AWS_OP_SUCCESS)
     {
-        ASSERT_TRUE(false);
+        throw std::runtime_error("ConnectAndDisconnect failed");
     }
     aws_string_destroy(endpoint);
     aws_string_destroy(cert_path);
@@ -411,7 +411,7 @@ static int s_TestMqtt311DirectConnectionWithHttpProxy(Aws::Crt::Allocator *alloc
     int connectResult = s_ConnectAndDisconnect(connection);
     if (connectResult != AWS_OP_SUCCESS)
     {
-        ASSERT_TRUE(false);
+        throw std::runtime_error("ConnectAndDisconnect failed");
     }
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
@@ -457,7 +457,7 @@ static int s_TestMqtt311WSConnectionMinimal(Aws::Crt::Allocator *allocator, void
     int connectResult = s_ConnectAndDisconnect(connection);
     if (connectResult != AWS_OP_SUCCESS)
     {
-        ASSERT_TRUE(false);
+        throw std::runtime_error("ConnectAndDisconnect failed");
     }
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
@@ -506,7 +506,7 @@ static int s_TestMqtt311WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator
     int connectResult = s_ConnectAndDisconnect(connection);
     if (connectResult != AWS_OP_SUCCESS)
     {
-        ASSERT_TRUE(false);
+        throw std::runtime_error("ConnectAndDisconnect failed");
     }
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
@@ -555,7 +555,7 @@ static int s_TestMqtt311WSConnectionWithTLS(Aws::Crt::Allocator *allocator, void
     int connectResult = s_ConnectAndDisconnect(connection);
     if (connectResult != AWS_OP_SUCCESS)
     {
-        ASSERT_TRUE(false);
+        throw std::runtime_error("ConnectAndDisconnect failed");
     }
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
@@ -615,7 +615,7 @@ static int s_TestMqtt311WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator
     int connectResult = s_ConnectAndDisconnect(connection);
     if (connectResult != AWS_OP_SUCCESS)
     {
-        ASSERT_TRUE(false);
+        throw std::runtime_error("ConnectAndDisconnect failed");
     }
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
