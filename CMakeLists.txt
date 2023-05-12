@@ -317,11 +317,25 @@ endif()
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
 
-# Disable code signing of this bundle! Otherwise cannot compile in CI
-if (APPLE)
+# We have to 'sign' the bundle on iOS to compile, otherwise we cannot compile in CI
+if (IOS)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ""
-        XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO")
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_BUNDLE_NAME "AWS-CRT-CPP-Bundle"
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/plist.in
+        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ""
+        XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO"
+
+        MACOSX_BUNDLE_BUNDLE_VERSION ${FULL_VERSION}
+        MACOSX_BUNDLE_LONG_VERSION_STRING "AWS-CRT-CPP-Bundle version ${FULL_VERSION}"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${FULL_VERSION}"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.aws.aws-crt-cpp"
+        MACOSX_BUNDLE_COPYRIGHT "(C) 2023 Amazon AWS"
+        MACOSX_RPATH TRUE
+        MACOSX_FRAMEWORK_IDENTIFIER com.aws.aws-crt-cpp.ios-bundle
+        XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ""
+    )
 endif()
 
 aws_prepare_symbol_visibility_args(${PROJECT_NAME} "AWS_CRT_CPP")
