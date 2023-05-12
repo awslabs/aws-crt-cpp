@@ -1259,8 +1259,7 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
     }
     if (connectionCompletedPromise.get_future().get() == false)
     {
-        // printf("Connection Failed");
-        // ASSERT_TRUE(false);
+        return -1; // AWS_OP_ERR
     }
     if (connection->Disconnect())
     {
