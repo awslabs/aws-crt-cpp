@@ -87,14 +87,6 @@ elseif(NOT DEFINED CMAKE_INSTALL_LIBDIR)
     set(CMAKE_INSTALL_LIBDIR "lib")
 endif()
 
-# Compiling iOS on Mac will not compile without a bundle identifier, so we need to add one here.
-if (APPLE)
-    set(APP_BUNDLE_IDENTIFIER "com.aws.aws-crt-cpp")
-    set(MACOSX_BUNDLE_INFO_STRING ${APP_BUNDLE_IDENTIFIER})
-    set(MACOSX_BUNDLE_GUI_IDENTIFIER ${APP_BUNDLE_IDENTIFIER})
-    set(MACOSX_BUNDLE_BUNDLE_NAME ${APP_BUNDLE_IDENTIFIER})
-endif()
-
 if(${CMAKE_INSTALL_LIBDIR} STREQUAL "lib64")
     set(FIND_LIBRARY_USE_LIB64_PATHS true)
 endif()
@@ -325,8 +317,11 @@ endif()
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
 
+# Disable code signing of this bundle! Otherwise cannot compile in CI
 if (APPLE)
-    set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/plist.in)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ""
+        XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO")
 endif()
 
 aws_prepare_symbol_visibility_args(${PROJECT_NAME} "AWS_CRT_CPP")
