@@ -23,8 +23,6 @@ jobs:
     strategy:
       matrix:
         image:
-          - manylinux2014-x64
-          - manylinux2014-x86
           - fedora-34-x64
           - opensuse-leap
           - rhel8-x64
@@ -38,11 +36,14 @@ jobs:
 
   # The following containers need to run without -DUSE_OPENSSL because they do not have OpenSSL packages
   # that are up-to-date (AL2) or don't provide OpenSSL development packages that is found in CMake (alpine)
+  # or are not able to connect on the socket even with the correct setup (manylinux2014)
   linux-compat-no-byo:
     runs-on: ubuntu-20.04 # latest
     strategy:
       matrix:
         image:
+          - manylinux2014-x64
+          - manylinux2014-x86
           - al2-x64
           - alpine-3.16-x64
           - alpine-3.16-x86
