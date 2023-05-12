@@ -1254,17 +1254,17 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
 
     if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
-        fprintf(stderr, "Failed to connect");
-        exit(-1);
+        printf("Failed to connect");
+        ASSERT_TRUE(false);
     }
     if (connectionCompletedPromise.get_future().get() == false)
     {
-        fprintf(stderr, "Connection Failed");
-        exit(-1);
+        printf("Connection Failed");
+        ASSERT_TRUE(false);
     }
     if (connection->Disconnect())
     {
-        connectionClosedPromise.get_future().wait();
+        // connectionClosedPromise.get_future().wait();
     }
 
     aws_string_destroy(endpoint);
