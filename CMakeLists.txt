@@ -318,7 +318,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
 
 # We have to 'sign' the bundle on iOS to compile, otherwise we cannot compile in CI
-if (IOS)
+if (APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ""
         MACOSX_BUNDLE TRUE
@@ -326,7 +326,6 @@ if (IOS)
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/plist.in
         XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ""
         XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO"
-
         MACOSX_BUNDLE_BUNDLE_VERSION ${FULL_VERSION}
         MACOSX_BUNDLE_LONG_VERSION_STRING "AWS-CRT-CPP-Bundle version ${FULL_VERSION}"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "${FULL_VERSION}"
@@ -335,6 +334,7 @@ if (IOS)
         MACOSX_RPATH TRUE
         MACOSX_FRAMEWORK_IDENTIFIER com.aws.aws-crt-cpp.ios-bundle
         XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ""
+        XCODE_ATTRIBUTE_CODE_SIGN_STYLE Manual
     )
 endif()
 
