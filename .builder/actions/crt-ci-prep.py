@@ -27,6 +27,19 @@ class CrtCiPrep(Builder.Action):
 
         return filename
 
+    def _write_s3_to_temp_file(self, env, s3_file):
+        try:
+            tmp_file = tempfile.NamedTemporaryFile(delete=False)
+            tmp_file.flush()
+            tmp_s3_filepath = tmp_file.name
+            cmd = ['aws', '--region', 'us-east-1', 's3', 'cp',
+                    s3_file, tmp_s3_filepath]
+            env.shell.exec(*cmd, check=True, quiet=True)
+            return tmp_s3_filepath
+        except:
+            print (f"ERROR: Could not get S3 file from URL {s3_file}!")
+            raise RuntimeError("Could not get S3 file from URL")
+
 
     def run(self, env):
         env.shell.setenv("AWS_TESTING_COGNITO_IDENTITY", env.shell.get_secret("aws-c-auth-testing/cognito-identity"))
@@ -41,6 +54,12 @@ class CrtCiPrep(Builder.Action):
 
         env.shell.setenv("AWS_TEST_MQTT5_IOT_CORE_CERTIFICATE_PATH", cert_file_name, quiet=True)
         env.shell.setenv("AWS_TEST_MQTT5_IOT_CORE_KEY_PATH", key_file_name, quiet=True)
+
+        # PKCS12 setup (MacOS only)
+        if (sys.platform == "darwin"):
+            pkcs12_file_name = self._write_s3_to_temp_file(env, "s3://aws-crt-test-stuff/unit-test-key-pkcs12.pem")
+            env.shell.setenv("AWS_TEST_MQTT311_IOT_CORE_PKCS12_KEY", pkcs12_file_name)
+            env.shell.setenv("AWS_TEST_MQTT311_IOT_CORE_PKCS12_KEY_PASSWORD", "PKCS12_KEY_PASSWORD")
 
         actions = []
 
