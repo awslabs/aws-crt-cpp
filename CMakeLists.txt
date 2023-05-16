@@ -226,15 +226,6 @@ file(GLOB AWS_CRT_PUBLIC_HEADERS
 
 aws_check_headers_cxx(${PROJECT_NAME} ${AWS_CRT_PUBLIC_HEADERS})
 
-# set extra warning flags
-if(AWS_WARNINGS_ARE_ERRORS)
- if(MSVC)
-     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
- else()
-     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
- endif()
-endif()
-
 file(GLOB AWS_CRT_CPP_HEADERS
     ${AWS_CRT_PUBLIC_HEADERS}
     ${AWS_CRT_EXTERNAL_HEADERS}
@@ -311,6 +302,15 @@ if(WIN32)
 endif()
 
 add_library(${PROJECT_NAME} ${AWS_CRT_CPP_HEADERS} ${AWS_CRT_CPP_SRC})
+
+ # set extra warning flags
+ if(AWS_WARNINGS_ARE_ERRORS)
+ if(MSVC)
+     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
+ else()
+     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
+ endif()
+endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DCJSON_HIDE_SYMBOLS)
 
