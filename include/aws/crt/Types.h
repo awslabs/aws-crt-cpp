@@ -1,5 +1,3 @@
-AWS_POP_SANE_WARNING_LEVEL
-
 #pragma once
 /**
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -20,8 +18,6 @@ AWS_POP_SANE_WARNING_LEVEL
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
-AWS_PUSH_SANE_WARNING_LEVEL
 
 struct aws_byte_buf;
 struct aws_byte_cursor;

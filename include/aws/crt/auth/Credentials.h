@@ -1,5 +1,3 @@
-AWS_POP_SANE_WARNING_LEVEL
-
 #pragma once
 /**
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -13,8 +11,6 @@ AWS_POP_SANE_WARNING_LEVEL
 
 #include <chrono>
 #include <functional>
-
-AWS_PUSH_SANE_WARNING_LEVEL
 
 struct aws_credentials;
 struct aws_credentials_provider;

@@ -15,8 +15,6 @@
 #include <stddef.h>
 #include <type_traits>
 
-AWS_PUSH_SANE_WARNING_LEVEL
-
 #if __cplusplus >= 201703L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L)
 #    include <string_view>
 #endif
@@ -72,8 +70,6 @@ namespace Aws
                 m_size = other->size();
                 return *this;
             }
-AWS_POP_SANE_WARNING_LEVEL
-
 #endif
             // iterators
 

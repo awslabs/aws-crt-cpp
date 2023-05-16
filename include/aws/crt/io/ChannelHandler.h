@@ -1,5 +1,3 @@
-AWS_POP_SANE_WARNING_LEVEL
-
 #pragma once
 /**
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -12,8 +10,6 @@ AWS_POP_SANE_WARNING_LEVEL
 
 #include <chrono>
 #include <cstddef>
-
-AWS_PUSH_SANE_WARNING_LEVEL
 
 struct aws_array_list;
 struct aws_io_message;
