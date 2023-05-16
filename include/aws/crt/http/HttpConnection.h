@@ -1,3 +1,5 @@
+AWS_POP_SANE_WARNING_LEVEL
+
 #pragma once
 /**
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -14,6 +16,8 @@
 
 #include <functional>
 #include <memory>
+
+AWS_PUSH_SANE_WARNING_LEVEL
 
 namespace Aws
 {

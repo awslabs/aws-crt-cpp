@@ -1,3 +1,5 @@
+AWS_POP_SANE_WARNING_LEVEL
+
 #pragma once
 /**
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -5,6 +7,8 @@
  */
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
+
+AWS_PUSH_SANE_WARNING_LEVEL
 
 namespace Aws
 {

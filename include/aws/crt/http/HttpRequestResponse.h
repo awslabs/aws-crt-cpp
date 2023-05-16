@@ -1,3 +1,5 @@
+AWS_POP_SANE_WARNING_LEVEL
+
 #pragma once
 /**
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -7,6 +9,8 @@
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
 #include <aws/crt/io/Stream.h>
+
+AWS_PUSH_SANE_WARNING_LEVEL
 
 struct aws_http_header;
 struct aws_http_message;

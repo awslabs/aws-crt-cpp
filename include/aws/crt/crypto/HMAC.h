@@ -1,3 +1,5 @@
+AWS_POP_SANE_WARNING_LEVEL
+
 #pragma once
 /**
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -6,6 +8,8 @@
 #include <aws/cal/hmac.h>
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
+
+AWS_PUSH_SANE_WARNING_LEVEL
 
 struct aws_hmac;
 namespace Aws

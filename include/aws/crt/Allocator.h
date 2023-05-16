@@ -1,3 +1,5 @@
+AWS_POP_SANE_WARNING_LEVEL
+
 #pragma once
 /**
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -6,6 +8,8 @@
 
 #include <aws/common/common.h>
 #include <aws/crt/Exports.h>
+
+AWS_PUSH_SANE_WARNING_LEVEL
 
 namespace Aws
 {

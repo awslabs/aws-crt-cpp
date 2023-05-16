@@ -1,3 +1,5 @@
+AWS_POP_SANE_WARNING_LEVEL
+
 #pragma once
 /**
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -10,6 +12,8 @@
 #include <aws/crt/mqtt/MqttClient.h>
 
 #include <aws/common/logging.h>
+
+AWS_PUSH_SANE_WARNING_LEVEL
 
 namespace Aws
 {

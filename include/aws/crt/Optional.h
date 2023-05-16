@@ -1,9 +1,13 @@
+AWS_POP_SANE_WARNING_LEVEL
+
 #pragma once
 /**
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <utility>
+
+AWS_PUSH_SANE_WARNING_LEVEL
 
 namespace Aws
 {

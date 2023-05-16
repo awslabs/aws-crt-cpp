@@ -1,3 +1,5 @@
+AWS_POP_SANE_WARNING_LEVEL
+
 #pragma once
 /**
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -5,6 +7,8 @@
  */
 
 #include <aws/crt/Types.h>
+
+AWS_PUSH_SANE_WARNING_LEVEL
 
 struct aws_endpoints_rule_engine;
 struct aws_endpoints_request_context;

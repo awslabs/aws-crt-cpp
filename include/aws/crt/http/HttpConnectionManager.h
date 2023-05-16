@@ -1,3 +1,5 @@
+AWS_POP_SANE_WARNING_LEVEL
+
 #pragma once
 /**
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -9,6 +11,8 @@
 #include <condition_variable>
 #include <future>
 #include <mutex>
+
+AWS_PUSH_SANE_WARNING_LEVEL
 
 struct aws_http_connection_manager;
 
