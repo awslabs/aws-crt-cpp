@@ -7,12 +7,12 @@
 # To do so, we generate a single-line C or C++ source file that includes each
 # header, and link all of these stub source files into a test executable.
 
-option(PERFORM_HEADER_CHECK_CXX "Performs compile-time checks that each header can be included independently.")
+option(PERFORM_HEADER_CHECK "Performs compile-time checks that each header can be included independently.")
 
 # Call as: aws_check_headers_cxx(${target} HEADERS TO CHECK LIST)
 function(aws_check_headers_cxx target)
     # Check headers against each supported CXX_STANDARD
-    if (PERFORM_HEADER_CHECK_CXX)
+    if (PERFORM_HEADER_CHECK)
         aws_check_headers_cxx_internal(${target} 11 ${ARGN})
         aws_check_headers_cxx_internal(${target} 14 ${ARGN})
         aws_check_headers_cxx_internal(${target} 17 ${ARGN})
@@ -22,7 +22,7 @@ function(aws_check_headers_cxx target)
 endfunction()
 
 function(aws_check_headers_cxx_internal target std)
-# Check that compiler supports this std
+    # Check that compiler supports this std
     list (FIND CMAKE_CXX_COMPILE_FEATURES "cxx_std_${std}" feature_idx)
     if (${feature_idx} LESS 0)
         return()
