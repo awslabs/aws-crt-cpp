@@ -22,7 +22,11 @@ function(aws_check_headers_cxx target)
 endfunction()
 
 function(aws_check_headers_cxx_internal target std)
-    # Check that compiler supports this std
+    if (NOT PERFORM_HEADER_CHECK)
+        return()
+    endif()
+
+# Check that compiler supports this std
     list (FIND CMAKE_CXX_COMPILE_FEATURES "cxx_std_${std}" feature_idx)
     if (${feature_idx} LESS 0)
         return()
