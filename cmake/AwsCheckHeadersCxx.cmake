@@ -56,6 +56,13 @@ function(aws_check_headers_cxx_internal target std)
         CXX_STANDARD_REQUIRED OFF
     )
 
+    # Ensure our headers can be included by an application with its warnings set very high
+    if(MSVC)
+        target_compile_options(${HEADER_CHECKER_LIB} PRIVATE /Wall /WX)
+    else()
+      target_compile_options(${HEADER_CHECKER_LIB} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+
     foreach(header IN LISTS ARGN)
         if (NOT ${header} MATCHES "\\.inl$")
             file(RELATIVE_PATH rel_header ${CMAKE_HOME_DIRECTORY} ${header})
