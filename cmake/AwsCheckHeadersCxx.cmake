@@ -36,7 +36,7 @@ function(aws_check_headers_cxx_internal target std)
     set(HEADER_CHECKER_ROOT "${CMAKE_CURRENT_BINARY_DIR}/header-checker-cxx-${std}")
 
     # Write stub main file
-    set(HEADER_CHECKER_MAIN "${HEADER_CHECKER_ROOT}/stub.cpp")
+    set(HEADER_CHECKER_MAIN "${HEADER_CHECKER_ROOT}/headerchecker_main.cpp")
     file(WRITE ${HEADER_CHECKER_MAIN} "
         int main(int argc, char **argv) {
             (void)argc;
@@ -65,14 +65,16 @@ function(aws_check_headers_cxx_internal target std)
 
     foreach(header IN LISTS ARGN)
         if (NOT ${header} MATCHES "\\.inl$")
-            file(RELATIVE_PATH rel_header ${CMAKE_HOME_DIRECTORY} ${header})
-            file(RELATIVE_PATH include_path "${CMAKE_HOME_DIRECTORY}/include" ${header})
-            set(stub_dir "${HEADER_CHECKER_ROOT}/${rel_header}")
-            file(MAKE_DIRECTORY "${stub_dir}")
-            # include file twice to ensure header guards are present
-            file(WRITE "${stub_dir}/check.cpp" "#include <${include_path}>\n#include <${include_path}>\n")
-
-            target_sources(${HEADER_CHECKER_LIB} PUBLIC "${stub_dir}/check.cpp")
+            # create unique token for this file, e.g.:
+            # "${CMAKE_CURRENT_SOURCE_DIR}/include/aws/common/byte_buf.h" -> "aws_common_byte_buf_h"
+            file(RELATIVE_PATH include_path "${CMAKE_CURRENT_SOURCE_DIR}/include" ${header})
+            # replace non-alphanumeric characters with underscores
+            string(REGEX REPLACE "[^a-zA-Z0-9]" "_" unique_token ${include_path})
+            set(cpp_file "${HEADER_CHECKER_ROOT}/headerchecker_${unique_token}.cpp")
+            # include header twice to check for include-guards
+            # define a unique int or compiler complains that there's nothing in the file
+            file(WRITE "${cpp_file}" "#include <${include_path}>\n#include <${include_path}>\nint ${unique_token}_cpp;")
+            target_sources(${HEADER_CHECKER_LIB} PUBLIC "${cpp_file}")
         endif()
     endforeach(header)
 endfunction()
