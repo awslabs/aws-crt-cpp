@@ -3,7 +3,10 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+/* This file generates level 4 compiler warnings in Visual Studio 2017 and older */
+#pragma warning(push, 3)
 #include <utility>
+#pragma warning(pop)
 
 namespace Aws
 {

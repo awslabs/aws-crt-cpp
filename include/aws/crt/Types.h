@@ -10,13 +10,19 @@
 #include <aws/crt/StringView.h>
 #include <aws/io/socket.h>
 #include <aws/mqtt/mqtt.h>
+/* This file generates level 4 compiler warnings in Visual Studio 2017 and older */
+#pragma warning(push, 3)
 #include <functional>
+#pragma warning(pop)
 #include <list>
 #include <map>
 #include <sstream>
 #include <string>
 #include <unordered_map>
+/* This file generates level 4 compiler warnings in Visual Studio 2017 and older */
+#pragma warning(push, 3)
 #include <utility>
+#pragma warning(pop)
 #include <vector>
 
 AWS_PUSH_SANE_WARNING_LEVEL
@@ -143,7 +149,7 @@ namespace Aws
             aws_mem_release(allocator, t);
         }
 
-        template <typename T, typename... Args> T *New(Allocator *allocator, Args &&...args)
+        template <typename T, typename... Args> T *New(Allocator *allocator, Args &&... args)
         {
             T *t = reinterpret_cast<T *>(aws_mem_acquire(allocator, sizeof(T)));
             if (!t)
@@ -151,7 +157,7 @@ namespace Aws
             return new (t) T(std::forward<Args>(args)...);
         }
 
-        template <typename T, typename... Args> std::shared_ptr<T> MakeShared(Allocator *allocator, Args &&...args)
+        template <typename T, typename... Args> std::shared_ptr<T> MakeShared(Allocator *allocator, Args &&... args)
         {
             T *t = reinterpret_cast<T *>(aws_mem_acquire(allocator, sizeof(T)));
             if (!t)
