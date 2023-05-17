@@ -223,7 +223,7 @@ jobs:
         test `lipo aws-crt-cpp/build/install/lib/libaws-crt-cpp.a -archs` = "arm64"
 
   ios-cross-compile:
-    runs-on: macos-11 # latest
+    runs-on: macos-13 # latest
     steps:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
