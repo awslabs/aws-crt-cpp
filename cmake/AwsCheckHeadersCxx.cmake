@@ -14,10 +14,10 @@ function(aws_check_headers_cxx target)
     # Check headers against each supported CXX_STANDARD
     if (PERFORM_HEADER_CHECK)
         aws_check_headers_cxx_internal(${target} 11 ${ARGN})
-        # aws_check_headers_cxx_internal(${target} 14 ${ARGN})
-        # aws_check_headers_cxx_internal(${target} 17 ${ARGN})
-        # aws_check_headers_cxx_internal(${target} 20 ${ARGN})
-        # aws_check_headers_cxx_internal(${target} 23 ${ARGN})
+        aws_check_headers_cxx_internal(${target} 14 ${ARGN})
+        aws_check_headers_cxx_internal(${target} 17 ${ARGN})
+        aws_check_headers_cxx_internal(${target} 20 ${ARGN})
+        aws_check_headers_cxx_internal(${target} 23 ${ARGN})
     endif ()
 endfunction()
 
@@ -59,7 +59,7 @@ function(aws_check_headers_cxx_internal target std)
 
     # Ensure our headers can be included by an application with its warnings set very high
     if(MSVC)
-        target_compile_options(${HEADER_CHECKER_LIB} PRIVATE /Wall /WX)
+        target_compile_options(${HEADER_CHECKER_LIB} PRIVATE /W4 /WX)
     else()
       target_compile_options(${HEADER_CHECKER_LIB} PRIVATE -Wall -Wextra -Wpedantic -Werror)
     endif()
