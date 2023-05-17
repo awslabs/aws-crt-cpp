@@ -12,11 +12,7 @@
 #include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Bootstrap.h>
 #include <aws/iot/MqttClient.h>
-
-/* This file generates level 4 compiler warnings in Visual Studio 2017 and older */
-#pragma warning(push, 3)
 #include <utility>
-#pragma warning(pop)
 
 namespace Aws
 {

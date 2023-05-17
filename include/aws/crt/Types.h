@@ -10,8 +10,6 @@
 #include <aws/crt/StringView.h>
 #include <aws/io/socket.h>
 #include <aws/mqtt/mqtt.h>
-/* This file generates level 4 compiler warnings in Visual Studio 2017 and older */
-#pragma warning(push, 3)
 #include <functional>
 #pragma warning(pop)
 #include <list>
@@ -19,10 +17,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
-/* This file generates level 4 compiler warnings in Visual Studio 2017 and older */
-#pragma warning(push, 3)
 #include <utility>
-#pragma warning(pop)
 #include <vector>
 
 AWS_PUSH_SANE_WARNING_LEVEL

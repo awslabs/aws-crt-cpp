@@ -13,10 +13,7 @@
 #include <aws/mqtt/client.h>
 
 #include <atomic>
-/* This file generates level 4 compiler warnings in Visual Studio 2017 and older */
-#pragma warning(push, 3)
 #include <functional>
-#pragma warning(pop)
 #include <memory>
 
 AWS_PUSH_SANE_WARNING_LEVEL
