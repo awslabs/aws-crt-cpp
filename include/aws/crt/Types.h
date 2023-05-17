@@ -11,7 +11,6 @@
 #include <aws/io/socket.h>
 #include <aws/mqtt/mqtt.h>
 #include <functional>
-#pragma warning(pop)
 #include <list>
 #include <map>
 #include <sstream>
