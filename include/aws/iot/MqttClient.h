@@ -9,6 +9,8 @@
 #include <aws/crt/mqtt/MqttClient.h>
 #include <aws/iot/MqttCommon.h>
 
+AWS_PUSH_SANE_WARNING_LEVEL
+
 #if !BYO_CRYPTO
 
 namespace Aws
@@ -496,3 +498,4 @@ namespace Aws
 } // namespace Aws
 
 #endif // !BYO_CRYPTO
+AWS_POP_SANE_WARNING_LEVEL

@@ -12,6 +12,8 @@
 #include <chrono>
 #include <functional>
 
+AWS_PUSH_SANE_WARNING_LEVEL
+
 struct aws_credentials;
 struct aws_credentials_provider;
 
@@ -583,3 +585,4 @@ namespace Aws
         } // namespace Auth
     }     // namespace Crt
 } // namespace Aws
+AWS_POP_SANE_WARNING_LEVEL

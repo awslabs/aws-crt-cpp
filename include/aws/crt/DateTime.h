@@ -11,6 +11,8 @@
 
 #include <chrono>
 
+AWS_PUSH_SANE_WARNING_LEVEL
+
 namespace Aws
 {
     namespace Crt
@@ -196,3 +198,4 @@ namespace Aws
         };
     } // namespace Crt
 } // namespace Aws
+AWS_POP_SANE_WARNING_LEVEL
