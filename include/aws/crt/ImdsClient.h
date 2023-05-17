@@ -7,7 +7,10 @@
 #include <aws/crt/DateTime.h>
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
+/* This file generates level 4 compiler warnings in Visual Studio 2017 and older */
+#pragma warning(push, 3)
 #include <functional>
+#pragma warning(pop)
 
 AWS_PUSH_SANE_WARNING_LEVEL
 

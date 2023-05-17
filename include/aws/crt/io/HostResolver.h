@@ -6,8 +6,10 @@
 #include <aws/crt/Types.h>
 
 #include <aws/io/host_resolver.h>
-
+/* This file generates level 4 compiler warnings in Visual Studio 2017 and older */
+#pragma warning(push, 3)
 #include <functional>
+#pragma warning(pop)
 
 AWS_PUSH_SANE_WARNING_LEVEL
 
