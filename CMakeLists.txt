@@ -303,15 +303,6 @@ endif()
 
 add_library(${PROJECT_NAME} ${AWS_CRT_CPP_HEADERS} ${AWS_CRT_CPP_SRC})
 
- # set extra warning flags
- if(AWS_WARNINGS_ARE_ERRORS)
- if(MSVC)
-     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
- else()
-     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
- endif()
-endif()
-
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DCJSON_HIDE_SYMBOLS)
 
 if(AWS_IOT_SDK_VERSION)
@@ -341,6 +332,14 @@ if(CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE MATCHES Debug)
     target_compile_definitions(${PROJECT_NAME} PRIVATE "-DDEBUG_BUILD")
 endif()
 
+ # set extra warning flags
+ if(AWS_WARNINGS_ARE_ERRORS)
+ if(MSVC)
+     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
+ else()
+     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
+ endif()
+endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
