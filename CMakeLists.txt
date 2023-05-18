@@ -70,7 +70,6 @@ project("aws-crt-cpp"
     LANGUAGES CXX C
     VERSION ${SIMPLE_VERSION})
 
-include(AwsCheckHeadersCxx)
 include(CTest)
 
 if(DEFINED CMAKE_PREFIX_PATH)
@@ -223,8 +222,10 @@ file(GLOB AWS_CRT_PUBLIC_HEADERS
     ${AWS_CRT_HTTP_HEADERS}
     ${AWS_CRT_ENDPOINT_HEADERS}
 )
-
-aws_check_headers(${PROJECT_NAME} DISABLE_C_HEADER_CHECKER ${AWS_CRT_PUBLIC_HEADERS})
+if(BUILD_DEPS)
+    include(AwsCheckHeaders)
+    aws_check_headers(${PROJECT_NAME} DISABLE_C_HEADER_CHECKER ${AWS_CRT_PUBLIC_HEADERS})
+endif()
 
 file(GLOB AWS_CRT_CPP_HEADERS
     ${AWS_CRT_PUBLIC_HEADERS}
