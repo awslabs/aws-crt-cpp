@@ -222,6 +222,7 @@ file(GLOB AWS_CRT_PUBLIC_HEADERS
     ${AWS_CRT_HTTP_HEADERS}
     ${AWS_CRT_ENDPOINT_HEADERS}
 )
+
 if(BUILD_DEPS)
     include(AwsCheckHeaders)
     aws_check_headers(${PROJECT_NAME} IS_CXX ${AWS_CRT_PUBLIC_HEADERS})
