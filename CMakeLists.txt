@@ -224,7 +224,7 @@ file(GLOB AWS_CRT_PUBLIC_HEADERS
 )
 if(BUILD_DEPS)
     include(AwsCheckHeaders)
-    aws_check_headers(${PROJECT_NAME} DISABLE_C_HEADER_CHECKER ${AWS_CRT_PUBLIC_HEADERS})
+    aws_check_headers(${PROJECT_NAME} IS_CXX ${AWS_CRT_PUBLIC_HEADERS})
 endif()
 
 file(GLOB AWS_CRT_CPP_HEADERS
