@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/Types.h>
-#include <aws/io/host_resolver.h>
-#include <functional>
 
-AWS_PUSH_SANE_WARNING_LEVEL
+#include <aws/io/host_resolver.h>
+
+#include <functional>
 
 namespace Aws
 {
@@ -121,4 +121,3 @@ namespace Aws
         } // namespace Io
     }     // namespace Crt
 } // namespace Aws
-AWS_POP_SANE_WARNING_LEVEL

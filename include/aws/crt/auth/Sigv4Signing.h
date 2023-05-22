@@ -10,8 +10,6 @@
 #include <aws/crt/Types.h>
 #include <aws/crt/auth/Signing.h>
 
-AWS_PUSH_SANE_WARNING_LEVEL
-
 struct aws_signing_config_aws;
 
 namespace Aws
@@ -352,4 +350,3 @@ namespace Aws
         } // namespace Auth
     }     // namespace Crt
 } // namespace Aws
-AWS_POP_SANE_WARNING_LEVEL

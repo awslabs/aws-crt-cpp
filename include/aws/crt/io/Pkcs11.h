@@ -6,8 +6,6 @@
 
 #include <aws/crt/Types.h>
 
-AWS_PUSH_SANE_WARNING_LEVEL
-
 struct aws_pkcs11_lib;
 
 namespace Aws
@@ -116,4 +114,3 @@ namespace Aws
         } // namespace Io
     }     // namespace Crt
 } // namespace Aws
-AWS_POP_SANE_WARNING_LEVEL

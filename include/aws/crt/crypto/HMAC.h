@@ -7,8 +7,6 @@
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
 
-AWS_PUSH_SANE_WARNING_LEVEL
-
 struct aws_hmac;
 namespace Aws
 {
@@ -150,4 +148,3 @@ namespace Aws
         } // namespace Crypto
     }     // namespace Crt
 } // namespace Aws
-AWS_POP_SANE_WARNING_LEVEL

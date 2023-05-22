@@ -19,8 +19,6 @@
 #include <utility>
 #include <vector>
 
-AWS_PUSH_SANE_WARNING_LEVEL
-
 struct aws_byte_buf;
 struct aws_byte_cursor;
 struct aws_socket_options;
@@ -165,4 +163,3 @@ namespace Aws
 
     } // namespace Crt
 } // namespace Aws
-AWS_POP_SANE_WARNING_LEVEL

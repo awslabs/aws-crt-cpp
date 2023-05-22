@@ -8,8 +8,6 @@
 
 #include <aws/cal/hash.h>
 
-AWS_PUSH_SANE_WARNING_LEVEL
-
 struct aws_hash;
 namespace Aws
 {
@@ -168,4 +166,3 @@ namespace Aws
         } // namespace Crypto
     }     // namespace Crt
 } // namespace Aws
-AWS_POP_SANE_WARNING_LEVEL

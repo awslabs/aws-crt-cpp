@@ -9,8 +9,6 @@
 #include <aws/crt/Types.h>
 #include <functional>
 
-AWS_PUSH_SANE_WARNING_LEVEL
-
 struct aws_credentials;
 struct aws_imds_client;
 struct aws_imds_instance_info;
@@ -386,4 +384,3 @@ namespace Aws
         } // namespace Imds
     }     // namespace Crt
 } // namespace Aws
-AWS_POP_SANE_WARNING_LEVEL

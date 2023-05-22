@@ -6,8 +6,6 @@
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/Types.h>
 
-AWS_PUSH_SANE_WARNING_LEVEL
-
 struct aws_json_value;
 namespace Aws
 {
@@ -453,4 +451,3 @@ namespace Aws
         };
     } // namespace Crt
 } // namespace Aws
-AWS_POP_SANE_WARNING_LEVEL

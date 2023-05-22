@@ -9,6 +9,7 @@
 #include <aws/crt/http/HttpProxyStrategy.h>
 #include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Bootstrap.h>
+
 #include <utility>
 
 #define AWS_MQTT_MAX_TOPIC_LENGTH 65535

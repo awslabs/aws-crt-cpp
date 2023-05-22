@@ -11,8 +11,6 @@
 #include <chrono>
 #include <cstddef>
 
-AWS_PUSH_SANE_WARNING_LEVEL
-
 struct aws_array_list;
 struct aws_io_message;
 
@@ -238,4 +236,3 @@ namespace Aws
         } // namespace Io
     }     // namespace Crt
 } // namespace Aws
-AWS_POP_SANE_WARNING_LEVEL
