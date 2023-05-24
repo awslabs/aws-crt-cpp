@@ -125,6 +125,30 @@ static void s_setupConnectionLifeCycle(
     });
 }
 
+static int s_CheckClientAndStop(
+    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client,
+    std::promise<bool> *connectionPromise)
+{
+    ASSERT_TRUE(mqtt5Client);
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(connectionPromise->get_future().get());
+    ASSERT_TRUE(mqtt5Client->Stop());
+    return AWS_OP_SUCCESS;
+}
+
+static int s_GetEnvVariable(Aws::Crt::Allocator *allocator, const aws_string *variableName, aws_string *output)
+{
+    int error = aws_get_environment_value(allocator, variableName, &output);
+    if (error == AWS_OP_SUCCESS && output)
+    {
+        if (aws_string_is_valid(output))
+        {
+            return AWS_OP_SUCCESS;
+        }
+    }
+    return AWS_OP_ERR;
+}
+
 /*
  * IoT Builder with mTLS key/cert connect
  */
@@ -133,17 +157,10 @@ static int s_TestIoTMqtt5ConnectWithmTLS(Aws::Crt::Allocator *allocator, void *)
     struct aws_string *endpoint = NULL;
     struct aws_string *cert = NULL;
     struct aws_string *key = NULL;
-
-    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_rsa_cert, &cert);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_rsa_key, &key);
-
-    bool isEveryEnvVarSet = (endpoint && cert && key);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet = (aws_string_is_valid(endpoint) && aws_string_is_valid(cert) && aws_string_is_valid(key));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_hostname, endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_rsa_cert, cert);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_rsa_key, key);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -166,10 +183,7 @@ static int s_TestIoTMqtt5ConnectWithmTLS(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
-    ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->Start());
-    ASSERT_TRUE(connectionPromise.get_future().get());
-    ASSERT_TRUE(mqtt5Client->Stop());
+    ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise));
     stoppedPromise.get_future().get();
 
     delete builder;
@@ -188,15 +202,9 @@ static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, vo
     struct aws_string *endpoint = NULL;
     struct aws_string *region = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_region, &region);
-
-    bool isEveryEnvVarSet = (endpoint && region);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet = (aws_string_is_valid(endpoint) && aws_string_is_valid(region));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_hostname, endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_region, region);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -210,10 +218,7 @@ static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, vo
     Aws::Crt::Auth::CredentialsProviderChainDefaultConfig defaultConfig;
     std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> provider =
         Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(defaultConfig);
-    if (!provider)
-    {
-        throw std::runtime_error("Failure to create credentials provider!");
-    }
+    ASSERT_TRUE(provider);
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
     Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWebsocket(
@@ -227,10 +232,8 @@ static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, vo
 
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
-    ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->Start());
-    ASSERT_TRUE(connectionPromise.get_future().get());
-    ASSERT_TRUE(mqtt5Client->Stop());
+    ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise));
+    stoppedPromise.get_future().get();
 
     delete builder;
     aws_string_destroy(endpoint);
@@ -253,23 +256,14 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuth(Aws::Crt::Allocator *alloc
     struct aws_string *tokenKeyName = NULL;
     struct aws_string *tokenValue = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_name, &authname);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_username, &username);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_password, &password);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokensignature, &signature);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenkey, &tokenKeyName);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenvalue, &tokenValue);
-
-    bool isEveryEnvVarSet = (endpoint && authname && username && password && signature && tokenKeyName && tokenValue);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(authname) && aws_string_is_valid(username) &&
-             aws_string_is_valid(password) && aws_string_is_valid(signature) && aws_string_is_valid(tokenKeyName) &&
-             aws_string_is_valid(tokenValue));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_hostname, endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_name, authname);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_username, username);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_password, password);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokensignature, signature);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenkey, tokenKeyName);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenvalue, tokenValue);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -303,10 +297,7 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuth(Aws::Crt::Allocator *alloc
 
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
-    ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->Start());
-    ASSERT_TRUE(connectionPromise.get_future().get());
-    ASSERT_TRUE(mqtt5Client->Stop());
+    ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise));
     stoppedPromise.get_future().get();
 
     aws_string_destroy(endpoint);
@@ -332,19 +323,11 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *all
     struct aws_string *username = NULL;
     struct aws_string *password = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_name, &authname);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_username, &username);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_password, &password);
-
-    bool isEveryEnvVarSet = (endpoint && authname && username && password);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(authname) && aws_string_is_valid(username) &&
-             aws_string_is_valid(password));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_hostname, endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_name, authname);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_username, username);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_password, password);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -371,10 +354,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *all
 
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
-    ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->Start());
-    ASSERT_TRUE(connectionPromise.get_future().get());
-    ASSERT_TRUE(mqtt5Client->Stop());
+    ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise));
     stoppedPromise.get_future().get();
 
     aws_string_destroy(endpoint);
@@ -398,20 +378,12 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets(Aws::Crt::Allo
     struct aws_string *username = NULL;
     struct aws_string *password = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_region, &region);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_name, &authname);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_username, &username);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_password, &password);
-
-    bool isEveryEnvVarSet = (endpoint && authname && username && password && region);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(authname) && aws_string_is_valid(username) &&
-             aws_string_is_valid(password) && aws_string_is_valid(region));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_hostname, endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_region, region);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_name, authname);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_username, username);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_password, password);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -442,10 +414,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets(Aws::Crt::Allo
 
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
-    ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->Start());
-    ASSERT_TRUE(connectionPromise.get_future().get());
-    ASSERT_TRUE(mqtt5Client->Stop());
+    ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise));
     stoppedPromise.get_future().get();
 
     aws_string_destroy(endpoint);
@@ -473,25 +442,15 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Alloca
     struct aws_string *tokenKeyName = NULL;
     struct aws_string *tokenValue = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_region, &region);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_name, &authname);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_username, &username);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_password, &password);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokensignature, &signature);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenkey, &tokenKeyName);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenvalue, &tokenValue);
-
-    bool isEveryEnvVarSet =
-        (endpoint && authname && username && password && signature && tokenKeyName && tokenValue && region);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(authname) && aws_string_is_valid(username) &&
-             aws_string_is_valid(password) && aws_string_is_valid(signature) && aws_string_is_valid(tokenKeyName) &&
-             aws_string_is_valid(tokenValue) && aws_string_is_valid(region));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_hostname, endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_region, region);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_name, authname);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_username, username);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_password, password);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokensignature, signature);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenkey, tokenKeyName);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenvalue, tokenValue);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -528,10 +487,7 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Alloca
 
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
-    ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->Start());
-    ASSERT_TRUE(connectionPromise.get_future().get());
-    ASSERT_TRUE(mqtt5Client->Stop());
+    ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise));
     stoppedPromise.get_future().get();
 
     aws_string_destroy(endpoint);
@@ -562,27 +518,15 @@ static int s_TestIoTMqtt5ConnectWithPKCS11(Aws::Crt::Allocator *allocator, void 
     struct aws_string *pkcs11_ca = NULL;
     struct aws_string *pkcs11_use_openssl = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_pkcs11_lib, &pkcs11_lib);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_pkcs11_cert, &pkcs11_cert);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_pkcs11_pin, &pkcs11_userPin);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_pkcs11_token_label, &pkcs11_tokenLabel);
-    error |= aws_get_environment_value(
-        allocator, s_mqtt5_test_envName_iot_pkcs11_private_key_label, &pkcs11_privateKeyLabel);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_pkcs11_ca, &pkcs11_ca);
-    aws_get_environment_value(allocator, s_test_envName_iot_pkcs11_use_openssl, &pkcs11_use_openssl);
-
-    bool isEveryEnvVarSet =
-        (endpoint && pkcs11_lib && pkcs11_cert && pkcs11_userPin && pkcs11_tokenLabel && pkcs11_privateKeyLabel &&
-         pkcs11_ca);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(pkcs11_cert) && aws_string_is_valid(pkcs11_userPin) &&
-             aws_string_is_valid(pkcs11_tokenLabel) && aws_string_is_valid(pkcs11_privateKeyLabel) &&
-             aws_string_is_valid(pkcs11_ca));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false || pkcs11_use_openssl == NULL)
+    int error = s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_hostname, endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_pkcs11_lib, pkcs11_lib);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_pkcs11_cert, pkcs11_cert);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_pkcs11_pin, pkcs11_userPin);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_pkcs11_token_label, pkcs11_tokenLabel);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_pkcs11_private_key_label, pkcs11_privateKeyLabel);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_pkcs11_ca, pkcs11_ca);
+    s_GetEnvVariable(allocator, s_test_envName_iot_pkcs11_use_openssl, pkcs11_use_openssl);
+    if (error != AWS_OP_SUCCESS || pkcs11_use_openssl == NULL)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -626,10 +570,7 @@ static int s_TestIoTMqtt5ConnectWithPKCS11(Aws::Crt::Allocator *allocator, void 
 
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
-    ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->Start());
-    ASSERT_TRUE(connectionPromise.get_future().get());
-    ASSERT_TRUE(mqtt5Client->Stop());
+    ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise));
     stoppedPromise.get_future().get();
 
     delete builder;
@@ -655,18 +596,11 @@ static int s_TestIoTMqtt5ConnectWithPKCS12(Aws::Crt::Allocator *allocator, void 
     struct aws_string *pkcs12_password = NULL;
     struct aws_string *codebuild_buildID = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_pkcs12_key, &pkcs12_key);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_pkcs12_key_password, &pkcs12_password);
-    aws_get_environment_value(allocator, s_mqtt5_test_envName_codebuild, &codebuild_buildID);
-
-    bool isEveryEnvVarSet = (endpoint && pkcs12_key && pkcs12_password);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(pkcs12_key) && aws_string_is_valid(pkcs12_password));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_hostname, endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_pkcs12_key, pkcs12_key);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_pkcs12_key_password, pkcs12_password);
+    s_GetEnvVariable(allocator, s_mqtt5_test_envName_codebuild, codebuild_buildID);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -702,10 +636,7 @@ static int s_TestIoTMqtt5ConnectWithPKCS12(Aws::Crt::Allocator *allocator, void 
 
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
-    ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->Start());
-    ASSERT_TRUE(connectionPromise.get_future().get());
-    ASSERT_TRUE(mqtt5Client->Stop());
+    ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise));
     stoppedPromise.get_future().get();
 
     delete builder;
@@ -726,16 +657,10 @@ static int s_TestIoTMqtt5ConnectWithWindowsCert(Aws::Crt::Allocator *allocator, 
     struct aws_string *windows_cert = NULL;
     struct aws_string *codebuild_buildID = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_windows_cert, &windows_cert);
-    aws_get_environment_value(allocator, s_mqtt5_test_envName_codebuild, &codebuild_buildID);
-
-    bool isEveryEnvVarSet = (endpoint && windows_cert);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet = (aws_string_is_valid(endpoint) && aws_string_is_valid(windows_cert));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_hostname, endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_windows_cert, windows_cert);
+    s_GetEnvVariable(allocator, s_mqtt5_test_envName_codebuild, codebuild_buildID);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -766,10 +691,7 @@ static int s_TestIoTMqtt5ConnectWithWindowsCert(Aws::Crt::Allocator *allocator, 
 
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
-    ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->Start());
-    ASSERT_TRUE(connectionPromise.get_future().get());
-    ASSERT_TRUE(mqtt5Client->Stop());
+    ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise));
     stoppedPromise.get_future().get();
 
     delete builder;
@@ -791,21 +713,12 @@ static int s_TestIoTMqtt5ConnectWSStatic(Aws::Crt::Allocator *allocator, void *)
     struct aws_string *secretAccessKey = NULL;
     struct aws_string *sessionToken = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_region, &region);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_credential_access_key, &accessKeyId);
-    error |=
-        aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_credential_secret_access_key, &secretAccessKey);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_credential_session_token, &sessionToken);
-
-    bool isEveryEnvVarSet = (endpoint && region && accessKeyId && secretAccessKey && sessionToken);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(region) && aws_string_is_valid(accessKeyId) &&
-             aws_string_is_valid(secretAccessKey) && aws_string_is_valid(sessionToken));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_hostname, endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_region, region);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_credential_access_key, accessKeyId);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_credential_secret_access_key, secretAccessKey);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_credential_session_token, sessionToken);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -824,10 +737,7 @@ static int s_TestIoTMqtt5ConnectWSStatic(Aws::Crt::Allocator *allocator, void *)
     providerConfig.SecretAccessKey = aws_byte_cursor_from_c_str(aws_string_c_str(secretAccessKey));
     providerConfig.SessionToken = aws_byte_cursor_from_c_str(aws_string_c_str(sessionToken));
     provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderStatic(providerConfig);
-    if (!provider)
-    {
-        throw std::runtime_error("Failure to create credentials provider!");
-    }
+    ASSERT_TRUE(provider);
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
     Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWebsocket(
@@ -841,10 +751,8 @@ static int s_TestIoTMqtt5ConnectWSStatic(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
-    ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->Start());
-    ASSERT_TRUE(connectionPromise.get_future().get());
-    ASSERT_TRUE(mqtt5Client->Stop());
+    ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise));
+    stoppedPromise.get_future().get();
 
     delete builder;
     aws_string_destroy(endpoint);
@@ -866,19 +774,11 @@ static int s_TestIoTMqtt5ConnectWSCognito(Aws::Crt::Allocator *allocator, void *
     struct aws_string *cognitoEndpoint = NULL;
     struct aws_string *cognitoIdentity = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_region, &region);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_cognito_endpoint, &cognitoEndpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_cognito_identity, &cognitoIdentity);
-
-    bool isEveryEnvVarSet = (endpoint && region && cognitoEndpoint && cognitoIdentity);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(region) && aws_string_is_valid(cognitoEndpoint) &&
-             aws_string_is_valid(cognitoIdentity));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_hostname, endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_region, region);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_cognito_endpoint, cognitoEndpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_cognito_identity, cognitoIdentity);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -898,10 +798,7 @@ static int s_TestIoTMqtt5ConnectWSCognito(Aws::Crt::Allocator *allocator, void *
     providerConfig.Identity = aws_string_c_str(cognitoIdentity);
     providerConfig.TlsCtx = cognitoTls;
     provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderCognito(providerConfig);
-    if (!provider)
-    {
-        throw std::runtime_error("Failure to create credentials provider!");
-    }
+    ASSERT_TRUE(provider);
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
     Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWebsocket(
@@ -915,10 +812,8 @@ static int s_TestIoTMqtt5ConnectWSCognito(Aws::Crt::Allocator *allocator, void *
 
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
-    ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->Start());
-    ASSERT_TRUE(connectionPromise.get_future().get());
-    ASSERT_TRUE(mqtt5Client->Stop());
+    ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise));
+    stoppedPromise.get_future().get();
 
     delete builder;
     aws_string_destroy(endpoint);
@@ -939,19 +834,11 @@ static int s_TestIoTMqtt5ConnectWSProfile(Aws::Crt::Allocator *allocator, void *
     struct aws_string *profileCredentials = NULL;
     struct aws_string *profileConfig = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_region, &region);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_profile_credentials, &profileCredentials);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_profile_config, &profileConfig);
-
-    bool isEveryEnvVarSet = (endpoint && region && profileCredentials && profileConfig);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(region) && aws_string_is_valid(profileCredentials) &&
-             aws_string_is_valid(profileConfig));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_hostname, endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_region, region);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_profile_credentials, profileCredentials);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_profile_config, profileConfig);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -968,10 +855,7 @@ static int s_TestIoTMqtt5ConnectWSProfile(Aws::Crt::Allocator *allocator, void *
     providerConfig.ConfigFileNameOverride = aws_byte_cursor_from_c_str(aws_string_c_str(profileConfig));
     providerConfig.CredentialsFileNameOverride = aws_byte_cursor_from_c_str(aws_string_c_str(profileCredentials));
     provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderProfile(providerConfig);
-    if (!provider)
-    {
-        throw std::runtime_error("Failure to create credentials provider!");
-    }
+    ASSERT_TRUE(provider);
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
     Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWebsocket(
@@ -985,10 +869,8 @@ static int s_TestIoTMqtt5ConnectWSProfile(Aws::Crt::Allocator *allocator, void *
 
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
-    ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->Start());
-    ASSERT_TRUE(connectionPromise.get_future().get());
-    ASSERT_TRUE(mqtt5Client->Stop());
+    ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise));
+    stoppedPromise.get_future().get();
 
     delete builder;
     aws_string_destroy(endpoint);
@@ -1011,20 +893,12 @@ static int s_TestIoTMqtt5ConnectWSEnvironment(Aws::Crt::Allocator *allocator, vo
     struct aws_string *secretAccessKey = NULL;
     struct aws_string *sessionToken = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_region, &region);
-    error |= aws_get_environment_value(allocator, s_mqtt_cred_access_key, &accessKey);
-    error |= aws_get_environment_value(allocator, s_mqtt_cred_secret_access_key, &secretAccessKey);
-    error |= aws_get_environment_value(allocator, s_mqtt_cred_session_token, &sessionToken);
-
-    bool isEveryEnvVarSet = (endpoint && region && accessKey && secretAccessKey && sessionToken);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(region) && aws_string_is_valid(accessKey) &&
-             aws_string_is_valid(secretAccessKey) && aws_string_is_valid(sessionToken));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_hostname, endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_region, region);
+    error |= s_GetEnvVariable(allocator, s_mqtt_cred_access_key, accessKey);
+    error |= s_GetEnvVariable(allocator, s_mqtt_cred_secret_access_key, secretAccessKey);
+    error |= s_GetEnvVariable(allocator, s_mqtt_cred_session_token, sessionToken);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -1039,10 +913,7 @@ static int s_TestIoTMqtt5ConnectWSEnvironment(Aws::Crt::Allocator *allocator, vo
 
     std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> provider = nullptr;
     provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderEnvironment();
-    if (!provider)
-    {
-        throw std::runtime_error("Failure to create credentials provider!");
-    }
+    ASSERT_TRUE(provider);
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
     Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWebsocket(
@@ -1056,10 +927,8 @@ static int s_TestIoTMqtt5ConnectWSEnvironment(Aws::Crt::Allocator *allocator, vo
 
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
-    ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->Start());
-    ASSERT_TRUE(connectionPromise.get_future().get());
-    ASSERT_TRUE(mqtt5Client->Stop());
+    ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise));
+    stoppedPromise.get_future().get();
 
     delete builder;
     aws_string_destroy(endpoint);
@@ -1086,27 +955,15 @@ static int s_TestIoTMqtt5ConnectWSX509(Aws::Crt::Allocator *allocator, void *)
     struct aws_string *x509KeyPath = NULL;
     struct aws_string *x509RootCAPath = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_region, &region);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_x509_endpoint, &x509Endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_x509_role_alias, &x509RoleAlias);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_x509_thing_name, &x509ThingName);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_x509_cert, &x509CertificatePath);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_x509_key, &x509KeyPath);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_x509_ca, &x509RootCAPath);
-
-    bool isEveryEnvVarSet =
-        (endpoint && region && x509Endpoint && x509RoleAlias && x509ThingName && x509CertificatePath && x509KeyPath &&
-         x509RootCAPath);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(region) && aws_string_is_valid(x509Endpoint) &&
-             aws_string_is_valid(x509RoleAlias) && aws_string_is_valid(x509ThingName) &&
-             aws_string_is_valid(x509CertificatePath) && aws_string_is_valid(x509KeyPath) &&
-             aws_string_is_valid(x509RootCAPath));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_hostname, endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_region, region);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_x509_endpoint, x509Endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_x509_role_alias, x509RoleAlias);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_x509_thing_name, x509ThingName);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_x509_cert, x509CertificatePath);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_x509_key, x509KeyPath);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_x509_ca, x509RootCAPath);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -1147,10 +1004,7 @@ static int s_TestIoTMqtt5ConnectWSX509(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> provider =
         Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderX509(providerConfig, allocator);
-    if (!provider)
-    {
-        throw std::runtime_error("Failure to create credentials provider!");
-    }
+    ASSERT_TRUE(provider);
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
     Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWebsocket(
@@ -1164,10 +1018,8 @@ static int s_TestIoTMqtt5ConnectWSX509(Aws::Crt::Allocator *allocator, void *)
 
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
 
-    ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->Start());
-    ASSERT_TRUE(connectionPromise.get_future().get());
-    ASSERT_TRUE(mqtt5Client->Stop());
+    ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise));
+    stoppedPromise.get_future().get();
 
     delete builder;
     aws_string_destroy(endpoint);

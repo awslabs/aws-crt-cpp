@@ -199,11 +199,7 @@ static int s_TestMqtt311DirectConnectionMinimal(Aws::Crt::Allocator *allocator, 
     socketOptions.SetConnectTimeoutMs(3000);
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
         aws_string_c_str(endpoint), (uint16_t)std::stoi(aws_string_c_str(port)), socketOptions, false);
-    int connectResult = s_ConnectAndDisconnect(connection);
-    if (connectResult != AWS_OP_SUCCESS)
-    {
-        throw std::runtime_error("ConnectAndDisconnect failed");
-    }
+    ASSERT_SUCCESS(s_ConnectAndDisconnect(connection));
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
     return AWS_OP_SUCCESS;
@@ -249,11 +245,7 @@ static int s_TestMqtt311DirectConnectionWithBasicAuth(Aws::Crt::Allocator *alloc
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
         aws_string_c_str(endpoint), (uint16_t)std::stoi(aws_string_c_str(port)), socketOptions, false);
     connection->SetLogin(aws_string_c_str(username), aws_string_c_str(password));
-    int connectResult = s_ConnectAndDisconnect(connection);
-    if (connectResult != AWS_OP_SUCCESS)
-    {
-        throw std::runtime_error("ConnectAndDisconnect failed");
-    }
+    ASSERT_SUCCESS(s_ConnectAndDisconnect(connection));
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
     aws_string_destroy(username);
@@ -299,11 +291,7 @@ static int s_TestMqtt311DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, 
     socketOptions.SetConnectTimeoutMs(3000);
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
         aws_string_c_str(endpoint), (uint16_t)std::stoi(aws_string_c_str(port)), socketOptions, tlsContext, false);
-    int connectResult = s_ConnectAndDisconnect(connection);
-    if (connectResult != AWS_OP_SUCCESS)
-    {
-        throw std::runtime_error("ConnectAndDisconnect failed");
-    }
+    ASSERT_SUCCESS(s_ConnectAndDisconnect(connection));
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
     return AWS_OP_SUCCESS;
@@ -350,11 +338,7 @@ static int s_TestMqtt311DirectConnectionWithMutualTLS(Aws::Crt::Allocator *alloc
     socketOptions.SetConnectTimeoutMs(3000);
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection =
         client.NewConnection(aws_string_c_str(endpoint), 8883, socketOptions, tlsContext, false);
-    int connectResult = s_ConnectAndDisconnect(connection);
-    if (connectResult != AWS_OP_SUCCESS)
-    {
-        throw std::runtime_error("ConnectAndDisconnect failed");
-    }
+    ASSERT_SUCCESS(s_ConnectAndDisconnect(connection));
     aws_string_destroy(endpoint);
     aws_string_destroy(cert_path);
     aws_string_destroy(key_path);
@@ -413,11 +397,7 @@ static int s_TestMqtt311DirectConnectionWithHttpProxy(Aws::Crt::Allocator *alloc
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
         aws_string_c_str(endpoint), (uint16_t)std::stoi(aws_string_c_str(port)), socketOptions, tlsContext, false);
     connection->SetHttpProxyOptions(proxyOptions);
-    int connectResult = s_ConnectAndDisconnect(connection);
-    if (connectResult != AWS_OP_SUCCESS)
-    {
-        throw std::runtime_error("ConnectAndDisconnect failed");
-    }
+    ASSERT_SUCCESS(s_ConnectAndDisconnect(connection));
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
     aws_string_destroy(proxy_endpoint);
@@ -460,11 +440,7 @@ static int s_TestMqtt311WSConnectionMinimal(Aws::Crt::Allocator *allocator, void
     socketOptions.SetConnectTimeoutMs(3000);
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
         aws_string_c_str(endpoint), (uint16_t)std::stoi(aws_string_c_str(port)), socketOptions, true);
-    int connectResult = s_ConnectAndDisconnect(connection);
-    if (connectResult != AWS_OP_SUCCESS)
-    {
-        throw std::runtime_error("ConnectAndDisconnect failed");
-    }
+    ASSERT_SUCCESS(s_ConnectAndDisconnect(connection));
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
     return AWS_OP_SUCCESS;
@@ -510,11 +486,7 @@ static int s_TestMqtt311WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
         aws_string_c_str(endpoint), (uint16_t)std::stoi(aws_string_c_str(port)), socketOptions, true);
     connection->SetLogin(aws_string_c_str(username), aws_string_c_str(password));
-    int connectResult = s_ConnectAndDisconnect(connection);
-    if (connectResult != AWS_OP_SUCCESS)
-    {
-        throw std::runtime_error("ConnectAndDisconnect failed");
-    }
+    ASSERT_SUCCESS(s_ConnectAndDisconnect(connection));
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
     aws_string_destroy(username);
@@ -560,11 +532,7 @@ static int s_TestMqtt311WSConnectionWithTLS(Aws::Crt::Allocator *allocator, void
     socketOptions.SetConnectTimeoutMs(3000);
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
         aws_string_c_str(endpoint), (uint16_t)std::stoi(aws_string_c_str(port)), socketOptions, tlsContext, true);
-    int connectResult = s_ConnectAndDisconnect(connection);
-    if (connectResult != AWS_OP_SUCCESS)
-    {
-        throw std::runtime_error("ConnectAndDisconnect failed");
-    }
+    ASSERT_SUCCESS(s_ConnectAndDisconnect(connection));
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
     return AWS_OP_SUCCESS;
@@ -621,11 +589,7 @@ static int s_TestMqtt311WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
         aws_string_c_str(endpoint), (uint16_t)std::stoi(aws_string_c_str(port)), socketOptions, tlsContext, true);
     connection->SetHttpProxyOptions(proxyOptions);
-    int connectResult = s_ConnectAndDisconnect(connection);
-    if (connectResult != AWS_OP_SUCCESS)
-    {
-        throw std::runtime_error("ConnectAndDisconnect failed");
-    }
+    ASSERT_SUCCESS(s_ConnectAndDisconnect(connection));
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
     aws_string_destroy(proxy_endpoint);

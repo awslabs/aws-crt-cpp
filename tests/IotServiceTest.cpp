@@ -64,10 +64,10 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
     using namespace Aws::Crt::Io;
     using namespace Aws::Crt::Mqtt;
 
-    aws_string *input_host;
-    aws_string *input_certificate;
-    aws_string *input_privateKey;
-    aws_string *input_rootCa;
+    aws_string *input_host = nullptr;
+    aws_string *input_certificate = nullptr;
+    aws_string *input_privateKey = nullptr;
+    aws_string *input_rootCa = nullptr;
     int getEnvResult =
         s_SetupEnvironmentVariables(allocator, input_host, input_certificate, input_privateKey, input_rootCa);
     if (getEnvResult != AWS_OP_SUCCESS)
@@ -214,10 +214,10 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
     using namespace Aws::Crt::Io;
     using namespace Aws::Crt::Mqtt;
 
-    aws_string *input_host;
-    aws_string *input_certificate;
-    aws_string *input_privateKey;
-    aws_string *input_rootCa;
+    aws_string *input_host = nullptr;
+    aws_string *input_certificate = nullptr;
+    aws_string *input_privateKey = nullptr;
+    aws_string *input_rootCa = nullptr;
     int getEnvResult =
         s_SetupEnvironmentVariables(allocator, input_host, input_certificate, input_privateKey, input_rootCa);
     if (getEnvResult != AWS_OP_SUCCESS)
@@ -409,10 +409,10 @@ static int s_TestIotStatisticsPublishWaitStatisticsDisconnect(Aws::Crt::Allocato
     using namespace Aws::Crt::Io;
     using namespace Aws::Crt::Mqtt;
 
-    aws_string *input_host;
-    aws_string *input_certificate;
-    aws_string *input_privateKey;
-    aws_string *input_rootCa;
+    aws_string *input_host = nullptr;
+    aws_string *input_certificate = nullptr;
+    aws_string *input_privateKey = nullptr;
+    aws_string *input_rootCa = nullptr;
     int getEnvResult =
         s_SetupEnvironmentVariables(allocator, input_host, input_certificate, input_privateKey, input_rootCa);
     if (getEnvResult != AWS_OP_SUCCESS)
@@ -543,10 +543,10 @@ static int s_TestIotStatisticsPublishStatisticsWaitDisconnect(Aws::Crt::Allocato
     using namespace Aws::Crt::Io;
     using namespace Aws::Crt::Mqtt;
 
-    aws_string *input_host;
-    aws_string *input_certificate;
-    aws_string *input_privateKey;
-    aws_string *input_rootCa;
+    aws_string *input_host = nullptr;
+    aws_string *input_certificate = nullptr;
+    aws_string *input_privateKey = nullptr;
+    aws_string *input_rootCa = nullptr;
     int getEnvResult =
         s_SetupEnvironmentVariables(allocator, input_host, input_certificate, input_privateKey, input_rootCa);
     if (getEnvResult != AWS_OP_SUCCESS)
