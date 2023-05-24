@@ -17,7 +17,6 @@ option(AWS_IOT_SDK_VERSION "Set the version reported by Aws::Iot::MqttClientConn
 # NOTE: Some environment variables use Mosquitto or Proxy servers, which are assumed to be installed
 # locally if running the testing outside of CI/CD.
 option(ENABLE_PROXY_INTEGRATION_TESTS "Whether or not to build and run the proxy integration tests that rely on a proxy server installed and running locally" OFF)
-option(ENABLE_MQTT5_TEST "Whether or not to build and run the mqtt5 integration reply on a proxy server running locally" ON)
 
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -277,10 +276,8 @@ endif()
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
 
-# Skip signing the code - otherwise iOS will not compile in CI at all! Newer versions
-# of XCode require code signing by default and M1 binaries require it, but we're just
-# a library, so skip code signing.
-# This only really applies to iOS currently, as MacOS isn't as picky about it
+# We need to force skip code signing, or iOS will not comiple in CI due to XCode.
+# This only applies to iOS as MacOS doesn't care.
 if (IOS)
     set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO")
     set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "")

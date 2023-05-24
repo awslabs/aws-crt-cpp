@@ -34,7 +34,7 @@ jobs:
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
         ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ matrix.image }} build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DUSE_OPENSSL=ON
 
-  # The following containers need to run without -DUSE_OPENSSL because they do not have OpenSSL packages
+  # These linux-compat images need to run without -DUSE_OPENSSL because they do not have OpenSSL packages
   # that are up-to-date (AL2) or don't provide OpenSSL development packages that is found in CMake (alpine)
   # or are not able to connect on the socket even with the correct setup (manylinux2014)
   linux-compat:
