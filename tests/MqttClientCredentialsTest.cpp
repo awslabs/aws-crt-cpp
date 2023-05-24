@@ -91,6 +91,19 @@ AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_profile_config, "AWS_T
 // Needed to return "success" instead of skip in Codebuild so it doesn't count as a failure
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_codebuild, "CODEBUILD_BUILD_ID");
 
+static int s_GetEnvVariable(Aws::Crt::Allocator *allocator, const aws_string *variableName, aws_string **output)
+{
+    int error = aws_get_environment_value(allocator, variableName, output);
+    if (error == AWS_OP_SUCCESS && output)
+    {
+        if (aws_string_is_valid(*output))
+        {
+            return AWS_OP_SUCCESS;
+        }
+    }
+    return AWS_OP_ERR;
+}
+
 /*
  * Custom Auth (no signing) connect for MQTT311
  */
@@ -102,19 +115,11 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     struct aws_string *password = NULL;
     struct aws_string *empty_string = aws_string_new_from_c_str(allocator, "");
 
-    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_nosign_custom_auth_name, &authname);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_nosign_custom_auth_username, &username);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_nosign_custom_auth_password, &password);
-
-    bool isEveryEnvVarSet = (endpoint && authname && username && password);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(authname) && aws_string_is_valid(username) &&
-             aws_string_is_valid(password));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_nosign_custom_auth_name, &authname);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_nosign_custom_auth_username, &username);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_nosign_custom_auth_password, &password);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -190,24 +195,14 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
     struct aws_string *tokenKeyName = NULL;
     struct aws_string *tokenValue = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_name, &authname);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_username, &username);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_password, &password);
-    error |=
-        aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_tokensignature, &signature);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_tokenkey, &tokenKeyName);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_tokenvalue, &tokenValue);
-
-    bool isEveryEnvVarSet = (endpoint && authname && username && password && signature && tokenKeyName && tokenValue);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(authname) && aws_string_is_valid(username) &&
-             aws_string_is_valid(password) && aws_string_is_valid(signature) && aws_string_is_valid(tokenKeyName) &&
-             aws_string_is_valid(tokenValue));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_name, &authname);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_username, &username);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_password, &password);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_tokensignature, &signature);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_tokenkey, &tokenKeyName);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_tokenvalue, &tokenValue);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -290,25 +285,15 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Allo
     struct aws_string *tokenValue = NULL;
     struct aws_string *signingRegion = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_name, &authname);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_username, &username);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_password, &password);
-    error |=
-        aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_tokensignature, &signature);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_tokenkey, &tokenKeyName);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_tokenvalue, &tokenValue);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_region, &signingRegion);
-
-    bool isEveryEnvVarSet = (endpoint && authname && username && password && signature && tokenKeyName && tokenValue);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(authname) && aws_string_is_valid(username) &&
-             aws_string_is_valid(password) && aws_string_is_valid(signature) && aws_string_is_valid(tokenKeyName) &&
-             aws_string_is_valid(tokenValue));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_name, &authname);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_username, &username);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_password, &password);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_tokensignature, &signature);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_tokenkey, &tokenKeyName);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_tokenvalue, &tokenValue);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_region, &signingRegion);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -398,27 +383,15 @@ static int s_TestIoTMqtt311ConnectWithPKCS11(Aws::Crt::Allocator *allocator, voi
     struct aws_string *pkcs11_ca = NULL;
     struct aws_string *pkcs11_use_openssl = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_pkcs11_lib, &pkcs11_lib);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_pkcs11_cert, &pkcs11_cert);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_pkcs11_pin, &pkcs11_userPin);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_pkcs11_token_label, &pkcs11_tokenLabel);
-    error |= aws_get_environment_value(
-        allocator, s_mqtt311_test_envName_iot_pkcs11_private_key_label, &pkcs11_privateKeyLabel);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_pkcs11_ca, &pkcs11_ca);
-    aws_get_environment_value(allocator, s_test_envName_iot_pkcs11_use_openssl, &pkcs11_use_openssl);
-
-    bool isEveryEnvVarSet =
-        (endpoint && pkcs11_lib && pkcs11_cert && pkcs11_userPin && pkcs11_tokenLabel && pkcs11_privateKeyLabel &&
-         pkcs11_ca);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(pkcs11_cert) && aws_string_is_valid(pkcs11_userPin) &&
-             aws_string_is_valid(pkcs11_tokenLabel) && aws_string_is_valid(pkcs11_privateKeyLabel) &&
-             aws_string_is_valid(pkcs11_ca));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false || pkcs11_use_openssl == NULL)
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_pkcs11_lib, &pkcs11_lib);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_pkcs11_cert, &pkcs11_cert);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_pkcs11_pin, &pkcs11_userPin);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_pkcs11_token_label, &pkcs11_tokenLabel);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_pkcs11_private_key_label, &pkcs11_privateKeyLabel);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_pkcs11_ca, &pkcs11_ca);
+    s_GetEnvVariable(allocator, s_test_envName_iot_pkcs11_use_openssl, &pkcs11_use_openssl);
+    if (error != AWS_OP_SUCCESS || pkcs11_use_openssl == NULL)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -504,18 +477,11 @@ static int s_TestIoTMqtt311ConnectWithPKCS12(Aws::Crt::Allocator *allocator, voi
     struct aws_string *pkcs12_password = NULL;
     struct aws_string *codebuild_buildID = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_pkcs12_key, &pkcs12_key);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_pkcs12_key_password, &pkcs12_password);
-    aws_get_environment_value(allocator, s_mqtt311_test_envName_codebuild, &codebuild_buildID);
-
-    bool isEveryEnvVarSet = (endpoint && pkcs12_key && pkcs12_password);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(pkcs12_key) && aws_string_is_valid(pkcs12_password));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_pkcs12_key, &pkcs12_key);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_pkcs12_key_password, &pkcs12_password);
+    s_GetEnvVariable(allocator, s_mqtt311_test_envName_codebuild, &codebuild_buildID);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -592,16 +558,10 @@ static int s_TestIoTMqtt311ConnectWithWindowsCert(Aws::Crt::Allocator *allocator
     struct aws_string *windows_cert = NULL;
     struct aws_string *codebuild_buildID = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_windows_cert, &windows_cert);
-    aws_get_environment_value(allocator, s_mqtt311_test_envName_codebuild, &codebuild_buildID);
-
-    bool isEveryEnvVarSet = (endpoint && windows_cert);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet = (aws_string_is_valid(endpoint) && aws_string_is_valid(windows_cert));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_windows_cert, &windows_cert);
+    s_GetEnvVariable(allocator, s_mqtt311_test_envName_codebuild, &codebuild_buildID);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -671,15 +631,9 @@ static int s_TestIoTMqtt311ConnectWSDefault(Aws::Crt::Allocator *allocator, void
     struct aws_string *endpoint = NULL;
     struct aws_string *region = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_region, &region);
-
-    bool isEveryEnvVarSet = (endpoint && region);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet = (aws_string_is_valid(endpoint) && aws_string_is_valid(region));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_region, &region);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -748,21 +702,12 @@ static int s_TestIoTMqtt311ConnectWSStatic(Aws::Crt::Allocator *allocator, void 
     struct aws_string *secretAccessKey = NULL;
     struct aws_string *sessionToken = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_region, &region);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_credential_access_key, &accessKeyId);
-    error |=
-        aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_credential_secret_access_key, &secretAccessKey);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_credential_session_token, &sessionToken);
-
-    bool isEveryEnvVarSet = (endpoint && region && accessKeyId && secretAccessKey && sessionToken);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(region) && aws_string_is_valid(accessKeyId) &&
-             aws_string_is_valid(secretAccessKey) && aws_string_is_valid(sessionToken));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_region, &region);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_credential_access_key, &accessKeyId);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_credential_secret_access_key, &secretAccessKey);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_credential_session_token, &sessionToken);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -839,19 +784,11 @@ static int s_TestIoTMqtt311ConnectWSCognito(Aws::Crt::Allocator *allocator, void
     struct aws_string *cognitoEndpoint = NULL;
     struct aws_string *cognitoIdentity = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_region, &region);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_cognito_endpoint, &cognitoEndpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_cognito_identity, &cognitoIdentity);
-
-    bool isEveryEnvVarSet = (endpoint && region && cognitoEndpoint && cognitoIdentity);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(region) && aws_string_is_valid(cognitoEndpoint) &&
-             aws_string_is_valid(cognitoIdentity));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_region, &region);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_cognito_endpoint, &cognitoEndpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_cognito_identity, &cognitoIdentity);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -928,19 +865,11 @@ static int s_TestIoTMqtt311ConnectWSProfile(Aws::Crt::Allocator *allocator, void
     struct aws_string *profileCredentials = NULL;
     struct aws_string *profileConfig = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_region, &region);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_profile_credentials, &profileCredentials);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_profile_config, &profileConfig);
-
-    bool isEveryEnvVarSet = (endpoint && region && profileCredentials && profileConfig);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(region) && aws_string_is_valid(profileCredentials) &&
-             aws_string_is_valid(profileConfig));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_region, &region);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_profile_credentials, &profileCredentials);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_profile_config, &profileConfig);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -1016,20 +945,12 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
     struct aws_string *secretAccessKey = NULL;
     struct aws_string *sessionToken = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_region, &region);
-    error |= aws_get_environment_value(allocator, s_mqtt_cred_access_key, &accessKey);
-    error |= aws_get_environment_value(allocator, s_mqtt_cred_secret_access_key, &secretAccessKey);
-    error |= aws_get_environment_value(allocator, s_mqtt_cred_session_token, &sessionToken);
-
-    bool isEveryEnvVarSet = (endpoint && region && accessKey && secretAccessKey && sessionToken);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(region) && aws_string_is_valid(accessKey) &&
-             aws_string_is_valid(secretAccessKey) && aws_string_is_valid(sessionToken));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_region, &region);
+    error |= s_GetEnvVariable(allocator, s_mqtt_cred_access_key, &accessKey);
+    error |= s_GetEnvVariable(allocator, s_mqtt_cred_secret_access_key, &secretAccessKey);
+    error |= s_GetEnvVariable(allocator, s_mqtt_cred_session_token, &sessionToken);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -1077,7 +998,7 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
     Aws::Crt::String uuidStr = Uuid.ToString();
 
     ASSERT_TRUE(connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/));
-    ASSERT_TRUE(connectionCompletedPromise.get_future().get() == false);
+    ASSERT_TRUE(connectionCompletedPromise.get_future().get());
     if (connection->Disconnect())
     {
         connectionClosedPromise.get_future().wait();

@@ -49,6 +49,19 @@ AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_ws_basicauth_port, "AWS_TE
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_ws_tls_hostname, "AWS_TEST_MQTT311_WS_MQTT_TLS_HOST");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_ws_tls_port, "AWS_TEST_MQTT311_WS_MQTT_TLS_PORT");
 
+static int s_GetEnvVariable(Aws::Crt::Allocator *allocator, const aws_string *variableName, aws_string **output)
+{
+    int error = aws_get_environment_value(allocator, variableName, output);
+    if (error == AWS_OP_SUCCESS && output)
+    {
+        if (aws_string_is_valid(*output))
+        {
+            return AWS_OP_SUCCESS;
+        }
+    }
+    return AWS_OP_ERR;
+}
+
 static int s_TestMqttClientResourceSafety(Aws::Crt::Allocator *allocator, void *ctx)
 {
     (void)ctx;
@@ -177,15 +190,9 @@ static int s_TestMqtt311DirectConnectionMinimal(Aws::Crt::Allocator *allocator, 
     struct aws_string *endpoint = NULL;
     struct aws_string *port = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_direct_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_direct_port, &port);
-
-    bool isEveryEnvVarSet = (endpoint && port);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet = (aws_string_is_valid(endpoint) && aws_string_is_valid(port));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_direct_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_direct_port, &port);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -199,7 +206,8 @@ static int s_TestMqtt311DirectConnectionMinimal(Aws::Crt::Allocator *allocator, 
     socketOptions.SetConnectTimeoutMs(3000);
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
         aws_string_c_str(endpoint), (uint16_t)std::stoi(aws_string_c_str(port)), socketOptions, false);
-    ASSERT_SUCCESS(s_ConnectAndDisconnect(connection));
+    int connectResult = s_ConnectAndDisconnect(connection);
+    ASSERT_SUCCESS(connectResult);
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
     return AWS_OP_SUCCESS;
@@ -216,19 +224,11 @@ static int s_TestMqtt311DirectConnectionWithBasicAuth(Aws::Crt::Allocator *alloc
     struct aws_string *username = NULL;
     struct aws_string *password = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_direct_basicauth_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_direct_basicauth_port, &port);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_basicauth_username, &username);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_basicauth_password, &password);
-
-    bool isEveryEnvVarSet = (endpoint && port && username && password);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(port) && aws_string_is_valid(username) &&
-             aws_string_is_valid(password));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_direct_basicauth_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_direct_basicauth_port, &port);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_basicauth_username, &username);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_basicauth_password, &password);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -245,7 +245,8 @@ static int s_TestMqtt311DirectConnectionWithBasicAuth(Aws::Crt::Allocator *alloc
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
         aws_string_c_str(endpoint), (uint16_t)std::stoi(aws_string_c_str(port)), socketOptions, false);
     connection->SetLogin(aws_string_c_str(username), aws_string_c_str(password));
-    ASSERT_SUCCESS(s_ConnectAndDisconnect(connection));
+    int connectResult = s_ConnectAndDisconnect(connection);
+    ASSERT_SUCCESS(connectResult);
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
     aws_string_destroy(username);
@@ -262,15 +263,10 @@ static int s_TestMqtt311DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, 
     struct aws_string *endpoint = NULL;
     struct aws_string *port = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_direct_tls_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_direct_tls_port, &port);
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_direct_tls_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_direct_tls_port, &port);
 
-    bool isEveryEnvVarSet = (endpoint && port);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet = (aws_string_is_valid(endpoint) && aws_string_is_valid(port));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -291,7 +287,8 @@ static int s_TestMqtt311DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, 
     socketOptions.SetConnectTimeoutMs(3000);
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
         aws_string_c_str(endpoint), (uint16_t)std::stoi(aws_string_c_str(port)), socketOptions, tlsContext, false);
-    ASSERT_SUCCESS(s_ConnectAndDisconnect(connection));
+    int connectResult = s_ConnectAndDisconnect(connection);
+    ASSERT_SUCCESS(connectResult);
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
     return AWS_OP_SUCCESS;
@@ -307,17 +304,10 @@ static int s_TestMqtt311DirectConnectionWithMutualTLS(Aws::Crt::Allocator *alloc
     struct aws_string *cert_path = NULL;
     struct aws_string *key_path = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_cert, &cert_path);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_key, &key_path);
-
-    bool isEveryEnvVarSet = (endpoint && cert_path && key_path);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(cert_path) && aws_string_is_valid(key_path));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_cert, &cert_path);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_key, &key_path);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -338,7 +328,8 @@ static int s_TestMqtt311DirectConnectionWithMutualTLS(Aws::Crt::Allocator *alloc
     socketOptions.SetConnectTimeoutMs(3000);
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection =
         client.NewConnection(aws_string_c_str(endpoint), 8883, socketOptions, tlsContext, false);
-    ASSERT_SUCCESS(s_ConnectAndDisconnect(connection));
+    int connectResult = s_ConnectAndDisconnect(connection);
+    ASSERT_SUCCESS(connectResult);
     aws_string_destroy(endpoint);
     aws_string_destroy(cert_path);
     aws_string_destroy(key_path);
@@ -356,19 +347,11 @@ static int s_TestMqtt311DirectConnectionWithHttpProxy(Aws::Crt::Allocator *alloc
     struct aws_string *proxy_endpoint = NULL;
     struct aws_string *proxy_port = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_direct_tls_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_direct_tls_port, &port);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_proxy_hostname, &proxy_endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_proxy_port, &proxy_port);
-
-    bool isEveryEnvVarSet = (endpoint && port && proxy_endpoint && proxy_port);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(port) && aws_string_is_valid(proxy_endpoint) &&
-             aws_string_is_valid(proxy_port));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_direct_tls_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_direct_tls_port, &port);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_proxy_hostname, &proxy_endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_proxy_port, &proxy_port);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -397,7 +380,8 @@ static int s_TestMqtt311DirectConnectionWithHttpProxy(Aws::Crt::Allocator *alloc
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
         aws_string_c_str(endpoint), (uint16_t)std::stoi(aws_string_c_str(port)), socketOptions, tlsContext, false);
     connection->SetHttpProxyOptions(proxyOptions);
-    ASSERT_SUCCESS(s_ConnectAndDisconnect(connection));
+    int connectResult = s_ConnectAndDisconnect(connection);
+    ASSERT_SUCCESS(connectResult);
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
     aws_string_destroy(proxy_endpoint);
@@ -418,15 +402,9 @@ static int s_TestMqtt311WSConnectionMinimal(Aws::Crt::Allocator *allocator, void
     struct aws_string *endpoint = NULL;
     struct aws_string *port = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_ws_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_ws_port, &port);
-
-    bool isEveryEnvVarSet = (endpoint && port);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet = (aws_string_is_valid(endpoint) && aws_string_is_valid(port));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_ws_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_ws_port, &port);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -440,7 +418,8 @@ static int s_TestMqtt311WSConnectionMinimal(Aws::Crt::Allocator *allocator, void
     socketOptions.SetConnectTimeoutMs(3000);
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
         aws_string_c_str(endpoint), (uint16_t)std::stoi(aws_string_c_str(port)), socketOptions, true);
-    ASSERT_SUCCESS(s_ConnectAndDisconnect(connection));
+    int connectResult = s_ConnectAndDisconnect(connection);
+    ASSERT_SUCCESS(connectResult);
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
     return AWS_OP_SUCCESS;
@@ -457,19 +436,11 @@ static int s_TestMqtt311WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator
     struct aws_string *username = NULL;
     struct aws_string *password = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_ws_basicauth_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_ws_basicauth_port, &port);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_basicauth_username, &username);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_basicauth_password, &password);
-
-    bool isEveryEnvVarSet = (endpoint && port && username && password);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet =
-            (aws_string_is_valid(endpoint) && aws_string_is_valid(port) && aws_string_is_valid(username) &&
-             aws_string_is_valid(password));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_ws_basicauth_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_ws_basicauth_port, &port);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_basicauth_username, &username);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_basicauth_password, &password);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -486,7 +457,8 @@ static int s_TestMqtt311WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
         aws_string_c_str(endpoint), (uint16_t)std::stoi(aws_string_c_str(port)), socketOptions, true);
     connection->SetLogin(aws_string_c_str(username), aws_string_c_str(password));
-    ASSERT_SUCCESS(s_ConnectAndDisconnect(connection));
+    int connectResult = s_ConnectAndDisconnect(connection);
+    ASSERT_SUCCESS(connectResult);
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
     aws_string_destroy(username);
@@ -503,15 +475,9 @@ static int s_TestMqtt311WSConnectionWithTLS(Aws::Crt::Allocator *allocator, void
     struct aws_string *endpoint = NULL;
     struct aws_string *port = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_ws_tls_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_ws_tls_port, &port);
-
-    bool isEveryEnvVarSet = (endpoint && port);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet = (aws_string_is_valid(endpoint) && aws_string_is_valid(port));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_ws_tls_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_ws_tls_port, &port);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -532,7 +498,8 @@ static int s_TestMqtt311WSConnectionWithTLS(Aws::Crt::Allocator *allocator, void
     socketOptions.SetConnectTimeoutMs(3000);
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
         aws_string_c_str(endpoint), (uint16_t)std::stoi(aws_string_c_str(port)), socketOptions, tlsContext, true);
-    ASSERT_SUCCESS(s_ConnectAndDisconnect(connection));
+    int connectResult = s_ConnectAndDisconnect(connection);
+    ASSERT_SUCCESS(connectResult);
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
     return AWS_OP_SUCCESS;
@@ -550,17 +517,11 @@ static int s_TestMqtt311WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator
     struct aws_string *proxy_endpoint = NULL;
     struct aws_string *proxy_port = NULL;
 
-    int error = aws_get_environment_value(allocator, s_mqtt311_test_envName_ws_tls_hostname, &endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_ws_tls_port, &port);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_proxy_hostname, &proxy_endpoint);
-    error |= aws_get_environment_value(allocator, s_mqtt311_test_envName_proxy_port, &proxy_port);
-
-    bool isEveryEnvVarSet = (endpoint && port);
-    if (isEveryEnvVarSet == true)
-    {
-        isEveryEnvVarSet = (aws_string_is_valid(endpoint) && aws_string_is_valid(port));
-    }
-    if (error != AWS_OP_SUCCESS || isEveryEnvVarSet == false)
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_ws_tls_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_ws_tls_port, &port);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_proxy_hostname, &proxy_endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_proxy_port, &proxy_port);
+    if (error != AWS_OP_SUCCESS)
     {
         printf("Environment Variables are not set for the test, skip the test");
         aws_string_destroy(endpoint);
@@ -589,7 +550,9 @@ static int s_TestMqtt311WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
         aws_string_c_str(endpoint), (uint16_t)std::stoi(aws_string_c_str(port)), socketOptions, tlsContext, true);
     connection->SetHttpProxyOptions(proxyOptions);
-    ASSERT_SUCCESS(s_ConnectAndDisconnect(connection));
+    int connectResult = s_ConnectAndDisconnect(connection);
+    ASSERT_SUCCESS(connectResult);
+
     aws_string_destroy(endpoint);
     aws_string_destroy(port);
     aws_string_destroy(proxy_endpoint);

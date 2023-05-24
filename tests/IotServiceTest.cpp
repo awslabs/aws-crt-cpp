@@ -25,37 +25,17 @@ AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_core_cert, "AWS_TEST_M
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_core_key, "AWS_TEST_MQTT311_IOT_CORE_RSA_KEY");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_core_ca, "AWS_TEST_MQTT311_ROOT_CA");
 
-static int s_SetupEnvironmentVariables(
-    Aws::Crt::Allocator *allocator,
-    aws_string *input_host,
-    aws_string *input_certificate,
-    aws_string *input_privateKey,
-    aws_string *input_rootCa)
+static int s_GetEnvVariable(Aws::Crt::Allocator *allocator, const aws_string *variableName, aws_string **output)
 {
-    int envResult = aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_core_host, &input_host);
-    envResult |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_core_cert, &input_certificate);
-    envResult |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_core_key, &input_privateKey);
-    envResult |= aws_get_environment_value(allocator, s_mqtt311_test_envName_iot_core_ca, &input_rootCa);
-    bool isEnvValid = (input_host && input_certificate && input_privateKey && input_rootCa);
-
-    if (envResult != AWS_OP_SUCCESS || isEnvValid == false)
+    int error = aws_get_environment_value(allocator, variableName, output);
+    if (error == AWS_OP_SUCCESS && output)
     {
-        printf("Required environment variable is not set or missing. Skipping test\n");
-        return AWS_OP_SKIP;
+        if (aws_string_is_valid(*output))
+        {
+            return AWS_OP_SUCCESS;
+        }
     }
-    return AWS_OP_SUCCESS;
-}
-
-static void s_CleanupEnvironmentVariables(
-    aws_string *input_host,
-    aws_string *input_certificate,
-    aws_string *input_privateKey,
-    aws_string *input_rootCa)
-{
-    aws_string_destroy(input_host);
-    aws_string_destroy(input_certificate);
-    aws_string_destroy(input_privateKey);
-    aws_string_destroy(input_rootCa);
+    return AWS_OP_ERR;
 }
 
 static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
@@ -68,12 +48,18 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
     aws_string *input_certificate = nullptr;
     aws_string *input_privateKey = nullptr;
     aws_string *input_rootCa = nullptr;
-    int getEnvResult =
-        s_SetupEnvironmentVariables(allocator, input_host, input_certificate, input_privateKey, input_rootCa);
-    if (getEnvResult != AWS_OP_SUCCESS)
+    int envResult = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_core_host, &input_host);
+    envResult |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_core_cert, &input_certificate);
+    envResult |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_core_key, &input_privateKey);
+    envResult |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_core_ca, &input_rootCa);
+    if (envResult != AWS_OP_SUCCESS)
     {
-        s_CleanupEnvironmentVariables(input_host, input_certificate, input_privateKey, input_rootCa);
-        return getEnvResult;
+        printf("Required environment variable is not set or missing. Skipping test\n");
+        aws_string_destroy(input_host);
+        aws_string_destroy(input_certificate);
+        aws_string_destroy(input_privateKey);
+        aws_string_destroy(input_rootCa);
+        return AWS_OP_SKIP;
     }
 
     const char *credentialFiles[] = {
@@ -86,7 +72,10 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
         if (!file.is_open())
         {
             printf("Required credential file %s is missing or unreadable, skipping test\n", credentialFiles[fileIdx]);
-            s_CleanupEnvironmentVariables(input_host, input_certificate, input_privateKey, input_rootCa);
+            aws_string_destroy(input_host);
+            aws_string_destroy(input_certificate);
+            aws_string_destroy(input_privateKey);
+            aws_string_destroy(input_rootCa);
             return AWS_OP_SKIP;
         }
     }
@@ -202,7 +191,12 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
             ASSERT_TRUE(mqttConnection);
         }
     }
-    s_CleanupEnvironmentVariables(input_host, input_certificate, input_privateKey, input_rootCa);
+
+    aws_string_destroy(input_host);
+    aws_string_destroy(input_certificate);
+    aws_string_destroy(input_privateKey);
+    aws_string_destroy(input_rootCa);
+
     return AWS_ERROR_SUCCESS;
 }
 
@@ -218,12 +212,18 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
     aws_string *input_certificate = nullptr;
     aws_string *input_privateKey = nullptr;
     aws_string *input_rootCa = nullptr;
-    int getEnvResult =
-        s_SetupEnvironmentVariables(allocator, input_host, input_certificate, input_privateKey, input_rootCa);
-    if (getEnvResult != AWS_OP_SUCCESS)
+    int envResult = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_core_host, &input_host);
+    envResult |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_core_cert, &input_certificate);
+    envResult |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_core_key, &input_privateKey);
+    envResult |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_core_ca, &input_rootCa);
+    if (envResult != AWS_OP_SUCCESS)
     {
-        s_CleanupEnvironmentVariables(input_host, input_certificate, input_privateKey, input_rootCa);
-        return getEnvResult;
+        printf("Required environment variable is not set or missing. Skipping test\n");
+        aws_string_destroy(input_host);
+        aws_string_destroy(input_certificate);
+        aws_string_destroy(input_privateKey);
+        aws_string_destroy(input_rootCa);
+        return AWS_OP_SKIP;
     }
 
     const char *credentialFiles[] = {
@@ -236,7 +236,10 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
         if (!file.is_open())
         {
             printf("Required credential file %s is missing or unreadable, skipping test\n", credentialFiles[fileIdx]);
-            s_CleanupEnvironmentVariables(input_host, input_certificate, input_privateKey, input_rootCa);
+            aws_string_destroy(input_host);
+            aws_string_destroy(input_certificate);
+            aws_string_destroy(input_privateKey);
+            aws_string_destroy(input_rootCa);
             return AWS_OP_SKIP;
         }
     }
@@ -397,7 +400,11 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
         }
     }
 
-    s_CleanupEnvironmentVariables(input_host, input_certificate, input_privateKey, input_rootCa);
+    aws_string_destroy(input_host);
+    aws_string_destroy(input_certificate);
+    aws_string_destroy(input_privateKey);
+    aws_string_destroy(input_rootCa);
+
     return AWS_ERROR_SUCCESS;
 }
 
@@ -413,12 +420,18 @@ static int s_TestIotStatisticsPublishWaitStatisticsDisconnect(Aws::Crt::Allocato
     aws_string *input_certificate = nullptr;
     aws_string *input_privateKey = nullptr;
     aws_string *input_rootCa = nullptr;
-    int getEnvResult =
-        s_SetupEnvironmentVariables(allocator, input_host, input_certificate, input_privateKey, input_rootCa);
-    if (getEnvResult != AWS_OP_SUCCESS)
+    int envResult = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_core_host, &input_host);
+    envResult |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_core_cert, &input_certificate);
+    envResult |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_core_key, &input_privateKey);
+    envResult |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_core_ca, &input_rootCa);
+    if (envResult != AWS_OP_SUCCESS)
     {
-        s_CleanupEnvironmentVariables(input_host, input_certificate, input_privateKey, input_rootCa);
-        return getEnvResult;
+        printf("Required environment variable is not set or missing. Skipping test\n");
+        aws_string_destroy(input_host);
+        aws_string_destroy(input_certificate);
+        aws_string_destroy(input_privateKey);
+        aws_string_destroy(input_rootCa);
+        return AWS_OP_SKIP;
     }
 
     const char *credentialFiles[] = {
@@ -431,7 +444,10 @@ static int s_TestIotStatisticsPublishWaitStatisticsDisconnect(Aws::Crt::Allocato
         if (!file.is_open())
         {
             printf("Required credential file %s is missing or unreadable, skipping test\n", credentialFiles[fileIdx]);
-            s_CleanupEnvironmentVariables(input_host, input_certificate, input_privateKey, input_rootCa);
+            aws_string_destroy(input_host);
+            aws_string_destroy(input_certificate);
+            aws_string_destroy(input_privateKey);
+            aws_string_destroy(input_rootCa);
             return AWS_OP_SKIP;
         }
     }
@@ -531,7 +547,11 @@ static int s_TestIotStatisticsPublishWaitStatisticsDisconnect(Aws::Crt::Allocato
         ASSERT_TRUE(mqttConnection);
     }
 
-    s_CleanupEnvironmentVariables(input_host, input_certificate, input_privateKey, input_rootCa);
+    aws_string_destroy(input_host);
+    aws_string_destroy(input_certificate);
+    aws_string_destroy(input_privateKey);
+    aws_string_destroy(input_rootCa);
+
     return AWS_ERROR_SUCCESS;
 }
 
@@ -547,12 +567,18 @@ static int s_TestIotStatisticsPublishStatisticsWaitDisconnect(Aws::Crt::Allocato
     aws_string *input_certificate = nullptr;
     aws_string *input_privateKey = nullptr;
     aws_string *input_rootCa = nullptr;
-    int getEnvResult =
-        s_SetupEnvironmentVariables(allocator, input_host, input_certificate, input_privateKey, input_rootCa);
-    if (getEnvResult != AWS_OP_SUCCESS)
+    int envResult = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_core_host, &input_host);
+    envResult |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_core_cert, &input_certificate);
+    envResult |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_core_key, &input_privateKey);
+    envResult |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_core_ca, &input_rootCa);
+    if (envResult != AWS_OP_SUCCESS)
     {
-        s_CleanupEnvironmentVariables(input_host, input_certificate, input_privateKey, input_rootCa);
-        return getEnvResult;
+        printf("Required environment variable is not set or missing. Skipping test\n");
+        aws_string_destroy(input_host);
+        aws_string_destroy(input_certificate);
+        aws_string_destroy(input_privateKey);
+        aws_string_destroy(input_rootCa);
+        return AWS_OP_SKIP;
     }
 
     const char *credentialFiles[] = {
@@ -565,7 +591,10 @@ static int s_TestIotStatisticsPublishStatisticsWaitDisconnect(Aws::Crt::Allocato
         if (!file.is_open())
         {
             printf("Required credential file %s is missing or unreadable, skipping test\n", credentialFiles[fileIdx]);
-            s_CleanupEnvironmentVariables(input_host, input_certificate, input_privateKey, input_rootCa);
+            aws_string_destroy(input_host);
+            aws_string_destroy(input_certificate);
+            aws_string_destroy(input_privateKey);
+            aws_string_destroy(input_rootCa);
             return AWS_OP_SKIP;
         }
     }
@@ -671,7 +700,11 @@ static int s_TestIotStatisticsPublishStatisticsWaitDisconnect(Aws::Crt::Allocato
         ASSERT_TRUE(mqttConnection);
     }
 
-    s_CleanupEnvironmentVariables(input_host, input_certificate, input_privateKey, input_rootCa);
+    aws_string_destroy(input_host);
+    aws_string_destroy(input_certificate);
+    aws_string_destroy(input_privateKey);
+    aws_string_destroy(input_rootCa);
+
     return AWS_ERROR_SUCCESS;
 }
 
