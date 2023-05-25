@@ -35,9 +35,30 @@ option(AWS_IOT_SDK_VERSION "Set the version reported by Aws::Iot::MqttClientConn
 # AWS_TEST_IOT_SIGNING_REGION - AWS region to make a websocket connection to
 # AWS_TEST_IOT_MQTT_ENDPOINT - AWS account-specific endpoint to connect to IoT core by
 #
+# The MQTT5 tests environment variables:
+#
+# AWS_TEST_MQTT5_DIRECT_MQTT_HOST - host to connect to in direct mqtt tests
+# AWS_TEST_MQTT5_DIRECT_MQTT_PORT - port to connect to in direct mqtt tests
+# AWS_TEST_MQTT5_DIRECT_MQTT_BASIC_AUTH_HOST - host to connect to in direct mqtt basic authentication tests
+# AWS_TEST_MQTT5_DIRECT_MQTT_BASIC_AUTH_PORT - port to connect to in direct mqtt basic authentication tests
+# AWS_TEST_MQTT5_DIRECT_MQTT_TLS_HOST - host to connect to in direct mqtt tls tests
+# AWS_TEST_MQTT5_DIRECT_MQTT_TLS_PORT - port to connect to in direct mqtt tls tests
+# AWS_TEST_MQTT5_WS_MQTT_HOST - host to connect to in websocket tests
+# AWS_TEST_MQTT5_WS_MQTT_PORT - port to connect to in websocket tests
+# AWS_TEST_MQTT5_WS_MQTT_BASIC_AUTH_HOST - host to connect to in websocket basic authentication tests
+# AWS_TEST_MQTT5_WS_MQTT_BASIC_AUTH_PORT - port to connect to in websocket basic authentication tests
+# AWS_TEST_MQTT5_WS_MQTT_TLS_HOST - host to connect to in websocket tls tests
+# AWS_TEST_MQTT5_WS_MQTT_TLS_PORT - port to connect to in websocket tls tests
+# AWS_TEST_MQTT5_BASIC_AUTH_USERNAME - username to use in basic authentication tests
+# AWS_TEST_MQTT5_BASIC_AUTH_PASSWORD - password to use in basic authentication tests
+# AWS_TEST_MQTT5_PROXY_HOST - name of http proxy host to use in proxy-based tests
+# AWS_TEST_MQTT5_PROXY_PORT - port of http proxy host to use in proxy-based tests
+#
 # ToDo: Scripts to populate environment variables via the CLI and IoT, SecretsManager calls
 #
 option(ENABLE_PROXY_INTEGRATION_TESTS "Whether or not to build and run the proxy integration tests that rely on a proxy server installed and running locally" OFF)
+option(ENABLE_MQTT5_TEST "Whether or not to build and run the mqtt5 integration reply on a proxy server running locally" OFF)
+
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -311,8 +332,10 @@ endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE MATCHES Debug)
     target_compile_definitions(${PROJECT_NAME} PRIVATE "-DDEBUG_BUILD")
+endif()
 
-    # set extra warning flags for debug build
+ # set extra warning flags
+if(AWS_WARNINGS_ARE_ERRORS)
     if(MSVC)
         target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4068)
     else()
@@ -389,6 +412,8 @@ if(NOT CMAKE_CROSSCOMPILING)
 
         if(NOT BYO_CRYPTO)
             add_subdirectory(bin/elasticurl_cpp)
+            add_subdirectory(bin/mqtt5_app)
+            add_subdirectory(bin/mqtt5_canary)
         endif()
     endif()
 endif()
