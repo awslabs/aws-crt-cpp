@@ -298,8 +298,7 @@ static int s_TestIotFailTest(Aws::Crt::Allocator *allocator, void *ctx)
         ASSERT_TRUE(mqttClient);
 
         // Intentially use a bad port so we fail to connect
-        auto mqttConnection =
-            mqttClient.NewConnection(aws_string_c_str(input_host), 123, socketOptions, tlsContext);
+        auto mqttConnection = mqttClient.NewConnection(aws_string_c_str(input_host), 123, socketOptions, tlsContext);
 
         std::mutex mutex;
         std::condition_variable cv;
@@ -645,7 +644,8 @@ static int s_TestIotStatisticsPublishWaitStatisticsDisconnect(Aws::Crt::Allocato
         Aws::Crt::Mqtt::MqttConnectionOperationStatistics statistics = mqttConnection->GetOperationStatistics();
         ASSERT_INT_EQUALS(0, statistics.incompleteOperationCount);
         ASSERT_INT_EQUALS(0, statistics.incompleteOperationSize);
-        // We skip the unacked beecause it is heavily socket-timing based and we (currently) do not have good control over that.
+        // We skip the unacked beecause it is heavily socket-timing based and we (currently) do not have good control
+        // over that.
         // TODO: Find a way to reliably test the unacked statistics
 
         Aws::Crt::ByteBuf payload = Aws::Crt::ByteBufFromCString("notice me pls");
@@ -661,7 +661,8 @@ static int s_TestIotStatisticsPublishWaitStatisticsDisconnect(Aws::Crt::Allocato
         statistics = mqttConnection->GetOperationStatistics();
         ASSERT_INT_EQUALS(0, statistics.incompleteOperationCount);
         ASSERT_INT_EQUALS(0, statistics.incompleteOperationSize);
-        // We skip the unacked beecause it is heavily socket-timing based and we (currently) do not have good control over that.
+        // We skip the unacked beecause it is heavily socket-timing based and we (currently) do not have good control
+        // over that.
         // TODO: Find a way to reliably test the unacked statistics
 
         mqttConnection->Disconnect();
@@ -801,7 +802,8 @@ static int s_TestIotStatisticsPublishStatisticsWaitDisconnect(Aws::Crt::Allocato
         statistics = mqttConnection->GetOperationStatistics();
         ASSERT_INT_EQUALS(1, statistics.incompleteOperationCount);
         ASSERT_INT_EQUALS(expected_size, statistics.incompleteOperationSize);
-        // We skip the unacked beecause it is heavily socket-timing based and we (currently) do not have good control over that.
+        // We skip the unacked beecause it is heavily socket-timing based and we (currently) do not have good control
+        // over that.
         // TODO: Find a way to reliably test the unacked statistics
 
         // wait for publish
@@ -814,7 +816,8 @@ static int s_TestIotStatisticsPublishStatisticsWaitDisconnect(Aws::Crt::Allocato
         statistics = mqttConnection->GetOperationStatistics();
         ASSERT_INT_EQUALS(0, statistics.incompleteOperationCount);
         ASSERT_INT_EQUALS(0, statistics.incompleteOperationSize);
-        // We skip the unacked beecause it is heavily socket-timing based and we (currently) do not have good control over that.
+        // We skip the unacked beecause it is heavily socket-timing based and we (currently) do not have good control
+        // over that.
         // TODO: Find a way to reliably test the unacked statistics
 
         mqttConnection->Disconnect();
