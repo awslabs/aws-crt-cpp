@@ -11,53 +11,12 @@ option(USE_OPENSSL "Set this if you want to use your system's OpenSSL 1.0.2/1.1.
 # Let aws-iot-device-sdk-cpp-v2 report its own version in MQTT connections (instead of reporting aws-crt-cpp's version).
 option(AWS_IOT_SDK_VERSION "Set the version reported by Aws::Iot::MqttClientConnectionConfigBuilder")
 
-# Proxy integration test control - In addition to this option, all proxy tests require the following environment variables set appropriately when running tests:
-#
-# AWS_TEST_HTTP_PROXY_HOST - host address of the proxy to use for tests that make open connections to the proxy
-# AWS_TEST_HTTP_PROXY_PORT - port to use for tests that make open connections to the proxy
-# AWS_TEST_HTTPS_PROXY_HOST - host address of the proxy to use for tests that make tls-protected connections to the proxy
-# AWS_TEST_HTTPS_PROXY_PORT - port to use for tests that make tls-protected connections to the proxy
-# AWS_TEST_HTTP_PROXY_BASIC_HOST - host address of the proxy to use for tests that make open connections to the proxy with basic authentication
-# AWS_TEST_HTTP_PROXY_BASIC_PORT - port to use for tests that make open connections to the proxy with basic authentication
-#
-# The x509 proxy tests also require:
-#
-# AWS_TEST_TLS_CERT_PATH - file path to certificate used to initialize the tls context of the x509 provider connection
-# AWS_TEST_TLS_KEY_PATH - file path to the key used to initialize the tls context of the x509 provider connection
-# AWS_TEST_TLS_ROOT_CERT_PATH - file path to the root CA used to initialize the tls context of the x509 provider connection
-# AWS_TEST_X509_ENDPOINT - AWS account-specific endpoint to source x509 credentials from
-# AWS_TEST_X509_THING_NAME - associated name of the x509 thing
-# AWS_TEST_X509_ROLE_ALIAS - associated role alias ...
-#
-# And the mqtt websocket tests require x509 sourced credentials with sufficient permission to
-# connect to IoT Core as well as:
-#
-# AWS_TEST_IOT_SIGNING_REGION - AWS region to make a websocket connection to
-# AWS_TEST_IOT_MQTT_ENDPOINT - AWS account-specific endpoint to connect to IoT core by
-#
-# The MQTT5 tests environment variables:
-#
-# AWS_TEST_MQTT5_DIRECT_MQTT_HOST - host to connect to in direct mqtt tests
-# AWS_TEST_MQTT5_DIRECT_MQTT_PORT - port to connect to in direct mqtt tests
-# AWS_TEST_MQTT5_DIRECT_MQTT_BASIC_AUTH_HOST - host to connect to in direct mqtt basic authentication tests
-# AWS_TEST_MQTT5_DIRECT_MQTT_BASIC_AUTH_PORT - port to connect to in direct mqtt basic authentication tests
-# AWS_TEST_MQTT5_DIRECT_MQTT_TLS_HOST - host to connect to in direct mqtt tls tests
-# AWS_TEST_MQTT5_DIRECT_MQTT_TLS_PORT - port to connect to in direct mqtt tls tests
-# AWS_TEST_MQTT5_WS_MQTT_HOST - host to connect to in websocket tests
-# AWS_TEST_MQTT5_WS_MQTT_PORT - port to connect to in websocket tests
-# AWS_TEST_MQTT5_WS_MQTT_BASIC_AUTH_HOST - host to connect to in websocket basic authentication tests
-# AWS_TEST_MQTT5_WS_MQTT_BASIC_AUTH_PORT - port to connect to in websocket basic authentication tests
-# AWS_TEST_MQTT5_WS_MQTT_TLS_HOST - host to connect to in websocket tls tests
-# AWS_TEST_MQTT5_WS_MQTT_TLS_PORT - port to connect to in websocket tls tests
-# AWS_TEST_MQTT5_BASIC_AUTH_USERNAME - username to use in basic authentication tests
-# AWS_TEST_MQTT5_BASIC_AUTH_PASSWORD - password to use in basic authentication tests
-# AWS_TEST_MQTT5_PROXY_HOST - name of http proxy host to use in proxy-based tests
-# AWS_TEST_MQTT5_PROXY_PORT - port of http proxy host to use in proxy-based tests
-#
-# ToDo: Scripts to populate environment variables via the CLI and IoT, SecretsManager calls
-#
+# Tests require environment variables setup in order to run properly.
+# See https://github.com/awslabs/aws-crt-builder/blob/main/builder/actions/setup_cross_ci_crt_environment.py
+# for how environment variables are setup.
+# NOTE: Some environment variables use Mosquitto or Proxy servers, which are assumed to be installed
+# locally if running the testing outside of CI/CD.
 option(ENABLE_PROXY_INTEGRATION_TESTS "Whether or not to build and run the proxy integration tests that rely on a proxy server installed and running locally" OFF)
-option(ENABLE_MQTT5_TEST "Whether or not to build and run the mqtt5 integration reply on a proxy server running locally" ON)
 
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
