@@ -276,17 +276,6 @@ endif()
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
 
-# We need to force skip code signing, or iOS will not comiple in CI due to XCode.
-# This only applies to iOS as MacOS doesn't care.
-if (IOS)
-    set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO")
-    set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "")
-    set(XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "")
-    set(XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO")
-    set_target_properties(${PROJECT_NAME} PROPERTIES
-        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/plist.in)
-endif()
-
 aws_prepare_symbol_visibility_args(${PROJECT_NAME} "AWS_CRT_CPP")
 
 # set runtime library
