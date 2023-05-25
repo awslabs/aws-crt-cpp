@@ -49,4 +49,3 @@ class BuildCrt(Builder.Action):
                     print(
                         "ERROR - could not install either libssl-devel or openssl-devel")
         return new_args
-
