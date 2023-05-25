@@ -321,6 +321,11 @@ static int s_TestIotFailTest(Aws::Crt::Allocator *allocator, void *ctx)
         ASSERT_TRUE(mqttConnection);
     }
 
+    aws_string_destroy(input_host);
+    aws_string_destroy(input_certificate);
+    aws_string_destroy(input_privateKey);
+    aws_string_destroy(input_rootCa);
+
     return AWS_ERROR_SUCCESS;
 }
 
