@@ -7,7 +7,7 @@ on:
       - 'docs'
 
 env:
-  BUILDER_VERSION: v0.9.21
+  BUILDER_VERSION: v0.9.44
   BUILDER_SOURCE: releases
   BUILDER_HOST: https://d19elf31gohf1l.cloudfront.net
   PACKAGE_NAME: aws-crt-cpp
@@ -18,6 +18,25 @@ env:
   AWS_REGION: us-east-1
 
 jobs:
+  linux-compat-use-openssl:
+    runs-on: ubuntu-20.04 # latest
+    strategy:
+      matrix:
+        image:
+          - fedora-34-x64
+          - opensuse-leap
+          - rhel8-x64
+    steps:
+    - name: Install qemu/docker
+      run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    - name: Build ${{ env.PACKAGE_NAME }}
+      run: |
+        aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ matrix.image }} build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DUSE_OPENSSL=ON
+
+  # These linux-compat images need to run without -DUSE_OPENSSL because they do not have OpenSSL packages
+  # that are up-to-date (AL2) or don't provide OpenSSL development packages that is found in CMake (alpine)
+  # or are not able to connect on the socket even with the correct setup (manylinux2014)
   linux-compat:
     runs-on: ubuntu-20.04 # latest
     strategy:
@@ -26,9 +45,6 @@ jobs:
           - manylinux2014-x64
           - manylinux2014-x86
           - al2-x64
-          - fedora-34-x64
-          - opensuse-leap
-          - rhel8-x64
           - alpine-3.16-x64
           - alpine-3.16-x86
           - alpine-3.16-armv6
@@ -63,7 +79,7 @@ jobs:
       - name: Build ${{ env.PACKAGE_NAME }}
         run: |
           aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-          ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }}
+          ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }} --cmake-extra=-DUSE_OPENSSL=ON
 
   raspberry:
     runs-on: ubuntu-20.04 # latest
@@ -94,7 +110,7 @@ jobs:
       run: |
         export CXXFLAGS=-std=${{ matrix.std }}
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }}
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }} --cmake-extra=-DUSE_OPENSSL=ON
 
   byo-crypto:
     runs-on: ubuntu-20.04 # latest
@@ -103,7 +119,7 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} -cmake-extra=-DBYO_CRYPTO=ON
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBYO_CRYPTO=ON --cmake-extra=-DUSE_OPENSSL=ON
 
   linux-shared-libs:
     runs-on: ubuntu-20.04 # latest
@@ -139,7 +155,7 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DUSE_CPU_EXTENSIONS=OFF
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DUSE_CPU_EXTENSIONS=OFF --cmake-extra=-DUSE_OPENSSL=ON
 
   windows:
     runs-on: windows-2022 # latest
@@ -229,7 +245,7 @@ jobs:
       run: |
         python3 -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder')"
         chmod a+x builder
-        ./builder build -p ${{ env.PACKAGE_NAME }} --target=ios-arm64
+        ./builder build -p ${{ env.PACKAGE_NAME }} --target=ios-arm64 --cmake-extra=-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
 
   cross_compile:
     name: Cross Compile ${{matrix.arch}}
