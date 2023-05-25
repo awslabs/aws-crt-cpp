@@ -231,6 +231,10 @@ AWS_TEST_CASE(IotPublishSubscribe, s_TestIotPublishSubscribe)
 
 static int s_TestIotFailTest(Aws::Crt::Allocator *allocator, void *ctx)
 {
+    using namespace Aws::Crt;
+    using namespace Aws::Crt::Io;
+    using namespace Aws::Crt::Mqtt;
+
     aws_string *input_host = nullptr;
     aws_string *input_certificate = nullptr;
     aws_string *input_privateKey = nullptr;
