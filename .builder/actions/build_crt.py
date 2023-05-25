@@ -18,7 +18,6 @@ class BuildCrt(Builder.Action):
 
     def run(self, env):
         project = Builder.Project.find_project('aws-crt-cpp')
-
         return Builder.CMakeBuild(project, args_transformer=self._transform_cmake_args)
 
     def _transform_cmake_args(self, env, project, cmake_args):
@@ -29,6 +28,7 @@ class BuildCrt(Builder.Action):
         for arg in cmake_args:
             if (arg == "-DUSE_OPENSSL=ON"):
                 is_using_openssl = True
+
             new_args.append(arg)
 
         # If we are using OpenSSL on Linux, then we want to make sure our CI container has the latest version
