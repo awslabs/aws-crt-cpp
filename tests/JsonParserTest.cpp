@@ -136,3 +136,63 @@ static int s_JsonBoolTest(struct aws_allocator *allocator, void *ctx)
 }
 
 AWS_TEST_CASE(JsonBoolTest, s_JsonBoolTest)
+
+static int s_JsonMoveTest(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        // use WithArray(key, &&obj) to move objectVector into object1
+        Aws::Crt::Vector<Aws::Crt::JsonObject> objectVector;
+        objectVector.resize(3);
+        objectVector[0].WithString("a", "AAAAAAAA");
+        objectVector[1].WithString("b", "BBBBBBBB");
+        objectVector[2].WithString("c", "CCCCCCCC");
+
+        Aws::Crt::JsonObject object1;
+        object1.WithArray("arrayOfObjs", std::move(objectVector));
+        ASSERT_TRUE(object1.View().IsObject());
+        ASSERT_TRUE(object1.View().GetJsonObject("arrayOfObjs").IsListType());
+        ASSERT_UINT_EQUALS(3, object1.View().GetArray("arrayOfObjs").size());
+        ASSERT_TRUE(object1.View().GetArray("arrayOfObjs")[0].GetString("a") == "AAAAAAAA");
+
+        // use move-constructor to replace object1 with object2
+        Aws::Crt::JsonObject object2(std::move(object1));
+        ASSERT_FALSE(object1.View().IsObject());
+        ASSERT_TRUE(object2.View().GetJsonObject("arrayOfObjs").IsListType());
+        ASSERT_UINT_EQUALS(3, object2.View().GetArray("arrayOfObjs").size());
+        ASSERT_TRUE(object2.View().GetArray("arrayOfObjs")[0].GetString("a") == "AAAAAAAA");
+
+        // use move-copy to replace object2 with object3
+        Aws::Crt::JsonObject object3;
+        object3 = std::move(object2);
+        ASSERT_FALSE(object2.View().IsObject());
+        ASSERT_TRUE(object3.View().GetJsonObject("arrayOfObjs").IsListType());
+        ASSERT_TRUE(object3.View().GetJsonObject("arrayOfObjs").IsListType());
+        ASSERT_UINT_EQUALS(3, object3.View().GetArray("arrayOfObjs").size());
+        ASSERT_TRUE(object3.View().GetArray("arrayOfObjs")[0].GetString("a") == "AAAAAAAA");
+
+        // use AsObject(&&) to replace object3 with object4
+        Aws::Crt::JsonObject object4;
+        object4.AsObject(std::move(object3));
+        ASSERT_FALSE(object3.View().IsObject());
+        ASSERT_TRUE(object4.View().GetJsonObject("arrayOfObjs").IsListType());
+        ASSERT_UINT_EQUALS(3, object4.View().GetArray("arrayOfObjs").size());
+        ASSERT_TRUE(object4.View().GetArray("arrayOfObjs")[0].GetString("a") == "AAAAAAAA");
+
+        // use AsArray(&&) to move objectVector into jsonArray
+        Aws::Crt::Vector<Aws::Crt::JsonObject> anotherObjectVector;
+        anotherObjectVector.resize(2);
+        anotherObjectVector[0].WithString("zero", "Number#0");
+        anotherObjectVector[1].WithString("one", "Number#1");
+
+        Aws::Crt::JsonObject jsonArray;
+        jsonArray.AsArray(std::move(anotherObjectVector));
+        ASSERT_TRUE(jsonArray.View().IsListType());
+        ASSERT_UINT_EQUALS(2, jsonArray.View().AsArray().size());
+        ASSERT_TRUE(jsonArray.View().AsArray()[0].GetString("zero") == "Number#0");
+    }
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(JsonMoveTest, s_JsonMoveTest)
