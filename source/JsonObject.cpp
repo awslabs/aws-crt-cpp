@@ -188,7 +188,7 @@ namespace Aws
                 /* old version of this code would silently ignore invalid items, so continue doing the same */
                 if (i.m_value != nullptr)
                 {
-                    aws_json_value_add_array_element(newArray, aws_json_value_duplicate(i.m_value));
+                    aws_json_value_add_array_element(newArray, i.m_value);
                     i.m_value = nullptr;
                 }
             }
