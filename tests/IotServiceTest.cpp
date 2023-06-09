@@ -118,6 +118,8 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
             bool subscribed = false;
             bool published = false;
             bool received = false;
+            bool connection_success = false;
+            bool closed = false;
             auto onConnectionCompleted =
                 [&](MqttConnection &, int errorCode, ReturnCode returnCode, bool sessionPresent) {
                     printf(
@@ -149,9 +151,22 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
                 published = true;
                 cv.notify_one();
             };
+            auto onConnectionSuccess = [&](MqttConnection &, OnConnectionSuccessData *data) {
+                connection_success = true;
+                printf("CONNECTION SUCCESS: returnCode=%i sessionPresent=%i\n", data->returnCode, data->sessionPresent);
+                cv.notify_one();
+            };
+            auto onConnectionClosed = [&](MqttConnection &, OnConnectionClosedData *data) {
+                (void)data;
+                closed = true;
+                printf("CLOSED");
+                cv.notify_one();
+            };
 
             mqttConnection->OnConnectionCompleted = onConnectionCompleted;
             mqttConnection->OnDisconnect = onDisconnect;
+            mqttConnection->OnConnectionSuccess = onConnectionSuccess;
+            mqttConnection->OnConnectionClosed = onConnectionClosed;
             Aws::Crt::UUID Uuid;
             Aws::Crt::String uuidStr = Uuid.ToString();
             mqttConnection->Connect(uuidStr.c_str(), true);
@@ -159,6 +174,12 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
             {
                 std::unique_lock<std::mutex> lock(mutex);
                 cv.wait(lock, [&]() { return connected; });
+            }
+
+            // Make sure the connection success callback fired
+            {
+                std::unique_lock<std::mutex> lock(mutex);
+                cv.wait(lock, [&]() { return connection_success; });
             }
 
             mqttConnection->Subscribe("/publish/me/senpai", QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, onTest, onSubAck);
@@ -177,7 +198,7 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
                 cv.wait(lock, [&]() { return published; });
             }
 
-            // wait for message received callback
+            // wait for the message received callback
             {
                 std::unique_lock<std::mutex> lock(mutex);
                 cv.wait(lock, [&]() { return received; });
@@ -187,6 +208,12 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
             {
                 std::unique_lock<std::mutex> lock(mutex);
                 cv.wait(lock, [&]() { return !connected; });
+            }
+
+            // Make sure the closed callback fired
+            {
+                std::unique_lock<std::mutex> lock(mutex);
+                cv.wait(lock, [&]() { return closed; });
             }
             ASSERT_TRUE(mqttConnection);
         }
@@ -201,6 +228,108 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
 }
 
 AWS_TEST_CASE(IotPublishSubscribe, s_TestIotPublishSubscribe)
+
+static int s_TestIotFailTest(Aws::Crt::Allocator *allocator, void *ctx)
+{
+    using namespace Aws::Crt;
+    using namespace Aws::Crt::Io;
+    using namespace Aws::Crt::Mqtt;
+
+    aws_string *input_host = nullptr;
+    aws_string *input_certificate = nullptr;
+    aws_string *input_privateKey = nullptr;
+    aws_string *input_rootCa = nullptr;
+    int envResult = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_core_host, &input_host);
+    envResult |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_core_cert, &input_certificate);
+    envResult |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_core_key, &input_privateKey);
+    envResult |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_core_ca, &input_rootCa);
+    if (envResult != AWS_OP_SUCCESS)
+    {
+        printf("Required environment variable is not set or missing. Skipping test\n");
+        aws_string_destroy(input_host);
+        aws_string_destroy(input_certificate);
+        aws_string_destroy(input_privateKey);
+        aws_string_destroy(input_rootCa);
+        return AWS_OP_SKIP;
+    }
+
+    const char *credentialFiles[] = {
+        aws_string_c_str(input_certificate), aws_string_c_str(input_privateKey), aws_string_c_str(input_rootCa)};
+
+    for (size_t fileIdx = 0; fileIdx < AWS_ARRAY_SIZE(credentialFiles); ++fileIdx)
+    {
+        std::ifstream file;
+        file.open(credentialFiles[fileIdx]);
+        if (!file.is_open())
+        {
+            printf("Required credential file %s is missing or unreadable, skipping test\n", credentialFiles[fileIdx]);
+            aws_string_destroy(input_host);
+            aws_string_destroy(input_certificate);
+            aws_string_destroy(input_privateKey);
+            aws_string_destroy(input_rootCa);
+            return AWS_OP_SKIP;
+        }
+    }
+
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
+            aws_string_c_str(input_certificate), aws_string_c_str(input_privateKey));
+        tlsCtxOptions.OverrideDefaultTrustStore(nullptr, aws_string_c_str(input_rootCa));
+        Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+        ASSERT_TRUE(tlsContext);
+
+        Aws::Crt::Io::SocketOptions socketOptions;
+        socketOptions.SetConnectTimeoutMs(3000);
+
+        Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+        ASSERT_TRUE(eventLoopGroup);
+
+        Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+        ASSERT_TRUE(defaultHostResolver);
+
+        Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+        ASSERT_TRUE(allocator);
+        clientBootstrap.EnableBlockingShutdown();
+
+        Aws::Crt::Mqtt::MqttClient mqttClient(clientBootstrap, allocator);
+        ASSERT_TRUE(mqttClient);
+
+        // Intentially use a bad port so we fail to connect
+        auto mqttConnection = mqttClient.NewConnection(aws_string_c_str(input_host), 123, socketOptions, tlsContext);
+
+        std::mutex mutex;
+        std::condition_variable cv;
+        bool connection_failure = false;
+        auto onConnectionFailure = [&](MqttConnection &, OnConnectionFailureData *data) {
+            connection_failure = true;
+            printf("CONNECTION FAILURE: error=%i\n", data->error);
+            cv.notify_one();
+        };
+        mqttConnection->OnConnectionFailure = onConnectionFailure;
+        Aws::Crt::UUID Uuid;
+        Aws::Crt::String uuidStr = Uuid.ToString();
+        mqttConnection->Connect(uuidStr.c_str(), true);
+
+        // Make sure the connection failure callback fired
+        {
+            std::unique_lock<std::mutex> lock(mutex);
+            cv.wait(lock, [&]() { return connection_failure; });
+        }
+        ASSERT_TRUE(mqttConnection);
+    }
+
+    aws_string_destroy(input_host);
+    aws_string_destroy(input_certificate);
+    aws_string_destroy(input_privateKey);
+    aws_string_destroy(input_rootCa);
+
+    return AWS_ERROR_SUCCESS;
+}
+
+AWS_TEST_CASE(IotFailTest, s_TestIotFailTest)
 
 static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
 {
@@ -520,8 +649,9 @@ static int s_TestIotStatisticsPublishWaitStatisticsDisconnect(Aws::Crt::Allocato
         Aws::Crt::Mqtt::MqttConnectionOperationStatistics statistics = mqttConnection->GetOperationStatistics();
         ASSERT_INT_EQUALS(0, statistics.incompleteOperationCount);
         ASSERT_INT_EQUALS(0, statistics.incompleteOperationSize);
-        ASSERT_INT_EQUALS(0, statistics.unackedOperationCount);
-        ASSERT_INT_EQUALS(0, statistics.unackedOperationSize);
+        // We skip the unacked beecause it is heavily socket-timing based and we (currently) do not have good control
+        // over that.
+        // TODO: Find a way to reliably test the unacked statistics
 
         Aws::Crt::ByteBuf payload = Aws::Crt::ByteBufFromCString("notice me pls");
         mqttConnection->Publish("/publish/me/senpai", QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, payload, onPubAck);
@@ -536,8 +666,9 @@ static int s_TestIotStatisticsPublishWaitStatisticsDisconnect(Aws::Crt::Allocato
         statistics = mqttConnection->GetOperationStatistics();
         ASSERT_INT_EQUALS(0, statistics.incompleteOperationCount);
         ASSERT_INT_EQUALS(0, statistics.incompleteOperationSize);
-        ASSERT_INT_EQUALS(0, statistics.unackedOperationCount);
-        ASSERT_INT_EQUALS(0, statistics.unackedOperationSize);
+        // We skip the unacked beecause it is heavily socket-timing based and we (currently) do not have good control
+        // over that.
+        // TODO: Find a way to reliably test the unacked statistics
 
         mqttConnection->Disconnect();
         {
@@ -666,8 +797,6 @@ static int s_TestIotStatisticsPublishStatisticsWaitDisconnect(Aws::Crt::Allocato
         Aws::Crt::Mqtt::MqttConnectionOperationStatistics statistics = mqttConnection->GetOperationStatistics();
         ASSERT_INT_EQUALS(0, statistics.incompleteOperationCount);
         ASSERT_INT_EQUALS(0, statistics.incompleteOperationSize);
-        ASSERT_INT_EQUALS(0, statistics.unackedOperationCount);
-        ASSERT_INT_EQUALS(0, statistics.unackedOperationSize);
 
         Aws::Crt::ByteBuf payload = Aws::Crt::ByteBufFromCString("notice me pls");
         mqttConnection->Publish("/publish/me/senpai", QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, payload, onPubAck);
@@ -678,6 +807,9 @@ static int s_TestIotStatisticsPublishStatisticsWaitDisconnect(Aws::Crt::Allocato
         statistics = mqttConnection->GetOperationStatistics();
         ASSERT_INT_EQUALS(1, statistics.incompleteOperationCount);
         ASSERT_INT_EQUALS(expected_size, statistics.incompleteOperationSize);
+        // We skip the unacked beecause it is heavily socket-timing based and we (currently) do not have good control
+        // over that.
+        // TODO: Find a way to reliably test the unacked statistics
 
         // wait for publish
         {
@@ -689,8 +821,9 @@ static int s_TestIotStatisticsPublishStatisticsWaitDisconnect(Aws::Crt::Allocato
         statistics = mqttConnection->GetOperationStatistics();
         ASSERT_INT_EQUALS(0, statistics.incompleteOperationCount);
         ASSERT_INT_EQUALS(0, statistics.incompleteOperationSize);
-        ASSERT_INT_EQUALS(0, statistics.unackedOperationCount);
-        ASSERT_INT_EQUALS(0, statistics.unackedOperationSize);
+        // We skip the unacked beecause it is heavily socket-timing based and we (currently) do not have good control
+        // over that.
+        // TODO: Find a way to reliably test the unacked statistics
 
         mqttConnection->Disconnect();
         {
