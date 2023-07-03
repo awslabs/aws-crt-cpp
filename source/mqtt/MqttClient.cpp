@@ -40,6 +40,27 @@ namespace Aws
                 {
                     connWrapper->OnConnectionResumed(*connWrapper, returnCode, sessionPresent);
                 }
+                if (connWrapper->OnConnectionSuccess)
+                {
+                    OnConnectionSuccessData callbackData;
+                    callbackData.returnCode = returnCode;
+                    callbackData.sessionPresent = sessionPresent;
+                    connWrapper->OnConnectionSuccess(*connWrapper, &callbackData);
+                }
+            }
+
+            void MqttConnection::s_onConnectionClosed(
+                aws_mqtt_client_connection *,
+                on_connection_closed_data *data,
+                void *userData)
+            {
+                (void)data;
+
+                auto connWrapper = reinterpret_cast<MqttConnection *>(userData);
+                if (connWrapper->OnConnectionClosed)
+                {
+                    connWrapper->OnConnectionClosed(*connWrapper, nullptr);
+                }
             }
 
             void MqttConnection::s_onConnectionCompleted(
@@ -53,6 +74,26 @@ namespace Aws
                 if (connWrapper->OnConnectionCompleted)
                 {
                     connWrapper->OnConnectionCompleted(*connWrapper, errorCode, returnCode, sessionPresent);
+                }
+
+                if (errorCode == AWS_ERROR_SUCCESS)
+                {
+                    if (connWrapper->OnConnectionSuccess)
+                    {
+                        OnConnectionSuccessData callbackData;
+                        callbackData.returnCode = returnCode;
+                        callbackData.sessionPresent = sessionPresent;
+                        connWrapper->OnConnectionSuccess(*connWrapper, &callbackData);
+                    }
+                }
+                else
+                {
+                    if (connWrapper->OnConnectionFailure)
+                    {
+                        OnConnectionFailureData callbackData;
+                        callbackData.error = errorCode;
+                        connWrapper->OnConnectionFailure(*connWrapper, &callbackData);
+                    }
                 }
             }
 
@@ -234,6 +275,9 @@ namespace Aws
                         self,
                         MqttConnection::s_onConnectionResumed,
                         self);
+
+                    aws_mqtt_client_connection_set_connection_closed_handler(
+                        self->m_underlyingConnection, MqttConnection::s_onConnectionClosed, self);
                 }
             }
 
@@ -291,6 +335,9 @@ namespace Aws
             {
                 if (*this)
                 {
+                    // Get rid of the on_closed callback, because if we are destroying the connection we do not care.
+                    aws_mqtt_client_connection_set_connection_closed_handler(m_underlyingConnection, nullptr, nullptr);
+
                     aws_mqtt_client_connection_release(m_underlyingConnection);
 
                     if (m_onAnyCbData)
