@@ -467,6 +467,15 @@ namespace Aws
                     enum aws_mqtt_connect_return_code returnCode,
                     bool sessionPresent,
                     void *userData);
+
+                static void s_onConnectionSuccess(
+                    aws_mqtt_client_connection *,
+                    ReturnCode returnCode,
+                    bool sessionPresent,
+                    void *userData);
+
+                static void s_onConnectionFailure(aws_mqtt_client_connection *, int errorCode, void *userData);
+
                 static void s_onConnectionResumed(
                     aws_mqtt_client_connection *,
                     ReturnCode returnCode,

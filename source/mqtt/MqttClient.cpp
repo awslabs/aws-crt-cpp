@@ -75,25 +75,32 @@ namespace Aws
                 {
                     connWrapper->OnConnectionCompleted(*connWrapper, errorCode, returnCode, sessionPresent);
                 }
+            }
 
-                if (errorCode == AWS_ERROR_SUCCESS)
+            void MqttConnection::s_onConnectionSuccess(
+                aws_mqtt_client_connection *,
+                ReturnCode returnCode,
+                bool sessionPresent,
+                void *userData)
+            {
+                auto connWrapper = reinterpret_cast<MqttConnection *>(userData);
+                if (connWrapper->OnConnectionSuccess)
                 {
-                    if (connWrapper->OnConnectionSuccess)
-                    {
-                        OnConnectionSuccessData callbackData;
-                        callbackData.returnCode = returnCode;
-                        callbackData.sessionPresent = sessionPresent;
-                        connWrapper->OnConnectionSuccess(*connWrapper, &callbackData);
-                    }
+                    OnConnectionSuccessData callbackData;
+                    callbackData.returnCode = returnCode;
+                    callbackData.sessionPresent = sessionPresent;
+                    connWrapper->OnConnectionSuccess(*connWrapper, &callbackData);
                 }
-                else
+            }
+
+            void MqttConnection::s_onConnectionFailure(aws_mqtt_client_connection *, int errorCode, void *userData)
+            {
+                auto connWrapper = reinterpret_cast<MqttConnection *>(userData);
+                if (connWrapper->OnConnectionFailure)
                 {
-                    if (connWrapper->OnConnectionFailure)
-                    {
-                        OnConnectionFailureData callbackData;
-                        callbackData.error = errorCode;
-                        connWrapper->OnConnectionFailure(*connWrapper, &callbackData);
-                    }
+                    OnConnectionFailureData callbackData;
+                    callbackData.error = errorCode;
+                    connWrapper->OnConnectionFailure(*connWrapper, &callbackData);
                 }
             }
 
@@ -419,6 +426,14 @@ namespace Aws
                 options.ping_timeout_ms = pingTimeoutMs;
                 options.protocol_operation_timeout_ms = protocolOperationTimeoutMs;
                 options.on_connection_complete = MqttConnection::s_onConnectionCompleted;
+
+                aws_mqtt_client_connection_set_connection_result_handlers(
+                    m_underlyingConnection,
+                    MqttConnection::s_onConnectionSuccess,
+                    this,
+                    MqttConnection::s_onConnectionFailure,
+                    this);
+
                 options.user_data = this;
 
                 if (m_useWebsocket)
