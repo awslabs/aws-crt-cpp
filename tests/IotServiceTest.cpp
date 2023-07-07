@@ -160,8 +160,7 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
         bool published = false;
         bool received = false;
         bool closed = false;
-        auto onConnectionCompleted = [&](MqttConnection &, int errorCode, ReturnCode returnCode, bool sessionPresent)
-        {
+        auto onConnectionCompleted = [&](MqttConnection &, int errorCode, ReturnCode returnCode, bool sessionPresent) {
             printf(
                 "%s errorCode=%d returnCode=%d sessionPresent=%d\n",
                 (errorCode == 0) ? "CONNECTED" : "COMPLETED",
@@ -171,32 +170,27 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
             connected = true;
             cv.notify_one();
         };
-        auto onDisconnect = [&](MqttConnection &)
-        {
+        auto onDisconnect = [&](MqttConnection &) {
             printf("DISCONNECTED\n");
             connected = false;
             cv.notify_one();
         };
-        auto onTest = [&](MqttConnection &, const String &topic, const ByteBuf &payload)
-        {
+        auto onTest = [&](MqttConnection &, const String &topic, const ByteBuf &payload) {
             printf("GOT MESSAGE topic=%s payload=" PRInSTR "\n", topic.c_str(), AWS_BYTE_BUF_PRI(payload));
             received = true;
             cv.notify_one();
         };
-        auto onSubAck = [&](MqttConnection &, uint16_t packetId, const String &topic, QOS qos, int)
-        {
+        auto onSubAck = [&](MqttConnection &, uint16_t packetId, const String &topic, QOS qos, int) {
             printf("SUBACK id=%d topic=%s qos=%d\n", packetId, topic.c_str(), qos);
             subscribed = true;
             cv.notify_one();
         };
-        auto onPubAck = [&](MqttConnection &, uint16_t packetId, int)
-        {
+        auto onPubAck = [&](MqttConnection &, uint16_t packetId, int) {
             printf("PUBLISHED id=%d\n", packetId);
             published = true;
             cv.notify_one();
         };
-        auto onConnectionClosed = [&](MqttConnection &, OnConnectionClosedData *data)
-        {
+        auto onConnectionClosed = [&](MqttConnection &, OnConnectionClosedData *data) {
             (void)data;
             closed = true;
             printf("CLOSED");
@@ -306,15 +300,13 @@ static int s_TestIotConnectionSuccessTest(Aws::Crt::Allocator *allocator, void *
     bool connection_success = false;
     bool closed = false;
 
-    auto onConnectionSuccess = [&](MqttConnection &, OnConnectionSuccessData *data)
-    {
+    auto onConnectionSuccess = [&](MqttConnection &, OnConnectionSuccessData *data) {
         connection_success = true;
         printf("CONNECTION SUCCESS: returnCode=%i sessionPresent=%i\n", data->returnCode, data->sessionPresent);
         cv.notify_one();
     };
 
-    auto onConnectionClosed = [&](MqttConnection &, OnConnectionClosedData *data)
-    {
+    auto onConnectionClosed = [&](MqttConnection &, OnConnectionClosedData *data) {
         (void)data;
         closed = true;
         printf("CLOSED");
@@ -396,8 +388,7 @@ static int s_TestIotConnectionFailureTest(Aws::Crt::Allocator *allocator, void *
     std::mutex mutex;
     std::condition_variable cv;
     bool connection_failure = false;
-    auto onConnectionFailure = [&](MqttConnection &, OnConnectionFailureData *data)
-    {
+    auto onConnectionFailure = [&](MqttConnection &, OnConnectionFailureData *data) {
         connection_failure = true;
         printf("CONNECTION FAILURE: error=%i\n", data->error);
         cv.notify_one();
@@ -476,16 +467,14 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
         std::condition_variable willCv;
         bool willConnected = false;
         auto willOnConnectionCompleted =
-            [&](MqttConnection &, int errorCode, ReturnCode returnCode, bool sessionPresent)
-        {
-            (void)errorCode;
-            (void)returnCode;
-            (void)sessionPresent;
-            willConnected = true;
-            willCv.notify_one();
-        };
-        auto willOnDisconnect = [&](MqttConnection &)
-        {
+            [&](MqttConnection &, int errorCode, ReturnCode returnCode, bool sessionPresent) {
+                (void)errorCode;
+                (void)returnCode;
+                (void)sessionPresent;
+                willConnected = true;
+                willCv.notify_one();
+            };
+        auto willOnDisconnect = [&](MqttConnection &) {
             willConnected = false;
             willCv.notify_one();
         };
@@ -505,29 +494,25 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
         bool subscriberSubscribed = false;
         bool subscriberReceived = false;
         auto subscriberOnConnectionCompleted =
-            [&](MqttConnection &, int errorCode, ReturnCode returnCode, bool sessionPresent)
-        {
-            (void)errorCode;
-            (void)returnCode;
-            (void)sessionPresent;
-            subscriberConnected = true;
-            subscriberCv.notify_one();
-        };
-        auto subscriberOnDisconnect = [&](MqttConnection &)
-        {
+            [&](MqttConnection &, int errorCode, ReturnCode returnCode, bool sessionPresent) {
+                (void)errorCode;
+                (void)returnCode;
+                (void)sessionPresent;
+                subscriberConnected = true;
+                subscriberCv.notify_one();
+            };
+        auto subscriberOnDisconnect = [&](MqttConnection &) {
             subscriberConnected = false;
             subscriberCv.notify_one();
         };
-        auto subscriberOnSubAck = [&](MqttConnection &, uint16_t packetId, const String &topic, QOS qos, int)
-        {
+        auto subscriberOnSubAck = [&](MqttConnection &, uint16_t packetId, const String &topic, QOS qos, int) {
             (void)packetId;
             (void)topic;
             (void)qos;
             subscriberSubscribed = true;
             subscriberCv.notify_one();
         };
-        auto subscriberOnTest = [&](MqttConnection &, const String &topic, const ByteBuf &payload)
-        {
+        auto subscriberOnTest = [&](MqttConnection &, const String &topic, const ByteBuf &payload) {
             (void)topic;
             (void)payload;
             subscriberReceived = true;
@@ -555,16 +540,14 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
         std::condition_variable interruptCv;
         bool interruptConnected = false;
         auto interruptOnConnectionCompleted =
-            [&](MqttConnection &, int errorCode, ReturnCode returnCode, bool sessionPresent)
-        {
-            (void)errorCode;
-            (void)returnCode;
-            (void)sessionPresent;
-            interruptConnected = true;
-            interruptCv.notify_one();
-        };
-        auto interruptOnDisconnect = [&](MqttConnection &)
-        {
+            [&](MqttConnection &, int errorCode, ReturnCode returnCode, bool sessionPresent) {
+                (void)errorCode;
+                (void)returnCode;
+                (void)sessionPresent;
+                interruptConnected = true;
+                interruptCv.notify_one();
+            };
+        auto interruptOnDisconnect = [&](MqttConnection &) {
             interruptConnected = false;
             interruptCv.notify_one();
         };
@@ -654,8 +637,7 @@ static int s_TestIotStatisticsPublishWaitStatisticsDisconnect(Aws::Crt::Allocato
         std::condition_variable cv;
         bool connected = false;
         bool published = false;
-        auto onConnectionCompleted = [&](MqttConnection &, int errorCode, ReturnCode returnCode, bool sessionPresent)
-        {
+        auto onConnectionCompleted = [&](MqttConnection &, int errorCode, ReturnCode returnCode, bool sessionPresent) {
             printf(
                 "%s errorCode=%d returnCode=%d sessionPresent=%d\n",
                 (errorCode == 0) ? "CONNECTED" : "COMPLETED",
@@ -665,14 +647,12 @@ static int s_TestIotStatisticsPublishWaitStatisticsDisconnect(Aws::Crt::Allocato
             connected = true;
             cv.notify_one();
         };
-        auto onDisconnect = [&](MqttConnection &)
-        {
+        auto onDisconnect = [&](MqttConnection &) {
             printf("DISCONNECTED\n");
             connected = false;
             cv.notify_one();
         };
-        auto onPubAck = [&](MqttConnection &, uint16_t packetId, int)
-        {
+        auto onPubAck = [&](MqttConnection &, uint16_t packetId, int) {
             printf("PUBLISHED id=%d\n", packetId);
             published = true;
             cv.notify_one();
@@ -777,8 +757,7 @@ static int s_TestIotStatisticsPublishStatisticsWaitDisconnect(Aws::Crt::Allocato
         std::condition_variable cv;
         bool connected = false;
         bool published = false;
-        auto onConnectionCompleted = [&](MqttConnection &, int errorCode, ReturnCode returnCode, bool sessionPresent)
-        {
+        auto onConnectionCompleted = [&](MqttConnection &, int errorCode, ReturnCode returnCode, bool sessionPresent) {
             printf(
                 "%s errorCode=%d returnCode=%d sessionPresent=%d\n",
                 (errorCode == 0) ? "CONNECTED" : "COMPLETED",
@@ -788,14 +767,12 @@ static int s_TestIotStatisticsPublishStatisticsWaitDisconnect(Aws::Crt::Allocato
             connected = true;
             cv.notify_one();
         };
-        auto onDisconnect = [&](MqttConnection &)
-        {
+        auto onDisconnect = [&](MqttConnection &) {
             printf("DISCONNECTED\n");
             connected = false;
             cv.notify_one();
         };
-        auto onPubAck = [&](MqttConnection &, uint16_t packetId, int)
-        {
+        auto onPubAck = [&](MqttConnection &, uint16_t packetId, int) {
             printf("PUBLISHED id=%d\n", packetId);
             published = true;
             cv.notify_one();
