@@ -109,8 +109,6 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
 {
     (void)ctx;
 
-    using namespace Aws::Crt;
-    using namespace Aws::Crt::Io;
     using namespace Aws::Crt::Mqtt;
 
     IotServiceTestEnvVars envVars;
@@ -175,12 +173,12 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
             connected = false;
             cv.notify_one();
         };
-        auto onTest = [&](MqttConnection &, const String &topic, const ByteBuf &payload) {
+        auto onTest = [&](MqttConnection &, const Aws::Crt::String &topic, const Aws::Crt::ByteBuf &payload) {
             printf("GOT MESSAGE topic=%s payload=" PRInSTR "\n", topic.c_str(), AWS_BYTE_BUF_PRI(payload));
             received = true;
             cv.notify_one();
         };
-        auto onSubAck = [&](MqttConnection &, uint16_t packetId, const String &topic, QOS qos, int) {
+        auto onSubAck = [&](MqttConnection &, uint16_t packetId, const Aws::Crt::String &topic, QOS qos, int) {
             printf("SUBACK id=%d topic=%s qos=%d\n", packetId, topic.c_str(), qos);
             subscribed = true;
             cv.notify_one();
@@ -254,8 +252,6 @@ static int s_TestIotConnectionSuccessTest(Aws::Crt::Allocator *allocator, void *
 {
     (void)ctx;
 
-    using namespace Aws::Crt;
-    using namespace Aws::Crt::Io;
     using namespace Aws::Crt::Mqtt;
 
     IotServiceTestEnvVars envVars;
@@ -343,8 +339,6 @@ static int s_TestIotConnectionFailureTest(Aws::Crt::Allocator *allocator, void *
 {
     (void)ctx;
 
-    using namespace Aws::Crt;
-    using namespace Aws::Crt::Io;
     using namespace Aws::Crt::Mqtt;
 
     IotServiceTestEnvVars envVars;
@@ -414,8 +408,6 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
 {
     (void)ctx;
 
-    using namespace Aws::Crt;
-    using namespace Aws::Crt::Io;
     using namespace Aws::Crt::Mqtt;
 
     IotServiceTestEnvVars envVars;
@@ -505,14 +497,14 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
             subscriberConnected = false;
             subscriberCv.notify_one();
         };
-        auto subscriberOnSubAck = [&](MqttConnection &, uint16_t packetId, const String &topic, QOS qos, int) {
+        auto subscriberOnSubAck = [&](MqttConnection &, uint16_t packetId, const Aws::Crt::String &topic, QOS qos, int) {
             (void)packetId;
             (void)topic;
             (void)qos;
             subscriberSubscribed = true;
             subscriberCv.notify_one();
         };
-        auto subscriberOnTest = [&](MqttConnection &, const String &topic, const ByteBuf &payload) {
+        auto subscriberOnTest = [&](MqttConnection &, const Aws::Crt::String &topic, const Aws::Crt::ByteBuf &payload) {
             (void)topic;
             (void)payload;
             subscriberReceived = true;
@@ -590,8 +582,6 @@ AWS_TEST_CASE(IotWillTest, s_TestIotWillTest)
 
 static int s_TestIotStatisticsPublishWaitStatisticsDisconnect(Aws::Crt::Allocator *allocator, void *ctx)
 {
-    using namespace Aws::Crt;
-    using namespace Aws::Crt::Io;
     using namespace Aws::Crt::Mqtt;
 
     IotServiceTestEnvVars envVars;
@@ -711,8 +701,6 @@ static int s_TestIotStatisticsPublishStatisticsWaitDisconnect(Aws::Crt::Allocato
 {
     (void)ctx;
 
-    using namespace Aws::Crt;
-    using namespace Aws::Crt::Io;
     using namespace Aws::Crt::Mqtt;
 
     IotServiceTestEnvVars envVars;
