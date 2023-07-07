@@ -497,13 +497,14 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
             subscriberConnected = false;
             subscriberCv.notify_one();
         };
-        auto subscriberOnSubAck = [&](MqttConnection &, uint16_t packetId, const Aws::Crt::String &topic, QOS qos, int) {
-            (void)packetId;
-            (void)topic;
-            (void)qos;
-            subscriberSubscribed = true;
-            subscriberCv.notify_one();
-        };
+        auto subscriberOnSubAck =
+            [&](MqttConnection &, uint16_t packetId, const Aws::Crt::String &topic, QOS qos, int) {
+                (void)packetId;
+                (void)topic;
+                (void)qos;
+                subscriberSubscribed = true;
+                subscriberCv.notify_one();
+            };
         auto subscriberOnTest = [&](MqttConnection &, const Aws::Crt::String &topic, const Aws::Crt::ByteBuf &payload) {
             (void)topic;
             (void)payload;
