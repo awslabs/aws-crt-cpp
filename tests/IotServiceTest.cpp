@@ -114,11 +114,13 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
     IotServiceTestEnvVars envVars;
     if (s_GetEnvVariables(allocator, envVars) != AWS_OP_SUCCESS)
     {
+        printf("Environment Variables are not set for the test, skip the test");
         return AWS_OP_SKIP;
     }
 
     if (s_ValidateCredentialFiles(envVars) != AWS_OP_SUCCESS)
     {
+        printf("Credential files are not set for the test, skip the test");
         return AWS_OP_SKIP;
     }
 
@@ -275,11 +277,13 @@ static int s_TestIotConnectionSuccessTest(Aws::Crt::Allocator *allocator, void *
     IotServiceTestEnvVars envVars;
     if (s_GetEnvVariables(allocator, envVars) != AWS_OP_SUCCESS)
     {
+        printf("Environment Variables are not set for the test, skip the test");
         return AWS_OP_SKIP;
     }
 
     if (s_ValidateCredentialFiles(envVars) != AWS_OP_SUCCESS)
     {
+        printf("Credential files are not set for the test, skip the test");
         return AWS_OP_SKIP;
     }
 
@@ -368,11 +372,13 @@ static int s_TestIotConnectionFailureTest(Aws::Crt::Allocator *allocator, void *
     IotServiceTestEnvVars envVars;
     if (s_GetEnvVariables(allocator, envVars) != AWS_OP_SUCCESS)
     {
+        printf("Environment Variables are not set for the test, skip the test");
         return AWS_OP_SKIP;
     }
 
     if (s_ValidateCredentialFiles(envVars) != AWS_OP_SUCCESS)
     {
+        printf("Credential files are not set for the test, skip the test");
         return AWS_OP_SKIP;
     }
 
@@ -440,11 +446,13 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
     IotServiceTestEnvVars envVars;
     if (s_GetEnvVariables(allocator, envVars) != AWS_OP_SUCCESS)
     {
+        printf("Environment Variables are not set for the test, skip the test");
         return AWS_OP_SKIP;
     }
 
     if (s_ValidateCredentialFiles(envVars) != AWS_OP_SUCCESS)
     {
+        printf("Credential files are not set for the test, skip the test");
         return AWS_OP_SKIP;
     }
 
@@ -639,11 +647,13 @@ static int s_TestIotStatisticsPublishWaitStatisticsDisconnect(Aws::Crt::Allocato
     IotServiceTestEnvVars envVars;
     if (s_GetEnvVariables(allocator, envVars) != AWS_OP_SUCCESS)
     {
+        printf("Environment Variables are not set for the test, skip the test");
         return AWS_OP_SKIP;
     }
 
     if (s_ValidateCredentialFiles(envVars) != AWS_OP_SUCCESS)
     {
+        printf("Credential files are not set for the test, skip the test");
         return AWS_OP_SKIP;
     }
 
@@ -767,11 +777,13 @@ static int s_TestIotStatisticsPublishStatisticsWaitDisconnect(Aws::Crt::Allocato
     IotServiceTestEnvVars envVars;
     if (s_GetEnvVariables(allocator, envVars) != AWS_OP_SUCCESS)
     {
+        printf("Environment Variables are not set for the test, skip the test");
         return AWS_OP_SKIP;
     }
 
     if (s_ValidateCredentialFiles(envVars) != AWS_OP_SUCCESS)
     {
+        printf("Credential files are not set for the test, skip the test");
         return AWS_OP_SKIP;
     }
 
