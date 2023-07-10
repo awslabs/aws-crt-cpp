@@ -183,7 +183,7 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
         };
         auto onTest = [&](MqttConnection &, const Aws::Crt::String &topic, const Aws::Crt::ByteBuf &payload) {
             printf("GOT MESSAGE topic=%s payload=" PRInSTR "\n", topic.c_str(), AWS_BYTE_BUF_PRI(payload));
-             {
+            {
                 std::lock_guard<std::mutex> lock(mutex);
                 received = true;
             }
