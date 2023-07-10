@@ -433,7 +433,6 @@ namespace Aws
                 options.ping_timeout_ms = pingTimeoutMs;
                 options.protocol_operation_timeout_ms = protocolOperationTimeoutMs;
                 options.on_connection_complete = MqttConnection::s_onConnectionCompleted;
-
                 options.user_data = this;
 
                 if (m_useWebsocket)
