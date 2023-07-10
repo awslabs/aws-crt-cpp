@@ -165,32 +165,50 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
                 errorCode,
                 (int)returnCode,
                 (int)sessionPresent);
-            connected = true;
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                connected = true;
+            }
             cv.notify_one();
         };
         auto onDisconnect = [&](MqttConnection &) {
             printf("DISCONNECTED\n");
-            connected = false;
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                connected = false;
+            }
             cv.notify_one();
         };
         auto onTest = [&](MqttConnection &, const Aws::Crt::String &topic, const Aws::Crt::ByteBuf &payload) {
             printf("GOT MESSAGE topic=%s payload=" PRInSTR "\n", topic.c_str(), AWS_BYTE_BUF_PRI(payload));
-            received = true;
+             {
+                std::lock_guard<std::mutex> lock(mutex);
+                received = true;
+            }
             cv.notify_one();
         };
         auto onSubAck = [&](MqttConnection &, uint16_t packetId, const Aws::Crt::String &topic, QOS qos, int) {
             printf("SUBACK id=%d topic=%s qos=%d\n", packetId, topic.c_str(), qos);
-            subscribed = true;
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                subscribed = true;
+            }
             cv.notify_one();
         };
         auto onPubAck = [&](MqttConnection &, uint16_t packetId, int) {
             printf("PUBLISHED id=%d\n", packetId);
-            published = true;
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                published = true;
+            }
             cv.notify_one();
         };
         auto onConnectionClosed = [&](MqttConnection &, OnConnectionClosedData *data) {
             (void)data;
-            closed = true;
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                closed = true;
+            }
             printf("CLOSED");
             cv.notify_one();
         };
@@ -297,14 +315,20 @@ static int s_TestIotConnectionSuccessTest(Aws::Crt::Allocator *allocator, void *
     bool closed = false;
 
     auto onConnectionSuccess = [&](MqttConnection &, OnConnectionSuccessData *data) {
-        connection_success = true;
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            connection_success = true;
+        }
         printf("CONNECTION SUCCESS: returnCode=%i sessionPresent=%i\n", data->returnCode, data->sessionPresent);
         cv.notify_one();
     };
 
     auto onConnectionClosed = [&](MqttConnection &, OnConnectionClosedData *data) {
         (void)data;
-        closed = true;
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            closed = true;
+        }
         printf("CLOSED");
         cv.notify_one();
     };
@@ -383,7 +407,10 @@ static int s_TestIotConnectionFailureTest(Aws::Crt::Allocator *allocator, void *
     std::condition_variable cv;
     bool connection_failure = false;
     auto onConnectionFailure = [&](MqttConnection &, OnConnectionFailureData *data) {
-        connection_failure = true;
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            connection_failure = true;
+        }
         printf("CONNECTION FAILURE: error=%i\n", data->error);
         cv.notify_one();
     };
@@ -463,11 +490,17 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
                 (void)errorCode;
                 (void)returnCode;
                 (void)sessionPresent;
-                willConnected = true;
+                {
+                    std::lock_guard<std::mutex> lock(willMutex);
+                    willConnected = true;
+                }
                 willCv.notify_one();
             };
         auto willOnDisconnect = [&](MqttConnection &) {
-            willConnected = false;
+            {
+                std::lock_guard<std::mutex> lock(willMutex);
+                willConnected = false;
+            }
             willCv.notify_one();
         };
         willConnection->OnConnectionCompleted = willOnConnectionCompleted;
@@ -490,11 +523,17 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
                 (void)errorCode;
                 (void)returnCode;
                 (void)sessionPresent;
-                subscriberConnected = true;
+                {
+                    std::lock_guard<std::mutex> lock(subscriberMutex);
+                    subscriberConnected = true;
+                }
                 subscriberCv.notify_one();
             };
         auto subscriberOnDisconnect = [&](MqttConnection &) {
-            subscriberConnected = false;
+            {
+                std::lock_guard<std::mutex> lock(subscriberMutex);
+                subscriberConnected = false;
+            }
             subscriberCv.notify_one();
         };
         auto subscriberOnSubAck =
@@ -502,13 +541,19 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
                 (void)packetId;
                 (void)topic;
                 (void)qos;
-                subscriberSubscribed = true;
+                {
+                    std::lock_guard<std::mutex> lock(subscriberMutex);
+                    subscriberSubscribed = true;
+                }
                 subscriberCv.notify_one();
             };
         auto subscriberOnTest = [&](MqttConnection &, const Aws::Crt::String &topic, const Aws::Crt::ByteBuf &payload) {
             (void)topic;
             (void)payload;
-            subscriberReceived = true;
+            {
+                std::lock_guard<std::mutex> lock(subscriberMutex);
+                subscriberReceived = true;
+            }
             subscriberCv.notify_one();
         };
         subscriberConnection->OnConnectionCompleted = subscriberOnConnectionCompleted;
@@ -537,11 +582,17 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
                 (void)errorCode;
                 (void)returnCode;
                 (void)sessionPresent;
-                interruptConnected = true;
+                {
+                    std::lock_guard<std::mutex> lock(interruptMutex);
+                    interruptConnected = true;
+                }
                 interruptCv.notify_one();
             };
         auto interruptOnDisconnect = [&](MqttConnection &) {
-            interruptConnected = false;
+            {
+                std::lock_guard<std::mutex> lock(interruptMutex);
+                interruptConnected = false;
+            }
             interruptCv.notify_one();
         };
         interruptConnection->OnConnectionCompleted = interruptOnConnectionCompleted;
@@ -635,17 +686,26 @@ static int s_TestIotStatisticsPublishWaitStatisticsDisconnect(Aws::Crt::Allocato
                 errorCode,
                 (int)returnCode,
                 (int)sessionPresent);
-            connected = true;
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                connected = true;
+            }
             cv.notify_one();
         };
         auto onDisconnect = [&](MqttConnection &) {
             printf("DISCONNECTED\n");
-            connected = false;
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                connected = false;
+            }
             cv.notify_one();
         };
         auto onPubAck = [&](MqttConnection &, uint16_t packetId, int) {
             printf("PUBLISHED id=%d\n", packetId);
-            published = true;
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                published = true;
+            }
             cv.notify_one();
         };
 
@@ -753,17 +813,26 @@ static int s_TestIotStatisticsPublishStatisticsWaitDisconnect(Aws::Crt::Allocato
                 errorCode,
                 (int)returnCode,
                 (int)sessionPresent);
-            connected = true;
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                connected = true;
+            }
             cv.notify_one();
         };
         auto onDisconnect = [&](MqttConnection &) {
             printf("DISCONNECTED\n");
-            connected = false;
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                connected = false;
+            }
             cv.notify_one();
         };
         auto onPubAck = [&](MqttConnection &, uint16_t packetId, int) {
             printf("PUBLISHED id=%d\n", packetId);
-            published = true;
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                published = true;
+            }
             cv.notify_one();
         };
 
