@@ -276,6 +276,13 @@ namespace Aws
 
                 if (self->m_underlyingConnection)
                 {
+                    aws_mqtt_client_connection_set_connection_result_handlers(
+                        self->m_underlyingConnection,
+                        MqttConnection::s_onConnectionSuccess,
+                        self,
+                        MqttConnection::s_onConnectionFailure,
+                        self);
+
                     aws_mqtt_client_connection_set_connection_interruption_handlers(
                         self->m_underlyingConnection,
                         MqttConnection::s_onConnectionInterrupted,
@@ -426,13 +433,6 @@ namespace Aws
                 options.ping_timeout_ms = pingTimeoutMs;
                 options.protocol_operation_timeout_ms = protocolOperationTimeoutMs;
                 options.on_connection_complete = MqttConnection::s_onConnectionCompleted;
-
-                aws_mqtt_client_connection_set_connection_result_handlers(
-                    m_underlyingConnection,
-                    MqttConnection::s_onConnectionSuccess,
-                    this,
-                    MqttConnection::s_onConnectionFailure,
-                    this);
 
                 options.user_data = this;
 
