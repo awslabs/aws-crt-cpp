@@ -65,7 +65,7 @@ static Aws::Crt::Optional<Aws::Crt::String> s_GetEnvVariable(
     return value;
 }
 
-static int s_SetEnvVars(Aws::Crt::Allocator *allocator, IotServiceTestEnvVars &envVars)
+static int s_GetEnvVariables(Aws::Crt::Allocator *allocator, IotServiceTestEnvVars &envVars)
 {
     Aws::Crt::Optional<Aws::Crt::String> inputHost = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_core_host);
     Aws::Crt::Optional<Aws::Crt::String> inputCertificate =
@@ -112,7 +112,7 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
     using namespace Aws::Crt::Mqtt;
 
     IotServiceTestEnvVars envVars;
-    if (s_SetEnvVars(allocator, envVars) != AWS_OP_SUCCESS)
+    if (s_GetEnvVariables(allocator, envVars) != AWS_OP_SUCCESS)
     {
         return AWS_OP_SKIP;
     }
@@ -273,7 +273,7 @@ static int s_TestIotConnectionSuccessTest(Aws::Crt::Allocator *allocator, void *
     using namespace Aws::Crt::Mqtt;
 
     IotServiceTestEnvVars envVars;
-    if (s_SetEnvVars(allocator, envVars) != AWS_OP_SUCCESS)
+    if (s_GetEnvVariables(allocator, envVars) != AWS_OP_SUCCESS)
     {
         return AWS_OP_SKIP;
     }
@@ -366,7 +366,7 @@ static int s_TestIotConnectionFailureTest(Aws::Crt::Allocator *allocator, void *
     using namespace Aws::Crt::Mqtt;
 
     IotServiceTestEnvVars envVars;
-    if (s_SetEnvVars(allocator, envVars) != AWS_OP_SUCCESS)
+    if (s_GetEnvVariables(allocator, envVars) != AWS_OP_SUCCESS)
     {
         return AWS_OP_SKIP;
     }
@@ -438,7 +438,7 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
     using namespace Aws::Crt::Mqtt;
 
     IotServiceTestEnvVars envVars;
-    if (s_SetEnvVars(allocator, envVars) != AWS_OP_SUCCESS)
+    if (s_GetEnvVariables(allocator, envVars) != AWS_OP_SUCCESS)
     {
         return AWS_OP_SKIP;
     }
@@ -637,7 +637,7 @@ static int s_TestIotStatisticsPublishWaitStatisticsDisconnect(Aws::Crt::Allocato
     using namespace Aws::Crt::Mqtt;
 
     IotServiceTestEnvVars envVars;
-    if (s_SetEnvVars(allocator, envVars) != AWS_OP_SUCCESS)
+    if (s_GetEnvVariables(allocator, envVars) != AWS_OP_SUCCESS)
     {
         return AWS_OP_SKIP;
     }
@@ -765,7 +765,7 @@ static int s_TestIotStatisticsPublishStatisticsWaitDisconnect(Aws::Crt::Allocato
     using namespace Aws::Crt::Mqtt;
 
     IotServiceTestEnvVars envVars;
-    if (s_SetEnvVars(allocator, envVars) != AWS_OP_SUCCESS)
+    if (s_GetEnvVariables(allocator, envVars) != AWS_OP_SUCCESS)
     {
         return AWS_OP_SKIP;
     }
