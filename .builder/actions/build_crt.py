@@ -26,9 +26,6 @@ class BuildCrt(Builder.Action):
 
         # remove or swap out flags that we don't want for C++
         for arg in cmake_args:
-            # we want to use PERFORM_HEADER_CHECK_CXX instead of PERFORM_HEADER_CHECK
-            if arg == "-DPERFORM_HEADER_CHECK=ON":
-                arg = "-DPERFORM_HEADER_CHECK_CXX=ON"
             if (arg == "-DUSE_OPENSSL=ON"):
                 is_using_openssl = True
 

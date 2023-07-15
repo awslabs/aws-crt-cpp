@@ -29,7 +29,6 @@ project("aws-crt-cpp"
     LANGUAGES CXX C
     VERSION ${SIMPLE_VERSION})
 
-include(AwsCheckHeadersCxx)
 include(CTest)
 
 if(DEFINED CMAKE_PREFIX_PATH)
@@ -183,7 +182,10 @@ file(GLOB AWS_CRT_PUBLIC_HEADERS
     ${AWS_CRT_ENDPOINT_HEADERS}
 )
 
-aws_check_headers_cxx(${PROJECT_NAME} ${AWS_CRT_PUBLIC_HEADERS})
+if(BUILD_DEPS)
+    include(AwsCheckHeaders)
+    aws_check_headers(${PROJECT_NAME} IS_CXX ${AWS_CRT_PUBLIC_HEADERS})
+endif()
 
 file(GLOB AWS_CRT_CPP_HEADERS
     ${AWS_CRT_PUBLIC_HEADERS}
@@ -291,7 +293,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE MATCHES Debug)
     target_compile_definitions(${PROJECT_NAME} PRIVATE "-DDEBUG_BUILD")
 endif()
 
- # set extra warning flags
+# set extra warning flags
 if(AWS_WARNINGS_ARE_ERRORS)
     if(MSVC)
         target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4068)

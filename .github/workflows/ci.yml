@@ -38,7 +38,7 @@ jobs:
   # that are up-to-date (AL2) or don't provide OpenSSL development packages that is found in CMake (alpine)
   # or are not able to connect on the socket even with the correct setup (manylinux2014)
   linux-compat:
-    runs-on: ubuntu-20.04 # latest
+    runs-on: ubuntu-22.04 # latest
     strategy:
       matrix:
         image:
@@ -59,7 +59,7 @@ jobs:
         ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ matrix.image }} build -p ${{ env.PACKAGE_NAME }}
 
   linux-compiler-compat:
-    runs-on: ubuntu-20.04 # latest
+    runs-on: ubuntu-22.04 # latest
     strategy:
       matrix:
         compiler:
@@ -99,7 +99,7 @@ jobs:
         ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ matrix.image }} build -p ${{ env.PACKAGE_NAME }}
 
   std-compat:
-    runs-on: ubuntu-20.04 # latest
+    runs-on: ubuntu-22.04 # latest
     strategy:
       matrix:
         compiler: [gcc-8, clang-9]
@@ -113,7 +113,7 @@ jobs:
         ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }} --cmake-extra=-DUSE_OPENSSL=ON
 
   byo-crypto:
-    runs-on: ubuntu-20.04 # latest
+    runs-on: ubuntu-22.04 # latest
     steps:
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
     - name: Build ${{ env.PACKAGE_NAME }}
@@ -122,7 +122,7 @@ jobs:
         ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBYO_CRYPTO=ON --cmake-extra=-DUSE_OPENSSL=ON
 
   linux-shared-libs:
-    runs-on: ubuntu-20.04 # latest
+    runs-on: ubuntu-22.04 # latest
     steps:
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
     - name: Build ${{ env.PACKAGE_NAME }}
@@ -131,7 +131,7 @@ jobs:
         ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBUILD_SHARED_LIBS=ON
 
   linux-openssl-static:
-    runs-on: ubuntu-20.04 # latest
+    runs-on: ubuntu-22.04 # latest
     steps:
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
     - name: Build ${{ env.PACKAGE_NAME }}
@@ -140,7 +140,7 @@ jobs:
         ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --variant=openssl --cmake-extra=-DUSE_OPENSSL=ON
 
   linux-openssl-shared:
-    runs-on: ubuntu-20.04 # latest
+    runs-on: ubuntu-22.04 # latest
     steps:
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
     - name: Build ${{ env.PACKAGE_NAME }}
@@ -149,7 +149,7 @@ jobs:
         ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --variant=openssl --cmake-extra=-DUSE_OPENSSL=ON --cmake-extra=-DBUILD_SHARED_LIBS=ON
 
   linux-no-cpu-extensions:
-    runs-on: ubuntu-20.04 # latest
+    runs-on: ubuntu-22.04 # latest
     steps:
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
     - name: Build ${{ env.PACKAGE_NAME }}
@@ -171,14 +171,14 @@ jobs:
     runs-on: windows-2019 # windows-2019 is last env with Visual Studio 2015 (v14.0)
     strategy:
       matrix:
-        arch: [Win32, x64]
+        arch: [x86, x64]
     steps:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
         md D:\a\work
         cd D:\a\work
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
-        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-Tv140 --cmake-extra=-A${{ matrix.arch }}
+        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --compiler msvc-14 --target windows-${{ matrix.arch }}
 
   windows-shared-libs:
     runs-on: windows-2022 # latest
@@ -217,7 +217,7 @@ jobs:
         python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DUSE_CPU_EXTENSIONS=OFF
 
   osx:
-    runs-on: macos-11 # latest
+    runs-on: macos-13 # latest
     steps:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
@@ -229,7 +229,7 @@ jobs:
   # it would be better to run tests natively on one of these machines,
   # but we don't have access to one in the cloud, so for now just cross-compile
   osx-arm64-cross-compile:
-    runs-on: macos-11 # latest
+    runs-on: macos-13 # latest
     steps:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
@@ -238,8 +238,11 @@ jobs:
         ./builder build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DCMAKE_OSX_ARCHITECTURES=arm64 run_tests=false
         test `lipo aws-crt-cpp/build/install/lib/libaws-crt-cpp.a -archs` = "arm64"
 
+  # cross-compile for iOS
+  # Skip signing the code on iOS.
+  # Otherwise it will not compile with error that Bundle identifier is missing.
   ios-cross-compile:
-    runs-on: macos-11 # latest
+    runs-on: macos-13 # latest
     steps:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
@@ -249,7 +252,7 @@ jobs:
 
   cross_compile:
     name: Cross Compile ${{matrix.arch}}
-    runs-on: ubuntu-20.04 # latest
+    runs-on: ubuntu-22.04 # latest
     strategy:
       matrix:
         arch: [linux-armv6, linux-armv7, linux-arm64, android-armv7]
@@ -263,7 +266,7 @@ jobs:
 
   # check that docs can still build
   check-docs:
-    runs-on: ubuntu-20.04 # latest
+    runs-on: ubuntu-22.04 # latest
     steps:
       - uses: actions/checkout@v2
         with:
@@ -274,7 +277,7 @@ jobs:
           ./make-docs.py
 
   check-submodules:
-    runs-on: ubuntu-20.04 # latest
+    runs-on: ubuntu-22.04 # latest
     steps:
     - name: Checkout Source
       uses: actions/checkout@v2
