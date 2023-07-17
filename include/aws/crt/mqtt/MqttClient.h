@@ -137,13 +137,13 @@ namespace Aws
 
             /**
              * Invoked upon receipt of a Publish message on a subscribed topic.
-             * @param connection    The connection object
-             * @param topic         The information channel to which the payload data was published.
-             * @param payload       The payload data.
-             * @param dup           DUP flag. If true, this might be re-delivery of an earlier
+             * - connection:    The connection object
+             * - topic:         The information channel to which the payload data was published.
+             * - payload:       The payload data.
+             * - dup:           DUP flag. If true, this might be re-delivery of an earlier
              *                      attempt to send the message.
-             * @param qos           Quality of Service used to deliver the message.
-             * @param retain        Retain flag. If true, the message was sent as a result of
+             * - qos:           Quality of Service used to deliver the message.
+             * - retain:        Retain flag. If true, the message was sent as a result of
              *                      a new subscription being made by the client.
              */
             using OnMessageReceivedHandler = std::function<void(
