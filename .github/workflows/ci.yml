@@ -19,7 +19,7 @@ env:
 
 jobs:
   linux-compat-use-openssl:
-    runs-on: ubuntu-20.04 # latest
+    runs-on: ubuntu-22.04 # latest
     strategy:
       matrix:
         image:
@@ -82,7 +82,7 @@ jobs:
           ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }} --cmake-extra=-DUSE_OPENSSL=ON
 
   raspberry:
-    runs-on: ubuntu-20.04 # latest
+    runs-on: ubuntu-22.04 # latest
     strategy:
       fail-fast: false
       matrix:
