@@ -35,8 +35,9 @@ static int s_TestDefaultResolution(struct aws_allocator *allocator, void *)
                 std::lock_guard<std::mutex> lock(semaphoreLock);
                 addressCount = addresses.size();
                 error = errorCode;
+                // This notify_one call has to be under mutex, to prevent a possible use-after-free case.
+                semaphore.notify_one();
             }
-            semaphore.notify_one();
         };
 
         ASSERT_TRUE(defaultHostResolver.ResolveHost("localhost", onHostResolved));
