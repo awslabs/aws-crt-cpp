@@ -78,7 +78,6 @@ jobs:
           - gcc-9
           - gcc-10
           - gcc-11
-          - gcc-12
     steps:
       # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
       - name: Build ${{ env.PACKAGE_NAME }}
