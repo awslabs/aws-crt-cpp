@@ -337,6 +337,7 @@ static int s_TestIotConnectionSuccessTest(Aws::Crt::Allocator *allocator, void *
         {
             std::lock_guard<std::mutex> lock(mutex);
             closed = true;
+            // This notify_one call has to be under mutex, to prevent a possible use-after-free case.
             cv.notify_one();
         }
     };
@@ -421,6 +422,7 @@ static int s_TestIotConnectionFailureTest(Aws::Crt::Allocator *allocator, void *
         {
             std::lock_guard<std::mutex> lock(mutex);
             connection_failure = true;
+            // This notify_one call has to be under mutex, to prevent a possible use-after-free case.
             cv.notify_one();
         }
     };
@@ -545,6 +547,7 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
             {
                 std::lock_guard<std::mutex> lock(subscriberMutex);
                 subscriberConnected = false;
+                // This notify_one call has to be under mutex, to prevent a possible use-after-free case.
                 subscriberCv.notify_one();
             }
         };
@@ -711,6 +714,7 @@ static int s_TestIotStatisticsPublishWaitStatisticsDisconnect(Aws::Crt::Allocato
             {
                 std::lock_guard<std::mutex> lock(mutex);
                 connected = false;
+                // This notify_one call has to be under mutex, to prevent a possible use-after-free case.
                 cv.notify_one();
             }
         };
@@ -840,6 +844,7 @@ static int s_TestIotStatisticsPublishStatisticsWaitDisconnect(Aws::Crt::Allocato
             {
                 std::lock_guard<std::mutex> lock(mutex);
                 connected = false;
+                // This notify_one call has to be under mutex, to prevent a possible use-after-free case.
                 cv.notify_one();
             }
         };
