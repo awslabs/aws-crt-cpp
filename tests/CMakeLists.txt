@@ -33,6 +33,8 @@ if(NOT BYO_CRYPTO)
     add_net_test_case(IoTMqtt311ConnectWSProfile)
     add_net_test_case(IoTMqtt311ConnectWSEnvironment)
 
+
+
     add_net_test_case(IoTMqtt5ConnectWithmTLS)
     add_net_test_case(IoTMqtt5ConnectWithWebsocket)
     add_net_test_case(IoTMqtt5ConnectWithSigningCustomAuth)
@@ -219,6 +221,10 @@ if(NOT BYO_CRYPTO)
     add_net_test_case(Mqtt5InterruptUnsub)
     add_net_test_case(Mqtt5InterruptPublishQoS1)
     add_net_test_case(Mqtt5OperationStatisticsSimple)
+
+    # Mqtt5-to-3 Adapter
+    add_net_test_case(Mqtt5to3AdapterNewConnectionMin)
+    add_net_test_case(Mqtt5to3AdapterDirectConnectionMinimal)
 endif()
 
 add_test_case(RuleEngine)

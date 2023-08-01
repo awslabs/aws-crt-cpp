@@ -38,6 +38,17 @@ namespace Aws
                     Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
+                 * Create a new connection object over plain text from the client5. The client must outlive
+                 * all of its connection instances.The Mqtt5 Options will be overwritten by the options,
+                 * passed in here.
+                 *
+                 * @param options: Mqtt5 Client Options
+                 *
+                 * @return std::shared_ptr<Crt::Mqtt::MqttConnection>
+                 */
+                std::shared_ptr<Crt::Mqtt::MqttConnection> NewConnection(const Mqtt5ClientOptions &options) noexcept;
+
+                /**
                  * Get shared poitner of the Mqtt5ClientCore. Mqtt5ClientCore is inherited to enable_shared_from_this to
                  * help with memory safety.
                  *

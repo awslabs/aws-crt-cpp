@@ -2530,4 +2530,123 @@ static int s_TestMqtt5OperationStatisticsSimple(Aws::Crt::Allocator *allocator, 
 }
 AWS_TEST_CASE(Mqtt5OperationStatisticsSimple, s_TestMqtt5OperationStatisticsSimple)
 
+/* Mqtt5-to-Mqtt3 Adapter Test */
+
+/* Test Helper Functions */
+static int s_ConnectAndDisconnect(std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection)
+{
+    std::promise<bool> connectionCompletedPromise;
+    std::promise<void> connectionClosedPromise;
+    auto onConnectionCompleted =
+        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool)
+    {
+        (void)returnCode;
+        if (errorCode)
+        {
+            connectionCompletedPromise.set_value(false);
+        }
+        else
+        {
+            connectionCompletedPromise.set_value(true);
+        }
+    };
+    auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
+    connection->OnConnectionCompleted = std::move(onConnectionCompleted);
+    connection->OnDisconnect = std::move(onDisconnect);
+
+    Aws::Crt::UUID Uuid;
+    Aws::Crt::String uuidStr = Uuid.ToString();
+
+    if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
+    {
+        printf("Failed to connect");
+        return AWS_OP_ERR;
+    }
+    if (connectionCompletedPromise.get_future().get() == false)
+    {
+        printf("Connection failed");
+        return AWS_OP_ERR;
+    }
+    if (connection->Disconnect())
+    {
+        connectionClosedPromise.get_future().wait();
+    }
+    return AWS_OP_SUCCESS;
+}
+
+/*
+ * [Adapter] Happy path. Minimal creation and cleanup
+ */
+static int s_TestMqtt5to3AdapterNewConnectionMin(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    // Hardcoded the host name and port for creation test
+    mqtt5Options.WithHostName("localhost").WithPort(1883);
+    Aws::Crt::Io::SocketOptions socketOptions;
+    socketOptions.SetConnectTimeoutMs(3000);
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(mqtt5Client);
+    std::shared_ptr<Mqtt::MqttConnection> mqttConnection = mqtt5Client->NewConnection(mqtt5Options);
+    ASSERT_TRUE(mqttConnection);
+
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5to3AdapterNewConnectionMin, s_TestMqtt5to3AdapterNewConnectionMin)
+
+static int s_TestMqtt5to3AdapterDirectConnectionMinimal(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+    Aws::Crt::Io::SocketOptions socketOptions;
+    socketOptions.SetConnectTimeoutMs(3000);
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+
+    mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string);
+    mqtt5Options.WithPort(mqtt5TestVars.m_port_value);
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(mqtt5Client);
+    std::shared_ptr<Mqtt::MqttConnection> mqttConnection = mqtt5Client->NewConnection(mqtt5Options);
+    ASSERT_TRUE(mqttConnection);
+    int connectResult = s_ConnectAndDisconnect(mqttConnection);
+    ASSERT_SUCCESS(connectResult);
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5to3AdapterDirectConnectionMinimal, s_TestMqtt5to3AdapterDirectConnectionMinimal)
+
+// static int s_TestMqtt5to3AdapterDirectConnectionMinimal(Aws::Crt::Allocator *allocator, void *)
+// {
+//     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+//     if (!mqtt5TestVars)
+//     {
+//         printf("Environment Variables are not set for the test, skip the test");
+//         return AWS_OP_SKIP;
+//     }
+
+//     ApiHandle apiHandle(allocator);
+//     Aws::Crt::Io::SocketOptions socketOptions;
+//     socketOptions.SetConnectTimeoutMs(3000);
+//     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+
+//     mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string);
+//     mqtt5Options.WithPort(mqtt5TestVars.m_port_value);
+
+//     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+//     ASSERT_TRUE(mqtt5Client);
+//     std::shared_ptr<Mqtt::MqttConnection> mqttConnection = mqtt5Client->NewConnection(mqtt5Options);
+//     ASSERT_TRUE(mqttConnection);
+//     int connectResult = s_ConnectAndDisconnect(mqttConnection);
+//     ASSERT_SUCCESS(connectResult);
+//     return AWS_OP_SUCCESS;
+// }
+// AWS_TEST_CASE(Mqtt5to3AdapterDirectConnectionMinimal, s_TestMqtt5to3AdapterDirectConnectionMinimal)
+
 #endif // !BYO_CRYPTO

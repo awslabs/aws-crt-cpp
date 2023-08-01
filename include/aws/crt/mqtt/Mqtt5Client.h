@@ -5,6 +5,7 @@
  */
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
+#include <aws/crt/mqtt/MqttClient.h>
 
 namespace Aws
 {
@@ -225,6 +226,18 @@ namespace Aws
                 static std::shared_ptr<Mqtt5Client> NewMqtt5Client(
                     const Mqtt5ClientOptions &options,
                     Allocator *allocator = ApiAllocator()) noexcept;
+
+                /**
+                 * Create a new connection object using TLS from the client. The client must outlive
+                 * all of its connection instances. The Mqtt5 Options will be overwritten by the options,
+                 * passed in here.
+                 *
+                 * @param options: Mqtt5 Client Options
+                 *
+                 * @return a new connection object.  Connect() will still need to be called after all further
+                 * configuration is finished.
+                 */
+                std::shared_ptr<Crt::Mqtt::MqttConnection> NewConnection(const Mqtt5ClientOptions &options) noexcept;
 
                 /**
                  * Get shared poitner of the Mqtt5Client. Mqtt5Client is inherited to enable_shared_from_this to help

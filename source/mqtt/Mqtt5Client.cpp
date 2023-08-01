@@ -61,6 +61,17 @@ namespace Aws
                     toSeat, [allocator](Mqtt5Client *client) { Crt::Delete(client, allocator); });
             }
 
+            std::shared_ptr<Crt::Mqtt::MqttConnection> Mqtt5Client::NewConnection(
+                const Mqtt5ClientOptions &options) noexcept
+            {
+                if (m_client_core == nullptr)
+                {
+                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to create mqtt3 connection: Mqtt5 Client is invalid.");
+                    return nullptr;
+                }
+                return m_client_core->NewConnection(options);
+            }
+
             Mqtt5Client::operator bool() const noexcept { return m_client_core != nullptr; }
 
             int Mqtt5Client::LastError() const noexcept { return aws_last_error(); }

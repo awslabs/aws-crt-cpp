@@ -5,6 +5,7 @@
 #include <aws/crt/mqtt/Mqtt5Client.h>
 #include <aws/crt/mqtt/Mqtt5ClientCore.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
+#include <aws/crt/mqtt/MqttClient.h>
 
 #include <aws/crt/Api.h>
 #include <aws/crt/StlAllocator.h>
@@ -491,6 +492,46 @@ namespace Aws
                     toSeat, [allocator](Mqtt5ClientCore *client) { Crt::Delete(client, allocator); });
                 shared_client->m_selfReference = shared_client;
                 return shared_client;
+            }
+
+            std::shared_ptr<Crt::Mqtt::MqttConnection> Mqtt5ClientCore::NewConnection(
+                const Mqtt5ClientOptions &options) noexcept
+            {
+                // If you're reading this and asking.... why is this so complicated? Why not use make_shared
+                // or allocate_shared? Well, MqttConnection constructors are private and stl is dumb like that.
+                // so, we do it manually.
+                Allocator *allocator = this->m_allocator;
+                Crt::Mqtt::MqttConnection *toSeat = reinterpret_cast<Crt::Mqtt::MqttConnection *>(
+                    aws_mem_acquire(allocator, sizeof(Crt::Mqtt::MqttConnection)));
+                if (!toSeat)
+                {
+                    return nullptr;
+                }
+
+                if (options.m_tlsConnectionOptions.has_value())
+                    toSeat = new (toSeat) Crt::Mqtt::MqttConnection(
+                        m_client,
+                        options.m_hostName.c_str(),
+                        options.m_port,
+                        options.m_socketOptions,
+                        options.m_tlsConnectionOptions.value(),
+                        options.websocketHandshakeTransform != NULL,
+                        allocator);
+                else
+                    toSeat = new (toSeat) Crt::Mqtt::MqttConnection(
+                        m_client,
+                        options.m_hostName.c_str(),
+                        options.m_port,
+                        options.m_socketOptions,
+                        options.websocketHandshakeTransform != NULL,
+                        allocator);
+                return std::shared_ptr<Crt::Mqtt::MqttConnection>(
+                    toSeat,
+                    [allocator](Crt::Mqtt::MqttConnection *connection)
+                    {
+                        connection->~MqttConnection();
+                        aws_mem_release(allocator, reinterpret_cast<void *>(connection));
+                    });
             }
 
             Mqtt5ClientCore::operator bool() const noexcept { return m_client != nullptr; }

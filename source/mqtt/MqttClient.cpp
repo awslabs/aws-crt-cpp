@@ -295,6 +295,41 @@ namespace Aws
                 }
             }
 
+            void MqttConnection::s_connectionInit(
+                MqttConnection *self,
+                const char *hostName,
+                uint16_t port,
+                const Io::SocketOptions &socketOptions,
+                aws_mqtt5_client *mqtt5client)
+            {
+
+                self->m_hostName = String(hostName);
+                self->m_port = port;
+                self->m_socketOptions = socketOptions;
+
+                self->m_underlyingConnection = aws_mqtt_client_connection_new_from_mqtt5_client(mqtt5client);
+
+                if (self->m_underlyingConnection)
+                {
+                    aws_mqtt_client_connection_set_connection_result_handlers(
+                        self->m_underlyingConnection,
+                        MqttConnection::s_onConnectionSuccess,
+                        self,
+                        MqttConnection::s_onConnectionFailure,
+                        self);
+
+                    aws_mqtt_client_connection_set_connection_interruption_handlers(
+                        self->m_underlyingConnection,
+                        MqttConnection::s_onConnectionInterrupted,
+                        self,
+                        MqttConnection::s_onConnectionResumed,
+                        self);
+
+                    aws_mqtt_client_connection_set_connection_closed_handler(
+                        self->m_underlyingConnection, MqttConnection::s_onConnectionClosed, self);
+                }
+            }
+
             void MqttConnection::s_onWebsocketHandshake(
                 struct aws_http_message *rawRequest,
                 void *user_data,
@@ -303,7 +338,7 @@ namespace Aws
             {
                 auto connection = reinterpret_cast<MqttConnection *>(user_data);
 
-                Allocator *allocator = connection->m_owningClient->allocator;
+                Allocator *allocator = connection->m_allocator;
                 // we have to do this because of private constructors.
                 auto toSeat =
                     reinterpret_cast<Http::HttpRequest *>(aws_mem_acquire(allocator, sizeof(Http::HttpRequest)));
@@ -329,7 +364,7 @@ namespace Aws
                 const Crt::Io::TlsContext &tlsContext,
                 bool useWebsocket) noexcept
                 : m_owningClient(client), m_tlsContext(tlsContext), m_tlsOptions(tlsContext.NewConnectionOptions()),
-                  m_onAnyCbData(nullptr), m_useTls(true), m_useWebsocket(useWebsocket)
+                  m_onAnyCbData(nullptr), m_useTls(true), m_useWebsocket(useWebsocket), m_allocator(client->allocator)
             {
                 s_connectionInit(this, hostName, port, socketOptions);
             }
@@ -340,9 +375,37 @@ namespace Aws
                 uint16_t port,
                 const Io::SocketOptions &socketOptions,
                 bool useWebsocket) noexcept
-                : m_owningClient(client), m_onAnyCbData(nullptr), m_useTls(false), m_useWebsocket(useWebsocket)
+                : m_owningClient(client), m_onAnyCbData(nullptr), m_useTls(false), m_useWebsocket(useWebsocket),
+                  m_allocator(client->allocator)
             {
                 s_connectionInit(this, hostName, port, socketOptions);
+            }
+
+            MqttConnection::MqttConnection(
+                aws_mqtt5_client *client,
+                const char *hostName,
+                uint16_t port,
+                const Io::SocketOptions &socketOptions,
+                const Crt::Io::TlsConnectionOptions &tlsOptions,
+                bool useWebsocket,
+                aws_allocator *allocator) noexcept
+                : m_owningClient(nullptr), m_tlsOptions(tlsOptions), m_onAnyCbData(nullptr), m_useTls(true),
+                  m_useWebsocket(useWebsocket), m_allocator(allocator)
+            {
+                s_connectionInit(this, hostName, port, socketOptions, client);
+            }
+
+            MqttConnection::MqttConnection(
+                aws_mqtt5_client *client,
+                const char *hostName,
+                uint16_t port,
+                const Io::SocketOptions &socketOptions,
+                bool useWebsocket,
+                aws_allocator *allocator) noexcept
+                : m_owningClient(nullptr), m_onAnyCbData(nullptr), m_useTls(false), m_useWebsocket(useWebsocket),
+                  m_allocator(allocator)
+            {
+                s_connectionInit(this, hostName, port, socketOptions, client);
             }
 
             MqttConnection::~MqttConnection()
@@ -491,7 +554,7 @@ namespace Aws
 
             bool MqttConnection::SetOnMessageHandler(OnMessageReceivedHandler &&onMessage) noexcept
             {
-                auto pubCallbackData = Aws::Crt::New<PubCallbackData>(m_owningClient->allocator);
+                auto pubCallbackData = Aws::Crt::New<PubCallbackData>(m_allocator);
 
                 if (!pubCallbackData)
                 {
@@ -500,7 +563,7 @@ namespace Aws
 
                 pubCallbackData->connection = this;
                 pubCallbackData->onMessageReceived = std::move(onMessage);
-                pubCallbackData->allocator = m_owningClient->allocator;
+                pubCallbackData->allocator = m_allocator;
 
                 if (!aws_mqtt_client_connection_set_on_any_publish_handler(
                         m_underlyingConnection, s_onPublish, pubCallbackData))
@@ -535,7 +598,7 @@ namespace Aws
                 OnMessageReceivedHandler &&onMessage,
                 OnSubAckHandler &&onSubAck) noexcept
             {
-                auto pubCallbackData = Crt::New<PubCallbackData>(m_owningClient->allocator);
+                auto pubCallbackData = Crt::New<PubCallbackData>(m_allocator);
 
                 if (!pubCallbackData)
                 {
@@ -544,21 +607,21 @@ namespace Aws
 
                 pubCallbackData->connection = this;
                 pubCallbackData->onMessageReceived = std::move(onMessage);
-                pubCallbackData->allocator = m_owningClient->allocator;
+                pubCallbackData->allocator = m_allocator;
 
-                auto subAckCallbackData = Crt::New<SubAckCallbackData>(m_owningClient->allocator);
+                auto subAckCallbackData = Crt::New<SubAckCallbackData>(m_allocator);
 
                 if (!subAckCallbackData)
                 {
-                    Crt::Delete(pubCallbackData, m_owningClient->allocator);
+                    Crt::Delete(pubCallbackData, m_allocator);
                     return 0;
                 }
 
                 subAckCallbackData->connection = this;
-                subAckCallbackData->allocator = m_owningClient->allocator;
+                subAckCallbackData->allocator = m_allocator;
                 subAckCallbackData->onSubAck = std::move(onSubAck);
                 subAckCallbackData->topic = nullptr;
-                subAckCallbackData->allocator = m_owningClient->allocator;
+                subAckCallbackData->allocator = m_allocator;
 
                 ByteBuf topicFilterBuf = aws_byte_buf_from_c_str(topicFilter);
                 ByteCursor topicFilterCur = aws_byte_cursor_from_buf(&topicFilterBuf);
@@ -608,7 +671,7 @@ namespace Aws
                 OnMultiSubAckHandler &&onSubAck) noexcept
             {
                 uint16_t packetId = 0;
-                auto subAckCallbackData = Crt::New<MultiSubAckCallbackData>(m_owningClient->allocator);
+                auto subAckCallbackData = Crt::New<MultiSubAckCallbackData>(m_allocator);
 
                 if (!subAckCallbackData)
                 {
@@ -619,15 +682,15 @@ namespace Aws
                 AWS_ZERO_STRUCT(multiPub);
 
                 if (aws_array_list_init_dynamic(
-                        &multiPub, m_owningClient->allocator, topicFilters.size(), sizeof(aws_mqtt_topic_subscription)))
+                        &multiPub, m_allocator, topicFilters.size(), sizeof(aws_mqtt_topic_subscription)))
                 {
-                    Crt::Delete(subAckCallbackData, m_owningClient->allocator);
+                    Crt::Delete(subAckCallbackData, m_allocator);
                     return 0;
                 }
 
                 for (auto &topicFilter : topicFilters)
                 {
-                    auto pubCallbackData = Crt::New<PubCallbackData>(m_owningClient->allocator);
+                    auto pubCallbackData = Crt::New<PubCallbackData>(m_allocator);
 
                     if (!pubCallbackData)
                     {
@@ -636,7 +699,7 @@ namespace Aws
 
                     pubCallbackData->connection = this;
                     pubCallbackData->onMessageReceived = topicFilter.second;
-                    pubCallbackData->allocator = m_owningClient->allocator;
+                    pubCallbackData->allocator = m_allocator;
 
                     ByteBuf topicFilterBuf = aws_byte_buf_from_c_str(topicFilter.first);
                     ByteCursor topicFilterCur = aws_byte_cursor_from_buf(&topicFilterBuf);
@@ -652,10 +715,10 @@ namespace Aws
                 }
 
                 subAckCallbackData->connection = this;
-                subAckCallbackData->allocator = m_owningClient->allocator;
+                subAckCallbackData->allocator = m_allocator;
                 subAckCallbackData->onSubAck = std::move(onSubAck);
                 subAckCallbackData->topic = nullptr;
-                subAckCallbackData->allocator = m_owningClient->allocator;
+                subAckCallbackData->allocator = m_allocator;
 
                 packetId = aws_mqtt_client_connection_subscribe_multiple(
                     m_underlyingConnection, &multiPub, s_onMultiSubAck, subAckCallbackData);
@@ -669,10 +732,10 @@ namespace Aws
                         aws_mqtt_topic_subscription *subscription = NULL;
                         aws_array_list_get_at_ptr(&multiPub, reinterpret_cast<void **>(&subscription), i);
                         auto pubCallbackData = reinterpret_cast<PubCallbackData *>(subscription->on_publish_ud);
-                        Crt::Delete(pubCallbackData, m_owningClient->allocator);
+                        Crt::Delete(pubCallbackData, m_allocator);
                     }
 
-                    Crt::Delete(subAckCallbackData, m_owningClient->allocator);
+                    Crt::Delete(subAckCallbackData, m_allocator);
                 }
 
                 aws_array_list_clean_up(&multiPub);
@@ -684,7 +747,7 @@ namespace Aws
                 const char *topicFilter,
                 OnOperationCompleteHandler &&onOpComplete) noexcept
             {
-                auto opCompleteCallbackData = Crt::New<OpCompleteCallbackData>(m_owningClient->allocator);
+                auto opCompleteCallbackData = Crt::New<OpCompleteCallbackData>(m_allocator);
 
                 if (!opCompleteCallbackData)
                 {
@@ -692,7 +755,7 @@ namespace Aws
                 }
 
                 opCompleteCallbackData->connection = this;
-                opCompleteCallbackData->allocator = m_owningClient->allocator;
+                opCompleteCallbackData->allocator = m_allocator;
                 opCompleteCallbackData->onOperationComplete = std::move(onOpComplete);
                 opCompleteCallbackData->topic = nullptr;
                 ByteBuf topicFilterBuf = aws_byte_buf_from_c_str(topicFilter);
@@ -703,7 +766,7 @@ namespace Aws
 
                 if (!packetId)
                 {
-                    Crt::Delete(opCompleteCallbackData, m_owningClient->allocator);
+                    Crt::Delete(opCompleteCallbackData, m_allocator);
                 }
 
                 return packetId;
@@ -717,25 +780,24 @@ namespace Aws
                 OnOperationCompleteHandler &&onOpComplete) noexcept
             {
 
-                auto opCompleteCallbackData = Crt::New<OpCompleteCallbackData>(m_owningClient->allocator);
+                auto opCompleteCallbackData = Crt::New<OpCompleteCallbackData>(m_allocator);
                 if (!opCompleteCallbackData)
                 {
                     return 0;
                 }
 
                 size_t topicLen = strnlen(topic, AWS_MQTT_MAX_TOPIC_LENGTH) + 1;
-                char *topicCpy =
-                    reinterpret_cast<char *>(aws_mem_calloc(m_owningClient->allocator, topicLen, sizeof(char)));
+                char *topicCpy = reinterpret_cast<char *>(aws_mem_calloc(m_allocator, topicLen, sizeof(char)));
 
                 if (!topicCpy)
                 {
-                    Crt::Delete(opCompleteCallbackData, m_owningClient->allocator);
+                    Crt::Delete(opCompleteCallbackData, m_allocator);
                 }
 
                 memcpy(topicCpy, topic, topicLen);
 
                 opCompleteCallbackData->connection = this;
-                opCompleteCallbackData->allocator = m_owningClient->allocator;
+                opCompleteCallbackData->allocator = m_allocator;
                 opCompleteCallbackData->onOperationComplete = std::move(onOpComplete);
                 opCompleteCallbackData->topic = topicCpy;
                 ByteCursor topicCur = aws_byte_cursor_from_array(topicCpy, topicLen - 1);
@@ -752,8 +814,8 @@ namespace Aws
 
                 if (!packetId)
                 {
-                    aws_mem_release(m_owningClient->allocator, reinterpret_cast<void *>(topicCpy));
-                    Crt::Delete(opCompleteCallbackData, m_owningClient->allocator);
+                    aws_mem_release(m_allocator, reinterpret_cast<void *>(topicCpy));
+                    Crt::Delete(opCompleteCallbackData, m_allocator);
                 }
 
                 return packetId;
