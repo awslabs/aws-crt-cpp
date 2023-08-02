@@ -521,9 +521,7 @@ namespace Aws
                     toSeat->SetHttpProxyOptions(*httpProxy);
                 }
                 return std::shared_ptr<Crt::Mqtt::MqttConnection>(
-                    toSeat,
-                    [allocator](Crt::Mqtt::MqttConnection *connection)
-                    {
+                    toSeat, [allocator](Crt::Mqtt::MqttConnection *connection) {
                         connection->~MqttConnection();
                         aws_mem_release(allocator, reinterpret_cast<void *>(connection));
                     });
@@ -554,9 +552,7 @@ namespace Aws
                     toSeat->SetHttpProxyOptions(*httpProxy);
                 }
                 return std::shared_ptr<Crt::Mqtt::MqttConnection>(
-                    toSeat,
-                    [allocator](Crt::Mqtt::MqttConnection *connection)
-                    {
+                    toSeat, [allocator](Crt::Mqtt::MqttConnection *connection) {
                         connection->~MqttConnection();
                         aws_mem_release(allocator, reinterpret_cast<void *>(connection));
                     });

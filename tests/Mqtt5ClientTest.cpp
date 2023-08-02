@@ -2538,18 +2538,17 @@ static int s_ConnectAndDisconnect(std::shared_ptr<Aws::Crt::Mqtt::MqttConnection
     std::promise<bool> connectionCompletedPromise;
     std::promise<void> connectionClosedPromise;
     auto onConnectionCompleted =
-        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool)
-    {
-        (void)returnCode;
-        if (errorCode)
-        {
-            connectionCompletedPromise.set_value(false);
-        }
-        else
-        {
-            connectionCompletedPromise.set_value(true);
-        }
-    };
+        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
+            (void)returnCode;
+            if (errorCode)
+            {
+                connectionCompletedPromise.set_value(false);
+            }
+            else
+            {
+                connectionCompletedPromise.set_value(true);
+            }
+        };
     auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
@@ -2735,10 +2734,11 @@ static int s_TestMqtt5to3AdapterWSConnectionMinimal(Aws::Crt::Allocator *allocat
     mqtt5Options.WithWebsocketHandshakeTransformCallback(
         [config, &Mqtt5WebSocket](
             std::shared_ptr<Aws::Crt::Http::HttpRequest> req,
-            const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete)
-        {
-            auto signingComplete = [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode)
-            { onComplete(req1, errorCode); };
+            const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete) {
+            auto signingComplete =
+                [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
+                    onComplete(req1, errorCode);
+                };
 
             auto signerConfig = config.CreateSigningConfigCb();
 
@@ -2753,18 +2753,20 @@ static int s_TestMqtt5to3AdapterWSConnectionMinimal(Aws::Crt::Allocator *allocat
         mqtt5TestVars.m_hostname_string.c_str(), mqtt5TestVars.m_port_value, socketOptions, true);
     ASSERT_TRUE(mqttConnection);
 
-    mqttConnection->WebsocketInterceptor = [config, &Mqtt3WebSocket](
-                                               std::shared_ptr<Aws::Crt::Http::HttpRequest> req,
-                                               const Aws::Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete)
-    {
-        auto signingComplete = [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode)
-        { onComplete(req1, errorCode); };
+    mqttConnection->WebsocketInterceptor =
+        [config, &Mqtt3WebSocket](
+            std::shared_ptr<Aws::Crt::Http::HttpRequest> req,
+            const Aws::Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete) {
+            auto signingComplete =
+                [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
+                    onComplete(req1, errorCode);
+                };
 
-        auto signerConfig = config.CreateSigningConfigCb();
+            auto signerConfig = config.CreateSigningConfigCb();
 
-        config.Signer->SignRequest(req, *signerConfig, signingComplete);
-        Mqtt3WebSocket = 1;
-    };
+            config.Signer->SignRequest(req, *signerConfig, signingComplete);
+            Mqtt3WebSocket = 1;
+        };
 
     int connectResult = s_ConnectAndDisconnect(mqttConnection);
     ASSERT_SUCCESS(connectResult);
