@@ -42,11 +42,42 @@ namespace Aws
                  * all of its connection instances.The Mqtt5 Options will be overwritten by the options,
                  * passed in here.
                  *
-                 * @param options: Mqtt5 Client Options
+                 * @param hostName endpoint to connect to
+                 * @param port port to connect to
+                 * @param socketOptions socket options to use when establishing the connection
+                 * @param tlsConnectionOptions
+                 * @param useWebsocket should the connection use websockets or should it use direct mqtt?
+                 * @param httpProxy optional httpProxy options
                  *
                  * @return std::shared_ptr<Crt::Mqtt::MqttConnection>
                  */
-                std::shared_ptr<Crt::Mqtt::MqttConnection> NewConnection(const Mqtt5ClientOptions &options) noexcept;
+                std::shared_ptr<Crt::Mqtt::MqttConnection> NewConnection(
+                    const char *hostName,
+                    uint16_t port,
+                    const Io::SocketOptions &socketOptions,
+                    const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
+                    bool useWebsocket = false,
+                    const Crt::Http::HttpClientConnectionProxyOptions *httpProxy = nullptr) noexcept;
+
+                /**
+                 * Create a new connection object over plain text from the client5. The client must outlive
+                 * all of its connection instances.The Mqtt5 Options will be overwritten by the options,
+                 * passed in here.
+                 *
+                 * @param hostName endpoint to connect to
+                 * @param port port to connect to
+                 * @param socketOptions socket options to use when establishing the connection
+                 * @param useWebsocket should the connection use websockets or should it use direct mqtt?
+                 * @param httpProxy optional httpProxy options
+                 *
+                 * @return std::shared_ptr<Crt::Mqtt::MqttConnection>
+                 */
+                std::shared_ptr<Crt::Mqtt::MqttConnection> NewConnection(
+                    const char *hostName,
+                    uint16_t port,
+                    const Io::SocketOptions &socketOptions,
+                    bool useWebsocket = false,
+                    const Crt::Http::HttpClientConnectionProxyOptions *httpProxy = nullptr) noexcept;
 
                 /**
                  * Get shared poitner of the Mqtt5ClientCore. Mqtt5ClientCore is inherited to enable_shared_from_this to

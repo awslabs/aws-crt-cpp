@@ -62,14 +62,34 @@ namespace Aws
             }
 
             std::shared_ptr<Crt::Mqtt::MqttConnection> Mqtt5Client::NewConnection(
-                const Mqtt5ClientOptions &options) noexcept
+                const char *hostName,
+                uint16_t port,
+                const Io::SocketOptions &socketOptions,
+                const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
+                bool useWebsocket,
+                const Crt::Http::HttpClientConnectionProxyOptions *proxyOptions) noexcept
             {
                 if (m_client_core == nullptr)
                 {
                     AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to create mqtt3 connection: Mqtt5 Client is invalid.");
                     return nullptr;
                 }
-                return m_client_core->NewConnection(options);
+                return m_client_core->NewConnection(hostName, port, socketOptions, tlsConnectionOptions, useWebsocket);
+            }
+
+            std::shared_ptr<Crt::Mqtt::MqttConnection> Mqtt5Client::NewConnection(
+                const char *hostName,
+                uint16_t port,
+                const Io::SocketOptions &socketOptions,
+                bool useWebsocket,
+                const Crt::Http::HttpClientConnectionProxyOptions *proxyOptions) noexcept
+            {
+                if (m_client_core == nullptr)
+                {
+                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to create mqtt3 connection: Mqtt5 Client is invalid.");
+                    return nullptr;
+                }
+                return m_client_core->NewConnection(hostName, port, socketOptions, useWebsocket, proxyOptions);
             }
 
             Mqtt5Client::operator bool() const noexcept { return m_client_core != nullptr; }

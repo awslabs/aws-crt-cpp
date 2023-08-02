@@ -114,6 +114,133 @@ namespace Aws
         {
         }
 
+        bool Mqtt5ClientBuilder::buildClientOptions(Crt::Mqtt5::Mqtt5ClientOptions *options) noexcept
+        {
+            uint16_t port = m_port;
+
+            if (!port) // port is default to 0
+            {
+                if (m_websocketConfig || Crt::Io::TlsContextOptions::IsAlpnSupported())
+                {
+                    port = 443;
+                }
+                else
+                {
+                    port = 8883;
+                }
+            }
+
+            if (port == 443 && !m_websocketConfig && Crt::Io::TlsContextOptions::IsAlpnSupported() &&
+                !m_customAuthConfig.has_value())
+            {
+                if (!m_tlsConnectionOptions->SetAlpnList("x-amzn-mqtt-ca"))
+                {
+                    return false;
+                }
+            }
+
+            if (m_customAuthConfig.has_value())
+            {
+                if (port != 443)
+                {
+                    AWS_LOGF_WARN(
+                        AWS_LS_MQTT5_GENERAL,
+                        "Attempting to connect to authorizer with unsupported port. Port is not 443...");
+                }
+                if (!m_websocketConfig)
+                {
+                    if (!m_tlsConnectionOptions->SetAlpnList("mqtt"))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            // add metrics string to username (if metrics enabled)
+            if (m_enableMetricsCollection || m_customAuthConfig.has_value())
+            {
+                Crt::String username = "";
+                if (m_connectOptions != nullptr)
+                {
+                    if (m_connectOptions->getUsername().has_value())
+                        username = m_connectOptions->getUsername().value();
+                }
+                else
+                {
+                    m_connectOptions = std::make_shared<ConnectPacket>(m_allocator);
+                }
+
+                if (m_customAuthConfig.has_value())
+                {
+                    if (!buildMqtt5FinalUsername(m_customAuthConfig, username))
+                    {
+                        AWS_LOGF_ERROR(
+                            AWS_LS_MQTT5_GENERAL,
+                            "Failed to setup CustomAuthorizerConfig, please check if the parameters are set "
+                            "correctly.");
+                        return false;
+                    }
+                    if (m_customAuthConfig->GetPassword().has_value())
+                    {
+                        m_connectOptions->WithPassword(m_customAuthConfig->GetPassword().value());
+                    }
+                }
+
+                if (m_enableMetricsCollection)
+                {
+                    username = AddToUsernameParameter(username, "SDK", m_sdkName);
+                    username = AddToUsernameParameter(username, "Version", m_sdkName);
+                }
+                m_connectOptions->WithUserName(username);
+            }
+
+            auto tlsContext =
+                Crt::Io::TlsContext(m_tlsConnectionOptions.value(), Crt::Io::TlsMode::CLIENT, m_allocator);
+            if (!tlsContext)
+            {
+                return false;
+            }
+
+            options->WithPort(port).WithTlsConnectionOptions(tlsContext.NewConnectionOptions());
+
+            if (m_connectOptions != nullptr)
+            {
+                options->WithConnectOptions(m_connectOptions);
+            }
+
+            if (m_websocketConfig.has_value())
+            {
+                auto websocketConfig = m_websocketConfig.value();
+                auto signerTransform = [websocketConfig](
+                                           std::shared_ptr<Crt::Http::HttpRequest> req,
+                                           const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete)
+                {
+                    // it is only a very happy coincidence that these function signatures match. This is the callback
+                    // for signing to be complete. It invokes the callback for websocket handshake to be complete.
+                    auto signingComplete =
+                        [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode)
+                    { onComplete(req1, errorCode); };
+
+                    auto signerConfig = websocketConfig.CreateSigningConfigCb();
+
+                    websocketConfig.Signer->SignRequest(req, *signerConfig, signingComplete);
+                };
+
+                options->WithWebsocketHandshakeTransformCallback(signerTransform);
+                bool useWebsocketProxyOptions =
+                    m_websocketConfig->ProxyOptions.has_value() && !m_proxyOptions.has_value();
+                if (useWebsocketProxyOptions)
+                {
+                    options->WithHttpProxyOptions(m_websocketConfig->ProxyOptions.value());
+                }
+                else if (m_proxyOptions.has_value())
+                {
+                    options->WithHttpProxyOptions(m_proxyOptions.value());
+                }
+            }
+            return true;
+        }
+
         Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
             const Crt::String hostName,
             const char *certPath,
@@ -303,7 +430,8 @@ namespace Aws
 
         Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithHostName(const Crt::String hostName)
         {
-            m_options->WithHostName(hostName);
+            m_hostName = hostName;
+            m_options->WithHostName(m_hostName);
             return *this;
         }
 
@@ -460,130 +588,77 @@ namespace Aws
                 return nullptr;
             }
 
-            uint16_t port = m_port;
-
-            if (!port) // port is default to 0
+            if (buildClientOptions(m_options) == false)
             {
-                if (m_websocketConfig || Crt::Io::TlsContextOptions::IsAlpnSupported())
-                {
-                    port = 443;
-                }
-                else
-                {
-                    port = 8883;
-                }
-            }
-
-            if (port == 443 && !m_websocketConfig && Crt::Io::TlsContextOptions::IsAlpnSupported() &&
-                !m_customAuthConfig.has_value())
-            {
-                if (!m_tlsConnectionOptions->SetAlpnList("x-amzn-mqtt-ca"))
-                {
-                    return nullptr;
-                }
-            }
-
-            if (m_customAuthConfig.has_value())
-            {
-                if (port != 443)
-                {
-                    AWS_LOGF_WARN(
-                        AWS_LS_MQTT5_GENERAL,
-                        "Attempting to connect to authorizer with unsupported port. Port is not 443...");
-                }
-                if (!m_websocketConfig)
-                {
-                    if (!m_tlsConnectionOptions->SetAlpnList("mqtt"))
-                    {
-                        return nullptr;
-                    }
-                }
-            }
-
-            // add metrics string to username (if metrics enabled)
-            if (m_enableMetricsCollection || m_customAuthConfig.has_value())
-            {
-                Crt::String username = "";
-                if (m_connectOptions != nullptr)
-                {
-                    if (m_connectOptions->getUsername().has_value())
-                        username = m_connectOptions->getUsername().value();
-                }
-                else
-                {
-                    m_connectOptions = std::make_shared<ConnectPacket>(m_allocator);
-                }
-
-                if (m_customAuthConfig.has_value())
-                {
-                    if (!buildMqtt5FinalUsername(m_customAuthConfig, username))
-                    {
-                        AWS_LOGF_ERROR(
-                            AWS_LS_MQTT5_GENERAL,
-                            "Failed to setup CustomAuthorizerConfig, please check if the parameters are set "
-                            "correctly.");
-                        return nullptr;
-                    }
-                    if (m_customAuthConfig->GetPassword().has_value())
-                    {
-                        m_connectOptions->WithPassword(m_customAuthConfig->GetPassword().value());
-                    }
-                }
-
-                if (m_enableMetricsCollection)
-                {
-                    username = AddToUsernameParameter(username, "SDK", m_sdkName);
-                    username = AddToUsernameParameter(username, "Version", m_sdkName);
-                }
-                m_connectOptions->WithUserName(username);
-            }
-
-            auto tlsContext =
-                Crt::Io::TlsContext(m_tlsConnectionOptions.value(), Crt::Io::TlsMode::CLIENT, m_allocator);
-            if (!tlsContext)
-            {
+                AWS_LOGF_DEBUG(AWS_LS_MQTT5_GENERAL, "Failed to setup client options.");
                 return nullptr;
             }
 
-            m_options->WithPort(port).WithTlsConnectionOptions(tlsContext.NewConnectionOptions());
+            return Crt::Mqtt5::Mqtt5Client::NewMqtt5Client(*m_options, m_allocator);
+        }
 
-            if (m_connectOptions != nullptr)
+        std::shared_ptr<Crt::Mqtt::MqttConnection> Mqtt5ClientBuilder::NewConnection(
+            std::shared_ptr<Crt::Mqtt5::Mqtt5Client> client) noexcept
+        {
+            if (client == nullptr)
             {
-                m_options->WithConnectOptions(m_connectOptions);
+                AWS_LOGF_DEBUG(AWS_LS_MQTT5_GENERAL, "Invalid Mqtt5 Client");
+                return nullptr;
             }
 
-            if (m_websocketConfig.has_value())
+            if (buildClientOptions(m_options) == false)
+            {
+                AWS_LOGF_DEBUG(AWS_LS_MQTT5_GENERAL, "Failed to setup client options.");
+                return nullptr;
+            }
+
+            Crt::Mqtt5::Mqtt5ClientOptions *options = m_options;
+
+            bool useWebsocket = m_websocketConfig.has_value();
+
+            auto newConnection = client->NewConnection(
+                options->m_hostName.c_str(),
+                options->m_port,
+                options->m_socketOptions,
+                options->m_tlsConnectionOptions.value(),
+                useWebsocket,
+                options->m_proxyOptions.has_value() ? &options->m_proxyOptions.value() : nullptr);
+
+            if (!newConnection)
+            {
+                AWS_LOGF_DEBUG(AWS_LS_MQTT5_GENERAL, "Failed to create Mqtt311 Connection from Mqtt5 Client.");
+                return nullptr;
+            }
+
+            if (!(*newConnection))
+            {
+                m_lastError = newConnection->LastError();
+                return nullptr;
+            }
+
+            /* If we have websocket enabled, we would need manually overwrite the WebsocketInterceptor for
+             * MqttConnection */
+            if (useWebsocket)
             {
                 auto websocketConfig = m_websocketConfig.value();
                 auto signerTransform = [websocketConfig](
                                            std::shared_ptr<Crt::Http::HttpRequest> req,
-                                           const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete) {
+                                           const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete)
+                {
                     // it is only a very happy coincidence that these function signatures match. This is the callback
                     // for signing to be complete. It invokes the callback for websocket handshake to be complete.
                     auto signingComplete =
-                        [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
-                            onComplete(req1, errorCode);
-                        };
+                        [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode)
+                    { onComplete(req1, errorCode); };
 
                     auto signerConfig = websocketConfig.CreateSigningConfigCb();
 
                     websocketConfig.Signer->SignRequest(req, *signerConfig, signingComplete);
                 };
-
-                m_options->WithWebsocketHandshakeTransformCallback(signerTransform);
-                bool useWebsocketProxyOptions =
-                    m_websocketConfig->ProxyOptions.has_value() && !m_proxyOptions.has_value();
-                if (useWebsocketProxyOptions)
-                {
-                    m_options->WithHttpProxyOptions(m_websocketConfig->ProxyOptions.value());
-                }
-                else if (m_proxyOptions.has_value())
-                {
-                    m_options->WithHttpProxyOptions(m_proxyOptions.value());
-                }
+                newConnection->WebsocketInterceptor = signerTransform;
             }
 
-            return Crt::Mqtt5::Mqtt5Client::NewMqtt5Client(*m_options, m_allocator);
+            return newConnection;
         }
 
         Aws::Iot::Mqtt5CustomAuthConfig::Mqtt5CustomAuthConfig(Crt::Allocator *allocator) noexcept

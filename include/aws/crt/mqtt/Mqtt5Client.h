@@ -9,6 +9,10 @@
 
 namespace Aws
 {
+    namespace Iot
+    {
+        class Mqtt5ClientBuilder;
+    }
     namespace Crt
     {
         namespace Mqtt5
@@ -228,16 +232,51 @@ namespace Aws
                     Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
-                 * Create a new connection object using TLS from the client. The client must outlive
-                 * all of its connection instances. The Mqtt5 Options will be overwritten by the options,
-                 * passed in here.
+                 * Create a new raws Mqtt311 connection interface using TLS from the client. The Mqtt5 Client
+                 * options/setup will be overwritten by the options passed in here.
                  *
-                 * @param options: Mqtt5 Client Options
+                 * @param hostName endpoint to connect to
+                 * @param port port to connect to
+                 * @param socketOptions socket options to use when establishing the connection
+                 * @param tlsConnectionOptions tls context to use with the connection
+                 * @param overwriteWebsocket should we overwrite the websocket configuration? Set the value to true will
+                 * overwrite the websocket interceptor configuration you set for the Mqtt5Client. You would need set
+                 * WebsocketInterceptor through the MqttConnection.
+                 * @param httpProxy optional httpProxy options
                  *
                  * @return a new connection object.  Connect() will still need to be called after all further
                  * configuration is finished.
                  */
-                std::shared_ptr<Crt::Mqtt::MqttConnection> NewConnection(const Mqtt5ClientOptions &options) noexcept;
+                std::shared_ptr<Crt::Mqtt::MqttConnection> NewConnection(
+                    const char *hostName,
+                    uint16_t port,
+                    const Io::SocketOptions &socketOptions,
+                    const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
+                    bool overwriteWebsocket = false,
+                    const Crt::Http::HttpClientConnectionProxyOptions *httpProxy = nullptr) noexcept;
+
+                /**
+                 * Create a new connection object over plain text from the client5. The Mqtt5 Client Options will be
+                 * overwritten by the options passed in here. If websocket is enabled, you would need setup the
+                 * MqttConnection::WebsocketInterceptor for the websocket connection work for the connection. It will
+                 * also overwrite any websocket configuration setup in Mqtt5Client.
+                 *
+                 * @param hostName endpoint to connect to
+                 * @param port port to connect to
+                 * @param socketOptions socket options to use when establishing the connection
+                 * @param overwriteWebsocket should we overwrite the websocket configuration? Set the value to true will
+                 * overwrite the websocket interceptor configuration you set for the Mqtt5Client. You would need set
+                 * WebsocketInterceptor through the MqttConnection.
+                 * @param httpProxy optional httpProxy options
+                 *
+                 * @return std::shared_ptr<Crt::Mqtt::MqttConnection>
+                 */
+                std::shared_ptr<Crt::Mqtt::MqttConnection> NewConnection(
+                    const char *hostName,
+                    uint16_t port,
+                    const Io::SocketOptions &socketOptions,
+                    bool overwriteWebsocket = false,
+                    const Crt::Http::HttpClientConnectionProxyOptions *httpProxy = nullptr) noexcept;
 
                 /**
                  * Get shared poitner of the Mqtt5Client. Mqtt5Client is inherited to enable_shared_from_this to help
@@ -347,6 +386,7 @@ namespace Aws
 
                 friend class Mqtt5Client;
                 friend class Mqtt5ClientCore;
+                friend class Iot::Mqtt5ClientBuilder;
 
               public:
                 /**

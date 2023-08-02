@@ -23,6 +23,14 @@ namespace Aws
         class WebsocketConfig;
     } // namespace Io
 
+    namespace Crt
+    {
+        namespace Mqtt
+        {
+            class MqttConnection;
+        }
+    } // namespace Crt
+
     namespace Iot
     {
 
@@ -420,11 +428,28 @@ namespace Aws
             Mqtt5ClientBuilder &WithSdkVersion(const Crt::String &sdkVersion);
 
             /**
-             * Builds a client configuration object from the set options.
+             * Builds a mqtt5 client object from the set options.
              *
-             * @return a new client connection config instance
+             * @return a new mqtt5 client
              */
             std::shared_ptr<Mqtt5Client> Build() noexcept;
+
+            /**
+             * Builds a mqtt311 connection object from the set options and Mqtt5Client. The following options
+             * would be overwritten by the options in Mqtt5ClientBuilder:
+             *          - hostname
+             *          - port
+             *          - websocketConfig
+             *          - socketOptions
+             *          - tlsConnectionOptions
+             *          - proxyOptions
+             *
+             * @param client the Mqtt5 Client
+             *
+             * @return a new mqtt3 connection object
+             */
+            std::shared_ptr<Crt::Mqtt::MqttConnection> NewConnection(
+                std::shared_ptr<Crt::Mqtt5::Mqtt5Client> client) noexcept;
 
             /**
              * @return true if the instance is in a valid state, false otherwise.
@@ -507,8 +532,15 @@ namespace Aws
             Mqtt5ClientBuilder(Crt::Allocator *allocator) noexcept;
             // Common setup shared by all valid constructors
             Mqtt5ClientBuilder(int error, Crt::Allocator *allocator) noexcept;
+            // Setup client options
+            bool buildClientOptions(Crt::Mqtt5::Mqtt5ClientOptions *options) noexcept;
 
             Crt::Allocator *m_allocator;
+
+            /**
+             * endpoint of the MQTT server to connect to.
+             */
+            Crt::String m_hostName;
 
             /**
              * Network port of the MQTT server to connect to.

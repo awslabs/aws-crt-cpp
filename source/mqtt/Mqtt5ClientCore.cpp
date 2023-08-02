@@ -10,6 +10,7 @@
 #include <aws/crt/Api.h>
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/http/HttpRequestResponse.h>
+#include <aws/mqtt/v5/mqtt5_client.h>
 
 namespace Aws
 {
@@ -495,7 +496,12 @@ namespace Aws
             }
 
             std::shared_ptr<Crt::Mqtt::MqttConnection> Mqtt5ClientCore::NewConnection(
-                const Mqtt5ClientOptions &options) noexcept
+                const char *hostName,
+                uint16_t port,
+                const Io::SocketOptions &socketOptions,
+                const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
+                bool useWebsocket,
+                const Crt::Http::HttpClientConnectionProxyOptions *httpProxy) noexcept
             {
                 // If you're reading this and asking.... why is this so complicated? Why not use make_shared
                 // or allocate_shared? Well, MqttConnection constructors are private and stl is dumb like that.
@@ -508,23 +514,45 @@ namespace Aws
                     return nullptr;
                 }
 
-                if (options.m_tlsConnectionOptions.has_value())
-                    toSeat = new (toSeat) Crt::Mqtt::MqttConnection(
-                        m_client,
-                        options.m_hostName.c_str(),
-                        options.m_port,
-                        options.m_socketOptions,
-                        options.m_tlsConnectionOptions.value(),
-                        options.websocketHandshakeTransform != NULL,
-                        allocator);
-                else
-                    toSeat = new (toSeat) Crt::Mqtt::MqttConnection(
-                        m_client,
-                        options.m_hostName.c_str(),
-                        options.m_port,
-                        options.m_socketOptions,
-                        options.websocketHandshakeTransform != NULL,
-                        allocator);
+                toSeat = new (toSeat) Crt::Mqtt::MqttConnection(
+                    m_client, hostName, port, socketOptions, tlsConnectionOptions, useWebsocket, allocator);
+                if (httpProxy != nullptr)
+                {
+                    toSeat->SetHttpProxyOptions(*httpProxy);
+                }
+                return std::shared_ptr<Crt::Mqtt::MqttConnection>(
+                    toSeat,
+                    [allocator](Crt::Mqtt::MqttConnection *connection)
+                    {
+                        connection->~MqttConnection();
+                        aws_mem_release(allocator, reinterpret_cast<void *>(connection));
+                    });
+            }
+
+            std::shared_ptr<Crt::Mqtt::MqttConnection> Mqtt5ClientCore::NewConnection(
+                const char *hostName,
+                uint16_t port,
+                const Io::SocketOptions &socketOptions,
+                bool useWebsocket,
+                const Crt::Http::HttpClientConnectionProxyOptions *httpProxy) noexcept
+            {
+                // If you're reading this and asking.... why is this so complicated? Why not use make_shared
+                // or allocate_shared? Well, MqttConnection constructors are private and stl is dumb like that.
+                // so, we do it manually.
+                Allocator *allocator = this->m_allocator;
+                Crt::Mqtt::MqttConnection *toSeat = reinterpret_cast<Crt::Mqtt::MqttConnection *>(
+                    aws_mem_acquire(allocator, sizeof(Crt::Mqtt::MqttConnection)));
+                if (!toSeat)
+                {
+                    return nullptr;
+                }
+
+                toSeat = new (toSeat)
+                    Crt::Mqtt::MqttConnection(m_client, hostName, port, socketOptions, useWebsocket, allocator);
+                if (httpProxy != nullptr)
+                {
+                    toSeat->SetHttpProxyOptions(*httpProxy);
+                }
                 return std::shared_ptr<Crt::Mqtt::MqttConnection>(
                     toSeat,
                     [allocator](Crt::Mqtt::MqttConnection *connection)

@@ -225,6 +225,9 @@ if(NOT BYO_CRYPTO)
     # Mqtt5-to-3 Adapter
     add_net_test_case(Mqtt5to3AdapterNewConnectionMin)
     add_net_test_case(Mqtt5to3AdapterDirectConnectionMinimal)
+    add_net_test_case(Mqtt5to3AdapterDirectConnectionFull)
+    add_net_test_case(Mqtt5to3AdapterWSConnectionMinimal)
+    add_net_test_case(Mqtt5to3AdapterWithIoTConnection)
 endif()
 
 add_test_case(RuleEngine)
