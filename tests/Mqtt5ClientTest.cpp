@@ -2553,8 +2553,10 @@ static int s_ConnectAndDisconnect(std::shared_ptr<Aws::Crt::Mqtt::MqttConnection
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
 
+    // Mqtt5 Test client policy only allows client id start with "test-"
     Aws::Crt::UUID Uuid;
-    Aws::Crt::String uuidStr = Uuid.ToString();
+    Aws::Crt::String uuidStr = "test-" + Uuid.ToString();
+
 
     if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
