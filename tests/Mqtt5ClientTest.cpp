@@ -2557,7 +2557,6 @@ static int s_ConnectAndDisconnect(std::shared_ptr<Aws::Crt::Mqtt::MqttConnection
     Aws::Crt::UUID Uuid;
     Aws::Crt::String uuidStr = "test-" + Uuid.ToString();
 
-
     if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
     {
         printf("Failed to connect");
@@ -2798,6 +2797,10 @@ static int s_TestMqtt5to3AdapterWithIoTConnection(Aws::Crt::Allocator *allocator
 
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
     ASSERT_TRUE(mqtt5Client);
+
+    mqtt5Client->Start();
+    // Sleep and wait for message recieved
+    aws_thread_current_sleep(2 * 1000 * 1000 * 1000);
 
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client2 = builder->Build();
     ASSERT_TRUE(mqtt5Client2);
