@@ -74,7 +74,8 @@ namespace Aws
                     AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to create mqtt3 connection: Mqtt5 Client is invalid.");
                     return nullptr;
                 }
-                return m_client_core->NewConnection(hostName, port, socketOptions, tlsConnectionOptions, useWebsocket);
+                return m_client_core->NewConnection(
+                    hostName, port, socketOptions, tlsConnectionOptions, useWebsocket, proxyOptions);
             }
 
             std::shared_ptr<Crt::Mqtt::MqttConnection> Mqtt5Client::NewConnection(

@@ -2800,12 +2800,12 @@ static int s_TestMqtt5to3AdapterWithIoTConnection(Aws::Crt::Allocator *allocator
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client2 = builder->Build();
     ASSERT_TRUE(mqtt5Client2);
 
-    // // Created a Mqtt311 Connection from mqtt5Client. The options are setup by the builder.
-    // std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> mqttConnection = builder->NewConnection(mqtt5Client);
-    // ASSERT_TRUE(mqttConnection);
+    // Created a Mqtt311 Connection from mqtt5Client. The options are setup by the builder.
+    std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> mqttConnection = builder->NewConnection(mqtt5Client);
+    ASSERT_TRUE(mqttConnection);
     delete builder;
-    // int connectResult = s_ConnectAndDisconnect(mqttConnection);
-    // ASSERT_SUCCESS(connectResult);
+    int connectResult = s_ConnectAndDisconnect(mqttConnection);
+    ASSERT_SUCCESS(connectResult);
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5to3AdapterWithIoTConnection, s_TestMqtt5to3AdapterWithIoTConnection)
