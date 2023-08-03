@@ -382,7 +382,7 @@ namespace Aws
             }
 
             MqttConnection::MqttConnection(
-                aws_mqtt5_client *client,
+                aws_mqtt5_client *mqtt5Client,
                 const char *hostName,
                 uint16_t port,
                 const Io::SocketOptions &socketOptions,
@@ -392,11 +392,11 @@ namespace Aws
                 : m_owningClient(nullptr), m_tlsOptions(tlsOptions), m_onAnyCbData(nullptr), m_useTls(true),
                   m_useWebsocket(useWebsocket), m_allocator(allocator)
             {
-                s_connectionInit(this, hostName, port, socketOptions, client);
+                s_connectionInit(this, hostName, port, socketOptions, mqtt5Client);
             }
 
             MqttConnection::MqttConnection(
-                aws_mqtt5_client *client,
+                aws_mqtt5_client *mqtt5Client,
                 const char *hostName,
                 uint16_t port,
                 const Io::SocketOptions &socketOptions,
@@ -405,7 +405,7 @@ namespace Aws
                 : m_owningClient(nullptr), m_onAnyCbData(nullptr), m_useTls(false), m_useWebsocket(useWebsocket),
                   m_allocator(allocator)
             {
-                s_connectionInit(this, hostName, port, socketOptions, client);
+                s_connectionInit(this, hostName, port, socketOptions, mqtt5Client);
             }
 
             MqttConnection::~MqttConnection()

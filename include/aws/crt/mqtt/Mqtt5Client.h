@@ -319,7 +319,7 @@ namespace Aws
                 const Mqtt5ClientOperationStatistics &GetOperationStatistics() noexcept;
 
                 /**
-                 * Create a new connection object from the client5.
+                 * Create a new MqttConnection object from the Mqtt5Client.
                  *
                  * @return std::shared_ptr<Crt::Mqtt::MqttConnection>
                  */
@@ -339,7 +339,7 @@ namespace Aws
             };
 
             /**
-             * The extra option required to build MqttConnection
+             * The extra options required to build MqttConnection
              */
             class Mqtt5to3AdapterOptions
             {
@@ -367,7 +367,7 @@ namespace Aws
 
                 /**
                  * TLS context for secure socket connections.
-                 * If undefined, then a plaintext connection will be used.
+                 * If undefined, a plaintext connection will be used.
                  */
                 Crt::Optional<Crt::Io::TlsConnectionOptions> m_tlsConnectionOptions;
 
@@ -615,6 +615,12 @@ namespace Aws
                 Mqtt5ClientOptions &operator=(Mqtt5ClientOptions &&) = delete;
 
               private:
+                /*
+                 * Allocate and create a new Mqtt5to3AdapterOptions. This function is internally used by Mqtt5Client to
+                 * support the Mqtt5to3Adapter.
+                 *
+                 * @return Mqtt5to3AdapterOptions
+                 */
                 Mqtt5to3AdapterOptions *NewMqtt5to3AdapterOptions() const noexcept;
 
                 /**
@@ -685,7 +691,7 @@ namespace Aws
 
                 /**
                  * TLS context for secure socket connections.
-                 * If undefined, then a plaintext connection will be used.
+                 * If undefined, a plaintext connection will be used.
                  */
                 Crt::Optional<Crt::Io::TlsConnectionOptions> m_tlsConnectionOptions;
 

@@ -108,9 +108,8 @@ namespace Aws
                 Mqtt5ClientCore(const Mqtt5ClientOptions &options, Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
-                 * Create a new connection object over plain text from the client5. The client must outlive
-                 * all of its connection instances.The Mqtt5 Options will be overwritten by the options,
-                 * passed in here.
+                 * Create a new connection object over plain text from the Mqtt5Client. The client must outlive
+                 * all of its connection instances. The Mqtt5 Options will be overwritten by the options passed in here.
                  *
                  * @param options the options from Mqtt5Client used to support the MqttConnection
                  *

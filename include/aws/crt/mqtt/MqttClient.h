@@ -218,7 +218,8 @@ namespace Aws
             };
 
             /**
-             * Represents a persistent Mqtt Connection. The memory is owned by MqttClient.
+             * Represents a persistent Mqtt Connection. The memory is owned by MqttClient or
+             * Mqtt5Client.
              * To get a new instance of this class, see MqttClient::NewConnection. Unless
              * specified all function arguments need only to live through the duration of the
              * function call.
@@ -469,7 +470,7 @@ namespace Aws
                     bool useWebsocket) noexcept;
 
                 MqttConnection(
-                    aws_mqtt5_client *client,
+                    aws_mqtt5_client *mqtt5Client,
                     const char *hostName,
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
@@ -478,7 +479,7 @@ namespace Aws
                     aws_allocator *allocaotr) noexcept;
 
                 MqttConnection(
-                    aws_mqtt5_client *client,
+                    aws_mqtt5_client *mqtt5Client,
                     const char *hostName,
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
