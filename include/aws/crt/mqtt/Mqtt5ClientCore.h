@@ -116,7 +116,8 @@ namespace Aws
                  *
                  * @return std::shared_ptr<Crt::Mqtt::MqttConnection>
                  */
-                std::shared_ptr<Crt::Mqtt::MqttConnection> NewConnection(Mqtt5::Mqtt5to3AdapterOptions* options) noexcept;
+                std::shared_ptr<Crt::Mqtt::MqttConnection> NewConnection(
+                    Mqtt5::Mqtt5to3AdapterOptions *options) noexcept;
 
                 /* Static Callbacks */
                 static void s_publishCompletionCallback(

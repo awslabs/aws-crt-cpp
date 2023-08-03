@@ -2814,7 +2814,6 @@ static int s_TestMqtt5to3AdapterWithIoTConnection(Aws::Crt::Allocator *allocator
 }
 AWS_TEST_CASE(Mqtt5to3AdapterWithIoTConnection, s_TestMqtt5to3AdapterWithIoTConnection)
 
-
 /*
  * [Mqtt5to3Adapter-UC6] MutalTLS connection
  */
