@@ -2848,7 +2848,7 @@ static int s_TestMqtt5to3AdapterDirectConnectionWithMutualTLS(Aws::Crt::Allocato
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
     std::shared_ptr<Mqtt::MqttConnection> mqttConnection = mqtt5Client->NewConnection(
-        mqtt5TestVars.m_hostname_string.c_str(), mqtt5TestVars.m_port_value, socketOptions, tlsContext);
+        mqtt5TestVars.m_hostname_string.c_str(), mqtt5TestVars.m_port_value, socketOptions, tlsConnection);
     ASSERT_TRUE(mqttConnection);
 
     int connectResult = s_ConnectAndDisconnect(mqttConnection);

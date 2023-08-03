@@ -55,7 +55,7 @@ namespace Aws
                     const char *hostName,
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
-                    const Crt::Io::TlsContext &tlsConnectionOptions,
+                    const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
                     bool useWebsocket = false,
                     const Crt::Http::HttpClientConnectionProxyOptions *httpProxy = nullptr) noexcept;
 
