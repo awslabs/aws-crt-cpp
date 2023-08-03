@@ -2803,21 +2803,12 @@ static int s_TestMqtt5to3AdapterWithIoTConnection(Aws::Crt::Allocator *allocator
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
     ASSERT_TRUE(mqtt5Client);
 
-    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client2 = builder->Build();
-    ASSERT_TRUE(mqtt5Client2);
-
     // Created a Mqtt311 Connection from mqtt5Client. The options are setup by the builder.
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> mqttConnection = builder->NewConnection(mqtt5Client);
     ASSERT_TRUE(mqttConnection);
     delete builder;
-    // int connectResult = s_ConnectAndDisconnect(mqttConnection);
-    // ASSERT_SUCCESS(connectResult);
-
-    ASSERT_TRUE(mqtt5Client->Start());
-    connectionPromise.get_future().get();
-    ASSERT_TRUE(mqtt5Client->Stop());
-    stoppedPromise.get_future().get();
-    return AWS_OP_SUCCESS;
+    int connectResult = s_ConnectAndDisconnect(mqttConnection);
+    ASSERT_SUCCESS(connectResult);
 
     return AWS_OP_SUCCESS;
 }
@@ -2857,7 +2848,7 @@ static int s_TestMqtt5to3AdapterDirectConnectionWithMutualTLS(Aws::Crt::Allocato
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
     std::shared_ptr<Mqtt::MqttConnection> mqttConnection = mqtt5Client->NewConnection(
-        mqtt5TestVars.m_hostname_string.c_str(), mqtt5TestVars.m_port_value, socketOptions, tlsConnection);
+        mqtt5TestVars.m_hostname_string.c_str(), mqtt5TestVars.m_port_value, socketOptions, tlsContext);
     ASSERT_TRUE(mqttConnection);
 
     int connectResult = s_ConnectAndDisconnect(mqttConnection);
