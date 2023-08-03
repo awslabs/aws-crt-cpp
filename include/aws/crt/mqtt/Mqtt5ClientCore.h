@@ -46,7 +46,9 @@ namespace Aws
                  * @param port port to connect to
                  * @param socketOptions socket options to use when establishing the connection
                  * @param tlsConnectionOptions
-                 * @param useWebsocket should the connection use websockets or should it use direct mqtt?
+                 * @param useWebsocket should we overwrite the websocket configuration? Set the value to true will
+                 * overwrite the websocket interceptor configuration you set for the Mqtt5Client. You would need set
+                 * WebsocketInterceptor through the MqttConnection.
                  * @param httpProxy optional httpProxy options
                  *
                  * @return std::shared_ptr<Crt::Mqtt::MqttConnection>
@@ -56,7 +58,7 @@ namespace Aws
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
                     const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
-                    bool useWebsocket = false,
+                    bool overwriteWebsocket = false,
                     const Crt::Http::HttpClientConnectionProxyOptions *httpProxy = nullptr) noexcept;
 
                 /**
@@ -67,7 +69,9 @@ namespace Aws
                  * @param hostName endpoint to connect to
                  * @param port port to connect to
                  * @param socketOptions socket options to use when establishing the connection
-                 * @param useWebsocket should the connection use websockets or should it use direct mqtt?
+                 * @param overwriteWebsocket should we overwrite the websocket configuration? Set the value to true will
+                 * overwrite the websocket interceptor configuration you set for the Mqtt5Client. You would need set
+                 * WebsocketInterceptor through the MqttConnection.
                  * @param httpProxy optional httpProxy options
                  *
                  * @return std::shared_ptr<Crt::Mqtt::MqttConnection>
@@ -76,7 +80,7 @@ namespace Aws
                     const char *hostName,
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
-                    bool useWebsocket = false,
+                    bool overwriteWebsocket = false,
                     const Crt::Http::HttpClientConnectionProxyOptions *httpProxy = nullptr) noexcept;
 
                 /**

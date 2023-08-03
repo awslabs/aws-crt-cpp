@@ -2575,7 +2575,7 @@ static int s_ConnectAndDisconnect(std::shared_ptr<Aws::Crt::Mqtt::MqttConnection
 }
 
 /*
- * [Adapter] Happy path. Minimal creation and cleanup
+ * [Mqtt5to3Adapter-UC1] Happy path. Minimal creation and cleanup
  */
 static int s_TestMqtt5to3AdapterNewConnectionMin(Aws::Crt::Allocator *allocator, void *)
 {
@@ -2596,6 +2596,9 @@ static int s_TestMqtt5to3AdapterNewConnectionMin(Aws::Crt::Allocator *allocator,
 }
 AWS_TEST_CASE(Mqtt5to3AdapterNewConnectionMin, s_TestMqtt5to3AdapterNewConnectionMin)
 
+/*
+ * [Mqtt5to3Adapter-UC2] Happy path. Minimal direct connection
+ */
 static int s_TestMqtt5to3AdapterDirectConnectionMinimal(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
@@ -2624,6 +2627,9 @@ static int s_TestMqtt5to3AdapterDirectConnectionMinimal(Aws::Crt::Allocator *all
 }
 AWS_TEST_CASE(Mqtt5to3AdapterDirectConnectionMinimal, s_TestMqtt5to3AdapterDirectConnectionMinimal)
 
+/*
+ * [Mqtt5to3Adapter-UC3] Full options client creation and cleanup
+ */
 static int s_TestMqtt5to3AdapterDirectConnectionFull(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
@@ -2701,7 +2707,7 @@ static int s_TestMqtt5to3AdapterDirectConnectionFull(Aws::Crt::Allocator *alloca
 AWS_TEST_CASE(Mqtt5to3AdapterDirectConnectionFull, s_TestMqtt5to3AdapterDirectConnectionFull)
 
 /*
- * [ConnWS-UC1] Happy path. Websocket connection with minimal configuration.
+ * [Mqtt5to3Adapter-UC4] Websocket creation and connection
  */
 static int s_TestMqtt5to3AdapterWSConnectionMinimal(Aws::Crt::Allocator *allocator, void *)
 {
@@ -2777,6 +2783,9 @@ static int s_TestMqtt5to3AdapterWSConnectionMinimal(Aws::Crt::Allocator *allocat
 }
 AWS_TEST_CASE(Mqtt5to3AdapterWSConnectionMinimal, s_TestMqtt5to3AdapterWSConnectionMinimal)
 
+/*
+ * [Mqtt5to3Adapter-UC5] IoT MutalTLS creation and cleanup with Mqtt5ClientBuilder
+ */
 static int s_TestMqtt5to3AdapterWithIoTConnection(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
@@ -2814,4 +2823,4 @@ static int s_TestMqtt5to3AdapterWithIoTConnection(Aws::Crt::Allocator *allocator
 }
 AWS_TEST_CASE(Mqtt5to3AdapterWithIoTConnection, s_TestMqtt5to3AdapterWithIoTConnection)
 
-#endif // !BYO_CRYPTO
+#endif // !BYO_CRYPTO∏

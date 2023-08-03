@@ -435,8 +435,10 @@ namespace Aws
             std::shared_ptr<Mqtt5Client> Build() noexcept;
 
             /**
-             * Builds a mqtt311 connection object from the set options and Mqtt5Client. The following options
-             * would be overwritten by the options in Mqtt5ClientBuilder:
+             * Builds a mqtt311 connection object based on the client options and Mqtt5Client.
+             * The mqtt311 connection will use the Mqtt5Client as the underlying implementation.
+             * You can use the connection object to perform Mqtt5 operations.
+             * The following options would be overwritten by the options in Mqtt5ClientBuilder:
              *          - hostname
              *          - port
              *          - websocketConfig
@@ -532,13 +534,13 @@ namespace Aws
             Mqtt5ClientBuilder(Crt::Allocator *allocator) noexcept;
             // Common setup shared by all valid constructors
             Mqtt5ClientBuilder(int error, Crt::Allocator *allocator) noexcept;
-            // Setup client options
+            // Help function to setup client options
             bool buildClientOptions(Crt::Mqtt5::Mqtt5ClientOptions *options) noexcept;
 
             Crt::Allocator *m_allocator;
 
             /**
-             * endpoint of the MQTT server to connect to.
+             * Service Endpoint to connect to.
              */
             Crt::String m_hostName;
 

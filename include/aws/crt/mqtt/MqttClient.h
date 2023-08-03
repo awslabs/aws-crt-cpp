@@ -451,7 +451,7 @@ namespace Aws
                 bool m_useTls;
                 bool m_useWebsocket;
                 MqttConnectionOperationStatistics m_operationStatistics;
-                aws_allocator *m_allocator;
+                Allocator *m_allocator;
 
                 MqttConnection(
                     aws_mqtt_client *client,

@@ -5,7 +5,6 @@
  */
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
-#include <aws/crt/mqtt/MqttClient.h>
 
 namespace Aws
 {
@@ -15,6 +14,10 @@ namespace Aws
     }
     namespace Crt
     {
+        namespace Mqtt
+        {
+            class MqttConnection;
+        }
         namespace Mqtt5
         {
             class ConnectPacket;
@@ -257,9 +260,7 @@ namespace Aws
 
                 /**
                  * Create a new connection object over plain text from the client5. The Mqtt5 Client Options will be
-                 * overwritten by the options passed in here. If websocket is enabled, you would need setup the
-                 * MqttConnection::WebsocketInterceptor for the websocket connection work for the connection. It will
-                 * also overwrite any websocket configuration setup in Mqtt5Client.
+                 * overwritten by the options passed in here.
                  *
                  * @param hostName endpoint to connect to
                  * @param port port to connect to
