@@ -46,7 +46,7 @@ namespace Aws
                  * @param port port to connect to
                  * @param socketOptions socket options to use when establishing the connection
                  * @param tlsConnectionOptions
-                 * @param useWebsocket should we overwrite the websocket configuration? Set the value to true will
+                 * @param overwriteWebsocket should we overwrite the websocket configuration? Set the value to true will
                  * overwrite the websocket interceptor configuration you set for the Mqtt5Client. You would need set
                  * WebsocketInterceptor through the MqttConnection.
                  * @param httpProxy optional httpProxy options
