@@ -499,7 +499,7 @@ namespace Aws
                 const char *hostName,
                 uint16_t port,
                 const Io::SocketOptions &socketOptions,
-                const Crt::Io::TlsContext &tlsContext,
+                const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
                 bool useWebsocket,
                 const Crt::Http::HttpClientConnectionProxyOptions *httpProxy) noexcept
             {
@@ -515,7 +515,7 @@ namespace Aws
                 }
 
                 toSeat = new (toSeat) Crt::Mqtt::MqttConnection(
-                    m_client, hostName, port, socketOptions, tlsContext, useWebsocket, allocator);
+                    m_client, hostName, port, socketOptions, tlsConnectionOptions, useWebsocket, allocator);
                 if (httpProxy != nullptr)
                 {
                     toSeat->SetHttpProxyOptions(*httpProxy);

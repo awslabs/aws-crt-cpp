@@ -473,7 +473,7 @@ namespace Aws
                     const char *hostName,
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
-                    const Crt::Io::TlsContext &tlsContext,
+                    const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
                     bool useWebsocket,
                     aws_allocator *allocaotr) noexcept;
 
