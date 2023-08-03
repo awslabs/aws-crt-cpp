@@ -621,7 +621,7 @@ static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocat
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
     ASSERT_TRUE(mqtt5Client->Start());
-    connectionPromise.get_future().get();
+    ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
@@ -2836,19 +2836,29 @@ static int s_TestMqtt5to3AdapterDirectConnectionWithMutualTLS(Aws::Crt::Allocato
 
     Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
         mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str(), allocator);
+    Aws::Crt::Io::TlsContextOptions tlsCtxOptions2 = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
+        mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str(), allocator);
 
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
     Aws::Crt::Io::TlsConnectionOptions tlsConnection = tlsContext.NewConnectionOptions();
 
+    Aws::Crt::Io::TlsContext tlsContext2(tlsCtxOptions2, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+    Aws::Crt::Io::TlsConnectionOptions tlsConnection2 = tlsContext2.NewConnectionOptions();
+
     ASSERT_TRUE(tlsConnection);
-    mqtt5Options.WithTlsConnectionOptions(tlsConnection);
+    ASSERT_TRUE(tlsConnection2);
+
+    ASSERT_TRUE(tlsConnection.SetAlpnList("x-amzn-mqtt-ca"));
+    ASSERT_TRUE(tlsConnection2.SetAlpnList("x-amzn-mqtt-ca"));
+
+    //mqtt5Options.WithTlsConnectionOptions(tlsConnection);
     Aws::Crt::Io::SocketOptions socketOptions;
     socketOptions.SetConnectTimeoutMs(3000);
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
     std::shared_ptr<Mqtt::MqttConnection> mqttConnection = mqtt5Client->NewConnection(
-        mqtt5TestVars.m_hostname_string.c_str(), mqtt5TestVars.m_port_value, socketOptions, tlsConnection);
+        mqtt5TestVars.m_hostname_string.c_str(), 443, socketOptions, tlsConnection2);
     ASSERT_TRUE(mqttConnection);
 
     int connectResult = s_ConnectAndDisconnect(mqttConnection);
