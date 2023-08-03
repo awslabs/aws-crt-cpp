@@ -616,11 +616,18 @@ namespace Aws
 
             bool useWebsocket = m_websocketConfig.has_value();
 
+            auto tlsContext =
+                Crt::Io::TlsContext(m_tlsConnectionOptions.value(), Crt::Io::TlsMode::CLIENT, m_allocator);
+            if (!tlsContext)
+            {
+                return nullptr;
+            }
+
             auto newConnection = client->NewConnection(
                 options->m_hostName.c_str(),
                 options->m_port,
                 options->m_socketOptions,
-                options->m_tlsConnectionOptions.value(),
+                tlsContext,
                 useWebsocket,
                 options->m_proxyOptions.has_value() ? &options->m_proxyOptions.value() : nullptr);
 

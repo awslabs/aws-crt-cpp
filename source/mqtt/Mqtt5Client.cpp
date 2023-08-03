@@ -65,7 +65,7 @@ namespace Aws
                 const char *hostName,
                 uint16_t port,
                 const Io::SocketOptions &socketOptions,
-                const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
+                const Crt::Io::TlsContext &tlsContext,
                 bool useWebsocket,
                 const Crt::Http::HttpClientConnectionProxyOptions *proxyOptions) noexcept
             {
@@ -75,7 +75,7 @@ namespace Aws
                     return nullptr;
                 }
                 return m_client_core->NewConnection(
-                    hostName, port, socketOptions, tlsConnectionOptions, useWebsocket, proxyOptions);
+                    hostName, port, socketOptions, tlsContext, useWebsocket, proxyOptions);
             }
 
             std::shared_ptr<Crt::Mqtt::MqttConnection> Mqtt5Client::NewConnection(

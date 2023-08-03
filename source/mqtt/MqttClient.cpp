@@ -386,10 +386,10 @@ namespace Aws
                 const char *hostName,
                 uint16_t port,
                 const Io::SocketOptions &socketOptions,
-                const Crt::Io::TlsConnectionOptions &tlsOptions,
+                const Crt::Io::TlsContext &tlsContext,
                 bool useWebsocket,
                 aws_allocator *allocator) noexcept
-                : m_owningClient(nullptr), m_tlsOptions(tlsOptions), m_onAnyCbData(nullptr), m_useTls(true),
+                : m_owningClient(nullptr), m_tlsContext(tlsContext), m_tlsOptions(tlsContext.NewConnectionOptions()), m_onAnyCbData(nullptr), m_useTls(true),
                   m_useWebsocket(useWebsocket), m_allocator(allocator)
             {
                 s_connectionInit(this, hostName, port, socketOptions, client);

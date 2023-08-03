@@ -251,7 +251,7 @@ namespace Aws
                     const char *hostName,
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
-                    const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
+                    const Crt::Io::TlsContext &tlsContext,
                     bool overwriteWebsocket = false,
                     const Crt::Http::HttpClientConnectionProxyOptions *httpProxy = nullptr) noexcept;
 
