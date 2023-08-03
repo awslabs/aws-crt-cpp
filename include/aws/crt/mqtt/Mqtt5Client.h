@@ -5,6 +5,7 @@
  */
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
+#include <aws/crt/mqtt/MqttClient.h>
 
 namespace Aws
 {
@@ -26,6 +27,8 @@ namespace Aws
             class UnsubscribePacket;
             class UnSubAckPacket;
             class Mqtt5ClientCore;
+
+            class Mqtt5to3AdapterOptions;
 
             struct AWS_CRT_CPP_API ReconnectOptions
             {
@@ -315,6 +318,13 @@ namespace Aws
                  */
                 const Mqtt5ClientOperationStatistics &GetOperationStatistics() noexcept;
 
+                /**
+                 * Create a new connection object from the client5.
+                 *
+                 * @return std::shared_ptr<Crt::Mqtt::MqttConnection>
+                 */
+                std::shared_ptr<Crt::Mqtt::MqttConnection> NewConnection() noexcept;
+
                 virtual ~Mqtt5Client();
 
               private:
@@ -324,6 +334,47 @@ namespace Aws
                 std::shared_ptr<Mqtt5ClientCore> m_client_core;
 
                 Mqtt5ClientOperationStatistics m_operationStatistics;
+
+                Mqtt5to3AdapterOptions *m_mqtt5to3AdapterOptions;
+            };
+
+            /**
+             * The extra option required to build MqttConnection
+             */
+            class Mqtt5to3AdapterOptions
+            {
+                friend class Mqtt5ClientOptions;
+                friend class Mqtt5ClientCore;
+
+              public:
+                // Default constructor
+                Mqtt5to3AdapterOptions();
+
+              private:
+                Crt::String m_hostName;
+
+                uint16_t m_port;
+
+                bool m_overwriteWebsocket;
+
+                Crt::Mqtt::OnWebSocketHandshakeIntercept m_webSocketInterceptor;
+
+                /**
+                 * Controls socket properties of the underlying MQTT connections made by the client.  Leave undefined to
+                 * use defaults (no TCP keep alive, 10 second socket timeout).
+                 */
+                Crt::Io::SocketOptions m_socketOptions;
+
+                /**
+                 * TLS context for secure socket connections.
+                 * If undefined, then a plaintext connection will be used.
+                 */
+                Crt::Optional<Crt::Io::TlsConnectionOptions> m_tlsConnectionOptions;
+
+                /**
+                 * Configures (tunneling) HTTP proxy usage when establishing MQTT connections
+                 */
+                Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
             };
 
             /**
@@ -564,6 +615,8 @@ namespace Aws
                 Mqtt5ClientOptions &operator=(Mqtt5ClientOptions &&) = delete;
 
               private:
+                Mqtt5to3AdapterOptions *NewMqtt5to3AdapterOptions() const noexcept;
+
                 /**
                  * This callback allows a custom transformation of the HTTP request that acts as the websocket
                  * handshake. Websockets will be used if this is set to a valid transformation callback.  To use

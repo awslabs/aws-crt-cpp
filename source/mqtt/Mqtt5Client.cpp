@@ -21,10 +21,23 @@ namespace Aws
     {
         namespace Mqtt5
         {
+            Mqtt5to3AdapterOptions::Mqtt5to3AdapterOptions() : m_port(0), m_overwriteWebsocket(false) {}
+
             Mqtt5Client::Mqtt5Client(const Mqtt5ClientOptions &options, Allocator *allocator) noexcept
                 : m_client_core(nullptr)
             {
                 m_client_core = Mqtt5ClientCore::NewMqtt5ClientCore(options, allocator);
+                m_mqtt5to3AdapterOptions = options.NewMqtt5to3AdapterOptions();
+            }
+
+            std::shared_ptr<Crt::Mqtt::MqttConnection> Mqtt5Client::NewConnection() noexcept
+            {
+                if (m_client_core == nullptr)
+                {
+                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to create mqtt3 connection: Mqtt5 Client is invalid.");
+                    return nullptr;
+                }
+                return m_client_core->NewConnection(m_mqtt5to3AdapterOptions);
             }
 
             Mqtt5Client::~Mqtt5Client()
@@ -34,6 +47,7 @@ namespace Aws
                     m_client_core->Close();
                     m_client_core.reset();
                 }
+                delete m_mqtt5to3AdapterOptions;
             }
 
             std::shared_ptr<Mqtt5Client> Mqtt5Client::NewMqtt5Client(
@@ -232,6 +246,36 @@ namespace Aws
             }
 
             Mqtt5ClientOptions::~Mqtt5ClientOptions() {}
+
+            Mqtt5to3AdapterOptions *Mqtt5ClientOptions::NewMqtt5to3AdapterOptions() const noexcept
+            {
+                Mqtt5to3AdapterOptions *adapterOptions = new Mqtt5to3AdapterOptions();
+                adapterOptions->m_hostName = m_hostName;
+                adapterOptions->m_port = m_port;
+                adapterOptions->m_socketOptions = m_socketOptions;
+                if (m_proxyOptions.has_value())
+                    adapterOptions->m_proxyOptions = m_proxyOptions.value();
+                if (m_tlsConnectionOptions.has_value())
+                {
+                    adapterOptions->m_tlsConnectionOptions = m_tlsConnectionOptions.value();
+                }
+                if (websocketHandshakeTransform)
+                {
+                    adapterOptions->m_overwriteWebsocket = true;
+
+                    auto signerTransform = [this](
+                                               std::shared_ptr<Crt::Http::HttpRequest> req,
+                                               const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete) {
+                        this->websocketHandshakeTransform(req, onComplete);
+                    };
+                    adapterOptions->m_webSocketInterceptor = std::move(signerTransform);
+                }
+                else
+                {
+                    adapterOptions->m_overwriteWebsocket = false;
+                }
+                return adapterOptions;
+            }
 
             Mqtt5ClientOptions &Mqtt5ClientOptions::WithHostName(Crt::String hostname)
             {

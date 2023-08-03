@@ -219,6 +219,14 @@ if(NOT BYO_CRYPTO)
     add_net_test_case(Mqtt5InterruptUnsub)
     add_net_test_case(Mqtt5InterruptPublishQoS1)
     add_net_test_case(Mqtt5OperationStatisticsSimple)
+
+    # Mqtt5-to-3 Adapter
+    add_net_test_case(Mqtt5to3AdapterNewConnectionMin)
+    add_net_test_case(Mqtt5to3AdapterDirectConnectionMinimal)
+    add_net_test_case(Mqtt5to3AdapterDirectConnectionFull)
+    add_net_test_case(Mqtt5to3AdapterWSConnectionMinimal)
+    add_net_test_case(Mqtt5to3AdapterWithIoTConnection)
+    add_net_test_case(Mqtt5to3AdapterDirectConnectionWithMutualTLS)
 endif()
 
 add_test_case(RuleEngine)

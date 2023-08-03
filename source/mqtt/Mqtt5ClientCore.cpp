@@ -195,6 +195,58 @@ namespace Aws
                 }
             }
 
+            std::shared_ptr<Crt::Mqtt::MqttConnection> Mqtt5ClientCore::NewConnection(
+                Mqtt5::Mqtt5to3AdapterOptions *options) noexcept
+            {
+                // If you're reading this and asking.... why is this so complicated? Why not use make_shared
+                // or allocate_shared? Well, MqttConnection constructors are private and stl is dumb like that.
+                // so, we do it manually.
+                Allocator *allocator = this->m_allocator;
+                Crt::Mqtt::MqttConnection *toSeat = reinterpret_cast<Crt::Mqtt::MqttConnection *>(
+                    aws_mem_acquire(allocator, sizeof(Crt::Mqtt::MqttConnection)));
+                if (!toSeat)
+                {
+                    return nullptr;
+                }
+
+                if (options->m_tlsConnectionOptions.has_value())
+                {
+                    toSeat = new (toSeat) Crt::Mqtt::MqttConnection(
+                        m_client,
+                        options->m_hostName.c_str(),
+                        options->m_port,
+                        options->m_socketOptions,
+                        options->m_tlsConnectionOptions.value(),
+                        options->m_overwriteWebsocket,
+                        allocator);
+                }
+                else
+                {
+                    toSeat = new (toSeat) Crt::Mqtt::MqttConnection(
+                        m_client,
+                        options->m_hostName.c_str(),
+                        options->m_port,
+                        options->m_socketOptions,
+                        options->m_overwriteWebsocket,
+                        allocator);
+                }
+                if (options->m_proxyOptions.has_value())
+                {
+                    toSeat->SetHttpProxyOptions(options->m_proxyOptions.value());
+                }
+
+                if (options->m_overwriteWebsocket)
+                {
+                    toSeat->WebsocketInterceptor = options->m_webSocketInterceptor;
+                }
+
+                return std::shared_ptr<Crt::Mqtt::MqttConnection>(
+                    toSeat, [allocator](Crt::Mqtt::MqttConnection *connection) {
+                        connection->~MqttConnection();
+                        aws_mem_release(allocator, reinterpret_cast<void *>(connection));
+                    });
+            }
+
             void Mqtt5ClientCore::s_publishCompletionCallback(
                 enum aws_mqtt5_packet_type packet_type,
                 const void *publishCompletionPacket,
