@@ -269,7 +269,7 @@ namespace Aws
                     auto signerTransform = [this](
                                                std::shared_ptr<Crt::Http::HttpRequest> req,
                                                const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete) {
-                        this->websocketHandshakeTransform(req, onComplete);
+                        this->websocketHandshakeTransform(std::move(req), onComplete);
                     };
                     adapterOptions->m_webSocketInterceptor = std::move(signerTransform);
                 }
