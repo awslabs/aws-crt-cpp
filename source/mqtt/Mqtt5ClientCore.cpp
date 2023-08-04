@@ -196,7 +196,7 @@ namespace Aws
             }
 
             std::shared_ptr<Crt::Mqtt::MqttConnection> Mqtt5ClientCore::NewConnection(
-                Mqtt5::Mqtt5to3AdapterOptions *options) noexcept
+                const Mqtt5::Mqtt5to3AdapterOptions *options) noexcept
             {
                 // If you're reading this and asking.... why is this so complicated? Why not use make_shared
                 // or allocate_shared? Well, MqttConnection constructors are private and stl is dumb like that.
@@ -521,7 +521,7 @@ namespace Aws
                 const Mqtt5ClientOptions &options,
                 Allocator *allocator) noexcept
             {
-                /* Copied from MqttClient.cpp:ln754 (MqttClient::NewConnection) */
+                /* Copied from MqttClient.cpp: MqttClient::NewConnection) */
                 /* As the constructor is private, make share would not work here. We do make_share manually. */
                 Mqtt5ClientCore *toSeat =
                     reinterpret_cast<Mqtt5ClientCore *>(aws_mem_acquire(allocator, sizeof(Mqtt5ClientCore)));

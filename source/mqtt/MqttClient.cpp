@@ -265,14 +265,22 @@ namespace Aws
                 MqttConnection *self,
                 const char *hostName,
                 uint16_t port,
-                const Io::SocketOptions &socketOptions)
+                const Io::SocketOptions &socketOptions,
+                aws_mqtt5_client *mqtt5Client)
             {
 
                 self->m_hostName = String(hostName);
                 self->m_port = port;
                 self->m_socketOptions = socketOptions;
 
-                self->m_underlyingConnection = aws_mqtt_client_connection_new(self->m_owningClient);
+                if (mqtt5Client)
+                {
+                    self->m_underlyingConnection = aws_mqtt_client_connection_new_from_mqtt5_client(mqtt5Client);
+                }
+                else
+                {
+                    self->m_underlyingConnection = aws_mqtt_client_connection_new(self->m_owningClient);
+                }
 
                 if (self->m_underlyingConnection)
                 {
@@ -293,40 +301,9 @@ namespace Aws
                     aws_mqtt_client_connection_set_connection_closed_handler(
                         self->m_underlyingConnection, MqttConnection::s_onConnectionClosed, self);
                 }
-            }
-
-            void MqttConnection::s_connectionInit(
-                MqttConnection *self,
-                const char *hostName,
-                uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                aws_mqtt5_client *mqtt5client)
-            {
-
-                self->m_hostName = String(hostName);
-                self->m_port = port;
-                self->m_socketOptions = socketOptions;
-
-                self->m_underlyingConnection = aws_mqtt_client_connection_new_from_mqtt5_client(mqtt5client);
-
-                if (self->m_underlyingConnection)
+                else
                 {
-                    aws_mqtt_client_connection_set_connection_result_handlers(
-                        self->m_underlyingConnection,
-                        MqttConnection::s_onConnectionSuccess,
-                        self,
-                        MqttConnection::s_onConnectionFailure,
-                        self);
-
-                    aws_mqtt_client_connection_set_connection_interruption_handlers(
-                        self->m_underlyingConnection,
-                        MqttConnection::s_onConnectionInterrupted,
-                        self,
-                        MqttConnection::s_onConnectionResumed,
-                        self);
-
-                    aws_mqtt_client_connection_set_connection_closed_handler(
-                        self->m_underlyingConnection, MqttConnection::s_onConnectionClosed, self);
+                    AWS_LOGF_DEBUG(AWS_LS_MQTT_CLIENT, "Failed to initialize Mqtt Connection");
                 }
             }
 
@@ -388,7 +365,7 @@ namespace Aws
                 const Io::SocketOptions &socketOptions,
                 const Crt::Io::TlsConnectionOptions &tlsOptions,
                 bool useWebsocket,
-                aws_allocator *allocator) noexcept
+                Allocator *allocator) noexcept
                 : m_owningClient(nullptr), m_tlsOptions(tlsOptions), m_onAnyCbData(nullptr), m_useTls(true),
                   m_useWebsocket(useWebsocket), m_allocator(allocator)
             {
@@ -401,7 +378,7 @@ namespace Aws
                 uint16_t port,
                 const Io::SocketOptions &socketOptions,
                 bool useWebsocket,
-                aws_allocator *allocator) noexcept
+                Allocator *allocator) noexcept
                 : m_owningClient(nullptr), m_onAnyCbData(nullptr), m_useTls(false), m_useWebsocket(useWebsocket),
                   m_allocator(allocator)
             {

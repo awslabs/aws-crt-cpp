@@ -476,7 +476,7 @@ namespace Aws
                     const Io::SocketOptions &socketOptions,
                     const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
                     bool useWebsocket,
-                    aws_allocator *allocaotr) noexcept;
+                    Allocator *allocator) noexcept;
 
                 MqttConnection(
                     aws_mqtt5_client *mqtt5Client,
@@ -484,7 +484,7 @@ namespace Aws
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
                     bool useWebsocket,
-                    aws_allocator *allocaotr) noexcept;
+                    Allocator *allocator) noexcept;
 
                 static void s_onConnectionInterrupted(aws_mqtt_client_connection *, int errorCode, void *userData);
                 static void s_onConnectionCompleted(
@@ -552,13 +552,8 @@ namespace Aws
                     MqttConnection *self,
                     const char *hostName,
                     uint16_t port,
-                    const Io::SocketOptions &socketOptions);
-                static void s_connectionInit(
-                    MqttConnection *self,
-                    const char *hostName,
-                    uint16_t port,
                     const Io::SocketOptions &socketOptions,
-                    aws_mqtt5_client *mqtt5client);
+                    aws_mqtt5_client *mqtt5Client = nullptr);
             };
 
             /**

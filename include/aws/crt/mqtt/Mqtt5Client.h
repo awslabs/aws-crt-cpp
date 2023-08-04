@@ -335,11 +335,11 @@ namespace Aws
 
                 Mqtt5ClientOperationStatistics m_operationStatistics;
 
-                Mqtt5to3AdapterOptions *m_mqtt5to3AdapterOptions;
+                ScopedResource<Mqtt5to3AdapterOptions> m_mqtt5to3AdapterOptions;
             };
 
             /**
-             * The extra options required to build MqttConnection
+             * The extra options required to build MqttConnection from Mqtt5Client
              */
             class Mqtt5to3AdapterOptions
             {
@@ -347,16 +347,25 @@ namespace Aws
                 friend class Mqtt5ClientCore;
 
               public:
-                // Default constructor
+                /* Default constructor */
                 Mqtt5to3AdapterOptions();
 
               private:
+                /* Host name of the MQTT server to connect to. */
                 Crt::String m_hostName;
 
+                /* Port to connect to */
                 uint16_t m_port;
 
+                /*
+                 * If the MqttConnection should overwrite the websocket config. If set to true, m_webSocketInterceptor
+                 * must be set.
+                 */
                 bool m_overwriteWebsocket;
 
+                /*
+                 * The transform function invoked during websocket handshake.
+                 */
                 Crt::Mqtt::OnWebSocketHandshakeIntercept m_webSocketInterceptor;
 
                 /**
@@ -621,7 +630,7 @@ namespace Aws
                  *
                  * @return Mqtt5to3AdapterOptions
                  */
-                Mqtt5to3AdapterOptions *NewMqtt5to3AdapterOptions() const noexcept;
+                ScopedResource<Mqtt5to3AdapterOptions> NewMqtt5to3AdapterOptions() const noexcept;
 
                 /**
                  * This callback allows a custom transformation of the HTTP request that acts as the websocket

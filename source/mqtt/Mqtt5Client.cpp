@@ -37,7 +37,7 @@ namespace Aws
                     AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to create mqtt3 connection: Mqtt5 Client is invalid.");
                     return nullptr;
                 }
-                return m_client_core->NewConnection(m_mqtt5to3AdapterOptions);
+                return m_client_core->NewConnection(m_mqtt5to3AdapterOptions.get());
             }
 
             Mqtt5Client::~Mqtt5Client()
@@ -47,7 +47,6 @@ namespace Aws
                     m_client_core->Close();
                     m_client_core.reset();
                 }
-                delete m_mqtt5to3AdapterOptions;
             }
 
             std::shared_ptr<Mqtt5Client> Mqtt5Client::NewMqtt5Client(
@@ -247,9 +246,13 @@ namespace Aws
 
             Mqtt5ClientOptions::~Mqtt5ClientOptions() {}
 
-            Mqtt5to3AdapterOptions *Mqtt5ClientOptions::NewMqtt5to3AdapterOptions() const noexcept
+            ScopedResource<Mqtt5to3AdapterOptions> Mqtt5ClientOptions::NewMqtt5to3AdapterOptions() const noexcept
             {
-                Mqtt5to3AdapterOptions *adapterOptions = new Mqtt5to3AdapterOptions();
+                Allocator *allocator = m_allocator;
+                ScopedResource<Mqtt5to3AdapterOptions> adapterOptions = ScopedResource<Mqtt5to3AdapterOptions>(
+                    Crt::New<Mqtt5to3AdapterOptions>(allocator),
+                    [allocator](Mqtt5to3AdapterOptions *options) { Crt::Delete(options, allocator); });
+
                 adapterOptions->m_hostName = m_hostName;
                 adapterOptions->m_port = m_port;
                 adapterOptions->m_socketOptions = m_socketOptions;
