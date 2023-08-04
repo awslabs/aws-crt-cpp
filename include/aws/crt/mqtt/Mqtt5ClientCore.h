@@ -107,6 +107,17 @@ namespace Aws
               private:
                 Mqtt5ClientCore(const Mqtt5ClientOptions &options, Allocator *allocator = ApiAllocator()) noexcept;
 
+                /**
+                 * Create a new connection object over plain text from the Mqtt5Client. The client must outlive
+                 * all of its connection instances. The Mqtt5 Options will be overwritten by the options passed in here.
+                 *
+                 * @param options the options from Mqtt5Client used to support the MqttConnection
+                 *
+                 * @return std::shared_ptr<Crt::Mqtt::MqttConnection>
+                 */
+                std::shared_ptr<Crt::Mqtt::MqttConnection> NewConnection(
+                    const Mqtt5::Mqtt5to3AdapterOptions *options) noexcept;
+
                 /* Static Callbacks */
                 static void s_publishCompletionCallback(
                     enum aws_mqtt5_packet_type packet_type,

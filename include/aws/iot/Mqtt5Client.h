@@ -522,7 +522,7 @@ namespace Aws
 
             /**
              * TLS context for secure socket connections.
-             * If undefined, then a plaintext connection will be used.
+             * If undefined, a plaintext connection will be used.
              */
             Crt::Optional<Crt::Io::TlsContextOptions> m_tlsConnectionOptions;
 
