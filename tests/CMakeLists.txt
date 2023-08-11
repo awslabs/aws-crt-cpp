@@ -77,6 +77,7 @@ if(NOT BYO_CRYPTO)
     add_net_test_case(HttpClientConnectionManagerInvalidTlsConnectionOptions)
     add_net_test_case(HttpClientConnectionWithPendingAcquisitions)
     add_net_test_case(HttpClientConnectionWithPendingAcquisitionsAndClosedConnections)
+    add_net_test_case(IotConnectionDestruction)
 endif()
 
 add_test_case(DefaultResolution)
