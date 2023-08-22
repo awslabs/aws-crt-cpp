@@ -11,6 +11,7 @@
 #include <aws/crt/io/TlsOptions.h>
 
 #include <aws/mqtt/client.h>
+#include <aws/mqtt/v5/mqtt5_client.h>
 
 #include <atomic>
 #include <functional>
@@ -28,6 +29,11 @@ namespace Aws
         namespace Http
         {
             class HttpRequest;
+        }
+
+        namespace Mqtt5
+        {
+            class Mqtt5ClientCore;
         }
 
         namespace Mqtt
@@ -137,13 +143,13 @@ namespace Aws
 
             /**
              * Invoked upon receipt of a Publish message on a subscribed topic.
-             * @param connection    The connection object
-             * @param topic         The information channel to which the payload data was published.
-             * @param payload       The payload data.
-             * @param dup           DUP flag. If true, this might be re-delivery of an earlier
+             * - connection:    The connection object
+             * - topic:         The information channel to which the payload data was published.
+             * - payload:       The payload data.
+             * - dup:           DUP flag. If true, this might be re-delivery of an earlier
              *                      attempt to send the message.
-             * @param qos           Quality of Service used to deliver the message.
-             * @param retain        Retain flag. If true, the message was sent as a result of
+             * - qos:           Quality of Service used to deliver the message.
+             * - retain:        Retain flag. If true, the message was sent as a result of
              *                      a new subscription being made by the client.
              */
             using OnMessageReceivedHandler = std::function<void(
@@ -212,7 +218,8 @@ namespace Aws
             };
 
             /**
-             * Represents a persistent Mqtt Connection. The memory is owned by MqttClient.
+             * Represents a persistent Mqtt Connection. The memory is owned by MqttClient or
+             * Mqtt5Client.
              * To get a new instance of this class, see MqttClient::NewConnection. Unless
              * specified all function arguments need only to live through the duration of the
              * function call.
@@ -220,6 +227,7 @@ namespace Aws
             class AWS_CRT_CPP_API MqttConnection final
             {
                 friend class MqttClient;
+                friend class Mqtt5::Mqtt5ClientCore;
 
               public:
                 ~MqttConnection();
@@ -444,6 +452,7 @@ namespace Aws
                 bool m_useTls;
                 bool m_useWebsocket;
                 MqttConnectionOperationStatistics m_operationStatistics;
+                Allocator *m_allocator;
 
                 MqttConnection(
                     aws_mqtt_client *client,
@@ -459,6 +468,23 @@ namespace Aws
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
                     bool useWebsocket) noexcept;
+
+                MqttConnection(
+                    aws_mqtt5_client *mqtt5Client,
+                    const char *hostName,
+                    uint16_t port,
+                    const Io::SocketOptions &socketOptions,
+                    const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
+                    bool useWebsocket,
+                    Allocator *allocator) noexcept;
+
+                MqttConnection(
+                    aws_mqtt5_client *mqtt5Client,
+                    const char *hostName,
+                    uint16_t port,
+                    const Io::SocketOptions &socketOptions,
+                    bool useWebsocket,
+                    Allocator *allocator) noexcept;
 
                 static void s_onConnectionInterrupted(aws_mqtt_client_connection *, int errorCode, void *userData);
                 static void s_onConnectionCompleted(
@@ -526,7 +552,8 @@ namespace Aws
                     MqttConnection *self,
                     const char *hostName,
                     uint16_t port,
-                    const Io::SocketOptions &socketOptions);
+                    const Io::SocketOptions &socketOptions,
+                    aws_mqtt5_client *mqtt5Client = nullptr);
             };
 
             /**
