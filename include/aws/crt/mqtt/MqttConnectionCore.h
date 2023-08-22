@@ -324,13 +324,13 @@ namespace Aws
 
                 static void s_onDisconnect(aws_mqtt_client_connection *connection, void *userData);
                 static void s_onPublish(
-                    aws_mqtt_client_connection *connection,
+                    aws_mqtt_client_connection *underlyingConnection,
                     const aws_byte_cursor *topic,
                     const aws_byte_cursor *payload,
                     bool dup,
                     enum aws_mqtt_qos qos,
                     bool retain,
-                    void *user_data);
+                    void *userData);
 
                 static void s_onSubAck(
                     aws_mqtt_client_connection *connection,

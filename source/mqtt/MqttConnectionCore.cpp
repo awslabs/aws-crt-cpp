@@ -85,7 +85,7 @@ namespace Aws
                 bool sessionPresent,
                 void *userData)
             {
-                auto connWrapper = reinterpret_cast<MqttConnection *>(userData);
+                auto *connWrapper = reinterpret_cast<MqttConnection *>(userData);
                 if (connWrapper->OnConnectionSuccess)
                 {
                     OnConnectionSuccessData callbackData;
@@ -97,7 +97,7 @@ namespace Aws
 
             void MqttConnectionCore::s_onConnectionFailure(aws_mqtt_client_connection * /*underlying_connection*/, int errorCode, void *userData)
             {
-                auto connWrapper = reinterpret_cast<MqttConnection *>(userData);
+                auto *connWrapper = reinterpret_cast<MqttConnection *>(userData);
                 if (connWrapper->OnConnectionFailure)
                 {
                     OnConnectionFailureData callbackData;
@@ -108,7 +108,7 @@ namespace Aws
 
             void MqttConnectionCore::s_onDisconnect(aws_mqtt_client_connection * /*underlying_connection*/, void *userData)
             {
-                auto connWrapper = reinterpret_cast<MqttConnection *>(userData);
+                auto *connWrapper = reinterpret_cast<MqttConnection *>(userData);
                 if (connWrapper->OnDisconnect)
                 {
                     connWrapper->OnDisconnect(*connWrapper);
@@ -117,21 +117,19 @@ namespace Aws
 
             struct PubCallbackData
             {
-                PubCallbackData() : connection(nullptr), allocator(nullptr) {}
-
-                MqttConnection *connection;
+                MqttConnection *connection = nullptr;
                 OnMessageReceivedHandler onMessageReceived;
-                Allocator *allocator;
+                Allocator *allocator = nullptr;
             };
 
             static void s_cleanUpOnPublishData(void *userData)
             {
-                auto callbackData = reinterpret_cast<PubCallbackData *>(userData);
+                auto *callbackData = reinterpret_cast<PubCallbackData *>(userData);
                 Crt::Delete(callbackData, callbackData->allocator);
             }
 
             void MqttConnectionCore::s_onPublish(
-                aws_mqtt_client_connection * /*underlying_connection*/,
+                aws_mqtt_client_connection * /*underlyingConnection*/,
                 const aws_byte_cursor *topic,
                 const aws_byte_cursor *payload,
                 bool dup,
