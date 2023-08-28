@@ -26,30 +26,68 @@ namespace Aws
                 int errorCode,
                 void *userData)
             {
-                auto *connWrapper = reinterpret_cast<MqttConnectionCore *>(userData);
-                if (connWrapper->OnConnectionInterrupted)
+                auto *connectionCore = reinterpret_cast<MqttConnectionCore *>(userData);
+
+                std::shared_ptr<MqttConnection> connection;
                 {
-                    connWrapper->OnConnectionInterrupted(*connWrapper, errorCode);
+                    std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
+                    // Connection is not accessible anymore.
+                    if (!connectionCore->m_isConnectionAlive)
+                    {
+                        return;
+                    }
+                    connection = connectionCore->m_connection.lock();
+                }
+                if (!connection)
+                {
+                    return;
+                }
+
+                // At this point we ensured that the MqttConnection object will be alive for the duration of the
+                // callback execution, so no critical section is needed.
+
+                if (connection->OnConnectionInterrupted)
+                {
+                    connection->OnConnectionInterrupted(*connection, errorCode);
                 }
             }
 
             void MqttConnectionCore::s_onConnectionResumed(
-                aws_mqtt_client_connection * /*underlying_connection*/,
+                aws_mqtt_client_connection * /*connection*/,
                 ReturnCode returnCode,
                 bool sessionPresent,
                 void *userData)
             {
-                auto *connWrapper = reinterpret_cast<MqttConnection *>(userData);
-                if (connWrapper->OnConnectionResumed)
+                auto *connectionCore = reinterpret_cast<MqttConnectionCore *>(userData);
+
+                std::shared_ptr<MqttConnection> connection;
                 {
-                    connWrapper->OnConnectionResumed(*connWrapper, returnCode, sessionPresent);
+                    std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
+                    // Connection is not accessible anymore.
+                    if (!connectionCore->m_isConnectionAlive)
+                    {
+                        return;
+                    }
+                    connection = connectionCore->m_connection.lock();
                 }
-                if (connWrapper->OnConnectionSuccess)
+                if (!connection)
+                {
+                    return;
+                }
+
+                // At this point we ensured that the MqttConnection object will be alive for the duration of the
+                // callback execution, so no critical section is needed.
+
+                if (connection->OnConnectionResumed)
+                {
+                    connection->OnConnectionResumed(*connection, returnCode, sessionPresent);
+                }
+                if (connection->OnConnectionSuccess)
                 {
                     OnConnectionSuccessData callbackData;
                     callbackData.returnCode = returnCode;
                     callbackData.sessionPresent = sessionPresent;
-                    connWrapper->OnConnectionSuccess(*connWrapper, &callbackData);
+                    connection->OnConnectionSuccess(*connection, &callbackData);
                 }
             }
 
@@ -60,10 +98,29 @@ namespace Aws
             {
                 (void)data;
 
-                auto *connWrapper = reinterpret_cast<MqttConnection *>(userData);
-                if (connWrapper->OnConnectionClosed)
+                auto *connectionCore = reinterpret_cast<MqttConnectionCore *>(userData);
+
+                std::shared_ptr<MqttConnection> connection;
                 {
-                    connWrapper->OnConnectionClosed(*connWrapper, nullptr);
+                    std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
+                    // Connection is not accessible anymore.
+                    if (!connectionCore->m_isConnectionAlive)
+                    {
+                        return;
+                    }
+                    connection = connectionCore->m_connection.lock();
+                }
+                if (!connection)
+                {
+                    return;
+                }
+
+                // At this point we ensured that the MqttConnection object will be alive for the duration of the
+                // callback execution, so no critical section is needed.
+
+                if (connection->OnConnectionClosed)
+                {
+                    connection->OnConnectionClosed(*connection, nullptr);
                 }
             }
 
@@ -74,10 +131,29 @@ namespace Aws
                 bool sessionPresent,
                 void *userData)
             {
-                auto *connWrapper = reinterpret_cast<MqttConnection *>(userData);
-                if (connWrapper->OnConnectionCompleted)
+                auto *connectionCore = reinterpret_cast<MqttConnectionCore *>(userData);
+
+                std::shared_ptr<MqttConnection> connection;
                 {
-                    connWrapper->OnConnectionCompleted(*connWrapper, errorCode, returnCode, sessionPresent);
+                    std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
+                    // Connection is not accessible anymore.
+                    if (!connectionCore->m_isConnectionAlive)
+                    {
+                        return;
+                    }
+                    connection = connectionCore->m_connection.lock();
+                }
+                if (!connection)
+                {
+                    return;
+                }
+
+                // At this point we ensured that the MqttConnection object will be alive for the duration of the
+                // callback execution, so no critical section is needed.
+
+                if (connection->OnConnectionCompleted)
+                {
+                    connection->OnConnectionCompleted(*connection, errorCode, returnCode, sessionPresent);
                 }
             }
 
@@ -87,13 +163,32 @@ namespace Aws
                 bool sessionPresent,
                 void *userData)
             {
-                auto *connWrapper = reinterpret_cast<MqttConnection *>(userData);
-                if (connWrapper->OnConnectionSuccess)
+                auto *connectionCore = reinterpret_cast<MqttConnectionCore *>(userData);
+
+                std::shared_ptr<MqttConnection> connection;
+                {
+                    std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
+                    // Connection is not accessible anymore.
+                    if (!connectionCore->m_isConnectionAlive)
+                    {
+                        return;
+                    }
+                    connection = connectionCore->m_connection.lock();
+                }
+                if (!connection)
+                {
+                    return;
+                }
+
+                // At this point we ensured that the MqttConnection object will be alive for the duration of the
+                // callback execution, so no critical section is needed.
+
+                if (connection->OnConnectionSuccess)
                 {
                     OnConnectionSuccessData callbackData;
                     callbackData.returnCode = returnCode;
                     callbackData.sessionPresent = sessionPresent;
-                    connWrapper->OnConnectionSuccess(*connWrapper, &callbackData);
+                    connection->OnConnectionSuccess(*connection, &callbackData);
                 }
             }
 
@@ -102,12 +197,31 @@ namespace Aws
                 int errorCode,
                 void *userData)
             {
-                auto *connWrapper = reinterpret_cast<MqttConnection *>(userData);
-                if (connWrapper->OnConnectionFailure)
+                auto *connectionCore = reinterpret_cast<MqttConnectionCore *>(userData);
+
+                std::shared_ptr<MqttConnection> connection;
+                {
+                    std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
+                    // Connection is not accessible anymore.
+                    if (!connectionCore->m_isConnectionAlive)
+                    {
+                        return;
+                    }
+                    connection = connectionCore->m_connection.lock();
+                }
+                if (!connection)
+                {
+                    return;
+                }
+
+                // At this point we ensured that the MqttConnection object will be alive for the duration of the
+                // callback execution, so no critical section is needed.
+
+                if (connection->OnConnectionFailure)
                 {
                     OnConnectionFailureData callbackData;
                     callbackData.error = errorCode;
-                    connWrapper->OnConnectionFailure(*connWrapper, &callbackData);
+                    connection->OnConnectionFailure(*connection, &callbackData);
                 }
             }
 
@@ -115,16 +229,35 @@ namespace Aws
                 aws_mqtt_client_connection * /*underlying_connection*/,
                 void *userData)
             {
-                auto *connWrapper = reinterpret_cast<MqttConnection *>(userData);
-                if (connWrapper->OnDisconnect)
+                auto *connectionCore = reinterpret_cast<MqttConnectionCore *>(userData);
+
+                std::shared_ptr<MqttConnection> connection;
                 {
-                    connWrapper->OnDisconnect(*connWrapper);
+                    std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
+                    // Connection is not accessible anymore.
+                    if (!connectionCore->m_isConnectionAlive)
+                    {
+                        return;
+                    }
+                    connection = connectionCore->m_connection.lock();
+                }
+                if (!connection)
+                {
+                    return;
+                }
+
+                // At this point we ensured that the MqttConnection object will be alive for the duration of the
+                // callback execution, so no critical section is needed.
+
+                if (connection->OnDisconnect)
+                {
+                    connection->OnDisconnect(*connection);
                 }
             }
 
             struct PubCallbackData
             {
-                MqttConnectionCore *connection = nullptr;
+                MqttConnection *connection = nullptr;
                 OnMessageReceivedHandler onMessageReceived;
                 Allocator *allocator = nullptr;
             };
@@ -157,7 +290,7 @@ namespace Aws
 
             struct OpCompleteCallbackData
             {
-                MqttConnectionCore *connection = nullptr;
+                MqttConnection *connection = nullptr;
                 OnOperationCompleteHandler onOperationComplete;
                 const char *topic = nullptr;
                 Allocator *allocator = nullptr;
@@ -170,7 +303,6 @@ namespace Aws
                 void *userData)
             {
                 auto *callbackData = reinterpret_cast<OpCompleteCallbackData *>(userData);
-
                 if (callbackData->onOperationComplete)
                 {
                     callbackData->onOperationComplete(*callbackData->connection, packetId, errorCode);
@@ -271,7 +403,6 @@ namespace Aws
                 const Io::SocketOptions &socketOptions,
                 aws_mqtt5_client *mqtt5Client)
             {
-
                 self->m_hostName = String(hostName);
                 self->m_port = port;
                 self->m_socketOptions = socketOptions;

@@ -168,7 +168,7 @@ namespace Aws
                  * @param topicFilters list of pairs of topic filters and message callbacks to invoke on a matching
                  * publish
                  * @param qos maximum qos client is willing to receive matching messages on
-                 * @param onOpComplete callback to invoke with the server's response to the subscribe request
+                 * @param onSubAck callback to invoke with the server's response to the subscribe request
                  *
                  * @return packet id of the subscribe request, or 0 if the attempt failed synchronously
                  */
@@ -261,6 +261,23 @@ namespace Aws
                 bool m_useWebsocket;
                 MqttConnectionOperationStatistics m_operationStatistics;
                 Allocator *m_allocator;
+
+                /**
+                 * @internal
+                 */
+                std::mutex m_connectionMutex;
+                /**
+                 * @internal
+                 */
+                bool m_isConnectionAlive;
+                /**
+                 * @internal
+                 */
+                std::weak_ptr<MqttConnection> m_connection;
+                /**
+                 * @internal
+                 */
+                std::shared_ptr<MqttConnectionCore> m_self;
 
                 MqttConnectionCore(
                     aws_mqtt_client *client,
