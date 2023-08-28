@@ -772,7 +772,7 @@ namespace Aws
                     topicFilter,
                     qos,
                     [onPublish](
-                        MqttConnectionCore &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
+                        MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
                         onPublish(connection, topic, payload);
                     },
                     std::move(onSubAck));
@@ -784,6 +784,7 @@ namespace Aws
                 OnMessageReceivedHandler &&onMessage,
                 OnSubAckHandler &&onSubAck) noexcept
             {
+                // TODO Is it possible to use std::unique_ptr here?
                 auto *pubCallbackData = Crt::New<PubCallbackData>(m_allocator);
 
                 if (pubCallbackData == nullptr)
@@ -791,7 +792,7 @@ namespace Aws
                     return 0;
                 }
 
-                pubCallbackData->connection = this;
+                pubCallbackData->connectionCore = this;
                 pubCallbackData->onMessageReceived = std::move(onMessage);
                 pubCallbackData->allocator = m_allocator;
 
@@ -844,12 +845,9 @@ namespace Aws
                     newTopicFilters.emplace_back(
                         pair.first,
                         [pubHandler](
-                            MqttConnectionCore &connection,
-                            const String &topic,
-                            const ByteBuf &payload,
-                            bool,
-                            QOS,
-                            bool) { pubHandler(connection, topic, payload); });
+                            MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
+                            pubHandler(connection, topic, payload);
+                        });
                 }
                 return Subscribe(newTopicFilters, qos, std::move(onSubAck));
             }
@@ -877,16 +875,18 @@ namespace Aws
                     return 0;
                 }
 
+                bool errorOccurred = false;
                 for (const auto &topicFilter : topicFilters)
                 {
                     auto *pubCallbackData = Crt::New<PubCallbackData>(m_allocator);
 
                     if (pubCallbackData == nullptr)
                     {
-                        goto clean_up;
+                        errorOccurred = true;
+                        break;
                     }
 
-                    pubCallbackData->connection = this;
+                    pubCallbackData->connectionCore = this;
                     pubCallbackData->onMessageReceived = topicFilter.second;
                     pubCallbackData->allocator = m_allocator;
 
@@ -903,16 +903,18 @@ namespace Aws
                     aws_array_list_push_back(&multiPub, reinterpret_cast<const void *>(&subscription));
                 }
 
-                subAckCallbackData->connection = this;
-                subAckCallbackData->allocator = m_allocator;
-                subAckCallbackData->onSubAck = std::move(onSubAck);
-                subAckCallbackData->topic = nullptr;
-                subAckCallbackData->allocator = m_allocator;
+                if (!errorOccurred)
+                {
+                    subAckCallbackData->connectionCore = this;
+                    subAckCallbackData->allocator = m_allocator;
+                    subAckCallbackData->onSubAck = std::move(onSubAck);
+                    subAckCallbackData->topic = nullptr;
+                    subAckCallbackData->allocator = m_allocator;
 
-                packetId = aws_mqtt_client_connection_subscribe_multiple(
-                    m_underlyingConnection, &multiPub, s_onMultiSubAck, subAckCallbackData);
+                    packetId = aws_mqtt_client_connection_subscribe_multiple(
+                        m_underlyingConnection, &multiPub, s_onMultiSubAck, subAckCallbackData);
+                }
 
-            clean_up:
                 if (packetId == 0U)
                 {
                     size_t length = aws_array_list_length(&multiPub);
@@ -943,7 +945,7 @@ namespace Aws
                     return 0;
                 }
 
-                opCompleteCallbackData->connection = this;
+                opCompleteCallbackData->connectionCore = this;
                 opCompleteCallbackData->allocator = m_allocator;
                 opCompleteCallbackData->onOperationComplete = std::move(onOpComplete);
                 opCompleteCallbackData->topic = nullptr;
@@ -985,7 +987,7 @@ namespace Aws
 
                 memcpy(topicCpy, topic, topicLen);
 
-                opCompleteCallbackData->connection = this;
+                opCompleteCallbackData->connectionCore = this;
                 opCompleteCallbackData->allocator = m_allocator;
                 opCompleteCallbackData->onOperationComplete = std::move(onOpComplete);
                 opCompleteCallbackData->topic = topicCpy;
