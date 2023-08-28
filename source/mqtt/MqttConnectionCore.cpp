@@ -257,7 +257,7 @@ namespace Aws
 
             struct PubCallbackData
             {
-                MqttConnection *connection = nullptr;
+                MqttConnectionCore *connectionCore = nullptr;
                 OnMessageReceivedHandler onMessageReceived;
                 Allocator *allocator = nullptr;
             };
@@ -269,7 +269,7 @@ namespace Aws
             }
 
             void MqttConnectionCore::s_onPublish(
-                aws_mqtt_client_connection * /*underlyingConnection*/,
+                aws_mqtt_client_connection * /*connection*/,
                 const aws_byte_cursor *topic,
                 const aws_byte_cursor *payload,
                 bool dup,
@@ -278,19 +278,38 @@ namespace Aws
                 void *userData)
             {
                 auto *callbackData = reinterpret_cast<PubCallbackData *>(userData);
-
-                if (callbackData->onMessageReceived)
+                if (!callbackData->onMessageReceived)
                 {
-                    String topicStr(reinterpret_cast<char *>(topic->ptr), topic->len);
-                    ByteBuf payloadBuf = aws_byte_buf_from_array(payload->ptr, payload->len);
-                    callbackData->onMessageReceived(
-                        *(callbackData->connection), topicStr, payloadBuf, dup, qos, retain);
+                    return;
                 }
+
+                auto *connectionCore = callbackData->connectionCore;
+                std::shared_ptr<MqttConnection> connection;
+                {
+                    std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
+                    // Connection is not accessible anymore.
+                    if (!connectionCore->m_isConnectionAlive)
+                    {
+                        return;
+                    }
+                    connection = connectionCore->m_connection.lock();
+                }
+                if (!connection)
+                {
+                    return;
+                }
+
+                // At this point we ensured that the MqttConnection object will be alive for the duration of the
+                // callback execution, so no critical section is needed.
+
+                String topicStr(reinterpret_cast<char *>(topic->ptr), topic->len);
+                ByteBuf payloadBuf = aws_byte_buf_from_array(payload->ptr, payload->len);
+                callbackData->onMessageReceived(*connection, topicStr, payloadBuf, dup, qos, retain);
             }
 
             struct OpCompleteCallbackData
             {
-                MqttConnection *connection = nullptr;
+                MqttConnectionCore *connectionCore = nullptr;
                 OnOperationCompleteHandler onOperationComplete;
                 const char *topic = nullptr;
                 Allocator *allocator = nullptr;
@@ -303,17 +322,33 @@ namespace Aws
                 void *userData)
             {
                 auto *callbackData = reinterpret_cast<OpCompleteCallbackData *>(userData);
+
+                // An owning pointer to the connection should be obtained only if the user callback is defined.
                 if (callbackData->onOperationComplete)
                 {
-                    callbackData->onOperationComplete(*callbackData->connection, packetId, errorCode);
+                    auto *connectionCore = callbackData->connectionCore;
+                    std::shared_ptr<MqttConnection> connection;
+                    {
+                        std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
+                        // Connection is not accessible anymore.
+                        if (connectionCore->m_isConnectionAlive)
+                        {
+                            connection = connectionCore->m_connection.lock();
+                        }
+                    }
+
+                    if (connection)
+                    {
+                        callbackData->onOperationComplete(*connection, packetId, errorCode);
+                    }
                 }
 
+                // Clean up previously allocated resources.
                 if (callbackData->topic != nullptr)
                 {
                     aws_mem_release(
                         callbackData->allocator, reinterpret_cast<void *>(const_cast<char *>(callbackData->topic)));
                 }
-
                 Crt::Delete(callbackData, callbackData->allocator);
             }
 
