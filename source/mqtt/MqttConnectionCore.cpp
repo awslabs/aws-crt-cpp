@@ -21,6 +21,14 @@ namespace Aws
     {
         namespace Mqtt
         {
+            void MqttConnectionCore::s_onConnectionTermination(void *userData)
+            {
+                auto *connectionCore = reinterpret_cast<MqttConnectionCore *>(userData);
+                // The underlying connection is destroyed, so no one can access the Core object, so it's safe to
+                // initiate self-destruction by releasing owning pointer to itself.
+                connectionCore->m_self.reset();
+            }
+
             void MqttConnectionCore::s_onConnectionInterrupted(
                 aws_mqtt_client_connection * /*connection*/,
                 int errorCode,
@@ -486,7 +494,8 @@ namespace Aws
                     aws_mqtt_client_connection_set_connection_closed_handler(
                         self->m_underlyingConnection, MqttConnectionCore::s_onConnectionClosed, self);
 
-                    aws_mqtt_client_connection_set_conn;
+                    aws_mqtt_client_connection_set_connection_termination_handler(
+                        self->m_underlyingConnection, MqttConnectionCore::s_onConnectionTermination, self);
                 }
                 else
                 {
@@ -604,10 +613,7 @@ namespace Aws
 
             MqttConnectionCore::operator bool() const noexcept { return m_underlyingConnection != nullptr; }
 
-            void MqttConnectionCore::Init()
-            {
-                m_self = shared_from_this();
-            }
+            void MqttConnectionCore::Init() { m_self = shared_from_this(); }
 
             void MqttConnectionCore::Close()
             {

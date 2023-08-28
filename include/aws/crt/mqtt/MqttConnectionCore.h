@@ -290,6 +290,8 @@ namespace Aws
                     bool useWebsocket,
                     Allocator *allocator) noexcept;
 
+                static void s_onConnectionTermination(void *userData);
+
                 static void s_onConnectionInterrupted(aws_mqtt_client_connection *, int errorCode, void *userData);
                 static void s_onConnectionCompleted(
                     aws_mqtt_client_connection *,
