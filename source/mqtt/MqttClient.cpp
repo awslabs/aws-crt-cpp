@@ -9,6 +9,7 @@
 #include <aws/crt/http/HttpProxyStrategy.h>
 #include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Bootstrap.h>
+#include <aws/crt/mqtt/MqttConnection.h>
 
 #include <utility>
 
@@ -79,9 +80,8 @@ namespace Aws
                 // or allocate_shared? Well, MqttConnection constructors are private and stl is dumb like that.
                 // so, we do it manually.
                 Allocator *allocator = m_client->allocator;
-                MqttConnection *toSeat =
-                    reinterpret_cast<MqttConnection *>(aws_mem_acquire(allocator, sizeof(MqttConnection)));
-                if (!toSeat)
+                auto *toSeat = reinterpret_cast<MqttConnection *>(aws_mem_acquire(allocator, sizeof(MqttConnection)));
+                if (toSeat == nullptr)
                 {
                     return nullptr;
                 }
@@ -104,9 +104,9 @@ namespace Aws
                 // or allocate_shared? Well, MqttConnection constructors are private and stl is dumb like that.
                 // so, we do it manually.
                 Allocator *allocator = m_client->allocator;
-                MqttConnection *toSeat =
+                auto *toSeat =
                     reinterpret_cast<MqttConnection *>(aws_mem_acquire(m_client->allocator, sizeof(MqttConnection)));
-                if (!toSeat)
+                if (toSeat == nullptr)
                 {
                     return nullptr;
                 }
