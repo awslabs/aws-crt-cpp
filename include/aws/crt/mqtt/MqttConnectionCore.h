@@ -369,9 +369,9 @@ namespace Aws
 
                 static void s_onWebsocketHandshake(
                     struct aws_http_message *request,
-                    void *user_data,
-                    aws_mqtt_transform_websocket_handshake_complete_fn *complete_fn,
-                    void *complete_ctx);
+                    void *userData,
+                    aws_mqtt_transform_websocket_handshake_complete_fn *completeFn,
+                    void *completeCtx);
 
                 static void s_connectionInit(
                     MqttConnectionCore *self,

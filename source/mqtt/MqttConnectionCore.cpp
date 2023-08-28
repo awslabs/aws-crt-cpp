@@ -31,7 +31,6 @@ namespace Aws
                 std::shared_ptr<MqttConnection> connection;
                 {
                     std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
-                    // Connection is not accessible anymore.
                     if (!connectionCore->m_isConnectionAlive)
                     {
                         return;
@@ -63,7 +62,6 @@ namespace Aws
                 std::shared_ptr<MqttConnection> connection;
                 {
                     std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
-                    // Connection is not accessible anymore.
                     if (!connectionCore->m_isConnectionAlive)
                     {
                         return;
@@ -103,7 +101,6 @@ namespace Aws
                 std::shared_ptr<MqttConnection> connection;
                 {
                     std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
-                    // Connection is not accessible anymore.
                     if (!connectionCore->m_isConnectionAlive)
                     {
                         return;
@@ -136,7 +133,6 @@ namespace Aws
                 std::shared_ptr<MqttConnection> connection;
                 {
                     std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
-                    // Connection is not accessible anymore.
                     if (!connectionCore->m_isConnectionAlive)
                     {
                         return;
@@ -168,7 +164,6 @@ namespace Aws
                 std::shared_ptr<MqttConnection> connection;
                 {
                     std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
-                    // Connection is not accessible anymore.
                     if (!connectionCore->m_isConnectionAlive)
                     {
                         return;
@@ -202,7 +197,6 @@ namespace Aws
                 std::shared_ptr<MqttConnection> connection;
                 {
                     std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
-                    // Connection is not accessible anymore.
                     if (!connectionCore->m_isConnectionAlive)
                     {
                         return;
@@ -234,7 +228,6 @@ namespace Aws
                 std::shared_ptr<MqttConnection> connection;
                 {
                     std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
-                    // Connection is not accessible anymore.
                     if (!connectionCore->m_isConnectionAlive)
                     {
                         return;
@@ -287,7 +280,6 @@ namespace Aws
                 std::shared_ptr<MqttConnection> connection;
                 {
                     std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
-                    // Connection is not accessible anymore.
                     if (!connectionCore->m_isConnectionAlive)
                     {
                         return;
@@ -330,13 +322,11 @@ namespace Aws
                     std::shared_ptr<MqttConnection> connection;
                     {
                         std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
-                        // Connection is not accessible anymore.
                         if (connectionCore->m_isConnectionAlive)
                         {
                             connection = connectionCore->m_connection.lock();
                         }
                     }
-
                     if (connection)
                     {
                         callbackData->onOperationComplete(*connection, packetId, errorCode);
@@ -370,29 +360,40 @@ namespace Aws
             {
                 auto *callbackData = reinterpret_cast<SubAckCallbackData *>(userData);
 
+                // An owning pointer to the connection should be obtained only if the user callback is defined.
                 if (callbackData->onSubAck)
                 {
-                    String topicStr(reinterpret_cast<char *>(topic->ptr), topic->len);
-                    callbackData->onSubAck(*callbackData->connection, packetId, topicStr, qos, errorCode);
+                    auto *connectionCore = callbackData->connectionCore;
+                    std::shared_ptr<MqttConnection> connection;
+                    {
+                        std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
+                        if (connectionCore->m_isConnectionAlive)
+                        {
+                            connection = connectionCore->m_connection.lock();
+                        }
+                    }
+                    if (connection)
+                    {
+                        String topicStr(reinterpret_cast<char *>(topic->ptr), topic->len);
+                        callbackData->onSubAck(*connection, packetId, topicStr, qos, errorCode);
+                    }
                 }
 
+                // Clean up previously allocated resources.
                 if (callbackData->topic != nullptr)
                 {
                     aws_mem_release(
                         callbackData->allocator, reinterpret_cast<void *>(const_cast<char *>(callbackData->topic)));
                 }
-
                 Crt::Delete(callbackData, callbackData->allocator);
             }
 
             struct MultiSubAckCallbackData
             {
-                MultiSubAckCallbackData() : connection(nullptr), topic(nullptr), allocator(nullptr) {}
-
-                MqttConnection *connection;
+                MqttConnectionCore *connectionCore = nullptr;
                 OnMultiSubAckHandler onSubAck;
-                const char *topic;
-                Allocator *allocator;
+                const char *topic = nullptr;
+                Allocator *allocator = nullptr;
             };
 
             void MqttConnectionCore::s_onMultiSubAck(
@@ -406,28 +407,43 @@ namespace Aws
 
                 if (callbackData->onSubAck)
                 {
-                    size_t length = aws_array_list_length(topicSubacks);
-                    Vector<String> topics;
-                    topics.reserve(length);
-                    QOS qos = AWS_MQTT_QOS_AT_MOST_ONCE;
-                    for (size_t i = 0; i < length; ++i)
+                    auto *connectionCore = callbackData->connectionCore;
+                    std::shared_ptr<MqttConnection> connection;
                     {
-                        aws_mqtt_topic_subscription *subscription = nullptr;
-                        aws_array_list_get_at(topicSubacks, &subscription, i);
-                        topics.push_back(
-                            String(reinterpret_cast<char *>(subscription->topic.ptr), subscription->topic.len));
-                        qos = subscription->qos;
+                        std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
+                        if (connectionCore->m_isConnectionAlive)
+                        {
+                            connection = connectionCore->m_connection.lock();
+                        }
                     }
 
-                    callbackData->onSubAck(*callbackData->connection, packetId, topics, qos, errorCode);
+                    if (connection)
+                    {
+                        size_t length = aws_array_list_length(topicSubacks);
+                        Vector<String> topics;
+                        topics.reserve(length);
+                        QOS qos = AWS_MQTT_QOS_AT_MOST_ONCE;
+                        for (size_t i = 0; i < length; ++i)
+                        {
+                            aws_mqtt_topic_subscription *subscription = nullptr;
+                            aws_array_list_get_at(topicSubacks, &subscription, i);
+                            // TODO Use emplace_back.
+                            topics.push_back(
+                                String(reinterpret_cast<char *>(subscription->topic.ptr), subscription->topic.len));
+                            // TODO Is only the last one needed?
+                            qos = subscription->qos;
+                        }
+
+                        callbackData->onSubAck(*connection, packetId, topics, qos, errorCode);
+                    }
                 }
 
+                // Clean up previously allocated resources.
                 if (callbackData->topic != nullptr)
                 {
                     aws_mem_release(
                         callbackData->allocator, reinterpret_cast<void *>(const_cast<char *>(callbackData->topic)));
                 }
-
                 Crt::Delete(callbackData, callbackData->allocator);
             }
 
@@ -478,25 +494,42 @@ namespace Aws
 
             void MqttConnectionCore::s_onWebsocketHandshake(
                 struct aws_http_message *rawRequest,
-                void *user_data,
-                aws_mqtt_transform_websocket_handshake_complete_fn *complete_fn,
-                void *complete_ctx)
+                void *userData,
+                aws_mqtt_transform_websocket_handshake_complete_fn *completeFn,
+                void *completeCtx)
             {
-                auto *connection = reinterpret_cast<MqttConnectionCore *>(user_data);
+                auto *connectionCore = reinterpret_cast<MqttConnectionCore *>(userData);
 
-                Allocator *allocator = connection->m_allocator;
+                std::shared_ptr<MqttConnection> connection;
+                {
+                    std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
+                    if (!connectionCore->m_isConnectionAlive)
+                    {
+                        return;
+                    }
+                    connection = connectionCore->m_connection.lock();
+                }
+                if (!connection)
+                {
+                    return;
+                }
+
+                // At this point we ensured that the MqttConnection object will be alive for the duration of the
+                // callback execution, so no critical section is needed.
+
+                Allocator *allocator = connectionCore->m_allocator;
                 // we have to do this because of private constructors.
                 auto *toSeat =
                     reinterpret_cast<Http::HttpRequest *>(aws_mem_acquire(allocator, sizeof(Http::HttpRequest)));
                 toSeat = new (toSeat) Http::HttpRequest(allocator, rawRequest);
 
-                std::shared_ptr<Http::HttpRequest> request = std::shared_ptr<Http::HttpRequest>(
+                auto request = std::shared_ptr<Http::HttpRequest>(
                     toSeat, [allocator](Http::HttpRequest *ptr) { Crt::Delete(ptr, allocator); });
 
                 auto onInterceptComplete =
-                    [complete_fn,
-                     complete_ctx](const std::shared_ptr<Http::HttpRequest> &transformedRequest, int errorCode) {
-                        complete_fn(transformedRequest->GetUnderlyingMessage(), errorCode, complete_ctx);
+                    [completeFn,
+                     completeCtx](const std::shared_ptr<Http::HttpRequest> &transformedRequest, int errorCode) {
+                        completeFn(transformedRequest->GetUnderlyingMessage(), errorCode, completeCtx);
                     };
 
                 connection->WebsocketInterceptor(request, onInterceptComplete);
