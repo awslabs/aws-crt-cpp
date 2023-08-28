@@ -41,7 +41,6 @@ namespace Aws
         namespace Mqtt
         {
             class MqttClient;
-            class MqttConnection;
 
             /**
              * Represents a persistent Mqtt Connection. The memory is owned by MqttClient or
@@ -85,11 +84,11 @@ namespace Aws
                 /**
                  * Sets login credentials for the connection. The must get set before the Connect call
                  * if it is to be used.
-                 * @param userName user name to add to the MQTT CONNECT packet
+                 * @param username user name to add to the MQTT CONNECT packet
                  * @param password password to add to the MQTT CONNECT packet
                  * @return success/failure
                  */
-                bool SetLogin(const char *userName, const char *password) noexcept;
+                bool SetLogin(const char *username, const char *password) noexcept;
 
                 /**
                  * @deprecated Sets websocket proxy options. Replaced by SetHttpProxyOptions.
@@ -297,6 +296,8 @@ namespace Aws
                     const Io::SocketOptions &socketOptions,
                     bool useWebsocket,
                     Allocator *allocator) noexcept;
+
+                std::shared_ptr<MqttConnectionCore> m_connectionCore;
             };
         } // namespace Mqtt
     }     // namespace Crt

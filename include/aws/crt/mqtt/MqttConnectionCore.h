@@ -26,8 +26,9 @@ namespace Aws
         {
             class MqttConnection;
 
-            class AWS_CRT_CPP_API MqttConnectionCore final
+            class AWS_CRT_CPP_API MqttConnectionCore final : public std::enable_shared_from_this<MqttConnectionCore>
             {
+                // TODO Use creation token.
                 friend class MqttConnection;
 
               public:
@@ -42,6 +43,12 @@ namespace Aws
                  * @return true if the instance is in a valid state, false otherwise.
                  */
                 operator bool() const noexcept;
+
+                /**
+                 * @internal
+                 * Initialize.
+                 */
+                void Init();
 
                 /**
                  * @internal
@@ -197,11 +204,6 @@ namespace Aws
                 bool SetOnMessageHandler(OnMessageReceivedHandler &&onMessage) noexcept;
 
                 /**
-                 * @deprecated Use alternate SetOnMessageHandler()
-                 */
-                bool SetOnMessageHandler(OnPublishReceivedHandler &&onPublish) noexcept;
-
-                /**
                  * Unsubscribes from topicFilter. OnOperationCompleteHandler will be invoked upon receipt of
                  * an unsuback message.
                  *
@@ -239,48 +241,11 @@ namespace Aws
                  */
                 const MqttConnectionOperationStatistics &GetOperationStatistics() noexcept;
 
-                /* TODO Since these members have public visibility, I cannot move them here. */
-                /* OnConnectionInterruptedHandler OnConnectionInterrupted; */
-                /* OnConnectionResumedHandler OnConnectionResumed; */
-                /* OnConnectionCompletedHandler OnConnectionCompleted; */
-                /* OnDisconnectHandler OnDisconnect; */
-                /* OnWebSocketHandshakeIntercept WebsocketInterceptor; */
-                /* OnConnectionClosedHandler OnConnectionClosed; */
-                /* OnConnectionSuccessHandler OnConnectionSuccess; */
-                /* OnConnectionFailureHandler OnConnectionFailure; */
-
               private:
-                aws_mqtt_client *m_owningClient;
-                aws_mqtt_client_connection *m_underlyingConnection;
-                String m_hostName;
-                uint16_t m_port;
-                Crt::Io::TlsContext m_tlsContext;
-                Io::TlsConnectionOptions m_tlsOptions;
-                Io::SocketOptions m_socketOptions;
-                Crt::Optional<Http::HttpClientConnectionProxyOptions> m_proxyOptions;
-                void *m_onAnyCbData;
-                bool m_useTls;
-                bool m_useWebsocket;
-                MqttConnectionOperationStatistics m_operationStatistics;
-                Allocator *m_allocator;
-
                 /**
                  * @internal
+                 * Constructor for MQTT311 connection with TLS.
                  */
-                std::mutex m_connectionMutex;
-                /**
-                 * @internal
-                 */
-                bool m_isConnectionAlive;
-                /**
-                 * @internal
-                 */
-                std::weak_ptr<MqttConnection> m_connection;
-                /**
-                 * @internal
-                 */
-                std::shared_ptr<MqttConnectionCore> m_self;
-
                 MqttConnectionCore(
                     aws_mqtt_client *client,
                     const char *hostName,
@@ -289,6 +254,10 @@ namespace Aws
                     const Crt::Io::TlsContext &tlsContext,
                     bool useWebsocket) noexcept;
 
+                /**
+                 * @internal
+                 * Constructor for MQTT311 connection.
+                 */
                 MqttConnectionCore(
                     aws_mqtt_client *client,
                     const char *hostName,
@@ -296,6 +265,10 @@ namespace Aws
                     const Io::SocketOptions &socketOptions,
                     bool useWebsocket) noexcept;
 
+                /**
+                 * @internal
+                 * Constructor for MQTT5 connection with TLS.
+                 */
                 MqttConnectionCore(
                     aws_mqtt5_client *mqtt5Client,
                     const char *hostName,
@@ -305,6 +278,10 @@ namespace Aws
                     bool useWebsocket,
                     Allocator *allocator) noexcept;
 
+                /**
+                 * @internal
+                 * Constructor for MQTT5 connection.
+                 */
                 MqttConnectionCore(
                     aws_mqtt5_client *mqtt5Client,
                     const char *hostName,
@@ -381,6 +358,29 @@ namespace Aws
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
                     aws_mqtt5_client *mqtt5Client = nullptr);
+
+                aws_mqtt_client *m_owningClient;
+                aws_mqtt_client_connection *m_underlyingConnection;
+                String m_hostName;
+                uint16_t m_port;
+                Crt::Io::TlsContext m_tlsContext;
+                Io::TlsConnectionOptions m_tlsOptions;
+                Io::SocketOptions m_socketOptions;
+                Crt::Optional<Http::HttpClientConnectionProxyOptions> m_proxyOptions;
+                void *m_onAnyCbData;
+                bool m_useTls;
+                bool m_useWebsocket;
+                MqttConnectionOperationStatistics m_operationStatistics;
+                Allocator *m_allocator;
+
+                /** @internal */
+                std::mutex m_connectionMutex;
+                /** @internal */
+                bool m_isConnectionAlive;
+                /** @internal */
+                std::weak_ptr<MqttConnection> m_connection;
+                /** @internal */
+                std::shared_ptr<MqttConnectionCore> m_self;
             };
         } // namespace Mqtt
     }     // namespace Crt

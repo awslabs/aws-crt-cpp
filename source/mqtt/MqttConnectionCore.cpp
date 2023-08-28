@@ -485,6 +485,8 @@ namespace Aws
 
                     aws_mqtt_client_connection_set_connection_closed_handler(
                         self->m_underlyingConnection, MqttConnectionCore::s_onConnectionClosed, self);
+
+                    aws_mqtt_client_connection_set_conn;
                 }
                 else
                 {
@@ -601,6 +603,11 @@ namespace Aws
             }
 
             MqttConnectionCore::operator bool() const noexcept { return m_underlyingConnection != nullptr; }
+
+            void MqttConnectionCore::Init()
+            {
+                m_self = shared_from_this();
+            }
 
             void MqttConnectionCore::Close()
             {
@@ -735,15 +742,6 @@ namespace Aws
             aws_mqtt_client_connection *MqttConnectionCore::GetUnderlyingConnection() noexcept
             {
                 return m_underlyingConnection;
-            }
-
-            bool MqttConnectionCore::SetOnMessageHandler(OnPublishReceivedHandler &&onPublish) noexcept
-            {
-                return SetOnMessageHandler(
-                    [onPublish](
-                        MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
-                        onPublish(connection, topic, payload);
-                    });
             }
 
             bool MqttConnectionCore::SetOnMessageHandler(OnMessageReceivedHandler &&onMessage) noexcept
