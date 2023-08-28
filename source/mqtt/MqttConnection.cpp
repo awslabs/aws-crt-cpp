@@ -30,7 +30,7 @@ namespace Aws
             {
                 m_connectionCore = std::make_shared<MqttConnectionCore>(
                     client, hostName, port, socketOptions, tlsContext, useWebsocket);
-                m_connectionCore
+                m_connectionCore->Init();
             }
 
             MqttConnection::MqttConnection(
@@ -42,6 +42,7 @@ namespace Aws
             {
                 m_connectionCore =
                     std::make_shared<MqttConnectionCore>(client, hostName, port, socketOptions, useWebsocket);
+                m_connectionCore->Init();
             }
 
             MqttConnection::MqttConnection(
@@ -49,12 +50,13 @@ namespace Aws
                 const char *hostName,
                 uint16_t port,
                 const Io::SocketOptions &socketOptions,
-                const Crt::Io::TlsConnectionOptions &tlsOptions,
+                const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
                 bool useWebsocket,
                 Allocator *allocator) noexcept
             {
                 m_connectionCore = std::make_shared<MqttConnectionCore>(
-                    mqtt5Client, hostName, port, socketOptions, tlsOptions, useWebsocket, allocator);
+                    mqtt5Client, hostName, port, socketOptions, tlsConnectionOptions, useWebsocket, allocator);
+                m_connectionCore->Init();
             }
 
             MqttConnection::MqttConnection(
@@ -67,6 +69,7 @@ namespace Aws
             {
                 m_connectionCore = std::make_shared<MqttConnectionCore>(
                     mqtt5Client, hostName, port, socketOptions, useWebsocket, allocator);
+                m_connectionCore->Init();
             }
 
             MqttConnection::~MqttConnection()
@@ -159,17 +162,17 @@ namespace Aws
             uint16_t MqttConnection::Subscribe(
                 const Vector<std::pair<const char *, OnPublishReceivedHandler>> &topicFilters,
                 QOS qos,
-                OnMultiSubAckHandler &&onSubAck) noexcept
+                OnMultiSubAckHandler &&onOpComplete) noexcept
             {
-                return m_connectionCore->Subscribe(topicFilters, qos, std::move(onSubAck));
+                return m_connectionCore->Subscribe(topicFilters, qos, std::move(onOpComplete));
             }
 
             uint16_t MqttConnection::Subscribe(
                 const Vector<std::pair<const char *, OnMessageReceivedHandler>> &topicFilters,
                 QOS qos,
-                OnMultiSubAckHandler &&onSubAck) noexcept
+                OnMultiSubAckHandler &&onOpComplete) noexcept
             {
-                return m_connectionCore->Subscribe(topicFilters, qos, std::move(onSubAck));
+                return m_connectionCore->Subscribe(topicFilters, qos, std::move(onOpComplete));
             }
 
             uint16_t MqttConnection::Unsubscribe(
@@ -192,66 +195,6 @@ namespace Aws
             const MqttConnectionOperationStatistics &MqttConnection::GetOperationStatistics() noexcept
             {
                 return m_connectionCore->GetOperationStatistics();
-            }
-
-            std::shared_ptr<MqttConnection> MqttClient::NewConnection(
-                const char *hostName,
-                uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                const Crt::Io::TlsContext &tlsContext,
-                bool useWebsocket) noexcept
-            {
-                if (!tlsContext)
-                {
-                    AWS_LOGF_ERROR(
-                        AWS_LS_MQTT_CLIENT,
-                        "id=%p Trying to call MqttClient::NewConnection using an invalid TlsContext.",
-                        (void *)m_client);
-                    aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
-                    return nullptr;
-                }
-
-                // If you're reading this and asking.... why is this so complicated? Why not use make_shared
-                // or allocate_shared? Well, MqttConnection constructors are private and stl is dumb like that.
-                // so, we do it manually.
-                Allocator *allocator = m_client->allocator;
-                MqttConnection *toSeat =
-                    reinterpret_cast<MqttConnection *>(aws_mem_acquire(allocator, sizeof(MqttConnection)));
-                if (!toSeat)
-                {
-                    return nullptr;
-                }
-
-                toSeat = new (toSeat) MqttConnection(m_client, hostName, port, socketOptions, tlsContext, useWebsocket);
-                return std::shared_ptr<MqttConnection>(toSeat, [allocator](MqttConnection *connection) {
-                    connection->~MqttConnection();
-                    aws_mem_release(allocator, reinterpret_cast<void *>(connection));
-                });
-            }
-
-            std::shared_ptr<MqttConnection> MqttClient::NewConnection(
-                const char *hostName,
-                uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                bool useWebsocket) noexcept
-
-            {
-                // If you're reading this and asking.... why is this so complicated? Why not use make_shared
-                // or allocate_shared? Well, MqttConnection constructors are private and stl is dumb like that.
-                // so, we do it manually.
-                Allocator *allocator = m_client->allocator;
-                MqttConnection *toSeat =
-                    reinterpret_cast<MqttConnection *>(aws_mem_acquire(m_client->allocator, sizeof(MqttConnection)));
-                if (!toSeat)
-                {
-                    return nullptr;
-                }
-
-                toSeat = new (toSeat) MqttConnection(m_client, hostName, port, socketOptions, useWebsocket);
-                return std::shared_ptr<MqttConnection>(toSeat, [allocator](MqttConnection *connection) {
-                    connection->~MqttConnection();
-                    aws_mem_release(allocator, reinterpret_cast<void *>(connection));
-                });
             }
         } // namespace Mqtt
     }     // namespace Crt
