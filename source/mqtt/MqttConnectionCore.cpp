@@ -587,6 +587,7 @@ namespace Aws
                 s_connectionInit(this, hostName, port, socketOptions, mqtt5Client);
             }
 
+            // TODO Remove all actions?
             MqttConnectionCore::~MqttConnectionCore()
             {
                 if (*this)
@@ -618,10 +619,10 @@ namespace Aws
                            m_underlyingConnection, &topicCur, qos, retain, &payloadCur) == 0;
             }
 
-            bool MqttConnectionCore::SetLogin(const char *userName, const char *password) noexcept
+            bool MqttConnectionCore::SetLogin(const char *username, const char *password) noexcept
             {
-                ByteBuf userNameBuf = aws_byte_buf_from_c_str(userName);
-                ByteCursor userNameCur = aws_byte_cursor_from_buf(&userNameBuf);
+                ByteBuf usernameBuf = aws_byte_buf_from_c_str(username);
+                ByteCursor usernameCur = aws_byte_cursor_from_buf(&usernameBuf);
 
                 ByteCursor *pwdCurPtr = nullptr;
                 ByteCursor pwdCur;
@@ -631,7 +632,7 @@ namespace Aws
                     pwdCur = ByteCursorFromCString(password);
                     pwdCurPtr = &pwdCur;
                 }
-                return aws_mqtt_client_connection_set_login(m_underlyingConnection, &userNameCur, pwdCurPtr) == 0;
+                return aws_mqtt_client_connection_set_login(m_underlyingConnection, &usernameCur, pwdCurPtr) == 0;
             }
 
             bool MqttConnectionCore::SetWebsocketProxyOptions(
@@ -679,14 +680,16 @@ namespace Aws
 
                 if (m_useWebsocket)
                 {
-                    if (WebsocketInterceptor)
+                    // TODO Add critical section.
+                    auto connection = m_connection.lock();
+                    if (connection->WebsocketInterceptor)
                     {
                         if (aws_mqtt_client_connection_use_websockets(
                                 m_underlyingConnection,
                                 MqttConnectionCore::s_onWebsocketHandshake,
                                 this,
                                 nullptr,
-                                nullptr))
+                                nullptr) != 0)
                         {
                             return false;
                         }
@@ -694,7 +697,7 @@ namespace Aws
                     else
                     {
                         if (aws_mqtt_client_connection_use_websockets(
-                                m_underlyingConnection, nullptr, nullptr, nullptr, nullptr))
+                                m_underlyingConnection, nullptr, nullptr, nullptr, nullptr) != 0)
                         {
                             return false;
                         }
@@ -730,20 +733,21 @@ namespace Aws
             {
                 return SetOnMessageHandler(
                     [onPublish](
-                        MqttConnectionCore &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
+                        MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
                         onPublish(connection, topic, payload);
                     });
             }
 
             bool MqttConnectionCore::SetOnMessageHandler(OnMessageReceivedHandler &&onMessage) noexcept
             {
+                // TODO Is it possible to use std::unique_ptr here?
                 auto *pubCallbackData = Aws::Crt::New<PubCallbackData>(m_allocator);
                 if (pubCallbackData == nullptr)
                 {
                     return false;
                 }
 
-                pubCallbackData->connection = this;
+                pubCallbackData->connectionCore = this;
                 pubCallbackData->onMessageReceived = std::move(onMessage);
                 pubCallbackData->allocator = m_allocator;
 
