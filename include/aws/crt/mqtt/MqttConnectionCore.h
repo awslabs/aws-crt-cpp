@@ -30,7 +30,6 @@ namespace Aws
         namespace Mqtt
         {
             class MqttClient;
-            class MqttConnection;
 
             class AWS_CRT_CPP_API MqttConnectionCore final
             {
@@ -176,7 +175,7 @@ namespace Aws
                 uint16_t Subscribe(
                     const Vector<std::pair<const char *, OnMessageReceivedHandler>> &topicFilters,
                     QOS qos,
-                    OnMultiSubAckHandler &&onOpComplete) noexcept;
+                    OnMultiSubAckHandler &&onSubAck) noexcept;
 
                 /**
                  * @deprecated Use alternate Subscribe()
@@ -184,7 +183,7 @@ namespace Aws
                 uint16_t Subscribe(
                     const Vector<std::pair<const char *, OnPublishReceivedHandler>> &topicFilters,
                     QOS qos,
-                    OnMultiSubAckHandler &&onOpComplete) noexcept;
+                    OnMultiSubAckHandler &&onSubAck) noexcept;
 
                 /**
                  * Installs a handler for all incoming publish messages, regardless of if Subscribe has been
@@ -324,7 +323,7 @@ namespace Aws
 
                 static void s_onDisconnect(aws_mqtt_client_connection *connection, void *userData);
                 static void s_onPublish(
-                    aws_mqtt_client_connection *underlyingConnection,
+                    aws_mqtt_client_connection *connection,
                     const aws_byte_cursor *topic,
                     const aws_byte_cursor *payload,
                     bool dup,
@@ -337,13 +336,13 @@ namespace Aws
                     uint16_t packetId,
                     const struct aws_byte_cursor *topic,
                     enum aws_mqtt_qos qos,
-                    int error_code,
+                    int errorCode,
                     void *userdata);
                 static void s_onMultiSubAck(
                     aws_mqtt_client_connection *connection,
                     uint16_t packetId,
-                    const struct aws_array_list *topic_subacks,
-                    int error_code,
+                    const struct aws_array_list *topicSubacks,
+                    int errorCode,
                     void *userdata);
                 static void s_onOpComplete(
                     aws_mqtt_client_connection *connection,
