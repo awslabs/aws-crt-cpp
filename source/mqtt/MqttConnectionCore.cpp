@@ -592,11 +592,6 @@ namespace Aws
             {
                 if (*this)
                 {
-                    // Get rid of the on_closed callback, because if we are destroying the connection we do not care.
-                    aws_mqtt_client_connection_set_connection_closed_handler(m_underlyingConnection, nullptr, nullptr);
-
-                    aws_mqtt_client_connection_release(m_underlyingConnection);
-
                     if (m_onAnyCbData != nullptr)
                     {
                         auto *pubCallbackData = reinterpret_cast<PubCallbackData *>(m_onAnyCbData);
@@ -606,6 +601,19 @@ namespace Aws
             }
 
             MqttConnectionCore::operator bool() const noexcept { return m_underlyingConnection != nullptr; }
+
+            void MqttConnectionCore::close()
+            {
+                {
+                    std::lock_guard<std::mutex> lock(m_connectionMutex);
+                    m_isConnectionAlive = false;
+                }
+
+                if (*this)
+                {
+                    aws_mqtt_client_connection_release(m_underlyingConnection);
+                }
+            }
 
             int MqttConnectionCore::LastError() const noexcept { return aws_last_error(); }
 

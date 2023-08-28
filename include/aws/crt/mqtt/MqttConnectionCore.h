@@ -22,19 +22,13 @@ namespace Aws
 {
     namespace Crt
     {
-        namespace Mqtt5
-        {
-            class Mqtt5ClientCore;
-        }
-
         namespace Mqtt
         {
-            class MqttClient;
+            class MqttConnection;
 
             class AWS_CRT_CPP_API MqttConnectionCore final
             {
-                friend class MqttClient;
-                friend class Mqtt5::Mqtt5ClientCore;
+                friend class MqttConnection;
 
               public:
                 ~MqttConnectionCore();
@@ -44,11 +38,19 @@ namespace Aws
                 MqttConnectionCore &operator=(MqttConnectionCore &&) = delete;
 
                 /**
+                 * @internal
                  * @return true if the instance is in a valid state, false otherwise.
                  */
                 operator bool() const noexcept;
 
                 /**
+                 * @internal
+                 * Close connection.
+                 */
+                void close();
+
+                /**
+                 * @internal
                  * @return the value of the last aws error encountered by operations on this instance.
                  */
                 int LastError() const noexcept;
