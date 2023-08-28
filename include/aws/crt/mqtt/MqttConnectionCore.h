@@ -47,7 +47,7 @@ namespace Aws
                  * @internal
                  * Close connection.
                  */
-                void close();
+                void Close();
 
                 /**
                  * @internal

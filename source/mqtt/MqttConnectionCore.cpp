@@ -602,7 +602,7 @@ namespace Aws
 
             MqttConnectionCore::operator bool() const noexcept { return m_underlyingConnection != nullptr; }
 
-            void MqttConnectionCore::close()
+            void MqttConnectionCore::Close()
             {
                 {
                     std::lock_guard<std::mutex> lock(m_connectionMutex);
