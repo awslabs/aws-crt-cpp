@@ -951,7 +951,6 @@ static int s_TestIotConnectionDestruction(Aws::Crt::Allocator *allocator, void *
     std::mutex mutex;
     std::condition_variable cv;
     bool connection_success = false;
-    bool closed = false;
 
     auto onConnectionSuccess = [&](MqttConnection &, OnConnectionSuccessData *data) {
         {
