@@ -28,15 +28,105 @@ namespace Aws
 
             class AWS_CRT_CPP_API MqttConnectionCore final : public std::enable_shared_from_this<MqttConnectionCore>
             {
-                // TODO Use creation token.
-                friend class MqttConnection;
+                /**
+                 * @internal
+                 */
+                class Key
+                {
+                };
 
               public:
+                /**
+                 * @internal
+                 * Constructor for MQTT311 connection with TLS.
+                 */
+                MqttConnectionCore(
+                    Key key,
+                    aws_mqtt_client *client,
+                    const char *hostName,
+                    uint16_t port,
+                    const Io::SocketOptions &socketOptions,
+                    const Crt::Io::TlsContext &tlsContext,
+                    bool useWebsocket) noexcept;
+
+                /**
+                 * @internal
+                 * Constructor for MQTT311 connection.
+                 */
+                MqttConnectionCore(
+                    Key key,
+                    aws_mqtt_client *client,
+                    const char *hostName,
+                    uint16_t port,
+                    const Io::SocketOptions &socketOptions,
+                    bool useWebsocket) noexcept;
+
+                /**
+                 * @internal
+                 * Constructor for MQTT5 connection with TLS.
+                 */
+                MqttConnectionCore(
+                    Key key,
+                    aws_mqtt5_client *mqtt5Client,
+                    const char *hostName,
+                    uint16_t port,
+                    const Io::SocketOptions &socketOptions,
+                    const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
+                    bool useWebsocket,
+                    Allocator *allocator) noexcept;
+
+                /**
+                 * @internal
+                 * Constructor for MQTT5 connection.
+                 */
+                MqttConnectionCore(
+                    Key key,
+                    aws_mqtt5_client *mqtt5Client,
+                    const char *hostName,
+                    uint16_t port,
+                    const Io::SocketOptions &socketOptions,
+                    bool useWebsocket,
+                    Allocator *allocator) noexcept;
+
                 ~MqttConnectionCore();
                 MqttConnectionCore(const MqttConnectionCore &) = delete;
                 MqttConnectionCore(MqttConnectionCore &&) = delete;
                 MqttConnectionCore &operator=(const MqttConnectionCore &) = delete;
                 MqttConnectionCore &operator=(MqttConnectionCore &&) = delete;
+
+                static std::shared_ptr<MqttConnectionCore> s_Create(
+                    aws_mqtt_client *client,
+                    const char *hostName,
+                    uint16_t port,
+                    const Io::SocketOptions &socketOptions,
+                    const Crt::Io::TlsContext &tlsContext,
+                    bool useWebsocket,
+                    Allocator *allocator);
+
+                static std::shared_ptr<MqttConnectionCore> s_Create(
+                    aws_mqtt_client *client,
+                    const char *hostName,
+                    uint16_t port,
+                    const Io::SocketOptions &socketOptions,
+                    bool useWebsocket,
+                    Allocator *allocator);
+
+                static std::shared_ptr<MqttConnectionCore> s_Create(
+                    aws_mqtt5_client *mqtt5Client,
+                    const char *hostName,
+                    uint16_t port,
+                    const Io::SocketOptions &socketOptions,
+                    const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
+                    bool useWebsocket,
+                    Allocator *allocator);
+
+                static std::shared_ptr<MqttConnectionCore> s_Create(
+                    aws_mqtt5_client *mqtt5Client,
+                    const char *hostName,
+                    uint16_t port,
+                    const Io::SocketOptions &socketOptions,
+                    bool useWebsocket,
+                    Allocator *allocator);
 
                 /**
                  * @internal
@@ -242,54 +332,6 @@ namespace Aws
                 const MqttConnectionOperationStatistics &GetOperationStatistics() noexcept;
 
               private:
-                /**
-                 * @internal
-                 * Constructor for MQTT311 connection with TLS.
-                 */
-                MqttConnectionCore(
-                    aws_mqtt_client *client,
-                    const char *hostName,
-                    uint16_t port,
-                    const Io::SocketOptions &socketOptions,
-                    const Crt::Io::TlsContext &tlsContext,
-                    bool useWebsocket) noexcept;
-
-                /**
-                 * @internal
-                 * Constructor for MQTT311 connection.
-                 */
-                MqttConnectionCore(
-                    aws_mqtt_client *client,
-                    const char *hostName,
-                    uint16_t port,
-                    const Io::SocketOptions &socketOptions,
-                    bool useWebsocket) noexcept;
-
-                /**
-                 * @internal
-                 * Constructor for MQTT5 connection with TLS.
-                 */
-                MqttConnectionCore(
-                    aws_mqtt5_client *mqtt5Client,
-                    const char *hostName,
-                    uint16_t port,
-                    const Io::SocketOptions &socketOptions,
-                    const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
-                    bool useWebsocket,
-                    Allocator *allocator) noexcept;
-
-                /**
-                 * @internal
-                 * Constructor for MQTT5 connection.
-                 */
-                MqttConnectionCore(
-                    aws_mqtt5_client *mqtt5Client,
-                    const char *hostName,
-                    uint16_t port,
-                    const Io::SocketOptions &socketOptions,
-                    bool useWebsocket,
-                    Allocator *allocator) noexcept;
-
                 static void s_onConnectionTermination(void *userData);
 
                 static void s_onConnectionInterrupted(aws_mqtt_client_connection *, int errorCode, void *userData);

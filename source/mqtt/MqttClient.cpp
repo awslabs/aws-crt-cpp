@@ -86,7 +86,8 @@ namespace Aws
                     return nullptr;
                 }
 
-                toSeat = new (toSeat) MqttConnection(m_client, hostName, port, socketOptions, tlsContext, useWebsocket);
+                toSeat = new (toSeat)
+                    MqttConnection(m_client, hostName, port, socketOptions, tlsContext, useWebsocket, allocator);
                 return std::shared_ptr<MqttConnection>(toSeat, [allocator](MqttConnection *connection) {
                     connection->~MqttConnection();
                     aws_mem_release(allocator, reinterpret_cast<void *>(connection));
@@ -111,7 +112,7 @@ namespace Aws
                     return nullptr;
                 }
 
-                toSeat = new (toSeat) MqttConnection(m_client, hostName, port, socketOptions, useWebsocket);
+                toSeat = new (toSeat) MqttConnection(m_client, hostName, port, socketOptions, useWebsocket, allocator);
                 return std::shared_ptr<MqttConnection>(toSeat, [allocator](MqttConnection *connection) {
                     connection->~MqttConnection();
                     aws_mem_release(allocator, reinterpret_cast<void *>(connection));

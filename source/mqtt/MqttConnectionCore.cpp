@@ -21,6 +21,148 @@ namespace Aws
     {
         namespace Mqtt
         {
+            struct PubCallbackData
+            {
+                MqttConnectionCore *connectionCore = nullptr;
+                OnMessageReceivedHandler onMessageReceived;
+                Allocator *allocator = nullptr;
+            };
+
+            MqttConnectionCore::MqttConnectionCore(
+                Key /*=key*/,
+                aws_mqtt_client *client,
+                const char *hostName,
+                uint16_t port,
+                const Io::SocketOptions &socketOptions,
+                const Crt::Io::TlsContext &tlsContext,
+                bool useWebsocket) noexcept
+                : m_owningClient(client), m_tlsContext(tlsContext), m_tlsOptions(tlsContext.NewConnectionOptions()),
+                  m_onAnyCbData(nullptr), m_useTls(true), m_useWebsocket(useWebsocket), m_allocator(client->allocator)
+            {
+                s_connectionInit(this, hostName, port, socketOptions);
+            }
+
+            MqttConnectionCore::MqttConnectionCore(
+                Key /*=key*/,
+                aws_mqtt_client *client,
+                const char *hostName,
+                uint16_t port,
+                const Io::SocketOptions &socketOptions,
+                bool useWebsocket) noexcept
+                : m_owningClient(client), m_onAnyCbData(nullptr), m_useTls(false), m_useWebsocket(useWebsocket),
+                  m_allocator(client->allocator)
+            {
+                s_connectionInit(this, hostName, port, socketOptions);
+            }
+
+            MqttConnectionCore::MqttConnectionCore(
+                Key /*=key*/,
+                aws_mqtt5_client *mqtt5Client,
+                const char *hostName,
+                uint16_t port,
+                const Io::SocketOptions &socketOptions,
+                const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
+                bool useWebsocket,
+                Allocator *allocator) noexcept
+                : m_owningClient(nullptr), m_tlsOptions(tlsConnectionOptions), m_onAnyCbData(nullptr), m_useTls(true),
+                  m_useWebsocket(useWebsocket), m_allocator(allocator)
+            {
+                s_connectionInit(this, hostName, port, socketOptions, mqtt5Client);
+            }
+
+            MqttConnectionCore::MqttConnectionCore(
+                Key /*=key*/,
+                aws_mqtt5_client *mqtt5Client,
+                const char *hostName,
+                uint16_t port,
+                const Io::SocketOptions &socketOptions,
+                bool useWebsocket,
+                Allocator *allocator) noexcept
+                : m_owningClient(nullptr), m_onAnyCbData(nullptr), m_useTls(false), m_useWebsocket(useWebsocket),
+                  m_allocator(allocator)
+            {
+                s_connectionInit(this, hostName, port, socketOptions, mqtt5Client);
+            }
+
+            // TODO Remove all actions?
+            MqttConnectionCore::~MqttConnectionCore()
+            {
+                if (*this)
+                {
+                    if (m_onAnyCbData != nullptr)
+                    {
+                        auto *pubCallbackData = reinterpret_cast<PubCallbackData *>(m_onAnyCbData);
+                        Crt::Delete(pubCallbackData, pubCallbackData->allocator);
+                    }
+                }
+            }
+
+            std::shared_ptr<MqttConnectionCore> MqttConnectionCore::s_Create(
+                aws_mqtt_client *client,
+                const char *hostName,
+                uint16_t port,
+                const Io::SocketOptions &socketOptions,
+                const Crt::Io::TlsContext &tlsContext,
+                bool useWebsocket,
+                Allocator *allocator)
+            {
+                auto connectionCore = MakeShared<MqttConnectionCore>(
+                    allocator, Key{}, client, hostName, port, socketOptions, tlsContext, useWebsocket);
+                connectionCore->Init();
+                return connectionCore;
+            }
+
+            std::shared_ptr<MqttConnectionCore> MqttConnectionCore::s_Create(
+                aws_mqtt_client *client,
+                const char *hostName,
+                uint16_t port,
+                const Io::SocketOptions &socketOptions,
+                bool useWebsocket,
+                Allocator *allocator)
+            {
+                auto connectionCore = MakeShared<MqttConnectionCore>(
+                    allocator, Key{}, client, hostName, port, socketOptions, useWebsocket);
+                connectionCore->Init();
+                return connectionCore;
+            }
+
+            std::shared_ptr<MqttConnectionCore> MqttConnectionCore::s_Create(
+                aws_mqtt5_client *mqtt5Client,
+                const char *hostName,
+                uint16_t port,
+                const Io::SocketOptions &socketOptions,
+                const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
+                bool useWebsocket,
+                Allocator *allocator)
+            {
+                auto connectionCore = MakeShared<MqttConnectionCore>(
+                    allocator,
+                    Key{},
+                    mqtt5Client,
+                    hostName,
+                    port,
+                    socketOptions,
+                    tlsConnectionOptions,
+                    useWebsocket,
+                    allocator);
+                connectionCore->Init();
+                return connectionCore;
+            }
+
+            std::shared_ptr<MqttConnectionCore> MqttConnectionCore::s_Create(
+                aws_mqtt5_client *mqtt5Client,
+                const char *hostName,
+                uint16_t port,
+                const Io::SocketOptions &socketOptions,
+                bool useWebsocket,
+                Allocator *allocator)
+            {
+                auto connectionCore = MakeShared<MqttConnectionCore>(
+                    allocator, Key{}, mqtt5Client, hostName, port, socketOptions, useWebsocket, allocator);
+                connectionCore->Init();
+                return connectionCore;
+            }
+
             void MqttConnectionCore::s_onConnectionTermination(void *userData)
             {
                 auto *connectionCore = reinterpret_cast<MqttConnectionCore *>(userData);
@@ -255,13 +397,6 @@ namespace Aws
                     connection->OnDisconnect(*connection);
                 }
             }
-
-            struct PubCallbackData
-            {
-                MqttConnectionCore *connectionCore = nullptr;
-                OnMessageReceivedHandler onMessageReceived;
-                Allocator *allocator = nullptr;
-            };
 
             static void s_cleanUpOnPublishData(void *userData)
             {
@@ -544,71 +679,6 @@ namespace Aws
                     };
 
                 connection->WebsocketInterceptor(request, onInterceptComplete);
-            }
-
-            MqttConnectionCore::MqttConnectionCore(
-                aws_mqtt_client *client,
-                const char *hostName,
-                uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                const Crt::Io::TlsContext &tlsContext,
-                bool useWebsocket) noexcept
-                : m_owningClient(client), m_tlsContext(tlsContext), m_tlsOptions(tlsContext.NewConnectionOptions()),
-                  m_onAnyCbData(nullptr), m_useTls(true), m_useWebsocket(useWebsocket), m_allocator(client->allocator)
-            {
-                s_connectionInit(this, hostName, port, socketOptions);
-            }
-
-            MqttConnectionCore::MqttConnectionCore(
-                aws_mqtt_client *client,
-                const char *hostName,
-                uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                bool useWebsocket) noexcept
-                : m_owningClient(client), m_onAnyCbData(nullptr), m_useTls(false), m_useWebsocket(useWebsocket),
-                  m_allocator(client->allocator)
-            {
-                s_connectionInit(this, hostName, port, socketOptions);
-            }
-
-            MqttConnectionCore::MqttConnectionCore(
-                aws_mqtt5_client *mqtt5Client,
-                const char *hostName,
-                uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
-                bool useWebsocket,
-                Allocator *allocator) noexcept
-                : m_owningClient(nullptr), m_tlsOptions(tlsConnectionOptions), m_onAnyCbData(nullptr), m_useTls(true),
-                  m_useWebsocket(useWebsocket), m_allocator(allocator)
-            {
-                s_connectionInit(this, hostName, port, socketOptions, mqtt5Client);
-            }
-
-            MqttConnectionCore::MqttConnectionCore(
-                aws_mqtt5_client *mqtt5Client,
-                const char *hostName,
-                uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                bool useWebsocket,
-                Allocator *allocator) noexcept
-                : m_owningClient(nullptr), m_onAnyCbData(nullptr), m_useTls(false), m_useWebsocket(useWebsocket),
-                  m_allocator(allocator)
-            {
-                s_connectionInit(this, hostName, port, socketOptions, mqtt5Client);
-            }
-
-            // TODO Remove all actions?
-            MqttConnectionCore::~MqttConnectionCore()
-            {
-                if (*this)
-                {
-                    if (m_onAnyCbData != nullptr)
-                    {
-                        auto *pubCallbackData = reinterpret_cast<PubCallbackData *>(m_onAnyCbData);
-                        Crt::Delete(pubCallbackData, pubCallbackData->allocator);
-                    }
-                }
             }
 
             MqttConnectionCore::operator bool() const noexcept { return m_underlyingConnection != nullptr; }

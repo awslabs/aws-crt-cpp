@@ -271,14 +271,16 @@ namespace Aws
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
                     const Crt::Io::TlsContext &tlsContext,
-                    bool useWebsocket) noexcept;
+                    bool useWebsocket,
+                    Allocator *allocator) noexcept;
 
                 MqttConnection(
                     aws_mqtt_client *client,
                     const char *hostName,
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
-                    bool useWebsocket) noexcept;
+                    bool useWebsocket,
+                    Allocator *allocator) noexcept;
 
                 MqttConnection(
                     aws_mqtt5_client *mqtt5Client,

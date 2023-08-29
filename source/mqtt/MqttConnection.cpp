@@ -26,11 +26,11 @@ namespace Aws
                 uint16_t port,
                 const Io::SocketOptions &socketOptions,
                 const Crt::Io::TlsContext &tlsContext,
-                bool useWebsocket) noexcept
+                bool useWebsocket,
+                Allocator *allocator) noexcept
             {
-                m_connectionCore = std::make_shared<MqttConnectionCore>(
-                    client, hostName, port, socketOptions, tlsContext, useWebsocket);
-                m_connectionCore->Init();
+                m_connectionCore = MqttConnectionCore::s_Create(
+                    client, hostName, port, socketOptions, tlsContext, useWebsocket, allocator);
             }
 
             MqttConnection::MqttConnection(
@@ -38,11 +38,11 @@ namespace Aws
                 const char *hostName,
                 uint16_t port,
                 const Io::SocketOptions &socketOptions,
-                bool useWebsocket) noexcept
+                bool useWebsocket,
+                Allocator *allocator) noexcept
             {
                 m_connectionCore =
-                    std::make_shared<MqttConnectionCore>(client, hostName, port, socketOptions, useWebsocket);
-                m_connectionCore->Init();
+                    MqttConnectionCore::s_Create(client, hostName, port, socketOptions, useWebsocket, allocator);
             }
 
             MqttConnection::MqttConnection(
@@ -54,9 +54,8 @@ namespace Aws
                 bool useWebsocket,
                 Allocator *allocator) noexcept
             {
-                m_connectionCore = std::make_shared<MqttConnectionCore>(
+                m_connectionCore = MqttConnectionCore::s_Create(
                     mqtt5Client, hostName, port, socketOptions, tlsConnectionOptions, useWebsocket, allocator);
-                m_connectionCore->Init();
             }
 
             MqttConnection::MqttConnection(
@@ -67,9 +66,8 @@ namespace Aws
                 bool useWebsocket,
                 Allocator *allocator) noexcept
             {
-                m_connectionCore = std::make_shared<MqttConnectionCore>(
-                    mqtt5Client, hostName, port, socketOptions, useWebsocket, allocator);
-                m_connectionCore->Init();
+                m_connectionCore =
+                    MqttConnectionCore::s_Create(mqtt5Client, hostName, port, socketOptions, useWebsocket, allocator);
             }
 
             MqttConnection::~MqttConnection()
