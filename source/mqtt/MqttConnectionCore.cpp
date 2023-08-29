@@ -563,8 +563,8 @@ namespace Aws
                             aws_mqtt_topic_subscription *subscription = nullptr;
                             aws_array_list_get_at(topicSubacks, &subscription, i);
                             // TODO Use emplace_back.
-                            topics.push_back(
-                                String(reinterpret_cast<char *>(subscription->topic.ptr), subscription->topic.len));
+                            topics.emplace_back(
+                                reinterpret_cast<char *>(subscription->topic.ptr), subscription->topic.len);
                             // TODO Is only the last one needed?
                             qos = subscription->qos;
                         }
@@ -670,7 +670,10 @@ namespace Aws
                         completeFn(transformedRequest->GetUnderlyingMessage(), errorCode, completeCtx);
                     };
 
-                connection->WebsocketInterceptor(request, onInterceptComplete);
+                if (connection->WebsocketInterceptor)
+                {
+                    connection->WebsocketInterceptor(request, onInterceptComplete);
+                }
             }
 
             MqttConnectionCore::operator bool() const noexcept { return m_underlyingConnection != nullptr; }
@@ -748,7 +751,8 @@ namespace Aws
                 bool cleanSession,
                 uint16_t keepAliveTime,
                 uint32_t pingTimeoutMs,
-                uint32_t protocolOperationTimeoutMs) noexcept
+                uint32_t protocolOperationTimeoutMs,
+                bool setWebSocketInterceptor) noexcept
             {
                 aws_mqtt_connection_options options;
                 AWS_ZERO_STRUCT(options);
@@ -768,9 +772,7 @@ namespace Aws
 
                 if (m_useWebsocket)
                 {
-                    // TODO Add critical section.
-                    auto connection = m_connection.lock();
-                    if (connection->WebsocketInterceptor)
+                    if (setWebSocketInterceptor)
                     {
                         if (aws_mqtt_client_connection_use_websockets(
                                 m_underlyingConnection,

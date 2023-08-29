@@ -76,10 +76,7 @@ namespace Aws
                 m_connectionCore->Close();
             }
 
-            void MqttConnection::Initialize()
-            {
-                m_connectionCore->Initialize(shared_from_this());
-            }
+            void MqttConnection::Initialize() { m_connectionCore->Initialize(shared_from_this()); }
 
             MqttConnection::operator bool() const noexcept { return m_connectionCore->operator bool(); }
 
@@ -119,8 +116,14 @@ namespace Aws
                 uint32_t pingTimeoutMs,
                 uint32_t protocolOperationTimeoutMs) noexcept
             {
+                bool setWebSocketInterceptor = static_cast<bool>(WebsocketInterceptor);
                 return m_connectionCore->Connect(
-                    clientId, cleanSession, keepAliveTime, pingTimeoutMs, protocolOperationTimeoutMs);
+                    clientId,
+                    cleanSession,
+                    keepAliveTime,
+                    pingTimeoutMs,
+                    protocolOperationTimeoutMs,
+                    setWebSocketInterceptor);
             }
 
             bool MqttConnection::Disconnect() noexcept { return m_connectionCore->Disconnect(); }

@@ -219,9 +219,10 @@ namespace Aws
                 bool Connect(
                     const char *clientId,
                     bool cleanSession,
-                    uint16_t keepAliveTimeSecs = 0,
-                    uint32_t pingTimeoutMs = 0,
-                    uint32_t protocolOperationTimeoutMs = 0) noexcept;
+                    uint16_t keepAliveTimeSecs,
+                    uint32_t pingTimeoutMs,
+                    uint32_t protocolOperationTimeoutMs,
+                    bool setWebSocketInterceptor) noexcept;
 
                 /**
                  * Initiates disconnect, OnDisconnectHandler will be invoked in an event-loop thread.
