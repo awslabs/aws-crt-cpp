@@ -7,6 +7,7 @@
 
 #include <aws/testing/aws_test_harness.h>
 
+#include <aws/common/clock.h>
 #include <aws/common/environment.h>
 #include <aws/common/string.h>
 #include <aws/crt/UUID.h>
@@ -963,7 +964,9 @@ static int s_TestIotConnectionDestruction(Aws::Crt::Allocator *allocator, void *
 
     mqttConnection->OnConnectionSuccess = onConnectionSuccess;
 
-    mqttConnection->OnDisconnect = [](MqttConnection &) { std::this_thread::sleep_for(std::chrono::seconds(1)); };
+    mqttConnection->OnDisconnect = [](MqttConnection &) {
+        aws_thread_current_sleep(aws_timestamp_convert(1, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_NANOS, nullptr));
+    };
 
     Aws::Crt::UUID Uuid;
     Aws::Crt::String uuidStr = Uuid.ToString();
