@@ -9,6 +9,8 @@
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/io/SocketOptions.h>
 #include <aws/crt/io/TlsOptions.h>
+#include <aws/crt/mqtt/MqttConnection.h>
+#include <aws/crt/mqtt/MqttTypes.h>
 
 #include <aws/mqtt/client.h>
 #include <aws/mqtt/v5/mqtt5_client.h>
@@ -38,9 +40,6 @@ namespace Aws
 
         namespace Mqtt
         {
-            class MqttClient;
-            class MqttConnection;
-
             /**
              * An MQTT client. This is a move-only type. Unless otherwise specified,
              * all function arguments need only to live through the duration of the
