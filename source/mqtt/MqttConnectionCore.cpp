@@ -106,10 +106,8 @@ namespace Aws
                 bool useWebsocket,
                 Allocator *allocator)
             {
-                auto connectionCore = MakeShared<MqttConnectionCore>(
+                return MakeShared<MqttConnectionCore>(
                     allocator, Key{}, client, hostName, port, socketOptions, tlsContext, useWebsocket);
-                connectionCore->Init();
-                return connectionCore;
             }
 
             std::shared_ptr<MqttConnectionCore> MqttConnectionCore::s_Create(
@@ -120,10 +118,8 @@ namespace Aws
                 bool useWebsocket,
                 Allocator *allocator)
             {
-                auto connectionCore = MakeShared<MqttConnectionCore>(
+                return MakeShared<MqttConnectionCore>(
                     allocator, Key{}, client, hostName, port, socketOptions, useWebsocket);
-                connectionCore->Init();
-                return connectionCore;
             }
 
             std::shared_ptr<MqttConnectionCore> MqttConnectionCore::s_Create(
@@ -135,7 +131,7 @@ namespace Aws
                 bool useWebsocket,
                 Allocator *allocator)
             {
-                auto connectionCore = MakeShared<MqttConnectionCore>(
+                return MakeShared<MqttConnectionCore>(
                     allocator,
                     Key{},
                     mqtt5Client,
@@ -145,8 +141,6 @@ namespace Aws
                     tlsConnectionOptions,
                     useWebsocket,
                     allocator);
-                connectionCore->Init();
-                return connectionCore;
             }
 
             std::shared_ptr<MqttConnectionCore> MqttConnectionCore::s_Create(
@@ -157,10 +151,8 @@ namespace Aws
                 bool useWebsocket,
                 Allocator *allocator)
             {
-                auto connectionCore = MakeShared<MqttConnectionCore>(
+                return MakeShared<MqttConnectionCore>(
                     allocator, Key{}, mqtt5Client, hostName, port, socketOptions, useWebsocket, allocator);
-                connectionCore->Init();
-                return connectionCore;
             }
 
             void MqttConnectionCore::s_onConnectionTermination(void *userData)
@@ -683,7 +675,12 @@ namespace Aws
 
             MqttConnectionCore::operator bool() const noexcept { return m_underlyingConnection != nullptr; }
 
-            void MqttConnectionCore::Init() { m_self = shared_from_this(); }
+            void MqttConnectionCore::Initialize(const std::shared_ptr<MqttConnection> &connection)
+            {
+                m_connection = connection;
+                m_self = shared_from_this();
+                m_isInitialized = true;
+            }
 
             void MqttConnectionCore::Close()
             {

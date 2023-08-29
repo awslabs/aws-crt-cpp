@@ -49,7 +49,7 @@ namespace Aws
              * specified all function arguments need only to live through the duration of the
              * function call.
              */
-            class AWS_CRT_CPP_API MqttConnection final
+            class AWS_CRT_CPP_API MqttConnection final : public std::enable_shared_from_this<MqttConnection>
             {
                 friend class MqttClient;
                 friend class Mqtt5::Mqtt5ClientCore;
@@ -60,6 +60,8 @@ namespace Aws
                 MqttConnection(MqttConnection &&) = delete;
                 MqttConnection &operator=(const MqttConnection &) = delete;
                 MqttConnection &operator=(MqttConnection &&) = delete;
+
+                void initialize();
 
                 /**
                  * @return true if the instance is in a valid state, false otherwise.

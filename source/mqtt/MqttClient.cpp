@@ -88,10 +88,14 @@ namespace Aws
 
                 toSeat = new (toSeat)
                     MqttConnection(m_client, hostName, port, socketOptions, tlsContext, useWebsocket, allocator);
-                return std::shared_ptr<MqttConnection>(toSeat, [allocator](MqttConnection *connection) {
+                auto mqttConnection = std::shared_ptr<MqttConnection>(toSeat, [allocator](MqttConnection *connection) {
                     connection->~MqttConnection();
                     aws_mem_release(allocator, reinterpret_cast<void *>(connection));
                 });
+
+                mqttConnection->initialize();
+
+                return mqttConnection;
             }
 
             std::shared_ptr<MqttConnection> MqttClient::NewConnection(

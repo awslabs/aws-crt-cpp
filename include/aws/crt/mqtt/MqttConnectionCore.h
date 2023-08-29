@@ -138,7 +138,7 @@ namespace Aws
                  * @internal
                  * Initialize.
                  */
-                void Init();
+                void Initialize(const std::shared_ptr<MqttConnection> &connection);
 
                 /**
                  * @internal
@@ -425,6 +425,8 @@ namespace Aws
                 std::weak_ptr<MqttConnection> m_connection;
                 /** @internal */
                 std::shared_ptr<MqttConnectionCore> m_self;
+                /** @internal */
+                bool m_isInitialized = false;
             };
         } // namespace Mqtt
     }     // namespace Crt
