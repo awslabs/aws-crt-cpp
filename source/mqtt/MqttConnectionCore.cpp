@@ -819,6 +819,7 @@ namespace Aws
                 return m_underlyingConnection;
             }
 
+            // TODO Fix memory leak on second call.
             bool MqttConnectionCore::SetOnMessageHandler(OnMessageReceivedHandler &&onMessage) noexcept
             {
                 // TODO Is it possible to use std::unique_ptr here?
@@ -981,7 +982,11 @@ namespace Aws
                     subscription.qos = qos;
                     subscription.topic = topicFilterCur;
 
-                    aws_array_list_push_back(&multiPub, reinterpret_cast<const void *>(&subscription));
+                    if (aws_array_list_push_back(&multiPub, reinterpret_cast<const void *>(&subscription)) != 0) {
+                        Crt::Delete(pubCallbackData, m_allocator);
+                        errorOccurred = true;
+                        break;
+                    }
                 }
 
                 if (!errorOccurred)
