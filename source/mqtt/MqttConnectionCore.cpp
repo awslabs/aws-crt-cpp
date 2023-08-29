@@ -21,6 +21,9 @@ namespace Aws
     {
         namespace Mqtt
         {
+            /**
+             * @internal
+             */
             struct PubCallbackData
             {
                 MqttConnectionCore *connectionCore = nullptr;
@@ -87,13 +90,10 @@ namespace Aws
             // TODO Remove all actions?
             MqttConnectionCore::~MqttConnectionCore()
             {
-                if (*this)
+                if (*this && m_onAnyCbData != nullptr)
                 {
-                    if (m_onAnyCbData != nullptr)
-                    {
-                        auto *pubCallbackData = reinterpret_cast<PubCallbackData *>(m_onAnyCbData);
-                        Crt::Delete(pubCallbackData, pubCallbackData->allocator);
-                    }
+                    auto *pubCallbackData = reinterpret_cast<PubCallbackData *>(m_onAnyCbData);
+                    Crt::Delete(pubCallbackData, pubCallbackData->allocator);
                 }
             }
 
