@@ -4,13 +4,7 @@
  */
 #include <aws/crt/mqtt/MqttConnection.h>
 
-#include <aws/crt/Api.h>
-#include <aws/crt/StlAllocator.h>
-#include <aws/crt/http/HttpProxyStrategy.h>
-#include <aws/crt/http/HttpRequestResponse.h>
-#include <aws/crt/io/Bootstrap.h>
-
-#include <utility>
+#include <aws/crt/mqtt/MqttConnectionCore.h>
 
 #define AWS_MQTT_MAX_TOPIC_LENGTH 65535
 

@@ -3,20 +3,18 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+
 #include <aws/crt/Exports.h>
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/Types.h>
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/io/SocketOptions.h>
 #include <aws/crt/io/TlsOptions.h>
-#include <aws/crt/mqtt/MqttConnectionCore.h>
 #include <aws/crt/mqtt/MqttTypes.h>
 
 #include <aws/mqtt/client.h>
 #include <aws/mqtt/v5/mqtt5_client.h>
 
-#include <atomic>
-#include <functional>
 #include <memory>
 
 namespace Aws
@@ -31,6 +29,7 @@ namespace Aws
         namespace Mqtt
         {
             class MqttClient;
+            class MqttConnectionCore;
 
             /**
              * Represents a persistent Mqtt Connection. The memory is owned by MqttClient or
