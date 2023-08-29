@@ -240,11 +240,13 @@ namespace Aws
                     toSeat->WebsocketInterceptor = options->m_webSocketInterceptor;
                 }
 
-                return std::shared_ptr<Crt::Mqtt::MqttConnection>(
+                auto mqttConnection = std::shared_ptr<Crt::Mqtt::MqttConnection>(
                     toSeat, [allocator](Crt::Mqtt::MqttConnection *connection) {
                         connection->~MqttConnection();
                         aws_mem_release(allocator, reinterpret_cast<void *>(connection));
                     });
+                mqttConnection->Initialize();
+                return mqttConnection;
             }
 
             void Mqtt5ClientCore::s_publishCompletionCallback(

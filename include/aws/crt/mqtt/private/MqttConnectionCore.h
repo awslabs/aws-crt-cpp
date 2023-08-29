@@ -381,10 +381,11 @@ namespace Aws
                     MqttConnectionCore *self,
                     const char *hostName,
                     uint16_t port,
-                    const Io::SocketOptions &socketOptions,
-                    aws_mqtt5_client *mqtt5Client = nullptr);
+                    const Io::SocketOptions &socketOptions);
 
-                aws_mqtt_client *m_owningClient;
+                void createUnderlyingConnection(aws_mqtt_client *mqttClient);
+                void createUnderlyingConnection(aws_mqtt5_client *mqtt5Client);
+
                 aws_mqtt_client_connection *m_underlyingConnection;
                 String m_hostName;
                 uint16_t m_port;

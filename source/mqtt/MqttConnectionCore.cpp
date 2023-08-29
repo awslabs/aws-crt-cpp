@@ -7,7 +7,6 @@
 
 #include <aws/crt/Api.h>
 #include <aws/crt/http/HttpRequestResponse.h>
-#include <aws/crt/mqtt/MqttConnection.h>
 
 #define AWS_MQTT_MAX_TOPIC_LENGTH 65535
 
@@ -35,9 +34,10 @@ namespace Aws
                 const Io::SocketOptions &socketOptions,
                 const Crt::Io::TlsContext &tlsContext,
                 bool useWebsocket) noexcept
-                : m_owningClient(client), m_tlsContext(tlsContext), m_tlsOptions(tlsContext.NewConnectionOptions()),
-                  m_onAnyCbData(nullptr), m_useTls(true), m_useWebsocket(useWebsocket), m_allocator(client->allocator)
+                : m_tlsContext(tlsContext), m_tlsOptions(tlsContext.NewConnectionOptions()), m_onAnyCbData(nullptr),
+                  m_useTls(true), m_useWebsocket(useWebsocket), m_allocator(client->allocator)
             {
+                createUnderlyingConnection(client);
                 s_connectionInit(this, hostName, port, socketOptions);
             }
 
@@ -48,9 +48,9 @@ namespace Aws
                 uint16_t port,
                 const Io::SocketOptions &socketOptions,
                 bool useWebsocket) noexcept
-                : m_owningClient(client), m_onAnyCbData(nullptr), m_useTls(false), m_useWebsocket(useWebsocket),
-                  m_allocator(client->allocator)
+                : m_onAnyCbData(nullptr), m_useTls(false), m_useWebsocket(useWebsocket), m_allocator(client->allocator)
             {
+                createUnderlyingConnection(client);
                 s_connectionInit(this, hostName, port, socketOptions);
             }
 
@@ -63,10 +63,11 @@ namespace Aws
                 const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
                 bool useWebsocket,
                 Allocator *allocator) noexcept
-                : m_owningClient(nullptr), m_tlsOptions(tlsConnectionOptions), m_onAnyCbData(nullptr), m_useTls(true),
+                : m_tlsOptions(tlsConnectionOptions), m_onAnyCbData(nullptr), m_useTls(true),
                   m_useWebsocket(useWebsocket), m_allocator(allocator)
             {
-                s_connectionInit(this, hostName, port, socketOptions, mqtt5Client);
+                createUnderlyingConnection(mqtt5Client);
+                s_connectionInit(this, hostName, port, socketOptions);
             }
 
             MqttConnectionCore::MqttConnectionCore(
@@ -77,10 +78,10 @@ namespace Aws
                 const Io::SocketOptions &socketOptions,
                 bool useWebsocket,
                 Allocator *allocator) noexcept
-                : m_owningClient(nullptr), m_onAnyCbData(nullptr), m_useTls(false), m_useWebsocket(useWebsocket),
-                  m_allocator(allocator)
+                : m_onAnyCbData(nullptr), m_useTls(false), m_useWebsocket(useWebsocket), m_allocator(allocator)
             {
-                s_connectionInit(this, hostName, port, socketOptions, mqtt5Client);
+                createUnderlyingConnection(mqtt5Client);
+                s_connectionInit(this, hostName, port, socketOptions);
             }
 
             // TODO Remove all actions?
@@ -582,21 +583,11 @@ namespace Aws
                 MqttConnectionCore *self,
                 const char *hostName,
                 uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                aws_mqtt5_client *mqtt5Client)
+                const Io::SocketOptions &socketOptions)
             {
                 self->m_hostName = String(hostName);
                 self->m_port = port;
                 self->m_socketOptions = socketOptions;
-
-                if (mqtt5Client != nullptr)
-                {
-                    self->m_underlyingConnection = aws_mqtt_client_connection_new_from_mqtt5_client(mqtt5Client);
-                }
-                else
-                {
-                    self->m_underlyingConnection = aws_mqtt_client_connection_new(self->m_owningClient);
-                }
 
                 if (self->m_underlyingConnection != nullptr)
                 {
@@ -626,6 +617,16 @@ namespace Aws
                 {
                     AWS_LOGF_DEBUG(AWS_LS_MQTT_CLIENT, "Failed to initialize Mqtt Connection");
                 }
+            }
+
+            void MqttConnectionCore::createUnderlyingConnection(aws_mqtt_client *client)
+            {
+                m_underlyingConnection = aws_mqtt_client_connection_new(client);
+            }
+
+            void MqttConnectionCore::createUnderlyingConnection(aws_mqtt5_client *mqtt5Client)
+            {
+                m_underlyingConnection = aws_mqtt_client_connection_new_from_mqtt5_client(mqtt5Client);
             }
 
             void MqttConnectionCore::s_onWebsocketHandshake(
