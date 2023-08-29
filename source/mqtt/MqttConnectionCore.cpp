@@ -623,6 +623,8 @@ namespace Aws
 
                     aws_mqtt_client_connection_set_connection_termination_handler(
                         self->m_underlyingConnection, MqttConnectionCore::s_onConnectionTermination, self);
+
+                    self->m_isConnectionAlive = true;
                 }
                 else
                 {
