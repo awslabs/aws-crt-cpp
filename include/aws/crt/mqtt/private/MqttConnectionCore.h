@@ -30,15 +30,17 @@ namespace Aws
             {
                 /**
                  * @internal
+                 * An auxiliary struct making MqttConnectionCore class non-publicly-constructible.
+                 * A variation of the passkey idiom.
                  */
-                class ConstructionKey
+                struct ConstructionKey
                 {
                 };
 
               public:
                 /**
                  * @internal
-                 * Constructor for MQTT311 connection with TLS.
+                 * Constructor for MQTT311 client with TLS support.
                  */
                 MqttConnectionCore(
                     ConstructionKey key,
@@ -51,7 +53,7 @@ namespace Aws
 
                 /**
                  * @internal
-                 * Constructor for MQTT311 connection.
+                 * Constructor for MQTT311 client.
                  */
                 MqttConnectionCore(
                     ConstructionKey key,
@@ -63,7 +65,7 @@ namespace Aws
 
                 /**
                  * @internal
-                 * Constructor for MQTT5 connection with TLS.
+                 * Constructor for MQTT5 client with TLS support.
                  */
                 MqttConnectionCore(
                     ConstructionKey key,
@@ -77,7 +79,7 @@ namespace Aws
 
                 /**
                  * @internal
-                 * Constructor for MQTT5 connection.
+                 * Constructor for MQTT5 client.
                  */
                 MqttConnectionCore(
                     ConstructionKey key,

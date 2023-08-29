@@ -28,7 +28,7 @@ namespace Aws
             };
 
             MqttConnectionCore::MqttConnectionCore(
-                ConstructionKey /*=key*/,
+                ConstructionKey /*key*/,
                 aws_mqtt_client *client,
                 const char *hostName,
                 uint16_t port,
@@ -42,7 +42,7 @@ namespace Aws
             }
 
             MqttConnectionCore::MqttConnectionCore(
-                ConstructionKey /*=key*/,
+                ConstructionKey /*key*/,
                 aws_mqtt_client *client,
                 const char *hostName,
                 uint16_t port,
@@ -55,7 +55,7 @@ namespace Aws
             }
 
             MqttConnectionCore::MqttConnectionCore(
-                ConstructionKey /*=key*/,
+                ConstructionKey /*key*/,
                 aws_mqtt5_client *mqtt5Client,
                 const char *hostName,
                 uint16_t port,
@@ -70,7 +70,7 @@ namespace Aws
             }
 
             MqttConnectionCore::MqttConnectionCore(
-                ConstructionKey /*=key*/,
+                ConstructionKey /*key*/,
                 aws_mqtt5_client *mqtt5Client,
                 const char *hostName,
                 uint16_t port,
