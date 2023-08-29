@@ -172,11 +172,6 @@ namespace Aws
                 bool SetLogin(const char *username, const char *password) noexcept;
 
                 /**
-                 * @deprecated Sets websocket proxy options. Replaced by SetHttpProxyOptions.
-                 */
-                bool SetWebsocketProxyOptions(const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
-
-                /**
                  * Sets http proxy options. In order to use an http proxy with mqtt either
                  *   (1) Websockets are used
                  *   (2) Mqtt-over-tls is used and the ALPN list of the tls context contains a tag that resolves to mqtt
@@ -252,15 +247,6 @@ namespace Aws
                     OnSubAckHandler &&onSubAck) noexcept;
 
                 /**
-                 * @deprecated Use alternate Subscribe()
-                 */
-                uint16_t Subscribe(
-                    const char *topicFilter,
-                    QOS qos,
-                    OnPublishReceivedHandler &&onPublish,
-                    OnSubAckHandler &&onSubAck) noexcept;
-
-                /**
                  * Subscribes to multiple topicFilters. OnMessageReceivedHandler will be invoked from an event-loop
                  * thread upon an incoming Publish message. OnMultiSubAckHandler will be invoked
                  * upon receipt of a suback message.
@@ -268,22 +254,14 @@ namespace Aws
                  * @param topicFilters list of pairs of topic filters and message callbacks to invoke on a matching
                  * publish
                  * @param qos maximum qos client is willing to receive matching messages on
-                 * @param onSubAck callback to invoke with the server's response to the subscribe request
+                 * @param onOpComplete callback to invoke with the server's response to the subscribe request
                  *
                  * @return packet id of the subscribe request, or 0 if the attempt failed synchronously
                  */
                 uint16_t Subscribe(
                     const Vector<std::pair<const char *, OnMessageReceivedHandler>> &topicFilters,
                     QOS qos,
-                    OnMultiSubAckHandler &&onSubAck) noexcept;
-
-                /**
-                 * @deprecated Use alternate Subscribe()
-                 */
-                uint16_t Subscribe(
-                    const Vector<std::pair<const char *, OnPublishReceivedHandler>> &topicFilters,
-                    QOS qos,
-                    OnMultiSubAckHandler &&onSubAck) noexcept;
+                    OnMultiSubAckHandler &&onOpComplete) noexcept;
 
                 /**
                  * Installs a handler for all incoming publish messages, regardless of if Subscribe has been

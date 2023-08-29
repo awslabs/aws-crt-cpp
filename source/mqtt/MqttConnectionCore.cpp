@@ -726,13 +726,6 @@ namespace Aws
                 return aws_mqtt_client_connection_set_login(m_underlyingConnection, &usernameCur, pwdCurPtr) == 0;
             }
 
-            bool MqttConnectionCore::SetWebsocketProxyOptions(
-                const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept
-            {
-                m_proxyOptions = proxyOptions;
-                return true;
-            }
-
             bool MqttConnectionCore::SetHttpProxyOptions(
                 const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept
             {
@@ -847,22 +840,6 @@ namespace Aws
             uint16_t MqttConnectionCore::Subscribe(
                 const char *topicFilter,
                 QOS qos,
-                OnPublishReceivedHandler &&onPublish,
-                OnSubAckHandler &&onSubAck) noexcept
-            {
-                return Subscribe(
-                    topicFilter,
-                    qos,
-                    [onPublish](
-                        MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
-                        onPublish(connection, topic, payload);
-                    },
-                    std::move(onSubAck));
-            }
-
-            uint16_t MqttConnectionCore::Subscribe(
-                const char *topicFilter,
-                QOS qos,
                 OnMessageReceivedHandler &&onMessage,
                 OnSubAckHandler &&onSubAck) noexcept
             {
@@ -915,29 +892,9 @@ namespace Aws
             }
 
             uint16_t MqttConnectionCore::Subscribe(
-                const Vector<std::pair<const char *, OnPublishReceivedHandler>> &topicFilters,
-                QOS qos,
-                OnMultiSubAckHandler &&onSubAck) noexcept
-            {
-                Vector<std::pair<const char *, OnMessageReceivedHandler>> newTopicFilters;
-                newTopicFilters.reserve(topicFilters.size());
-                for (const auto &pair : topicFilters)
-                {
-                    const OnPublishReceivedHandler &pubHandler = pair.second;
-                    newTopicFilters.emplace_back(
-                        pair.first,
-                        [pubHandler](
-                            MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
-                            pubHandler(connection, topic, payload);
-                        });
-                }
-                return Subscribe(newTopicFilters, qos, std::move(onSubAck));
-            }
-
-            uint16_t MqttConnectionCore::Subscribe(
                 const Vector<std::pair<const char *, OnMessageReceivedHandler>> &topicFilters,
                 QOS qos,
-                OnMultiSubAckHandler &&onSubAck) noexcept
+                OnMultiSubAckHandler &&onOpComplete) noexcept
             {
                 uint16_t packetId = 0;
                 auto *subAckCallbackData = Crt::New<MultiSubAckCallbackData>(m_allocator);
@@ -994,7 +951,7 @@ namespace Aws
                 {
                     subAckCallbackData->connectionCore = this;
                     subAckCallbackData->allocator = m_allocator;
-                    subAckCallbackData->onSubAck = std::move(onSubAck);
+                    subAckCallbackData->onSubAck = std::move(onOpComplete);
                     subAckCallbackData->topic = nullptr;
                     subAckCallbackData->allocator = m_allocator;
 

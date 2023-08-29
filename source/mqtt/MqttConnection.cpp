@@ -95,7 +95,7 @@ namespace Aws
             bool MqttConnection::SetWebsocketProxyOptions(
                 const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept
             {
-                return m_connectionCore->SetWebsocketProxyOptions(proxyOptions);
+                return m_connectionCore->SetHttpProxyOptions(proxyOptions);
             }
 
             bool MqttConnection::SetHttpProxyOptions(
@@ -153,7 +153,14 @@ namespace Aws
                 OnPublishReceivedHandler &&onPublish,
                 OnSubAckHandler &&onSubAck) noexcept
             {
-                return m_connectionCore->Subscribe(topicFilter, qos, std::move(onPublish), std::move(onSubAck));
+                return m_connectionCore->Subscribe(
+                    topicFilter,
+                    qos,
+                    [onPublish](
+                        MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
+                        onPublish(connection, topic, payload);
+                    },
+                    std::move(onSubAck));
             }
 
             uint16_t MqttConnection::Subscribe(
@@ -170,7 +177,19 @@ namespace Aws
                 QOS qos,
                 OnMultiSubAckHandler &&onOpComplete) noexcept
             {
-                return m_connectionCore->Subscribe(topicFilters, qos, std::move(onOpComplete));
+                Vector<std::pair<const char *, OnMessageReceivedHandler>> newTopicFilters;
+                newTopicFilters.reserve(topicFilters.size());
+                for (const auto &pair : topicFilters)
+                {
+                    const OnPublishReceivedHandler &pubHandler = pair.second;
+                    newTopicFilters.emplace_back(
+                        pair.first,
+                        [pubHandler](
+                            MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
+                            pubHandler(connection, topic, payload);
+                        });
+                }
+                return m_connectionCore->Subscribe(newTopicFilters, qos, std::move(onOpComplete));
             }
 
             uint16_t MqttConnection::Subscribe(
