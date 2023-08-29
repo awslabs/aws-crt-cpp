@@ -32,7 +32,7 @@ namespace Aws
             };
 
             MqttConnectionCore::MqttConnectionCore(
-                Key /*=key*/,
+                CreationKey /*=key*/,
                 aws_mqtt_client *client,
                 const char *hostName,
                 uint16_t port,
@@ -46,7 +46,7 @@ namespace Aws
             }
 
             MqttConnectionCore::MqttConnectionCore(
-                Key /*=key*/,
+                CreationKey /*=key*/,
                 aws_mqtt_client *client,
                 const char *hostName,
                 uint16_t port,
@@ -59,7 +59,7 @@ namespace Aws
             }
 
             MqttConnectionCore::MqttConnectionCore(
-                Key /*=key*/,
+                CreationKey /*=key*/,
                 aws_mqtt5_client *mqtt5Client,
                 const char *hostName,
                 uint16_t port,
@@ -74,7 +74,7 @@ namespace Aws
             }
 
             MqttConnectionCore::MqttConnectionCore(
-                Key /*=key*/,
+                CreationKey /*=key*/,
                 aws_mqtt5_client *mqtt5Client,
                 const char *hostName,
                 uint16_t port,
@@ -107,7 +107,7 @@ namespace Aws
                 Allocator *allocator)
             {
                 return MakeShared<MqttConnectionCore>(
-                    allocator, Key{}, client, hostName, port, socketOptions, tlsContext, useWebsocket);
+                    allocator, CreationKey{}, client, hostName, port, socketOptions, tlsContext, useWebsocket);
             }
 
             std::shared_ptr<MqttConnectionCore> MqttConnectionCore::s_Create(
@@ -119,7 +119,7 @@ namespace Aws
                 Allocator *allocator)
             {
                 return MakeShared<MqttConnectionCore>(
-                    allocator, Key{}, client, hostName, port, socketOptions, useWebsocket);
+                    allocator, CreationKey{}, client, hostName, port, socketOptions, useWebsocket);
             }
 
             std::shared_ptr<MqttConnectionCore> MqttConnectionCore::s_Create(
@@ -133,7 +133,7 @@ namespace Aws
             {
                 return MakeShared<MqttConnectionCore>(
                     allocator,
-                    Key{},
+                    CreationKey{},
                     mqtt5Client,
                     hostName,
                     port,
@@ -152,7 +152,7 @@ namespace Aws
                 Allocator *allocator)
             {
                 return MakeShared<MqttConnectionCore>(
-                    allocator, Key{}, mqtt5Client, hostName, port, socketOptions, useWebsocket, allocator);
+                    allocator, CreationKey{}, mqtt5Client, hostName, port, socketOptions, useWebsocket, allocator);
             }
 
             void MqttConnectionCore::s_onConnectionTermination(void *userData)

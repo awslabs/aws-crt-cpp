@@ -23,16 +23,6 @@ namespace Aws
 {
     namespace Crt
     {
-        namespace Io
-        {
-            class ClientBootstrap;
-        }
-
-        namespace Http
-        {
-            class HttpRequest;
-        }
-
         namespace Mqtt5
         {
             class Mqtt5ClientCore;
@@ -61,7 +51,7 @@ namespace Aws
                 MqttConnection &operator=(const MqttConnection &) = delete;
                 MqttConnection &operator=(MqttConnection &&) = delete;
 
-                void initialize();
+                void Initialize();
 
                 /**
                  * @return true if the instance is in a valid state, false otherwise.

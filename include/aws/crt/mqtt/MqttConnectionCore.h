@@ -31,7 +31,7 @@ namespace Aws
                 /**
                  * @internal
                  */
-                class Key
+                class CreationKey
                 {
                 };
 
@@ -41,7 +41,7 @@ namespace Aws
                  * Constructor for MQTT311 connection with TLS.
                  */
                 MqttConnectionCore(
-                    Key key,
+                    CreationKey key,
                     aws_mqtt_client *client,
                     const char *hostName,
                     uint16_t port,
@@ -54,7 +54,7 @@ namespace Aws
                  * Constructor for MQTT311 connection.
                  */
                 MqttConnectionCore(
-                    Key key,
+                    CreationKey key,
                     aws_mqtt_client *client,
                     const char *hostName,
                     uint16_t port,
@@ -66,7 +66,7 @@ namespace Aws
                  * Constructor for MQTT5 connection with TLS.
                  */
                 MqttConnectionCore(
-                    Key key,
+                    CreationKey key,
                     aws_mqtt5_client *mqtt5Client,
                     const char *hostName,
                     uint16_t port,
@@ -80,7 +80,7 @@ namespace Aws
                  * Constructor for MQTT5 connection.
                  */
                 MqttConnectionCore(
-                    Key key,
+                    CreationKey key,
                     aws_mqtt5_client *mqtt5Client,
                     const char *hostName,
                     uint16_t port,

@@ -76,9 +76,9 @@ namespace Aws
                 m_connectionCore->Close();
             }
 
-            void MqttConnection::initialize()
+            void MqttConnection::Initialize()
             {
-                m_connectionCore->initialize(shared_from_this());
+                m_connectionCore->Initialize(shared_from_this());
             }
 
             MqttConnection::operator bool() const noexcept { return m_connectionCore->operator bool(); }
