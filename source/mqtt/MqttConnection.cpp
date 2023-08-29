@@ -2,9 +2,10 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+
 #include <aws/crt/mqtt/MqttConnection.h>
 
-#include <aws/crt/mqtt/MqttConnectionCore.h>
+#include <aws/crt/mqtt/private/MqttConnectionCore.h>
 
 #define AWS_MQTT_MAX_TOPIC_LENGTH 65535
 

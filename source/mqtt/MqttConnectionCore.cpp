@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 
-#include <aws/crt/mqtt/MqttConnection.h>
-#include <aws/crt/mqtt/MqttConnectionCore.h>
+#include <aws/crt/mqtt/private/MqttConnectionCore.h>
 
 #include <aws/crt/Api.h>
 #include <aws/crt/http/HttpRequestResponse.h>
+#include <aws/crt/mqtt/MqttConnection.h>
 
 #define AWS_MQTT_MAX_TOPIC_LENGTH 65535
 
