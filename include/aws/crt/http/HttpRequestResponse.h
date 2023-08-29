@@ -108,7 +108,6 @@ namespace Aws
              */
             class AWS_CRT_CPP_API HttpRequest : public HttpMessage
             {
-                friend class Mqtt::MqttConnection;
                 friend class Mqtt::MqttConnectionCore;
                 friend class Mqtt5::Mqtt5ClientCore;
 
