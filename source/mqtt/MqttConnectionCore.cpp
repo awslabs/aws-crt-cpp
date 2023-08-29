@@ -982,7 +982,8 @@ namespace Aws
                     subscription.qos = qos;
                     subscription.topic = topicFilterCur;
 
-                    if (aws_array_list_push_back(&multiPub, reinterpret_cast<const void *>(&subscription)) != 0) {
+                    if (aws_array_list_push_back(&multiPub, reinterpret_cast<const void *>(&subscription)) != 0)
+                    {
                         Crt::Delete(pubCallbackData, m_allocator);
                         errorOccurred = true;
                         break;

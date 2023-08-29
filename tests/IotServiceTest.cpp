@@ -964,9 +964,7 @@ static int s_TestIotConnectionDestruction(Aws::Crt::Allocator *allocator, void *
 
     mqttConnection->OnConnectionSuccess = onConnectionSuccess;
 
-    mqttConnection->OnDisconnect = [](MqttConnection &) {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-    };
+    mqttConnection->OnDisconnect = [](MqttConnection &) { std::this_thread::sleep_for(std::chrono::seconds(1)); };
 
     Aws::Crt::UUID Uuid;
     Aws::Crt::String uuidStr = Uuid.ToString();

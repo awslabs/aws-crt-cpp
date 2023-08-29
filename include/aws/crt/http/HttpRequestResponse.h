@@ -19,7 +19,7 @@ namespace Aws
         {
             class MqttConnection;
             class MqttConnectionCore;
-        }
+        } // namespace Mqtt
         namespace Mqtt5
         {
             class Mqtt5ClientCore;
