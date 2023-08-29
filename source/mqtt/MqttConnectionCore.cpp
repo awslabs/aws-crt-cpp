@@ -684,7 +684,7 @@ namespace Aws
                 m_isInitialized = true;
             }
 
-            void MqttConnectionCore::Close()
+            void MqttConnectionCore::Destroy()
             {
                 {
                     std::lock_guard<std::mutex> lock(m_connectionMutex);

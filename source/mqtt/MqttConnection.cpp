@@ -67,8 +67,8 @@ namespace Aws
 
             MqttConnection::~MqttConnection()
             {
-                // Request for the underlying connection to close.
-                m_connectionCore->Close();
+                // Request the internal core to release the underlying connection.
+                m_connectionCore->Destroy();
             }
 
             void MqttConnection::Initialize() { m_connectionCore->Initialize(shared_from_this()); }

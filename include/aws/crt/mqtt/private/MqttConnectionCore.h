@@ -26,6 +26,14 @@ namespace Aws
         {
             class MqttConnection;
 
+            /**
+             * @internal
+             * The MqttConnectionCore is an internal class for MqttConnection. The class is used to handle communication
+             * between MqttConnection and underlying C MQTT client. This class should only be used internally by
+             * MqttConnection.
+             * @note Unless otherwise specified, all function arguments need only to live through the duration of the
+             * function call.
+             */
             class AWS_CRT_CPP_API MqttConnectionCore final : public std::enable_shared_from_this<MqttConnectionCore>
             {
                 /**
@@ -38,10 +46,6 @@ namespace Aws
                 };
 
               public:
-                /**
-                 * @internal
-                 * Constructor for MQTT311 client with TLS support.
-                 */
                 MqttConnectionCore(
                     ConstructionKey key,
                     aws_mqtt_client *client,
@@ -51,10 +55,6 @@ namespace Aws
                     const Crt::Io::TlsContext &tlsContext,
                     bool useWebsocket) noexcept;
 
-                /**
-                 * @internal
-                 * Constructor for MQTT311 client.
-                 */
                 MqttConnectionCore(
                     ConstructionKey key,
                     aws_mqtt_client *client,
@@ -63,10 +63,6 @@ namespace Aws
                     const Io::SocketOptions &socketOptions,
                     bool useWebsocket) noexcept;
 
-                /**
-                 * @internal
-                 * Constructor for MQTT5 client with TLS support.
-                 */
                 MqttConnectionCore(
                     ConstructionKey key,
                     aws_mqtt5_client *mqtt5Client,
@@ -77,10 +73,6 @@ namespace Aws
                     bool useWebsocket,
                     Allocator *allocator) noexcept;
 
-                /**
-                 * @internal
-                 * Constructor for MQTT5 client.
-                 */
                 MqttConnectionCore(
                     ConstructionKey key,
                     aws_mqtt5_client *mqtt5Client,
@@ -96,6 +88,10 @@ namespace Aws
                 MqttConnectionCore &operator=(const MqttConnectionCore &) = delete;
                 MqttConnectionCore &operator=(MqttConnectionCore &&) = delete;
 
+                /**
+                 * @internal
+                 * Factory method for instatiating MqttConnectionCore object.
+                 */
                 static std::shared_ptr<MqttConnectionCore> s_Create(
                     aws_mqtt_client *client,
                     const char *hostName,
@@ -105,6 +101,10 @@ namespace Aws
                     bool useWebsocket,
                     Allocator *allocator);
 
+                /**
+                 * @internal
+                 * Factory method for instatiating MqttConnectionCore object.
+                 */
                 static std::shared_ptr<MqttConnectionCore> s_Create(
                     aws_mqtt_client *client,
                     const char *hostName,
@@ -113,6 +113,10 @@ namespace Aws
                     bool useWebsocket,
                     Allocator *allocator);
 
+                /**
+                 * @internal
+                 * Factory method for instatiating MqttConnectionCore object.
+                 */
                 static std::shared_ptr<MqttConnectionCore> s_Create(
                     aws_mqtt5_client *mqtt5Client,
                     const char *hostName,
@@ -122,6 +126,10 @@ namespace Aws
                     bool useWebsocket,
                     Allocator *allocator);
 
+                /**
+                 * @internal
+                 * Factory method for instatiating MqttConnectionCore object.
+                 */
                 static std::shared_ptr<MqttConnectionCore> s_Create(
                     aws_mqtt5_client *mqtt5Client,
                     const char *hostName,
@@ -138,15 +146,19 @@ namespace Aws
 
                 /**
                  * @internal
-                 * Initialize.
+                 * Perform initialization actions that are not possible in the constructor (e.g. obtain a shared_ptr to
+                 * itself).
                  */
                 void Initialize(const std::shared_ptr<MqttConnection> &connection);
 
                 /**
                  * @internal
-                 * Close connection.
+                 * Tells the MqttConnectionCore to release the native client and clean up unhandled resources and
+                 * operations before destroying it.
+                 *
+                 * @attention After the function is invoked, the MqttConnectionCore object becomes invalid.
                  */
-                void Close();
+                void Destroy();
 
                 /**
                  * @internal
@@ -155,6 +167,7 @@ namespace Aws
                 int LastError() const noexcept;
 
                 /**
+                 * @internal
                  * Sets LastWill for the connection.
                  * @param topic topic the will message should be published to
                  * @param qos QOS the will message should be published with
@@ -165,6 +178,7 @@ namespace Aws
                 bool SetWill(const char *topic, QOS qos, bool retain, const ByteBuf &payload) noexcept;
 
                 /**
+                 * @internal
                  * Sets login credentials for the connection. The must get set before the Connect call
                  * if it is to be used.
                  * @param username user name to add to the MQTT CONNECT packet
@@ -174,6 +188,7 @@ namespace Aws
                 bool SetLogin(const char *username, const char *password) noexcept;
 
                 /**
+                 * @internal
                  * Sets http proxy options. In order to use an http proxy with mqtt either
                  *   (1) Websockets are used
                  *   (2) Mqtt-over-tls is used and the ALPN list of the tls context contains a tag that resolves to mqtt
@@ -185,6 +200,7 @@ namespace Aws
                 bool SetHttpProxyOptions(const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
 
                 /**
+                 * @internal
                  * Customize time to wait between reconnect attempts.
                  * The time will start at min and multiply by 2 until max is reached.
                  * The time resets back to min after a successful connection.
@@ -198,8 +214,8 @@ namespace Aws
                 bool SetReconnectTimeout(uint64_t min_seconds, uint64_t max_seconds) noexcept;
 
                 /**
-                 * Initiates the connection, OnConnectionCompleted will
-                 * be invoked in an event-loop thread.
+                 * @internal
+                 * @copydoc MqttConnection::Connect()
                  *
                  * @param clientId client identifier to use when establishing the mqtt connection
                  * @param cleanSession false to attempt to rejoin an existing session for the client id, true to skip
@@ -209,6 +225,7 @@ namespace Aws
                  * @param protocolOperationTimeoutMs timeout in milliseconds to give up waiting for a response packet
                  * for an operation.  Necessary due to throttling properties on certain server implementations that do
                  * not return an ACK for throttled operations.
+                 * @param setWebSocketInterceptor Determines if websocket interceptor callback should be setup.
                  *
                  * @return true if the connection attempt was successfully started (implying a callback will be invoked
                  * with the eventual result), false if it could not be started (no callback will happen)
@@ -222,8 +239,8 @@ namespace Aws
                     bool setWebSocketInterceptor) noexcept;
 
                 /**
-                 * Initiates disconnect, OnDisconnectHandler will be invoked in an event-loop thread.
-                 * @return success/failure in initiating disconnect
+                 * @internal
+                 * @copydoc MqttConnection::Disconnect()
                  */
                 bool Disconnect() noexcept;
 
@@ -231,6 +248,7 @@ namespace Aws
                 aws_mqtt_client_connection *GetUnderlyingConnection() noexcept;
 
                 /**
+                 * @internal
                  * Subscribes to topicFilter. OnMessageReceivedHandler will be invoked from an event-loop
                  * thread upon an incoming Publish message. OnSubAckHandler will be invoked
                  * upon receipt of a suback message.
@@ -249,6 +267,7 @@ namespace Aws
                     OnSubAckHandler &&onSubAck) noexcept;
 
                 /**
+                 * @internal
                  * Subscribes to multiple topicFilters. OnMessageReceivedHandler will be invoked from an event-loop
                  * thread upon an incoming Publish message. OnMultiSubAckHandler will be invoked
                  * upon receipt of a suback message.
@@ -266,6 +285,7 @@ namespace Aws
                     OnMultiSubAckHandler &&onOpComplete) noexcept;
 
                 /**
+                 * @internal
                  * Installs a handler for all incoming publish messages, regardless of if Subscribe has been
                  * called on the topic.
                  *
@@ -275,6 +295,7 @@ namespace Aws
                 bool SetOnMessageHandler(OnMessageReceivedHandler &&onMessage) noexcept;
 
                 /**
+                 * @internal
                  * Unsubscribes from topicFilter. OnOperationCompleteHandler will be invoked upon receipt of
                  * an unsuback message.
                  *
@@ -286,6 +307,7 @@ namespace Aws
                 uint16_t Unsubscribe(const char *topicFilter, OnOperationCompleteHandler &&onOpComplete) noexcept;
 
                 /**
+                 * @internal
                  * Publishes to a topic.
                  *
                  * @param topic topic to publish to
@@ -306,6 +328,7 @@ namespace Aws
                     OnOperationCompleteHandler &&onOpComplete) noexcept;
 
                 /**
+                 * @internal
                  * Get the statistics about the current state of the connection's queue of operations
                  *
                  * @return MqttConnectionOperationStatistics
