@@ -3,6 +3,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+
 #include <aws/crt/Exports.h>
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/Types.h>
@@ -14,7 +15,6 @@
 #include <aws/mqtt/client.h>
 #include <aws/mqtt/v5/mqtt5_client.h>
 
-#include <atomic>
 #include <functional>
 #include <memory>
 
@@ -31,7 +31,7 @@ namespace Aws
                 /**
                  * @internal
                  */
-                class CreationKey
+                class ConstructionKey
                 {
                 };
 
@@ -41,7 +41,7 @@ namespace Aws
                  * Constructor for MQTT311 connection with TLS.
                  */
                 MqttConnectionCore(
-                    CreationKey key,
+                    ConstructionKey key,
                     aws_mqtt_client *client,
                     const char *hostName,
                     uint16_t port,
@@ -54,7 +54,7 @@ namespace Aws
                  * Constructor for MQTT311 connection.
                  */
                 MqttConnectionCore(
-                    CreationKey key,
+                    ConstructionKey key,
                     aws_mqtt_client *client,
                     const char *hostName,
                     uint16_t port,
@@ -66,7 +66,7 @@ namespace Aws
                  * Constructor for MQTT5 connection with TLS.
                  */
                 MqttConnectionCore(
-                    CreationKey key,
+                    ConstructionKey key,
                     aws_mqtt5_client *mqtt5Client,
                     const char *hostName,
                     uint16_t port,
@@ -80,7 +80,7 @@ namespace Aws
                  * Constructor for MQTT5 connection.
                  */
                 MqttConnectionCore(
-                    CreationKey key,
+                    ConstructionKey key,
                     aws_mqtt5_client *mqtt5Client,
                     const char *hostName,
                     uint16_t port,
