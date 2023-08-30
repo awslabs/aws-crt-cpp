@@ -2081,19 +2081,32 @@ static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *)
     }
 
     ApiHandle apiHandle(allocator);
-    // A long and invlid client id;
-    Aws::Crt::String CLIENT_ID = "8entIDAndNULLCONNECTPACKET" + Aws::Crt::UUID().ToString();
+
+    const String TEST_TOPIC = "test/s_TestMqtt5NullUnsubscribe" + Aws::Crt::UUID().ToString();
 
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
     mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string).WithPort(mqtt5TestVars.m_port_value);
 
-    std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect = std::make_shared<Aws::Crt::Mqtt5::ConnectPacket>();
-    packetConnect->WithClientId(CLIENT_ID);
-    mqtt5Options.WithConnectOptions(packetConnect);
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
-    ASSERT_FALSE(mqtt5Client);
-    ASSERT_TRUE(LastError() == AWS_ERROR_MQTT5_CLIENT_OPTIONS_VALIDATION);
+    ASSERT_TRUE(mqtt5Client);
+
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(connectionPromise.get_future().get());
+
+    /* Subscribe to empty subscribe packet*/
+    Vector<String> unsubList;
+    unsubList.clear();
+    std::shared_ptr<Mqtt5::UnsubscribePacket> unsubscribe = std::make_shared<Mqtt5::UnsubscribePacket>(allocator);
+    unsubscribe->WithTopicFilters(unsubList);
+    ASSERT_FALSE(mqtt5Client->Unsubscribe(unsubscribe));
+
+    ASSERT_TRUE(mqtt5Client->Stop());
+    stoppedPromise.get_future().get();
 
     return AWS_OP_SUCCESS;
 }
