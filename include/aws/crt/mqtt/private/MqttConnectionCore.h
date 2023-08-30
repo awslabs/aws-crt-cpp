@@ -215,7 +215,8 @@ namespace Aws
 
                 /**
                  * @internal
-                 * @copydoc MqttConnection::Connect()
+                 * Initiates the connection, OnConnectionCompleted will
+                 * be invoked in an event-loop thread.
                  *
                  * @param clientId client identifier to use when establishing the mqtt connection
                  * @param cleanSession false to attempt to rejoin an existing session for the client id, true to skip
@@ -240,7 +241,8 @@ namespace Aws
 
                 /**
                  * @internal
-                 * @copydoc MqttConnection::Disconnect()
+                 * Initiates disconnect, OnDisconnectHandler will be invoked in an event-loop thread.
+                 * @return success/failure in initiating disconnect
                  */
                 bool Disconnect() noexcept;
 
@@ -422,16 +424,33 @@ namespace Aws
                 MqttConnectionOperationStatistics m_operationStatistics;
                 Allocator *m_allocator;
 
-                /** @internal */
+                /**
+                 * @internal
+                 * Lock protecting the MqttConnection object between callbacks and destruction process.
+                 */
                 std::mutex m_connectionMutex;
-                /** @internal */
+
+                /**
+                 * @internal
+                 * Flag indicating if the MqttConnection object is still alive and accessible.
+                 */
                 bool m_isConnectionAlive;
-                /** @internal */
+
+                /**
+                 * @internal
+                 * The MqttConnection object which created this MqttConnectionCore object.
+                 *
+                 * We have to store this object here to be able to pass it to user callbacks.
+                 * @note Creating a new std::shared_ptr from this weak_ptr must always be performed under the lock.
+                 */
                 std::weak_ptr<MqttConnection> m_connection;
-                /** @internal */
+
+                /**
+                 * @internal
+                 * The self reference is used to keep the MqttConnectionCore alive until the underlying connections is
+                 * destroyed.
+                 */
                 std::shared_ptr<MqttConnectionCore> m_self;
-                /** @internal */
-                bool m_isInitialized = false;
             };
         } // namespace Mqtt
     }     // namespace Crt

@@ -18,6 +18,8 @@ namespace Aws
         {
             /**
              * @internal
+             * Auxiliary struct providing access to a user callback and a connection object in callbacks triggered by
+             * publish events from the active subscriptions.
              */
             struct PubCallbackData
             {
@@ -84,7 +86,6 @@ namespace Aws
                 s_connectionInit(this, hostName, port, socketOptions);
             }
 
-            // TODO Remove all actions?
             MqttConnectionCore::~MqttConnectionCore()
             {
                 if (*this && m_onAnyCbData != nullptr)
@@ -681,7 +682,6 @@ namespace Aws
             {
                 m_connection = connection;
                 m_self = shared_from_this();
-                m_isInitialized = true;
             }
 
             void MqttConnectionCore::Destroy()
@@ -814,7 +814,6 @@ namespace Aws
             // TODO Fix memory leak on second call.
             bool MqttConnectionCore::SetOnMessageHandler(OnMessageReceivedHandler &&onMessage) noexcept
             {
-                // TODO Is it possible to use std::unique_ptr here?
                 auto *pubCallbackData = Aws::Crt::New<PubCallbackData>(m_allocator);
                 if (pubCallbackData == nullptr)
                 {
@@ -842,7 +841,6 @@ namespace Aws
                 OnMessageReceivedHandler &&onMessage,
                 OnSubAckHandler &&onSubAck) noexcept
             {
-                // TODO Is it possible to use std::unique_ptr here?
                 auto *pubCallbackData = Crt::New<PubCallbackData>(m_allocator);
 
                 if (pubCallbackData == nullptr)
