@@ -2099,14 +2099,15 @@ static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *)
 
     if (mqtt5Client)
     {
-        fprintf(stderr, "=== mqtt5Client is true\n");
+        fprintf(stderr, "=== mqtt5Client is true: %d\n", FAILURE);
     }
     else
     {
-        fprintf(stderr, "=== mqtt5Client is false\n");
+        fprintf(stderr, "=== mqtt5Client is false: %d\n", FAILURE);
     }
 
     ASSERT_FALSE(mqtt5Client);
+    return -1;
     ASSERT_TRUE(LastError() == AWS_ERROR_MQTT5_CLIENT_OPTIONS_VALIDATION);
 
     return AWS_OP_SUCCESS;
