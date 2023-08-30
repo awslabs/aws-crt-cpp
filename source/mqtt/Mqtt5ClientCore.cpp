@@ -240,6 +240,7 @@ namespace Aws
                     toSeat->WebsocketInterceptor = options->m_webSocketInterceptor;
                 }
 
+                // I'm gonna break you!
                 return std::shared_ptr<Crt::Mqtt::MqttConnection>(
                     toSeat, [allocator](Crt::Mqtt::MqttConnection *connection) {
                         connection->~MqttConnection();
