@@ -28,12 +28,10 @@ class DebugTest(Builder.Action):
         toolchain = env.toolchain
 
         project = Builder.Project.find_project('aws-crt-cpp')
-        project_source_dir, project_build_dir, project_install_dir = _project_dirs(
-            env, project)
+        project_source_dir, project_build_dir, project_install_dir = _project_dirs(env, project)
 
         ctest = toolchain.ctest_binary()
-        sh.exec(*toolchain.shell_env, ctest,
-                "--debug", working_dir=project_build_dir, check=True)
+        sh.exec(*toolchain.shell_env, ctest, "--version")
+        sh.exec(*toolchain.shell_env, ctest, "--debug", working_dir=project_build_dir, check=True)
         # Try to generate the coverage report. Will be ignored by ctest if no coverage data available.
-        sh.exec(*toolchain.shell_env, ctest,
-                "-T", "coverage", working_dir=project_build_dir, check=True)
+        sh.exec(*toolchain.shell_env, ctest, "-T", "coverage", working_dir=project_build_dir, check=True)
