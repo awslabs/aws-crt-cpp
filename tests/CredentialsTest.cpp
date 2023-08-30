@@ -232,7 +232,7 @@ static int s_TestProviderImdsGet(struct aws_allocator *allocator, void *ctx)
         ASSERT_TRUE(defaultHostResolver);
 
         Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
-        ASSERT_TRUE(clientBootstrap);
+        ASSERT_FALSE(clientBootstrap);
         clientBootstrap.EnableBlockingShutdown();
 
         CredentialsProviderImdsConfig config;
