@@ -2052,7 +2052,7 @@ static int s_TestMqtt5NullUnsubscribe(Aws::Crt::Allocator *allocator, void *)
     s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
-    ASSERT_FALSE(mqtt5Client);
+    ASSERT_TRUE(mqtt5Client);
 
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
@@ -2088,36 +2088,17 @@ static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *)
         "8charactersToMakeAInvalidClientIDAndNULLCONNECTPACKET" +
         Aws::Crt::UUID().ToString();
 
-    const uint32_t SESSION_EXPIRY_INTERVAL_SEC = 600;
-
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
     mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string).WithPort(mqtt5TestVars.m_port_value);
 
     std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect = std::make_shared<Aws::Crt::Mqtt5::ConnectPacket>();
     packetConnect->WithClientId(CLIENT_ID);
-    packetConnect->WithSessionExpiryIntervalSec(SESSION_EXPIRY_INTERVAL_SEC);
     mqtt5Options.WithConnectOptions(packetConnect);
-
-    std::promise<bool> connectionPromise;
-    std::promise<void> stoppedPromise;
-
-    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
-
-    // Override the ConnectionSuccessCallback to validate the negotiatedSettings
-    mqtt5Options.WithClientConnectionSuccessCallback([&](const OnConnectionSuccessEventData &eventData) {
-        printf("[MQTT5]Client Connection Success.");
-        ASSERT_TRUE(eventData.negotiatedSettings->getSessionExpiryIntervalSec() == SESSION_EXPIRY_INTERVAL_SEC);
-        connectionPromise.set_value(true);
-        return 0;
-    });
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_FALSE(mqtt5Client);
+    ASSERT_TRUE(LastError() == AWS_ERROR_MQTT5_CLIENT_OPTIONS_VALIDATION);
 
-    ASSERT_TRUE(mqtt5Client->Start());
-    ASSERT_TRUE(connectionPromise.get_future().get());
-    ASSERT_TRUE(mqtt5Client->Stop());
-    stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5NullConnectPacket, s_TestMqtt5NullConnectPacket)
