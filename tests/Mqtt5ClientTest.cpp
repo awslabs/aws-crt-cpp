@@ -2052,7 +2052,7 @@ static int s_TestMqtt5NullUnsubscribe(Aws::Crt::Allocator *allocator, void *)
     s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
-    ASSERT_TRUE(mqtt5Client);
+    ASSERT_FALSE(mqtt5Client);
 
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
