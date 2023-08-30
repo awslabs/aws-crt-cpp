@@ -2098,7 +2098,7 @@ static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(connectionPromise.get_future().get());
 
-    /* Subscribe to empty subscribe packet*/
+    /* Subscribe to empty subscribe packet */
     Vector<String> unsubList;
     unsubList.clear();
     std::shared_ptr<Mqtt5::UnsubscribePacket> unsubscribe = std::make_shared<Mqtt5::UnsubscribePacket>(allocator);
