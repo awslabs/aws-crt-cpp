@@ -12,6 +12,6 @@ cd build
 
 cmake -DENABLE_PROXY_INTEGRATION_TESTS=ON $@ ../
 make
-ctest --output-on-failure
+ctest --debug #--output-on-failure
 
 cd ..
