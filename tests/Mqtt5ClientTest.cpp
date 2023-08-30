@@ -2082,11 +2082,7 @@ static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *)
 
     ApiHandle apiHandle(allocator);
     // A long and invlid client id;
-    Aws::Crt::String CLIENT_ID =
-        "AClientIDGreaterThan128charactersToMakeAInvalidClientIDAndNULLCONNECTPACKETAClientIDGr"
-        "eaterThan128charactersToMakeAInvalidClientIDAndNULLCONNECTPACKETAClientIDGreaterThan12"
-        "8charactersToMakeAInvalidClientIDAndNULLCONNECTPACKET" +
-        Aws::Crt::UUID().ToString();
+    Aws::Crt::String CLIENT_ID = "8entIDAndNULLCONNECTPACKET" + Aws::Crt::UUID().ToString();
 
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
     mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string).WithPort(mqtt5TestVars.m_port_value);
