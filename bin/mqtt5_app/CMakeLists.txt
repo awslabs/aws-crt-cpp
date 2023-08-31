@@ -25,9 +25,7 @@ else ()
 endif ()
 
 
-if (CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE MATCHES Debug)
-    target_compile_definitions(${MQTT5_APP_PROJECT_NAME} PRIVATE "-DDEBUG_BUILD")
-endif ()
+target_compile_definitions(${MQTT5_APP_PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:DEBUG_BUILD>)
 
 target_include_directories(${MQTT5_APP_PROJECT_NAME} PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
