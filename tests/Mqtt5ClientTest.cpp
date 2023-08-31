@@ -2107,7 +2107,6 @@ static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *)
     }
 
     ASSERT_FALSE(mqtt5Client);
-    return 5;
     ASSERT_TRUE(LastError() == AWS_ERROR_MQTT5_CLIENT_OPTIONS_VALIDATION);
 
     return AWS_OP_SUCCESS;
