@@ -95,64 +95,6 @@ namespace Aws
                 }
             }
 
-            std::shared_ptr<MqttConnectionCore> MqttConnectionCore::s_Create(
-                aws_mqtt_client *client,
-                const char *hostName,
-                uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                const Crt::Io::TlsContext &tlsContext,
-                bool useWebsocket,
-                Allocator *allocator)
-            {
-                return MakeShared<MqttConnectionCore>(
-                    allocator, ConstructionKey{}, client, hostName, port, socketOptions, tlsContext, useWebsocket);
-            }
-
-            std::shared_ptr<MqttConnectionCore> MqttConnectionCore::s_Create(
-                aws_mqtt_client *client,
-                const char *hostName,
-                uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                bool useWebsocket,
-                Allocator *allocator)
-            {
-                return MakeShared<MqttConnectionCore>(
-                    allocator, ConstructionKey{}, client, hostName, port, socketOptions, useWebsocket);
-            }
-
-            std::shared_ptr<MqttConnectionCore> MqttConnectionCore::s_Create(
-                aws_mqtt5_client *mqtt5Client,
-                const char *hostName,
-                uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
-                bool useWebsocket,
-                Allocator *allocator)
-            {
-                return MakeShared<MqttConnectionCore>(
-                    allocator,
-                    ConstructionKey{},
-                    mqtt5Client,
-                    hostName,
-                    port,
-                    socketOptions,
-                    tlsConnectionOptions,
-                    useWebsocket,
-                    allocator);
-            }
-
-            std::shared_ptr<MqttConnectionCore> MqttConnectionCore::s_Create(
-                aws_mqtt5_client *mqtt5Client,
-                const char *hostName,
-                uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                bool useWebsocket,
-                Allocator *allocator)
-            {
-                return MakeShared<MqttConnectionCore>(
-                    allocator, ConstructionKey{}, mqtt5Client, hostName, port, socketOptions, useWebsocket, allocator);
-            }
-
             void MqttConnectionCore::s_onConnectionTermination(void *userData)
             {
                 auto *connectionCore = reinterpret_cast<MqttConnectionCore *>(userData);

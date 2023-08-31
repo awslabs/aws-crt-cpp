@@ -24,8 +24,8 @@ namespace Aws
                 bool useWebsocket,
                 Allocator *allocator) noexcept
             {
-                m_connectionCore = MqttConnectionCore::s_Create(
-                    client, hostName, port, socketOptions, tlsContext, useWebsocket, allocator);
+                m_connectionCore = MakeShared<MqttConnectionCore>(
+                    allocator, ConstructionKey{}, client, hostName, port, socketOptions, tlsContext, useWebsocket);
             }
 
             MqttConnection::MqttConnection(
@@ -36,8 +36,8 @@ namespace Aws
                 bool useWebsocket,
                 Allocator *allocator) noexcept
             {
-                m_connectionCore =
-                    MqttConnectionCore::s_Create(client, hostName, port, socketOptions, useWebsocket, allocator);
+                m_connectionCore = MakeShared<MqttConnectionCore>(
+                    allocator, ConstructionKey{}, client, hostName, port, socketOptions, useWebsocket);
             }
 
             MqttConnection::MqttConnection(
@@ -49,8 +49,16 @@ namespace Aws
                 bool useWebsocket,
                 Allocator *allocator) noexcept
             {
-                m_connectionCore = MqttConnectionCore::s_Create(
-                    mqtt5Client, hostName, port, socketOptions, tlsConnectionOptions, useWebsocket, allocator);
+                m_connectionCore = MakeShared<MqttConnectionCore>(
+                    allocator,
+                    ConstructionKey{},
+                    mqtt5Client,
+                    hostName,
+                    port,
+                    socketOptions,
+                    tlsConnectionOptions,
+                    useWebsocket,
+                    allocator);
             }
 
             MqttConnection::MqttConnection(
@@ -61,8 +69,8 @@ namespace Aws
                 bool useWebsocket,
                 Allocator *allocator) noexcept
             {
-                m_connectionCore =
-                    MqttConnectionCore::s_Create(mqtt5Client, hostName, port, socketOptions, useWebsocket, allocator);
+                m_connectionCore = MakeShared<MqttConnectionCore>(
+                    allocator, ConstructionKey{}, mqtt5Client, hostName, port, socketOptions, useWebsocket, allocator);
             }
 
             MqttConnection::~MqttConnection()

@@ -28,6 +28,17 @@ namespace Aws
 
             /**
              * @internal
+             * An auxiliary struct making MqttConnectionCore class non-publicly-constructible.
+             * A variation of the passkey idiom.
+             */
+            class ConstructionKey
+            {
+                ConstructionKey() {}
+                friend MqttConnection;
+            };
+
+            /**
+             * @internal
              * The MqttConnectionCore is an internal class for MqttConnection. The class is used to handle communication
              * between MqttConnection and underlying C MQTT client. This class should only be used internally by
              * MqttConnection.
@@ -36,15 +47,6 @@ namespace Aws
              */
             class AWS_CRT_CPP_API MqttConnectionCore final : public std::enable_shared_from_this<MqttConnectionCore>
             {
-                /**
-                 * @internal
-                 * An auxiliary struct making MqttConnectionCore class non-publicly-constructible.
-                 * A variation of the passkey idiom.
-                 */
-                struct ConstructionKey
-                {
-                };
-
               public:
                 MqttConnectionCore(
                     ConstructionKey key,
