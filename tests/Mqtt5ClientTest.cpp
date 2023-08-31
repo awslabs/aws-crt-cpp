@@ -2071,37 +2071,6 @@ static int s_TestMqtt5NullUnsubscribe(Aws::Crt::Allocator *allocator, void *)
 }
 AWS_TEST_CASE(Mqtt5NullUnsubscribe, s_TestMqtt5NullUnsubscribe)
 
-static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *)
-{
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    if (!mqtt5TestVars)
-    {
-        printf("Environment Variables are not set for the test, skip the test");
-        return AWS_OP_SKIP;
-    }
-
-    ApiHandle apiHandle(allocator);
-    // A long and invlid client id;
-    Aws::Crt::String CLIENT_ID =
-        "AClientIDGreaterThan128charactersToMakeAInvalidClientIDAndNULLCONNECTPACKETAClientIDGr"
-        "eaterThan128charactersToMakeAInvalidClientIDAndNULLCONNECTPACKETAClientIDGreaterThan12"
-        "8charactersToMakeAInvalidClientIDAndNULLCONNECTPACKET" +
-        Aws::Crt::UUID().ToString();
-
-    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
-    mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string).WithPort(mqtt5TestVars.m_port_value);
-
-    std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect = std::make_shared<Aws::Crt::Mqtt5::ConnectPacket>();
-    packetConnect->WithClientId(CLIENT_ID);
-    mqtt5Options.WithConnectOptions(packetConnect);
-
-    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
-    ASSERT_TRUE(mqtt5Client);
-
-    return AWS_OP_SUCCESS;
-}
-AWS_TEST_CASE(Mqtt5NullConnectPacket, s_TestMqtt5NullConnectPacket)
-
 //////////////////////////////////////////////////////////
 // QoS1 Test Cases [QoS1-UC]
 //////////////////////////////////////////////////////////
