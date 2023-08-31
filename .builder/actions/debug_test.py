@@ -1,6 +1,5 @@
 import Builder
 import os
-import sys
 
 def _project_dirs(env, project):
     if not project.resolved():

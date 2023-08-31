@@ -28,7 +28,7 @@
     ],
     "test_steps": [
         "crt-ci-prep",
-        "debug-test",
+        "test",
         "elasticurl-tests"
     ]
 }
