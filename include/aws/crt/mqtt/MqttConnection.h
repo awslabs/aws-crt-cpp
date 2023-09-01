@@ -247,43 +247,43 @@ namespace Aws
                 const MqttConnectionOperationStatistics &GetOperationStatistics() noexcept;
 
                 /**
-                 * This callback is invoked every time the connections is interrupted.
+                 * A callback invoked every time the connections is interrupted.
                  */
                 OnConnectionInterruptedHandler OnConnectionInterrupted;
 
                 /**
-                 * This callback is invoked every time the connection is resumed.
+                 * A callback invoked every time the connection is resumed.
                  */
                 OnConnectionResumedHandler OnConnectionResumed;
 
                 /**
-                 * This callback is invoked on connection completion, either successful or not.
+                 * A callback invoked on connection completion, either successful or not.
                  */
                 OnConnectionCompletedHandler OnConnectionCompleted;
 
                 /**
-                 * This callback is invoked on disconnect.
+                 * A callback invoked on disconnect.
                  */
                 OnDisconnectHandler OnDisconnect;
 
                 /**
-                 * This callback is invoked on WebSocket handshake.
+                 * A callback invoked on WebSocket handshake.
                  */
                 OnWebSocketHandshakeIntercept WebsocketInterceptor;
 
                 /**
-                 * This callback is invoked on disconnect.
+                 * A callback invoked on disconnect.
                  * @note From the user perspective, this callback is indistinguishable from OnDisconnect.
                  */
                 OnConnectionClosedHandler OnConnectionClosed;
 
                 /**
-                 * This callback is invoked on successful connection completion.
+                 * A callback invoked on successful connection completion.
                  */
                 OnConnectionSuccessHandler OnConnectionSuccess;
 
                 /**
-                 * This callback is invoked on a failed attempt to connect.
+                 * A callback invoked on a failed attempt to connect.
                  */
                 OnConnectionFailureHandler OnConnectionFailure;
 
