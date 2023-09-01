@@ -145,11 +145,13 @@ namespace Aws
                 void(std::shared_ptr<Http::HttpRequest> req, const OnWebSocketHandshakeInterceptComplete &onComplete)>;
 
             /**
-             * Represents a persistent Mqtt Connection. The memory is owned by MqttClient or
-             * Mqtt5Client.
-             * To get a new instance of this class, see MqttClient::NewConnection. Unless
-             * specified all function arguments need only to live through the duration of the
-             * function call.
+             * Represents a persistent Mqtt Connection. The memory is owned by MqttClient or Mqtt5Client.
+             *
+             * To get a new instance of this class, use MqttClient::NewConnection or Mqtt5Client::NewConnection. Unless
+             * specified all function arguments need only to live through the duration of the function call.
+             *
+             * @sa MqttClient::NewConnection
+             * @sa Mqtt5Client::NewConnection
              */
             class AWS_CRT_CPP_API MqttConnection final : public std::enable_shared_from_this<MqttConnection>
             {
@@ -157,6 +159,7 @@ namespace Aws
                 friend class Mqtt5::Mqtt5ClientCore;
 
               public:
+                // TODO Make private.
                 MqttConnection() = default;
                 ~MqttConnection();
                 MqttConnection(const MqttConnection &) = delete;
@@ -369,7 +372,7 @@ namespace Aws
                 OnConnectionResumedHandler OnConnectionResumed;
 
                 /**
-                 * A callback invoked on connection completion, either successful or not.
+                 * Invoked when a connack message is received, or an error occurred.
                  */
                 OnConnectionCompletedHandler OnConnectionCompleted;
 
@@ -379,23 +382,33 @@ namespace Aws
                 OnDisconnectHandler OnDisconnect;
 
                 /**
-                 * A callback invoked on WebSocket handshake.
+                 * Invoked during websocket handshake to give users opportunity to transform an http request for
+                 * purposes such as signing/authorization etc... Returning from this function does not continue the
+                 * websocket handshake since some work flows may be asynchronous. To accommodate that, onComplete must
+                 * be invoked upon completion of the signing process.
                  */
                 OnWebSocketHandshakeIntercept WebsocketInterceptor;
 
                 /**
-                 * A callback invoked on disconnect.
+                 * Invoked when a connection is disconnected and shutdown successfully.
+                 *
+                 * @note Currently callbackData will always be nullptr, but this may change in the future to send
+                 * additional data.
                  * @note From the user perspective, this callback is indistinguishable from OnDisconnect.
                  */
                 OnConnectionClosedHandler OnConnectionClosed;
 
                 /**
-                 * A callback invoked on successful connection completion.
+                 * Invoked whenever the connection successfully connects.
+                 *
+                 * This callback is invoked for every successful connect and every successful reconnect.
                  */
                 OnConnectionSuccessHandler OnConnectionSuccess;
 
                 /**
-                 * A callback invoked on a failed attempt to connect.
+                 * Invoked whenever the connection fails to connect.
+                 *
+                 * This callback is invoked for every failed connect and every failed reconnect.
                  */
                 OnConnectionFailureHandler OnConnectionFailure;
 
