@@ -14,10 +14,10 @@ set_target_properties(${MQTT5_APP_PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_
 
 #set warnings and runtime library
 if (MSVC)
-    if(STATIC_CRT)
-        target_compile_options(${PROJECT_NAME} PRIVATE "/MT$<$<CONFIG:Debug>:d>")
+    if(AWS_STATIC_MSVC_RUNTIME_LIBRARY OR STATIC_CRT)
+        target_compile_options(${MQTT5_APP_PROJECT_NAME} PRIVATE "/MT$<$<CONFIG:Debug>:d>")
     else()
-        target_compile_options(${PROJECT_NAME} PRIVATE "/MD$<$<CONFIG:Debug>:d>")
+        target_compile_options(${MQTT5_APP_PROJECT_NAME} PRIVATE "/MD$<$<CONFIG:Debug>:d>")
     endif()
     target_compile_options(${MQTT5_APP_PROJECT_NAME} PRIVATE /W4 /WX)
 else ()
