@@ -15,12 +15,18 @@
 #include <aws/mqtt/client.h>
 #include <aws/mqtt/v5/mqtt5_client.h>
 
+#include <functional>
 #include <memory>
 
 namespace Aws
 {
     namespace Crt
     {
+        namespace Http
+        {
+            class HttpRequest;
+        }
+
         namespace Mqtt5
         {
             class Mqtt5ClientCore;
@@ -30,6 +36,113 @@ namespace Aws
         {
             class MqttClient;
             class MqttConnectionCore;
+            class MqttConnection;
+
+            /**
+             * The data returned when the connection closed callback is invoked in a connection.
+             * Note: This class is currently empty, but this may contain data in the future.
+             */
+            struct OnConnectionClosedData
+            {
+            };
+
+            /**
+             * The data returned when the connection success callback is invoked in a connection.
+             */
+            struct OnConnectionSuccessData
+            {
+                /**
+                 * The Connect return code received from the server.
+                 */
+                ReturnCode returnCode;
+
+                /**
+                 * Returns whether a session was present and resumed for this successful connection.
+                 * Will be set to true if the connection resumed an already present MQTT connection session.
+                 */
+                bool sessionPresent;
+            };
+
+            /**
+             * The data returned when the connection failure callback is invoked in a connection.
+             */
+            struct OnConnectionFailureData
+            {
+                /**
+                 * The AWS CRT error code for the connection failure.
+                 * Use Aws::Crt::ErrorDebugString to get a human readable string from the error code.
+                 */
+                int error;
+            };
+
+            /**
+             * Invoked Upon Connection loss.
+             */
+            using OnConnectionInterruptedHandler = std::function<void(MqttConnection &connection, int error)>;
+
+            /**
+             * Invoked Upon Connection resumed.
+             */
+            using OnConnectionResumedHandler =
+                std::function<void(MqttConnection &connection, ReturnCode connectCode, bool sessionPresent)>;
+
+            /**
+             * Invoked when a connack message is received, or an error occurred.
+             */
+            using OnConnectionCompletedHandler = std::function<
+                void(MqttConnection &connection, int errorCode, ReturnCode returnCode, bool sessionPresent)>;
+
+            /**
+             * Invoked when a connection is disconnected and shutdown successfully.
+             *
+             * Note: Currently callbackData will always be nullptr, but this may change in the future to send additional
+             * data.
+             */
+            using OnConnectionClosedHandler =
+                std::function<void(MqttConnection &connection, OnConnectionClosedData *callbackData)>;
+
+            /**
+             * Invoked whenever the connection successfully connects.
+             *
+             * This callback is invoked for every successful connect and every successful reconnect.
+             */
+            using OnConnectionSuccessHandler =
+                std::function<void(MqttConnection &connection, OnConnectionSuccessData *callbackData)>;
+
+            /**
+             * Invoked whenever the connection fails to connect.
+             *
+             * This callback is invoked for every failed connect and every failed reconnect.
+             */
+            using OnConnectionFailureHandler =
+                std::function<void(MqttConnection &connection, OnConnectionFailureData *callbackData)>;
+
+            /**
+             * Invoked when a disconnect message has been sent.
+             */
+            using OnDisconnectHandler = std::function<void(MqttConnection &connection)>;
+
+            /**
+             * @deprecated Use OnMessageReceivedHandler
+             */
+            using OnPublishReceivedHandler =
+                std::function<void(MqttConnection &connection, const String &topic, const ByteBuf &payload)>;
+
+            /**
+             * Callback for users to invoke upon completion of, presumably asynchronous, OnWebSocketHandshakeIntercept
+             * callback's initiated process.
+             */
+            using OnWebSocketHandshakeInterceptComplete =
+                std::function<void(const std::shared_ptr<Http::HttpRequest> &, int errorCode)>;
+
+            /**
+             * Invoked during websocket handshake to give users opportunity to transform an http request for purposes
+             * such as signing/authorization etc... Returning from this function does not continue the websocket
+             * handshake since some work flows may be asynchronous. To accommodate that, onComplete must be invoked upon
+             * completion of the signing process.
+             */
+            using OnWebSocketHandshakeIntercept = std::function<
+                void(std::shared_ptr<Http::HttpRequest> req, const OnWebSocketHandshakeInterceptComplete &onComplete)>;
 
             /**
              * Represents a persistent Mqtt Connection. The memory is owned by MqttClient or
