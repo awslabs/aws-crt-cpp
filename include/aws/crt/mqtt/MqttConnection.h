@@ -418,7 +418,7 @@ namespace Aws
                     const char *hostName,
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
-                    Crt::Io::TlsContext &&tlsContext,
+                    Crt::Io::TlsContext &&tlsContext, // TODO Deal with the exact type.
                     bool useWebsocket,
                     Allocator *allocator);
 
@@ -435,7 +435,7 @@ namespace Aws
                     const char *hostName,
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
-                    Crt::Io::TlsConnectionOptions &&tlsConnectionOptions,
+                    Crt::Io::TlsConnectionOptions &&tlsConnectionOptions, // TODO Deal with the exact type.
                     bool useWebsocket,
                     Allocator *allocator);
 

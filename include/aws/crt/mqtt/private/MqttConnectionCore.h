@@ -40,15 +40,11 @@ namespace Aws
                 /**
                  * @internal
                  * An auxiliary struct making MqttConnectionCore class non-publicly-constructible.
-                 * A variation of the passkey idiom.
                  */
                 class ConstructionKey
                 {
-                    /**
-                     * @internal
-                     * Default constructor must be user-defined to prevent compiler from generating other special
-                     * functions.
-                     */
+                    // Default constructor must be user-defined to prevent compiler from generating other special
+                    // functions which will be public.
                     ConstructionKey() {}
                     ConstructionKey(const ConstructionKey &key) = default;
                     friend MqttConnection;
