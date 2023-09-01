@@ -376,7 +376,8 @@ static int s_TestIoTMqtt311ConnectWithPKCS11(Aws::Crt::Allocator *allocator, voi
 {
     // This test is temporarily disabled due to asan reporting memory leak in CRYPTO_zalloc.
     bool SKIP_TEST = true;
-    if (SKIP_TEST) {
+    if (SKIP_TEST)
+    {
         return AWS_OP_SKIP;
     }
     struct aws_string *endpoint = NULL;
