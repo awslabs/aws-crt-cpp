@@ -28,17 +28,6 @@ namespace Aws
 
             /**
              * @internal
-             * An auxiliary struct making MqttConnectionCore class non-publicly-constructible.
-             * A variation of the passkey idiom.
-             */
-            class ConstructionKey
-            {
-                ConstructionKey() {}
-                friend MqttConnection;
-            };
-
-            /**
-             * @internal
              * The MqttConnectionCore is an internal class for MqttConnection. The class is used to handle communication
              * between MqttConnection and underlying C MQTT client. This class should only be used internally by
              * MqttConnection.
@@ -48,41 +37,74 @@ namespace Aws
             class AWS_CRT_CPP_API MqttConnectionCore final : public std::enable_shared_from_this<MqttConnectionCore>
             {
               public:
+                /**
+                 * @internal
+                 * An auxiliary struct making MqttConnectionCore class non-publicly-constructible.
+                 * A variation of the passkey idiom.
+                 */
+                class ConstructionKey
+                {
+                    /**
+                     * @internal
+                     * Default constructor must be user-defined to prevent compiler from generating other special
+                     * functions.
+                     */
+                    ConstructionKey() {}
+                    ConstructionKey(const ConstructionKey &key) = default;
+                    friend MqttConnection;
+                };
+
                 MqttConnectionCore(
-                    ConstructionKey key,
+                    const ConstructionKey & /*key*/,
+                    std::shared_ptr<MqttConnection> connection,
                     aws_mqtt_client *client,
                     const char *hostName,
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
-                    const Crt::Io::TlsContext &tlsContext,
-                    bool useWebsocket) noexcept;
+                    Crt::Io::TlsContext &&tlsContext,
+                    Crt::Io::TlsConnectionOptions &&tlsConnectionOptions,
+                    bool useTls,
+                    bool useWebsocket,
+                    Allocator *allocator) noexcept;
 
                 MqttConnectionCore(
-                    ConstructionKey key,
+                    const ConstructionKey & /*key*/,
+                    std::shared_ptr<MqttConnection> connection,
+                    aws_mqtt5_client *mqtt5Client,
+                    const char *hostName,
+                    uint16_t port,
+                    const Io::SocketOptions &socketOptions,
+                    Crt::Io::TlsContext &&tlsContext,
+                    Crt::Io::TlsConnectionOptions &&tlsConnectionOptions,
+                    bool useTls,
+                    bool useWebsocket,
+                    Allocator *allocator) noexcept;
+
+                static std::shared_ptr<MqttConnectionCore> s_Create(
+                    const ConstructionKey & /*key*/,
+                    std::shared_ptr<MqttConnection> connection,
                     aws_mqtt_client *client,
                     const char *hostName,
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
-                    bool useWebsocket) noexcept;
+                    Crt::Io::TlsContext &&tlsContext,
+                    Crt::Io::TlsConnectionOptions &&tlsConnectionOptions,
+                    bool useTls,
+                    bool useWebsocket,
+                    Allocator *allocator);
 
-                MqttConnectionCore(
-                    ConstructionKey key,
+                static std::shared_ptr<MqttConnectionCore> s_Create(
+                    const ConstructionKey & /*key*/,
+                    std::shared_ptr<MqttConnection> connection,
                     aws_mqtt5_client *mqtt5Client,
                     const char *hostName,
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
-                    const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
+                    Crt::Io::TlsContext &&tlsContext,
+                    Crt::Io::TlsConnectionOptions &&tlsConnectionOptions,
+                    bool useTls,
                     bool useWebsocket,
-                    Allocator *allocator) noexcept;
-
-                MqttConnectionCore(
-                    ConstructionKey key,
-                    aws_mqtt5_client *mqtt5Client,
-                    const char *hostName,
-                    uint16_t port,
-                    const Io::SocketOptions &socketOptions,
-                    bool useWebsocket,
-                    Allocator *allocator) noexcept;
+                    Allocator *allocator);
 
                 ~MqttConnectionCore();
                 MqttConnectionCore(const MqttConnectionCore &) = delete;
@@ -92,66 +114,9 @@ namespace Aws
 
                 /**
                  * @internal
-                 * Factory method for instatiating MqttConnectionCore object.
-                 */
-                static std::shared_ptr<MqttConnectionCore> s_Create(
-                    aws_mqtt_client *client,
-                    const char *hostName,
-                    uint16_t port,
-                    const Io::SocketOptions &socketOptions,
-                    const Crt::Io::TlsContext &tlsContext,
-                    bool useWebsocket,
-                    Allocator *allocator);
-
-                /**
-                 * @internal
-                 * Factory method for instatiating MqttConnectionCore object.
-                 */
-                static std::shared_ptr<MqttConnectionCore> s_Create(
-                    aws_mqtt_client *client,
-                    const char *hostName,
-                    uint16_t port,
-                    const Io::SocketOptions &socketOptions,
-                    bool useWebsocket,
-                    Allocator *allocator);
-
-                /**
-                 * @internal
-                 * Factory method for instatiating MqttConnectionCore object.
-                 */
-                static std::shared_ptr<MqttConnectionCore> s_Create(
-                    aws_mqtt5_client *mqtt5Client,
-                    const char *hostName,
-                    uint16_t port,
-                    const Io::SocketOptions &socketOptions,
-                    const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
-                    bool useWebsocket,
-                    Allocator *allocator);
-
-                /**
-                 * @internal
-                 * Factory method for instatiating MqttConnectionCore object.
-                 */
-                static std::shared_ptr<MqttConnectionCore> s_Create(
-                    aws_mqtt5_client *mqtt5Client,
-                    const char *hostName,
-                    uint16_t port,
-                    const Io::SocketOptions &socketOptions,
-                    bool useWebsocket,
-                    Allocator *allocator);
-
-                /**
-                 * @internal
                  * @return true if the instance is in a valid state, false otherwise.
                  */
                 operator bool() const noexcept;
-
-                /**
-                 * @internal
-                 * Perform initialization actions that are not possible in the constructor (e.g. obtain a shared_ptr to
-                 * itself).
-                 */
-                void Initialize(const std::shared_ptr<MqttConnection> &connection);
 
                 /**
                  * @internal
@@ -404,14 +369,9 @@ namespace Aws
                     aws_mqtt_transform_websocket_handshake_complete_fn *completeFn,
                     void *completeCtx);
 
-                static void s_connectionInit(
-                    MqttConnectionCore *self,
-                    const char *hostName,
-                    uint16_t port,
-                    const Io::SocketOptions &socketOptions);
-
                 void createUnderlyingConnection(aws_mqtt_client *mqttClient);
                 void createUnderlyingConnection(aws_mqtt5_client *mqtt5Client);
+                void connectionInit();
 
                 aws_mqtt_client_connection *m_underlyingConnection;
                 String m_hostName;

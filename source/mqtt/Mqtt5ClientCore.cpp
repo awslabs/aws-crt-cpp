@@ -198,55 +198,41 @@ namespace Aws
             std::shared_ptr<Crt::Mqtt::MqttConnection> Mqtt5ClientCore::NewConnection(
                 const Mqtt5::Mqtt5to3AdapterOptions *options) noexcept
             {
-                // If you're reading this and asking.... why is this so complicated? Why not use make_shared
-                // or allocate_shared? Well, MqttConnection constructors are private and stl is dumb like that.
-                // so, we do it manually.
-                Allocator *allocator = this->m_allocator;
-                Crt::Mqtt::MqttConnection *toSeat = reinterpret_cast<Crt::Mqtt::MqttConnection *>(
-                    aws_mem_acquire(allocator, sizeof(Crt::Mqtt::MqttConnection)));
-                if (!toSeat)
-                {
-                    return nullptr;
-                }
+                std::shared_ptr<Mqtt::MqttConnection> connection;
 
                 if (options->m_tlsConnectionOptions.has_value())
                 {
-                    toSeat = new (toSeat) Crt::Mqtt::MqttConnection(
+                    auto tlsConnectionOptions = options->m_tlsConnectionOptions.value();
+                    connection = Mqtt::MqttConnection::s_Create(
                         m_client,
                         options->m_hostName.c_str(),
                         options->m_port,
                         options->m_socketOptions,
-                        options->m_tlsConnectionOptions.value(),
+                        std::move(tlsConnectionOptions),
                         options->m_overwriteWebsocket,
-                        allocator);
+                        m_allocator);
                 }
                 else
                 {
-                    toSeat = new (toSeat) Crt::Mqtt::MqttConnection(
+                    connection = Mqtt::MqttConnection::s_Create(
                         m_client,
                         options->m_hostName.c_str(),
                         options->m_port,
                         options->m_socketOptions,
                         options->m_overwriteWebsocket,
-                        allocator);
+                        m_allocator);
                 }
                 if (options->m_proxyOptions.has_value())
                 {
-                    toSeat->SetHttpProxyOptions(options->m_proxyOptions.value());
+                    connection->SetHttpProxyOptions(options->m_proxyOptions.value());
                 }
 
                 if (options->m_overwriteWebsocket)
                 {
-                    toSeat->WebsocketInterceptor = options->m_webSocketInterceptor;
+                    connection->WebsocketInterceptor = options->m_webSocketInterceptor;
                 }
 
-                auto mqttConnection = std::shared_ptr<Crt::Mqtt::MqttConnection>(
-                    toSeat, [allocator](Crt::Mqtt::MqttConnection *connection) {
-                        connection->~MqttConnection();
-                        aws_mem_release(allocator, reinterpret_cast<void *>(connection));
-                    });
-                mqttConnection->Initialize();
-                return mqttConnection;
+                return connection;
             }
 
             void Mqtt5ClientCore::s_publishCompletionCallback(

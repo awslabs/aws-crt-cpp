@@ -76,24 +76,15 @@ namespace Aws
                     return nullptr;
                 }
 
-                // If you're reading this and asking.... why is this so complicated? Why not use make_shared
-                // or allocate_shared? Well, MqttConnection constructors are private and stl is dumb like that.
-                // so, we do it manually.
-                Allocator *allocator = m_client->allocator;
-                auto *toSeat = reinterpret_cast<MqttConnection *>(aws_mem_acquire(allocator, sizeof(MqttConnection)));
-                if (toSeat == nullptr)
-                {
-                    return nullptr;
-                }
-
-                toSeat = new (toSeat)
-                    MqttConnection(m_client, hostName, port, socketOptions, tlsContext, useWebsocket, allocator);
-                auto mqttConnection = std::shared_ptr<MqttConnection>(toSeat, [allocator](MqttConnection *connection) {
-                    connection->~MqttConnection();
-                    aws_mem_release(allocator, reinterpret_cast<void *>(connection));
-                });
-                mqttConnection->Initialize();
-                return mqttConnection;
+                auto tlsContextCopy = tlsContext;
+                return MqttConnection::s_Create(
+                    m_client,
+                    hostName,
+                    port,
+                    socketOptions,
+                    std::move(tlsContextCopy),
+                    useWebsocket,
+                    m_client->allocator);
             }
 
             std::shared_ptr<MqttConnection> MqttClient::NewConnection(
@@ -103,24 +94,8 @@ namespace Aws
                 bool useWebsocket) noexcept
 
             {
-                // If you're reading this and asking.... why is this so complicated? Why not use make_shared
-                // or allocate_shared? Well, MqttConnection constructors are private and stl is dumb like that.
-                // so, we do it manually.
-                Allocator *allocator = m_client->allocator;
-                auto *toSeat =
-                    reinterpret_cast<MqttConnection *>(aws_mem_acquire(m_client->allocator, sizeof(MqttConnection)));
-                if (toSeat == nullptr)
-                {
-                    return nullptr;
-                }
-
-                toSeat = new (toSeat) MqttConnection(m_client, hostName, port, socketOptions, useWebsocket, allocator);
-                auto mqttConnection = std::shared_ptr<MqttConnection>(toSeat, [allocator](MqttConnection *connection) {
-                    connection->~MqttConnection();
-                    aws_mem_release(allocator, reinterpret_cast<void *>(connection));
-                });
-                mqttConnection->Initialize();
-                return mqttConnection;
+                return MqttConnection::s_Create(
+                    m_client, hostName, port, socketOptions, useWebsocket, m_client->allocator);
             }
         } // namespace Mqtt
     }     // namespace Crt

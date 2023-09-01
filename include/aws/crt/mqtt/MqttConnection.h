@@ -157,13 +157,12 @@ namespace Aws
                 friend class Mqtt5::Mqtt5ClientCore;
 
               public:
+                MqttConnection() = default;
                 ~MqttConnection();
                 MqttConnection(const MqttConnection &) = delete;
                 MqttConnection(MqttConnection &&) = delete;
                 MqttConnection &operator=(const MqttConnection &) = delete;
                 MqttConnection &operator=(MqttConnection &&) = delete;
-
-                void Initialize();
 
                 /**
                  * @return true if the instance is in a valid state, false otherwise.
@@ -401,39 +400,39 @@ namespace Aws
                 OnConnectionFailureHandler OnConnectionFailure;
 
               private:
-                MqttConnection(
+                static std::shared_ptr<MqttConnection> s_Create(
                     aws_mqtt_client *client,
                     const char *hostName,
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
-                    const Crt::Io::TlsContext &tlsContext,
+                    Crt::Io::TlsContext &&tlsContext,
                     bool useWebsocket,
-                    Allocator *allocator) noexcept;
+                    Allocator *allocator);
 
-                MqttConnection(
+                static std::shared_ptr<MqttConnection> s_Create(
                     aws_mqtt_client *client,
                     const char *hostName,
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
                     bool useWebsocket,
-                    Allocator *allocator) noexcept;
+                    Allocator *allocator);
 
-                MqttConnection(
+                static std::shared_ptr<MqttConnection> s_Create(
                     aws_mqtt5_client *mqtt5Client,
                     const char *hostName,
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
-                    const Crt::Io::TlsConnectionOptions &tlsConnectionOptions,
+                    Crt::Io::TlsConnectionOptions &&tlsConnectionOptions,
                     bool useWebsocket,
-                    Allocator *allocator) noexcept;
+                    Allocator *allocator);
 
-                MqttConnection(
+                static std::shared_ptr<MqttConnection> s_Create(
                     aws_mqtt5_client *mqtt5Client,
                     const char *hostName,
                     uint16_t port,
                     const Io::SocketOptions &socketOptions,
                     bool useWebsocket,
-                    Allocator *allocator) noexcept;
+                    Allocator *allocator);
 
                 /**
                  * @internal
