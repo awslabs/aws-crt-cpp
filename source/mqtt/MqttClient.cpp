@@ -76,15 +76,18 @@ namespace Aws
                     return nullptr;
                 }
 
-                auto tlsContextCopy = tlsContext;
-                return MqttConnection::s_Create(
-                    m_client,
-                    hostName,
-                    port,
-                    socketOptions,
-                    std::move(tlsContextCopy),
-                    useWebsocket,
-                    m_client->allocator);
+                MqttConnectionOptions connectionOptions;
+                connectionOptions.client = m_client;
+                connectionOptions.hostName = hostName;
+                connectionOptions.port = port;
+                connectionOptions.socketOptions = socketOptions;
+                connectionOptions.tlsContext = tlsContext;
+                connectionOptions.tlsConnectionOptions = tlsContext.NewConnectionOptions();
+                connectionOptions.useWebsocket = useWebsocket;
+                connectionOptions.useTls = true;
+                connectionOptions.allocator = m_client->allocator;
+
+                return MqttConnection::s_CreateMqttConnection(std::move(connectionOptions));
             }
 
             std::shared_ptr<MqttConnection> MqttClient::NewConnection(
@@ -94,8 +97,16 @@ namespace Aws
                 bool useWebsocket) noexcept
 
             {
-                return MqttConnection::s_Create(
-                    m_client, hostName, port, socketOptions, useWebsocket, m_client->allocator);
+                MqttConnectionOptions connectionOptions;
+                connectionOptions.client = m_client;
+                connectionOptions.hostName = hostName;
+                connectionOptions.port = port;
+                connectionOptions.socketOptions = socketOptions;
+                connectionOptions.useWebsocket = useWebsocket;
+                connectionOptions.useTls = false;
+                connectionOptions.allocator = m_client->allocator;
+
+                return MqttConnection::s_CreateMqttConnection(std::move(connectionOptions));
             }
         } // namespace Mqtt
     }     // namespace Crt

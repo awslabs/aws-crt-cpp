@@ -159,8 +159,6 @@ namespace Aws
                 friend class Mqtt5::Mqtt5ClientCore;
 
               public:
-                // TODO Make private.
-                MqttConnection() = default;
                 ~MqttConnection();
                 MqttConnection(const MqttConnection &) = delete;
                 MqttConnection(MqttConnection &&) = delete;
@@ -413,39 +411,21 @@ namespace Aws
                 OnConnectionFailureHandler OnConnectionFailure;
 
               private:
-                static std::shared_ptr<MqttConnection> s_Create(
-                    aws_mqtt_client *client,
-                    const char *hostName,
-                    uint16_t port,
-                    const Io::SocketOptions &socketOptions,
-                    Crt::Io::TlsContext &&tlsContext, // TODO Deal with the exact type.
-                    bool useWebsocket,
-                    Allocator *allocator);
+                /**
+                 * Constructor.
+                 *
+                 * Make private to restrict ability to create MqttConnections objects to certain classes.
+                 */
+                MqttConnection() = default;
 
-                static std::shared_ptr<MqttConnection> s_Create(
-                    aws_mqtt_client *client,
-                    const char *hostName,
-                    uint16_t port,
-                    const Io::SocketOptions &socketOptions,
-                    bool useWebsocket,
-                    Allocator *allocator);
-
-                static std::shared_ptr<MqttConnection> s_Create(
-                    aws_mqtt5_client *mqtt5Client,
-                    const char *hostName,
-                    uint16_t port,
-                    const Io::SocketOptions &socketOptions,
-                    Crt::Io::TlsConnectionOptions &&tlsConnectionOptions, // TODO Deal with the exact type.
-                    bool useWebsocket,
-                    Allocator *allocator);
-
-                static std::shared_ptr<MqttConnection> s_Create(
-                    aws_mqtt5_client *mqtt5Client,
-                    const char *hostName,
-                    uint16_t port,
-                    const Io::SocketOptions &socketOptions,
-                    bool useWebsocket,
-                    Allocator *allocator);
+                /**
+                 * @internal
+                 * Factory method for creating MqttConnection.
+                 *
+                 * @param options Options required for MqttConnection creation.
+                 * @return New instance of MqttConnection.
+                 */
+                static std::shared_ptr<MqttConnection> s_CreateMqttConnection(MqttConnectionOptions options) noexcept;
 
                 /**
                  * @internal

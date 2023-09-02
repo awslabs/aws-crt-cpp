@@ -21,113 +21,47 @@ namespace Aws
                 m_connectionCore->Destroy();
             }
 
-            std::shared_ptr<MqttConnection> MqttConnection::s_Create(
-                aws_mqtt_client *client,
-                const char *hostName,
-                uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                Crt::Io::TlsContext &&tlsContext,
-                bool useWebsocket,
-                Allocator *allocator)
+            std::shared_ptr<MqttConnection> MqttConnection::s_CreateMqttConnection(
+                MqttConnectionOptions options) noexcept
             {
-                if (!tlsContext)
+                if (options.useTls && !options.tlsContext)
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_MQTT_CLIENT,
                         "id=%p Trying to call MqttClient::NewConnection using an invalid TlsContext.",
-                        (void *)client);
+                        (void *)options.client);
                     aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
-                    return nullptr;
+                    return {};
                 }
 
-                auto tlsConnectionOptions = tlsContext.NewConnectionOptions();
-                auto connection = MakeShared<MqttConnection>(allocator);
-                connection->m_connectionCore = MqttConnectionCore::s_Create(
-                    MqttConnectionCore::ConstructionKey{},
-                    connection,
-                    client,
-                    hostName,
-                    port,
-                    socketOptions,
-                    std::move(tlsContext),
-                    std::move(tlsConnectionOptions),
-                    /*useTls=*/true,
-                    useWebsocket,
-                    allocator);
-                return connection;
-            }
+                auto *allocator = options.allocator;
 
-            std::shared_ptr<MqttConnection> MqttConnection::s_Create(
-                aws_mqtt_client *client,
-                const char *hostName,
-                uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                bool useWebsocket,
-                Allocator *allocator)
-            {
-                auto connection = MakeShared<MqttConnection>(allocator);
-                Crt::Io::TlsContext tlsContext;
-                connection->m_connectionCore = MqttConnectionCore::s_Create(
-                    MqttConnectionCore::ConstructionKey{},
-                    connection,
-                    client,
-                    hostName,
-                    port,
-                    socketOptions,
-                    Crt::Io::TlsContext{},
-                    Crt::Io::TlsConnectionOptions{},
-                    /*useTls=*/false,
-                    useWebsocket,
-                    allocator);
-                return connection;
-            }
+                auto *toSeat = reinterpret_cast<MqttConnection *>(aws_mem_acquire(allocator, sizeof(MqttConnection)));
+                if (toSeat == nullptr)
+                {
+                    return nullptr;
+                }
+                toSeat = new (toSeat) MqttConnection();
+                // Creation failed, make sure we release the allocated memory
+                if (!*toSeat)
+                {
+                    Crt::Delete(toSeat, allocator);
+                    return nullptr;
+                }
+                auto connection = std::shared_ptr<MqttConnection>(
+                    toSeat, [allocator](MqttConnection *mqttConnection) { Crt::Delete(mqttConnection, allocator); });
+                if (!connection)
+                {
+                    return {};
+                }
 
-            std::shared_ptr<MqttConnection> MqttConnection::s_Create(
-                aws_mqtt5_client *mqtt5Client,
-                const char *hostName,
-                uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                Crt::Io::TlsConnectionOptions &&tlsConnectionOptions,
-                bool useWebsocket,
-                Allocator *allocator)
-            {
-                auto connection = MakeShared<MqttConnection>(allocator);
-                connection->m_connectionCore = MqttConnectionCore::s_Create(
-                    MqttConnectionCore::ConstructionKey{},
-                    connection,
-                    mqtt5Client,
-                    hostName,
-                    port,
-                    socketOptions,
-                    Crt::Io::TlsContext{},
-                    std::move(tlsConnectionOptions),
-                    /*useTls=*/true,
-                    useWebsocket,
-                    allocator);
-                return connection;
-            }
+                connection->m_connectionCore = MqttConnectionCore::s_createMqttConnectionCore(
+                    MqttConnectionCore::ConstructionKey{}, connection, std::move(options));
+                if (!connection->m_connectionCore)
+                {
+                    return {};
+                }
 
-            std::shared_ptr<MqttConnection> MqttConnection::s_Create(
-                aws_mqtt5_client *mqtt5Client,
-                const char *hostName,
-                uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                bool useWebsocket,
-                Allocator *allocator)
-            {
-                auto connection = MakeShared<MqttConnection>(allocator);
-                connection->m_connectionCore = MqttConnectionCore::s_Create(
-                    MqttConnectionCore::ConstructionKey{},
-                    connection,
-                    mqtt5Client,
-                    hostName,
-                    port,
-                    socketOptions,
-                    Crt::Io::TlsContext{},
-                    Crt::Io::TlsConnectionOptions{},
-                    /*useTls=*/true,
-                    useWebsocket,
-                    allocator);
                 return connection;
             }
 

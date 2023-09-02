@@ -198,30 +198,26 @@ namespace Aws
             std::shared_ptr<Crt::Mqtt::MqttConnection> Mqtt5ClientCore::NewConnection(
                 const Mqtt5::Mqtt5to3AdapterOptions *options) noexcept
             {
-                std::shared_ptr<Mqtt::MqttConnection> connection;
+                Mqtt::MqttConnectionOptions connectionOptions;
+                connectionOptions.mqtt5Client = m_client;
+                connectionOptions.hostName = options->m_hostName.c_str();
+                connectionOptions.port = options->m_port;
+                connectionOptions.socketOptions = options->m_socketOptions;
+                connectionOptions.useWebsocket = options->m_overwriteWebsocket;
+                connectionOptions.allocator = m_allocator;
 
                 if (options->m_tlsConnectionOptions.has_value())
                 {
-                    auto tlsConnectionOptions = options->m_tlsConnectionOptions.value();
-                    connection = Mqtt::MqttConnection::s_Create(
-                        m_client,
-                        options->m_hostName.c_str(),
-                        options->m_port,
-                        options->m_socketOptions,
-                        std::move(tlsConnectionOptions),
-                        options->m_overwriteWebsocket,
-                        m_allocator);
+                    connectionOptions.tlsConnectionOptions = options->m_tlsConnectionOptions.value();
+                    connectionOptions.useTls = true;
                 }
-                else
+
+                auto connection = Mqtt::MqttConnection::s_CreateMqttConnection(std::move(connectionOptions));
+                if (!connection)
                 {
-                    connection = Mqtt::MqttConnection::s_Create(
-                        m_client,
-                        options->m_hostName.c_str(),
-                        options->m_port,
-                        options->m_socketOptions,
-                        options->m_overwriteWebsocket,
-                        m_allocator);
+                    return {};
                 }
+
                 if (options->m_proxyOptions.has_value())
                 {
                     connection->SetHttpProxyOptions(options->m_proxyOptions.value());

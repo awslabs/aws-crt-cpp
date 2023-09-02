@@ -5,6 +5,11 @@
  */
 
 #include <aws/crt/Types.h>
+#include <aws/crt/io/SocketOptions.h>
+#include <aws/crt/io/TlsOptions.h>
+
+#include <aws/mqtt/client.h>
+#include <aws/mqtt/v5/mqtt5_client.h>
 
 #include <functional>
 
@@ -15,6 +20,23 @@ namespace Aws
         namespace Mqtt
         {
             class MqttConnection;
+
+            /**
+             * Options required to create an MqttConnection.
+             */
+            struct MqttConnectionOptions
+            {
+                aws_mqtt_client *client = nullptr;
+                aws_mqtt5_client *mqtt5Client = nullptr;
+                const char *hostName = nullptr;
+                uint16_t port = 0;
+                Io::SocketOptions socketOptions;
+                Crt::Io::TlsContext tlsContext;
+                Crt::Io::TlsConnectionOptions tlsConnectionOptions;
+                bool useWebsocket = false;
+                bool useTls = false;
+                Allocator *allocator = nullptr;
+            };
 
             /**
              * Invoked upon receipt of a Publish message on a subscribed topic.

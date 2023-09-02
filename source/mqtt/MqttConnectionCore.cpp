@@ -31,42 +31,21 @@ namespace Aws
             MqttConnectionCore::MqttConnectionCore(
                 const ConstructionKey & /*key*/,
                 std::shared_ptr<MqttConnection> connection,
-                aws_mqtt_client *client,
-                const char *hostName,
-                uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                Crt::Io::TlsContext &&tlsContext,
-                Crt::Io::TlsConnectionOptions &&tlsConnectionOptions,
-                bool useTls,
-                bool useWebsocket,
-                Allocator *allocator) noexcept
-                : m_underlyingConnection(nullptr), m_hostName(hostName), m_port(port),
-                  m_tlsContext(std::move(tlsContext)), m_tlsOptions(std::move(tlsConnectionOptions)),
-                  m_socketOptions(socketOptions), m_onAnyCbData(nullptr), m_useTls(useTls),
-                  m_useWebsocket(useWebsocket), m_allocator(allocator), m_connection(std::move(connection))
+                MqttConnectionOptions options) noexcept
+                : m_underlyingConnection(nullptr), m_hostName(options.hostName), m_port(options.port),
+                  m_tlsContext(std::move(options.tlsContext)), m_tlsOptions(std::move(options.tlsConnectionOptions)),
+                  m_socketOptions(std::move(options.socketOptions)), m_onAnyCbData(nullptr), m_useTls(options.useTls),
+                  m_useWebsocket(options.useWebsocket), m_allocator(options.allocator),
+                  m_connection(std::move(connection))
             {
-                createUnderlyingConnection(client);
-                connectionInit();
-            }
-
-            MqttConnectionCore::MqttConnectionCore(
-                const ConstructionKey & /*key*/,
-                std::shared_ptr<MqttConnection> connection,
-                aws_mqtt5_client *mqtt5Client,
-                const char *hostName,
-                uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                Crt::Io::TlsContext &&tlsContext,
-                Crt::Io::TlsConnectionOptions &&tlsConnectionOptions,
-                bool useTls,
-                bool useWebsocket,
-                Allocator *allocator) noexcept
-                : m_underlyingConnection(nullptr), m_hostName(hostName), m_port(port),
-                  m_tlsContext(std::move(tlsContext)), m_tlsOptions(std::move(tlsConnectionOptions)),
-                  m_socketOptions(socketOptions), m_onAnyCbData(nullptr), m_useTls(useTls),
-                  m_useWebsocket(useWebsocket), m_allocator(allocator), m_connection(std::move(connection))
-            {
-                createUnderlyingConnection(mqtt5Client);
+                if (options.client != nullptr)
+                {
+                    createUnderlyingConnection(options.client);
+                }
+                else if (options.mqtt5Client != nullptr)
+                {
+                    createUnderlyingConnection(options.mqtt5Client);
+                }
                 connectionInit();
             }
 
@@ -79,62 +58,18 @@ namespace Aws
                 }
             }
 
-            std::shared_ptr<MqttConnectionCore> MqttConnectionCore::s_Create(
+            std::shared_ptr<MqttConnectionCore> MqttConnectionCore::s_createMqttConnectionCore(
                 const ConstructionKey &key,
                 std::shared_ptr<MqttConnection> connection,
-                aws_mqtt_client *client,
-                const char *hostName,
-                uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                Crt::Io::TlsContext &&tlsContext,
-                Crt::Io::TlsConnectionOptions &&tlsConnectionOptions,
-                bool useTls,
-                bool useWebsocket,
-                Allocator *allocator)
+                MqttConnectionOptions options) noexcept
             {
-                auto connectionCore = MakeShared<MqttConnectionCore>(
-                    allocator,
-                    key,
-                    std::move(connection),
-                    client,
-                    hostName,
-                    port,
-                    socketOptions,
-                    std::move(tlsContext),
-                    std::move(tlsConnectionOptions),
-                    useTls,
-                    useWebsocket,
-                    allocator);
-                connectionCore->m_self = connectionCore;
-                return connectionCore;
-            }
-
-            std::shared_ptr<MqttConnectionCore> MqttConnectionCore::s_Create(
-                const ConstructionKey &key,
-                std::shared_ptr<MqttConnection> connection,
-                aws_mqtt5_client *mqtt5Client,
-                const char *hostName,
-                uint16_t port,
-                const Io::SocketOptions &socketOptions,
-                Crt::Io::TlsContext &&tlsContext,
-                Crt::Io::TlsConnectionOptions &&tlsConnectionOptions,
-                bool useTls,
-                bool useWebsocket,
-                Allocator *allocator)
-            {
-                auto connectionCore = MakeShared<MqttConnectionCore>(
-                    allocator,
-                    key,
-                    std::move(connection),
-                    mqtt5Client,
-                    hostName,
-                    port,
-                    socketOptions,
-                    std::move(tlsContext),
-                    std::move(tlsConnectionOptions),
-                    useTls,
-                    useWebsocket,
-                    allocator);
+                auto *allocator = options.allocator;
+                auto connectionCore =
+                    MakeShared<MqttConnectionCore>(allocator, key, std::move(connection), std::move(options));
+                if (!connectionCore)
+                {
+                    return {};
+                }
                 connectionCore->m_self = connectionCore;
                 return connectionCore;
             }
@@ -153,16 +88,7 @@ namespace Aws
                 void *userData)
             {
                 auto *connectionCore = reinterpret_cast<MqttConnectionCore *>(userData);
-
-                std::shared_ptr<MqttConnection> connection;
-                {
-                    std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
-                    if (!connectionCore->m_isConnectionAlive)
-                    {
-                        return;
-                    }
-                    connection = connectionCore->m_connection.lock();
-                }
+                auto connection = connectionCore->obtainConnectionInstance();
                 if (!connection)
                 {
                     return;
@@ -184,16 +110,7 @@ namespace Aws
                 void *userData)
             {
                 auto *connectionCore = reinterpret_cast<MqttConnectionCore *>(userData);
-
-                std::shared_ptr<MqttConnection> connection;
-                {
-                    std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
-                    if (!connectionCore->m_isConnectionAlive)
-                    {
-                        return;
-                    }
-                    connection = connectionCore->m_connection.lock();
-                }
+                auto connection = connectionCore->obtainConnectionInstance();
                 if (!connection)
                 {
                     return;
@@ -223,16 +140,7 @@ namespace Aws
                 (void)data;
 
                 auto *connectionCore = reinterpret_cast<MqttConnectionCore *>(userData);
-
-                std::shared_ptr<MqttConnection> connection;
-                {
-                    std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
-                    if (!connectionCore->m_isConnectionAlive)
-                    {
-                        return;
-                    }
-                    connection = connectionCore->m_connection.lock();
-                }
+                auto connection = connectionCore->obtainConnectionInstance();
                 if (!connection)
                 {
                     return;
@@ -255,16 +163,7 @@ namespace Aws
                 void *userData)
             {
                 auto *connectionCore = reinterpret_cast<MqttConnectionCore *>(userData);
-
-                std::shared_ptr<MqttConnection> connection;
-                {
-                    std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
-                    if (!connectionCore->m_isConnectionAlive)
-                    {
-                        return;
-                    }
-                    connection = connectionCore->m_connection.lock();
-                }
+                auto connection = connectionCore->obtainConnectionInstance();
                 if (!connection)
                 {
                     return;
@@ -286,16 +185,7 @@ namespace Aws
                 void *userData)
             {
                 auto *connectionCore = reinterpret_cast<MqttConnectionCore *>(userData);
-
-                std::shared_ptr<MqttConnection> connection;
-                {
-                    std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
-                    if (!connectionCore->m_isConnectionAlive)
-                    {
-                        return;
-                    }
-                    connection = connectionCore->m_connection.lock();
-                }
+                auto connection = connectionCore->obtainConnectionInstance();
                 if (!connection)
                 {
                     return;
@@ -319,16 +209,7 @@ namespace Aws
                 void *userData)
             {
                 auto *connectionCore = reinterpret_cast<MqttConnectionCore *>(userData);
-
-                std::shared_ptr<MqttConnection> connection;
-                {
-                    std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
-                    if (!connectionCore->m_isConnectionAlive)
-                    {
-                        return;
-                    }
-                    connection = connectionCore->m_connection.lock();
-                }
+                auto connection = connectionCore->obtainConnectionInstance();
                 if (!connection)
                 {
                     return;
@@ -350,16 +231,7 @@ namespace Aws
                 void *userData)
             {
                 auto *connectionCore = reinterpret_cast<MqttConnectionCore *>(userData);
-
-                std::shared_ptr<MqttConnection> connection;
-                {
-                    std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
-                    if (!connectionCore->m_isConnectionAlive)
-                    {
-                        return;
-                    }
-                    connection = connectionCore->m_connection.lock();
-                }
+                auto connection = connectionCore->obtainConnectionInstance();
                 if (!connection)
                 {
                     return;
@@ -396,15 +268,7 @@ namespace Aws
                 }
 
                 auto *connectionCore = callbackData->connectionCore;
-                std::shared_ptr<MqttConnection> connection;
-                {
-                    std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
-                    if (!connectionCore->m_isConnectionAlive)
-                    {
-                        return;
-                    }
-                    connection = connectionCore->m_connection.lock();
-                }
+                auto connection = connectionCore->obtainConnectionInstance();
                 if (!connection)
                 {
                     return;
@@ -434,18 +298,9 @@ namespace Aws
             {
                 auto *callbackData = reinterpret_cast<OpCompleteCallbackData *>(userData);
 
-                // An owning pointer to the connection should be obtained only if the user callback is defined.
                 if (callbackData->onOperationComplete)
                 {
-                    auto *connectionCore = callbackData->connectionCore;
-                    std::shared_ptr<MqttConnection> connection;
-                    {
-                        std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
-                        if (connectionCore->m_isConnectionAlive)
-                        {
-                            connection = connectionCore->m_connection.lock();
-                        }
-                    }
+                    auto connection = callbackData->connectionCore->obtainConnectionInstance();
                     if (connection)
                     {
                         callbackData->onOperationComplete(*connection, packetId, errorCode);
@@ -479,18 +334,9 @@ namespace Aws
             {
                 auto *callbackData = reinterpret_cast<SubAckCallbackData *>(userData);
 
-                // An owning pointer to the connection should be obtained only if the user callback is defined.
                 if (callbackData->onSubAck)
                 {
-                    auto *connectionCore = callbackData->connectionCore;
-                    std::shared_ptr<MqttConnection> connection;
-                    {
-                        std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
-                        if (connectionCore->m_isConnectionAlive)
-                        {
-                            connection = connectionCore->m_connection.lock();
-                        }
-                    }
+                    auto connection = callbackData->connectionCore->obtainConnectionInstance();
                     if (connection)
                     {
                         String topicStr(reinterpret_cast<char *>(topic->ptr), topic->len);
@@ -526,16 +372,7 @@ namespace Aws
 
                 if (callbackData->onSubAck)
                 {
-                    auto *connectionCore = callbackData->connectionCore;
-                    std::shared_ptr<MqttConnection> connection;
-                    {
-                        std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
-                        if (connectionCore->m_isConnectionAlive)
-                        {
-                            connection = connectionCore->m_connection.lock();
-                        }
-                    }
-
+                    auto connection = callbackData->connectionCore->obtainConnectionInstance();
                     if (connection)
                     {
                         size_t length = aws_array_list_length(topicSubacks);
@@ -608,6 +445,16 @@ namespace Aws
                 }
             }
 
+            std::shared_ptr<MqttConnection> MqttConnectionCore::obtainConnectionInstance()
+            {
+                std::lock_guard<std::mutex> lock(m_connectionMutex);
+                if (!m_isConnectionAlive)
+                {
+                    return {};
+                }
+                return m_connection.lock();
+            }
+
             void MqttConnectionCore::s_onWebsocketHandshake(
                 struct aws_http_message *rawRequest,
                 void *userData,
@@ -615,16 +462,7 @@ namespace Aws
                 void *completeCtx)
             {
                 auto *connectionCore = reinterpret_cast<MqttConnectionCore *>(userData);
-
-                std::shared_ptr<MqttConnection> connection;
-                {
-                    std::lock_guard<std::mutex> lock(connectionCore->m_connectionMutex);
-                    if (!connectionCore->m_isConnectionAlive)
-                    {
-                        return;
-                    }
-                    connection = connectionCore->m_connection.lock();
-                }
+                auto connection = connectionCore->obtainConnectionInstance();
                 if (!connection)
                 {
                     return;

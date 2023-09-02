@@ -40,6 +40,7 @@ namespace Aws
                 /**
                  * @internal
                  * An auxiliary struct making MqttConnectionCore class non-publicly-constructible.
+                 * @sa The Passkey idiom.
                  */
                 class ConstructionKey
                 {
@@ -53,60 +54,18 @@ namespace Aws
                 MqttConnectionCore(
                     const ConstructionKey & /*key*/,
                     std::shared_ptr<MqttConnection> connection,
-                    aws_mqtt_client *client,
-                    const char *hostName,
-                    uint16_t port,
-                    const Io::SocketOptions &socketOptions,
-                    Crt::Io::TlsContext &&tlsContext,
-                    Crt::Io::TlsConnectionOptions &&tlsConnectionOptions,
-                    bool useTls,
-                    bool useWebsocket,
-                    Allocator *allocator) noexcept;
-
-                MqttConnectionCore(
-                    const ConstructionKey & /*key*/,
-                    std::shared_ptr<MqttConnection> connection,
-                    aws_mqtt5_client *mqtt5Client,
-                    const char *hostName,
-                    uint16_t port,
-                    const Io::SocketOptions &socketOptions,
-                    Crt::Io::TlsContext &&tlsContext,
-                    Crt::Io::TlsConnectionOptions &&tlsConnectionOptions,
-                    bool useTls,
-                    bool useWebsocket,
-                    Allocator *allocator) noexcept;
-
-                static std::shared_ptr<MqttConnectionCore> s_Create(
-                    const ConstructionKey & /*key*/,
-                    std::shared_ptr<MqttConnection> connection,
-                    aws_mqtt_client *client,
-                    const char *hostName,
-                    uint16_t port,
-                    const Io::SocketOptions &socketOptions,
-                    Crt::Io::TlsContext &&tlsContext,
-                    Crt::Io::TlsConnectionOptions &&tlsConnectionOptions,
-                    bool useTls,
-                    bool useWebsocket,
-                    Allocator *allocator);
-
-                static std::shared_ptr<MqttConnectionCore> s_Create(
-                    const ConstructionKey & /*key*/,
-                    std::shared_ptr<MqttConnection> connection,
-                    aws_mqtt5_client *mqtt5Client,
-                    const char *hostName,
-                    uint16_t port,
-                    const Io::SocketOptions &socketOptions,
-                    Crt::Io::TlsContext &&tlsContext,
-                    Crt::Io::TlsConnectionOptions &&tlsConnectionOptions,
-                    bool useTls,
-                    bool useWebsocket,
-                    Allocator *allocator);
+                    MqttConnectionOptions options) noexcept;
 
                 ~MqttConnectionCore();
                 MqttConnectionCore(const MqttConnectionCore &) = delete;
                 MqttConnectionCore(MqttConnectionCore &&) = delete;
                 MqttConnectionCore &operator=(const MqttConnectionCore &) = delete;
                 MqttConnectionCore &operator=(MqttConnectionCore &&) = delete;
+
+                static std::shared_ptr<MqttConnectionCore> s_createMqttConnectionCore(
+                    const ConstructionKey &key,
+                    std::shared_ptr<MqttConnection> connection,
+                    MqttConnectionOptions options) noexcept;
 
                 /**
                  * @internal
@@ -369,6 +328,15 @@ namespace Aws
                 void createUnderlyingConnection(aws_mqtt5_client *mqtt5Client);
                 void connectionInit();
 
+                /**
+                 * @internal
+                 * Try to obtain a shared_ptr of the MqttConnection object.
+                 *
+                 * @return A std::shared_ptr of the MqttConnection object if it's still alive, empty std::shared_ptr
+                 * otherwise.
+                 */
+                std::shared_ptr<MqttConnection> obtainConnectionInstance();
+
                 aws_mqtt_client_connection *m_underlyingConnection;
                 String m_hostName;
                 uint16_t m_port;
@@ -384,7 +352,7 @@ namespace Aws
 
                 /**
                  * @internal
-                 * Lock protecting the MqttConnection object between callbacks and destruction process.
+                 * A lock protecting the MqttConnection object between callbacks and destruction process.
                  */
                 std::mutex m_connectionMutex;
 
@@ -398,7 +366,7 @@ namespace Aws
                  * @internal
                  * The MqttConnection object which created this MqttConnectionCore object.
                  *
-                 * We have to store this object here to be able to pass it to user callbacks.
+                 * We have to store this object here to be able to pass it to the user callbacks.
                  * @note Creating a new std::shared_ptr from this weak_ptr must always be performed under the lock.
                  */
                 std::weak_ptr<MqttConnection> m_connection;
