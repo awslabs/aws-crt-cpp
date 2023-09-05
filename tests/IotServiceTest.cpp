@@ -1052,12 +1052,13 @@ static int s_TestIotConnectionDestructionWithExecutingCallback(Aws::Crt::Allocat
         {
             std::lock_guard<std::mutex> lock(mutex);
             disconnectingStarted = true;
+            // This notify_one call has to be under mutex, to prevent a possible use-after-free case.
+            cv.notify_one();
         }
         printf("Disconnecting...\n");
         // Add some delay to the disconnection callback, so the destruction process will definitely start while
         // the callback is still executing.
         aws_thread_current_sleep(aws_timestamp_convert(2, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_NANOS, nullptr));
-        cv.notify_one();
     };
 
     Aws::Crt::UUID Uuid;
@@ -1143,9 +1144,10 @@ static int s_TestIotConnectionDestructionWithinConnectionCallback(Aws::Crt::Allo
         {
             std::lock_guard<std::mutex> lock(mutex);
             connection_success = true;
+            // This notify_one call has to be under mutex, to prevent a possible use-after-free case.
+            cv.notify_one();
         }
         printf("CONNECTION SUCCESS: returnCode=%i sessionPresent=%i\n", data->returnCode, data->sessionPresent);
-        cv.notify_one();
     };
 
     mqttConnection->OnConnectionSuccess = onConnectionSuccess;
@@ -1234,8 +1236,9 @@ static int s_TestIotConnectionDestructionWithinDisconnectCallback(Aws::Crt::Allo
         {
             std::lock_guard<std::mutex> lock(mutex);
             disconnected = true;
+            // This notify_one call has to be under mutex, to prevent a possible use-after-free case.
+            cv.notify_one();
         }
-        cv.notify_one();
     };
 
     Aws::Crt::UUID Uuid;
