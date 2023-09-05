@@ -17,8 +17,11 @@ namespace Aws
         {
             MqttConnection::~MqttConnection()
             {
-                // Request the internal core to release the underlying connection.
-                m_connectionCore->Destroy();
+                if (m_connectionCore)
+                {
+                    // Request the internal core to release the underlying connection.
+                    m_connectionCore->Destroy();
+                }
             }
 
             std::shared_ptr<MqttConnection> MqttConnection::s_CreateMqttConnection(
@@ -32,22 +35,19 @@ namespace Aws
                     return nullptr;
                 }
                 toSeat = new (toSeat) MqttConnection();
-                // Creation failed, make sure we release the allocated memory
-                if (!*toSeat)
-                {
-                    Crt::Delete(toSeat, allocator);
-                    return nullptr;
-                }
+
                 auto connection = std::shared_ptr<MqttConnection>(
                     toSeat, [allocator](MqttConnection *mqttConnection) { Crt::Delete(mqttConnection, allocator); });
+                // Creation failed, make sure we release the allocated memory
                 if (!connection)
                 {
+                    Crt::Delete(toSeat, allocator);
                     return {};
                 }
 
                 connection->m_connectionCore = MqttConnectionCore::s_createMqttConnectionCore(
                     MqttConnectionCore::ConstructionKey{}, connection, std::move(options));
-                if (!connection->m_connectionCore)
+                if (!connection->m_connectionCore || !*connection)
                 {
                     return {};
                 }
@@ -55,7 +55,10 @@ namespace Aws
                 return connection;
             }
 
-            MqttConnection::operator bool() const noexcept { return m_connectionCore->operator bool(); }
+            MqttConnection::operator bool() const noexcept
+            {
+                return m_connectionCore->operator bool();
+            }
 
             int MqttConnection::LastError() const noexcept { return m_connectionCore->LastError(); }
 
