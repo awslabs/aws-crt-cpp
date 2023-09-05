@@ -503,6 +503,11 @@ namespace Aws
 
                 if (*this)
                 {
+                    // Initiate disconnect in case we currently connected.
+                    Disconnect();
+
+                    // Initiate the destruction process of the underlying connection.
+                    // MqttConnectionCore::s_onConnectionTermination will be called.
                     aws_mqtt_client_connection_release(m_underlyingConnection);
                 }
             }
