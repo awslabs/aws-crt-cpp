@@ -7,8 +7,6 @@
 
 #include <aws/crt/mqtt/private/MqttConnectionCore.h>
 
-#define AWS_MQTT_MAX_TOPIC_LENGTH 65535
-
 namespace Aws
 {
     namespace Crt
