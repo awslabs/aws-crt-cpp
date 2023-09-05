@@ -24,16 +24,6 @@ namespace Aws
             std::shared_ptr<MqttConnection> MqttConnection::s_CreateMqttConnection(
                 MqttConnectionOptions options) noexcept
             {
-                if (options.useTls && !options.tlsContext)
-                {
-                    AWS_LOGF_ERROR(
-                        AWS_LS_MQTT_CLIENT,
-                        "id=%p Trying to call MqttClient::NewConnection using an invalid TlsContext.",
-                        (void *)options.client);
-                    aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
-                    return {};
-                }
-
                 auto *allocator = options.allocator;
 
                 auto *toSeat = reinterpret_cast<MqttConnection *>(aws_mem_acquire(allocator, sizeof(MqttConnection)));
