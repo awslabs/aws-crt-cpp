@@ -30,8 +30,5 @@
         "crt-ci-prep",
         "test",
         "elasticurl-tests"
-    ],
-    "build_env": {
-        "LSAN_OPTIONS": "suppressions={source_dir}/tests/resources/suppressions-lsan.txt"
-    }
+    ]
 }
