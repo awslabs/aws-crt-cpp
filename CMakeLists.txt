@@ -316,7 +316,6 @@ aws_use_package(aws-c-s3)
 
 aws_add_sanitizers(${PROJECT_NAME})
 
-# TODO ? Use PRIVATE for a subset of libraries.
 target_link_libraries(${PROJECT_NAME} PUBLIC ${DEP_AWS_LIBS})
 
 install(FILES ${AWS_CRT_HEADERS} DESTINATION "include/aws/crt" COMPONENT Development)
