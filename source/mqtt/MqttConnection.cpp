@@ -55,10 +55,7 @@ namespace Aws
                 return connection;
             }
 
-            MqttConnection::operator bool() const noexcept
-            {
-                return m_connectionCore->operator bool();
-            }
+            MqttConnection::operator bool() const noexcept { return m_connectionCore->operator bool(); }
 
             int MqttConnection::LastError() const noexcept { return m_connectionCore->LastError(); }
 
