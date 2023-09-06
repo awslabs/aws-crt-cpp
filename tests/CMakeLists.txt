@@ -81,6 +81,7 @@ if(NOT BYO_CRYPTO)
     add_net_test_case(IotConnectionDestructionWithExecutingCallback)
     add_net_test_case(IotConnectionDestructionWithinConnectionCallback)
     add_net_test_case(IotConnectionDestructionWithinDisconnectCallback)
+    add_net_test_case(IotConnectionDestructionWithPublish)
 endif()
 
 add_test_case(DefaultResolution)

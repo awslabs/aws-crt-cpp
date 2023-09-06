@@ -1266,4 +1266,102 @@ static int s_TestIotConnectionDestructionWithinDisconnectCallback(Aws::Crt::Allo
 
 AWS_TEST_CASE(IotConnectionDestructionWithinDisconnectCallback, s_TestIotConnectionDestructionWithinDisconnectCallback)
 
+static int s_TestIotConnectionDestructionWithPublish(Aws::Crt::Allocator *allocator, void *ctx)
+{
+    (void)ctx;
+
+    using namespace Aws::Crt::Mqtt;
+
+    IotServiceTestEnvVars envVars;
+    if (s_GetEnvVariables(allocator, envVars) != AWS_OP_SUCCESS)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    if (s_ValidateCredentialFiles(envVars) != AWS_OP_SUCCESS)
+    {
+        printf("Credential files are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
+    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
+        envVars.inputCertificate.c_str(), envVars.inputPrivateKey.c_str());
+    tlsCtxOptions.OverrideDefaultTrustStore(nullptr, envVars.inputRootCa.c_str());
+    Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+    ASSERT_TRUE(tlsContext);
+
+    Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+    ASSERT_TRUE(eventLoopGroup);
+
+    Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+    ASSERT_TRUE(defaultHostResolver);
+
+    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+    ASSERT_TRUE(allocator);
+    clientBootstrap.EnableBlockingShutdown();
+
+    Aws::Crt::Mqtt::MqttClient mqttClient(clientBootstrap, allocator);
+    ASSERT_TRUE(mqttClient);
+
+    Aws::Crt::Io::SocketOptions socketOptions;
+    socketOptions.SetConnectTimeoutMs(3000);
+
+    auto mqttConnection = mqttClient.NewConnection(envVars.inputHost.c_str(), 8883, socketOptions, tlsContext);
+
+    std::mutex mutex;
+    std::condition_variable cv;
+    bool connected = false;
+    bool published = false;
+    auto onConnectionSuccess = [&](MqttConnection &, OnConnectionSuccessData * /*data*/) {
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            connected = true;
+        }
+        cv.notify_one();
+    };
+    mqttConnection->OnConnectionSuccess = onConnectionSuccess;
+
+    Aws::Crt::UUID Uuid;
+    Aws::Crt::String uuidStr = Uuid.ToString();
+    mqttConnection->Connect(uuidStr.c_str(), true);
+
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        cv.wait(lock, [&]() { return connected; });
+    }
+
+    // Publish data.
+    Aws::Crt::ByteBuf payload = Aws::Crt::ByteBufFromCString("notice me pls");
+    auto onPubAck = [&](MqttConnection &connection, uint16_t packetId, int) {
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            published = true;
+        }
+        cv.notify_one();
+        // Add some time for the main thread to destroy the connection.
+        aws_thread_current_sleep(aws_timestamp_convert(2, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_NANOS, nullptr));
+
+        // Try to access the connection object.
+        printf("On published: packet id is %d, connection last error is %d\n", packetId, connection.LastError());
+    };
+    mqttConnection->Publish("/publish/me/senpai", QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, payload, onPubAck);
+
+    // wait for publish
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        cv.wait(lock, [&]() { return published; });
+    }
+
+    mqttConnection.reset();
+
+    ASSERT_FALSE(mqttConnection);
+
+    return AWS_ERROR_SUCCESS;
+}
+
+AWS_TEST_CASE(IotConnectionDestructionWithPublish, s_TestIotConnectionDestructionWithPublish)
+
 #endif // !BYO_CRYPTO
