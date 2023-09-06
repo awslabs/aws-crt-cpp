@@ -360,8 +360,7 @@ namespace Aws
 
                 /**
                  * @internal
-                 * Try to obtain a shared_ptr of the MqttConnection object.
-                 *
+                 * Try to obtain in a thread-safe manner a shared_ptr of the MqttConnection object.
                  * @return A std::shared_ptr of the MqttConnection object if it's still alive, empty std::shared_ptr
                  * otherwise.
                  */
