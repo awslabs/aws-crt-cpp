@@ -1339,8 +1339,9 @@ static int s_TestIotConnectionDestructionWithPublish(Aws::Crt::Allocator *alloca
         {
             std::lock_guard<std::mutex> lock(mutex);
             published = true;
+            // This notify_one call has to be under mutex, to prevent a possible use-after-free case.
+            cv.notify_one();
         }
-        cv.notify_one();
         // Add some time for the main thread to destroy the connection.
         aws_thread_current_sleep(aws_timestamp_convert(2, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_NANOS, nullptr));
 
