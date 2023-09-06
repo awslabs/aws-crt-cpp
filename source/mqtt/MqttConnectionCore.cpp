@@ -430,8 +430,6 @@ namespace Aws
 
                     aws_mqtt_client_connection_set_connection_termination_handler(
                         m_underlyingConnection, MqttConnectionCore::s_onConnectionTermination, this);
-
-                    m_isConnectionAlive = true;
                 }
                 else
                 {
@@ -441,11 +439,21 @@ namespace Aws
 
             std::shared_ptr<MqttConnection> MqttConnectionCore::obtainConnectionInstance()
             {
-                std::lock_guard<std::mutex> lock(m_connectionMutex);
-                if (!m_isConnectionAlive)
-                {
-                    return {};
-                }
+                // std::weak_ptr::lock will return std::shared_ptr of the managed object ONLY IF there is at least one
+                // other alive instance.
+                // If the last alive shared_ptr (on the user side) is being destroyed in parallel with this code, they
+                // will try to atomically increment/decrement the shared ref counter. So, the following two scenarios
+                // are possible.
+                // 1. std::weak_ptr::lock first increments the ref counter.
+                //   - std::weak_ptr::lock atomically increments the ref counter to 2.
+                //   - The user shared_ptr's destructor atomically decrements the ref counter to 1.
+                //   - When the shared_ptr object obtained here is destroyed, the ref counter decremented to 0
+                //   - The MqttConnection object destructor called.
+                // 2. User's shared_ptr is first.
+                //   - The user shared_ptr's destructor atomically decrements the ref counter to 0.
+                //   - std::weak_ptr::lock tries to increment the ref counter, but this fails.
+                //   - std::weak_ptr::lock return empty std::shared_ptr.
+                //   - The MqttConnection object destructor called.
                 return m_connection.lock();
             }
 
@@ -490,18 +498,15 @@ namespace Aws
 
             void MqttConnectionCore::Destroy()
             {
-                {
-                    std::lock_guard<std::mutex> lock(m_connectionMutex);
-                    m_isConnectionAlive = false;
-                }
-
                 if (*this)
                 {
                     // Initiate disconnect in case we currently connected.
                     Disconnect();
 
                     // Initiate the destruction process of the underlying connection.
-                    // MqttConnectionCore::s_onConnectionTermination will be called.
+                    // MqttConnectionCore::s_onConnectionTermination will be called asynchronously (through
+                    // on_connection_termination handler of the underlying connection) when the destruction process is
+                    // completed.
                     aws_mqtt_client_connection_release(m_underlyingConnection);
                 }
             }

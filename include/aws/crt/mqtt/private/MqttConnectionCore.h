@@ -382,22 +382,9 @@ namespace Aws
 
                 /**
                  * @internal
-                 * A lock protecting the MqttConnection object between callbacks and destruction process.
-                 */
-                std::mutex m_connectionMutex;
-
-                /**
-                 * @internal
-                 * Flag indicating if the MqttConnection object is still alive and accessible.
-                 */
-                bool m_isConnectionAlive;
-
-                /**
-                 * @internal
                  * The MqttConnection object which created this MqttConnectionCore object.
                  *
                  * We have to store this object here to be able to pass it to the user callbacks.
-                 * @note Creating a new std::shared_ptr from this weak_ptr must always be performed under the lock.
                  */
                 std::weak_ptr<MqttConnection> m_connection;
 
