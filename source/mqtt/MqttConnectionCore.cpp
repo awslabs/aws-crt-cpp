@@ -447,9 +447,6 @@ namespace Aws
 
             std::shared_ptr<MqttConnection> MqttConnectionCore::obtainConnectionInstance()
             {
-                // FIXME Okay, this actually doesn't work. There is a chance that the MqttConnection dtor started
-                // destroying the MqttConnection object, but this lock was first to lock the mutex. After this function
-                // completes, the destruction process will continue leaving us with shared_ptr of destroyed object.
                 std::lock_guard<std::mutex> lock(m_connectionMutex);
                 if (!m_isConnectionAlive)
                 {
