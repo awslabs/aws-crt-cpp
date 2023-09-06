@@ -34,7 +34,7 @@ namespace Aws
              * @note Unless otherwise specified, all function arguments need only to live through the duration of the
              * function call.
              */
-            class AWS_CRT_CPP_API MqttConnectionCore final : public std::enable_shared_from_this<MqttConnectionCore>
+            class MqttConnectionCore final : public std::enable_shared_from_this<MqttConnectionCore>
             {
                 /**
                  * @internal
