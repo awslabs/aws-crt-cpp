@@ -241,6 +241,7 @@ namespace Aws
                 /**
                  * @internal
                  * Factory method for instantiation of MqttConnectCore.
+                 * @param client MQTT3 client.
                  * @param connection MqttConnection object, it's used for user callbacks.
                  * @param options Options required to create connection.
                  */
@@ -252,6 +253,7 @@ namespace Aws
                 /**
                  * @internal
                  * Factory method for instantiation of MqttConnectCore.
+                 * @param mqtt5Client MQTT5 client.
                  * @param connection MqttConnection object, it's used for user callbacks.
                  * @param options Options required to create connection.
                  */
@@ -332,7 +334,7 @@ namespace Aws
                  * should be used for instantiation.
                  *
                  * @param client MQTT3 client.
-                 * @param client MQTT5 client.
+                 * @param mqtt5Client MQTT5 client.
                  * @param connection MqttConnection object, it's used for user callbacks.
                  * @param options Options required to create connection.
                  *
