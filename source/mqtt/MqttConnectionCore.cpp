@@ -682,7 +682,8 @@ namespace Aws
                 {
                     // There is a previously set message handler. We can delete it safely only after setting a new
                     // handler successfully.
-                    if (m_onAnyCbData != nullptr) {
+                    if (m_onAnyCbData != nullptr)
+                    {
                         auto *previousData = reinterpret_cast<PubCallbackData *>(m_onAnyCbData);
                         Crt::Delete(previousData, previousData->allocator);
                     }
