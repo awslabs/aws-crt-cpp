@@ -286,7 +286,6 @@ namespace Aws
             {
                 MqttConnectionCore *connectionCore = nullptr;
                 OnOperationCompleteHandler onOperationComplete;
-                const char *topic = nullptr;
                 Allocator *allocator = nullptr;
             };
 
@@ -308,11 +307,6 @@ namespace Aws
                 }
 
                 // Clean up previously allocated resources.
-                if (callbackData->topic != nullptr)
-                {
-                    aws_mem_release(
-                        callbackData->allocator, reinterpret_cast<void *>(const_cast<char *>(callbackData->topic)));
-                }
                 Crt::Delete(callbackData, callbackData->allocator);
             }
 
@@ -804,7 +798,6 @@ namespace Aws
                 opCompleteCallbackData->connectionCore = this;
                 opCompleteCallbackData->allocator = m_allocator;
                 opCompleteCallbackData->onOperationComplete = std::move(onOpComplete);
-                opCompleteCallbackData->topic = nullptr;
                 ByteBuf topicFilterBuf = aws_byte_buf_from_c_str(topicFilter);
                 ByteCursor topicFilterCur = aws_byte_cursor_from_buf(&topicFilterBuf);
 
@@ -833,22 +826,11 @@ namespace Aws
                     return 0;
                 }
 
-                size_t topicLen = strnlen(topic, AWS_MQTT_MAX_TOPIC_LENGTH) + 1;
-                char *topicCpy = reinterpret_cast<char *>(aws_mem_calloc(m_allocator, topicLen, sizeof(char)));
-
-                if (topicCpy == nullptr)
-                {
-                    Crt::Delete(opCompleteCallbackData, m_allocator);
-                }
-
-                memcpy(topicCpy, topic, topicLen);
-
                 opCompleteCallbackData->connectionCore = this;
                 opCompleteCallbackData->allocator = m_allocator;
                 opCompleteCallbackData->onOperationComplete = std::move(onOpComplete);
-                opCompleteCallbackData->topic = topicCpy;
-                ByteCursor topicCur = aws_byte_cursor_from_array(topicCpy, topicLen - 1);
 
+                ByteCursor topicCur = aws_byte_cursor_from_array(topic, strnlen(topic, AWS_MQTT_MAX_TOPIC_LENGTH));
                 ByteCursor payloadCur = aws_byte_cursor_from_buf(&payload);
                 uint16_t packetId = aws_mqtt_client_connection_publish(
                     m_underlyingConnection,
@@ -861,7 +843,6 @@ namespace Aws
 
                 if (packetId == 0U)
                 {
-                    aws_mem_release(m_allocator, reinterpret_cast<void *>(topicCpy));
                     Crt::Delete(opCompleteCallbackData, m_allocator);
                 }
 
