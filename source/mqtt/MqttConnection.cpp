@@ -53,34 +53,47 @@ namespace Aws
                 return connection;
             }
 
-            MqttConnection::operator bool() const noexcept { return m_connectionCore->operator bool(); }
+            MqttConnection::operator bool() const noexcept
+            {
+                AWS_ASSERT(m_connectionCore != nullptr);
+                return m_connectionCore->operator bool();
+            }
 
-            int MqttConnection::LastError() const noexcept { return m_connectionCore->LastError(); }
+            int MqttConnection::LastError() const noexcept
+            {
+                AWS_ASSERT(m_connectionCore != nullptr);
+                return m_connectionCore->LastError();
+            }
 
             bool MqttConnection::SetWill(const char *topic, QOS qos, bool retain, const ByteBuf &payload) noexcept
             {
+                AWS_ASSERT(m_connectionCore != nullptr);
                 return m_connectionCore->SetWill(topic, qos, retain, payload);
             }
 
             bool MqttConnection::SetLogin(const char *username, const char *password) noexcept
             {
+                AWS_ASSERT(m_connectionCore != nullptr);
                 return m_connectionCore->SetLogin(username, password);
             }
 
             bool MqttConnection::SetWebsocketProxyOptions(
                 const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept
             {
+                AWS_ASSERT(m_connectionCore != nullptr);
                 return m_connectionCore->SetHttpProxyOptions(proxyOptions);
             }
 
             bool MqttConnection::SetHttpProxyOptions(
                 const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept
             {
+                AWS_ASSERT(m_connectionCore != nullptr);
                 return m_connectionCore->SetHttpProxyOptions(proxyOptions);
             }
 
             bool MqttConnection::SetReconnectTimeout(uint64_t min_seconds, uint64_t max_seconds) noexcept
             {
+                AWS_ASSERT(m_connectionCore != nullptr);
                 return m_connectionCore->SetReconnectTimeout(min_seconds, max_seconds);
             }
 
@@ -91,6 +104,7 @@ namespace Aws
                 uint32_t pingTimeoutMs,
                 uint32_t protocolOperationTimeoutMs) noexcept
             {
+                AWS_ASSERT(m_connectionCore != nullptr);
                 bool setWebSocketInterceptor = static_cast<bool>(WebsocketInterceptor);
                 return m_connectionCore->Connect(
                     clientId,
@@ -101,15 +115,21 @@ namespace Aws
                     setWebSocketInterceptor);
             }
 
-            bool MqttConnection::Disconnect() noexcept { return m_connectionCore->Disconnect(); }
+            bool MqttConnection::Disconnect() noexcept
+            {
+                AWS_ASSERT(m_connectionCore != nullptr);
+                return m_connectionCore->Disconnect();
+            }
 
             aws_mqtt_client_connection *MqttConnection::GetUnderlyingConnection() noexcept
             {
+                AWS_ASSERT(m_connectionCore != nullptr);
                 return m_connectionCore->GetUnderlyingConnection();
             }
 
             bool MqttConnection::SetOnMessageHandler(OnPublishReceivedHandler &&onPublish) noexcept
             {
+                AWS_ASSERT(m_connectionCore != nullptr);
                 return m_connectionCore->SetOnMessageHandler(
                     [onPublish](
                         MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
@@ -119,6 +139,7 @@ namespace Aws
 
             bool MqttConnection::SetOnMessageHandler(OnMessageReceivedHandler &&onMessage) noexcept
             {
+                AWS_ASSERT(m_connectionCore != nullptr);
                 return m_connectionCore->SetOnMessageHandler(std::move(onMessage));
             }
 
@@ -128,6 +149,7 @@ namespace Aws
                 OnPublishReceivedHandler &&onPublish,
                 OnSubAckHandler &&onSubAck) noexcept
             {
+                AWS_ASSERT(m_connectionCore != nullptr);
                 return m_connectionCore->Subscribe(
                     topicFilter,
                     qos,
@@ -144,6 +166,7 @@ namespace Aws
                 OnMessageReceivedHandler &&onMessage,
                 OnSubAckHandler &&onSubAck) noexcept
             {
+                AWS_ASSERT(m_connectionCore != nullptr);
                 return m_connectionCore->Subscribe(topicFilter, qos, std::move(onMessage), std::move(onSubAck));
             }
 
@@ -152,6 +175,8 @@ namespace Aws
                 QOS qos,
                 OnMultiSubAckHandler &&onOpComplete) noexcept
             {
+                AWS_ASSERT(m_connectionCore != nullptr);
+
                 Vector<std::pair<const char *, OnMessageReceivedHandler>> newTopicFilters;
                 newTopicFilters.reserve(topicFilters.size());
                 for (const auto &pair : topicFilters)
@@ -172,6 +197,7 @@ namespace Aws
                 QOS qos,
                 OnMultiSubAckHandler &&onOpComplete) noexcept
             {
+                AWS_ASSERT(m_connectionCore != nullptr);
                 return m_connectionCore->Subscribe(topicFilters, qos, std::move(onOpComplete));
             }
 
@@ -179,6 +205,7 @@ namespace Aws
                 const char *topicFilter,
                 OnOperationCompleteHandler &&onOpComplete) noexcept
             {
+                AWS_ASSERT(m_connectionCore != nullptr);
                 return m_connectionCore->Unsubscribe(topicFilter, std::move(onOpComplete));
             }
 
@@ -189,11 +216,13 @@ namespace Aws
                 const ByteBuf &payload,
                 OnOperationCompleteHandler &&onOpComplete) noexcept
             {
+                AWS_ASSERT(m_connectionCore != nullptr);
                 return m_connectionCore->Publish(topic, qos, retain, payload, std::move(onOpComplete));
             }
 
             const MqttConnectionOperationStatistics &MqttConnection::GetOperationStatistics() noexcept
             {
+                AWS_ASSERT(m_connectionCore != nullptr);
                 return m_connectionCore->GetOperationStatistics();
             }
         } // namespace Mqtt
