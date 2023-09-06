@@ -442,18 +442,21 @@ namespace Aws
                 // std::weak_ptr::lock will return std::shared_ptr of the managed object ONLY IF there is at least one
                 // other alive instance.
                 // If the last alive shared_ptr (on the user side) is being destroyed in parallel with this code, they
-                // will try to atomically increment/decrement the shared ref counter. So, the following two scenarios
-                // are possible.
-                // 1. std::weak_ptr::lock first increments the ref counter.
+                // will try to atomically increment/decrement the shared ref counter (equal to 1). So, the two following
+                // scenarios are possible.
+                // 1. std::weak_ptr::lock increments the ref counter first.
                 //   - std::weak_ptr::lock atomically increments the ref counter to 2.
                 //   - The user shared_ptr's destructor atomically decrements the ref counter to 1.
-                //   - When the shared_ptr object obtained here is destroyed, the ref counter decremented to 0
+                //   - When the shared_ptr object obtained here is destroyed, the ref counter decremented to 0.
                 //   - The MqttConnection object destructor called.
-                // 2. User's shared_ptr is first.
+                // 2. User's shared_ptr decrements the ref counter first.
                 //   - The user shared_ptr's destructor atomically decrements the ref counter to 0.
-                //   - std::weak_ptr::lock tries to increment the ref counter, but this fails.
-                //   - std::weak_ptr::lock return empty std::shared_ptr.
+                //   - std::weak_ptr::lock tries to increment the ref counter, but fails.
+                //   - std::weak_ptr::lock returns empty std::shared_ptr.
                 //   - The MqttConnection object destructor called.
+                // The first scenario extends the MqttConnection object lifetime for the next user callback execution.
+                // With the second scenario, the user callback for which we try to obtain the MqttConnection instance,
+                // won't be called.
                 return m_connection.lock();
             }
 
