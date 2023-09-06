@@ -36,10 +36,21 @@ namespace Aws
              */
             class AWS_CRT_CPP_API MqttConnectionCore final : public std::enable_shared_from_this<MqttConnectionCore>
             {
+                /**
+                 * @internal
+                 * An auxiliary struct preventing others from instantiating MqttConnectionCore directly using
+                 * constructor.
+                 */
+                class NotPubliclyConstructible
+                {
+                };
+
               public:
                 /**
                  * @internal
-                 * An auxiliary struct making MqttConnectionCore class non-publicly-constructible.
+                 * An auxiliary struct restricting the instantiation of the MqttConnectionCore to the specified friends
+                 * only, without making the constructors private.
+                 * @note This struct allows using std::make_shared and similar functions as constructors remain public.
                  * @sa The Passkey idiom.
                  */
                 class ConstructionKey
@@ -51,8 +62,20 @@ namespace Aws
                     friend MqttConnection;
                 };
 
+                /**
+                 * @internal
+                 * Constructor.
+                 *
+                 * The first parameteter ensures that this constructor won't be used by other classes.
+                 * MqttConnectionCore::s_createMqttConnectionCore should be used for MqttConnectionCore instantiation.
+                 *
+                 * @param key Special parameter restricting the use to the internal methods only.
+                 * @param connection MqttConnection object, it's used for user callbacks.
+                 * @param options Options required to create connection.
+                 *
+                 */
                 MqttConnectionCore(
-                    const ConstructionKey & /*key*/,
+                    const NotPubliclyConstructible &key,
                     std::shared_ptr<MqttConnection> connection,
                     MqttConnectionOptions options) noexcept;
 
@@ -62,6 +85,13 @@ namespace Aws
                 MqttConnectionCore &operator=(const MqttConnectionCore &) = delete;
                 MqttConnectionCore &operator=(MqttConnectionCore &&) = delete;
 
+                /**
+                 * @internal
+                 * Factory method for instantiation of MqttConnectCore.
+                 * @param key Special parameter restricting the instantiation to the specified classes.
+                 * @param connection MqttConnection object, it's used for user callbacks.
+                 * @param options Options required to create connection.
+                 */
                 static std::shared_ptr<MqttConnectionCore> s_createMqttConnectionCore(
                     const ConstructionKey &key,
                     std::shared_ptr<MqttConnection> connection,
