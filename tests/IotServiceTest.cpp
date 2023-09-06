@@ -978,7 +978,7 @@ static int s_TestIotConnectionDestruction(Aws::Crt::Allocator *allocator, void *
 
     mqttConnection->Disconnect();
 
-    // Intentionally don't wait for the dicsonnect callback completion.
+    // Intentionally don't wait for the disconnect callback completion.
 
     ASSERT_TRUE(mqttConnection);
 
