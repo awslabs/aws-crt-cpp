@@ -415,7 +415,6 @@ namespace Aws
                         {
                             aws_mqtt_topic_subscription *subscription = nullptr;
                             aws_array_list_get_at(topicSubacks, &subscription, i);
-                            // TODO Use emplace_back.
                             topics.emplace_back(
                                 reinterpret_cast<char *>(subscription->topic.ptr), subscription->topic.len);
                             // TODO Is only the last one needed?
@@ -666,7 +665,6 @@ namespace Aws
                 return m_underlyingConnection;
             }
 
-            // TODO Fix memory leak on second call.
             bool MqttConnectionCore::SetOnMessageHandler(OnMessageReceivedHandler &&onMessage) noexcept
             {
                 auto *pubCallbackData = Aws::Crt::New<PubCallbackData>(m_allocator);
@@ -682,6 +680,12 @@ namespace Aws
                 if (aws_mqtt_client_connection_set_on_any_publish_handler(
                         m_underlyingConnection, s_onPublish, pubCallbackData) == 0)
                 {
+                    // There is a previously set message handler. We can delete it safely only after setting a new
+                    // handler successfully.
+                    if (m_onAnyCbData != nullptr) {
+                        auto *previousData = reinterpret_cast<PubCallbackData *>(m_onAnyCbData);
+                        Crt::Delete(previousData, previousData->allocator);
+                    }
                     m_onAnyCbData = reinterpret_cast<void *>(pubCallbackData);
                     return true;
                 }
