@@ -23,6 +23,7 @@ namespace Aws
             }
 
             std::shared_ptr<MqttConnection> MqttConnection::s_CreateMqttConnection(
+                aws_mqtt_client *client,
                 MqttConnectionOptions options) noexcept
             {
                 auto *allocator = options.allocator;
@@ -44,7 +45,39 @@ namespace Aws
                 }
 
                 connection->m_connectionCore =
-                    MqttConnectionCore::s_createMqttConnectionCore(connection, std::move(options));
+                    MqttConnectionCore::s_createMqttConnectionCore(client, connection, std::move(options));
+                if (!connection->m_connectionCore || !*connection)
+                {
+                    return {};
+                }
+
+                return connection;
+            }
+
+            std::shared_ptr<MqttConnection> MqttConnection::s_CreateMqttConnection(
+                aws_mqtt5_client *mqtt5Client,
+                MqttConnectionOptions options) noexcept
+            {
+                auto *allocator = options.allocator;
+
+                auto *toSeat = reinterpret_cast<MqttConnection *>(aws_mem_acquire(allocator, sizeof(MqttConnection)));
+                if (toSeat == nullptr)
+                {
+                    return nullptr;
+                }
+                toSeat = new (toSeat) MqttConnection();
+
+                auto connection = std::shared_ptr<MqttConnection>(
+                    toSeat, [allocator](MqttConnection *mqttConnection) { Crt::Delete(mqttConnection, allocator); });
+                // Creation failed, make sure we release the allocated memory
+                if (!connection)
+                {
+                    Crt::Delete(toSeat, allocator);
+                    return {};
+                }
+
+                connection->m_connectionCore =
+                    MqttConnectionCore::s_createMqttConnectionCore(mqtt5Client, connection, std::move(options));
                 if (!connection->m_connectionCore || !*connection)
                 {
                     return {};

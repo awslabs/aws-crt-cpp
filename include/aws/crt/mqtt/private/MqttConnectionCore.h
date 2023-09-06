@@ -245,6 +245,18 @@ namespace Aws
                  * @param options Options required to create connection.
                  */
                 static std::shared_ptr<MqttConnectionCore> s_createMqttConnectionCore(
+                    aws_mqtt_client *client,
+                    std::shared_ptr<MqttConnection> connection,
+                    MqttConnectionOptions options) noexcept;
+
+                /**
+                 * @internal
+                 * Factory method for instantiation of MqttConnectCore.
+                 * @param connection MqttConnection object, it's used for user callbacks.
+                 * @param options Options required to create connection.
+                 */
+                static std::shared_ptr<MqttConnectionCore> s_createMqttConnectionCore(
+                    aws_mqtt5_client *mqtt5Client,
                     std::shared_ptr<MqttConnection> connection,
                     MqttConnectionOptions options) noexcept;
 
@@ -319,11 +331,17 @@ namespace Aws
                  * @note Do not create MqttConnectionCore directly, MqttConnectionCore::s_createMqttConnectionCore
                  * should be used for instantiation.
                  *
+                 * @param client MQTT3 client.
+                 * @param client MQTT5 client.
                  * @param connection MqttConnection object, it's used for user callbacks.
                  * @param options Options required to create connection.
                  *
                  */
-                MqttConnectionCore(std::shared_ptr<MqttConnection> connection, MqttConnectionOptions options) noexcept;
+                MqttConnectionCore(
+                    aws_mqtt_client *client,
+                    aws_mqtt5_client *mqtt5Client,
+                    std::shared_ptr<MqttConnection> connection,
+                    MqttConnectionOptions options) noexcept;
 
                 void createUnderlyingConnection(aws_mqtt_client *mqttClient);
                 void createUnderlyingConnection(aws_mqtt5_client *mqtt5Client);

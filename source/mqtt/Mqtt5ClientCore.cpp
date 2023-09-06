@@ -199,7 +199,6 @@ namespace Aws
                 const Mqtt5::Mqtt5to3AdapterOptions *options) noexcept
             {
                 Mqtt::MqttConnectionOptions connectionOptions;
-                connectionOptions.mqtt5Client = m_client;
                 connectionOptions.hostName = options->m_hostName.c_str();
                 connectionOptions.port = options->m_port;
                 connectionOptions.socketOptions = options->m_socketOptions;
@@ -212,7 +211,7 @@ namespace Aws
                     connectionOptions.useTls = true;
                 }
 
-                auto connection = Mqtt::MqttConnection::s_CreateMqttConnection(std::move(connectionOptions));
+                auto connection = Mqtt::MqttConnection::s_CreateMqttConnection(m_client, std::move(connectionOptions));
                 if (!connection)
                 {
                     return {};

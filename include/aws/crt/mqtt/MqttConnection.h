@@ -422,11 +422,25 @@ namespace Aws
                  * @internal
                  * Factory method for creating MqttConnection.
                  *
+                 * @param client MQTT3 client.
                  * @param options Options required for MqttConnection creation.
                  * @return New instance of MqttConnection.
                  */
-                static std::shared_ptr<MqttConnection> s_CreateMqttConnection(MqttConnectionOptions options) noexcept;
+                static std::shared_ptr<MqttConnection> s_CreateMqttConnection(
+                    aws_mqtt_client *client,
+                    MqttConnectionOptions options) noexcept;
 
+                /**
+                 * @internal
+                 * Factory method for creating MqttConnection.
+                 *
+                 * @param mqtt5Client MQTT5 client.
+                 * @param options Options required for MqttConnection creation.
+                 * @return New instance of MqttConnection.
+                 */
+                static std::shared_ptr<MqttConnection> s_CreateMqttConnection(
+                    aws_mqtt5_client *mqtt5Client,
+                    MqttConnectionOptions options) noexcept;
                 /**
                  * @internal
                  * Internal handler for the underlying connection.

@@ -77,7 +77,6 @@ namespace Aws
                 }
 
                 MqttConnectionOptions connectionOptions;
-                connectionOptions.client = m_client;
                 connectionOptions.hostName = hostName;
                 connectionOptions.port = port;
                 connectionOptions.socketOptions = socketOptions;
@@ -87,7 +86,7 @@ namespace Aws
                 connectionOptions.useTls = true;
                 connectionOptions.allocator = m_client->allocator;
 
-                return MqttConnection::s_CreateMqttConnection(std::move(connectionOptions));
+                return MqttConnection::s_CreateMqttConnection(m_client, std::move(connectionOptions));
             }
 
             std::shared_ptr<MqttConnection> MqttClient::NewConnection(
@@ -98,7 +97,6 @@ namespace Aws
 
             {
                 MqttConnectionOptions connectionOptions;
-                connectionOptions.client = m_client;
                 connectionOptions.hostName = hostName;
                 connectionOptions.port = port;
                 connectionOptions.socketOptions = socketOptions;
@@ -106,7 +104,7 @@ namespace Aws
                 connectionOptions.useTls = false;
                 connectionOptions.allocator = m_client->allocator;
 
-                return MqttConnection::s_CreateMqttConnection(std::move(connectionOptions));
+                return MqttConnection::s_CreateMqttConnection(m_client, std::move(connectionOptions));
             }
         } // namespace Mqtt
     }     // namespace Crt

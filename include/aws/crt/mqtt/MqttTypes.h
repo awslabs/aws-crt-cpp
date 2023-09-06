@@ -26,8 +26,6 @@ namespace Aws
              */
             struct MqttConnectionOptions
             {
-                aws_mqtt_client *client = nullptr;
-                aws_mqtt5_client *mqtt5Client = nullptr;
                 const char *hostName = nullptr;
                 uint16_t port = 0;
                 Io::SocketOptions socketOptions;
