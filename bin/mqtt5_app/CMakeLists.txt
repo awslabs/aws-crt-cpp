@@ -14,10 +14,10 @@ set_target_properties(${MQTT5_APP_PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_
 
 #set warnings and runtime library
 if (MSVC)
-    if(STATIC_CRT)
-        target_compile_options(${PROJECT_NAME} PRIVATE "/MT$<$<CONFIG:Debug>:d>")
+    if(AWS_STATIC_MSVC_RUNTIME_LIBRARY OR STATIC_CRT)
+        target_compile_options(${MQTT5_APP_PROJECT_NAME} PRIVATE "/MT$<$<CONFIG:Debug>:d>")
     else()
-        target_compile_options(${PROJECT_NAME} PRIVATE "/MD$<$<CONFIG:Debug>:d>")
+        target_compile_options(${MQTT5_APP_PROJECT_NAME} PRIVATE "/MD$<$<CONFIG:Debug>:d>")
     endif()
     target_compile_options(${MQTT5_APP_PROJECT_NAME} PRIVATE /W4 /WX)
 else ()
@@ -25,9 +25,7 @@ else ()
 endif ()
 
 
-if (CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE MATCHES Debug)
-    target_compile_definitions(${MQTT5_APP_PROJECT_NAME} PRIVATE "-DDEBUG_BUILD")
-endif ()
+target_compile_definitions(${MQTT5_APP_PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:DEBUG_BUILD>)
 
 target_include_directories(${MQTT5_APP_PROJECT_NAME} PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
