@@ -43,8 +43,8 @@ namespace Aws
                     return {};
                 }
 
-                connection->m_connectionCore = MqttConnectionCore::s_createMqttConnectionCore(
-                    MqttConnectionCore::ConstructionKey{}, connection, std::move(options));
+                connection->m_connectionCore =
+                    MqttConnectionCore::s_createMqttConnectionCore(connection, std::move(options));
                 if (!connection->m_connectionCore || !*connection)
                 {
                     return {};

@@ -36,66 +36,14 @@ namespace Aws
              */
             class MqttConnectionCore final : public std::enable_shared_from_this<MqttConnectionCore>
             {
-                /**
-                 * @internal
-                 * An auxiliary struct preventing others from instantiating MqttConnectionCore directly using
-                 * constructor.
-                 */
-                class NotPubliclyConstructible
-                {
-                };
+                friend MqttConnection;
 
               public:
-                /**
-                 * @internal
-                 * An auxiliary struct restricting the instantiation of the MqttConnectionCore to the specified friends
-                 * only, without making the constructors private.
-                 * @note This struct allows using std::make_shared and similar functions as constructors remain public.
-                 * @sa The Passkey idiom.
-                 */
-                class ConstructionKey
-                {
-                    // Default constructor must be user-defined to prevent compiler from generating other special
-                    // functions which will be public.
-                    ConstructionKey() {}
-                    ConstructionKey(const ConstructionKey &key) = default;
-                    friend MqttConnection;
-                };
-
-                /**
-                 * @internal
-                 * Constructor.
-                 *
-                 * The first parameteter ensures that this constructor won't be used by other classes.
-                 * MqttConnectionCore::s_createMqttConnectionCore should be used for MqttConnectionCore instantiation.
-                 *
-                 * @param key Special parameter restricting the use to the internal methods only.
-                 * @param connection MqttConnection object, it's used for user callbacks.
-                 * @param options Options required to create connection.
-                 *
-                 */
-                MqttConnectionCore(
-                    const NotPubliclyConstructible &key,
-                    std::shared_ptr<MqttConnection> connection,
-                    MqttConnectionOptions options) noexcept;
-
                 ~MqttConnectionCore();
                 MqttConnectionCore(const MqttConnectionCore &) = delete;
                 MqttConnectionCore(MqttConnectionCore &&) = delete;
                 MqttConnectionCore &operator=(const MqttConnectionCore &) = delete;
                 MqttConnectionCore &operator=(MqttConnectionCore &&) = delete;
-
-                /**
-                 * @internal
-                 * Factory method for instantiation of MqttConnectCore.
-                 * @param key Special parameter restricting the instantiation to the specified classes.
-                 * @param connection MqttConnection object, it's used for user callbacks.
-                 * @param options Options required to create connection.
-                 */
-                static std::shared_ptr<MqttConnectionCore> s_createMqttConnectionCore(
-                    const ConstructionKey &key,
-                    std::shared_ptr<MqttConnection> connection,
-                    MqttConnectionOptions options) noexcept;
 
                 /**
                  * @internal
@@ -290,6 +238,16 @@ namespace Aws
                 const MqttConnectionOperationStatistics &GetOperationStatistics() noexcept;
 
               private:
+                /**
+                 * @internal
+                 * Factory method for instantiation of MqttConnectCore.
+                 * @param connection MqttConnection object, it's used for user callbacks.
+                 * @param options Options required to create connection.
+                 */
+                static std::shared_ptr<MqttConnectionCore> s_createMqttConnectionCore(
+                    std::shared_ptr<MqttConnection> connection,
+                    MqttConnectionOptions options) noexcept;
+
                 static void s_onConnectionTermination(void *userData);
 
                 static void s_onConnectionInterrupted(aws_mqtt_client_connection *, int errorCode, void *userData);
@@ -353,6 +311,19 @@ namespace Aws
                     void *userData,
                     aws_mqtt_transform_websocket_handshake_complete_fn *completeFn,
                     void *completeCtx);
+
+                /**
+                 * @internal
+                 * Constructor.
+                 *
+                 * @note Do not create MqttConnectionCore directly, MqttConnectionCore::s_createMqttConnectionCore
+                 * should be used for instantiation.
+                 *
+                 * @param connection MqttConnection object, it's used for user callbacks.
+                 * @param options Options required to create connection.
+                 *
+                 */
+                MqttConnectionCore(std::shared_ptr<MqttConnection> connection, MqttConnectionOptions options) noexcept;
 
                 void createUnderlyingConnection(aws_mqtt_client *mqttClient);
                 void createUnderlyingConnection(aws_mqtt5_client *mqtt5Client);

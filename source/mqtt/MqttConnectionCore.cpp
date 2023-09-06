@@ -29,7 +29,6 @@ namespace Aws
             };
 
             MqttConnectionCore::MqttConnectionCore(
-                const NotPubliclyConstructible & /*key*/,
                 std::shared_ptr<MqttConnection> connection,
                 MqttConnectionOptions options) noexcept
                 : m_underlyingConnection(nullptr), m_hostName(options.hostName), m_port(options.port),
@@ -59,17 +58,26 @@ namespace Aws
             }
 
             std::shared_ptr<MqttConnectionCore> MqttConnectionCore::s_createMqttConnectionCore(
-                const ConstructionKey & /*key*/,
                 std::shared_ptr<MqttConnection> connection,
                 MqttConnectionOptions options) noexcept
             {
                 auto *allocator = options.allocator;
-                auto connectionCore = MakeShared<MqttConnectionCore>(
-                    allocator, NotPubliclyConstructible{}, std::move(connection), std::move(options));
-                if (!connectionCore)
+                auto *toSeat =
+                    reinterpret_cast<MqttConnectionCore *>(aws_mem_acquire(allocator, sizeof(MqttConnectionCore)));
+                if (toSeat == nullptr)
                 {
                     return {};
                 }
+
+                toSeat = new (toSeat) MqttConnectionCore(std::move(connection), std::move(options));
+                if (!*toSeat)
+                {
+                    Crt::Delete(toSeat, allocator);
+                    return nullptr;
+                }
+
+                auto connectionCore = std::shared_ptr<MqttConnectionCore>(
+                    toSeat, [allocator](MqttConnectionCore *ptr) { Crt::Delete(ptr, allocator); });
                 connectionCore->m_self = connectionCore;
                 return connectionCore;
             }
