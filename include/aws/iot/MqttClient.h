@@ -6,7 +6,7 @@
 #include <aws/crt/Config.h>
 #include <aws/crt/Exports.h>
 #include <aws/crt/auth/Sigv4Signing.h>
-#include <aws/crt/mqtt/MqttClient.h>
+#include <aws/crt/mqtt/MqttConnection.h>
 #include <aws/iot/MqttCommon.h>
 
 #if !BYO_CRYPTO
