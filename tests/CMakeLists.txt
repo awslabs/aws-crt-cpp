@@ -233,7 +233,7 @@ set(TEST_BINARY_NAME ${PROJECT_NAME}-tests)
 #    add_net_test_case(Mqtt5to3AdapterDirectConnectionWithMutualTLS)
 #endif()
 
-#add_test_case(RuleEngine)
+add_test_case(RuleEngine)
 
 if(AWS_HAS_CI_ENVIRONMENT AND NOT BYO_CRYPTO)
     add_test_case(CognitoCredentialsProviderGetSuccess)
