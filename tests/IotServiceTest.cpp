@@ -208,13 +208,12 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
         };
         auto onConnectionClosed = [&](MqttConnection &, OnConnectionClosedData *data) {
             (void)data;
-            printf("CLOSED\n");
             {
                 std::lock_guard<std::mutex> lock(mutex);
                 closed = true;
-                // This notify_one call has to be under mutex, to prevent a possible use-after-free case.
-                cv.notify_one();
             }
+            printf("CLOSED");
+            cv.notify_one();
         };
 
         mqttConnection->OnConnectionCompleted = onConnectionCompleted;
@@ -333,13 +332,12 @@ static int s_TestIotConnectionSuccessTest(Aws::Crt::Allocator *allocator, void *
 
     auto onConnectionClosed = [&](MqttConnection &, OnConnectionClosedData *data) {
         (void)data;
-        printf("CLOSED");
         {
             std::lock_guard<std::mutex> lock(mutex);
             closed = true;
-            // This notify_one call has to be under mutex, to prevent a possible use-after-free case.
-            cv.notify_one();
         }
+        printf("CLOSED");
+        cv.notify_one();
     };
 
     mqttConnection->OnConnectionSuccess = onConnectionSuccess;
@@ -418,13 +416,12 @@ static int s_TestIotConnectionFailureTest(Aws::Crt::Allocator *allocator, void *
     std::condition_variable cv;
     bool connection_failure = false;
     auto onConnectionFailure = [&](MqttConnection &, OnConnectionFailureData *data) {
-        printf("CONNECTION FAILURE: error=%i\n", data->error);
         {
             std::lock_guard<std::mutex> lock(mutex);
             connection_failure = true;
-            // This notify_one call has to be under mutex, to prevent a possible use-after-free case.
-            cv.notify_one();
         }
+        printf("CONNECTION FAILURE: error=%i\n", data->error);
+        cv.notify_one();
     };
     mqttConnection->OnConnectionFailure = onConnectionFailure;
     Aws::Crt::UUID Uuid;
@@ -547,9 +544,8 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
             {
                 std::lock_guard<std::mutex> lock(subscriberMutex);
                 subscriberConnected = false;
-                // This notify_one call has to be under mutex, to prevent a possible use-after-free case.
-                subscriberCv.notify_one();
             }
+            subscriberCv.notify_one();
         };
         auto subscriberOnSubAck =
             [&](MqttConnection &, uint16_t packetId, const Aws::Crt::String &topic, QOS qos, int) {
@@ -714,9 +710,8 @@ static int s_TestIotStatisticsPublishWaitStatisticsDisconnect(Aws::Crt::Allocato
             {
                 std::lock_guard<std::mutex> lock(mutex);
                 connected = false;
-                // This notify_one call has to be under mutex, to prevent a possible use-after-free case.
-                cv.notify_one();
             }
+            cv.notify_one();
         };
         auto onPubAck = [&](MqttConnection &, uint16_t packetId, int) {
             printf("PUBLISHED id=%d\n", packetId);
@@ -844,9 +839,8 @@ static int s_TestIotStatisticsPublishStatisticsWaitDisconnect(Aws::Crt::Allocato
             {
                 std::lock_guard<std::mutex> lock(mutex);
                 connected = false;
-                // This notify_one call has to be under mutex, to prevent a possible use-after-free case.
-                cv.notify_one();
             }
+            cv.notify_one();
         };
         auto onPubAck = [&](MqttConnection &, uint16_t packetId, int) {
             printf("PUBLISHED id=%d\n", packetId);
