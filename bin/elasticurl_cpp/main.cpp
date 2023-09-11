@@ -48,7 +48,7 @@ static void s_Usage(int exit_code)
     std::cerr << "usage: elasticurl [options] url\n";
     std::cerr << " url: url to make a request to. The default is a GET request.\n";
     std::cerr << "\n Options:\n\n";
-    std::cerr << "      --cacert FILE: path to a CA certficate file.\n";
+    std::cerr << "      --cacert FILE: path to a CA certificate file.\n";
     std::cerr << "      --capath PATH: path to a directory containing CA files.\n";
     std::cerr << "      --cert FILE: path to a PEM encoded certificate to use with mTLS\n";
     std::cerr << "      --key FILE: Path to a PEM encoded private key that matches cert.\n";
@@ -481,9 +481,12 @@ int main(int argc, char **argv)
 
     request.SetMethod(ByteCursorFromCString(appCtx.verb));
     auto pathAndQuery = appCtx.uri.GetPathAndQuery();
-    if (pathAndQuery.len > 0) {
+    if (pathAndQuery.len > 0)
+    {
         request.SetPath(pathAndQuery);
-    } else {
+    }
+    else
+    {
         request.SetPath(ByteCursorFromCString("/"));
     }
 

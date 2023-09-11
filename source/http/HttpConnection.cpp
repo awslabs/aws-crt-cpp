@@ -46,12 +46,12 @@ namespace Aws
             void HttpClientConnection::s_onClientConnectionSetup(
                 struct aws_http_connection *connection,
                 int errorCode,
-                void *user_data) noexcept
+                void *userData) noexcept
             {
                 /**
                  * Allocate an HttpClientConnection and seat it to `ConnectionCallbackData`'s shared_ptr.
                  */
-                auto *callbackData = static_cast<ConnectionCallbackData *>(user_data);
+                auto *callbackData = static_cast<ConnectionCallbackData *>(userData);
                 if (!errorCode)
                 {
                     auto connectionObj = std::allocate_shared<UnmanagedConnection>(

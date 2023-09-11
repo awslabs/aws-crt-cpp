@@ -501,8 +501,8 @@ namespace Aws
 
                 static void s_onClientConnectionSetup(
                     struct aws_http_connection *connection,
-                    int error_code,
-                    void *user_data) noexcept;
+                    int errorCode,
+                    void *userData) noexcept;
                 static void s_onClientConnectionShutdown(
                     struct aws_http_connection *connection,
                     int error_code,
