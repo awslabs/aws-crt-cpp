@@ -9,6 +9,8 @@ file(GLOB MQTT5_APP_SRC
 set(MQTT5_APP_PROJECT_NAME mqtt5_app)
 add_executable(${MQTT5_APP_PROJECT_NAME} ${MQTT5_APP_SRC})
 
+add_aws_sanitizers(${MQTT5_APP_PROJECT_NAME})
+
 set_target_properties(${MQTT5_APP_PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(${MQTT5_APP_PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
 
@@ -31,7 +33,7 @@ target_include_directories(${MQTT5_APP_PROJECT_NAME} PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>)
 
-target_link_libraries(${MQTT5_APP_PROJECT_NAME} aws-crt-cpp)
+target_link_libraries(${MQTT5_APP_PROJECT_NAME} PRIVATE aws-crt-cpp)
 
 if (BUILD_SHARED_LIBS AND NOT WIN32)
     message(INFO " mqtt5 app will be built with shared libs, but you may need to set LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib to run the application")
