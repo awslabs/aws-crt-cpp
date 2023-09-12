@@ -314,7 +314,9 @@ aws_use_package(aws-checksums)
 aws_use_package(aws-c-event-stream)
 aws_use_package(aws-c-s3)
 
-target_link_libraries(${PROJECT_NAME} ${DEP_AWS_LIBS})
+aws_add_sanitizers(${PROJECT_NAME})
+
+target_link_libraries(${PROJECT_NAME} PUBLIC ${DEP_AWS_LIBS})
 
 install(FILES ${AWS_CRT_HEADERS} DESTINATION "include/aws/crt" COMPONENT Development)
 install(FILES ${AWS_CRT_AUTH_HEADERS} DESTINATION "include/aws/crt/auth" COMPONENT Development)

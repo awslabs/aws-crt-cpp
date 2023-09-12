@@ -9,6 +9,8 @@ file(GLOB ELASTICURL_CPP_SRC
 set(ELASTICURL_CPP_PROJECT_NAME elasticurl_cpp)
 add_executable(${ELASTICURL_CPP_PROJECT_NAME} ${ELASTICURL_CPP_SRC})
 
+aws_add_sanitizers(${ELASTICURL_CPP_PROJECT_NAME})
+
 set_target_properties(${ELASTICURL_CPP_PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(${ELASTICURL_CPP_PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
 
@@ -31,7 +33,7 @@ target_include_directories(${ELASTICURL_CPP_PROJECT_NAME} PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>)
 
-target_link_libraries(${ELASTICURL_CPP_PROJECT_NAME} aws-crt-cpp)
+target_link_libraries(${ELASTICURL_CPP_PROJECT_NAME} PRIVATE aws-crt-cpp)
 
 if (BUILD_SHARED_LIBS AND NOT WIN32)
     message(INFO " elasticurl will be built with shared libs, but you may need to set LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib to run the application")

@@ -247,6 +247,8 @@ endif()
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 
+aws_add_sanitizers(${TEST_BINARY_NAME})
+
  # set extra warning flags
 if(AWS_WARNINGS_ARE_ERRORS)
     if(MSVC)
