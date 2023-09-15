@@ -31,8 +31,7 @@
         "test",
         "elasticurl-tests"
     ],
-    "build_env": {
-        "LSAN_OPTIONS": "suppressions={source_dir}/tests/resources/suppressions-lsan.txt:detect_leaks=0",
-        "VERBOSE": 1
+    "env": {
+        "LSAN_OPTIONS": "suppressions={source_dir}/tests/resources/suppressions-lsan.txt"
     }
 }
