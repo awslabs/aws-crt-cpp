@@ -28,7 +28,7 @@
     ],
     "test_steps": [
         "crt-ci-prep",
-        "test",
+        "debug-test",
         "elasticurl-tests"
     ],
     "build_env": {
