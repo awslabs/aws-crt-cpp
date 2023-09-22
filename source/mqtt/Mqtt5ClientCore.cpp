@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/mqtt/Mqtt5Client.h>
-#include <aws/crt/mqtt/private/Mqtt5ClientCore.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
+#include <aws/crt/mqtt/private/Mqtt5ClientCore.h>
 
 #include <aws/crt/Api.h>
 #include <aws/crt/StlAllocator.h>

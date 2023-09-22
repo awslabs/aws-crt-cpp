@@ -5,9 +5,9 @@
 
 #include <aws/crt/mqtt/MqttConnection.h>
 
-#include <aws/crt/mqtt/private/MqttConnectionCore.h>
 #include <aws/crt/mqtt/Mqtt5Client.h>
 #include <aws/crt/mqtt/private/Mqtt5ClientCore.h>
+#include <aws/crt/mqtt/private/MqttConnectionCore.h>
 
 namespace Aws
 {
@@ -24,15 +24,17 @@ namespace Aws
                 }
             }
 
-            std::shared_ptr<MqttConnection> MqttConnection::NewConnectionFromMqtt5Client(std::shared_ptr<Crt::Mqtt5::Mqtt5Client> mqtt5client) noexcept
+            std::shared_ptr<MqttConnection> MqttConnection::NewConnectionFromMqtt5Client(
+                std::shared_ptr<Crt::Mqtt5::Mqtt5Client> mqtt5client) noexcept
             {
-                if(!mqtt5client || !*mqtt5client || !mqtt5client->m_client_core)
+                if (!mqtt5client || !*mqtt5client || !mqtt5client->m_client_core)
                 {
                     AWS_LOGF_ERROR(AWS_LS_MQTT5_CLIENT, "Failed to create mqtt3 connection: Mqtt5 Client is invalid.");
                     return nullptr;
                 }
 
-                /* Creating a MqttConnection would need access to the underlying c mqtt5 client. The c mqtt5 client should only be managed by the
+                /* Creating a MqttConnection would need access to the underlying c mqtt5 client. The c mqtt5 client
+                *should only be managed by the
                 ** Mqtt5ClientCore to make sure it is thread safe. Use the client core to create a new connection.
                 */
                 return mqtt5client->m_client_core->NewConnection(mqtt5client->m_mqtt5to3AdapterOptions.get());

@@ -31,7 +31,7 @@ namespace Aws
         {
             class Mqtt5Client;
             class Mqtt5ClientCore;
-        }
+        } // namespace Mqtt5
 
         namespace Mqtt
         {
@@ -172,7 +172,8 @@ namespace Aws
                  *
                  * @return std::shared_ptr<Crt::Mqtt::MqttConnection>
                  */
-                static std::shared_ptr<Crt::Mqtt::MqttConnection> NewConnectionFromMqtt5Client(std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5client) noexcept;
+                static std::shared_ptr<Crt::Mqtt::MqttConnection> NewConnectionFromMqtt5Client(
+                    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5client) noexcept;
 
                 /**
                  * @return true if the instance is in a valid state, false otherwise.

@@ -2556,7 +2556,8 @@ static int s_AdapterConenctAndDisconnectThroughMqtt5(
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    std::shared_ptr<Mqtt::MqttConnection> mqttConnection = Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    std::shared_ptr<Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
     ASSERT_TRUE(mqttConnection && *mqttConnection);
 
     ASSERT_TRUE(mqtt5Client->Start());
@@ -2581,13 +2582,13 @@ static int s_TestMqtt5to3AdapterNewConnectionMin(Aws::Crt::Allocator *allocator,
     socketOptions.SetConnectTimeoutMs(3000);
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    std::shared_ptr<Mqtt::MqttConnection> mqttConnection = Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    std::shared_ptr<Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
     ASSERT_TRUE(mqttConnection);
 
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5to3AdapterNewConnectionMin, s_TestMqtt5to3AdapterNewConnectionMin)
-
 
 /*
  * [Mqtt5to3Adapter-UC2] Maximum creation and cleanup
@@ -2656,13 +2657,13 @@ static int s_TestMqtt5to3AdapterNewClientFull(Aws::Crt::Allocator *allocator, vo
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    std::shared_ptr<Mqtt::MqttConnection> mqttConnection = Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    std::shared_ptr<Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
     ASSERT_TRUE(mqttConnection && *mqttConnection);
 
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5to3AdapterNewClientFull, s_TestMqtt5to3AdapterNewClientFull)
-
 
 /*
  * [Mqtt5to3Adapter-UC3] Happy path. Minimal direct connection
@@ -2686,13 +2687,16 @@ static int s_TestMqtt5to3AdapterDirectConnectionMinimalThroughMqtt3(Aws::Crt::Al
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
-    std::shared_ptr<Mqtt::MqttConnection> mqttConnection = Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    std::shared_ptr<Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
     ASSERT_TRUE(mqttConnection);
     int connectResult = s_ConnectAndDisconnectThroughMqtt3(mqttConnection);
     ASSERT_SUCCESS(connectResult);
     return AWS_OP_SUCCESS;
 }
-AWS_TEST_CASE(Mqtt5to3AdapterDirectConnectionMinimalThroughMqtt3, s_TestMqtt5to3AdapterDirectConnectionMinimalThroughMqtt3)
+AWS_TEST_CASE(
+    Mqtt5to3AdapterDirectConnectionMinimalThroughMqtt3,
+    s_TestMqtt5to3AdapterDirectConnectionMinimalThroughMqtt3)
 
 /*
  * [Mqtt5to3Adapter-UC4] Websocket creation and connection
@@ -2744,7 +2748,8 @@ static int s_TestMqtt5to3AdapterWSConnectionMinimalThroughMqtt3(Aws::Crt::Alloca
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
 
-    std::shared_ptr<Mqtt::MqttConnection> mqttConnection = Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    std::shared_ptr<Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
     ASSERT_TRUE(mqttConnection);
 
     mqttConnection->WebsocketInterceptor =
@@ -2795,7 +2800,8 @@ static int s_TestMqtt5to3AdapterWithIoTConnectionThroughMqtt3(Aws::Crt::Allocato
     ASSERT_TRUE(mqtt5Client);
 
     // Created a Mqtt311 Connection from mqtt5Client. The options are setup by the builder.
-    std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> mqttConnection = Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
     ASSERT_TRUE(mqttConnection);
     delete builder;
     int connectResult = s_ConnectAndDisconnectThroughMqtt3(mqttConnection);
@@ -2836,14 +2842,17 @@ static int s_TestMqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt3(Aws::C
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
     // Created a Mqtt311 Connection from mqtt5Client. The options are setup by the builder.
-    std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> mqttConnection = Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
     ASSERT_TRUE(mqttConnection);
     int connectResult = s_ConnectAndDisconnectThroughMqtt3(mqttConnection);
     ASSERT_SUCCESS(connectResult);
 
     return AWS_OP_SUCCESS;
 }
-AWS_TEST_CASE(Mqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt3, s_TestMqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt3)
+AWS_TEST_CASE(
+    Mqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt3,
+    s_TestMqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt3)
 
 /*
  * [Mqtt5to3Adapter-UC7] Happy path. Minimal direct connection Through Mqtt5
@@ -2867,7 +2876,9 @@ static int s_TestMqtt5to3AdapterDirectConnectionMinimalThroughMqtt5(Aws::Crt::Al
 
     return s_AdapterConenctAndDisconnectThroughMqtt5(mqtt5Options, allocator);
 }
-AWS_TEST_CASE(Mqtt5to3AdapterDirectConnectionMinimalThroughMqtt5, s_TestMqtt5to3AdapterDirectConnectionMinimalThroughMqtt5)
+AWS_TEST_CASE(
+    Mqtt5to3AdapterDirectConnectionMinimalThroughMqtt5,
+    s_TestMqtt5to3AdapterDirectConnectionMinimalThroughMqtt5)
 
 /*
  * [Mqtt5to3Adapter-UC4] Websocket creation and connection
@@ -2923,7 +2934,8 @@ static int s_TestMqtt5to3AdapterWSConnectionMinimalThroughMqtt5(Aws::Crt::Alloca
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
 
-    std::shared_ptr<Mqtt::MqttConnection> mqttConnection = Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    std::shared_ptr<Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
     ASSERT_TRUE(mqttConnection);
 
     mqttConnection->WebsocketInterceptor =
@@ -2981,7 +2993,8 @@ static int s_TestMqtt5to3AdapterWithIoTConnectionThroughMqtt5(Aws::Crt::Allocato
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
     ASSERT_TRUE(mqtt5Client);
     // Created a Mqtt311 Connection from mqtt5Client. The options are setup by the builder.
-    std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> mqttConnection = Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
     ASSERT_TRUE(mqttConnection);
 
     ASSERT_TRUE(mqtt5Client->Start());
@@ -3026,7 +3039,8 @@ static int s_TestMqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt5(Aws::C
 
     return s_AdapterConenctAndDisconnectThroughMqtt5(mqtt5Options, allocator);
 }
-AWS_TEST_CASE(Mqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt5, s_TestMqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt5)
-
+AWS_TEST_CASE(
+    Mqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt5,
+    s_TestMqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt5)
 
 #endif // !BYO_CRYPTO∏
