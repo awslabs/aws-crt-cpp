@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/mqtt/Mqtt5Client.h>
-#include <aws/crt/mqtt/Mqtt5ClientCore.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
+#include <aws/crt/mqtt/private/Mqtt5ClientCore.h>
 
 #include <aws/crt/Api.h>
 #include <aws/crt/StlAllocator.h>
@@ -28,16 +28,6 @@ namespace Aws
             {
                 m_client_core = Mqtt5ClientCore::NewMqtt5ClientCore(options, allocator);
                 m_mqtt5to3AdapterOptions = options.NewMqtt5to3AdapterOptions();
-            }
-
-            std::shared_ptr<Crt::Mqtt::MqttConnection> Mqtt5Client::NewConnection() noexcept
-            {
-                if (m_client_core == nullptr)
-                {
-                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to create mqtt3 connection: Mqtt5 Client is invalid.");
-                    return nullptr;
-                }
-                return m_client_core->NewConnection(m_mqtt5to3AdapterOptions.get());
             }
 
             Mqtt5Client::~Mqtt5Client()

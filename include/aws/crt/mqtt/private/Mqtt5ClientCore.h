@@ -23,7 +23,8 @@ namespace Aws
              */
             class AWS_CRT_CPP_API Mqtt5ClientCore final : public std::enable_shared_from_this<Mqtt5ClientCore>
             {
-                friend Mqtt5Client;
+                friend class Mqtt5Client;
+                friend class Mqtt::MqttConnection;
 
               public:
                 /**
@@ -201,6 +202,54 @@ namespace Aws
 
                 aws_mqtt5_client *m_client;
                 Allocator *m_allocator;
+            };
+
+            /**
+             * The extra options required to build MqttConnection from Mqtt5Client
+             */
+            class Mqtt5to3AdapterOptions
+            {
+                friend class Mqtt5ClientOptions;
+                friend class Mqtt5ClientCore;
+
+              public:
+                /* Default constructor */
+                Mqtt5to3AdapterOptions();
+
+              private:
+                /* Host name of the MQTT server to connect to. */
+                Crt::String m_hostName;
+
+                /* Port to connect to */
+                uint16_t m_port;
+
+                /*
+                 * If the MqttConnection should overwrite the websocket config. If set to true, m_webSocketInterceptor
+                 * must be set.
+                 */
+                bool m_overwriteWebsocket;
+
+                /*
+                 * The transform function invoked during websocket handshake.
+                 */
+                Crt::Mqtt::OnWebSocketHandshakeIntercept m_webSocketInterceptor;
+
+                /**
+                 * Controls socket properties of the underlying MQTT connections made by the client.  Leave undefined to
+                 * use defaults (no TCP keep alive, 10 second socket timeout).
+                 */
+                Crt::Io::SocketOptions m_socketOptions;
+
+                /**
+                 * TLS context for secure socket connections.
+                 * If undefined, a plaintext connection will be used.
+                 */
+                Crt::Optional<Crt::Io::TlsConnectionOptions> m_tlsConnectionOptions;
+
+                /**
+                 * Configures (tunneling) HTTP proxy usage when establishing MQTT connections
+                 */
+                Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
             };
 
         } // namespace Mqtt5
