@@ -34,9 +34,9 @@ namespace Aws
                 }
 
                 /* Creating a MqttConnection would need access to the underlying c mqtt5 client. The c mqtt5 client
-                *should only be managed by the
-                ** Mqtt5ClientCore to make sure it is thread safe. Use the client core to create a new connection.
-                */
+                 *should only be managed by the
+                 ** Mqtt5ClientCore to make sure it is thread safe. Use the client core to create a new connection.
+                 */
                 return mqtt5client->m_client_core->NewConnection(mqtt5client->m_mqtt5to3AdapterOptions.get());
             }
 

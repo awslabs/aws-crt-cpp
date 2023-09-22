@@ -218,6 +218,7 @@ namespace Aws
             class AWS_CRT_CPP_API Mqtt5Client final : public std::enable_shared_from_this<Mqtt5Client>
             {
                 friend class Mqtt::MqttConnection;
+
               public:
                 /**
                  * Factory function for mqtt5 client

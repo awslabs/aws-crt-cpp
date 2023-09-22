@@ -3043,4 +3043,105 @@ AWS_TEST_CASE(
     Mqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt5,
     s_TestMqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt5)
 
+/*
+ * [Mqtt5to3Adapter-UC5] IoT MutalTLS creation and cleanup with Mqtt5ClientBuilder
+ */
+static int s_TestMqtt5to3AdapterOperations(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+        mqtt5TestVars.m_hostname_string,
+        mqtt5TestVars.m_certificate_path_string.c_str(),
+        mqtt5TestVars.m_private_key_path_string.c_str(),
+        allocator);
+    ASSERT_TRUE(builder);
+
+    bool subscribed = false;
+    bool published = false;
+    bool unsubscribed = false;
+    uint8_t received = 0;
+    std::mutex mutex;
+    std::condition_variable cv;
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+
+    String testUUID = Aws::Crt::UUID().ToString();
+    String testTopic = "test/MQTT5to3Adapter_" + testUUID;
+    ByteBuf testPayload = Aws::Crt::ByteBufFromCString("PUBLISH ME!");
+
+    s_setupConnectionLifeCycle(builder, connectionPromise, stoppedPromise);
+
+    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
+    ASSERT_TRUE(mqtt5Client);
+    // Created a Mqtt311 Connection from mqtt5Client. The options are setup by the builder.
+    std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    ASSERT_TRUE(mqttConnection);
+
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(connectionPromise.get_future().get());
+
+    auto onMessage = [&](Mqtt::MqttConnection &, const String &topic, const ByteBuf &payload, bool, Mqtt::QOS, bool) {
+        printf("GOT MESSAGE topic=%s payload=" PRInSTR "\n", topic.c_str(), AWS_BYTE_BUF_PRI(payload));
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            ++received;
+        }
+        cv.notify_one();
+    };
+    auto onSubAck = [&](Mqtt::MqttConnection &, uint16_t packetId, const Aws::Crt::String &topic, Mqtt::QOS qos, int) {
+        printf("SUBACK id=%d topic=%s qos=%d\n", packetId, topic.c_str(), qos);
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            subscribed = true;
+        }
+        cv.notify_one();
+    };
+    auto onPubAck = [&](Mqtt::MqttConnection &, uint16_t packetId, int) {
+        printf("PUBLISHED id=%d\n", packetId);
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            published = true;
+        }
+        cv.notify_one();
+    };
+
+    mqttConnection->Subscribe(
+        testTopic.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, std::move(onMessage), std::move(onSubAck));
+
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        cv.wait(lock, [&]() { return subscribed; });
+    }
+
+    mqttConnection->Publish(testTopic.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, testPayload, onPubAck);
+
+    // wait for publish
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        cv.wait(lock, [&]() { return published; });
+    }
+
+    // Sleep and wait for message recieved
+    aws_thread_current_sleep(2000 * 1000 * 1000);
+
+    /* Stop immediately */
+    ASSERT_TRUE(mqtt5Client->Stop());
+    stoppedPromise.get_future().get();
+
+    delete builder;
+
+    ASSERT_TRUE(received == 1);
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5to3AdapterOperations, s_TestMqtt5to3AdapterOperations)
+
 #endif // !BYO_CRYPTO∏
