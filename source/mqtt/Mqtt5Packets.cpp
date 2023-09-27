@@ -804,9 +804,9 @@ namespace Aws
                 setPacketOptional(m_topicAliasMaximum, packet.topic_alias_maximum);
                 setPacketStringOptional(m_reasonString, packet.reason_string);
                 setUserProperties(m_userProperties, packet.user_properties, packet.user_property_count);
-                setPacketOptional(m_wildcardSubscriptionsAvaliable, packet.wildcard_subscriptions_available);
-                setPacketOptional(m_subscriptionIdentifiersAvaliable, packet.subscription_identifiers_available);
-                setPacketOptional(m_sharedSubscriptionsAvaliable, packet.shared_subscriptions_available);
+                setPacketOptional(m_wildcardSubscriptionsAvailable, packet.wildcard_subscriptions_available);
+                setPacketOptional(m_subscriptionIdentifiersAvailable, packet.subscription_identifiers_available);
+                setPacketOptional(m_sharedSubscriptionsAvailable, packet.shared_subscriptions_available);
                 setPacketOptional(m_serverKeepAlive, packet.server_keep_alive);
                 setPacketStringOptional(m_responseInformation, packet.response_information);
                 setPacketStringOptional(m_serverReference, packet.server_reference);
@@ -849,19 +849,19 @@ namespace Aws
 
             const Vector<UserProperty> &ConnAckPacket::getUserProperty() const noexcept { return m_userProperties; }
 
-            const Crt::Optional<bool> &ConnAckPacket::getWildcardSubscriptionsAvaliable() const noexcept
+            const Crt::Optional<bool> &ConnAckPacket::getWildcardSubscriptionsAvailable() const noexcept
             {
-                return m_wildcardSubscriptionsAvaliable;
+                return m_wildcardSubscriptionsAvailable;
             }
 
-            const Crt::Optional<bool> &ConnAckPacket::getSubscriptionIdentifiersAvaliable() const noexcept
+            const Crt::Optional<bool> &ConnAckPacket::getSubscriptionIdentifiersAvailable() const noexcept
             {
-                return m_subscriptionIdentifiersAvaliable;
+                return m_subscriptionIdentifiersAvailable;
             }
 
-            const Crt::Optional<bool> &ConnAckPacket::getSharedSubscriptionsAvaliable() const noexcept
+            const Crt::Optional<bool> &ConnAckPacket::getSharedSubscriptionsAvailable() const noexcept
             {
-                return m_sharedSubscriptionsAvaliable;
+                return m_sharedSubscriptionsAvailable;
             }
 
             const Crt::Optional<uint16_t> &ConnAckPacket::getServerKeepAlive() const noexcept
@@ -1176,9 +1176,9 @@ namespace Aws
                 m_serverKeepAliveSec = negotiated_settings.server_keep_alive;
 
                 m_retainAvailable = negotiated_settings.retain_available;
-                m_wildcardSubscriptionsAvaliable = negotiated_settings.wildcard_subscriptions_available;
-                m_subscriptionIdentifiersAvaliable = negotiated_settings.subscription_identifiers_available;
-                m_sharedSubscriptionsAvaliable = negotiated_settings.shared_subscriptions_available;
+                m_wildcardSubscriptionsAvailable = negotiated_settings.wildcard_subscriptions_available;
+                m_subscriptionIdentifiersAvailable = negotiated_settings.subscription_identifiers_available;
+                m_sharedSubscriptionsAvailable = negotiated_settings.shared_subscriptions_available;
                 m_rejoinedSession = negotiated_settings.rejoined_session;
 
                 m_clientId = Crt::String(
@@ -1204,19 +1204,19 @@ namespace Aws
 
             bool NegotiatedSettings::getRetainAvailable() const noexcept { return m_retainAvailable; }
 
-            bool NegotiatedSettings::getWildcardSubscriptionsAvaliable() const noexcept
+            bool NegotiatedSettings::getWildcardSubscriptionsAvailable() const noexcept
             {
-                return m_wildcardSubscriptionsAvaliable;
+                return m_wildcardSubscriptionsAvailable;
             }
 
-            bool NegotiatedSettings::getSubscriptionIdentifiersAvaliable() const noexcept
+            bool NegotiatedSettings::getSubscriptionIdentifiersAvailable() const noexcept
             {
-                return m_subscriptionIdentifiersAvaliable;
+                return m_subscriptionIdentifiersAvailable;
             }
 
-            bool NegotiatedSettings::getSharedSubscriptionsAvaliable() const noexcept
+            bool NegotiatedSettings::getSharedSubscriptionsAvailable() const noexcept
             {
-                return m_sharedSubscriptionsAvaliable;
+                return m_sharedSubscriptionsAvailable;
             }
 
             bool NegotiatedSettings::getRejoinedSession() const noexcept { return m_rejoinedSession; }
