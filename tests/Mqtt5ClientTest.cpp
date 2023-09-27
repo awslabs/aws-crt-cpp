@@ -3113,6 +3113,14 @@ static int s_TestMqtt5to3AdapterOperations(Aws::Crt::Allocator *allocator, void 
         }
         cv.notify_one();
     };
+    auto onUnsubAck = [&](Mqtt::MqttConnection &, uint16_t packetId, int) {
+        printf("UNSUBACK id=%d\n", packetId);
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            unsubscribed = true;
+        }
+        cv.notify_one();
+    };
 
     mqttConnection->Subscribe(
         testTopic.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, std::move(onMessage), std::move(onSubAck));
@@ -3132,6 +3140,20 @@ static int s_TestMqtt5to3AdapterOperations(Aws::Crt::Allocator *allocator, void 
 
     // Sleep and wait for message recieved
     aws_thread_current_sleep(2000 * 1000 * 1000);
+
+    mqttConnection->Unsubscribe(testTopic.c_str(), onUnsubAck);
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        cv.wait(lock, [&]() { return subscribed; });
+    }
+    published = false;
+    mqttConnection->Publish(testTopic.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, testPayload, onPubAck);
+
+    // wait for publish
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        cv.wait(lock, [&]() { return published; });
+    }
 
     /* Stop immediately */
     ASSERT_TRUE(mqtt5Client->Stop());
