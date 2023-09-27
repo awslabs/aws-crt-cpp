@@ -491,17 +491,17 @@ namespace Aws
                 /**
                  * @return Whether the server supports wildcard subscriptions.
                  */
-                bool getWildcardSubscriptionsAvaliable() const noexcept;
+                bool getWildcardSubscriptionsAvailable() const noexcept;
 
                 /**
                  * @return Whether the server supports subscription identifiers
                  */
-                bool getSubscriptionIdentifiersAvaliable() const noexcept;
+                bool getSubscriptionIdentifiersAvailable() const noexcept;
 
                 /**
                  * @return Whether the server supports shared subscriptions
                  */
-                bool getSharedSubscriptionsAvaliable() const noexcept;
+                bool getSharedSubscriptionsAvailable() const noexcept;
 
                 /**
                  * @return Whether the client has rejoined an existing session.
@@ -560,17 +560,17 @@ namespace Aws
                 /**
                  * Whether the server supports wildcard subscriptions.
                  */
-                bool m_wildcardSubscriptionsAvaliable;
+                bool m_wildcardSubscriptionsAvailable;
 
                 /**
                  * Whether the server supports subscription identifiers
                  */
-                bool m_subscriptionIdentifiersAvaliable;
+                bool m_subscriptionIdentifiersAvailable;
 
                 /**
                  * Whether the server supports shared subscriptions
                  */
-                bool m_sharedSubscriptionsAvaliable;
+                bool m_sharedSubscriptionsAvailable;
 
                 /**
                  * Whether the client has rejoined an existing session.
@@ -1221,7 +1221,7 @@ namespace Aws
                  *
                  * @return Whether the server supports wildcard subscriptions.
                  */
-                const Crt::Optional<bool> &getWildcardSubscriptionsAvaliable() const noexcept;
+                const Crt::Optional<bool> &getWildcardSubscriptionsAvailable() const noexcept;
 
                 /**
                  * Indicates whether the server supports subscription identifiers.  If null, subscription identifiers
@@ -1232,7 +1232,7 @@ namespace Aws
                  *
                  * @return whether the server supports subscription identifiers.
                  */
-                const Crt::Optional<bool> &getSubscriptionIdentifiersAvaliable() const noexcept;
+                const Crt::Optional<bool> &getSubscriptionIdentifiersAvailable() const noexcept;
 
                 /**
                  * Indicates whether the server supports shared subscription topic filters.  If null, shared
@@ -1243,7 +1243,7 @@ namespace Aws
                  *
                  * @return whether the server supports shared subscription topic filters.
                  */
-                const Crt::Optional<bool> &getSharedSubscriptionsAvaliable() const noexcept;
+                const Crt::Optional<bool> &getSharedSubscriptionsAvailable() const noexcept;
 
                 /**
                  * Server-requested override of the keep alive interval, in seconds.  If null, the keep alive value sent
@@ -1378,7 +1378,7 @@ namespace Aws
                  * See [MQTT5 Wildcard Subscriptions
                  * Available](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901091)
                  */
-                Crt::Optional<bool> m_wildcardSubscriptionsAvaliable;
+                Crt::Optional<bool> m_wildcardSubscriptionsAvailable;
 
                 /**
                  * Indicates whether the server supports subscription identifiers.  If undefined, subscription
@@ -1387,7 +1387,7 @@ namespace Aws
                  * See [MQTT5 Subscription Identifiers
                  * Available](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901092)
                  */
-                Crt::Optional<bool> m_subscriptionIdentifiersAvaliable;
+                Crt::Optional<bool> m_subscriptionIdentifiersAvailable;
 
                 /**
                  * Indicates whether the server supports shared subscription topic filters.  If undefined, shared
@@ -1396,7 +1396,7 @@ namespace Aws
                  * See [MQTT5 Shared Subscriptions
                  * Available](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901093)
                  */
-                Crt::Optional<bool> m_sharedSubscriptionsAvaliable;
+                Crt::Optional<bool> m_sharedSubscriptionsAvailable;
 
                 /**
                  * Server-requested override of the keep alive interval, in seconds.  If undefined, the keep alive value
