@@ -2666,7 +2666,7 @@ static int s_TestMqtt5to3AdapterNewClientFull(Aws::Crt::Allocator *allocator, vo
 AWS_TEST_CASE(Mqtt5to3AdapterNewClientFull, s_TestMqtt5to3AdapterNewClientFull)
 
 /*
- * [Mqtt5to3Adapter-UC3] Happy path. Minimal direct connection
+ * [Mqtt5to3Adapter-UC3] Happy path. Minimal direct connection through Mqtt3 Interface
  */
 static int s_TestMqtt5to3AdapterDirectConnectionMinimalThroughMqtt3(Aws::Crt::Allocator *allocator, void *)
 {
@@ -2699,7 +2699,7 @@ AWS_TEST_CASE(
     s_TestMqtt5to3AdapterDirectConnectionMinimalThroughMqtt3)
 
 /*
- * [Mqtt5to3Adapter-UC4] Websocket creation and connection
+ * [Mqtt5to3Adapter-UC4] Websocket creation and connection through Mqtt3 Interface
  */
 static int s_TestMqtt5to3AdapterWSConnectionMinimalThroughMqtt3(Aws::Crt::Allocator *allocator, void *)
 {
@@ -2776,7 +2776,7 @@ static int s_TestMqtt5to3AdapterWSConnectionMinimalThroughMqtt3(Aws::Crt::Alloca
 AWS_TEST_CASE(Mqtt5to3AdapterWSConnectionMinimalThroughMqtt3, s_TestMqtt5to3AdapterWSConnectionMinimalThroughMqtt3)
 
 /*
- * [Mqtt5to3Adapter-UC5] IoT MutalTLS creation and cleanup with Mqtt5ClientBuilder
+ * [Mqtt5to3Adapter-UC5] IoT MutalTLS creation and cleanup with Mqtt5ClientBuilder through Mqtt3 Interface
  */
 static int s_TestMqtt5to3AdapterWithIoTConnectionThroughMqtt3(Aws::Crt::Allocator *allocator, void *)
 {
@@ -2812,7 +2812,7 @@ static int s_TestMqtt5to3AdapterWithIoTConnectionThroughMqtt3(Aws::Crt::Allocato
 AWS_TEST_CASE(Mqtt5to3AdapterWithIoTConnectionThroughMqtt3, s_TestMqtt5to3AdapterWithIoTConnectionThroughMqtt3)
 
 /*
- * [Mqtt5to3Adapter-UC6] MutalTLS connection
+ * [Mqtt5to3Adapter-UC6] MutalTLS connection through Mqtt3 Interface
  */
 static int s_TestMqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt3(Aws::Crt::Allocator *allocator, void *)
 {
@@ -2855,7 +2855,7 @@ AWS_TEST_CASE(
     s_TestMqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt3)
 
 /*
- * [Mqtt5to3Adapter-UC7] Happy path. Minimal direct connection Through Mqtt5
+ * [Mqtt5to3Adapter-UC7] Happy path. Minimal direct connection through Mqtt5 Interface
  */
 static int s_TestMqtt5to3AdapterDirectConnectionMinimalThroughMqtt5(Aws::Crt::Allocator *allocator, void *)
 {
@@ -2881,7 +2881,7 @@ AWS_TEST_CASE(
     s_TestMqtt5to3AdapterDirectConnectionMinimalThroughMqtt5)
 
 /*
- * [Mqtt5to3Adapter-UC4] Websocket creation and connection
+ * [Mqtt5to3Adapter-UC8] Websocket creation and connection through Mqtt5 Interface
  */
 static int s_TestMqtt5to3AdapterWSConnectionMinimalThroughMqtt5(Aws::Crt::Allocator *allocator, void *)
 {
@@ -2965,7 +2965,7 @@ static int s_TestMqtt5to3AdapterWSConnectionMinimalThroughMqtt5(Aws::Crt::Alloca
 AWS_TEST_CASE(Mqtt5to3AdapterWSConnectionMinimalThroughMqtt5, s_TestMqtt5to3AdapterWSConnectionMinimalThroughMqtt5)
 
 /*
- * [Mqtt5to3Adapter-UC5] IoT MutalTLS creation and cleanup with Mqtt5ClientBuilder
+ * [Mqtt5to3Adapter-UC9] IoT MutalTLS creation and cleanup with Mqtt5ClientBuilder through Mqtt5 Interface
  */
 static int s_TestMqtt5to3AdapterWithIoTConnectionThroughMqtt5(Aws::Crt::Allocator *allocator, void *)
 {
@@ -3010,7 +3010,7 @@ static int s_TestMqtt5to3AdapterWithIoTConnectionThroughMqtt5(Aws::Crt::Allocato
 AWS_TEST_CASE(Mqtt5to3AdapterWithIoTConnectionThroughMqtt5, s_TestMqtt5to3AdapterWithIoTConnectionThroughMqtt5)
 
 /*
- * [Mqtt5to3Adapter-UC6] MutalTLS connection
+ * [Mqtt5to3Adapter-UC10] MutalTLS connection through Mqtt5 Interface
  */
 static int s_TestMqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt5(Aws::Crt::Allocator *allocator, void *)
 {
@@ -3044,7 +3044,7 @@ AWS_TEST_CASE(
     s_TestMqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt5)
 
 /*
- * [Mqtt5to3Adapter-UC5] IoT MutalTLS creation and cleanup with Mqtt5ClientBuilder
+ * [Mqtt5to3Adapter-UC11] Test sub/unsub/publish operations through adapter
  */
 static int s_TestMqtt5to3AdapterOperations(Aws::Crt::Allocator *allocator, void *)
 {
@@ -3143,5 +3143,149 @@ static int s_TestMqtt5to3AdapterOperations(Aws::Crt::Allocator *allocator, void 
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5to3AdapterOperations, s_TestMqtt5to3AdapterOperations)
+
+/*
+ * [Mqtt5to3Adapter-UC11] Test one mqtt5 client with multiple adapters
+ */
+static int s_TestMqtt5to3AdapterMultipleAdapters(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+    String randomID = Aws::Crt::UUID().ToString();
+    String testTopic1 = "test/topic1_" + randomID;
+    String testTopic2 = "test/topic2_" + randomID;
+
+    ApiHandle apiHandle(allocator);
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string);
+    mqtt5Options.WithPort(443);
+
+    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
+        mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str(), allocator);
+
+    Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+    ASSERT_TRUE(tlsContext);
+    Aws::Crt::Io::TlsConnectionOptions tlsConnection = tlsContext.NewConnectionOptions();
+    ASSERT_TRUE(tlsConnection);
+    ASSERT_TRUE(tlsConnection.SetAlpnList("x-amzn-mqtt-ca"));
+    mqtt5Options.WithTlsConnectionOptions(tlsConnection);
+
+    /* Setup Mqtt5 Client lifecycle evetns */
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(mqtt5Client);
+    // Created a Mqtt311 Connection from mqtt5Client. The options are setup by the builder.
+    std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> mqttConnection1 =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    ASSERT_TRUE(mqttConnection1);
+
+    // Created a Mqtt311 Connection from mqtt5Client. The options are setup by the builder.
+    std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> mqttConnection2 =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    ASSERT_TRUE(mqttConnection2);
+
+    size_t received1 = 0;
+    size_t received2 = 0;
+    std::mutex mutex;
+    std::condition_variable cv;
+    bool subscribed1 = false;
+    bool subscribed2 = false;
+    bool published = false;
+    ByteBuf testPayload = Aws::Crt::ByteBufFromCString("PUBLISH ME!");
+
+    auto onMessage1 = [&](Mqtt::MqttConnection &, const String &topic, const ByteBuf &payload, bool, Mqtt::QOS, bool) {
+        printf("GOT MESSAGE topic=%s payload=" PRInSTR "\n", topic.c_str(), AWS_BYTE_BUF_PRI(payload));
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            ++received1;
+        }
+        cv.notify_one();
+    };
+    auto onSubAck1 = [&](Mqtt::MqttConnection &, uint16_t packetId, const Aws::Crt::String &topic, Mqtt::QOS qos, int) {
+        printf("SUBACK id=%d topic=%s qos=%d\n", packetId, topic.c_str(), qos);
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            subscribed1 = true;
+        }
+        cv.notify_one();
+    };
+
+    auto onMessage2 = [&](Mqtt::MqttConnection &, const String &topic, const ByteBuf &payload, bool, Mqtt::QOS, bool) {
+        printf("GOT MESSAGE topic=%s payload=" PRInSTR "\n", topic.c_str(), AWS_BYTE_BUF_PRI(payload));
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            ++received2;
+        }
+        cv.notify_one();
+    };
+    auto onSubAck2 = [&](Mqtt::MqttConnection &, uint16_t packetId, const Aws::Crt::String &topic, Mqtt::QOS qos, int) {
+        printf("SUBACK id=%d topic=%s qos=%d\n", packetId, topic.c_str(), qos);
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            subscribed2 = true;
+        }
+        cv.notify_one();
+    };
+
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(connectionPromise.get_future().get());
+
+    mqttConnection1->Subscribe(testTopic1.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, onMessage1, onSubAck1);
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        cv.wait(lock, [&]() { return subscribed1; });
+    }
+
+    mqttConnection2->Subscribe(testTopic2.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, onMessage2, onSubAck2);
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        cv.wait(lock, [&]() { return subscribed2; });
+    }
+
+    auto onPubAck = [&](Mqtt::MqttConnection &, uint16_t packetId, int) {
+        printf("PUBLISHED id=%d\n", packetId);
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            published = true;
+        }
+        cv.notify_one();
+    };
+
+    // Publish to testTopic1
+    mqttConnection1->Publish(testTopic1.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, testPayload, onPubAck);
+    // wait for publish
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        cv.wait(lock, [&]() { return published; });
+    }
+
+    published = false;
+    // Publish to testTopic2
+    mqttConnection1->Publish(testTopic2.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, testPayload, onPubAck);
+    // wait for publish
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        cv.wait(lock, [&]() { return published; });
+    }
+
+    // Sleep and wait for message recieved
+    aws_thread_current_sleep(2000 * 1000 * 1000);
+    ASSERT_TRUE(mqtt5Client->Stop());
+    stoppedPromise.get_future().get();
+
+    ASSERT_TRUE(received1 = 1);
+    ASSERT_TRUE(received2 = 1);
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(Mqtt5to3AdapterMultipleAdapters, s_TestMqtt5to3AdapterMultipleAdapters)
 
 #endif // !BYO_CRYPTO∏
