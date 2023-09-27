@@ -270,6 +270,16 @@ namespace Aws
             Mqtt5ClientBuilder &WithPort(uint16_t port) noexcept;
 
             /**
+             * Set booststrap for mqtt5 client
+             *
+             * @param bootStrap bootstrap used for mqtt5 client. The default ClientBootstrap see
+             * Aws::Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap.
+             *
+             * @return this option object
+             */
+            Mqtt5ClientBuilder &WithBootstrap(Crt::Io::ClientBootstrap *bootStrap) noexcept;
+
+            /**
              * Sets the certificate authority for the endpoint you're connecting to. This is a path to a file on disk
              * and must be in PEM format.
              *
@@ -514,11 +524,6 @@ namespace Aws
              * Network port of the MQTT server to connect to.
              */
             uint16_t m_port;
-
-            /**
-             * Client bootstrap to use.  In almost all cases, this can be left undefined.
-             */
-            Io::ClientBootstrap *m_bootstrap;
 
             /**
              * TLS context for secure socket connections.

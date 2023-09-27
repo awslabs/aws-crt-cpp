@@ -313,6 +313,12 @@ namespace Aws
             return *this;
         }
 
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithBootstrap(Crt::Io::ClientBootstrap *bootStrap) noexcept
+        {
+            m_options->WithBootstrap(bootStrap);
+            return *this;
+        }
+
         Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithCertificateAuthority(const char *caPath) noexcept
         {
             if (m_tlsConnectionOptions)
