@@ -3303,8 +3303,8 @@ static int s_TestMqtt5to3AdapterMultipleAdapters(Aws::Crt::Allocator *allocator,
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
 
-    ASSERT_TRUE(received1 = 1);
-    ASSERT_TRUE(received2 = 1);
+    ASSERT_TRUE(received1 == 1);
+    ASSERT_TRUE(received2 == 1);
     return AWS_OP_SUCCESS;
 }
 
