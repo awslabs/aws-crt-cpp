@@ -336,8 +336,6 @@ namespace Aws
              */
             class AWS_CRT_CPP_API Mqtt5ClientOptions final
             {
-
-                friend class Mqtt5Client;
                 friend class Mqtt5ClientCore;
                 friend class Mqtt5to3AdapterOptions;
 

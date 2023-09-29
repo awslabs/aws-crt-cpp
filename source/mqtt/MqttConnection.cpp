@@ -33,6 +33,8 @@ namespace Aws
                     return nullptr;
                 }
 
+                Mqtt5::Mqtt5to3AdapterOptions *adatperOptions =
+                    mqtt5client->m_client_core->m_mqtt5to3AdapterOptions.get();
                 /**
                  * As we passed the std::shared_ptr<Mqtt5Client> by value, this function scope would  keep a reference
                  * of the Mqtt5Client thus the underlying c client. Therefore we directly access the c client here.
@@ -40,15 +42,23 @@ namespace Aws
                  * reference.
                  */
                 auto connection = MqttConnection::s_CreateMqttConnection(
-                    mqtt5client->m_client_core->m_client,
-                    std::move(mqtt5client->m_client_core->m_mqtt5to3AdapterOptions->m_mqtt3options));
+                    mqtt5client->m_client_core->m_client, adatperOptions->m_mqtt3options);
 
                 if (!connection)
                 {
                     return {};
                 }
 
-                mqtt5client->m_client_core->m_mqtt5to3AdapterOptions->setupConnectionOptions(connection);
+                if (adatperOptions->m_proxyOptions.has_value())
+                {
+                    connection->SetHttpProxyOptions(adatperOptions->m_proxyOptions.value());
+                }
+
+                if (adatperOptions->m_mqtt3options.useWebsocket)
+                {
+                    connection->WebsocketInterceptor = adatperOptions->m_webSocketInterceptor;
+                }
+
                 return connection;
             }
 

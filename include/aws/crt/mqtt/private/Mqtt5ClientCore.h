@@ -229,7 +229,6 @@ namespace Aws
                  */
                 static ScopedResource<Mqtt5to3AdapterOptions> NewMqtt5to3AdapterOptions(
                     const Mqtt5ClientOptions &options) noexcept;
-                void setupConnectionOptions(std::shared_ptr<Mqtt::MqttConnection> &connection);
 
               private:
                 Mqtt::MqttConnectionOptions m_mqtt3options;

@@ -646,20 +646,6 @@ namespace Aws
                 }
                 return adapterOptions;
             }
-
-            void Mqtt5to3AdapterOptions::setupConnectionOptions(std::shared_ptr<Mqtt::MqttConnection> &connection)
-            {
-                if (m_proxyOptions.has_value())
-                {
-                    connection->SetHttpProxyOptions(m_proxyOptions.value());
-                }
-
-                if (m_mqtt3options.useWebsocket)
-                {
-                    connection->WebsocketInterceptor = m_webSocketInterceptor;
-                }
-            }
-
         } // namespace Mqtt5
     }     // namespace Crt
 } // namespace Aws
