@@ -329,8 +329,6 @@ namespace Aws
                 std::shared_ptr<Mqtt5ClientCore> m_client_core;
 
                 Mqtt5ClientOperationStatistics m_operationStatistics;
-
-                ScopedResource<Mqtt5to3AdapterOptions> m_mqtt5to3AdapterOptions;
             };
 
             /**
@@ -341,6 +339,7 @@ namespace Aws
 
                 friend class Mqtt5Client;
                 friend class Mqtt5ClientCore;
+                friend class Mqtt5to3AdapterOptions;
 
               public:
                 /**
@@ -571,14 +570,6 @@ namespace Aws
                 Mqtt5ClientOptions &operator=(Mqtt5ClientOptions &&) = delete;
 
               private:
-                /*
-                 * Allocate and create a new Mqtt5to3AdapterOptions. This function is internally used by Mqtt5Client to
-                 * support the Mqtt5to3Adapter.
-                 *
-                 * @return Mqtt5to3AdapterOptions
-                 */
-                ScopedResource<Mqtt5to3AdapterOptions> NewMqtt5to3AdapterOptions() const noexcept;
-
                 /**
                  * This callback allows a custom transformation of the HTTP request that acts as the websocket
                  * handshake. Websockets will be used if this is set to a valid transformation callback.  To use

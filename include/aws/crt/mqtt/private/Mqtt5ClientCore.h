@@ -187,6 +187,11 @@ namespace Aws
                 std::shared_ptr<Mqtt5ClientCore> m_selfReference;
 
                 /*
+                 * The Mqtt5to3 Adapter Options. Used to create a mqtt311 connection from mqtt5 client
+                 */
+                ScopedResource<Mqtt5to3AdapterOptions> m_mqtt5to3AdapterOptions;
+
+                /*
                  * The callback flag used to indicate if it is safe to invoke the callbacks
                  */
                 enum CallbackFlag
@@ -211,40 +216,28 @@ namespace Aws
             {
                 friend class Mqtt5ClientOptions;
                 friend class Mqtt5ClientCore;
+                friend class Mqtt::MqttConnection;
 
               public:
                 /* Default constructor */
                 Mqtt5to3AdapterOptions();
+                /*
+                 * Allocate and create a new Mqtt5to3AdapterOptions. This function is internally used by Mqtt5Client to
+                 * support the Mqtt5to3Adapter.
+                 *
+                 * @return Mqtt5to3AdapterOptions
+                 */
+                static ScopedResource<Mqtt5to3AdapterOptions> NewMqtt5to3AdapterOptions(
+                    const Mqtt5ClientOptions &options) noexcept;
+                void setupConnectionOptions(std::shared_ptr<Mqtt::MqttConnection> &connection);
 
               private:
-                /* Host name of the MQTT server to connect to. */
-                Crt::String m_hostName;
-
-                /* Port to connect to */
-                uint16_t m_port;
-
-                /*
-                 * If the MqttConnection should overwrite the websocket config. If set to true, m_webSocketInterceptor
-                 * must be set.
-                 */
-                bool m_overwriteWebsocket;
+                Mqtt::MqttConnectionOptions m_mqtt3options;
 
                 /*
                  * The transform function invoked during websocket handshake.
                  */
                 Crt::Mqtt::OnWebSocketHandshakeIntercept m_webSocketInterceptor;
-
-                /**
-                 * Controls socket properties of the underlying MQTT connections made by the client.  Leave undefined to
-                 * use defaults (no TCP keep alive, 10 second socket timeout).
-                 */
-                Crt::Io::SocketOptions m_socketOptions;
-
-                /**
-                 * TLS context for secure socket connections.
-                 * If undefined, a plaintext connection will be used.
-                 */
-                Crt::Optional<Crt::Io::TlsConnectionOptions> m_tlsConnectionOptions;
 
                 /**
                  * Configures (tunneling) HTTP proxy usage when establishing MQTT connections

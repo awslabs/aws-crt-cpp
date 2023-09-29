@@ -195,41 +195,6 @@ namespace Aws
                 }
             }
 
-            std::shared_ptr<Crt::Mqtt::MqttConnection> Mqtt5ClientCore::NewConnection(
-                const Mqtt5::Mqtt5to3AdapterOptions *options) noexcept
-            {
-                Mqtt::MqttConnectionOptions connectionOptions;
-                connectionOptions.hostName = options->m_hostName.c_str();
-                connectionOptions.port = options->m_port;
-                connectionOptions.socketOptions = options->m_socketOptions;
-                connectionOptions.useWebsocket = options->m_overwriteWebsocket;
-                connectionOptions.allocator = m_allocator;
-
-                if (options->m_tlsConnectionOptions.has_value())
-                {
-                    connectionOptions.tlsConnectionOptions = options->m_tlsConnectionOptions.value();
-                    connectionOptions.useTls = true;
-                }
-
-                auto connection = Mqtt::MqttConnection::s_CreateMqttConnection(m_client, std::move(connectionOptions));
-                if (!connection)
-                {
-                    return {};
-                }
-
-                if (options->m_proxyOptions.has_value())
-                {
-                    connection->SetHttpProxyOptions(options->m_proxyOptions.value());
-                }
-
-                if (options->m_overwriteWebsocket)
-                {
-                    connection->WebsocketInterceptor = options->m_webSocketInterceptor;
-                }
-
-                return connection;
-            }
-
             void Mqtt5ClientCore::s_publishCompletionCallback(
                 enum aws_mqtt5_packet_type packet_type,
                 const void *publishCompletionPacket,
@@ -496,6 +461,8 @@ namespace Aws
                 clientOptions.client_termination_handler_user_data = this;
 
                 m_client = aws_mqtt5_client_new(allocator, &clientOptions);
+
+                m_mqtt5to3AdapterOptions = Mqtt5to3AdapterOptions::NewMqtt5to3AdapterOptions(options);
             }
 
             Mqtt5ClientCore::~Mqtt5ClientCore() {}
@@ -639,6 +606,57 @@ namespace Aws
                 {
                     aws_mqtt5_client_release(m_client);
                     m_client = nullptr;
+                }
+            }
+
+            Mqtt5to3AdapterOptions::Mqtt5to3AdapterOptions() {}
+
+            ScopedResource<Mqtt5to3AdapterOptions> Mqtt5to3AdapterOptions::NewMqtt5to3AdapterOptions(
+                const Mqtt5ClientOptions &options) noexcept
+            {
+                Allocator *allocator = options.m_allocator;
+                ScopedResource<Mqtt5to3AdapterOptions> adapterOptions = ScopedResource<Mqtt5to3AdapterOptions>(
+                    Crt::New<Mqtt5to3AdapterOptions>(allocator),
+                    [allocator](Mqtt5to3AdapterOptions *options) { Crt::Delete(options, allocator); });
+
+                adapterOptions->m_mqtt3options.hostName = options.m_hostName.c_str();
+                adapterOptions->m_mqtt3options.port = options.m_port;
+                adapterOptions->m_mqtt3options.socketOptions = options.m_socketOptions;
+                if (options.m_proxyOptions.has_value())
+                    adapterOptions->m_proxyOptions = options.m_proxyOptions.value();
+                if (options.m_tlsConnectionOptions.has_value())
+                {
+                    adapterOptions->m_mqtt3options.tlsConnectionOptions = options.m_tlsConnectionOptions.value();
+                    adapterOptions->m_mqtt3options.useTls = true;
+                }
+                if (options.websocketHandshakeTransform)
+                {
+                    adapterOptions->m_mqtt3options.useWebsocket = true;
+
+                    auto signerTransform = [&options](
+                                               std::shared_ptr<Crt::Http::HttpRequest> req,
+                                               const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete) {
+                        options.websocketHandshakeTransform(std::move(req), onComplete);
+                    };
+                    adapterOptions->m_webSocketInterceptor = std::move(signerTransform);
+                }
+                else
+                {
+                    adapterOptions->m_mqtt3options.useWebsocket = false;
+                }
+                return adapterOptions;
+            }
+
+            void Mqtt5to3AdapterOptions::setupConnectionOptions(std::shared_ptr<Mqtt::MqttConnection> &connection)
+            {
+                if (m_proxyOptions.has_value())
+                {
+                    connection->SetHttpProxyOptions(m_proxyOptions.value());
+                }
+
+                if (m_mqtt3options.useWebsocket)
+                {
+                    connection->WebsocketInterceptor = m_webSocketInterceptor;
                 }
             }
 
