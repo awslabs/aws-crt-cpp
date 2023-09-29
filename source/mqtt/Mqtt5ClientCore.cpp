@@ -618,7 +618,7 @@ namespace Aws
                 ScopedResource<Mqtt5to3AdapterOptions> adapterOptions = ScopedResource<Mqtt5to3AdapterOptions>(
                     Crt::New<Mqtt5to3AdapterOptions>(allocator),
                     [allocator](Mqtt5to3AdapterOptions *options) { Crt::Delete(options, allocator); });
-
+                adapterOptions->m_mqtt3options.allocator = options.m_allocator;
                 adapterOptions->m_mqtt3options.hostName = options.m_hostName.c_str();
                 adapterOptions->m_mqtt3options.port = options.m_port;
                 adapterOptions->m_mqtt3options.socketOptions = options.m_socketOptions;
