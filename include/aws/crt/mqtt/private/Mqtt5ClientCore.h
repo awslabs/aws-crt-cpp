@@ -231,12 +231,18 @@ namespace Aws
                     const Mqtt5ClientOptions &options) noexcept;
 
               private:
-                Mqtt::MqttConnectionOptions m_mqtt3options;
+                Mqtt::MqttConnectionOptions m_mqtt3Options;
+
+                /* Reserve to store memory for m_mqtt3options.hostname */
+                String m_hostname;
 
                 /*
                  * The transform function invoked during websocket handshake.
                  */
                 Crt::Mqtt::OnWebSocketHandshakeIntercept m_webSocketInterceptor;
+
+                /* Store the user intercept handshake function */
+                OnWebSocketHandshakeIntercept m_websocketHandshakeTransform;
 
                 /**
                  * Configures (tunneling) HTTP proxy usage when establishing MQTT connections
