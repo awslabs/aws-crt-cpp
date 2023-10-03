@@ -5,6 +5,8 @@
 
 #include <aws/crt/mqtt/MqttConnection.h>
 
+#include <aws/crt/mqtt/Mqtt5Client.h>
+#include <aws/crt/mqtt/private/Mqtt5ClientCore.h>
 #include <aws/crt/mqtt/private/MqttConnectionCore.h>
 
 namespace Aws
@@ -20,6 +22,44 @@ namespace Aws
                     // Request the internal core to release the underlying connection.
                     m_connectionCore->Destroy();
                 }
+            }
+
+            std::shared_ptr<MqttConnection> MqttConnection::NewConnectionFromMqtt5Client(
+                std::shared_ptr<Crt::Mqtt5::Mqtt5Client> mqtt5client) noexcept
+            {
+                if (!mqtt5client || !*mqtt5client || !mqtt5client->m_client_core)
+                {
+                    AWS_LOGF_ERROR(AWS_LS_MQTT5_CLIENT, "Failed to create mqtt3 connection: Mqtt5 Client is invalid.");
+                    return nullptr;
+                }
+
+                Mqtt5::Mqtt5to3AdapterOptions *adapterOptions =
+                    mqtt5client->m_client_core->m_mqtt5to3AdapterOptions.get();
+                /**
+                 * As we passed the std::shared_ptr<Mqtt5Client> by value, this function scope would  keep a reference
+                 * of the Mqtt5Client thus the underlying c client. Therefore we directly access the c client here.
+                 * Other than that, we should never directly access the underlying c client without acquire the
+                 * reference.
+                 */
+                auto connection = MqttConnection::s_CreateMqttConnection(
+                    mqtt5client->m_client_core->m_client, adapterOptions->m_mqtt3Options);
+
+                if (!connection)
+                {
+                    return {};
+                }
+
+                if (adapterOptions->m_proxyOptions.has_value())
+                {
+                    connection->SetHttpProxyOptions(adapterOptions->m_proxyOptions.value());
+                }
+
+                if (adapterOptions->m_mqtt3Options.useWebsocket)
+                {
+                    connection->WebsocketInterceptor = adapterOptions->m_webSocketInterceptor;
+                }
+
+                return connection;
             }
 
             std::shared_ptr<MqttConnection> MqttConnection::s_CreateMqttConnection(

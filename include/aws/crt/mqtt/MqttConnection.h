@@ -29,8 +29,9 @@ namespace Aws
 
         namespace Mqtt5
         {
+            class Mqtt5Client;
             class Mqtt5ClientCore;
-        }
+        } // namespace Mqtt5
 
         namespace Mqtt
         {
@@ -164,6 +165,15 @@ namespace Aws
                 MqttConnection(MqttConnection &&) = delete;
                 MqttConnection &operator=(const MqttConnection &) = delete;
                 MqttConnection &operator=(MqttConnection &&) = delete;
+
+                /**
+                 * Create a new MqttConnection object from the Mqtt5Client.
+                 * @param mqtt5client The shared ptr of Mqtt5Client
+                 *
+                 * @return std::shared_ptr<Crt::Mqtt::MqttConnection>
+                 */
+                static std::shared_ptr<Crt::Mqtt::MqttConnection> NewConnectionFromMqtt5Client(
+                    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5client) noexcept;
 
                 /**
                  * @return true if the instance is in a valid state, false otherwise.

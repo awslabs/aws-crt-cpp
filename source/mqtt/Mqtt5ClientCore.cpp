@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/mqtt/Mqtt5Client.h>
-#include <aws/crt/mqtt/Mqtt5ClientCore.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
+#include <aws/crt/mqtt/private/Mqtt5ClientCore.h>
 
 #include <aws/crt/Api.h>
 #include <aws/crt/StlAllocator.h>
@@ -193,41 +193,6 @@ namespace Aws
                             AWS_LS_MQTT5_CLIENT, "Publish Received Event: Failed to access Publish packet view.");
                     }
                 }
-            }
-
-            std::shared_ptr<Crt::Mqtt::MqttConnection> Mqtt5ClientCore::NewConnection(
-                const Mqtt5::Mqtt5to3AdapterOptions *options) noexcept
-            {
-                Mqtt::MqttConnectionOptions connectionOptions;
-                connectionOptions.hostName = options->m_hostName.c_str();
-                connectionOptions.port = options->m_port;
-                connectionOptions.socketOptions = options->m_socketOptions;
-                connectionOptions.useWebsocket = options->m_overwriteWebsocket;
-                connectionOptions.allocator = m_allocator;
-
-                if (options->m_tlsConnectionOptions.has_value())
-                {
-                    connectionOptions.tlsConnectionOptions = options->m_tlsConnectionOptions.value();
-                    connectionOptions.useTls = true;
-                }
-
-                auto connection = Mqtt::MqttConnection::s_CreateMqttConnection(m_client, std::move(connectionOptions));
-                if (!connection)
-                {
-                    return {};
-                }
-
-                if (options->m_proxyOptions.has_value())
-                {
-                    connection->SetHttpProxyOptions(options->m_proxyOptions.value());
-                }
-
-                if (options->m_overwriteWebsocket)
-                {
-                    connection->WebsocketInterceptor = options->m_webSocketInterceptor;
-                }
-
-                return connection;
             }
 
             void Mqtt5ClientCore::s_publishCompletionCallback(
@@ -496,6 +461,8 @@ namespace Aws
                 clientOptions.client_termination_handler_user_data = this;
 
                 m_client = aws_mqtt5_client_new(allocator, &clientOptions);
+
+                m_mqtt5to3AdapterOptions = Mqtt5to3AdapterOptions::NewMqtt5to3AdapterOptions(options);
             }
 
             Mqtt5ClientCore::~Mqtt5ClientCore() {}
@@ -642,6 +609,45 @@ namespace Aws
                 }
             }
 
+            Mqtt5to3AdapterOptions::Mqtt5to3AdapterOptions() {}
+
+            ScopedResource<Mqtt5to3AdapterOptions> Mqtt5to3AdapterOptions::NewMqtt5to3AdapterOptions(
+                const Mqtt5ClientOptions &options) noexcept
+            {
+                Allocator *allocator = options.m_allocator;
+                ScopedResource<Mqtt5to3AdapterOptions> adapterOptions = ScopedResource<Mqtt5to3AdapterOptions>(
+                    Crt::New<Mqtt5to3AdapterOptions>(allocator),
+                    [allocator](Mqtt5to3AdapterOptions *options) { Crt::Delete(options, allocator); });
+                adapterOptions->m_mqtt3Options.allocator = options.m_allocator;
+                adapterOptions->m_hostname = options.m_hostName;
+                adapterOptions->m_mqtt3Options.hostName = adapterOptions->m_hostname.c_str();
+                adapterOptions->m_mqtt3Options.port = options.m_port;
+                adapterOptions->m_mqtt3Options.socketOptions = options.m_socketOptions;
+                if (options.m_proxyOptions.has_value())
+                    adapterOptions->m_proxyOptions = options.m_proxyOptions.value();
+                if (options.m_tlsConnectionOptions.has_value())
+                {
+                    adapterOptions->m_mqtt3Options.tlsConnectionOptions = options.m_tlsConnectionOptions.value();
+                    adapterOptions->m_mqtt3Options.useTls = true;
+                }
+                if (options.websocketHandshakeTransform)
+                {
+                    adapterOptions->m_mqtt3Options.useWebsocket = true;
+                    adapterOptions->m_websocketHandshakeTransform = options.websocketHandshakeTransform;
+
+                    auto signerTransform = [&adapterOptions](
+                                               std::shared_ptr<Crt::Http::HttpRequest> req,
+                                               const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete) {
+                        adapterOptions->m_websocketHandshakeTransform(std::move(req), onComplete);
+                    };
+                    adapterOptions->m_webSocketInterceptor = std::move(signerTransform);
+                }
+                else
+                {
+                    adapterOptions->m_mqtt3Options.useWebsocket = false;
+                }
+                return adapterOptions;
+            }
         } // namespace Mqtt5
     }     // namespace Crt
 } // namespace Aws
