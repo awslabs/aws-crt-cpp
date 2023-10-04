@@ -1,3 +1,7 @@
+/*! \cond DOXYGEN_PRIVATE
+** Hide API from this file in doxygen. Set DOXYGEN_PRIVATE in doxygen
+** config to enable this file for doxygen.
+*/
 /**
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
@@ -917,3 +921,4 @@ namespace Aws
         } // namespace Mqtt
     }     // namespace Crt
 } // namespace Aws
+/*! \endcond */
