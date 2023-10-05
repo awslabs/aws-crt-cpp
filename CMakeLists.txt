@@ -314,6 +314,7 @@ aws_use_package(aws-checksums)
 aws_use_package(aws-c-event-stream)
 aws_use_package(aws-c-s3)
 
+include(AwsSanitizers)
 aws_add_sanitizers(${PROJECT_NAME})
 
 target_link_libraries(${PROJECT_NAME} PUBLIC ${DEP_AWS_LIBS})
