@@ -3167,6 +3167,53 @@ static int s_TestMqtt5to3AdapterOperations(Aws::Crt::Allocator *allocator, void 
 AWS_TEST_CASE(Mqtt5to3AdapterOperations, s_TestMqtt5to3AdapterOperations)
 
 /*
+ * [Mqtt5to3Adapter-UC11] Test s_TestMqtt5to3AdapterNullPubAck
+ * The unit test would have memory leak if the callback data for incomplete publish was not released.
+ */
+static int s_TestMqtt5to3AdapterNullPubAck(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+        mqtt5TestVars.m_hostname_string,
+        mqtt5TestVars.m_certificate_path_string.c_str(),
+        mqtt5TestVars.m_private_key_path_string.c_str(),
+        allocator);
+    ASSERT_TRUE(builder);
+    uint8_t received = 0;
+    std::mutex mutex;
+    std::condition_variable cv;
+
+    String testUUID = Aws::Crt::UUID().ToString();
+    String testTopic = "test/MQTT5to3Adapter_" + testUUID;
+    ByteBuf testPayload = Aws::Crt::ByteBufFromCString("PUBLISH ME!");
+
+    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
+    ASSERT_TRUE(mqtt5Client);
+    // Created a Mqtt311 Connection from mqtt5Client. The options are setup by the builder.
+    std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    ASSERT_TRUE(mqttConnection);
+
+    // Publish an offline message to create an incomplete publish operation
+    mqttConnection->Publish(testTopic.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, testPayload, NULL);
+
+    delete builder;
+
+    // If the incomplete operation callback was not called, there would be a memory leak as the callback data was not
+    // released
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5to3AdapterNullPubAck, s_TestMqtt5to3AdapterNullPubAck)
+
+/*
  * [Mqtt5to3Adapter-UC11] Test one mqtt5 client with multiple adapters
  */
 static int s_TestMqtt5to3AdapterMultipleAdapters(Aws::Crt::Allocator *allocator, void *)
