@@ -3187,8 +3187,6 @@ static int s_TestMqtt5to3AdapterNullPubAck(Aws::Crt::Allocator *allocator, void 
         mqtt5TestVars.m_private_key_path_string.c_str(),
         allocator);
     ASSERT_TRUE(builder);
-    std::mutex mutex;
-    std::condition_variable cv;
 
     String testUUID = Aws::Crt::UUID().ToString();
     String testTopic = "test/MQTT5to3Adapter_" + testUUID;
