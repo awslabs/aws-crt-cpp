@@ -60,7 +60,10 @@ if(NOT CMAKE_BUILD_TYPE)
     endif()
 endif()
 
-configure_file(include/aws/crt/Config.h.in ${CMAKE_CURRENT_LIST_DIR}/include/aws/crt/Config.h @ONLY)
+set(GENERATED_ROOT_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+set(GENERATED_INCLUDE_DIR "${GENERATED_ROOT_DIR}/include")
+set(GENERATED_CONFIG_HEADER "${GENERATED_INCLUDE_DIR}/aws/crt/Config.h")
+configure_file(include/aws/crt/Config.h.in ${GENERATED_CONFIG_HEADER} @ONLY)
 
 # This is required in order to append /lib/cmake to each element in CMAKE_PREFIX_PATH
 set(AWS_MODULE_DIR "/${CMAKE_INSTALL_LIBDIR}/cmake")
@@ -137,6 +140,7 @@ include(AwsSharedLibSetup)
 
 file(GLOB AWS_CRT_HEADERS
     "include/aws/crt/*.h"
+    ${GENERATED_CONFIG_HEADER}
 )
 
 file(GLOB AWS_CRT_AUTH_HEADERS
@@ -302,6 +306,7 @@ endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${GENERATED_INCLUDE_DIR}>
     $<INSTALL_INTERFACE:include>)
 
 aws_use_package(aws-c-http)
@@ -348,21 +353,21 @@ install(EXPORT "${PROJECT_NAME}-targets"
     COMPONENT Development)
 
 configure_file("cmake/${PROJECT_NAME}-config.cmake"
-    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+    "${GENERATED_ROOT_DIR}/${PROJECT_NAME}-config.cmake"
     @ONLY)
 
 include(CMakePackageConfigHelpers)
 
 write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
+    "${GENERATED_ROOT_DIR}/${PROJECT_NAME}-config-version.cmake"
     COMPATIBILITY ExactVersion
 )
 
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+install(FILES "${GENERATED_ROOT_DIR}/${PROJECT_NAME}-config.cmake"
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}/cmake/"
     COMPONENT Development)
 
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
+install(FILES "${GENERATED_ROOT_DIR}/${PROJECT_NAME}-config-version.cmake"
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}/cmake/"
     COMPONENT Development)
 
