@@ -459,6 +459,7 @@ namespace Aws
 
                 setPacketOptional(m_payloadFormatIndicator, packet.payload_format);
                 setPacketOptional(m_messageExpiryIntervalSec, packet.message_expiry_interval_seconds);
+                setPacketOptional(m_topicAlias, packet.topic_alias);
                 setPacketStringOptional(m_responseTopic, m_responseTopicString, packet.response_topic);
                 setPacketByteBufOptional(
                     m_correlationData, m_correlationDataStorage, allocator, packet.correlation_data);
@@ -536,6 +537,12 @@ namespace Aws
                 return *this;
             }
 
+            PublishPacket &PublishPacket::WithTopicAlias(uint16_t topicAlias) noexcept
+            {
+                m_topicAlias = topicAlias;
+                return *this;
+            }
+
             PublishPacket &PublishPacket::WithResponseTopic(ByteCursor responseTopic) noexcept
             {
                 setPacketStringOptional(m_responseTopic, m_responseTopicString, &responseTopic);
@@ -583,6 +590,10 @@ namespace Aws
                 {
                     raw_options.message_expiry_interval_seconds = &m_messageExpiryIntervalSec.value();
                 }
+                if (m_topicAlias.has_value())
+                {
+                    raw_options.topic_alias = &m_topicAlias.value();
+                }
                 if (m_responseTopic.has_value())
                 {
                     raw_options.response_topic = &m_responseTopic.value();
@@ -615,6 +626,11 @@ namespace Aws
             const Crt::Optional<uint32_t> &PublishPacket::getMessageExpiryIntervalSec() const noexcept
             {
                 return m_messageExpiryIntervalSec;
+            }
+
+            const Crt::Optional<uint16_t> &PublishPacket::getTopicAlias() const noexcept
+            {
+                return m_topicAlias;
             }
 
             const Crt::Optional<ByteCursor> &PublishPacket::getResponseTopic() const noexcept

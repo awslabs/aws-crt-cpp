@@ -129,6 +129,14 @@ namespace Aws
                 PublishPacket &WithMessageExpiryIntervalSec(uint32_t second) noexcept;
 
                 /**
+                 * Sets the opic alias to use, if possible, when encoding this packet.  Only used if the
+                 * client's outbound topic aliasing mode is set to Manual.
+                 *
+                 * See [MQTT5 Topic Alias](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901113)
+                 */
+                PublishPacket &WithTopicAlias(uint16_t topicAlias) noexcept;
+
+                /**
                  * Sets the opaque topic string intended to assist with request/response implementations.  Not
                  * internally meaningful to MQTT5 or this client.
                  *
@@ -256,6 +264,18 @@ namespace Aws
                 const Crt::Optional<uint32_t> &getMessageExpiryIntervalSec() const noexcept;
 
                 /**
+                 * Sent publishes - Topic alias to use, if possible, when encoding this packet.  Only used if the
+                 * client's outbound topic aliasing mode is set to Manual.
+                 *
+                 * Received publishes - topic alias used by the server when transmitting the publish to the client.
+                 *
+                 * See [MQTT5 Topic Alias](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901113)
+                 *
+                 * @return the topic alias, if any, associated with this PUBLISH packet
+                 */
+                const Crt::Optional<uint16_t> &getTopicAlias() const noexcept;
+
+                /**
                  * Opaque topic string intended to assist with request/response implementations.  Not internally
                  * meaningful to MQTT5 or this client.
                  *
@@ -374,6 +394,16 @@ namespace Aws
                  * Interval](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901112)
                  */
                 Crt::Optional<uint32_t> m_messageExpiryIntervalSec;
+
+                /**
+                 * Sent publishes - Topic alias to use, if possible, when encoding this packet.  Only used if the
+                 * client's outbound topic aliasing mode is set to Manual.
+                 *
+                 * Received publishes - topic alias used by the server when transmitting the publish to the client.
+                 *
+                 * See [MQTT5 Topic Alias](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901113)
+                 */
+                Crt::Optional<uint16_t> m_topicAlias;
 
                 /**
                  * Opaque topic string intended to assist with request/response implementations.  Not internally
