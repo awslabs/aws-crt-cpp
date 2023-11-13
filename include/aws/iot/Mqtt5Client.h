@@ -370,6 +370,14 @@ namespace Aws
             Mqtt5ClientBuilder &WithReconnectOptions(ReconnectOptions reconnectOptions) noexcept;
 
             /**
+             * Sets the topic aliasing behavior that the client should use.
+             *
+             * @param topicAliasingOptions topic aliasing behavior options to use
+             * @return this builder object
+             */
+            Mqtt5ClientBuilder &WithTopicAliasingOptions(TopicAliasingOptions topicAliasingOptions) noexcept;
+
+            /**
              * Sets minConnectedTimeToResetReconnectDelayMs, amount of time that must elapse with an established
              * connection before the reconnect delay is reset to the minimum. This helps alleviate bandwidth-waste
              * in fast reconnect cycles due to permission failures on operations.
