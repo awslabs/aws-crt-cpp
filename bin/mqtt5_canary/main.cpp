@@ -676,7 +676,6 @@ int main(int argc, char **argv)
 
     ApiHandle apiHandle(allocator);
     struct AppCtx appCtx = {};
-    AWS_ZERO_STRUCT(appCtx);
     appCtx.allocator = allocator;
     aws_mutex_init(&appCtx.lock);
     appCtx.port = 1883;
