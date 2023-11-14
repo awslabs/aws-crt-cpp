@@ -216,8 +216,8 @@ static void s_ParseOptions(int argc, char **argv, struct AppCtx &ctx, struct Aws
                 }
                 else
                 {
-                    // fprintf(stderr, "Succeeded parsing uri");
-                    fprintf(stderr, "Succeed to parse uri " PRInSTR "\n", AWS_BYTE_CURSOR_PRI(ctx.uri.GetFullUri()));
+                    fprintf(stderr, "Succeeded parsing uri");
+                    // fprintf(stderr, "Succeed to parse uri " PRInSTR "\n", AWS_BYTE_CURSOR_PRI(ctx.uri.GetFullUri()));
                 }
                 break;
             default:
