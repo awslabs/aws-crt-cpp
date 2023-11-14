@@ -187,6 +187,8 @@ namespace Aws
                 m_socketOptions.SetSocketType(Io::SocketType::Stream);
                 AWS_ZERO_STRUCT(m_packetConnectViewStorage);
                 AWS_ZERO_STRUCT(m_httpProxyOptionsStorage);
+
+                AWS_ZERO_STRUCT(m_topicAliasingOptions);
             }
 
             bool Mqtt5ClientOptions::initializeRawOptions(aws_mqtt5_client_options &raw_options) const noexcept
@@ -227,6 +229,7 @@ namespace Aws
                 raw_options.ping_timeout_ms = m_pingTimeoutMs;
                 raw_options.connack_timeout_ms = m_connackTimeoutMs;
                 raw_options.ack_timeout_seconds = m_ackTimeoutSec;
+                raw_options.topic_aliasing_options = &m_topicAliasingOptions;
 
                 return true;
             }
@@ -304,6 +307,30 @@ namespace Aws
             Mqtt5ClientOptions &Mqtt5ClientOptions::WithReconnectOptions(ReconnectOptions reconnectOptions) noexcept
             {
                 m_reconnectionOptions = reconnectOptions;
+                return *this;
+            }
+
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithTopicAliasingOptions(
+                TopicAliasingOptions topicAliasingOptions) noexcept
+            {
+                m_topicAliasingOptions.outbound_topic_alias_behavior =
+                    topicAliasingOptions.m_outboundBehavior.has_value()
+                        ? (enum aws_mqtt5_client_outbound_topic_alias_behavior_type)
+                              topicAliasingOptions.m_outboundBehavior.value()
+                        : AWS_MQTT5_COTABT_DEFAULT;
+                m_topicAliasingOptions.outbound_alias_cache_max_size =
+                    topicAliasingOptions.m_outboundCacheMaxSize.has_value()
+                        ? topicAliasingOptions.m_outboundCacheMaxSize.value()
+                        : (uint16_t)0;
+                m_topicAliasingOptions.inbound_topic_alias_behavior =
+                    topicAliasingOptions.m_inboundBehavior.has_value()
+                        ? (enum aws_mqtt5_client_inbound_topic_alias_behavior_type)
+                              topicAliasingOptions.m_inboundBehavior.value()
+                        : AWS_MQTT5_CITABT_DEFAULT;
+                m_topicAliasingOptions.inbound_alias_cache_size =
+                    topicAliasingOptions.m_inboundCacheMaxSize.has_value()
+                        ? topicAliasingOptions.m_inboundCacheMaxSize.value()
+                        : (uint16_t)0;
 
                 return *this;
             }

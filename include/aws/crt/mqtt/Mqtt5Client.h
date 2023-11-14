@@ -30,6 +30,117 @@ namespace Aws
 
             class Mqtt5to3AdapterOptions;
 
+            /**
+             * An enumeration that controls how the client applies topic aliasing to outbound publish packets.
+             *
+             * Topic alias behavior is described in
+             * https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901113
+             */
+            enum class OutboundTopicAliasBehaviorType
+            {
+
+                /**
+                 * Maps to Disabled.  This keeps the client from being broken (by default) if the broker
+                 * topic aliasing implementation has a problem.
+                 */
+                Default = AWS_MQTT5_COTABT_DEFAULT,
+
+                /**
+                 * Outbound aliasing is the user's responsibility.  Client will cache and use
+                 * previously-established aliases if they fall within the negotiated limits of the connection.
+                 *
+                 * The user must still always submit a full topic in their publishes because disconnections disrupt
+                 * topic alias mappings unpredictably.  The client will properly use a requested alias when the
+                 * most-recently-seen binding for a topic alias value matches the alias and topic in the publish packet.
+                 */
+                Manual = AWS_MQTT5_COTABT_MANUAL,
+
+                /**
+                 * (Recommended) The client will ignore any user-specified topic aliasing and instead use an LRU cache
+                 * to drive alias usage.
+                 */
+                LRU = AWS_MQTT5_COTABT_LRU,
+
+                /**
+                 * Completely disable outbound topic aliasing.
+                 */
+                Disabled = AWS_MQTT5_COTABT_DISABLED,
+            };
+
+            /**
+             * An enumeration that controls whether or not the client allows the broker to send publishes that use topic
+             * aliasing.
+             *
+             * Topic alias behavior is described in
+             * https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901113
+             */
+            enum class InboundTopicAliasBehaviorType
+            {
+
+                /**
+                 * Maps to Disabled.  This keeps the client from being broken (by default) if the broker
+                 * topic aliasing implementation has a problem.
+                 */
+                Default = AWS_MQTT5_CITABT_DEFAULT,
+
+                /**
+                 * Allow the server to send PUBLISH packets to the client that use topic aliasing
+                 */
+                Enabled = AWS_MQTT5_CITABT_ENABLED,
+
+                /**
+                 * Forbid the server from sending PUBLISH packets to the client that use topic aliasing
+                 */
+                Disabled = AWS_MQTT5_CITABT_DISABLED,
+            };
+
+            /**
+             * Configuration for all client topic aliasing behavior.
+             */
+            struct AWS_CRT_CPP_API TopicAliasingOptions
+            {
+
+                /**
+                 * Controls what kind of outbound topic aliasing behavior the client should attempt to use.
+                 *
+                 * If topic aliasing is not supported by the server, this setting has no effect and any attempts to
+                 * directly manipulate the topic alias id in outbound publishes will be ignored.
+                 *
+                 * If left undefined, then outbound topic aliasing is disabled.
+                 */
+                Crt::Optional<OutboundTopicAliasBehaviorType> m_outboundBehavior;
+
+                /**
+                 * If outbound topic aliasing is set to LRU, this controls the maximum size of the cache.  If outbound
+                 * topic aliasing is set to LRU and this is zero or undefined, a sensible default is used (25).  If
+                 * outbound topic aliasing is not set to LRU, then this setting has no effect.
+                 *
+                 * The final size of the cache is determined by the minimum of this setting and the value of the
+                 * topic_alias_maximum property of the received CONNACK.  If the received CONNACK does not have an
+                 * explicit positive value for that field, outbound topic aliasing is disabled for the duration of that
+                 * connection.
+                 */
+                Crt::Optional<uint16_t> m_outboundCacheMaxSize;
+
+                /**
+                 * Controls whether or not the client allows the broker to use topic aliasing when sending publishes.
+                 * Even if inbound topic aliasing is enabled, it is up to the server to choose whether or not to use it.
+                 *
+                 * If left undefined, then inbound topic aliasing is disabled.
+                 */
+                Crt::Optional<InboundTopicAliasBehaviorType> m_inboundBehavior;
+
+                /**
+                 * If inbound topic aliasing is enabled, this will control the size of the inbound alias cache.  If
+                 * inbound aliases are enabled and this is zero or undefined, then a sensible default will be used (25).
+                 * If inbound aliases are disabled, this setting has no effect.
+                 *
+                 * Behaviorally, this value overrides anything present in the topic_alias_maximum field of
+                 * the CONNECT packet options.
+                 */
+                Crt::Optional<uint16_t> m_inboundCacheMaxSize;
+            };
+
             struct AWS_CRT_CPP_API ReconnectOptions
             {
                 /**
@@ -58,28 +169,30 @@ namespace Aws
                 uint64_t m_minConnectedTimeToResetReconnectDelayMs;
             };
 
-            /* Simple statistics about the current state of the client's queue of operations */
+            /**
+             * Simple statistics about the current state of the client's queue of operations
+             */
             struct AWS_CRT_CPP_API Mqtt5ClientOperationStatistics
             {
-                /*
+                /**
                  * total number of operations submitted to the client that have not yet been completed.  Unacked
                  * operations are a subset of this.
                  */
                 uint64_t incompleteOperationCount;
 
-                /*
+                /**
                  * total packet size of operations submitted to the client that have not yet been completed.  Unacked
                  * operations are a subset of this.
                  */
                 uint64_t incompleteOperationSize;
 
-                /*
+                /**
                  * total number of operations that have been sent to the server and are waiting for a corresponding ACK
                  * before they can be completed.
                  */
                 uint64_t unackedOperationCount;
 
-                /*
+                /**
                  * total packet size of operations that have been sent to the server and are waiting for a corresponding
                  * ACK before they can be completed.
                  */
@@ -455,6 +568,14 @@ namespace Aws
                 Mqtt5ClientOptions &WithReconnectOptions(ReconnectOptions reconnectOptions) noexcept;
 
                 /**
+                 * Sets the topic aliasing behavior for the client.
+                 *
+                 * @param topicAliasingOptions topic aliasing behavior options to use
+                 * @return this options object
+                 */
+                Mqtt5ClientOptions &WithTopicAliasingOptions(TopicAliasingOptions topicAliasingOptions) noexcept;
+
+                /**
                  * Sets ping timeout (ms). Time interval to wait after sending a PINGREQ for a PINGRESP to arrive.
                  * If one does not arrive, the client will close the current connection.
                  *
@@ -674,6 +795,11 @@ namespace Aws
                  * Reconnect options, includes retryJitterMode, min reconnect delay time and max reconnect delay time
                  */
                 ReconnectOptions m_reconnectionOptions;
+
+                /**
+                 * Controls client topic aliasing behavior
+                 */
+                aws_mqtt5_client_topic_alias_options m_topicAliasingOptions;
 
                 /**
                  * Time interval to wait after sending a PINGREQ for a PINGRESP to arrive.  If one does not arrive, the
