@@ -61,15 +61,9 @@ namespace Aws
                     toSeat, [allocator](Mqtt5Client *client) { Crt::Delete(client, allocator); });
             }
 
-            Mqtt5Client::operator bool() const noexcept
-            {
-                return m_client_core != nullptr;
-            }
+            Mqtt5Client::operator bool() const noexcept { return m_client_core != nullptr; }
 
-            int Mqtt5Client::LastError() const noexcept
-            {
-                return aws_last_error();
-            }
+            int Mqtt5Client::LastError() const noexcept { return aws_last_error(); }
 
             bool Mqtt5Client::Start() const noexcept
             {
