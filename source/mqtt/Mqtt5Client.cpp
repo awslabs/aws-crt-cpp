@@ -61,9 +61,15 @@ namespace Aws
                     toSeat, [allocator](Mqtt5Client *client) { Crt::Delete(client, allocator); });
             }
 
-            Mqtt5Client::operator bool() const noexcept { return m_client_core != nullptr; }
+            Mqtt5Client::operator bool() const noexcept
+            {
+                return m_client_core != nullptr;
+            }
 
-            int Mqtt5Client::LastError() const noexcept { return aws_last_error(); }
+            int Mqtt5Client::LastError() const noexcept
+            {
+                return aws_last_error();
+            }
 
             bool Mqtt5Client::Start() const noexcept
             {
@@ -313,24 +319,25 @@ namespace Aws
             Mqtt5ClientOptions &Mqtt5ClientOptions::WithTopicAliasingOptions(
                 TopicAliasingOptions topicAliasingOptions) noexcept
             {
-                struct aws_mqtt5_client_topic_alias_options options = {
-                    .outbound_topic_alias_behavior = topicAliasingOptions.m_outboundBehavior.has_value()
-                                                         ? (enum aws_mqtt5_client_outbound_topic_alias_behavior_type)
-                                                               topicAliasingOptions.m_outboundBehavior.value()
-                                                         : AWS_MQTT5_COTABT_DEFAULT,
-                    .outbound_alias_cache_max_size = topicAliasingOptions.m_outboundCacheMaxSize.has_value()
-                                                         ? topicAliasingOptions.m_outboundCacheMaxSize.value()
-                                                         : (uint16_t)0,
-                    .inbound_topic_alias_behavior = topicAliasingOptions.m_inboundBehavior.has_value()
-                                                        ? (enum aws_mqtt5_client_inbound_topic_alias_behavior_type)
-                                                              topicAliasingOptions.m_inboundBehavior.value()
-                                                        : AWS_MQTT5_CITABT_DEFAULT,
-                    .inbound_alias_cache_size = topicAliasingOptions.m_inboundCacheMaxSize.has_value()
-                                                    ? topicAliasingOptions.m_inboundCacheMaxSize.value()
-                                                    : (uint16_t)0,
-                };
+                m_topicAliasingOptions.outbound_topic_alias_behavior =
+                    topicAliasingOptions.m_outboundBehavior.has_value()
+                        ? (enum aws_mqtt5_client_outbound_topic_alias_behavior_type)
+                              topicAliasingOptions.m_outboundBehavior.value()
+                        : AWS_MQTT5_COTABT_DEFAULT;
+                m_topicAliasingOptions.outbound_alias_cache_max_size =
+                    topicAliasingOptions.m_outboundCacheMaxSize.has_value()
+                        ? topicAliasingOptions.m_outboundCacheMaxSize.value()
+                        : (uint16_t)0;
+                m_topicAliasingOptions.inbound_topic_alias_behavior =
+                    topicAliasingOptions.m_inboundBehavior.has_value()
+                        ? (enum aws_mqtt5_client_inbound_topic_alias_behavior_type)
+                              topicAliasingOptions.m_inboundBehavior.value()
+                        : AWS_MQTT5_CITABT_DEFAULT;
+                m_topicAliasingOptions.inbound_alias_cache_size =
+                    topicAliasingOptions.m_inboundCacheMaxSize.has_value()
+                        ? topicAliasingOptions.m_inboundCacheMaxSize.value()
+                        : (uint16_t)0;
 
-                m_topicAliasingOptions = options;
                 return *this;
             }
 
