@@ -310,13 +310,24 @@ namespace Aws
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::WithTopicAliasingOptions(TopicAliasingOptions topicAliasingOptions) noexcept
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithTopicAliasingOptions(
+                TopicAliasingOptions topicAliasingOptions) noexcept
             {
                 struct aws_mqtt5_client_topic_alias_options options = {
-                    .outbound_topic_alias_behavior = topicAliasingOptions.m_outboundBehavior.has_value() ? (enum aws_mqtt5_client_outbound_topic_alias_behavior_type) topicAliasingOptions.m_outboundBehavior.value() : AWS_MQTT5_COTABT_DEFAULT,
-                    .outbound_alias_cache_max_size = topicAliasingOptions.m_outboundCacheMaxSize.has_value() ? topicAliasingOptions.m_outboundCacheMaxSize.value() : (uint16_t) 0,
-                    .inbound_topic_alias_behavior = topicAliasingOptions.m_inboundBehavior.has_value() ? (enum aws_mqtt5_client_inbound_topic_alias_behavior_type) topicAliasingOptions.m_inboundBehavior.value() : AWS_MQTT5_CITABT_DEFAULT,
-                    .inbound_alias_cache_size = topicAliasingOptions.m_inboundCacheMaxSize.has_value() ? topicAliasingOptions.m_inboundCacheMaxSize.value() : (uint16_t) 0,
+                    .outbound_topic_alias_behavior = topicAliasingOptions.m_outboundBehavior.has_value()
+                                                         ? (enum aws_mqtt5_client_outbound_topic_alias_behavior_type)
+                                                               topicAliasingOptions.m_outboundBehavior.value()
+                                                         : AWS_MQTT5_COTABT_DEFAULT,
+                    .outbound_alias_cache_max_size = topicAliasingOptions.m_outboundCacheMaxSize.has_value()
+                                                         ? topicAliasingOptions.m_outboundCacheMaxSize.value()
+                                                         : (uint16_t)0,
+                    .inbound_topic_alias_behavior = topicAliasingOptions.m_inboundBehavior.has_value()
+                                                        ? (enum aws_mqtt5_client_inbound_topic_alias_behavior_type)
+                                                              topicAliasingOptions.m_inboundBehavior.value()
+                                                        : AWS_MQTT5_CITABT_DEFAULT,
+                    .inbound_alias_cache_size = topicAliasingOptions.m_inboundCacheMaxSize.has_value()
+                                                    ? topicAliasingOptions.m_inboundCacheMaxSize.value()
+                                                    : (uint16_t)0,
                 };
 
                 m_topicAliasingOptions = options;

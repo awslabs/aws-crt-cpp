@@ -628,10 +628,7 @@ namespace Aws
                 return m_messageExpiryIntervalSec;
             }
 
-            const Crt::Optional<uint16_t> &PublishPacket::getTopicAlias() const noexcept
-            {
-                return m_topicAlias;
-            }
+            const Crt::Optional<uint16_t> &PublishPacket::getTopicAlias() const noexcept { return m_topicAlias; }
 
             const Crt::Optional<ByteCursor> &PublishPacket::getResponseTopic() const noexcept
             {

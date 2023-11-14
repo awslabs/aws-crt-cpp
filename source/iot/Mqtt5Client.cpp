@@ -389,7 +389,8 @@ namespace Aws
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithTopicAliasingOptions(TopicAliasingOptions topicAliasingOptions) noexcept
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithTopicAliasingOptions(
+            TopicAliasingOptions topicAliasingOptions) noexcept
         {
             m_options->WithTopicAliasingOptions(topicAliasingOptions);
             return *this;
