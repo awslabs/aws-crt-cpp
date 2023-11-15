@@ -1186,6 +1186,8 @@ namespace Aws
                 m_receiveMaximumFromServer = negotiated_settings.receive_maximum_from_server;
 
                 m_maximumPacketSizeBytes = negotiated_settings.maximum_packet_size_to_server;
+                m_topicAliasMaximumToServer = negotiated_settings.topic_alias_maximum_to_server;
+                m_topicAliasMaximumToClient = negotiated_settings.topic_alias_maximum_to_client;
                 m_serverKeepAliveSec = negotiated_settings.server_keep_alive;
 
                 m_retainAvailable = negotiated_settings.retain_available;
@@ -1212,6 +1214,16 @@ namespace Aws
             }
 
             uint32_t NegotiatedSettings::getMaximumPacketSizeBytes() const noexcept { return m_maximumPacketSizeBytes; }
+
+            uint16_t NegotiatedSettings::getTopicAliasMaximumToServer() const noexcept
+            {
+                return m_topicAliasMaximumToServer;
+            }
+
+            uint16_t NegotiatedSettings::getTopicAliasMaximumToClient() const noexcept
+            {
+                return m_topicAliasMaximumToClient;
+            }
 
             uint16_t NegotiatedSettings::getServerKeepAlive() const noexcept { return m_serverKeepAliveSec; }
 

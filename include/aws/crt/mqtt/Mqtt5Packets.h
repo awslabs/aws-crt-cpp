@@ -505,6 +505,16 @@ namespace Aws
                 uint32_t getMaximumPacketSizeBytes() const noexcept;
 
                 /**
+                 * @return returns the maximum allowed topic alias value on publishes sent from client to server
+                 */
+                uint16_t getTopicAliasMaximumToServer() const noexcept;
+
+                /**
+                 * @return returns the maximum allowed topic alias value on publishes sent from server to client
+                 */
+                uint16_t getTopicAliasMaximumToClient() const noexcept;
+
+                /**
                  * The maximum amount of time in seconds between client packets. The client should use PINGREQs to
                  * ensure this limit is not breached.  The server will disconnect the client for inactivity if no MQTT
                  * packet is received in a time interval equal to 1.5 x this value.
@@ -574,6 +584,16 @@ namespace Aws
                  * The maximum packet size the server is willing to accept.
                  */
                 uint32_t m_maximumPacketSizeBytes;
+
+                /**
+                 * the maximum allowed topic alias value on publishes sent from client to server
+                 */
+                uint16_t m_topicAliasMaximumToServer;
+
+                /**
+                 * the maximum allowed topic alias value on publishes sent from server to client
+                 */
+                uint16_t m_topicAliasMaximumToClient;
 
                 /**
                  * The maximum amount of time in seconds between client packets.  The client should use PINGREQs to
