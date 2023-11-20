@@ -29,7 +29,7 @@ using namespace Aws::Crt::Mqtt5;
 struct app_ctx
 {
     struct aws_allocator *allocator;
-    Io::Uri uri;
+    Aws::Crt::String uri;
     uint16_t port;
     const char *cacert;
     const char *cert;
@@ -90,17 +90,19 @@ static void s_parse_options(int argc, char **argv, struct app_ctx &ctx)
                 break;
             case 0x02:
                 /* getopt_long() returns 0x02 (START_OF_TEXT) if a positional arg was encountered */
-                ctx.uri = Io::Uri(aws_byte_cursor_from_c_str(aws_cli_positional_arg), ctx.allocator);
-                if (!ctx.uri)
+                ctx.uri = aws_cli_positional_arg;
+                if (ctx.uri.empty())
                 {
-                    std::cerr << "Failed to parse uri \"" << aws_cli_positional_arg << "\" with error "
-                              << aws_error_debug_str(ctx.uri.LastError()) << std::endl;
+                    fprintf(stderr, "Failed to parse uri %s.\n", ctx.uri.c_str());
+                    // std::cerr << "Failed to parse uri \"" << aws_cli_positional_arg << "\" with error "
+                    //           << aws_error_debug_str(ctx.uri.LastError()) << std::endl;
                     s_usage(1);
                 }
                 else
                 {
-                    std::cerr << "Success to parse uri \"" << aws_cli_positional_arg
-                              << static_cast<const char *>(AWS_BYTE_CURSOR_PRI(ctx.uri.GetFullUri())) << std::endl;
+                    fprintf(stderr, "Success to parse uri %s.\n", ctx.uri.c_str());
+                    // std::cerr << "Success to parse uri \"" << aws_cli_positional_arg
+                    //           << static_cast<const char *>(AWS_BYTE_CURSOR_PRI(ctx.uri.GetFullUri())) << std::endl;
                 }
                 break;
             case 'a':
@@ -136,7 +138,7 @@ static void s_parse_options(int argc, char **argv, struct app_ctx &ctx)
         }
     }
 
-    if (!ctx.uri)
+    if (ctx.uri.empty())
     {
         std::cerr << "A URI for the request must be supplied.\n";
         s_usage(1);
@@ -180,10 +182,6 @@ int main(int argc, char **argv)
     app_ctx.port = 1883;
 
     s_parse_options(argc, argv, app_ctx);
-    if (app_ctx.uri.GetPort())
-    {
-        app_ctx.port = app_ctx.uri.GetPort();
-    }
 
     // s_aws_mqtt5_canary_update_tps_sleep_time(&tester_options);
     // s_aws_mqtt5_canary_init_weighted_operations(&tester_options);
@@ -204,7 +202,7 @@ int main(int argc, char **argv)
 
     bool useTls = false;
 
-    auto hostName = app_ctx.uri.GetHostName();
+    auto hostName = ByteCursorFromString(app_ctx.uri);
 
     /***************************************************
      * setup connection configs
@@ -241,7 +239,7 @@ int main(int argc, char **argv)
         tlsConnectionOptions = tlsContext.NewConnectionOptions();
 
         std::cout << "MQTT5: Looking into the uri string: "
-                  << static_cast<const char *>(AWS_BYTE_CURSOR_PRI(app_ctx.uri.GetFullUri())) << std::endl;
+                  << app_ctx.uri.c_str() << std::endl;
 
         if (!tlsConnectionOptions.SetServerName(hostName))
         {
