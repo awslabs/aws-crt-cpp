@@ -34,7 +34,7 @@ struct AppCtx
 {
     Allocator *allocator;
     struct aws_mutex lock;
-    Io::Uri uri;
+    Aws::Crt::String uri;
     uint16_t port;
     const char *cacert;
     const char *cert;
@@ -204,20 +204,19 @@ static void s_ParseOptions(int argc, char **argv, struct AppCtx &ctx, struct Aws
                 break;
             case 0x02:
                 /* getopt_long() returns 0x02 (START_OF_TEXT) if a positional arg was encountered */
-                ctx.uri = Io::Uri(aws_byte_cursor_from_c_str(aws_cli_positional_arg), ctx.allocator);
-                if (!ctx.uri)
+                ctx.uri = Aws::Crt::String(aws_cli_positional_arg);
+                if (ctx.uri.empty())
                 {
                     fprintf(
                         stderr,
-                        "Failed to parse uri %s with error %s\n",
-                        aws_cli_positional_arg,
-                        aws_error_debug_str(ctx.uri.LastError()));
+                        "Failed to parse uri %s with error. \n",
+                        ctx.uri.c_str());
                     s_Usage(1);
                 }
                 else
                 {
                     // fprintf(stderr, "Succeeded parsing uri");
-                    fprintf(stderr, "Succeed to parse uri " PRInSTR "\n", AWS_BYTE_CURSOR_PRI(ctx.uri.GetFullUri()));
+                    fprintf(stderr, "Succeed to parse uri %s.\n", aws_cli_positional_arg);
                 }
                 break;
             default:
@@ -226,7 +225,7 @@ static void s_ParseOptions(int argc, char **argv, struct AppCtx &ctx, struct Aws
         }
     }
 
-    if (!ctx.uri)
+    if (ctx.uri.empty())
     {
         fprintf(stderr, "A URI for the request must be supplied.\n");
         s_Usage(1);
@@ -306,7 +305,7 @@ static void s_AwsMqtt5CanaryAddOperationToArray(
 static void s_AwsMqtt5CanaryInitWeightedOperations(AwsMqtt5CanaryTesterOptions *testerOptions)
 {
 
-    s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_STOP, 1);
+    // s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_STOP, 1);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_SUBSCRIBE, 200);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_UNSUBSCRIBE, 200);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_UNSUBSCRIBE_BAD, 100);
@@ -689,10 +688,6 @@ int main(int argc, char **argv)
     testerOptions.operations = operations;
 
     s_ParseOptions(argc, argv, appCtx, &testerOptions);
-    if (appCtx.uri.GetPort())
-    {
-        appCtx.port = appCtx.uri.GetPort();
-    }
 
     s_Mqtt5CanaryUpdateTpsSleepTime(&testerOptions);
     s_AwsMqtt5CanaryInitWeightedOperations(&testerOptions);
@@ -713,7 +708,7 @@ int main(int argc, char **argv)
     /***************************************************
      * TLS
      ***************************************************/
-    auto hostName = appCtx.uri.GetHostName();
+    auto hostName = ByteCursorFromString(appCtx.uri);
     Io::TlsContextOptions tlsCtxOptions;
     Io::TlsContext tlsContext;
     Io::TlsConnectionOptions tlsConnectionOptions;
