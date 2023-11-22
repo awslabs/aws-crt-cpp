@@ -238,7 +238,8 @@ static void s_ParseOptions(int argc, char **argv, struct AppCtx &ctx, struct Aws
 
 static void s_Mqtt5CanaryUpdateTpsSleepTime(struct AwsMqtt5CanaryTesterOptions *testerOptions)
 {
-    testerOptions->tpsSleepTime =
+
+    testerOptions->tpsSleepTime = testerOptions->tps == 0 ? 0 :
         (aws_timestamp_convert(1, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_NANOS, NULL) / testerOptions->tps);
 }
 
