@@ -390,6 +390,14 @@ static int s_AwsMqtt5CanaryOperationStop(struct AwsMqtt5CanaryTestClient *testCl
     return AWS_OP_ERR;
 }
 
+OnSubscribeCompletionHandler subscribe_completion = [](int errorcode, std::shared_ptr<SubAckPacket>){
+    if(errorcode != 0)
+    {
+        fprintf(stderr, "Subscribe failed with errorcode: %d, %s", errorcode, aws_error_str(errorcode));
+    }
+};
+
+
 static int s_AwsMqtt5CanaryOperationSubscribe(struct AwsMqtt5CanaryTestClient *testClient, Allocator *allocator)
 {
     if (!testClient->isConnected)
@@ -420,13 +428,13 @@ static int s_AwsMqtt5CanaryOperationSubscribe(struct AwsMqtt5CanaryTestClient *t
 
     testClient->subscriptionCount++;
 
-    AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Subscribe to topic: %s", testClient->clientId.c_str(), topicArray);
+    fprintf(stderr, "ID:%s Subscribe to topic: %s", testClient->clientId.c_str(), topicArray);
 
-    if (testClient->client->Subscribe(packet))
+    if (testClient->client->Subscribe(packet,subscribe_completion))
     {
         return AWS_OP_SUCCESS;
     }
-    AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Subscribe Failed", testClient->clientId.c_str());
+    fprintf(stderr, "ID:%s Subscribe Failed", testClient->clientId.c_str());
     return AWS_OP_ERR;
 }
 
@@ -452,8 +460,8 @@ static int s_AwsMqtt5CanaryOperationUnsubscribeBad(struct AwsMqtt5CanaryTestClie
                     return;
                 if (packet->getReasonCodes()[0] == AWS_MQTT5_UARC_SUCCESS)
                 {
-                    AWS_LOGF_ERROR(
-                        AWS_LS_MQTT5_CANARY,
+                    fprintf(
+                        stderr,
                         "ID:%s Unsubscribe Bad Server Failed with errorcode : %s",
                         testClient->clientId.c_str(),
                         packet->getReasonString()->c_str());
@@ -500,6 +508,13 @@ static int s_AwsMqtt5CanaryOperationUnsubscribe(struct AwsMqtt5CanaryTestClient 
     return AWS_OP_ERR;
 }
 
+OnPublishCompletionHandler publish_completion = [](int errorcode, std::shared_ptr<PublishResult>){
+    if(errorcode != 0)
+    {
+        fprintf(stderr, "Publish failed with errorcode: %d, %s", errorcode, aws_error_str(errorcode));
+    }
+};
+
 /* Help function for Publish Operation. Do not call it directly for operations. */
 static int s_AwsMqtt5CanaryOperationPublish(
     struct AwsMqtt5CanaryTestClient *testClient,
@@ -539,13 +554,13 @@ static int s_AwsMqtt5CanaryOperationPublish(
         .WithUserProperty(std::move(up2))
         .WithUserProperty(std::move(up3));
 
-    if (testClient->client->Publish(packetPublish))
+    if (testClient->client->Publish(packetPublish, publish_completion))
     {
         AWS_LOGF_INFO(
             AWS_LS_MQTT5_CANARY, "ID:%s Publish to topic %s", testClient->clientId.c_str(), topicFilter.c_str());
         return AWS_OP_SUCCESS;
     }
-    AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Publish Failed", testClient->clientId.c_str());
+    fprintf(stderr, "ID:%s Publish Failed", testClient->clientId.c_str());
     return AWS_OP_ERR;
 }
 
@@ -945,16 +960,16 @@ int main(int argc, char **argv)
 
             if (now > timeTestFinish)
             {
-                printf("   Operating TPS average over test: %zu\n\n", operationsExecuted / testerOptions.testRunSeconds);
+                fprintf(stderr,"   Operating TPS average over test: %zu\n\n", operationsExecuted / testerOptions.testRunSeconds);
                 done = true;
             }
 
             if (now > memoryCheckPoint)
             {
                 const size_t outstanding_bytes = aws_mem_tracer_bytes(allocator);
-                printf("Summary:\n");
-                printf("   Outstanding bytes: %zu\n", outstanding_bytes);
-                printf("   Operations executed: %zu\n", operationsExecuted);
+                fprintf(stderr, "Summary:\n");
+                fprintf(stderr, "   Outstanding bytes: %zu\n", outstanding_bytes);
+                fprintf(stderr, "   Operations executed: %zu\n", operationsExecuted);
                 memoryCheckPoint = now + timeInterval;
             }
 
