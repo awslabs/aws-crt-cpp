@@ -393,7 +393,7 @@ static int s_AwsMqtt5CanaryOperationStop(struct AwsMqtt5CanaryTestClient *testCl
 OnSubscribeCompletionHandler subscribe_completion = [](int errorcode, std::shared_ptr<SubAckPacket>){
     if(errorcode != 0)
     {
-        fprintf(stderr, "Subscribe failed with errorcode: %d, %s", errorcode, aws_error_str(errorcode));
+        fprintf(stderr, "Subscribe failed with errorcode: %d, %s\n", errorcode, aws_error_str(errorcode));
     }
 };
 
@@ -428,13 +428,13 @@ static int s_AwsMqtt5CanaryOperationSubscribe(struct AwsMqtt5CanaryTestClient *t
 
     testClient->subscriptionCount++;
 
-    fprintf(stderr, "ID:%s Subscribe to topic: %s", testClient->clientId.c_str(), topicArray);
+    fprintf(stderr, "ID:%s Subscribe to topic: %s\n", testClient->clientId.c_str(), topicArray);
 
     if (testClient->client->Subscribe(packet,subscribe_completion))
     {
         return AWS_OP_SUCCESS;
     }
-    fprintf(stderr, "ID:%s Subscribe Failed", testClient->clientId.c_str());
+    fprintf(stderr, "ID:%s Subscribe Failed\n", testClient->clientId.c_str());
     return AWS_OP_ERR;
 }
 
@@ -462,7 +462,7 @@ static int s_AwsMqtt5CanaryOperationUnsubscribeBad(struct AwsMqtt5CanaryTestClie
                 {
                     fprintf(
                         stderr,
-                        "ID:%s Unsubscribe Bad Server Failed with errorcode : %s",
+                        "ID:%s Unsubscribe Bad Server Failed with errorcode : %s\n",
                         testClient->clientId.c_str(),
                         packet->getReasonString()->c_str());
                 }
@@ -511,7 +511,7 @@ static int s_AwsMqtt5CanaryOperationUnsubscribe(struct AwsMqtt5CanaryTestClient 
 OnPublishCompletionHandler publish_completion = [](int errorcode, std::shared_ptr<PublishResult>){
     if(errorcode != 0)
     {
-        fprintf(stderr, "Publish failed with errorcode: %d, %s", errorcode, aws_error_str(errorcode));
+        fprintf(stderr, "Publish failed with errorcode: %d, %s\n", errorcode, aws_error_str(errorcode));
     }
 };
 
@@ -560,7 +560,7 @@ static int s_AwsMqtt5CanaryOperationPublish(
             AWS_LS_MQTT5_CANARY, "ID:%s Publish to topic %s", testClient->clientId.c_str(), topicFilter.c_str());
         return AWS_OP_SUCCESS;
     }
-    fprintf(stderr, "ID:%s Publish Failed", testClient->clientId.c_str());
+    fprintf(stderr, "ID:%s Publish Failed\n", testClient->clientId.c_str());
     return AWS_OP_ERR;
 }
 
