@@ -413,14 +413,14 @@ static int s_AwsMqtt5CanaryOperationSubscribe(struct AwsMqtt5CanaryTestClient *t
         .WithNoLocal(false)
         .WithQOS(Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE)
         .WithRetainHandlingType(Mqtt5::RetainHandlingType::AWS_MQTT5_RHT_SEND_ON_SUBSCRIBE)
-        .WithRetain(false);
+        .WithRetainAsPublished(false);
 
     Mqtt5::Subscription subscription2;
     subscription2.WithTopicFilter(testClient->sharedTopic)
         .WithNoLocal(false)
         .WithQOS(Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE)
         .WithRetainHandlingType(Mqtt5::RetainHandlingType::AWS_MQTT5_RHT_SEND_ON_SUBSCRIBE)
-        .WithRetain(false);
+        .WithRetainAsPublished(false);
 
     std::shared_ptr<Mqtt5::SubscribePacket> packet = std::make_shared<Mqtt5::SubscribePacket>(allocator);
     packet->WithSubscription(std::move(subscription1));
