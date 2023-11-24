@@ -147,7 +147,7 @@ namespace Aws
                  * Controls how the reconnect delay is modified in order to smooth out the distribution of reconnection
                  * attempt timepoints for a large set of reconnecting clients.
                  */
-                JitterMode m_reconnectMode;
+                ExponentialBackoffJitterMode m_reconnectMode;
 
                 /**
                  * Minimum amount of time to wait to reconnect after a disconnect.  Exponential backoff is performed
@@ -383,47 +383,47 @@ namespace Aws
                  * Notifies the MQTT5 client that you want it to transition to the stopped state, disconnecting any
                  * existing connection and stopping subsequent reconnect attempts.
                  *
-                 * @param disconnectOptions (optional) properties of a DISCONNECT packet to send as part of the shutdown
+                 * @param disconnectPacket (optional) properties of a DISCONNECT packet to send as part of the shutdown
                  * process
                  *
                  * @return bool: true if operation succeed, otherwise false
                  */
-                bool Stop(std::shared_ptr<DisconnectPacket> disconnectOptions) noexcept;
+                bool Stop(std::shared_ptr<DisconnectPacket> disconnectPacket) noexcept;
 
                 /**
                  * Tells the client to attempt to send a PUBLISH packet
                  *
-                 * @param publishOptions: packet PUBLISH to send to the server
+                 * @param publishPacket: packet PUBLISH to send to the server
                  * @param onPublishCompletionCallback: callback on publish complete, default to NULL
                  *
                  * @return true if the publish operation succeed otherwise false
                  */
                 bool Publish(
-                    std::shared_ptr<PublishPacket> publishOptions,
+                    std::shared_ptr<PublishPacket> publishPacket,
                     OnPublishCompletionHandler onPublishCompletionCallback = NULL) noexcept;
 
                 /**
                  * Tells the client to attempt to subscribe to one or more topic filters.
                  *
-                 * @param subscribeOptions: SUBSCRIBE packet to send to the server
+                 * @param subscribePacket: SUBSCRIBE packet to send to the server
                  * @param onSubscribeCompletionCallback: callback on subscribe complete, default to NULL
                  *
                  * @return true if the subscription operation succeed otherwise false
                  */
                 bool Subscribe(
-                    std::shared_ptr<SubscribePacket> subscribeOptions,
+                    std::shared_ptr<SubscribePacket> subscribePacket,
                     OnSubscribeCompletionHandler onSubscribeCompletionCallback = NULL) noexcept;
 
                 /**
                  * Tells the client to attempt to unsubscribe to one or more topic filters.
                  *
-                 * @param unsubscribeOptions: UNSUBSCRIBE packet to send to the server
+                 * @param unsubscribePacket: UNSUBSCRIBE packet to send to the server
                  * @param onUnsubscribeCompletionCallback: callback on unsubscribe complete, default to NULL
                  *
                  * @return true if the unsubscription operation succeed otherwise false
                  */
                 bool Unsubscribe(
-                    std::shared_ptr<UnsubscribePacket> unsubscribeOptions,
+                    std::shared_ptr<UnsubscribePacket> unsubscribePacket,
                     OnUnsubscribeCompletionHandler onUnsubscribeCompletionCallback = NULL) noexcept;
 
                 /**
@@ -517,11 +517,11 @@ namespace Aws
                 /**
                  * Sets mqtt5 connection options
                  *
-                 * @param packetConnect package connection options
+                 * @param connectPacket package connection options
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &WithConnectOptions(std::shared_ptr<ConnectPacket> packetConnect) noexcept;
+                Mqtt5ClientOptions &WithConnectOptions(std::shared_ptr<ConnectPacket> connectPacket) noexcept;
 
                 /**
                  * Sets session behavior. Overrides how the MQTT5 client should behave with respect to MQTT sessions.

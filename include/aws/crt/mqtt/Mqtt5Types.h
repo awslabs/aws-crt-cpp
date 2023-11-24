@@ -371,7 +371,7 @@ namespace Aws
              * See [Exponential Backoff and
              * Jitter](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/)
              */
-            enum class JitterMode
+            enum class ExponentialBackoffJitterMode
             {
                 /* uses AWS_EXPONENTIAL_BACKOFF_JITTER_FULL */
                 AWS_EXPONENTIAL_BACKOFF_JITTER_DEFAULT =
@@ -383,6 +383,9 @@ namespace Aws
                 AWS_EXPONENTIAL_BACKOFF_JITTER_DECORRELATED =
                     aws_exponential_backoff_jitter_mode::AWS_EXPONENTIAL_BACKOFF_JITTER_DECORRELATED,
             };
+
+            /** @deprecated JitterMode is deprecated, please use ExponentialBackoffJitterMode */
+            using JitterMode = ExponentialBackoffJitterMode;
 
             /**
              * Optional property describing a PUBLISH payload's format.
