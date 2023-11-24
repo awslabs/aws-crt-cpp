@@ -379,7 +379,7 @@ namespace Aws
         Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithOfflineQueueBehavior(
             ClientOperationQueueBehaviorType operationQueueBehavior) noexcept
         {
-            m_options->WithAckTimeoutSeconds(operationQueueBehavior);
+            m_options->WithOfflineQueueBehavior(operationQueueBehavior);
             return *this;
         }
 
@@ -408,9 +408,15 @@ namespace Aws
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithAckTimeoutSeconds(uint32_t ackTimeoutSeconds) noexcept
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithAckTimeoutSec(uint32_t ackTimeoutSec) noexcept
         {
-            m_options->WithAckTimeoutSeconds(ackTimeoutSeconds);
+            m_options->WithAckTimeoutSec(ackTimeoutSec);
+            return *this;
+        }
+
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithAckTimeoutSeconds(uint32_t ackTimeoutSec) noexcept
+        {
+            m_options->WithAckTimeoutSec(ackTimeoutSec);
             return *this;
         }
 

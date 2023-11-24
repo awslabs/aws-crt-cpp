@@ -500,9 +500,16 @@ namespace Aws
                 uint16_t getReceiveMaximumFromServer() const noexcept;
 
                 /**
+                 * @deprecated the function is deprecated, please use `getMaximumPacketSizeToServer`
+                 *
                  * @return The maximum packet size the server is willing to accept.
                  */
                 uint32_t getMaximumPacketSizeBytes() const noexcept;
+
+                /**
+                 * @return The maximum packet size the server is willing to accept.
+                 */
+                uint32_t getMaximumPacketSizeToServer() const noexcept;
 
                 /**
                  * @return returns the maximum allowed topic alias value on publishes sent from client to server
@@ -521,7 +528,7 @@ namespace Aws
                  *
                  * @return The maximum amount of time in seconds between client packets.
                  */
-                uint16_t getServerKeepAlive() const noexcept;
+                uint16_t getServerKeepAliveSec() const noexcept;
 
                 /**
                  * @return Whether the server supports retained messages.
@@ -939,6 +946,8 @@ namespace Aws
                 const Crt::Optional<uint16_t> &getReceiveMaximum() const noexcept;
 
                 /**
+                 * @deprecated The function is deprecated, please use `getMaximumPacketSizeToServer`
+                 *
                  * Notifies the server of the maximum packet size the client is willing to handle.  If
                  * omitted or null, then no limit beyond the natural limits of MQTT packet size is requested.
                  *
@@ -948,6 +957,17 @@ namespace Aws
                  * @return The maximum packet size the client is willing to handle
                  */
                 const Crt::Optional<uint32_t> &getMaximumPacketSizeBytes() const noexcept;
+
+                /**
+                 * Notifies the server of the maximum packet size the client is willing to handle.  If
+                 * omitted or null, then no limit beyond the natural limits of MQTT packet size is requested.
+                 *
+                 * See [MQTT5 Maximum Packet
+                 * Size](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901050)
+                 *
+                 * @return The maximum packet size the client is willing to handle
+                 */
+                const Crt::Optional<uint32_t> &getMaximumPacketSizeToServer() const noexcept;
 
                 /**
                  * A time interval, in seconds, that the server should wait (for a session reconnection) before sending
@@ -1175,7 +1195,7 @@ namespace Aws
                  * @return A time interval, in seconds, that the server will persist this connection's MQTT session
                  * state for.
                  */
-                const Crt::Optional<uint32_t> &getSessionExpiryInterval() const noexcept;
+                const Crt::Optional<uint32_t> &getSessionExpiryIntervalSec() const noexcept;
 
                 /**
                  * The maximum amount of in-flight QoS 1 or 2 messages that the server is willing to handle at once. If
@@ -1304,7 +1324,7 @@ namespace Aws
                  *
                  * @return Server-requested override of the keep alive interval, in seconds
                  */
-                const Crt::Optional<uint16_t> &getServerKeepAlive() const noexcept;
+                const Crt::Optional<uint16_t> &getServerKeepAliveSec() const noexcept;
 
                 /**
                  * A value that can be used in the creation of a response topic associated with this connection.
@@ -1360,7 +1380,7 @@ namespace Aws
                  * See [MQTT5 Session Expiry
                  * Interval](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901082)
                  */
-                Crt::Optional<uint32_t> m_sessionExpiryInterval;
+                Crt::Optional<uint32_t> m_sessionExpiryIntervalSec;
 
                 /**
                  * The maximum amount of in-flight QoS 1 or 2 messages that the server is willing to handle at once.  If
@@ -1455,7 +1475,7 @@ namespace Aws
                  * See [MQTT5 Server Keep
                  * Alive](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901094)
                  */
-                Crt::Optional<uint16_t> m_serverKeepAlive;
+                Crt::Optional<uint16_t> m_serverKeepAliveSec;
 
                 /**
                  * A value that can be used in the creation of a response topic associated with this connection.
@@ -1880,7 +1900,7 @@ namespace Aws
                  * @param retain bool
                  * @return The Subscription Object after setting the reason string.
                  */
-                Subscription &WithRetain(bool retain) noexcept;
+                Subscription &WithRetainAsPublished(bool retain) noexcept;
 
                 /**
                  * Sets should messages sent due to this subscription keep the retain flag preserved on the message?
@@ -1937,7 +1957,7 @@ namespace Aws
                  * See [MQTT5 Subscription
                  * Options](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901169)
                  */
-                bool m_retain;
+                bool m_retainAsPublished;
 
                 /**
                  * Should retained messages on matching topics be sent in reaction to this subscription?  If undefined,
