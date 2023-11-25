@@ -452,7 +452,7 @@ namespace Aws
             }
 
             PublishPacket::PublishPacket(const aws_mqtt5_packet_publish_view &packet, Allocator *allocator) noexcept
-                : m_allocator(allocator), m_qos(packet.qos), m_retain(packet.retain),
+                : m_allocator(allocator), m_qos((QOS)packet.qos), m_retain(packet.retain),
                   m_topicName((const char *)packet.topic.ptr, packet.topic.len), m_userPropertiesStorage(nullptr)
             {
                 AWS_ZERO_STRUCT(m_payloadStorage);
@@ -462,7 +462,7 @@ namespace Aws
 
                 WithPayload(packet.payload);
 
-                setPacketOptional(m_payloadFormatIndicator, packet.payload_format);
+                setPacketOptional(m_payloadFormatIndicator, (PayloadFormatIndicator*)packet.payload_format);
                 setPacketOptional(m_messageExpiryIntervalSec, packet.message_expiry_interval_seconds);
                 setPacketOptional(m_topicAlias, packet.topic_alias);
                 setPacketStringOptional(m_responseTopic, m_responseTopicString, packet.response_topic);
@@ -582,7 +582,7 @@ namespace Aws
             {
                 AWS_ZERO_STRUCT(raw_options);
                 raw_options.payload = m_payload;
-                raw_options.qos = m_qos;
+                raw_options.qos = (aws_mqtt5_qos)m_qos;
                 raw_options.retain = m_retain;
                 raw_options.topic = ByteCursorFromString(m_topicName);
 
@@ -671,7 +671,7 @@ namespace Aws
             }
 
             DisconnectPacket::DisconnectPacket(Allocator *allocator) noexcept
-                : m_allocator(allocator), m_reasonCode(AWS_MQTT5_DRC_NORMAL_DISCONNECTION),
+                : m_allocator(allocator), m_reasonCode(DisconnectReasonCode::AWS_MQTT5_DRC_NORMAL_DISCONNECTION),
                   m_userPropertiesStorage(nullptr)
             {
             }
@@ -680,7 +680,7 @@ namespace Aws
             {
                 AWS_ZERO_STRUCT(raw_options);
 
-                raw_options.reason_code = m_reasonCode;
+                raw_options.reason_code = (aws_mqtt5_disconnect_reason_code)m_reasonCode;
 
                 if (m_sessionExpiryIntervalSec.has_value())
                 {
@@ -775,7 +775,7 @@ namespace Aws
                 Allocator *allocator) noexcept
                 : m_allocator(allocator), m_userPropertiesStorage(nullptr)
             {
-                m_reasonCode = packet.reason_code;
+                m_reasonCode = (DisconnectReasonCode)packet.reason_code;
 
                 setPacketOptional(m_sessionExpiryIntervalSec, packet.session_expiry_interval_seconds);
                 setPacketStringOptional(m_reasonString, packet.reason_string);
@@ -793,7 +793,7 @@ namespace Aws
 
             PubAckPacket::PubAckPacket(const aws_mqtt5_packet_puback_view &packet, Allocator * /*allocator*/) noexcept
             {
-                m_reasonCode = packet.reason_code;
+                m_reasonCode = (PubAckReasonCode)packet.reason_code;
                 setPacketStringOptional(m_reasonString, packet.reason_string);
                 setUserProperties(m_userProperties, packet.user_properties, packet.user_property_count);
             }
@@ -812,10 +812,10 @@ namespace Aws
                 Allocator * /*allocator*/) noexcept
             {
                 m_sessionPresent = packet.session_present;
-                m_reasonCode = packet.reason_code;
+                m_reasonCode = (enum ConnectReasonCode)packet.reason_code;
                 setPacketOptional(m_sessionExpiryIntervalSec, packet.session_expiry_interval);
                 setPacketOptional(m_receiveMaximum, packet.receive_maximum);
-                setPacketOptional(m_maximumQOS, packet.maximum_qos);
+                setPacketOptional(m_maximumQOS, (QOS*)packet.maximum_qos);
                 setPacketOptional(m_retainAvailable, packet.retain_available);
                 setPacketOptional(m_maximumPacketSize, packet.maximum_packet_size);
                 setPacketStringOptional(m_assignedClientIdentifier, packet.assigned_client_identifier);
@@ -899,14 +899,14 @@ namespace Aws
 
             Subscription::Subscription(Allocator *allocator)
                 : m_allocator(allocator), m_topicFilter(""), m_qos(QOS::AWS_MQTT5_QOS_AT_MOST_ONCE), m_noLocal(false),
-                  m_retainAsPublished(false), m_retainHnadlingType(AWS_MQTT5_RHT_SEND_ON_SUBSCRIBE)
+                  m_retainAsPublished(false), m_retainHnadlingType(RetainHandlingType::AWS_MQTT5_RHT_SEND_ON_SUBSCRIBE)
 
             {
             }
 
             Subscription::Subscription(Crt::String topicFilter, Mqtt5::QOS qos, Allocator *allocator)
                 : m_allocator(allocator), m_topicFilter(std::move(topicFilter)), m_qos(qos), m_noLocal(false),
-                  m_retainAsPublished(false), m_retainHnadlingType(AWS_MQTT5_RHT_SEND_ON_SUBSCRIBE)
+                  m_retainAsPublished(false), m_retainHnadlingType(RetainHandlingType::AWS_MQTT5_RHT_SEND_ON_SUBSCRIBE)
             {
             }
 
@@ -942,9 +942,9 @@ namespace Aws
                 AWS_ZERO_STRUCT(raw_options);
                 raw_options.topic_filter = ByteCursorFromString(m_topicFilter);
                 raw_options.no_local = m_noLocal;
-                raw_options.qos = m_qos;
+                raw_options.qos = (enum aws_mqtt5_qos)m_qos;
                 raw_options.retain_as_published = m_retainAsPublished;
-                raw_options.retain_handling_type = m_retainHnadlingType;
+                raw_options.retain_handling_type = (enum aws_mqtt5_retain_handling_type)m_retainHnadlingType;
                 return true;
             }
 
@@ -1074,7 +1074,7 @@ namespace Aws
                 setUserProperties(m_userProperties, packet.user_properties, packet.user_property_count);
                 for (size_t i = 0; i < packet.reason_code_count; i++)
                 {
-                    m_reasonCodes.push_back(*(packet.reason_codes + i));
+                    m_reasonCodes.push_back(*((enum SubAckReasonCode*)(packet.reason_codes + i)));
                 }
             }
 
@@ -1160,7 +1160,7 @@ namespace Aws
 
                 for (size_t i = 0; i < packet.reason_code_count; i++)
                 {
-                    m_reasonCodes.push_back(*(packet.reason_codes + i));
+                    m_reasonCodes.push_back(*(enum UnSubAckReasonCode*)(packet.reason_codes + i));
                 }
                 setUserProperties(m_userProperties, packet.user_properties, packet.user_property_count);
             }
@@ -1186,7 +1186,7 @@ namespace Aws
             {
                 (void)allocator;
 
-                m_maximumQOS = negotiated_settings.maximum_qos;
+                m_maximumQOS = (enum QOS)negotiated_settings.maximum_qos;
                 m_sessionExpiryIntervalSec = negotiated_settings.session_expiry_interval;
                 m_receiveMaximumFromServer = negotiated_settings.receive_maximum_from_server;
 

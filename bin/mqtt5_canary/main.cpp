@@ -450,7 +450,7 @@ static int s_AwsMqtt5CanaryOperationUnsubscribeBad(struct AwsMqtt5CanaryTestClie
             unsubscription, [testClient](int, std::shared_ptr<Mqtt5::UnSubAckPacket> packet) {
                 if (packet == nullptr)
                     return;
-                if (packet->getReasonCodes()[0] == AWS_MQTT5_UARC_SUCCESS)
+                if (packet->getReasonCodes()[0] == UnSubAckReasonCode::AWS_MQTT5_UARC_SUCCESS)
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_MQTT5_CANARY,
@@ -558,7 +558,7 @@ static int s_AwsMqtt5CanaryOperationPublishQos0(struct AwsMqtt5CanaryTestClient 
 
     Aws::Crt::String topic = "topic1";
     AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Publish qos0", testClient->clientId.c_str());
-    return s_AwsMqtt5CanaryOperationPublish(testClient, topic, AWS_MQTT5_QOS_AT_MOST_ONCE, allocator);
+    return s_AwsMqtt5CanaryOperationPublish(testClient, topic, QOS::AWS_MQTT5_QOS_AT_MOST_ONCE, allocator);
 }
 
 static int s_AwsMqtt5CanaryOperationPublishQos1(struct AwsMqtt5CanaryTestClient *testClient, Allocator *allocator)
@@ -569,7 +569,7 @@ static int s_AwsMqtt5CanaryOperationPublishQos1(struct AwsMqtt5CanaryTestClient 
     }
     Aws::Crt::String topic = "topic1";
     AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Publish qos1", testClient->clientId.c_str());
-    return s_AwsMqtt5CanaryOperationPublish(testClient, topic, AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+    return s_AwsMqtt5CanaryOperationPublish(testClient, topic, QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
 }
 
 static int s_AwsMqtt5CanaryOperationPublishToSubscribedTopicQos0(
@@ -591,7 +591,7 @@ static int s_AwsMqtt5CanaryOperationPublishToSubscribedTopicQos0(
 
     AWS_LOGF_INFO(
         AWS_LS_MQTT5_CANARY, "ID:%s Publish qos 0 to subscribed topic: %s", testClient->clientId.c_str(), topicArray);
-    return s_AwsMqtt5CanaryOperationPublish(testClient, topicArray, AWS_MQTT5_QOS_AT_MOST_ONCE, allocator);
+    return s_AwsMqtt5CanaryOperationPublish(testClient, topicArray, QOS::AWS_MQTT5_QOS_AT_MOST_ONCE, allocator);
 }
 
 static int s_AwsMqtt5CanaryOperationPublishToSubscribedTopicQos1(
@@ -614,7 +614,7 @@ static int s_AwsMqtt5CanaryOperationPublishToSubscribedTopicQos1(
 
     AWS_LOGF_INFO(
         AWS_LS_MQTT5_CANARY, "ID:%s Publish qos 1 to subscribed topic: %s", testClient->clientId.c_str(), topicArray);
-    return s_AwsMqtt5CanaryOperationPublish(testClient, topicArray, AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+    return s_AwsMqtt5CanaryOperationPublish(testClient, topicArray, QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
 }
 
 static int s_AwsMqtt5CanaryOperationPublishToSharedTopicQos0(
@@ -630,7 +630,7 @@ static int s_AwsMqtt5CanaryOperationPublishToSharedTopicQos0(
         "ID:%s Publish qos 0 to shared topic: %s",
         testClient->clientId.c_str(),
         testClient->sharedTopic.c_str());
-    return s_AwsMqtt5CanaryOperationPublish(testClient, testClient->sharedTopic, AWS_MQTT5_QOS_AT_MOST_ONCE, allocator);
+    return s_AwsMqtt5CanaryOperationPublish(testClient, testClient->sharedTopic, QOS::AWS_MQTT5_QOS_AT_MOST_ONCE, allocator);
 }
 
 static int s_AwsMqtt5CanaryOperationPublishToSharedTopicQos1(
@@ -647,7 +647,7 @@ static int s_AwsMqtt5CanaryOperationPublishToSharedTopicQos1(
         testClient->clientId.c_str(),
         testClient->sharedTopic.c_str());
     return s_AwsMqtt5CanaryOperationPublish(
-        testClient, testClient->sharedTopic, AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+        testClient, testClient->sharedTopic, QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
 }
 
 static struct AwsMqtt5CanaryOperationsFunctionTable s_AwsMqtt5CanaryOperationTable = {{
@@ -828,7 +828,7 @@ int main(int argc, char **argv)
             .WithSocketOptions(socketOptions)
             .WithBootstrap(&clientBootstrap)
             .WithPingTimeoutMs(10000)
-            .WithReconnectOptions({AWS_EXPONENTIAL_BACKOFF_JITTER_NONE, 1000, 120000, 3000});
+            .WithReconnectOptions({JitterMode::AWS_EXPONENTIAL_BACKOFF_JITTER_NONE, 1000, 120000, 3000});
 
         if (appCtx.use_tls)
         {
