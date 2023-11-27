@@ -19,6 +19,7 @@
 #include <aws/common/mutex.h>
 #include <condition_variable>
 #include <inttypes.h>
+#include <ctime>
 #include <iostream>
 
 #define AWS_MQTT5_CANARY_CLIENT_CREATION_SLEEP_TIME 10000000
@@ -364,7 +365,7 @@ static int s_AwsMqtt5CanaryOperationStart(struct AwsMqtt5CanaryTestClient *testC
 {
     if (testClient->isConnected)
     {
-        fprintf(stderr, "ID:%s already started", testClient->clientId.c_str());
+        fprintf(stderr, "%ju: ID:%s already started", std::time(0), testClient->clientId.c_str());
         return AWS_OP_SUCCESS;
     }
 
@@ -388,10 +389,10 @@ static int s_AwsMqtt5CanaryOperationStart(struct AwsMqtt5CanaryTestClient *testC
         // If the connection operation failed eventually, "withClientConnectionFailureCallback"
         // will set the flag to false.
         testClient->isConnected = true;
-        fprintf(stderr, "ID:%s client started ... ", testClient->clientId.c_str());
+        fprintf(stderr, "%ju: ID:%s client started ... \n", std::time(0), testClient->clientId.c_str());
         return AWS_OP_SUCCESS;
     }
-    fprintf(stderr, "ID:%s client start failed ", testClient->clientId.c_str());
+    fprintf(stderr, "%ju: ID:%s client start failed \n", std::time(0), testClient->clientId.c_str());
     return AWS_OP_ERR;
 }
 
@@ -417,7 +418,7 @@ OnSubscribeCompletionHandler subscribe_completion = [](int errorcode, std::share
     if (errorcode != 0)
     {
         ++g_statistic.subscribe_failed;
-        fprintf(stderr, "Subscribe failed with errorcode: %d, %s\n", errorcode, aws_error_str(errorcode));
+        fprintf(stderr, "%ju: Subscribe failed with errorcode: %d, %s\n", std::time(0), errorcode, aws_error_str(errorcode));
         return;
     }
     ++g_statistic.subscribe_succeed;
@@ -453,8 +454,6 @@ static int s_AwsMqtt5CanaryOperationSubscribe(struct AwsMqtt5CanaryTestClient *t
 
     testClient->subscriptionCount++;
 
-    fprintf(stderr, "ID:%s Subscribe to topic: %s\n", testClient->clientId.c_str(), topicArray);
-
     ++g_statistic.totalOperations;
     ++g_statistic.subscribe_attempt;
     if (testClient->client->Subscribe(packet, subscribe_completion))
@@ -462,7 +461,7 @@ static int s_AwsMqtt5CanaryOperationSubscribe(struct AwsMqtt5CanaryTestClient *t
         return AWS_OP_SUCCESS;
     }
     ++g_statistic.subscribe_failed;
-    fprintf(stderr, "ID:%s Subscribe Failed\n", testClient->clientId.c_str());
+    fprintf(stderr, "%ju: ID:%s Subscribe Failed\n", std::time(0), testClient->clientId.c_str());
     return AWS_OP_ERR;
 }
 
@@ -493,8 +492,8 @@ static int s_AwsMqtt5CanaryOperationUnsubscribeBad(struct AwsMqtt5CanaryTestClie
                     ++g_statistic.unsub_succeed;
                     fprintf(
                         stderr,
-                        "ID:%s Unsubscribe Bad Server Failed with errorcode : %s\n",
-                        testClient->clientId.c_str(),
+                        "%ju: ID:%s Unsubscribe Bad Server Failed with errorcode : %s\n",
+                        std::time(0), testClient->clientId.c_str(),
                         packet->getReasonString()->c_str());
                 }
             }))
@@ -548,7 +547,7 @@ OnPublishCompletionHandler publish_completion = [](int errorcode, std::shared_pt
     if (errorcode != 0)
     {
         ++g_statistic.publish_failed;
-        fprintf(stderr, "Publish failed with errorcode: %d, %s\n", errorcode, aws_error_str(errorcode));
+        fprintf(stderr, "%ju: ID: Publish failed with errorcode: %d, %s\n", std::time(0), errorcode, aws_error_str(errorcode));
         return;
     }
     ++g_statistic.publish_succeed;
@@ -595,14 +594,23 @@ static int s_AwsMqtt5CanaryOperationPublish(
 
     ++g_statistic.totalOperations;
     ++g_statistic.publish_attempt;
-    if (testClient->client->Publish(packetPublish, publish_completion))
+    const char * client_id = testClient->clientId.c_str();
+    if (testClient->client->Publish(packetPublish, [client_id](int errorcode, std::shared_ptr<PublishResult> packet) {
+            if (errorcode != 0)
+            {
+                ++g_statistic.publish_failed;
+                fprintf(stderr, "%ju: ID: %s Publish failed with errorcode: %d, %s\n", std::time(0), client_id, errorcode, aws_error_str(errorcode));
+                return;
+            }
+            ++g_statistic.publish_succeed;
+        }))
     {
         AWS_LOGF_INFO(
             AWS_LS_MQTT5_CANARY, "ID:%s Publish to topic %s", testClient->clientId.c_str(), topicFilter.c_str());
         return AWS_OP_SUCCESS;
     }
     ++g_statistic.publish_failed;
-    fprintf(stderr, "ID:%s Publish Failed\n", testClient->clientId.c_str());
+    fprintf(stderr, "%ju: ID:%s Publish Failed\n", std::time(0), testClient->clientId.c_str());
     return AWS_OP_ERR;
 }
 
@@ -933,7 +941,7 @@ int main(int argc, char **argv)
                         eventData.negotiatedSettings->getClientId().length());
                     clients[i].settings = eventData.negotiatedSettings;
 
-                    fprintf(stderr, "ID:%s client Connection Success ", clients[i].clientId.c_str());
+                    fprintf(stderr, "%ju: ID:%s client Connection Success \n", std::time(0), clients[i].clientId.c_str());
                     AWS_LOGF_INFO(
                         AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Connection Success", clients[i].clientId.c_str());
                 });
@@ -948,16 +956,31 @@ int main(int argc, char **argv)
                         eventData.errorCode,
                         aws_error_debug_str(eventData.errorCode));
 
-                    fprintf(stderr, "ID:%s client Connection failed with error code %d(%s)", clients[i].clientId.c_str(),eventData.errorCode,
+                    fprintf(
+                        stderr,
+                        "%ju: ID:%s client Connection failed with error code %d(%s)\n",
+                        std::time(0), clients[i].clientId.c_str(),
+                        eventData.errorCode,
                         aws_error_debug_str(eventData.errorCode));
                 });
 
-            mqtt5Options.WithClientDisconnectionCallback([&clients, i](const OnDisconnectionEventData &) {
+            mqtt5Options.WithClientDisconnectionCallback([&clients, i](const OnDisconnectionEventData &eventdata) {
                 clients[i].isConnected = false;
+                fprintf(
+                        stderr,
+                        "%ju: ID:%s client Disconnected with error code %d(%s)\n",
+                        std::time(0), clients[i].clientId.c_str(),
+                        eventdata.errorCode,
+                        aws_error_debug_str(eventdata.errorCode));
                 AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Disconnect", clients[i].clientId.c_str());
             });
 
             mqtt5Options.WithClientStoppedCallback([&clients, i](const OnStoppedEventData &) {
+                clients[i].isConnected = false;
+                fprintf(
+                        stderr,
+                        "%ju: ID:%s client Stopped.\n",
+                        std::time(0), clients[i].clientId.c_str());
                 AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Stopped", clients[i].clientId.c_str());
             });
 
