@@ -413,23 +413,11 @@ namespace Aws
              * Sets Operation Timeout(Seconds). Time interval to wait for an ack after sending a QoS 1+ PUBLISH,
              * SUBSCRIBE, or UNSUBSCRIBE before failing the operation.
              *
-             * @param ackTimeoutSec
+             * @param ackTimeoutSeconds
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &WithAckTimeoutSec(uint32_t ackTimeoutSec) noexcept;
-
-            /**
-             * @deprecated the function is deprecated, please use `WithAckTimeoutSec`
-             *
-             * Sets Operation Timeout(Seconds). Time interval to wait for an ack after sending a QoS 1+ PUBLISH,
-             * SUBSCRIBE, or UNSUBSCRIBE before failing the operation.
-             *
-             * @param ackTimeoutSec
-             *
-             * @return this option object
-             */
-            Mqtt5ClientBuilder &WithAckTimeoutSeconds(uint32_t ackTimeoutSec) noexcept;
+            Mqtt5ClientBuilder &WithAckTimeoutSeconds(uint32_t ackTimeoutSeconds) noexcept;
 
             /**
              * Overrides the default SDK Name to send as a metric in the MQTT CONNECT packet.
