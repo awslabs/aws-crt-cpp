@@ -257,6 +257,23 @@ static void s_AwsMqtt5CanaryInitTesterOptions(struct AwsMqtt5CanaryTesterOptions
     testerOptions->memoryCheckIntervalSec = 600;
 }
 
+struct AwsMqtt5CanaryStatistic
+{
+    uint64_t totalOperations;
+
+    uint64_t subscribe_attempt;
+    uint64_t subscribe_succeed;
+    uint64_t subscribe_failed;
+
+    uint64_t publish_attempt;
+    uint64_t publish_succeed;
+    uint64_t publish_failed;
+
+    uint64_t unsub_attempt;
+    uint64_t unsub_succeed;
+    uint64_t unsub_failed;
+}g_statistic;
+
 struct AwsMqtt5CanaryTestClient
 {
     std::shared_ptr<Mqtt5::Mqtt5Client> client;
@@ -380,6 +397,8 @@ static int s_AwsMqtt5CanaryOperationStop(struct AwsMqtt5CanaryTestClient *testCl
     {
         return AWS_OP_SUCCESS;
     }
+
+    g_statistic.totalOperations++;
     if (testClient->client->Stop())
     {
         testClient->subscriptionCount = 0;
@@ -393,8 +412,11 @@ static int s_AwsMqtt5CanaryOperationStop(struct AwsMqtt5CanaryTestClient *testCl
 OnSubscribeCompletionHandler subscribe_completion = [](int errorcode, std::shared_ptr<SubAckPacket>){
     if(errorcode != 0)
     {
+        ++g_statistic.subscribe_failed;
         fprintf(stderr, "Subscribe failed with errorcode: %d, %s\n", errorcode, aws_error_str(errorcode));
+        return;
     }
+    ++g_statistic.subscribe_succeed;
 };
 
 
@@ -430,10 +452,13 @@ static int s_AwsMqtt5CanaryOperationSubscribe(struct AwsMqtt5CanaryTestClient *t
 
     fprintf(stderr, "ID:%s Subscribe to topic: %s\n", testClient->clientId.c_str(), topicArray);
 
+    ++g_statistic.totalOperations;
+    ++g_statistic.subscribe_attempt;
     if (testClient->client->Subscribe(packet,subscribe_completion))
     {
         return AWS_OP_SUCCESS;
     }
+    ++g_statistic.subscribe_failed;
     fprintf(stderr, "ID:%s Subscribe Failed\n", testClient->clientId.c_str());
     return AWS_OP_ERR;
 }
@@ -454,12 +479,15 @@ static int s_AwsMqtt5CanaryOperationUnsubscribeBad(struct AwsMqtt5CanaryTestClie
     std::shared_ptr<Mqtt5::UnsubscribePacket> unsubscription = std::make_shared<Mqtt5::UnsubscribePacket>(allocator);
     unsubscription->WithTopicFilters(topics);
 
+    ++g_statistic.totalOperations;
+    ++g_statistic.unsub_attempt;
     if (testClient->client->Unsubscribe(
             unsubscription, [testClient](int, std::shared_ptr<Mqtt5::UnSubAckPacket> packet) {
                 if (packet == nullptr)
                     return;
                 if (packet->getReasonCodes()[0] == AWS_MQTT5_UARC_SUCCESS)
                 {
+                    ++g_statistic.unsub_succeed;
                     fprintf(
                         stderr,
                         "ID:%s Unsubscribe Bad Server Failed with errorcode : %s\n",
@@ -471,6 +499,7 @@ static int s_AwsMqtt5CanaryOperationUnsubscribeBad(struct AwsMqtt5CanaryTestClie
         AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Unsubscribe Bad", testClient->clientId.c_str());
         return AWS_OP_SUCCESS;
     }
+        ++g_statistic.unsub_failed;
     AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Unsubscribe Bad Operation Failed", testClient->clientId.c_str());
     return AWS_OP_ERR;
 }
@@ -498,12 +527,16 @@ static int s_AwsMqtt5CanaryOperationUnsubscribe(struct AwsMqtt5CanaryTestClient 
     std::shared_ptr<Mqtt5::UnsubscribePacket> unsubscription = std::make_shared<Mqtt5::UnsubscribePacket>(allocator);
     unsubscription->WithTopicFilters(topics);
 
+    ++g_statistic.totalOperations;
+    ++g_statistic.unsub_attempt;
     if (testClient->client->Unsubscribe(unsubscription))
     {
+        ++g_statistic.unsub_succeed;
         AWS_LOGF_INFO(
             AWS_LS_MQTT5_CANARY, "ID:%s Unsubscribe from topic: %s", testClient->clientId.c_str(), topicArray);
         return AWS_OP_SUCCESS;
     }
+    ++g_statistic.unsub_failed;
     AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Unsubscribe Failed", testClient->clientId.c_str());
     return AWS_OP_ERR;
 }
@@ -511,8 +544,12 @@ static int s_AwsMqtt5CanaryOperationUnsubscribe(struct AwsMqtt5CanaryTestClient 
 OnPublishCompletionHandler publish_completion = [](int errorcode, std::shared_ptr<PublishResult>){
     if(errorcode != 0)
     {
+        ++g_statistic.publish_failed;
         fprintf(stderr, "Publish failed with errorcode: %d, %s\n", errorcode, aws_error_str(errorcode));
+        return;
     }
+    ++g_statistic.publish_succeed;
+
 };
 
 /* Help function for Publish Operation. Do not call it directly for operations. */
@@ -554,12 +591,16 @@ static int s_AwsMqtt5CanaryOperationPublish(
         .WithUserProperty(std::move(up2))
         .WithUserProperty(std::move(up3));
 
+
+    ++g_statistic.totalOperations;
+    ++g_statistic.publish_attempt;
     if (testClient->client->Publish(packetPublish, publish_completion))
     {
         AWS_LOGF_INFO(
             AWS_LS_MQTT5_CANARY, "ID:%s Publish to topic %s", testClient->clientId.c_str(), topicFilter.c_str());
         return AWS_OP_SUCCESS;
     }
+    ++g_statistic.publish_failed;
     fprintf(stderr, "ID:%s Publish Failed\n", testClient->clientId.c_str());
     return AWS_OP_ERR;
 }
@@ -703,6 +744,8 @@ int main(int argc, char **argv)
         enum AwsMqtt5CanaryOperations operations[AWS_MQTT5_CANARY_OPERATION_ARRAY_SIZE];
         AWS_ZERO_STRUCT(operations);
         testerOptions.operations = operations;
+
+        AWS_ZERO_STRUCT(g_statistic);
 
         s_ParseOptions(argc, argv, appCtx, &testerOptions);
         if (appCtx.uri.GetPort())
@@ -923,13 +966,13 @@ int main(int argc, char **argv)
                 s_AwsMqtt5CanaryOperationTable.operationByOperationType[AWS_MQTT5_CANARY_OPERATION_START];
             if ((*operation_fn)(&clients[i], appCtx.allocator) == AWS_OP_ERR)
             {
-                AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Operation Failed.", client.clientId.c_str());
+                fprintf(stderr, "ID:%s Operation Failed.", client.clientId.c_str());
             }
 
             aws_thread_current_sleep(AWS_MQTT5_CANARY_CLIENT_CREATION_SLEEP_TIME);
         }
 
-        fprintf(stderr, "Clients created\n");
+        printf("Clients created\n");
 
         /**********************************************************
          * TESTING
@@ -988,6 +1031,23 @@ int main(int argc, char **argv)
                 AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s STOP Operation Failed.", client.clientId.c_str());
             }
         }
+
+        fprintf(stderr, "Final Statistic: \n"
+        "total operations: %" PRId64 "\n"
+        "tps: %" PRId64 "\n"
+        "subscribe attempt: %" PRId64 "\n"
+        "subscribe succeed: %" PRId64 "\n"
+        "subscribe failed: %" PRId64 "\n"
+        "publish attempt: %" PRId64 "\n"
+        "publish succeed: %" PRId64 "\n"
+        "publish failed: %" PRId64 "\n"
+        "unsub attempt: %" PRId64 "\n"
+        "unsub succeed: %" PRId64 "\n"
+        "unsub failed: %" PRId64 "\n",
+        g_statistic.totalOperations, g_statistic.totalOperations/testerOptions.testRunSeconds,
+        g_statistic.subscribe_attempt, g_statistic.subscribe_succeed, g_statistic.subscribe_failed,
+        g_statistic.publish_attempt, g_statistic.publish_succeed, g_statistic.publish_failed,
+        g_statistic.unsub_attempt, g_statistic.unsub_succeed, g_statistic.unsub_failed);
     }
 
     aws_mem_tracer_destroy(allocator);
