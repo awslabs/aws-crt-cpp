@@ -541,7 +541,7 @@ static int s_AwsMqtt5CanaryOperationPublish(
     uint8_t payload_data[AWS_MQTT5_CANARY_PAYLOAD_SIZE_MAX];
     for (i = 0; i < payload_size; i++)
     {
-        payload_data[i] = rand() % 128 + 1;
+        payload_data[i] = 'a';
     }
     ByteCursor payload = ByteCursorFromArray(payload_data, payload_size);
 
