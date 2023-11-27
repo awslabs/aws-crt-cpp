@@ -362,6 +362,7 @@ static int s_AwsMqtt5CanaryOperationStart(struct AwsMqtt5CanaryTestClient *testC
 {
     if (testClient->isConnected)
     {
+        fprintf(stderr, "ID:%s already started", testClient->clientId.c_str());
         return AWS_OP_SUCCESS;
     }
 
@@ -387,7 +388,7 @@ static int s_AwsMqtt5CanaryOperationStart(struct AwsMqtt5CanaryTestClient *testC
         testClient->isConnected = true;
         return AWS_OP_SUCCESS;
     }
-    AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Start Failed", testClient->clientId.c_str());
+    fprintf(stderr, "ID:%s client start failed ", testClient->clientId.c_str());
     return AWS_OP_ERR;
 }
 
