@@ -18,7 +18,6 @@
 #include <aws/common/command_line_parser.h>
 #include <aws/common/mutex.h>
 #include <condition_variable>
-#include <ctime>
 #include <inttypes.h>
 #include <iostream>
 
@@ -461,7 +460,19 @@ static int s_AwsMqtt5CanaryOperationSubscribe(struct AwsMqtt5CanaryTestClient *t
     ++g_statistic.subscribe_attempt;
     AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Subscribe to topic: %s", testClient->clientId.c_str(), topicArray);
 
-    if (testClient->client->Subscribe(packet, subscribe_completion))
+    if (testClient->client->Subscribe(packet, [](int errorcode, std::shared_ptr<SubAckPacket>) {
+            if (errorcode != 0)
+            {
+                ++g_statistic.subscribe_failed;
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT5_CANARY,
+                    "Subscribe failed with errorcode: %d, %s\n",
+                    errorcode,
+                    aws_error_str(errorcode));
+                return;
+            }
+            ++g_statistic.subscribe_succeed;
+        }))
     {
         return AWS_OP_SUCCESS;
     }
@@ -497,8 +508,7 @@ static int s_AwsMqtt5CanaryOperationUnsubscribeBad(struct AwsMqtt5CanaryTestClie
                     ++g_statistic.unsub_succeed;
                     AWS_LOGF_ERROR(
                         AWS_LS_MQTT5_CANARY,
-                        "%ju: ID:%s Unsubscribe Bad Server Failed with errorcode : %s\n",
-                        std::time(0),
+                        "ID:%s Unsubscribe Bad Server Failed with errorcode : %s\n",
                         testClient->clientId.c_str(),
                         packet->getReasonString()->c_str());
                 }
@@ -957,7 +967,7 @@ int main(int argc, char **argv)
                         aws_error_debug_str(eventData.errorCode));
                 });
 
-            mqtt5Options.WithClientDisconnectionCallback([&clients, i](const OnDisconnectionEventData &eventdata) {
+            mqtt5Options.WithClientDisconnectionCallback([&clients, i](const OnDisconnectionEventData &) {
                 clients[i].isConnected = false;
                 AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Disconnect", clients[i].clientId.c_str());
             });
