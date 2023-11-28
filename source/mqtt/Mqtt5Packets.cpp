@@ -812,7 +812,7 @@ namespace Aws
                 Allocator * /*allocator*/) noexcept
             {
                 m_sessionPresent = packet.session_present;
-                m_reasonCode = (enum ConnectReasonCode)packet.reason_code;
+                m_reasonCode = (ConnectReasonCode)packet.reason_code;
                 setPacketOptional(m_sessionExpiryIntervalSec, packet.session_expiry_interval);
                 setPacketOptional(m_receiveMaximum, packet.receive_maximum);
                 setPacketOptional(m_maximumQOS, (QOS*)packet.maximum_qos);
@@ -1074,7 +1074,7 @@ namespace Aws
                 setUserProperties(m_userProperties, packet.user_properties, packet.user_property_count);
                 for (size_t i = 0; i < packet.reason_code_count; i++)
                 {
-                    m_reasonCodes.push_back(*((enum SubAckReasonCode*)(packet.reason_codes + i)));
+                    m_reasonCodes.push_back(*((SubAckReasonCode*)(packet.reason_codes + i)));
                 }
             }
 
@@ -1160,7 +1160,7 @@ namespace Aws
 
                 for (size_t i = 0; i < packet.reason_code_count; i++)
                 {
-                    m_reasonCodes.push_back(*(enum UnSubAckReasonCode*)(packet.reason_codes + i));
+                    m_reasonCodes.push_back(*(UnSubAckReasonCode*)(packet.reason_codes + i));
                 }
                 setUserProperties(m_userProperties, packet.user_properties, packet.user_property_count);
             }
@@ -1186,7 +1186,7 @@ namespace Aws
             {
                 (void)allocator;
 
-                m_maximumQOS = (enum QOS)negotiated_settings.maximum_qos;
+                m_maximumQOS = (QOS)negotiated_settings.maximum_qos;
                 m_sessionExpiryIntervalSec = negotiated_settings.session_expiry_interval;
                 m_receiveMaximumFromServer = negotiated_settings.receive_maximum_from_server;
 
