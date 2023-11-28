@@ -18,7 +18,7 @@ namespace Aws
              * Enum values match [MQTT5
              * spec](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901234) encoding values.
              */
-            enum class QOS
+            enum QOS
             {
                 /** https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901235 */
                 AWS_MQTT5_QOS_AT_MOST_ONCE = aws_mqtt5_qos::AWS_MQTT5_QOS_AT_LEAST_ONCE,
@@ -34,7 +34,7 @@ namespace Aws
              * Enum values match [MQTT5
              * spec](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901079) encoding values.
              */
-            enum class ConnectReasonCode
+            enum ConnectReasonCode
             {
                 /** 0 */
                 AWS_MQTT5_CRC_SUCCESS = aws_mqtt5_connect_reason_code::AWS_MQTT5_CRC_SUCCESS,
@@ -96,7 +96,7 @@ namespace Aws
              * Enum values match [MQTT5
              * spec](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901208) encoding values.
              */
-            enum class DisconnectReasonCode
+            enum DisconnectReasonCode
             {
                 /** 0 */
                 AWS_MQTT5_DRC_NORMAL_DISCONNECTION =
@@ -179,7 +179,7 @@ namespace Aws
              * Data model of an [MQTT5
              * PUBACK](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901121) packet
              */
-            enum class PubAckReasonCode
+            enum PubAckReasonCode
             {
                 /** 0 */
                 AWS_MQTT5_PARC_SUCCESS = aws_mqtt5_puback_reason_code::AWS_MQTT5_PARC_SUCCESS,
@@ -212,7 +212,7 @@ namespace Aws
              * Enum values match [MQTT5
              * spec](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901124) encoding values.
              */
-            enum class SubAckReasonCode
+            enum SubAckReasonCode
             {
                 /** 0 */
                 AWS_MQTT5_SARC_GRANTED_QOS_0 = aws_mqtt5_suback_reason_code::AWS_MQTT5_SARC_GRANTED_QOS_0,
@@ -252,7 +252,7 @@ namespace Aws
              * Enum values match [MQTT5
              * spec](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901194) encoding values.
              */
-            enum class UnSubAckReasonCode
+            enum UnSubAckReasonCode
             {
                 /** 0 */
                 AWS_MQTT5_UARC_SUCCESS = aws_mqtt5_unsuback_reason_code::AWS_MQTT5_UARC_SUCCESS,
@@ -278,7 +278,7 @@ namespace Aws
             /**
              * Controls how the MQTT5 client should behave with respect to MQTT sessions.
              */
-            enum class ClientSessionBehaviorType
+            enum ClientSessionBehaviorType
             {
                 /**
                  * Maps to AWS_MQTT5_CSBT_CLEAN
@@ -309,7 +309,7 @@ namespace Aws
              * Additional controls for client behavior with respect to operation validation and flow control; these
              * checks go beyond the MQTT5 spec to respect limits of specific MQTT brokers.
              */
-            enum class ClientExtendedValidationAndFlowControl
+            enum ClientExtendedValidationAndFlowControl
             {
                 /**
                  * Do not do any additional validation or flow control outside of the MQTT5 spec
@@ -334,7 +334,7 @@ namespace Aws
              * not connected, then any operation that would be failed on disconnect (according to these rules) will be
              * rejected.
              */
-            enum class ClientOperationQueueBehaviorType
+            enum ClientOperationQueueBehaviorType
             {
                 /*
                  * Maps to AWS_MQTT5_COQBT_FAIL_QOS0_PUBLISH_ON_DISCONNECT
@@ -371,7 +371,7 @@ namespace Aws
              * See [Exponential Backoff and
              * Jitter](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/)
              */
-            enum class ExponentialBackoffJitterMode
+            enum ExponentialBackoffJitterMode
             {
                 /* uses AWS_EXPONENTIAL_BACKOFF_JITTER_FULL */
                 AWS_EXPONENTIAL_BACKOFF_JITTER_DEFAULT =
@@ -393,7 +393,7 @@ namespace Aws
              * Enum values match [MQTT5
              * spec](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901111) encoding values.
              */
-            enum class PayloadFormatIndicator
+            enum PayloadFormatIndicator
             {
                 /** 0 */
                 AWS_MQTT5_PFI_BYTES = aws_mqtt5_payload_format_indicator::AWS_MQTT5_PFI_BYTES,
@@ -408,7 +408,7 @@ namespace Aws
              * Enum values match [MQTT5
              * spec](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901169) encoding values.
              */
-            enum class RetainHandlingType
+            enum RetainHandlingType
             {
                 /**
                  * Server should send all retained messages on topics that match the subscription's filter.
@@ -435,7 +435,7 @@ namespace Aws
              *
              * https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901022
              */
-            enum class PacketType
+            enum PacketType
             {
                 /* internal indicator that the associated packet is null */
                 AWS_MQTT5_PT_NONE = aws_mqtt5_packet_type::AWS_MQTT5_PT_NONE,
