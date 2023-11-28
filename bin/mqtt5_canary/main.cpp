@@ -411,21 +411,6 @@ static int s_AwsMqtt5CanaryOperationStop(struct AwsMqtt5CanaryTestClient *testCl
     return AWS_OP_ERR;
 }
 
-OnSubscribeCompletionHandler subscribe_completion = [](int errorcode, std::shared_ptr<SubAckPacket>) {
-    if (errorcode != 0)
-    {
-        ++g_statistic.subscribe_failed;
-        fprintf(
-            stderr,
-            "%ju: Subscribe failed with errorcode: %d, %s\n",
-            std::time(0),
-            errorcode,
-            aws_error_str(errorcode));
-        return;
-    }
-    ++g_statistic.subscribe_succeed;
-};
-
 static int s_AwsMqtt5CanaryOperationSubscribe(struct AwsMqtt5CanaryTestClient *testClient, Allocator *allocator)
 {
     if (!testClient->isConnected)
