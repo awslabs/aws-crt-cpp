@@ -891,7 +891,8 @@ int main(int argc, char **argv)
             .WithSocketOptions(socketOptions)
             .WithBootstrap(&clientBootstrap)
             .WithPingTimeoutMs(10000)
-            .WithReconnectOptions({AWS_EXPONENTIAL_BACKOFF_JITTER_NONE, 1000, 120000, 3000});
+            .WithReconnectOptions({AWS_EXPONENTIAL_BACKOFF_JITTER_NONE, 1000, 120000, 3000})
+            .WithConnackTimeoutMs(3000);
 
         if (appCtx.use_tls)
         {
@@ -954,11 +955,12 @@ int main(int argc, char **argv)
 
             mqtt5Options.WithClientDisconnectionCallback([&clients, i](const OnDisconnectionEventData &) {
                 clients[i].isConnected = false;
-                AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Disconnect", clients[i].clientId.c_str());
+                AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Disconnect", clients[i].clientId.c_str());
             });
 
             mqtt5Options.WithClientStoppedCallback([&clients, i](const OnStoppedEventData &) {
-                AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Stopped", clients[i].clientId.c_str());
+                clients[i].isConnected = false;
+                AWS_LOGF_ERROR(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Stopped", clients[i].clientId.c_str());
             });
 
             clients[i].client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, appCtx.allocator);
