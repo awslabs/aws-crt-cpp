@@ -585,15 +585,15 @@ static int s_AwsMqtt5CanaryOperationPublish(
 
     ++g_statistic.totalOperations;
     ++g_statistic.publish_attempt;
-    const char *client_id = testClient->clientId.c_str();
-    if (testClient->client->Publish(packetPublish, [client_id](int errorcode, std::shared_ptr<PublishResult> packet) {
+
+    if (testClient->client->Publish(packetPublish, [testClient](int errorcode, std::shared_ptr<PublishResult> packet) {
             if (errorcode != 0)
             {
                 ++g_statistic.publish_failed;
-                AWS_LOGF_INFO(
+                AWS_LOGF_ERROR(
                     AWS_LS_MQTT5_CANARY,
-                    "ID: %s Publish failed with errorcode: %d, %s\n",
-                    client_id,
+                    "ID: %s Publish failed with error code: %d, %s\n",
+                    testClient->clientId.c_str(),
                     errorcode,
                     aws_error_str(errorcode));
                 return;
@@ -958,7 +958,6 @@ int main(int argc, char **argv)
             });
 
             mqtt5Options.WithClientStoppedCallback([&clients, i](const OnStoppedEventData &) {
-                clients[i].isConnected = false;
                 AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Stopped", clients[i].clientId.c_str());
             });
 
