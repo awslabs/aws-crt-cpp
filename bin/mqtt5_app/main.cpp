@@ -455,7 +455,7 @@ int main(int argc, char **argv)
                 std::cout << "MQTT5: check suback packet : " << std::endl;
                 for (auto code : packet->getReasonCodes())
                 {
-                    std::cout << "Get suback with codes: " << code << std::endl;
+                    std::cout << "Get suback with codes: " << (int)code << std::endl;
                     if (code > Mqtt5::SubAckReasonCode::AWS_MQTT5_SARC_GRANTED_QOS_2)
                     {
                         std::cout << "Subscription Suceed." << std::endl;

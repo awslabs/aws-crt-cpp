@@ -1922,7 +1922,7 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *)
     subscribed.get_future().get();
 
     std::shared_ptr<Mqtt5::DisconnectPacket> disconnect = std::make_shared<Mqtt5::DisconnectPacket>(allocator);
-    disconnect->WithReasonCode(AWS_MQTT5_DRC_DISCONNECT_WITH_WILL_MESSAGE);
+    disconnect->WithReasonCode(DisconnectReasonCode::AWS_MQTT5_DRC_DISCONNECT_WITH_WILL_MESSAGE);
     ASSERT_TRUE(publisher->Stop(disconnect));
     publisherStoppedPromise.get_future().get();
 
