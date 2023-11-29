@@ -828,7 +828,8 @@ int main(int argc, char **argv)
             .WithSocketOptions(socketOptions)
             .WithBootstrap(&clientBootstrap)
             .WithPingTimeoutMs(10000)
-            .WithReconnectOptions({JitterMode::AWS_EXPONENTIAL_BACKOFF_JITTER_NONE, 1000, 120000, 3000});
+            .WithReconnectOptions(
+                {ExponentialBackoffJitterMode::AWS_EXPONENTIAL_BACKOFF_JITTER_NONE, 1000, 120000, 3000});
 
         if (appCtx.use_tls)
         {
