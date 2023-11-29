@@ -531,6 +531,17 @@ namespace Aws
                 uint16_t getServerKeepAliveSec() const noexcept;
 
                 /**
+                 * @deprecated The function is deprecated, please use `getServerKeepAliveSec()`
+                 *
+                 * The maximum amount of time in seconds between client packets. The client should use PINGREQs to
+                 * ensure this limit is not breached.  The server will disconnect the client for inactivity if no MQTT
+                 * packet is received in a time interval equal to 1.5 x this value.
+                 *
+                 * @return The maximum amount of time in seconds between client packets.
+                 */
+                uint16_t getServerKeepAlive() const noexcept;
+
+                /**
                  * @return Whether the server supports retained messages.
                  */
                 bool getRetainAvailable() const noexcept;
@@ -1198,6 +1209,20 @@ namespace Aws
                 const Crt::Optional<uint32_t> &getSessionExpiryIntervalSec() const noexcept;
 
                 /**
+                 * @deprecated The function is deprecated, please use `getSessionExpiryIntervalSec`.
+                 *
+                 * A time interval, in seconds, that the server will persist this connection's MQTT session state
+                 * for.  If present, this value overrides any session expiry specified in the preceding CONNECT packet.
+                 *
+                 * See [MQTT5 Session Expiry
+                 * Interval](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901082)
+                 *
+                 * @return A time interval, in seconds, that the server will persist this connection's MQTT session
+                 * state for.
+                 */
+                const Crt::Optional<uint32_t> &getSessionExpiryInterval() const noexcept;
+
+                /**
                  * The maximum amount of in-flight QoS 1 or 2 messages that the server is willing to handle at once. If
                  * omitted or null, the limit is based on the valid MQTT packet id space (65535).
                  *
@@ -1325,6 +1350,18 @@ namespace Aws
                  * @return Server-requested override of the keep alive interval, in seconds
                  */
                 const Crt::Optional<uint16_t> &getServerKeepAliveSec() const noexcept;
+
+                /**
+                 * @deprecated The function is deprecated, please use `getServerKeepAliveSec`.
+                 * Server-requested override of the keep alive interval, in seconds.  If null, the keep alive value sent
+                 * by the client should be used.
+                 *
+                 * See [MQTT5 Server Keep
+                 * Alive](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901094)
+                 *
+                 * @return Server-requested override of the keep alive interval, in seconds
+                 */
+                const Crt::Optional<uint16_t> &getServerKeepAlive() const noexcept;
 
                 /**
                  * A value that can be used in the creation of a response topic associated with this connection.
@@ -1901,6 +1938,20 @@ namespace Aws
                  * @return The Subscription Object after setting the reason string.
                  */
                 Subscription &WithRetainAsPublished(bool retain) noexcept;
+
+                /**
+                 * @deprecated The function is deprecated, please use `WithRetainAsPublished`.
+                 *
+                 * Sets should the server not send publishes to a client when that client was the one who sent the
+                 * publish? The value will be default to false.
+                 *
+                 * See [MQTT5 Subscription
+                 * Options](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901169)
+                 *
+                 * @param retain bool
+                 * @return The Subscription Object after setting the reason string.
+                 */
+                Subscription &WithRetain(bool retain) noexcept;
 
                 /**
                  * Sets should messages sent due to this subscription keep the retain flag preserved on the message?

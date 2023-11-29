@@ -839,6 +839,11 @@ namespace Aws
                 return m_sessionExpiryIntervalSec;
             }
 
+            const Crt::Optional<uint32_t> &ConnAckPacket::getSessionExpiryInterval() const noexcept
+            {
+                return m_sessionExpiryIntervalSec;
+            }
+
             const Crt::Optional<uint16_t> &ConnAckPacket::getReceiveMaximum() const noexcept
             {
                 return m_receiveMaximum;
@@ -887,6 +892,11 @@ namespace Aws
                 return m_serverKeepAliveSec;
             }
 
+            const Crt::Optional<uint16_t> &ConnAckPacket::getServerKeepAlive() const noexcept
+            {
+                return m_serverKeepAliveSec;
+            }
+
             const Crt::Optional<String> &ConnAckPacket::getResponseInformation() const noexcept
             {
                 return m_responseInformation;
@@ -924,6 +934,11 @@ namespace Aws
             Subscription &Subscription::WithNoLocal(bool noLocal) noexcept
             {
                 m_noLocal = noLocal;
+                return *this;
+            }
+            Subscription &Subscription::WithRetain(bool retain) noexcept
+            {
+                m_retainAsPublished = retain;
                 return *this;
             }
             Subscription &Subscription::WithRetainAsPublished(bool retain) noexcept
@@ -1236,6 +1251,11 @@ namespace Aws
             }
 
             uint16_t NegotiatedSettings::getServerKeepAliveSec() const noexcept { return m_serverKeepAliveSec; }
+
+            uint16_t NegotiatedSettings::getServerKeepAlive() const noexcept
+            {
+                return m_serverKeepAliveSec;
+            }
 
             bool NegotiatedSettings::getRetainAvailable() const noexcept { return m_retainAvailable; }
 
