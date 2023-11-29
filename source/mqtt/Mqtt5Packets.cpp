@@ -1252,10 +1252,7 @@ namespace Aws
 
             uint16_t NegotiatedSettings::getServerKeepAliveSec() const noexcept { return m_serverKeepAliveSec; }
 
-            uint16_t NegotiatedSettings::getServerKeepAlive() const noexcept
-            {
-                return m_serverKeepAliveSec;
-            }
+            uint16_t NegotiatedSettings::getServerKeepAlive() const noexcept { return m_serverKeepAliveSec; }
 
             bool NegotiatedSettings::getRetainAvailable() const noexcept { return m_retainAvailable; }
 
