@@ -596,7 +596,7 @@ namespace Aws
                 Mqtt5ClientOptions &WithConnackTimeoutMs(uint32_t connackTimeoutMs) noexcept;
 
                 /**
-                 * @deprecated The function is deprecated, please use `WithAckTimeoutSec`
+                 * @deprecated The function is deprecated, please use `Mqtt5ClientOptions::WithAckTimeoutSec(uint32_t)`
                  *
                  * Sets Operation Timeout(Seconds). Time interval to wait for an ack after sending a QoS 1+ PUBLISH,
                  * SUBSCRIBE, or UNSUBSCRIBE before failing the operation.

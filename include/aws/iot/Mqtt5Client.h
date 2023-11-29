@@ -420,7 +420,7 @@ namespace Aws
             Mqtt5ClientBuilder &WithAckTimeoutSec(uint32_t ackTimeoutSec) noexcept;
 
             /**
-             * @deprecated the function is deprecated, please use `WithAckTimeoutSec`
+             * @deprecated the function is deprecated, please use `Mqtt5ClientBuilder::WithAckTimeoutSec(uint32_t)`
              *
              * Sets Operation Timeout(Seconds). Time interval to wait for an ack after sending a QoS 1+ PUBLISH,
              * SUBSCRIBE, or UNSUBSCRIBE before failing the operation.

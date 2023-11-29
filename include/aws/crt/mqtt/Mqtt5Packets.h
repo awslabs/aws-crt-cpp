@@ -500,7 +500,8 @@ namespace Aws
                 uint16_t getReceiveMaximumFromServer() const noexcept;
 
                 /**
-                 * @deprecated the function is deprecated, please use `getMaximumPacketSizeToServer`
+                 * @deprecated the function is deprecated, please use
+                 * `NegotiatedSettings::getMaximumPacketSizeToServer()`
                  *
                  * @return The maximum packet size the server is willing to accept.
                  */
@@ -531,7 +532,7 @@ namespace Aws
                 uint16_t getServerKeepAliveSec() const noexcept;
 
                 /**
-                 * @deprecated The function is deprecated, please use `getServerKeepAliveSec()`
+                 * @deprecated The function is deprecated, please use `NegotiatedSettings::getServerKeepAliveSec()`
                  *
                  * The maximum amount of time in seconds between client packets. The client should use PINGREQs to
                  * ensure this limit is not breached.  The server will disconnect the client for inactivity if no MQTT
@@ -957,7 +958,7 @@ namespace Aws
                 const Crt::Optional<uint16_t> &getReceiveMaximum() const noexcept;
 
                 /**
-                 * @deprecated The function is deprecated, please use `getMaximumPacketSizeToServer`
+                 * @deprecated The function is deprecated, please use `ConnectPacket::getMaximumPacketSizeToServer()`
                  *
                  * Notifies the server of the maximum packet size the client is willing to handle.  If
                  * omitted or null, then no limit beyond the natural limits of MQTT packet size is requested.
@@ -1209,7 +1210,7 @@ namespace Aws
                 const Crt::Optional<uint32_t> &getSessionExpiryIntervalSec() const noexcept;
 
                 /**
-                 * @deprecated The function is deprecated, please use `getSessionExpiryIntervalSec`.
+                 * @deprecated The function is deprecated, please use `ConnAckPacket::getSessionExpiryIntervalSec()`.
                  *
                  * A time interval, in seconds, that the server will persist this connection's MQTT session state
                  * for.  If present, this value overrides any session expiry specified in the preceding CONNECT packet.
@@ -1352,7 +1353,7 @@ namespace Aws
                 const Crt::Optional<uint16_t> &getServerKeepAliveSec() const noexcept;
 
                 /**
-                 * @deprecated The function is deprecated, please use `getServerKeepAliveSec`.
+                 * @deprecated The function is deprecated, please use `ConnAckPacket::getServerKeepAliveSec()`.
                  * Server-requested override of the keep alive interval, in seconds.  If null, the keep alive value sent
                  * by the client should be used.
                  *
@@ -1940,7 +1941,7 @@ namespace Aws
                 Subscription &WithRetainAsPublished(bool retain) noexcept;
 
                 /**
-                 * @deprecated The function is deprecated, please use `WithRetainAsPublished`.
+                 * @deprecated The function is deprecated, please use `Subscription::WithRetainAsPublished(bool)`.
                  *
                  * Sets should the server not send publishes to a client when that client was the one who sent the
                  * publish? The value will be default to false.

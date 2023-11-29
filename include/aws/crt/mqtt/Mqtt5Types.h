@@ -384,7 +384,7 @@ namespace Aws
                     aws_exponential_backoff_jitter_mode::AWS_EXPONENTIAL_BACKOFF_JITTER_DECORRELATED,
             };
 
-            /** @deprecated JitterMode is deprecated, please use ExponentialBackoffJitterMode */
+            /** @deprecated JitterMode is deprecated, please use  Aws::Crt::Mqtt5::ExponentialBackoffJitterMode */
             using JitterMode = ExponentialBackoffJitterMode;
 
             /**
