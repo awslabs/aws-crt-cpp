@@ -416,8 +416,7 @@ namespace Aws
 
         Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithAckTimeoutSeconds(uint32_t ackTimeoutSec) noexcept
         {
-            m_options->WithAckTimeoutSec(ackTimeoutSec);
-            return *this;
+            return WithAckTimeoutSec(ackTimeoutSec);
         }
 
         Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithSdkName(const Crt::String &sdkName)

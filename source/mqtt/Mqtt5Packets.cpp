@@ -391,7 +391,7 @@ namespace Aws
 
             const Crt::Optional<uint32_t> &ConnectPacket::getMaximumPacketSizeBytes() const noexcept
             {
-                return m_maximumPacketSizeBytes;
+                return getMaximumPacketSizeToServer();
             }
 
             const Crt::Optional<uint32_t> &ConnectPacket::getMaximumPacketSizeToServer() const noexcept
@@ -841,7 +841,7 @@ namespace Aws
 
             const Crt::Optional<uint32_t> &ConnAckPacket::getSessionExpiryInterval() const noexcept
             {
-                return m_sessionExpiryIntervalSec;
+                return getSessionExpiryIntervalSec();
             }
 
             const Crt::Optional<uint16_t> &ConnAckPacket::getReceiveMaximum() const noexcept
@@ -894,7 +894,7 @@ namespace Aws
 
             const Crt::Optional<uint16_t> &ConnAckPacket::getServerKeepAlive() const noexcept
             {
-                return m_serverKeepAliveSec;
+                return getServerKeepAliveSec();
             }
 
             const Crt::Optional<String> &ConnAckPacket::getResponseInformation() const noexcept
@@ -938,8 +938,7 @@ namespace Aws
             }
             Subscription &Subscription::WithRetain(bool retain) noexcept
             {
-                m_retainAsPublished = retain;
-                return *this;
+                return WithRetainAsPublished(retain);
             }
             Subscription &Subscription::WithRetainAsPublished(bool retain) noexcept
             {
@@ -1233,7 +1232,7 @@ namespace Aws
                 return m_receiveMaximumFromServer;
             }
 
-            uint32_t NegotiatedSettings::getMaximumPacketSizeBytes() const noexcept { return m_maximumPacketSizeBytes; }
+            uint32_t NegotiatedSettings::getMaximumPacketSizeBytes() const noexcept { return getMaximumPacketSizeToServer(); }
 
             uint32_t NegotiatedSettings::getMaximumPacketSizeToServer() const noexcept
             {
@@ -1252,7 +1251,7 @@ namespace Aws
 
             uint16_t NegotiatedSettings::getServerKeepAliveSec() const noexcept { return m_serverKeepAliveSec; }
 
-            uint16_t NegotiatedSettings::getServerKeepAlive() const noexcept { return m_serverKeepAliveSec; }
+            uint16_t NegotiatedSettings::getServerKeepAlive() const noexcept { return getServerKeepAliveSec(); }
 
             bool NegotiatedSettings::getRetainAvailable() const noexcept { return m_retainAvailable; }
 
