@@ -179,12 +179,10 @@ namespace Aws
              */
             Mqtt5ClientOptions::Mqtt5ClientOptions(Crt::Allocator *allocator) noexcept
                 : m_bootstrap(nullptr), m_sessionBehavior(ClientSessionBehaviorType::AWS_MQTT5_CSBT_DEFAULT),
-                  m_extendedValidationAndFlowControlOptions(
-                      ClientExtendedValidationAndFlowControl::AWS_MQTT5_EVAFCO_AWS_IOT_CORE_DEFAULTS),
-                  m_offlineQueueBehavior(ClientOperationQueueBehaviorType::AWS_MQTT5_COQBT_DEFAULT),
-                  m_reconnectionOptions(
-                      {ExponentialBackoffJitterMode::AWS_EXPONENTIAL_BACKOFF_JITTER_DEFAULT, 0, 0, 0}),
-                  m_pingTimeoutMs(0), m_connackTimeoutMs(0), m_ackTimeoutSec(0), m_allocator(allocator)
+                  m_extendedValidationAndFlowControlOptions(AWS_MQTT5_EVAFCO_AWS_IOT_CORE_DEFAULTS),
+                  m_offlineQueueBehavior(AWS_MQTT5_COQBT_DEFAULT),
+                  m_reconnectionOptions({AWS_EXPONENTIAL_BACKOFF_JITTER_DEFAULT, 0, 0, 0}), m_pingTimeoutMs(0),
+                  m_connackTimeoutMs(0), m_ackTimeoutSec(0), m_allocator(allocator)
             {
                 m_socketOptions.SetSocketType(Io::SocketType::Stream);
                 AWS_ZERO_STRUCT(m_packetConnectViewStorage);
@@ -221,9 +219,7 @@ namespace Aws
 
                 raw_options.connect_options = &m_packetConnectViewStorage;
                 raw_options.session_behavior = m_sessionBehavior;
-                raw_options.extended_validation_and_flow_control_options =
-
-                    m_extendedValidationAndFlowControlOptions;
+                raw_options.extended_validation_and_flow_control_options = m_extendedValidationAndFlowControlOptions;
                 raw_options.offline_queue_behavior = m_offlineQueueBehavior;
                 raw_options.retry_jitter_mode = m_reconnectionOptions.m_reconnectMode;
                 raw_options.max_reconnect_delay_ms = m_reconnectionOptions.m_maxReconnectDelayMs;
