@@ -239,8 +239,10 @@ static void s_ParseOptions(int argc, char **argv, struct AppCtx &ctx, struct Aws
 static void s_Mqtt5CanaryUpdateTpsSleepTime(struct AwsMqtt5CanaryTesterOptions *testerOptions)
 {
 
-    testerOptions->tpsSleepTime = testerOptions->tps == 0 ? 0 :
-        (aws_timestamp_convert(1, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_NANOS, NULL) / testerOptions->tps);
+    testerOptions->tpsSleepTime =
+        testerOptions->tps == 0
+            ? 0
+            : (aws_timestamp_convert(1, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_NANOS, NULL) / testerOptions->tps);
 }
 
 static void s_AwsMqtt5CanaryInitTesterOptions(struct AwsMqtt5CanaryTesterOptions *testerOptions)
@@ -450,7 +452,7 @@ static int s_AwsMqtt5CanaryOperationUnsubscribeBad(struct AwsMqtt5CanaryTestClie
             unsubscription, [testClient](int, std::shared_ptr<Mqtt5::UnSubAckPacket> packet) {
                 if (packet == nullptr)
                     return;
-                if (packet->getReasonCodes()[0] == UnSubAckReasonCode::AWS_MQTT5_UARC_SUCCESS)
+                if (packet->getReasonCodes()[0] == AWS_MQTT5_UARC_SUCCESS)
                 {
                     AWS_LOGF_ERROR(
                         AWS_LS_MQTT5_CANARY,
@@ -558,7 +560,7 @@ static int s_AwsMqtt5CanaryOperationPublishQos0(struct AwsMqtt5CanaryTestClient 
 
     Aws::Crt::String topic = "topic1";
     AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Publish qos0", testClient->clientId.c_str());
-    return s_AwsMqtt5CanaryOperationPublish(testClient, topic, QOS::AWS_MQTT5_QOS_AT_MOST_ONCE, allocator);
+    return s_AwsMqtt5CanaryOperationPublish(testClient, topic, AWS_MQTT5_QOS_AT_MOST_ONCE, allocator);
 }
 
 static int s_AwsMqtt5CanaryOperationPublishQos1(struct AwsMqtt5CanaryTestClient *testClient, Allocator *allocator)
@@ -569,7 +571,7 @@ static int s_AwsMqtt5CanaryOperationPublishQos1(struct AwsMqtt5CanaryTestClient 
     }
     Aws::Crt::String topic = "topic1";
     AWS_LOGF_INFO(AWS_LS_MQTT5_CANARY, "ID:%s Publish qos1", testClient->clientId.c_str());
-    return s_AwsMqtt5CanaryOperationPublish(testClient, topic, QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+    return s_AwsMqtt5CanaryOperationPublish(testClient, topic, AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
 }
 
 static int s_AwsMqtt5CanaryOperationPublishToSubscribedTopicQos0(
@@ -591,7 +593,7 @@ static int s_AwsMqtt5CanaryOperationPublishToSubscribedTopicQos0(
 
     AWS_LOGF_INFO(
         AWS_LS_MQTT5_CANARY, "ID:%s Publish qos 0 to subscribed topic: %s", testClient->clientId.c_str(), topicArray);
-    return s_AwsMqtt5CanaryOperationPublish(testClient, topicArray, QOS::AWS_MQTT5_QOS_AT_MOST_ONCE, allocator);
+    return s_AwsMqtt5CanaryOperationPublish(testClient, topicArray, AWS_MQTT5_QOS_AT_MOST_ONCE, allocator);
 }
 
 static int s_AwsMqtt5CanaryOperationPublishToSubscribedTopicQos1(
@@ -614,7 +616,7 @@ static int s_AwsMqtt5CanaryOperationPublishToSubscribedTopicQos1(
 
     AWS_LOGF_INFO(
         AWS_LS_MQTT5_CANARY, "ID:%s Publish qos 1 to subscribed topic: %s", testClient->clientId.c_str(), topicArray);
-    return s_AwsMqtt5CanaryOperationPublish(testClient, topicArray, QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+    return s_AwsMqtt5CanaryOperationPublish(testClient, topicArray, AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
 }
 
 static int s_AwsMqtt5CanaryOperationPublishToSharedTopicQos0(
@@ -630,7 +632,7 @@ static int s_AwsMqtt5CanaryOperationPublishToSharedTopicQos0(
         "ID:%s Publish qos 0 to shared topic: %s",
         testClient->clientId.c_str(),
         testClient->sharedTopic.c_str());
-    return s_AwsMqtt5CanaryOperationPublish(testClient, testClient->sharedTopic, QOS::AWS_MQTT5_QOS_AT_MOST_ONCE, allocator);
+    return s_AwsMqtt5CanaryOperationPublish(testClient, testClient->sharedTopic, AWS_MQTT5_QOS_AT_MOST_ONCE, allocator);
 }
 
 static int s_AwsMqtt5CanaryOperationPublishToSharedTopicQos1(
@@ -647,7 +649,7 @@ static int s_AwsMqtt5CanaryOperationPublishToSharedTopicQos1(
         testClient->clientId.c_str(),
         testClient->sharedTopic.c_str());
     return s_AwsMqtt5CanaryOperationPublish(
-        testClient, testClient->sharedTopic, QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+        testClient, testClient->sharedTopic, AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
 }
 
 static struct AwsMqtt5CanaryOperationsFunctionTable s_AwsMqtt5CanaryOperationTable = {{
@@ -828,8 +830,7 @@ int main(int argc, char **argv)
             .WithSocketOptions(socketOptions)
             .WithBootstrap(&clientBootstrap)
             .WithPingTimeoutMs(10000)
-            .WithReconnectOptions(
-                {ExponentialBackoffJitterMode::AWS_EXPONENTIAL_BACKOFF_JITTER_NONE, 1000, 120000, 3000});
+            .WithReconnectOptions({AWS_EXPONENTIAL_BACKOFF_JITTER_NONE, 1000, 120000, 3000});
 
         if (appCtx.use_tls)
         {
@@ -879,15 +880,16 @@ int main(int argc, char **argv)
                         AWS_LS_MQTT5_CANARY, "ID:%s Lifecycle Event: Connection Success", clients[i].clientId.c_str());
                 });
 
-            mqtt5Options.WithClientConnectionFailureCallback([&clients, i](const OnConnectionFailureEventData &eventData) {
-                clients[i].isConnected = false;
-                AWS_LOGF_ERROR(
-                    AWS_LS_MQTT5_CANARY,
-                    "ID:%s Connection failed with  Error Code: %d(%s)",
-                    clients[i].clientId.c_str(),
-                    eventData.errorCode,
-                    aws_error_debug_str(eventData.errorCode));
-            });
+            mqtt5Options.WithClientConnectionFailureCallback(
+                [&clients, i](const OnConnectionFailureEventData &eventData) {
+                    clients[i].isConnected = false;
+                    AWS_LOGF_ERROR(
+                        AWS_LS_MQTT5_CANARY,
+                        "ID:%s Connection failed with  Error Code: %d(%s)",
+                        clients[i].clientId.c_str(),
+                        eventData.errorCode,
+                        aws_error_debug_str(eventData.errorCode));
+                });
 
             mqtt5Options.WithClientDisconnectionCallback([&clients, i](const OnDisconnectionEventData &) {
                 clients[i].isConnected = false;
@@ -946,7 +948,8 @@ int main(int argc, char **argv)
 
             if (now > timeTestFinish)
             {
-                printf("   Operating TPS average over test: %zu\n\n", operationsExecuted / testerOptions.testRunSeconds);
+                printf(
+                    "   Operating TPS average over test: %zu\n\n", operationsExecuted / testerOptions.testRunSeconds);
                 done = true;
             }
 

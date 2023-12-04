@@ -220,14 +220,12 @@ namespace Aws
                 }
 
                 raw_options.connect_options = &m_packetConnectViewStorage;
-                raw_options.session_behavior = (enum aws_mqtt5_client_session_behavior_type)m_sessionBehavior;
+                raw_options.session_behavior = m_sessionBehavior;
                 raw_options.extended_validation_and_flow_control_options =
-                    (enum aws_mqtt5_extended_validation_and_flow_control_options)
-                        m_extendedValidationAndFlowControlOptions;
-                raw_options.offline_queue_behavior =
-                    (enum aws_mqtt5_client_operation_queue_behavior_type)m_offlineQueueBehavior;
-                raw_options.retry_jitter_mode =
-                    (enum aws_exponential_backoff_jitter_mode)m_reconnectionOptions.m_reconnectMode;
+
+                    m_extendedValidationAndFlowControlOptions;
+                raw_options.offline_queue_behavior = m_offlineQueueBehavior;
+                raw_options.retry_jitter_mode = m_reconnectionOptions.m_reconnectMode;
                 raw_options.max_reconnect_delay_ms = m_reconnectionOptions.m_maxReconnectDelayMs;
                 raw_options.min_reconnect_delay_ms = m_reconnectionOptions.m_minReconnectDelayMs;
                 raw_options.min_connected_time_to_reset_reconnect_delay_ms =
