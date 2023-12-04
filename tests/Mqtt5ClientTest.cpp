@@ -121,7 +121,7 @@ static int s_TestMqtt5NewClientFull(Aws::Crt::Allocator *allocator, void *)
     mqtt5Options.WithReconnectOptions(reconnectOptions);
     mqtt5Options.WithPingTimeoutMs(1000);
     mqtt5Options.WithConnackTimeoutMs(100);
-    mqtt5Options.WithAckTimeoutSeconds(1000);
+    mqtt5Options.WithAckTimeoutSec(1000);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -747,7 +747,7 @@ static int s_TestMqtt5DirectConnectionFull(Aws::Crt::Allocator *allocator, void 
     mqtt5Options.WithReconnectOptions(reconnectOptions);
     mqtt5Options.WithPingTimeoutMs(1000);
     mqtt5Options.WithConnackTimeoutMs(100);
-    mqtt5Options.WithAckTimeoutSeconds(1000);
+    mqtt5Options.WithAckTimeoutSec(1000);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -1160,7 +1160,7 @@ static int s_TestMqtt5WSConnectionFull(Aws::Crt::Allocator *allocator, void *)
     mqtt5Options.WithReconnectOptions(reconnectOptions);
     mqtt5Options.WithPingTimeoutMs(1000);
     mqtt5Options.WithConnackTimeoutMs(100);
-    mqtt5Options.WithAckTimeoutSeconds(1000);
+    mqtt5Options.WithAckTimeoutSec(1000);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -1624,7 +1624,7 @@ static int s_TestMqtt5NegotiatedSettingsFull(Aws::Crt::Allocator *allocator, voi
         std::shared_ptr<NegotiatedSettings> settings = eventData.negotiatedSettings;
         ASSERT_TRUE(settings->getSessionExpiryIntervalSec() == SESSION_EXPIRY_INTERVAL_SEC);
         ASSERT_TRUE(settings->getClientId() == CLIENT_ID);
-        ASSERT_TRUE(settings->getServerKeepAlive() == KEEP_ALIVE_INTERVAL);
+        ASSERT_TRUE(settings->getServerKeepAliveSec() == KEEP_ALIVE_INTERVAL);
         connectionPromise.set_value(true);
         return 0;
     });
@@ -1678,7 +1678,7 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
     mqtt5Options.WithClientConnectionSuccessCallback([&](const OnConnectionSuccessEventData &eventData) {
         std::shared_ptr<NegotiatedSettings> settings = eventData.negotiatedSettings;
         uint16_t receivedmax = settings->getReceiveMaximumFromServer();
-        uint32_t max_package = settings->getMaximumPacketSizeBytes();
+        uint32_t max_package = settings->getMaximumPacketSizeToServer();
         ASSERT_FALSE(receivedmax == RECEIVE_MAX);
         ASSERT_FALSE(max_package == PACKET_MAX);
         ASSERT_FALSE(settings->getRejoinedSession());
@@ -2648,7 +2648,7 @@ static int s_TestMqtt5to3AdapterNewClientFull(Aws::Crt::Allocator *allocator, vo
     mqtt5Options.WithReconnectOptions(reconnectOptions);
     mqtt5Options.WithPingTimeoutMs(1000);
     mqtt5Options.WithConnackTimeoutMs(100);
-    mqtt5Options.WithAckTimeoutSeconds(1000);
+    mqtt5Options.WithAckTimeoutSec(1000);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;

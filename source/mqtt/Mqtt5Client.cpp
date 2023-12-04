@@ -347,9 +347,14 @@ namespace Aws
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::WithAckTimeoutSeconds(uint32_t ackTimeoutSeconds) noexcept
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithAckTimeoutSeconds(uint32_t ackTimeoutSec) noexcept
             {
-                m_ackTimeoutSec = ackTimeoutSeconds;
+                return WithAckTimeoutSec(ackTimeoutSec);
+            }
+
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithAckTimeoutSec(uint32_t ackTimeoutSec) noexcept
+            {
+                m_ackTimeoutSec = ackTimeoutSec;
                 return *this;
             }
 

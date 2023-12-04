@@ -391,6 +391,11 @@ namespace Aws
 
             const Crt::Optional<uint32_t> &ConnectPacket::getMaximumPacketSizeBytes() const noexcept
             {
+                return getMaximumPacketSizeToServer();
+            }
+
+            const Crt::Optional<uint32_t> &ConnectPacket::getMaximumPacketSizeToServer() const noexcept
+            {
                 return m_maximumPacketSizeBytes;
             }
 
@@ -808,7 +813,7 @@ namespace Aws
             {
                 m_sessionPresent = packet.session_present;
                 m_reasonCode = packet.reason_code;
-                setPacketOptional(m_sessionExpiryInterval, packet.session_expiry_interval);
+                setPacketOptional(m_sessionExpiryIntervalSec, packet.session_expiry_interval);
                 setPacketOptional(m_receiveMaximum, packet.receive_maximum);
                 setPacketOptional(m_maximumQOS, packet.maximum_qos);
                 setPacketOptional(m_retainAvailable, packet.retain_available);
@@ -820,7 +825,7 @@ namespace Aws
                 setPacketOptional(m_wildcardSubscriptionsAvailable, packet.wildcard_subscriptions_available);
                 setPacketOptional(m_subscriptionIdentifiersAvailable, packet.subscription_identifiers_available);
                 setPacketOptional(m_sharedSubscriptionsAvailable, packet.shared_subscriptions_available);
-                setPacketOptional(m_serverKeepAlive, packet.server_keep_alive);
+                setPacketOptional(m_serverKeepAliveSec, packet.server_keep_alive);
                 setPacketStringOptional(m_responseInformation, packet.response_information);
                 setPacketStringOptional(m_serverReference, packet.server_reference);
             }
@@ -829,9 +834,14 @@ namespace Aws
 
             ConnectReasonCode ConnAckPacket::getReasonCode() const noexcept { return m_reasonCode; }
 
+            const Crt::Optional<uint32_t> &ConnAckPacket::getSessionExpiryIntervalSec() const noexcept
+            {
+                return m_sessionExpiryIntervalSec;
+            }
+
             const Crt::Optional<uint32_t> &ConnAckPacket::getSessionExpiryInterval() const noexcept
             {
-                return m_sessionExpiryInterval;
+                return getSessionExpiryIntervalSec();
             }
 
             const Crt::Optional<uint16_t> &ConnAckPacket::getReceiveMaximum() const noexcept
@@ -877,9 +887,14 @@ namespace Aws
                 return m_sharedSubscriptionsAvailable;
             }
 
+            const Crt::Optional<uint16_t> &ConnAckPacket::getServerKeepAliveSec() const noexcept
+            {
+                return m_serverKeepAliveSec;
+            }
+
             const Crt::Optional<uint16_t> &ConnAckPacket::getServerKeepAlive() const noexcept
             {
-                return m_serverKeepAlive;
+                return getServerKeepAliveSec();
             }
 
             const Crt::Optional<String> &ConnAckPacket::getResponseInformation() const noexcept
@@ -894,14 +909,14 @@ namespace Aws
 
             Subscription::Subscription(Allocator *allocator)
                 : m_allocator(allocator), m_topicFilter(""), m_qos(QOS::AWS_MQTT5_QOS_AT_MOST_ONCE), m_noLocal(false),
-                  m_retain(false), m_retainHnadlingType(AWS_MQTT5_RHT_SEND_ON_SUBSCRIBE)
+                  m_retainAsPublished(false), m_retainHnadlingType(AWS_MQTT5_RHT_SEND_ON_SUBSCRIBE)
 
             {
             }
 
             Subscription::Subscription(Crt::String topicFilter, Mqtt5::QOS qos, Allocator *allocator)
                 : m_allocator(allocator), m_topicFilter(std::move(topicFilter)), m_qos(qos), m_noLocal(false),
-                  m_retain(false), m_retainHnadlingType(AWS_MQTT5_RHT_SEND_ON_SUBSCRIBE)
+                  m_retainAsPublished(false), m_retainHnadlingType(AWS_MQTT5_RHT_SEND_ON_SUBSCRIBE)
             {
             }
 
@@ -921,9 +936,10 @@ namespace Aws
                 m_noLocal = noLocal;
                 return *this;
             }
-            Subscription &Subscription::WithRetain(bool retain) noexcept
+            Subscription &Subscription::WithRetain(bool retain) noexcept { return WithRetainAsPublished(retain); }
+            Subscription &Subscription::WithRetainAsPublished(bool retain) noexcept
             {
-                m_retain = retain;
+                m_retainAsPublished = retain;
                 return *this;
             }
             Subscription &Subscription::WithRetainHandlingType(RetainHandlingType retainHandlingType) noexcept
@@ -938,21 +954,21 @@ namespace Aws
                 raw_options.topic_filter = ByteCursorFromString(m_topicFilter);
                 raw_options.no_local = m_noLocal;
                 raw_options.qos = m_qos;
-                raw_options.retain_as_published = m_retain;
+                raw_options.retain_as_published = m_retainAsPublished;
                 raw_options.retain_handling_type = m_retainHnadlingType;
                 return true;
             }
 
             Subscription::Subscription(const Subscription &toCopy) noexcept
                 : m_allocator(toCopy.m_allocator), m_topicFilter(toCopy.m_topicFilter), m_qos(toCopy.m_qos),
-                  m_noLocal(toCopy.m_noLocal), m_retain(toCopy.m_retain),
+                  m_noLocal(toCopy.m_noLocal), m_retainAsPublished(toCopy.m_retainAsPublished),
                   m_retainHnadlingType(toCopy.m_retainHnadlingType)
             {
             }
 
             Subscription::Subscription(Subscription &&toMove) noexcept
                 : m_allocator(toMove.m_allocator), m_topicFilter(std::move(toMove.m_topicFilter)), m_qos(toMove.m_qos),
-                  m_noLocal(toMove.m_noLocal), m_retain(toMove.m_retain),
+                  m_noLocal(toMove.m_noLocal), m_retainAsPublished(toMove.m_retainAsPublished),
                   m_retainHnadlingType(toMove.m_retainHnadlingType)
             {
             }
@@ -965,7 +981,7 @@ namespace Aws
                     m_qos = toCopy.m_qos;
                     m_topicFilter = toCopy.m_topicFilter;
                     m_noLocal = toCopy.m_noLocal;
-                    m_retain = toCopy.m_retain;
+                    m_retainAsPublished = toCopy.m_retainAsPublished;
                     m_retainHnadlingType = toCopy.m_retainHnadlingType;
                 }
                 return *this;
@@ -979,7 +995,7 @@ namespace Aws
                     m_qos = toMove.m_qos;
                     m_topicFilter = std::move(toMove.m_topicFilter);
                     m_noLocal = toMove.m_noLocal;
-                    m_retain = toMove.m_retain;
+                    m_retainAsPublished = toMove.m_retainAsPublished;
                     m_retainHnadlingType = toMove.m_retainHnadlingType;
                 }
                 return *this;
@@ -1213,7 +1229,15 @@ namespace Aws
                 return m_receiveMaximumFromServer;
             }
 
-            uint32_t NegotiatedSettings::getMaximumPacketSizeBytes() const noexcept { return m_maximumPacketSizeBytes; }
+            uint32_t NegotiatedSettings::getMaximumPacketSizeBytes() const noexcept
+            {
+                return getMaximumPacketSizeToServer();
+            }
+
+            uint32_t NegotiatedSettings::getMaximumPacketSizeToServer() const noexcept
+            {
+                return m_maximumPacketSizeBytes;
+            }
 
             uint16_t NegotiatedSettings::getTopicAliasMaximumToServer() const noexcept
             {
@@ -1225,7 +1249,9 @@ namespace Aws
                 return m_topicAliasMaximumToClient;
             }
 
-            uint16_t NegotiatedSettings::getServerKeepAlive() const noexcept { return m_serverKeepAliveSec; }
+            uint16_t NegotiatedSettings::getServerKeepAliveSec() const noexcept { return m_serverKeepAliveSec; }
+
+            uint16_t NegotiatedSettings::getServerKeepAlive() const noexcept { return getServerKeepAliveSec(); }
 
             bool NegotiatedSettings::getRetainAvailable() const noexcept { return m_retainAvailable; }
 
