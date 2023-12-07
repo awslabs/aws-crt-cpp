@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/Api.h>
+#include <aws/crt/Config.h>
 #include <aws/crt/JsonObject.h>
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/io/TlsOptions.h>
@@ -37,7 +38,8 @@ namespace Aws
         std::mutex ApiHandle::s_lock_default_host_resolver;
 
         ApiHandle::ApiHandle(Allocator *allocator) noexcept
-            : m_logger(), m_shutdownBehavior(ApiHandleShutdownBehavior::Blocking)
+            : m_logger(), m_shutdownBehavior(ApiHandleShutdownBehavior::Blocking),
+              m_version({AWS_CRT_CPP_VERSION_MAJOR, AWS_CRT_CPP_VERSION_MINOR, AWS_CRT_CPP_VERSION_PATCH})
         {
             // sets up the StlAllocator for use.
             g_allocator = allocator;
@@ -372,6 +374,8 @@ namespace Aws
         {
             return s_BYOCryptoIsTlsAlpnSupportedCallback;
         }
+
+        ApiHandle::Version ApiHandle::GetCrtVersion() const { return m_version; }
 
         const char *ErrorDebugString(int error) noexcept { return aws_error_debug_str(error); }
 
