@@ -61,7 +61,7 @@ namespace Aws
 
             std::shared_ptr<MqttConnection> MqttClient::NewConnection(
                 const char *hostName,
-                uint16_t port,
+                uint32_t port,
                 const Io::SocketOptions &socketOptions,
                 const Crt::Io::TlsContext &tlsContext,
                 bool useWebsocket) noexcept
@@ -91,7 +91,7 @@ namespace Aws
 
             std::shared_ptr<MqttConnection> MqttClient::NewConnection(
                 const char *hostName,
-                uint16_t port,
+                uint32_t port,
                 const Io::SocketOptions &socketOptions,
                 bool useWebsocket) noexcept
 

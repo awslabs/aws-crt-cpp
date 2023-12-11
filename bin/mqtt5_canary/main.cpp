@@ -35,7 +35,7 @@ struct AppCtx
     Allocator *allocator;
     struct aws_mutex lock;
     Io::Uri uri;
-    uint16_t port;
+    uint32_t port;
     const char *cacert;
     const char *cert;
     const char *key;

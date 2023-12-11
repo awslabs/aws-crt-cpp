@@ -27,7 +27,7 @@ namespace Aws
             struct MqttConnectionOptions
             {
                 const char *hostName = nullptr;
-                uint16_t port = 0;
+                uint32_t port = 0;
                 Io::SocketOptions socketOptions;
                 Crt::Io::TlsContext tlsContext;
                 Crt::Io::TlsConnectionOptions tlsConnectionOptions;

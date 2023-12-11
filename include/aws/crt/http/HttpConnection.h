@@ -298,7 +298,7 @@ namespace Aws
                  * The port of the proxy server to connect to.
                  * Required.
                  */
-                uint16_t Port;
+                uint32_t Port;
 
                 /**
                  * Sets the TLS options for the connection to the proxy.
@@ -391,7 +391,7 @@ namespace Aws
                  * The port of the http server to connect to.
                  * Required.
                  */
-                uint16_t Port;
+                uint32_t Port;
 
                 /**
                  * The socket options of the connection.

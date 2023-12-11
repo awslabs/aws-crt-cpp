@@ -266,7 +266,7 @@ namespace Aws
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &WithPort(uint16_t port) noexcept;
+            Mqtt5ClientBuilder &WithPort(uint32_t port) noexcept;
 
             /**
              * Set booststrap for mqtt5 client

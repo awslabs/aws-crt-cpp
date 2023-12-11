@@ -37,7 +37,7 @@ namespace Aws
              */
             MqttClientConnectionConfig(
                 const Crt::String &endpoint,
-                uint16_t port,
+                uint32_t port,
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext);
 
@@ -60,7 +60,7 @@ namespace Aws
              */
             MqttClientConnectionConfig(
                 const Crt::String &endpoint,
-                uint16_t port,
+                uint32_t port,
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext,
                 Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
@@ -81,13 +81,13 @@ namespace Aws
 
             MqttClientConnectionConfig(
                 const Crt::String &endpoint,
-                uint16_t port,
+                uint32_t port,
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext,
                 const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions);
 
             Crt::String m_endpoint;
-            uint16_t m_port;
+            uint32_t m_port;
             Crt::Io::TlsContext m_context;
             Crt::Io::SocketOptions m_socketOptions;
             Crt::Mqtt::OnWebSocketHandshakeIntercept m_webSocketInterceptor;
@@ -219,7 +219,7 @@ namespace Aws
              *
              * @return this builder object
              */
-            MqttClientConnectionConfigBuilder &WithPortOverride(uint16_t port) noexcept;
+            MqttClientConnectionConfigBuilder &WithPortOverride(uint32_t port) noexcept;
 
             /**
              * Sets the certificate authority for the endpoint you're connecting to. This is a path to a file on disk

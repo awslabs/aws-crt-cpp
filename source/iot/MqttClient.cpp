@@ -29,7 +29,7 @@ namespace Aws
 
         MqttClientConnectionConfig::MqttClientConnectionConfig(
             const Crt::String &endpoint,
-            uint16_t port,
+            uint32_t port,
             const Crt::Io::SocketOptions &socketOptions,
             Crt::Io::TlsContext &&tlsContext)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
@@ -39,7 +39,7 @@ namespace Aws
 
         MqttClientConnectionConfig::MqttClientConnectionConfig(
             const Crt::String &endpoint,
-            uint16_t port,
+            uint32_t port,
             const Crt::Io::SocketOptions &socketOptions,
             Crt::Io::TlsContext &&tlsContext,
             Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
@@ -51,7 +51,7 @@ namespace Aws
 
         MqttClientConnectionConfig::MqttClientConnectionConfig(
             const Crt::String &endpoint,
-            uint16_t port,
+            uint32_t port,
             const Crt::Io::SocketOptions &socketOptions,
             Crt::Io::TlsContext &&tlsContext,
             const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions)
@@ -218,7 +218,7 @@ namespace Aws
             return *this;
         }
 
-        MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithPortOverride(uint16_t port) noexcept
+        MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithPortOverride(uint32_t port) noexcept
         {
             m_portOverride = port;
             return *this;
@@ -443,7 +443,7 @@ namespace Aws
                 return MqttClientConnectionConfig::CreateInvalid(m_lastError);
             }
 
-            uint16_t port = m_portOverride;
+            uint32_t port = m_portOverride;
 
             if (!m_portOverride)
             {
