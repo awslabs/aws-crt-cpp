@@ -80,7 +80,7 @@ namespace Aws
                  * be set to 0. In that case, it is your responsibility to determine the correct port
                  * based on the protocol you're using.
                  */
-                uint16_t GetPort() const noexcept;
+                uint32_t GetPort() const noexcept;
 
                 /** @return the Path and Query portion of the URI. In the case of Http, this likely the value for the
                  * URI parameter.

@@ -135,7 +135,7 @@ namespace Aws
 
             ByteCursor Uri::GetHostName() const noexcept { return m_uri.host_name; }
 
-            uint16_t Uri::GetPort() const noexcept { return m_uri.port; }
+            uint32_t Uri::GetPort() const noexcept { return m_uri.port; }
 
             ByteCursor Uri::GetPathAndQuery() const noexcept { return m_uri.path_and_query; }
 
