@@ -49,6 +49,9 @@ AWS_STATIC_STRING_FROM_LITERAL(
 AWS_STATIC_STRING_FROM_LITERAL(
     s_mqtt311_test_envName_iot_sign_custom_auth_tokensignature,
     "AWS_TEST_MQTT311_IOT_CORE_SIGNING_AUTHORIZER_TOKEN_SIGNATURE");
+AWS_STATIC_STRING_FROM_LITERAL(
+    s_mqtt311_test_envName_iot_sign_custom_auth_tokensignature_unencoded,
+    "AWS_TEST_MQTT311_IOT_CORE_SIGNING_AUTHORIZER_TOKEN_SIGNATURE_UNENCODED");
 
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_pkcs11_lib, "AWS_TEST_PKCS11_LIB");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_pkcs11_token_label, "AWS_TEST_PKCS11_TOKEN_LABEL");
@@ -272,6 +275,96 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
 AWS_TEST_CASE(IoTMqtt311ConnectWithSigningCustomAuth, s_TestIoTMqtt311ConnectWithSigningCustomAuth)
 
 /*
+ * Custom Auth (signing with unencoded signature) connect for MQTT311
+ */
+static int s_TestIoTMqtt311ConnectWithSigningCustomAuthUnencoded(Aws::Crt::Allocator *allocator, void *)
+{
+    struct aws_string *endpoint = NULL;
+    struct aws_string *authname = NULL;
+    struct aws_string *username = NULL;
+    struct aws_string *password = NULL;
+    struct aws_string *unencodedSignature = NULL;
+    struct aws_string *tokenKeyName = NULL;
+    struct aws_string *tokenValue = NULL;
+
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_name, &authname);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_username, &username);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_password, &password);
+    error |= s_GetEnvVariable(
+        allocator, s_mqtt311_test_envName_iot_sign_custom_auth_tokensignature_unencoded, &unencodedSignature);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_tokenkey, &tokenKeyName);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_tokenvalue, &tokenValue);
+    if (error != AWS_OP_SUCCESS)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        aws_string_destroy(endpoint);
+        aws_string_destroy(authname);
+        aws_string_destroy(username);
+        aws_string_destroy(password);
+        aws_string_destroy(unencodedSignature);
+        aws_string_destroy(tokenKeyName);
+        aws_string_destroy(tokenValue);
+        return AWS_OP_SKIP;
+    }
+
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
+    Aws::Iot::MqttClient client;
+    auto clientConfigBuilder = Aws::Iot::MqttClientConnectionConfigBuilder::NewDefaultBuilder();
+    clientConfigBuilder.WithEndpoint(aws_string_c_str(endpoint));
+    clientConfigBuilder.WithCustomAuthorizer(
+        aws_string_c_str(username),
+        aws_string_c_str(authname),
+        aws_string_c_str(unencodedSignature),
+        aws_string_c_str(password),
+        aws_string_c_str(tokenKeyName),
+        aws_string_c_str(tokenValue));
+    auto clientConfig = clientConfigBuilder.Build();
+    ASSERT_TRUE(clientConfig);
+    auto connection = client.NewConnection(clientConfig);
+    ASSERT_TRUE(*connection);
+
+    std::promise<bool> connectionCompletedPromise;
+    std::promise<void> connectionClosedPromise;
+    auto onConnectionCompleted =
+        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
+            (void)returnCode;
+            if (errorCode)
+            {
+                connectionCompletedPromise.set_value(false);
+            }
+            else
+            {
+                connectionCompletedPromise.set_value(true);
+            }
+        };
+    auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
+    connection->OnConnectionCompleted = std::move(onConnectionCompleted);
+    connection->OnDisconnect = std::move(onDisconnect);
+
+    Aws::Crt::UUID Uuid;
+    Aws::Crt::String uuidStr = Uuid.ToString();
+
+    ASSERT_TRUE(connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/));
+    ASSERT_TRUE(connectionCompletedPromise.get_future().get());
+    if (connection->Disconnect())
+    {
+        connectionClosedPromise.get_future().wait();
+    }
+
+    aws_string_destroy(endpoint);
+    aws_string_destroy(authname);
+    aws_string_destroy(username);
+    aws_string_destroy(password);
+    aws_string_destroy(unencodedSignature);
+    aws_string_destroy(tokenKeyName);
+    aws_string_destroy(tokenValue);
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTMqtt311ConnectWithSigningCustomAuthUnencoded, s_TestIoTMqtt311ConnectWithSigningCustomAuthUnencoded)
+
+/*
  * Custom Auth (signing) connect for MQTT311 - Websockets
  */
 static int s_TestIoTMqtt311ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Allocator *allocator, void *)
@@ -368,6 +461,107 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Allo
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt311ConnectWithSigningCustomAuthWebsockets, s_TestIoTMqtt311ConnectWithSigningCustomAuthWebsockets)
+
+/*
+ * Custom Auth (signing) connect for MQTT311 - Websockets
+ */
+static int s_TestIoTMqtt311ConnectWithSigningCustomAuthWebsocketsUnencoded(Aws::Crt::Allocator *allocator, void *)
+{
+    struct aws_string *endpoint = NULL;
+    struct aws_string *authname = NULL;
+    struct aws_string *username = NULL;
+    struct aws_string *password = NULL;
+    struct aws_string *unencodedSignature = NULL;
+    struct aws_string *tokenKeyName = NULL;
+    struct aws_string *tokenValue = NULL;
+    struct aws_string *signingRegion = NULL;
+
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_name, &authname);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_username, &username);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_password, &password);
+    error |= s_GetEnvVariable(
+        allocator, s_mqtt311_test_envName_iot_sign_custom_auth_tokensignature_unencoded, &unencodedSignature);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_tokenkey, &tokenKeyName);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_sign_custom_auth_tokenvalue, &tokenValue);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_region, &signingRegion);
+    if (error != AWS_OP_SUCCESS)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        aws_string_destroy(endpoint);
+        aws_string_destroy(authname);
+        aws_string_destroy(username);
+        aws_string_destroy(password);
+        aws_string_destroy(unencodedSignature);
+        aws_string_destroy(tokenKeyName);
+        aws_string_destroy(tokenValue);
+        aws_string_destroy(signingRegion);
+        return AWS_OP_SKIP;
+    }
+
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
+    Aws::Crt::Auth::CredentialsProviderChainDefaultConfig defaultConfig;
+    std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> provider =
+        Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(defaultConfig);
+    Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(signingRegion), provider);
+
+    Aws::Iot::MqttClient client;
+    auto clientConfigBuilder = Aws::Iot::MqttClientConnectionConfigBuilder(websocketConfig);
+    clientConfigBuilder.WithEndpoint(aws_string_c_str(endpoint));
+    clientConfigBuilder.WithCustomAuthorizer(
+        aws_string_c_str(username),
+        aws_string_c_str(authname),
+        aws_string_c_str(unencodedSignature),
+        aws_string_c_str(password),
+        aws_string_c_str(tokenKeyName),
+        aws_string_c_str(tokenValue));
+    auto clientConfig = clientConfigBuilder.Build();
+    ASSERT_TRUE(clientConfig);
+    auto connection = client.NewConnection(clientConfig);
+    ASSERT_TRUE(*connection);
+
+    std::promise<bool> connectionCompletedPromise;
+    std::promise<void> connectionClosedPromise;
+    auto onConnectionCompleted =
+        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
+            (void)returnCode;
+            if (errorCode)
+            {
+                connectionCompletedPromise.set_value(false);
+            }
+            else
+            {
+                connectionCompletedPromise.set_value(true);
+            }
+        };
+    auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
+    connection->OnConnectionCompleted = std::move(onConnectionCompleted);
+    connection->OnDisconnect = std::move(onDisconnect);
+
+    Aws::Crt::UUID Uuid;
+    Aws::Crt::String uuidStr = Uuid.ToString();
+
+    ASSERT_TRUE(connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/));
+    ASSERT_TRUE(connectionCompletedPromise.get_future().get());
+    if (connection->Disconnect())
+    {
+        connectionClosedPromise.get_future().wait();
+    }
+
+    aws_string_destroy(endpoint);
+    aws_string_destroy(authname);
+    aws_string_destroy(username);
+    aws_string_destroy(password);
+    aws_string_destroy(unencodedSignature);
+    aws_string_destroy(tokenKeyName);
+    aws_string_destroy(tokenValue);
+    aws_string_destroy(signingRegion);
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(
+    IoTMqtt311ConnectWithSigningCustomAuthWebsocketsUnencoded,
+    s_TestIoTMqtt311ConnectWithSigningCustomAuthWebsocketsUnencoded)
 
 /*
  * PKCS11 connect for MQTT311

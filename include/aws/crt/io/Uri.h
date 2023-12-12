@@ -97,6 +97,9 @@ namespace Aws
                 int m_lastError;
                 bool m_isInit;
             };
+
+            AWS_CRT_CPP_API Aws::Crt::String EncodeQueryParameterValue(ByteCursor paramValue);
+
         } // namespace Io
     }     // namespace Crt
 } // namespace Aws

@@ -140,6 +140,20 @@ namespace Aws
             ByteCursor Uri::GetPathAndQuery() const noexcept { return m_uri.path_and_query; }
 
             ByteCursor Uri::GetFullUri() const noexcept { return ByteCursorFromByteBuf(m_uri.uri_str); }
+
+            Aws::Crt::String EncodeQueryParameterValue(ByteCursor paramValue)
+            {
+                struct aws_byte_buf encoded_buffer;
+                aws_byte_buf_init(&encoded_buffer, ApiAllocator(), 3 * paramValue.len);
+
+                auto encoding_result = aws_byte_buf_append_encoding_uri_param(&encoded_buffer, &paramValue);
+                AWS_FATAL_ASSERT(AWS_OP_SUCCESS == encoding_result);
+
+                auto encoded_value = Aws::Crt::String((const char *)encoded_buffer.buffer, encoded_buffer.len);
+                aws_byte_buf_clean_up(&encoded_buffer);
+
+                return encoded_value;
+            }
         } // namespace Io
     }     // namespace Crt
 } // namespace Aws

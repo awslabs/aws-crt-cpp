@@ -7,6 +7,7 @@
 #include <aws/crt/auth/Credentials.h>
 #include <aws/crt/auth/Sigv4Signing.h>
 #include <aws/crt/http/HttpRequestResponse.h>
+#include <aws/crt/io/Uri.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
 
 #include <aws/iot/Mqtt5Client.h>
@@ -729,7 +730,17 @@ namespace Aws
 
         Mqtt5CustomAuthConfig &Aws::Iot::Mqtt5CustomAuthConfig::WithTokenSignature(Crt::String tokenSignature)
         {
-            m_tokenSignature = std::move(tokenSignature);
+            if (tokenSignature.find('%') != tokenSignature.npos)
+            {
+                // We can assume that a base 64 value that contains a '%' character has already been uri encoded
+                m_tokenSignature = std::move(tokenSignature);
+            }
+            else
+            {
+                m_tokenSignature = std::move(
+                    Aws::Crt::Io::EncodeQueryParameterValue(aws_byte_cursor_from_c_str(tokenSignature.c_str())));
+            }
+
             return *this;
         }
 

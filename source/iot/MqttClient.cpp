@@ -8,6 +8,7 @@
 #include <aws/crt/auth/Credentials.h>
 #include <aws/crt/auth/Sigv4Signing.h>
 #include <aws/crt/http/HttpRequestResponse.h>
+#include <aws/crt/io/Uri.h>
 
 #if !BYO_CRYPTO
 
@@ -381,8 +382,21 @@ namespace Aws
                         "signed custom authorizer.",
                         (void *)this);
                 }
+
+                Crt::String encodedSignature;
+                if (authorizerSignature.find('%') != authorizerSignature.npos)
+                {
+                    // We can assume that a base 64 value that contains a '%' character has already been uri encoded
+                    encodedSignature = authorizerSignature;
+                }
+                else
+                {
+                    encodedSignature = std::move(Aws::Crt::Io::EncodeQueryParameterValue(
+                        aws_byte_cursor_from_c_str(authorizerSignature.c_str())));
+                }
+
                 usernameString =
-                    AddToUsernameParameter(usernameString, authorizerSignature, "x-amz-customauthorizer-signature=");
+                    AddToUsernameParameter(usernameString, encodedSignature, "x-amz-customauthorizer-signature=");
             }
             if (!tokenKeyName.empty() || !tokenValue.empty())
             {
