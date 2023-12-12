@@ -754,7 +754,7 @@ namespace Aws
                 /**
                  * Network port of the MQTT server to connect to.
                  */
-                uint16_t m_port;
+                uint32_t m_port;
 
                 /**
                  * Client bootstrap to use.  In almost all cases, this can be left undefined.

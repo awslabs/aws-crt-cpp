@@ -542,7 +542,7 @@ namespace Aws
             /**
              * Network port of the MQTT server to connect to.
              */
-            uint16_t m_port;
+            uint32_t m_port;
 
             /**
              * TLS context for secure socket connections.

@@ -437,7 +437,7 @@ namespace Aws
 
             Crt::Allocator *m_allocator;
             Crt::String m_endpoint;
-            uint16_t m_portOverride;
+            uint32_t m_portOverride;
             Crt::Io::SocketOptions m_socketOptions;
             Crt::Io::TlsContextOptions m_contextOptions;
             Crt::Optional<WebsocketConfig> m_websocketConfig;
