@@ -387,7 +387,7 @@ namespace Aws
                 if (authorizerSignature.find('%') != authorizerSignature.npos)
                 {
                     // We can assume that a base 64 value that contains a '%' character has already been uri encoded
-                    encodedSignature = authorizerSignature;
+                    encodedSignature = std::move(authorizerSignature);
                 }
                 else
                 {
