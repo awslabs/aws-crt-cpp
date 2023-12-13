@@ -370,9 +370,10 @@ namespace Aws
             {
                 usernameString = AddToUsernameParameter(usernameString, authorizerName, "x-amz-customauthorizer-name=");
             }
-            if (!authorizerSignature.empty())
+
+            if (!authorizerSignature.empty() || !tokenKeyName.empty() || !tokenValue.empty())
             {
-                if (tokenKeyName.empty() || tokenValue.empty())
+                if (authorizerSignature.empty() || tokenKeyName.empty() || tokenValue.empty())
                 {
                     AWS_LOGF_WARN(
                         AWS_LS_MQTT_CLIENT,
@@ -382,7 +383,10 @@ namespace Aws
                         "signed custom authorizer.",
                         (void *)this);
                 }
+            }
 
+            if (!authorizerSignature.empty())
+            {
                 Crt::String encodedSignature;
                 if (authorizerSignature.find('%') != authorizerSignature.npos)
                 {
@@ -398,17 +402,9 @@ namespace Aws
                 usernameString =
                     AddToUsernameParameter(usernameString, encodedSignature, "x-amz-customauthorizer-signature=");
             }
-            if (!tokenKeyName.empty() || !tokenValue.empty())
+
+            if (!tokenKeyName.empty() && !tokenValue.empty())
             {
-                if (tokenKeyName.empty() || tokenValue.empty())
-                {
-                    AWS_LOGF_ERROR(
-                        AWS_LS_MQTT_CLIENT,
-                        "id=%p: Token-based custom authentication requires all token-related properties to be set",
-                        (void *)this);
-                    m_lastError = AWS_ERROR_INVALID_ARGUMENT;
-                    return *this;
-                }
                 usernameString = AddToUsernameParameter(usernameString, tokenValue, tokenKeyName + "=");
             }
 
