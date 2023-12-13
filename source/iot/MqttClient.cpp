@@ -391,8 +391,8 @@ namespace Aws
                 }
                 else
                 {
-                    encodedSignature = std::move(Aws::Crt::Io::EncodeQueryParameterValue(
-                        aws_byte_cursor_from_c_str(authorizerSignature.c_str())));
+                    encodedSignature = Aws::Crt::Io::EncodeQueryParameterValue(
+                        aws_byte_cursor_from_c_str(authorizerSignature.c_str()));
                 }
 
                 usernameString =

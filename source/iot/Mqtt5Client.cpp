@@ -733,12 +733,12 @@ namespace Aws
             if (tokenSignature.find('%') != tokenSignature.npos)
             {
                 // We can assume that a base 64 value that contains a '%' character has already been uri encoded
-                m_tokenSignature = std::move(tokenSignature);
+                m_tokenSignature = tokenSignature;
             }
             else
             {
-                m_tokenSignature = std::move(
-                    Aws::Crt::Io::EncodeQueryParameterValue(aws_byte_cursor_from_c_str(tokenSignature.c_str())));
+                m_tokenSignature =
+                    Aws::Crt::Io::EncodeQueryParameterValue(aws_byte_cursor_from_c_str(tokenSignature.c_str()));
             }
 
             return *this;
