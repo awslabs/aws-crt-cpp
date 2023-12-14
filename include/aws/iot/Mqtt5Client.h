@@ -107,8 +107,7 @@ namespace Aws
              * The digital signature of the token value in the {@link tokenValue} property.  The signature must be based
              * on the private key associated with the custom authorizer.  The signature must be base64 encoded.
              *
-             * Required if the custom authorizer has signing enabled.  It is strongly suggested to URL-encode this
-             * value; the SDK will not do so for you.
+             * Required if the custom authorizer has signing enabled.
              */
             Crt::Optional<Crt::String> m_tokenSignature;
 
