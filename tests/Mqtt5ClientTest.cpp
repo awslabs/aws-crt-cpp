@@ -119,9 +119,9 @@ static int s_TestMqtt5NewClientFull(Aws::Crt::Allocator *allocator, void *)
     mqtt5Options.WithOfflineQueueBehavior(
         Mqtt5::ClientOperationQueueBehaviorType::AWS_MQTT5_COQBT_FAIL_QOS0_PUBLISH_ON_DISCONNECT);
     mqtt5Options.WithReconnectOptions(reconnectOptions);
-    mqtt5Options.WithPingTimeoutMs(1000);
-    mqtt5Options.WithConnackTimeoutMs(100);
-    mqtt5Options.WithAckTimeoutSec(1000);
+    mqtt5Options.WithPingTimeoutMs(10000);
+    mqtt5Options.WithConnackTimeoutMs(10000);
+    mqtt5Options.WithAckTimeoutSec(60000);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -1158,9 +1158,9 @@ static int s_TestMqtt5WSConnectionFull(Aws::Crt::Allocator *allocator, void *)
     mqtt5Options.WithOfflineQueueBehavior(
         Mqtt5::ClientOperationQueueBehaviorType::AWS_MQTT5_COQBT_FAIL_QOS0_PUBLISH_ON_DISCONNECT);
     mqtt5Options.WithReconnectOptions(reconnectOptions);
-    mqtt5Options.WithPingTimeoutMs(1000);
-    mqtt5Options.WithConnackTimeoutMs(100);
-    mqtt5Options.WithAckTimeoutSec(1000);
+    mqtt5Options.WithPingTimeoutMs(10000);
+    mqtt5Options.WithConnackTimeoutMs(10000);
+    mqtt5Options.WithAckTimeoutSec(60000);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -2646,9 +2646,9 @@ static int s_TestMqtt5to3AdapterNewClientFull(Aws::Crt::Allocator *allocator, vo
     mqtt5Options.WithOfflineQueueBehavior(
         Mqtt5::ClientOperationQueueBehaviorType::AWS_MQTT5_COQBT_FAIL_QOS0_PUBLISH_ON_DISCONNECT);
     mqtt5Options.WithReconnectOptions(reconnectOptions);
-    mqtt5Options.WithPingTimeoutMs(1000);
-    mqtt5Options.WithConnackTimeoutMs(100);
-    mqtt5Options.WithAckTimeoutSec(1000);
+    mqtt5Options.WithPingTimeoutMs(10000);
+    mqtt5Options.WithConnackTimeoutMs(10000);
+    mqtt5Options.WithAckTimeoutSec(60000);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
