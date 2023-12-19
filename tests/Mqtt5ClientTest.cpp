@@ -1959,7 +1959,6 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     int client1_messages = 0;
     int client2_messages = 0;
 
-
     Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
         mqtt5TestVars.m_hostname_string,
         mqtt5TestVars.m_certificate_path_string.c_str(),
@@ -1982,7 +1981,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     ASSERT_TRUE(publish_builder);
 
     std::promise<void> client1_received;
-    auto onMessage_client1 = [&](const PublishReceivedEventData &eventData)->int {
+    auto onMessage_client1 = [&](const PublishReceivedEventData &eventData) -> int {
         String topic = eventData.publishPacket->getTopic();
         if (topic == TEST_TOPIC)
         {
@@ -2002,7 +2001,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     builder->WithPublishReceivedCallback(onMessage_client1);
 
     std::promise<void> client2_received;
-    auto onMessage_client2 = [&](const PublishReceivedEventData &eventData)->int {
+    auto onMessage_client2 = [&](const PublishReceivedEventData &eventData) -> int {
         String topic = eventData.publishPacket->getTopic();
         if (topic == TEST_TOPIC)
         {
@@ -2019,8 +2018,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
         }
         return 0;
     };
-    builder2->WithPublishReceivedCallback(onMessage_client1);
-
+    builder2->WithPublishReceivedCallback(onMessage_client2);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -2037,7 +2035,6 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
 
     ASSERT_TRUE(mqtt5Client);
     ASSERT_TRUE(mqtt5Client->Start());
-
 
     /* second subscriber */
     s_setupConnectionLifeCycle(builder2, connectionPromise2, stoppedPromise2, "Subscriber 2");
@@ -2083,7 +2080,6 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
             TEST_TOPIC, ByteCursorFromCString(payload.c_str()), Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
         ASSERT_TRUE(mqtt5Publisher->Publish(publish));
     }
-
 
     client1_received.get_future().wait();
     client2_received.get_future().wait();
