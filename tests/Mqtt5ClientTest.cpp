@@ -2061,7 +2061,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     subscribe->WithSubscription(std::move(subscription));
 
     std::promise<void> suback;
-    auto onSubAck = [&](int , std::shared_ptr<SubAckPacket> ) { suback.set_value(); };
+    auto onSubAck = [&](int , std::shared_ptr<SubAckPacket>) { suback.set_value(); };
 
     /*subscribe both clients */
     ASSERT_TRUE(mqtt5Client->Subscribe(subscribe, onSubAck));
@@ -2098,7 +2098,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     return AWS_OP_SUCCESS;
 }
 
-AWS_TEST_CASE(Mqtt5SharedSubscriptionTest,  s_TestMqtt5SharedSubscriptionTest)
+AWS_TEST_CASE(Mqtt5SharedSubscriptionTest, s_TestMqtt5SharedSubscriptionTest)
 
 //////////////////////////////////////////////////////////
 // Error Operation Tests [ErrorOp-UC]
