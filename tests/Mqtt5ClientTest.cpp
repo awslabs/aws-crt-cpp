@@ -2061,7 +2061,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     subscribe->WithSubscription(std::move(subscription));
 
     std::promise<void> suback;
-    auto onSubAck = [&](int ioErr, std::shared_ptr<SubAckPacket> packet) {
+    auto onSubAck = [&](int , std::shared_ptr<SubAckPacket> ) {
         suback.set_value();
     };
 
