@@ -2114,6 +2114,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     fprintf(stderr, "all packets sent =========\n");
     client1_received.get_future().wait();
     client2_received.get_future().wait();
+    fprintf(stderr, "all packets received =========\n");
 
     /* makes sure messages are distrubuted evenly between the two clients*/
     ASSERT_INT_EQUALS(5, client1_messages);
@@ -2124,6 +2125,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     {
         ASSERT_TRUE(receivedMessages[i] > 0);
     }
+    fprintf(stderr, "all packets checked =========\n");
 
     /* Stop all clients */
     ASSERT_TRUE(mqtt5Client->Stop());
@@ -2134,6 +2136,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     stoppedPromise.get_future().get();
     stoppedPromise2.get_future().get();
     stoppedPromise3.get_future().get();
+    fprintf(stderr, "all connections stopped =========\n");
 
     delete subscribe_builder;
     delete subscribe_builder2;
