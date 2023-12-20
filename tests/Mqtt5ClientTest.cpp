@@ -1972,20 +1972,6 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
         allocator);
     ASSERT_TRUE(builder);
 
-    Aws::Iot::Mqtt5ClientBuilder *builder2 = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
-        mqtt5TestVars.m_hostname_string,
-        mqtt5TestVars.m_certificate_path_string.c_str(),
-        mqtt5TestVars.m_private_key_path_string.c_str(),
-        allocator);
-    ASSERT_TRUE(builder2);
-
-    Aws::Iot::Mqtt5ClientBuilder *publish_builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
-        mqtt5TestVars.m_hostname_string,
-        mqtt5TestVars.m_certificate_path_string.c_str(),
-        mqtt5TestVars.m_private_key_path_string.c_str(),
-        allocator);
-    ASSERT_TRUE(publish_builder);
-
     std::promise<void> client1_received;
     auto onMessage_client1 = [&](const PublishReceivedEventData &eventData) -> int {
         String topic = eventData.publishPacket->getTopic();
@@ -2005,6 +1991,13 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
         return 0;
     };
     builder->WithPublishReceivedCallback(onMessage_client1);
+
+    Aws::Iot::Mqtt5ClientBuilder *builder2 = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+        mqtt5TestVars.m_hostname_string,
+        mqtt5TestVars.m_certificate_path_string.c_str(),
+        mqtt5TestVars.m_private_key_path_string.c_str(),
+        allocator);
+    ASSERT_TRUE(builder2);
 
     std::promise<void> client2_received;
     auto onMessage_client2 = [&](const PublishReceivedEventData &eventData) -> int {
@@ -2026,6 +2019,15 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     };
     builder2->WithPublishReceivedCallback(onMessage_client2);
 
+    Aws::Iot::Mqtt5ClientBuilder *publish_builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+        mqtt5TestVars.m_hostname_string,
+        mqtt5TestVars.m_certificate_path_string.c_str(),
+        mqtt5TestVars.m_private_key_path_string.c_str(),
+        allocator);
+    ASSERT_TRUE(publish_builder);
+
+
+
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
 
@@ -2036,13 +2038,12 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     std::promise<void> stoppedPromise3;
 
     std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect = std::make_shared<Aws::Crt::Mqtt5::ConnectPacket>();
-    packetConnect->WithClientId("s_TestMqtt5SharedSubscriptionTest" + Aws::Crt::UUID().ToString());
 
     /* first subscriber */
+    packetConnect->WithClientId("s_TestMqtt5SharedSubscriptionTest" + Aws::Crt::UUID().ToString());
     builder->WithConnectOptions(packetConnect);
     s_setupConnectionLifeCycle(builder, connectionPromise, stoppedPromise, "Subscriber 1");
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
-
     ASSERT_TRUE(mqtt5Client);
     ASSERT_TRUE(mqtt5Client->Start());
 
@@ -2051,16 +2052,14 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     builder2->WithConnectOptions(packetConnect);
     s_setupConnectionLifeCycle(builder2, connectionPromise2, stoppedPromise2, "Subscriber 2");
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client2 = builder2->Build();
-
     ASSERT_TRUE(mqtt5Client2);
     ASSERT_TRUE(mqtt5Client2->Start());
 
     /* publisher */
-    publish_builder->WithConnectOptions(packetConnect);
     packetConnect->WithClientId("s_TestMqtt5SharedSubscriptionTest" + Aws::Crt::UUID().ToString());
+    publish_builder->WithConnectOptions(packetConnect);
     s_setupConnectionLifeCycle(publish_builder, connectionPromise3, stoppedPromise3, "Publisher");
     std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Publisher = publish_builder->Build();
-
     ASSERT_TRUE(mqtt5Publisher);
     ASSERT_TRUE(mqtt5Publisher->Start());
 
@@ -2068,6 +2067,10 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(connectionPromise2.get_future().get());
     ASSERT_TRUE(connectionPromise3.get_future().get());
+
+    connectionPromise = std::promise<bool>();
+    connectionPromise2 = std::promise<bool>();
+    connectionPromise3 = std::promise<bool>();
 
     /* Subscribe to test topic */
     Mqtt5::Subscription subscription(sharedTopicFilter, Mqtt5::QOS::AWS_MQTT5_QOS_AT_MOST_ONCE, allocator);
