@@ -2136,19 +2136,21 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     fprintf(stderr, "all packets received =========\n");
 
     Vector<String> unsubList;
-    unsubList.clear();
-    std::shared_ptr<Mqtt5::UnsubscribePacket> unsubscribe_client1 = std::make_shared<Mqtt5::UnsubscribePacket>(allocator);
+    unsubList.push_back(TEST_TOPIC);
+    std::shared_ptr<Mqtt5::UnsubscribePacket> unsubscribe_client1 =
+        std::make_shared<Mqtt5::UnsubscribePacket>(allocator);
     unsubscribe_client1->WithTopicFilters(unsubList);
     ASSERT_FALSE(mqtt5Client->Unsubscribe(unsubscribe_client1));
 
-    std::shared_ptr<Mqtt5::UnsubscribePacket> unsubscribe_client2 = std::make_shared<Mqtt5::UnsubscribePacket>(allocator);
+    std::shared_ptr<Mqtt5::UnsubscribePacket> unsubscribe_client2 =
+        std::make_shared<Mqtt5::UnsubscribePacket>(allocator);
     unsubscribe_client2->WithTopicFilters(unsubList);
     ASSERT_FALSE(mqtt5Client->Unsubscribe(unsubscribe_client2));
 
     client_received = std::promise<void>();
 
     /* makes sure messages are distrubuted evenly between the two clients*/
-    ASSERT_INT_EQUALS(10, client_messages);
+    ASSERT_INT_EQUALS(11, client_messages); /* We are adding one at the end, so 10 messages received */
     ASSERT_TRUE(client1_received);
     ASSERT_TRUE(client2_received);
 
