@@ -29,18 +29,18 @@ static void s_setupConnectionLifeCycle(
 {
     mqtt5Options.WithClientConnectionSuccessCallback(
         [&connectionPromise, clientName](const OnConnectionSuccessEventData &) {
-            printf("[MQTT5]%s Connection Success.", clientName);
+            printf("[MQTT5]%s Connection Success.\n", clientName);
             connectionPromise.set_value(true);
         });
 
     mqtt5Options.WithClientConnectionFailureCallback(
         [&connectionPromise, clientName](const OnConnectionFailureEventData &eventData) {
-            printf("[MQTT5]%s Connection failed with error : %s", clientName, aws_error_debug_str(eventData.errorCode));
+            printf("[MQTT5]%s Connection failed with error : %s\n", clientName, aws_error_debug_str(eventData.errorCode));
             connectionPromise.set_value(false);
         });
 
     mqtt5Options.WithClientStoppedCallback([&stoppedPromise, clientName](const OnStoppedEventData &) {
-        printf("[MQTT5]%s Stopped", clientName);
+        printf("[MQTT5]%s Stopped\n", clientName);
         stoppedPromise.set_value();
     });
 }
@@ -1977,6 +1977,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     std::promise<void> client1_received;
     auto onMessage_client1 = [&](const PublishReceivedEventData &eventData) -> int {
         String topic = eventData.publishPacket->getTopic();
+        printf("========= packet 1 received %s\n", topic.c_str());
         if (topic == TEST_TOPIC)
         {
             ByteCursor payload = eventData.publishPacket->getPayload();
@@ -1985,7 +1986,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
             ASSERT_TRUE(message_int < MESSAGE_NUMBER);
             ++receivedMessages[message_int];
             client1_messages++;
-            if (client1_messages >= 5)
+            if (client1_messages == 5)
             {
                 fprintf(stderr, "client 1 future set\n");
                 client1_received.set_value();
@@ -2006,6 +2007,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     std::promise<void> client2_received;
     auto onMessage_client2 = [&](const PublishReceivedEventData &eventData) -> int {
         String topic = eventData.publishPacket->getTopic();
+        printf("========= packet 2 received %s\n", topic.c_str());
         if (topic == TEST_TOPIC)
         {
             ByteCursor payload = eventData.publishPacket->getPayload();
@@ -2014,7 +2016,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
             ASSERT_TRUE(message_int < MESSAGE_NUMBER);
             ++receivedMessages[message_int];
             client2_messages++;
-            if (client2_messages >= 5)
+            if (client2_messages == 5)
             {
                 fprintf(stderr, " client 2 future set\n");
                 client2_received.set_value();
