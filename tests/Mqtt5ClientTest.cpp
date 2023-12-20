@@ -1992,9 +1992,10 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
             client1_received = true;
 
             bool exchanged = false;
-            int desired = 10;
+            int desired = 11;
+            int tested = 10;
             client_messages++;
-            exchanged = client_messages.compare_exchange_strong(desired, desired);
+            exchanged = client_messages.compare_exchange_strong(tested, desired);
             if (exchanged == true)
             //if (client_messages == 10)
             {
@@ -2027,9 +2028,10 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
             client2_received = true;
 
             bool exchanged = false;
-            int desired = 10;
+            int desired = 11;
+            int tested = 10;
             client_messages++;
-            exchanged = client_messages.compare_exchange_strong(desired, desired);
+            exchanged = client_messages.compare_exchange_strong(tested, desired);
             if (exchanged == true)
             //if (client_messages == 10)
             {
