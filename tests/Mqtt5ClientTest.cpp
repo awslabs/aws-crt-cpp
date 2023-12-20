@@ -1983,8 +1983,9 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
             ASSERT_TRUE(message_int < MESSAGE_NUMBER);
             ++receivedMessages[message_int];
             client1_messages++;
-            if (client1_messages == 5)
+            if (client1_messages >= 5)
             {
+                fprintf(stdout, "client 1 future set\n");
                 client1_received.set_value();
             }
         }
@@ -2012,6 +2013,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
             client2_messages++;
             if (client2_messages == 5)
             {
+                fprintf(stdout, " client 2 future set\n");
                 client2_received.set_value();
             }
         }
@@ -2094,6 +2096,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     /* subscribe second client */
     ASSERT_TRUE(mqtt5Client2->Subscribe(subscribe2, onSubAck));
     suback.get_future().wait();
+    suback = std::promise<void>();
 
     /* Publish message 10 to test topic */
     for (int i = 0; i < MESSAGE_NUMBER; i++)
