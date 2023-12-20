@@ -1943,6 +1943,7 @@ AWS_TEST_CASE(Mqtt5WillTest, s_TestMqtt5WillTest)
  */
 static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, void *)
 {
+    fprintf(stderr, "starting s_TestMqtt5SharedSubscriptionTest ===========\n");
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
@@ -1965,11 +1966,12 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
         receivedMessages.push_back(0);
     }
 
-    Aws::Iot::Mqtt5ClientBuilder *subscribe_builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
-        mqtt5TestVars.m_hostname_string,
-        mqtt5TestVars.m_certificate_path_string.c_str(),
-        mqtt5TestVars.m_private_key_path_string.c_str(),
-        allocator);
+    Aws::Iot::Mqtt5ClientBuilder *subscribe_builder =
+        Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+            mqtt5TestVars.m_hostname_string,
+            mqtt5TestVars.m_certificate_path_string.c_str(),
+            mqtt5TestVars.m_private_key_path_string.c_str(),
+            allocator);
     ASSERT_TRUE(subscribe_builder);
 
     std::promise<void> client1_received;
@@ -1993,11 +1995,12 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     };
     subscribe_builder->WithPublishReceivedCallback(onMessage_client1);
 
-    Aws::Iot::Mqtt5ClientBuilder *subscribe_builder2 = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
-        mqtt5TestVars.m_hostname_string,
-        mqtt5TestVars.m_certificate_path_string.c_str(),
-        mqtt5TestVars.m_private_key_path_string.c_str(),
-        allocator);
+    Aws::Iot::Mqtt5ClientBuilder *subscribe_builder2 =
+        Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+            mqtt5TestVars.m_hostname_string,
+            mqtt5TestVars.m_certificate_path_string.c_str(),
+            mqtt5TestVars.m_private_key_path_string.c_str(),
+            allocator);
     ASSERT_TRUE(subscribe_builder2);
 
     std::promise<void> client2_received;
@@ -2094,6 +2097,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     /* subscribe second client */
     ASSERT_TRUE(mqtt5Client2->Subscribe(subscribe2, onSubAck));
     suback.get_future().wait();
+
     suback = std::promise<void>();
 
     /* Publish message 10 to test topic */
@@ -2119,9 +2123,9 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     }
 
     /* Stop all clients */
-    mqtt5Client->Stop();
-    mqtt5Client2->Stop();
-    mqtt5Publisher->Stop();
+    ASSERT_TRUE(mqtt5Client->Stop());
+    ASSERT_TRUE(mqtt5Client2->Stop());
+    ASSERT_TRUE(mqtt5Publisher->Stop());
 
     /* Wait for all clents to disconnect */
     stoppedPromise.get_future().get();
