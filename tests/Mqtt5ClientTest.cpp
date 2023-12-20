@@ -1997,7 +1997,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
             client_messages++;
             exchanged = client_messages.compare_exchange_strong(tested, desired);
             if (exchanged == true)
-            //if (client_messages == 10)
+            // if (client_messages == 10)
             {
                 fprintf(stderr, "client 1 future set ======\n");
                 client_received.set_value();
@@ -2033,7 +2033,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
             client_messages++;
             exchanged = client_messages.compare_exchange_strong(tested, desired);
             if (exchanged == true)
-            //if (client_messages == 10)
+            // if (client_messages == 10)
             {
                 fprintf(stderr, " client 2 future set=======\n");
                 client_received.set_value();
@@ -2132,7 +2132,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
 
     fprintf(stderr, "all packets sent =========\n");
     client_received.get_future().wait();
-    //client2_received.get_future().wait();
+    // client2_received.get_future().wait();
     fprintf(stderr, "all packets received =========\n");
 
     Vector<String> unsubList;
@@ -2140,12 +2140,12 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     std::shared_ptr<Mqtt5::UnsubscribePacket> unsubscribe_client1 =
         std::make_shared<Mqtt5::UnsubscribePacket>(allocator);
     unsubscribe_client1->WithTopicFilters(unsubList);
-    ASSERT_FALSE(mqtt5Client->Unsubscribe(unsubscribe_client1));
+    ASSERT_TRUE(mqtt5Client->Unsubscribe(unsubscribe_client1));
 
     std::shared_ptr<Mqtt5::UnsubscribePacket> unsubscribe_client2 =
         std::make_shared<Mqtt5::UnsubscribePacket>(allocator);
     unsubscribe_client2->WithTopicFilters(unsubList);
-    ASSERT_FALSE(mqtt5Client->Unsubscribe(unsubscribe_client2));
+    ASSERT_TRUE(mqtt5Client->Unsubscribe(unsubscribe_client2));
 
     client_received = std::promise<void>();
 
