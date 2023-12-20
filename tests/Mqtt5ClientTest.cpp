@@ -2067,9 +2067,11 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     ASSERT_TRUE(mqtt5Publisher->Start());
 
     /* Wait for all clents to connect */
+    fprintf(stderr, "waiting for connections =========\n");
     ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(connectionPromise2.get_future().get());
     ASSERT_TRUE(connectionPromise3.get_future().get());
+    fprintf(stderr, "all connections started =========\n");
 
     connectionPromise = std::promise<bool>();
     connectionPromise2 = std::promise<bool>();
@@ -2109,6 +2111,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
         ASSERT_TRUE(mqtt5Publisher->Publish(publish));
     }
 
+    fprintf(stderr, "all packets sent =========\n");
     client1_received.get_future().wait();
     client2_received.get_future().wait();
 
@@ -2131,6 +2134,10 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     stoppedPromise.get_future().get();
     stoppedPromise2.get_future().get();
     stoppedPromise3.get_future().get();
+
+    delete subscribe_builder;
+    delete subscribe_builder2;
+    delete publish_builder;
 
     return AWS_OP_SUCCESS;
 }
