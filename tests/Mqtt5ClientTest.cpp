@@ -2084,12 +2084,12 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     /* Subscribe to test topic */
     Mqtt5::Subscription subscription(sharedTopicFilter, Mqtt5::QOS::AWS_MQTT5_QOS_AT_MOST_ONCE, allocator);
     std::shared_ptr<Mqtt5::SubscribePacket> subscribe = std::make_shared<Mqtt5::SubscribePacket>(allocator);
-    subscribe->WithSubscription(subscription);
+    subscribe->WithSubscription(std::move(subscription));
 
     /* Subscribe to test topic */
     Mqtt5::Subscription subscription2(sharedTopicFilter, Mqtt5::QOS::AWS_MQTT5_QOS_AT_MOST_ONCE, allocator);
     std::shared_ptr<Mqtt5::SubscribePacket> subscribe2 = std::make_shared<Mqtt5::SubscribePacket>(allocator);
-    subscribe2->WithSubscription(subscription);
+    subscribe2->WithSubscription(std::move(subscription2));
 
     std::promise<void> suback;
     auto onSubAck = [&](int, std::shared_ptr<SubAckPacket>) { suback.set_value(); };
