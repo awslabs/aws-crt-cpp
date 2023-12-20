@@ -2116,8 +2116,8 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     }
 
     fprintf(stderr, "all packets sent =========\n");
-    //client1_received.get_future().wait();
-    //client2_received.get_future().wait();
+    client1_received.get_future().wait();
+    client2_received.get_future().wait();
     fprintf(stderr, "all packets received =========\n");
 
     /* makes sure messages are distrubuted evenly between the two clients*/
