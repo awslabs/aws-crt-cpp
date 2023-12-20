@@ -33,11 +33,11 @@ static void s_setupConnectionLifeCycle(
             connectionPromise.set_value(true);
         });
 
-    mqtt5Options.WithClientConnectionFailureCallback(
-        [&connectionPromise, clientName](const OnConnectionFailureEventData &eventData) {
-            printf("[MQTT5]%s Connection failed with error : %s\n", clientName, aws_error_debug_str(eventData.errorCode));
-            connectionPromise.set_value(false);
-        });
+    mqtt5Options.WithClientConnectionFailureCallback([&connectionPromise,
+                                                      clientName](const OnConnectionFailureEventData &eventData) {
+        printf("[MQTT5]%s Connection failed with error : %s\n", clientName, aws_error_debug_str(eventData.errorCode));
+        connectionPromise.set_value(false);
+    });
 
     mqtt5Options.WithClientStoppedCallback([&stoppedPromise, clientName](const OnStoppedEventData &) {
         printf("[MQTT5]%s Stopped\n", clientName);
@@ -1954,8 +1954,10 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     ApiHandle apiHandle(allocator);
 
     String currentUUID = Aws::Crt::UUID().ToString();
-    const String TEST_TOPIC = "test/MQTTT5_Binding_CPP_ss" + currentUUID;
-    const String sharedTopicFilter = "$share/crttest/test/MQTT5_Binding_CPP_ss" + currentUUID;
+
+    const String TEST_TOPIC = "test/MQTT5_Binding_CPP_" + currentUUID;
+    const String sharedTopicFilter = "$share/crttest/test/MQTT5_Binding_CPP_" + currentUUID;
+
     const int MESSAGE_NUMBER = 10;
     int client1_messages = 0;
     int client2_messages = 0;
