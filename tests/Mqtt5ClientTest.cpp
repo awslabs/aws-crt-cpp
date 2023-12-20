@@ -12,6 +12,7 @@
 #include <aws/iot/MqttCommon.h>
 #include <aws/testing/aws_test_harness.h>
 
+#include <atomic>
 #include <utility>
 
 using namespace Aws::Crt;
@@ -1959,8 +1960,9 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     const String sharedTopicFilter = "$share/crttest/test/MQTT5_Binding_CPP_" + currentUUID;
 
     const int MESSAGE_NUMBER = 10;
-    int client_messages = 0;
-    //int client2_messages = 0;
+    std::atomic<int> client_messages(0);
+    bool client1_received = false;
+    bool client2_received = false;
 
     std::vector<int> receivedMessages;
     for (int i = 0; i < MESSAGE_NUMBER; i++)
@@ -1987,8 +1989,14 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
             int message_int = atoi(message_string.c_str());
             ASSERT_TRUE(message_int < MESSAGE_NUMBER);
             ++receivedMessages[message_int];
+            client1_received = true;
+
+            bool exchanged = false;
+            int desired = 10;
             client_messages++;
-            if (client_messages == 10)
+            exchanged = client_messages.compare_exchange_strong(desired, desired);
+            if (exchanged == true)
+            //if (client_messages == 10)
             {
                 fprintf(stderr, "client 1 future set ======\n");
                 client_received.set_value();
@@ -2016,8 +2024,14 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
             int message_int = atoi(message_string.c_str());
             ASSERT_TRUE(message_int < MESSAGE_NUMBER);
             ++receivedMessages[message_int];
+            client2_received = true;
+
+            bool exchanged = false;
+            int desired = 10;
             client_messages++;
-            if (client_messages == 10)
+            exchanged = client_messages.compare_exchange_strong(desired, desired);
+            if (exchanged == true)
+            //if (client_messages == 10)
             {
                 fprintf(stderr, " client 2 future set=======\n");
                 client_received.set_value();
@@ -2133,7 +2147,8 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
 
     /* makes sure messages are distrubuted evenly between the two clients*/
     ASSERT_INT_EQUALS(10, client_messages);
-    //ASSERT_INT_EQUALS(5, client2_messages);
+    ASSERT_TRUE(client1_received);
+    ASSERT_TRUE(client2_received);
 
     /* make sure all messages are received */
     for (int i = 0; i < MESSAGE_NUMBER; i++)
