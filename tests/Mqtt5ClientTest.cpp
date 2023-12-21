@@ -1989,7 +1989,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
                 int message_int = atoi(message_string.c_str());
                 ASSERT_TRUE(message_int < MESSAGE_NUMBER);
                 ++receivedMessages[message_int];
-                received = true;                                       // this line has changed
+                received = true; // this line has changed
 
                 bool exchanged = false;
                 int desired = 11;
