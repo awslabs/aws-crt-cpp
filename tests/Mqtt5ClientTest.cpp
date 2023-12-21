@@ -1963,7 +1963,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     bool client1_received = false;
     bool client2_received = false;
 
-    std::vector<int> receivedMessages;
+    std::vector<int> receivedMessages(MESSAGE_NUMBER);
     for (int i = 0; i < MESSAGE_NUMBER; i++)
     {
         receivedMessages.push_back(0);
@@ -1978,6 +1978,37 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     ASSERT_TRUE(subscribe_builder);
 
     std::promise<void> client_received;
+
+    auto get_on_message_callback = [&](bool &received) {
+        return [&](const PublishReceivedEventData &eventData) -> int {
+            String topic = eventData.publishPacket->getTopic();
+            if (topic == TEST_TOPIC)
+            {
+                ByteCursor payload = eventData.publishPacket->getPayload();
+                String message_string = String((const char *)payload.ptr, payload.len);
+                int message_int = atoi(message_string.c_str());
+                ASSERT_TRUE(message_int < MESSAGE_NUMBER);
+                ++receivedMessages[message_int];
+                received = true;                                       // this line has changed
+
+                bool exchanged = false;
+                int desired = 11;
+                int tested = 10;
+                client_messages++;
+                exchanged = client_messages.compare_exchange_strong(tested, desired);
+                if (exchanged == true)
+                {
+                    client_received.set_value();
+                }
+            }
+            return 0;
+        };
+    };
+    auto onMessage_client1 = get_on_message_callback(client1_received);
+    auto onMessage_client2 = get_on_message_callback(client2_received);
+
+//    std::promise<void> client_received;
+/*
     auto onMessage_client1 = [&](const PublishReceivedEventData &eventData) -> int {
         String topic = eventData.publishPacket->getTopic();
         if (topic == TEST_TOPIC)
@@ -2001,6 +2032,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
         }
         return 0;
     };
+*/
     subscribe_builder->WithPublishReceivedCallback(onMessage_client1);
 
     Aws::Iot::Mqtt5ClientBuilder *subscribe_builder2 =
@@ -2011,6 +2043,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
             allocator);
     ASSERT_TRUE(subscribe_builder2);
 
+/*
     auto onMessage_client2 = [&](const PublishReceivedEventData &eventData) -> int {
         String topic = eventData.publishPacket->getTopic();
         if (topic == TEST_TOPIC)
@@ -2034,6 +2067,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
         }
         return 0;
     };
+*/
     subscribe_builder2->WithPublishReceivedCallback(onMessage_client2);
 
     Aws::Iot::Mqtt5ClientBuilder *publish_builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
@@ -2134,7 +2168,7 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     std::shared_ptr<Mqtt5::UnsubscribePacket> unsubscribe_client2 =
         std::make_shared<Mqtt5::UnsubscribePacket>(allocator);
     unsubscribe_client2->WithTopicFilters(unsubList);
-    ASSERT_TRUE(mqtt5Client->Unsubscribe(unsubscribe_client2));
+    ASSERT_TRUE(mqtt5Client2->Unsubscribe(unsubscribe_client2));
 
     /* make sure all messages are received */
     ASSERT_INT_EQUALS(MESSAGE_NUMBER + 1, client_messages); /* We are adding one at the end, so 10 messages received */
@@ -2377,7 +2411,7 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *)
 
     subscribed.get_future().get();
 
-    /* Publish message 10 to test topic */
+    /* Publish 10 messages to test topic */
     for (int i = 0; i < MESSAGE_NUMBER; i++)
     {
         std::string payload = std::to_string(i);
