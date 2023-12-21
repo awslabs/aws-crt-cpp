@@ -2007,32 +2007,6 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     auto onMessage_client1 = get_on_message_callback(client1_received);
     auto onMessage_client2 = get_on_message_callback(client2_received);
 
-//    std::promise<void> client_received;
-/*
-    auto onMessage_client1 = [&](const PublishReceivedEventData &eventData) -> int {
-        String topic = eventData.publishPacket->getTopic();
-        if (topic == TEST_TOPIC)
-        {
-            ByteCursor payload = eventData.publishPacket->getPayload();
-            String message_string = String((const char *)payload.ptr, payload.len);
-            int message_int = atoi(message_string.c_str());
-            ASSERT_TRUE(message_int < MESSAGE_NUMBER);
-            ++receivedMessages[message_int];
-            client1_received = true;
-
-            bool exchanged = false;
-            int desired = 11;
-            int tested = 10;
-            client_messages++;
-            exchanged = client_messages.compare_exchange_strong(tested, desired);
-            if (exchanged == true)
-            {
-                client_received.set_value();
-            }
-        }
-        return 0;
-    };
-*/
     subscribe_builder->WithPublishReceivedCallback(onMessage_client1);
 
     Aws::Iot::Mqtt5ClientBuilder *subscribe_builder2 =
@@ -2043,31 +2017,6 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
             allocator);
     ASSERT_TRUE(subscribe_builder2);
 
-/*
-    auto onMessage_client2 = [&](const PublishReceivedEventData &eventData) -> int {
-        String topic = eventData.publishPacket->getTopic();
-        if (topic == TEST_TOPIC)
-        {
-            ByteCursor payload = eventData.publishPacket->getPayload();
-            String message_string = String((const char *)payload.ptr, payload.len);
-            int message_int = atoi(message_string.c_str());
-            ASSERT_TRUE(message_int < MESSAGE_NUMBER);
-            ++receivedMessages[message_int];
-            client2_received = true;
-
-            bool exchanged = false;
-            int desired = 11;
-            int tested = 10;
-            client_messages++;
-            exchanged = client_messages.compare_exchange_strong(tested, desired);
-            if (exchanged == true)
-            {
-                client_received.set_value();
-            }
-        }
-        return 0;
-    };
-*/
     subscribe_builder2->WithPublishReceivedCallback(onMessage_client2);
 
     Aws::Iot::Mqtt5ClientBuilder *publish_builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
