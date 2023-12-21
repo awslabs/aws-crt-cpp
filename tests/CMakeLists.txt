@@ -227,6 +227,7 @@ if(NOT BYO_CRYPTO)
     add_net_test_case(Mqtt5InterruptUnsub)
     add_net_test_case(Mqtt5InterruptPublishQoS1)
     add_net_test_case(Mqtt5OperationStatisticsSimple)
+    add_net_test_case(Mqtt5SharedSubscriptionTest)
 
     # Mqtt5-to-3 Adapter
     add_test_case(Mqtt5to3AdapterNewConnectionMin)
