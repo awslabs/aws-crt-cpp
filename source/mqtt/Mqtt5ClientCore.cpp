@@ -521,7 +521,7 @@ namespace Aws
                 pubCallbackData->allocator = m_allocator;
                 pubCallbackData->onPublishCompletion = onPublishCompletionCallback;
 
-                aws_mqtt5_publish_completion_options options;
+                aws_mqtt5_publish_completion_options options{};
 
                 options.completion_callback = Mqtt5ClientCore::s_publishCompletionCallback;
                 options.completion_user_data = pubCallbackData;
@@ -555,7 +555,7 @@ namespace Aws
                 subCallbackData->allocator = m_allocator;
                 subCallbackData->onSubscribeCompletion = onSubscribeCompletionCallback;
 
-                aws_mqtt5_subscribe_completion_options options;
+                aws_mqtt5_subscribe_completion_options options{};
 
                 options.completion_callback = Mqtt5ClientCore::s_subscribeCompletionCallback;
                 options.completion_user_data = subCallbackData;
@@ -588,7 +588,7 @@ namespace Aws
                 unSubCallbackData->allocator = m_allocator;
                 unSubCallbackData->onUnsubscribeCompletion = onUnsubscribeCompletionCallback;
 
-                aws_mqtt5_unsubscribe_completion_options options;
+                aws_mqtt5_unsubscribe_completion_options options{};
 
                 options.completion_callback = Mqtt5ClientCore::s_unsubscribeCompletionCallback;
                 options.completion_user_data = unSubCallbackData;
