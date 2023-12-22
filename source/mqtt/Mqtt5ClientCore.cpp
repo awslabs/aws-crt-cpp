@@ -521,11 +521,10 @@ namespace Aws
                 pubCallbackData->allocator = m_allocator;
                 pubCallbackData->onPublishCompletion = onPublishCompletionCallback;
 
-                aws_mqtt5_publish_completion_options options;
+                aws_mqtt5_publish_completion_options options{};
 
                 options.completion_callback = Mqtt5ClientCore::s_publishCompletionCallback;
                 options.completion_user_data = pubCallbackData;
-                options.ack_timeout_seconds_override = 0;
 
                 int result = aws_mqtt5_client_publish(m_client, &publish, &options);
                 if (result != AWS_OP_SUCCESS)
@@ -556,11 +555,10 @@ namespace Aws
                 subCallbackData->allocator = m_allocator;
                 subCallbackData->onSubscribeCompletion = onSubscribeCompletionCallback;
 
-                aws_mqtt5_subscribe_completion_options options;
+                aws_mqtt5_subscribe_completion_options options{};
 
                 options.completion_callback = Mqtt5ClientCore::s_subscribeCompletionCallback;
                 options.completion_user_data = subCallbackData;
-                options.ack_timeout_seconds_override = 0;
 
                 /* Subscribe to topic */
                 int result = aws_mqtt5_client_subscribe(m_client, &subscribe, &options);
@@ -590,11 +588,10 @@ namespace Aws
                 unSubCallbackData->allocator = m_allocator;
                 unSubCallbackData->onUnsubscribeCompletion = onUnsubscribeCompletionCallback;
 
-                aws_mqtt5_unsubscribe_completion_options options;
+                aws_mqtt5_unsubscribe_completion_options options{};
 
                 options.completion_callback = Mqtt5ClientCore::s_unsubscribeCompletionCallback;
                 options.completion_user_data = unSubCallbackData;
-                options.ack_timeout_seconds_override = 0;
 
                 int result = aws_mqtt5_client_unsubscribe(m_client, &unsubscribe, &options);
                 if (result != AWS_OP_SUCCESS)
