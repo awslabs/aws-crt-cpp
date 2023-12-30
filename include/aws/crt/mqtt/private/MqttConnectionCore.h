@@ -363,7 +363,7 @@ namespace Aws
 
                 aws_mqtt_client_connection *m_underlyingConnection;
                 String m_hostName;
-                uint16_t m_port;
+                uint32_t m_port;
                 Crt::Io::TlsContext m_tlsContext;
                 Io::TlsConnectionOptions m_tlsOptions;
                 Io::SocketOptions m_socketOptions;

@@ -105,7 +105,7 @@ instance of this class for each reservation.
         tlsCtxOptions.OverrideDefaultTrustStore(nullptr, caFile.c_str());
     }
 
-    uint16_t port = 8883;
+    uint32_t port = 8883;
     if (Io::TlsContextOptions::IsAlpnSupported())
     {
         /*

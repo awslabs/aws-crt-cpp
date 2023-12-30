@@ -308,7 +308,7 @@ namespace Aws
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithPort(uint16_t port) noexcept
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithPort(uint32_t port) noexcept
         {
             m_port = port;
             return *this;
@@ -479,7 +479,7 @@ namespace Aws
                 return nullptr;
             }
 
-            uint16_t port = m_port;
+            uint32_t port = m_port;
 
             if (!port) // port is default to 0
             {

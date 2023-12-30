@@ -242,7 +242,7 @@ namespace Aws
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::WithPort(uint16_t port) noexcept
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithPort(uint32_t port) noexcept
             {
                 m_port = port;
                 return *this;

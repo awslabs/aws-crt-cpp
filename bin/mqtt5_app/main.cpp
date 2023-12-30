@@ -30,7 +30,7 @@ struct app_ctx
 {
     struct aws_allocator *allocator;
     Io::Uri uri;
-    uint16_t port;
+    uint32_t port;
     const char *cacert;
     const char *cert;
     const char *key;

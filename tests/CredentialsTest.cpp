@@ -376,7 +376,7 @@ static int s_InitializeProxyOptions(
     ASSERT_SUCCESS(aws_get_environment_value(allocator, s_httpProxyPortEnvVariable, &proxy_port));
 
     proxyOptions.HostName = Aws::Crt::String(aws_string_c_str(proxy_host_name));
-    proxyOptions.Port = static_cast<uint16_t>(atoi(aws_string_c_str(proxy_port)));
+    proxyOptions.Port = static_cast<uint32_t>(atoi(aws_string_c_str(proxy_port)));
 
     aws_string_destroy(proxy_host_name);
     aws_string_destroy(proxy_port);

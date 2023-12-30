@@ -256,7 +256,7 @@ int main(int argc, char **argv)
         apiHandle.InitializeLogging(appCtx.LogLevel, stderr);
     }
     bool useTls = true;
-    uint16_t port = 443;
+    uint32_t port = 443;
     if (!appCtx.uri.GetScheme().len && (appCtx.uri.GetPort() == 80 || appCtx.uri.GetPort() == 8080))
     {
         useTls = false;
