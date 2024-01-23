@@ -375,8 +375,8 @@ static int s_InitializeProxyOptions(
     ASSERT_SUCCESS(aws_get_environment_value(allocator, s_httpProxyHostEnvVariable, &proxy_host_name));
     ASSERT_SUCCESS(aws_get_environment_value(allocator, s_httpProxyPortEnvVariable, &proxy_port));
 
-    proxyOptions.HostName = Aws::Crt::String((const char *)proxy_host_name->bytes);
-    proxyOptions.Port = atoi((const char *)proxy_port->bytes);
+    proxyOptions.HostName = Aws::Crt::String(aws_string_c_str(proxy_host_name));
+    proxyOptions.Port = static_cast<uint16_t>(atoi(aws_string_c_str(proxy_port)));
 
     aws_string_destroy(proxy_host_name);
     aws_string_destroy(proxy_port);
@@ -384,15 +384,19 @@ static int s_InitializeProxyOptions(
     return AWS_OP_SUCCESS;
 }
 
-AWS_STATIC_STRING_FROM_LITERAL(s_CognitoIdentityEnvVariable, "AWS_TESTING_COGNITO_IDENTITY");
+AWS_STATIC_STRING_FROM_LITERAL(s_CognitoIdentityEnvVariable, "AWS_TEST_MQTT311_COGNITO_IDENTITY");
+AWS_STATIC_STRING_FROM_LITERAL(s_CognitoEndpointEnvVariable, "AWS_TEST_MQTT311_COGNITO_ENDPOINT");
 
-static int s_GetCognitoIdentityFromEnvironment(String &identity, struct aws_allocator *allocator)
+static int s_GetCognitoVariableFromEnvironment(
+    String &identity,
+    struct aws_allocator *allocator,
+    const aws_string *envName)
 {
     struct aws_string *id = NULL;
 
-    ASSERT_SUCCESS(aws_get_environment_value(allocator, s_CognitoIdentityEnvVariable, &id));
+    ASSERT_SUCCESS(aws_get_environment_value(allocator, envName, &id));
 
-    identity = Aws::Crt::String((const char *)id->bytes);
+    identity = Aws::Crt::String(aws_string_c_str(id));
 
     aws_string_destroy(id);
 
@@ -420,8 +424,8 @@ static int s_DoCognitoCredentialsProviderSuccessTest(struct aws_allocator *alloc
 
         CredentialsProviderCognitoConfig config;
         config.Bootstrap = &clientBootstrap;
-        config.Endpoint = "cognito-identity.us-east-1.amazonaws.com";
-        ASSERT_SUCCESS(s_GetCognitoIdentityFromEnvironment(config.Identity, allocator));
+        ASSERT_SUCCESS(s_GetCognitoVariableFromEnvironment(config.Endpoint, allocator, s_CognitoEndpointEnvVariable));
+        ASSERT_SUCCESS(s_GetCognitoVariableFromEnvironment(config.Identity, allocator, s_CognitoIdentityEnvVariable));
         config.TlsCtx = tlsContext;
         if (useProxy)
         {
@@ -475,7 +479,7 @@ static int s_GetSTSRoleFromEnvironment(String &roleArn, struct aws_allocator *al
 
     ASSERT_SUCCESS(aws_get_environment_value(allocator, s_STSRoleArnEnvVariable, &role));
 
-    roleArn = Aws::Crt::String((const char *)role->bytes);
+    roleArn = Aws::Crt::String(aws_string_c_str(role));
 
     aws_string_destroy(role);
 

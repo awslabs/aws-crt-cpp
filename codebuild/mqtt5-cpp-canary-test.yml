@@ -1,0 +1,51 @@
+version: 0.2
+env:
+  shell: bash
+  variables:
+    CANARY_DURATION: 25200
+    CANARY_THREADS: 3
+    CANARY_TPS: 50
+    CANARY_CLIENT_COUNT: 10
+    CANARY_LOG_LEVEL: 'ERROR'
+    BUILDER_VERSION: v0.9.44
+    BUILDER_SOURCE: releases
+    BUILDER_HOST: https://d19elf31gohf1l.cloudfront.net
+    PACKAGE_NAME: aws-crt-cpp
+    CANARY_TEST_EXE_PATH: build/install/bin/mqtt5_canary
+    CANARY_SERVER_ARN: Mqtt5MosquittoSever
+
+phases:
+  install:
+    commands:
+      # install cmake for codebuild environment.
+      - add-apt-repository ppa:openjdk-r/ppa
+      - add-apt-repository ppa:ubuntu-toolchain-r/test
+      - apt-get update -y
+      - sudo apt-get install cmake -y
+      - git submodule update --init --recursive
+      # Install necessary lib for canary wrapper
+      - sudo apt-get install gcc python3-dev -y -f
+      - sudo apt-get install pip -y -f
+      - python3 -m pip install psutil
+      - python3 -m pip install boto3
+
+  build:
+    commands:
+      - export CANNARY_TEST_EXE=$CODEBUILD_SRC_DIR/$CANARY_TEST_EXE_PATH
+      - echo $CANNARY_TEST_EXE
+      - export ENDPOINT=$(aws secretsmanager get-secret-value --secret-id "$CANARY_SERVER_ARN" --query "SecretString" | cut -f2 -d":" | sed -e 's/[\\\"\}]//g')
+      - export GIT_HASH=$(git rev-parse HEAD)
+      # Build library and test
+      - python3 -c "from urllib.request import urlretrieve; urlretrieve('$BUILDER_HOST/$BUILDER_SOURCE/$BUILDER_VERSION/builder.pyz?run=$CODEBUILD_BUILD_ID', 'builder.pyz')"
+      - python3 builder.pyz build -p $PACKAGE_NAME
+
+      # ==========
+      # Canary related:
+      - echo run canary test through wrapper
+      # start canary
+      - python3 codebuild/CanaryWrapper.py --canary_executable $CANNARY_TEST_EXE --canary_arguments "-s ${CANARY_DURATION} -t ${CANARY_THREADS} -T ${CANARY_TPS} -C ${CANARY_CLIENT_COUNT} -v ${CANARY_LOG_LEVEL} ${ENDPOINT}" --git_hash ${GIT_HASH} --git_repo_name $PACKAGE_NAME --codebuild_log_path $CODEBUILD_LOG_PATH
+      # ==========
+
+  post_build:
+    commands:
+      - echo Build completed on `date`

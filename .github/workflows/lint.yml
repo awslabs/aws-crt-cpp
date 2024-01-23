@@ -9,7 +9,7 @@ on:
 jobs:
   clang-format:
 
-    runs-on: ubuntu-20.04 # latest
+    runs-on: ubuntu-22.04 # latest
 
     steps:
     - name: Checkout Sources

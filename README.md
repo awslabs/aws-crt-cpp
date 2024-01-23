@@ -28,7 +28,7 @@ If you want to manage these dependencies manually (e.g. you're using them in oth
 `-DBUILD_DEPS=OFF` and `-DCMAKE_PREFIX_PATH=<install>` pointing to the absolute path where you have them installed.
 
 ### MSVC
-If you want to use a statically linked MSVCRT (/MT, /MTd), you can add `-DSTATIC_CRT=ON` to your cmake configuration.
+If you want to use a statically linked MSVCRT (/MT, /MTd), you can add `-DAWS_STATIC_MSVC_RUNTIME_LIBRARY=ON` to your cmake configuration.
 
 ### Apple Silicon (aka M1) and Universal Binaries
 

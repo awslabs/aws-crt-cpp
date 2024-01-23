@@ -174,6 +174,22 @@ namespace Aws
                 Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
+             * Sets the builder up for MTLS, using a PKCS#12 file for private key operations.
+             *
+             * NOTE: This only works on MacOS devices.
+             *
+             * @param hostName - AWS IoT endpoint to connect to
+             * @param options The PKCS12 options to use.
+             * @param allocator - memory allocator to use
+             *
+             * @return Mqtt5ClientBuilder
+             */
+            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithMtlsPkcs12(
+                const Crt::String hostName,
+                const struct Pkcs12Options &options,
+                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
+
+            /**
              * Sets the builder up for MTLS, using a certificate in a Windows certificate store.
              *
              * NOTE: This only works on Windows.
@@ -242,7 +258,7 @@ namespace Aws
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &withHostName(Crt::String hostname);
+            Mqtt5ClientBuilder &WithHostName(Crt::String hostname);
 
             /**
              * Set port to connect to
@@ -251,7 +267,17 @@ namespace Aws
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &withPort(uint16_t port) noexcept;
+            Mqtt5ClientBuilder &WithPort(uint16_t port) noexcept;
+
+            /**
+             * Set booststrap for mqtt5 client
+             *
+             * @param bootStrap bootstrap used for mqtt5 client. The default ClientBootstrap see
+             * Aws::Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap.
+             *
+             * @return this option object
+             */
+            Mqtt5ClientBuilder &WithBootstrap(Crt::Io::ClientBootstrap *bootStrap) noexcept;
 
             /**
              * Sets the certificate authority for the endpoint you're connecting to. This is a path to a file on disk
@@ -280,7 +306,7 @@ namespace Aws
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &withHttpProxyOptions(
+            Mqtt5ClientBuilder &WithHttpProxyOptions(
                 const Crt::Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
 
             /**
@@ -297,7 +323,7 @@ namespace Aws
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &withConnectOptions(std::shared_ptr<ConnectPacket> packetConnect) noexcept;
+            Mqtt5ClientBuilder &WithConnectOptions(std::shared_ptr<ConnectPacket> packetConnect) noexcept;
 
             /**
              * Sets session behavior. Overrides how the MQTT5 client should behave with respect to MQTT sessions.
@@ -306,7 +332,7 @@ namespace Aws
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &withSessionBehavior(ClientSessionBehaviorType sessionBehavior) noexcept;
+            Mqtt5ClientBuilder &WithSessionBehavior(ClientSessionBehaviorType sessionBehavior) noexcept;
 
             /**
              * Sets client extended validation and flow control, additional controls for client behavior with
@@ -317,7 +343,7 @@ namespace Aws
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &withClientExtendedValidationAndFlowControl(
+            Mqtt5ClientBuilder &WithClientExtendedValidationAndFlowControl(
                 ClientExtendedValidationAndFlowControl clientExtendedValidationAndFlowControl) noexcept;
 
             /**
@@ -330,7 +356,7 @@ namespace Aws
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &withOfflineQueueBehavior(
+            Mqtt5ClientBuilder &WithOfflineQueueBehavior(
                 ClientOperationQueueBehaviorType offlineQueueBehavior) noexcept;
 
             /**
@@ -341,7 +367,15 @@ namespace Aws
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &withReconnectOptions(ReconnectOptions reconnectOptions) noexcept;
+            Mqtt5ClientBuilder &WithReconnectOptions(ReconnectOptions reconnectOptions) noexcept;
+
+            /**
+             * Sets the topic aliasing behavior that the client should use.
+             *
+             * @param topicAliasingOptions topic aliasing behavior options to use
+             * @return this builder object
+             */
+            Mqtt5ClientBuilder &WithTopicAliasingOptions(TopicAliasingOptions topicAliasingOptions) noexcept;
 
             /**
              * Sets minConnectedTimeToResetReconnectDelayMs, amount of time that must elapse with an established
@@ -352,7 +386,7 @@ namespace Aws
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &withMinConnectedTimeToResetReconnectDelayMs(
+            Mqtt5ClientBuilder &WithMinConnectedTimeToResetReconnectDelayMs(
                 uint64_t minConnectedTimeToResetReconnectDelayMs) noexcept;
 
             /**
@@ -363,7 +397,7 @@ namespace Aws
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &withPingTimeoutMs(uint32_t pingTimeoutMs) noexcept;
+            Mqtt5ClientBuilder &WithPingTimeoutMs(uint32_t pingTimeoutMs) noexcept;
 
             /**
              * Sets Connack Timeout (ms). Time interval to wait after sending a CONNECT request for a CONNACK
@@ -373,17 +407,29 @@ namespace Aws
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &withConnackTimeoutMs(uint32_t connackTimeoutMs) noexcept;
+            Mqtt5ClientBuilder &WithConnackTimeoutMs(uint32_t connackTimeoutMs) noexcept;
 
             /**
              * Sets Operation Timeout(Seconds). Time interval to wait for an ack after sending a QoS 1+ PUBLISH,
              * SUBSCRIBE, or UNSUBSCRIBE before failing the operation.
              *
-             * @param ackTimeoutSeconds
+             * @param ackTimeoutSec
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &withAckTimeoutSeconds(uint32_t ackTimeoutSeconds) noexcept;
+            Mqtt5ClientBuilder &WithAckTimeoutSec(uint32_t ackTimeoutSec) noexcept;
+
+            /**
+             * @deprecated the function is deprecated, please use `Mqtt5ClientBuilder::WithAckTimeoutSec(uint32_t)`
+             *
+             * Sets Operation Timeout(Seconds). Time interval to wait for an ack after sending a QoS 1+ PUBLISH,
+             * SUBSCRIBE, or UNSUBSCRIBE before failing the operation.
+             *
+             * @param ackTimeoutSec
+             *
+             * @return this option object
+             */
+            Mqtt5ClientBuilder &WithAckTimeoutSeconds(uint32_t ackTimeoutSec) noexcept;
 
             /**
              * Overrides the default SDK Name to send as a metric in the MQTT CONNECT packet.
@@ -439,7 +485,7 @@ namespace Aws
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &withClientConnectionSuccessCallback(OnConnectionSuccessHandler callback) noexcept;
+            Mqtt5ClientBuilder &WithClientConnectionSuccessCallback(OnConnectionSuccessHandler callback) noexcept;
 
             /**
              * Setup callback trigged when client fails to establish an MQTT connection
@@ -448,7 +494,7 @@ namespace Aws
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &withClientConnectionFailureCallback(OnConnectionFailureHandler callback) noexcept;
+            Mqtt5ClientBuilder &WithClientConnectionFailureCallback(OnConnectionFailureHandler callback) noexcept;
 
             /**
              * Setup callback handler trigged when client's current MQTT connection is closed
@@ -457,7 +503,7 @@ namespace Aws
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &withClientDisconnectionCallback(OnDisconnectionHandler callback) noexcept;
+            Mqtt5ClientBuilder &WithClientDisconnectionCallback(OnDisconnectionHandler callback) noexcept;
 
             /**
              * Setup callback handler trigged when client reaches the "Stopped" state
@@ -466,7 +512,7 @@ namespace Aws
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &withClientStoppedCallback(OnStoppedHandler callback) noexcept;
+            Mqtt5ClientBuilder &WithClientStoppedCallback(OnStoppedHandler callback) noexcept;
 
             /**
              * Setup callback handler trigged when client begins an attempt to connect to the remote endpoint.
@@ -475,7 +521,7 @@ namespace Aws
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &withClientAttemptingConnectCallback(OnAttemptingConnectHandler callback) noexcept;
+            Mqtt5ClientBuilder &WithClientAttemptingConnectCallback(OnAttemptingConnectHandler callback) noexcept;
 
             /**
              * Setup callback handler trigged when an MQTT PUBLISH packet is received by the client
@@ -484,7 +530,7 @@ namespace Aws
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &withPublishReceivedCallback(OnPublishReceivedHandler callback) noexcept;
+            Mqtt5ClientBuilder &WithPublishReceivedCallback(OnPublishReceivedHandler callback) noexcept;
 
           private:
             // Common setup shared by all valid constructors
@@ -500,13 +546,8 @@ namespace Aws
             uint16_t m_port;
 
             /**
-             * Client bootstrap to use.  In almost all cases, this can be left undefined.
-             */
-            Io::ClientBootstrap *m_bootstrap;
-
-            /**
              * TLS context for secure socket connections.
-             * If undefined, then a plaintext connection will be used.
+             * If undefined, a plaintext connection will be used.
              */
             Crt::Optional<Crt::Io::TlsContextOptions> m_tlsConnectionOptions;
 

@@ -87,6 +87,10 @@ namespace Aws
             m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(certPath, pkeyPath, allocator);
             if (!m_contextOptions)
             {
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT_CLIENT,
+                    "id=%p: Error initializing TLS context from certificate and private key filepaths",
+                    (void *)this);
                 m_lastError = m_contextOptions.LastError();
                 return;
             }
@@ -101,6 +105,10 @@ namespace Aws
             m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(cert, pkey, allocator);
             if (!m_contextOptions)
             {
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT_CLIENT,
+                    "id=%p: Error initializing TLS context from certificate and private key data",
+                    (void *)this);
                 m_lastError = m_contextOptions.LastError();
                 return;
             }
@@ -112,6 +120,22 @@ namespace Aws
             : MqttClientConnectionConfigBuilder(allocator)
         {
             m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtlsPkcs11(pkcs11Options, allocator);
+            if (!m_contextOptions)
+            {
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT_CLIENT, "id=%p: Error initializing TLS context from PKCS11 options", (void *)this);
+                m_lastError = m_contextOptions.LastError();
+                return;
+            }
+        }
+
+        MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(
+            const struct Pkcs12Options &options,
+            Crt::Allocator *allocator) noexcept
+            : MqttClientConnectionConfigBuilder(allocator)
+        {
+            m_contextOptions = Crt::Io::TlsContextOptions::InitClientWithMtlsPkcs12(
+                options.pkcs12_file.c_str(), options.pkcs12_password.c_str(), allocator);
             if (!m_contextOptions)
             {
                 m_lastError = m_contextOptions.LastError();
@@ -128,6 +152,10 @@ namespace Aws
                 Crt::Io::TlsContextOptions::InitClientWithMtlsSystemPath(windowsCertStorePath, allocator);
             if (!m_contextOptions)
             {
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT_CLIENT,
+                    "id=%p: Error initializing TLS context from Windows Certificate Store data",
+                    (void *)this);
                 m_lastError = m_contextOptions.LastError();
                 return;
             }
@@ -141,6 +169,8 @@ namespace Aws
             m_contextOptions = Crt::Io::TlsContextOptions::InitDefaultClient(allocator);
             if (!m_contextOptions)
             {
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT_CLIENT, "id=%p: Error initializing default client TLS context", (void *)this);
                 m_lastError = m_contextOptions.LastError();
                 return;
             }
@@ -200,6 +230,7 @@ namespace Aws
             {
                 if (!m_contextOptions.OverrideDefaultTrustStore(nullptr, caPath))
                 {
+                    AWS_LOGF_WARN(AWS_LS_MQTT_CLIENT, "id=%p: Error overriding default trust store", (void *)this);
                     m_lastError = m_contextOptions.LastError();
                 }
             }
@@ -213,6 +244,7 @@ namespace Aws
             {
                 if (!m_contextOptions.OverrideDefaultTrustStore(cert))
                 {
+                    AWS_LOGF_WARN(AWS_LS_MQTT_CLIENT, "id=%p: Error overriding default trust store", (void *)this);
                     m_lastError = m_contextOptions.LastError();
                 }
             }
@@ -297,8 +329,23 @@ namespace Aws
             const Crt::String &authorizerSignature,
             const Crt::String &password) noexcept
         {
+            return this->WithCustomAuthorizer(username, authorizerName, authorizerSignature, password, "", "");
+        }
+
+        MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithCustomAuthorizer(
+            const Crt::String &username,
+            const Crt::String &authorizerName,
+            const Crt::String &authorizerSignature,
+            const Crt::String &password,
+            const Crt::String &tokenKeyName,
+            const Crt::String &tokenValue) noexcept
+        {
             if (!m_contextOptions.IsAlpnSupported())
             {
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT_CLIENT,
+                    "id=%p: Alpn is not supported on this platform and therefore cannot use custom authentication",
+                    (void *)this);
                 m_lastError = AWS_ERROR_INVALID_STATE;
                 return *this;
             }
@@ -324,8 +371,31 @@ namespace Aws
             }
             if (!authorizerSignature.empty())
             {
+                if (tokenKeyName.empty() || tokenValue.empty())
+                {
+                    AWS_LOGF_WARN(
+                        AWS_LS_MQTT_CLIENT,
+                        "id=%p: Signed custom authorizers with signature will not work without a token key name and "
+                        "token value. Your connection may be rejected/stalled on the IoT Core side due to this. Please "
+                        "use the non-deprecated API and pass both the token key name and token value to connect to a "
+                        "signed custom authorizer.",
+                        (void *)this);
+                }
                 usernameString =
                     AddToUsernameParameter(usernameString, authorizerSignature, "x-amz-customauthorizer-signature=");
+            }
+            if (!tokenKeyName.empty() || !tokenValue.empty())
+            {
+                if (tokenKeyName.empty() || tokenValue.empty())
+                {
+                    AWS_LOGF_ERROR(
+                        AWS_LS_MQTT_CLIENT,
+                        "id=%p: Token-based custom authentication requires all token-related properties to be set",
+                        (void *)this);
+                    m_lastError = AWS_ERROR_INVALID_ARGUMENT;
+                    return *this;
+                }
+                usernameString = AddToUsernameParameter(usernameString, tokenValue, tokenKeyName + "=");
             }
 
             m_username = usernameString;
