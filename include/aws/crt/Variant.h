@@ -83,6 +83,32 @@ namespace Aws
                     static const bool value = ContainsType<T, Ts...>();
                 };
             } // namespace Checker
+#if defined(DEBUG_BUILD)
+            namespace VariantDebug
+            {
+                template <typename... Ts> class VariantDebugBrowser
+                {
+                  public:
+                    VariantDebugBrowser(char *storage) { InitTuple<0, Ts...>(storage); }
+                    std::tuple<typename std::add_pointer<Ts>::type...> as_tuple;
+
+                  private:
+                    template <short Index, typename First, typename Second, typename... Rest>
+                    void InitTuple(char *storage)
+                    {
+                        First *value = reinterpret_cast<First *>(storage);
+                        std::get<Index>(as_tuple) = value;
+                        InitTuple<Index + 1, Second, Rest...>(storage);
+                    }
+
+                    template <short Index, typename Last> void InitTuple(char *storage)
+                    {
+                        Last *value = reinterpret_cast<Last *>(storage);
+                        std::get<Index>(as_tuple) = value;
+                    }
+                };
+            } // namespace VariantDebug
+#endif        /* defined(DEBUG_BUILD) */
         }     // namespace VariantDetail
 
         template <std::size_t Index, typename... Ts> class VariantAlternative;
@@ -366,6 +392,9 @@ namespace Aws
 
             alignas(VariantDetail::ParameterPackSize::AlignAsPack<Ts...>()) char m_storage[STORAGE_SIZE];
             VariantDetail::Index::VariantIndex m_index = -1;
+#if defined(DEBUG_BUILD)
+            VariantDetail::VariantDebug::VariantDebugBrowser<Ts...> browser = m_storage;
+#endif /* defined(DEBUG_BUILD) */
 
             void Destroy()
             {
