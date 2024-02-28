@@ -5,6 +5,7 @@
  */
 
 #include <aws/common/assert.h>
+#include <aws/crt/Utility.h>
 
 #include <algorithm>
 #include <type_traits>
@@ -83,7 +84,7 @@ namespace Aws
                     static const bool value = ContainsType<T, Ts...>();
                 };
             } // namespace Checker
-#if defined(DEBUG_BUILD)
+#if defined(AWS_CRT_ENABLE_VARIANT_DEBUG)
             namespace VariantDebug
             {
                 template <typename... Ts> class VariantDebugBrowser
@@ -93,7 +94,7 @@ namespace Aws
                     std::tuple<typename std::add_pointer<Ts>::type...> as_tuple;
 
                   private:
-                    template <short Index, typename First, typename Second, typename... Rest>
+                    template <IndexT Index, typename First, typename Second, typename... Rest>
                     void InitTuple(char *storage)
                     {
                         First *value = reinterpret_cast<First *>(storage);
@@ -101,22 +102,17 @@ namespace Aws
                         InitTuple<Index + 1, Second, Rest...>(storage);
                     }
 
-                    template <short Index, typename Last> void InitTuple(char *storage)
+                    template <IndexT Index, typename Last> void InitTuple(char *storage)
                     {
                         Last *value = reinterpret_cast<Last *>(storage);
                         std::get<Index>(as_tuple) = value;
                     }
                 };
             } // namespace VariantDebug
-#endif        /* defined(DEBUG_BUILD) */
+#endif        /* defined(AWS_CRT_ENABLE_VARIANT_DEBUG) */
         }     // namespace VariantDetail
 
         template <std::size_t Index, typename... Ts> class VariantAlternative;
-
-        template <typename T> struct VariantInPlaceInitT
-        {
-            explicit VariantInPlaceInitT() = default;
-        };
 
         /**
          * Custom implementation of a Variant type. std::variant requires C++17
@@ -124,19 +120,16 @@ namespace Aws
          */
         template <typename... Ts> class Variant
         {
-          public:
-            static constexpr std::size_t AlternativeCount = sizeof...(Ts);
-
+          private:
             template <std::size_t Index> using ThisVariantAlternative = VariantAlternative<Index, Ts...>;
-
-            using ThisVariantT = Variant<Ts...>;
-            template <typename OtherT>
-            using EnableIfOtherIsSameVariantType =
-                typename std::enable_if<std::is_same<typename std::decay<OtherT>, ThisVariantT>::value, int>::type;
 
             template <typename OtherT>
             using EnableIfOtherIsThisVariantAlternative = typename std::
                 enable_if<VariantDetail::Checker::HasType<typename std::decay<OtherT>::type, Ts...>::value, int>::type;
+
+          public:
+            using IndexT = VariantDetail::Index::VariantIndex;
+            static constexpr std::size_t AlternativeCount = sizeof...(Ts);
 
             Variant()
             {
@@ -147,19 +140,19 @@ namespace Aws
 
             Variant(const Variant &other)
             {
-                auto otherIdx = other.m_index;
-                if (otherIdx != -1)
+                m_index = other.m_index;
+                if (other.m_index != -1)
                 {
-                    CopyConstructUtil<0, Ts...>(other);
+                    VisitorUtil<0, Ts...>::VisitBinary(this, other, CopyMoveConstructor());
                 }
             }
 
             Variant(Variant &&other)
             {
-                auto otherIdx = other.m_index;
-                if (otherIdx != -1)
+                m_index = other.m_index;
+                if (other.m_index != -1)
                 {
-                    MoveConstructUtil<0, Ts...>(std::move(other));
+                    VisitorUtil<0, Ts...>::VisitBinary(this, std::move(other), CopyMoveConstructor());
                 }
             }
 
@@ -169,12 +162,12 @@ namespace Aws
                     VariantDetail::Checker::HasType<typename std::decay<T>::type, Ts...>::value,
                     "This variant does not have such alternative T.");
                 static_assert(
-                    sizeof(T) >= STORAGE_SIZE,
+                    sizeof(T) <= STORAGE_SIZE,
                     "Attempting to instantiate a Variant with a type bigger than all alternatives.");
 
                 using PlainT = typename std::decay<T>::type;
                 new (m_storage) PlainT(val);
-                m_index = VariantDetail::Index::GetIndexOf<T, Ts...>();
+                m_index = VariantDetail::Index::GetIndexOf<PlainT, Ts...>();
                 AWS_ASSERT(m_index != -1);
             }
 
@@ -189,12 +182,12 @@ namespace Aws
 
                 using PlainT = typename std::decay<T>::type;
                 new (m_storage) PlainT(std::forward<T>(val));
-                m_index = VariantDetail::Index::GetIndexOf<T, Ts...>();
+                m_index = VariantDetail::Index::GetIndexOf<PlainT, Ts...>();
                 AWS_ASSERT(m_index != -1);
             }
 
             // An overload to initialize with an Alternative T in-place
-            template <typename T, typename... Args> explicit Variant(VariantInPlaceInitT<T>, Args &&...args)
+            template <typename T, typename... Args> explicit Variant(Aws::Crt::InPlaceTypeT<T>, Args &&...args)
             {
                 static_assert(
                     VariantDetail::Checker::HasType<typename std::decay<T>::type, Ts...>::value,
@@ -205,22 +198,24 @@ namespace Aws
 
                 using PlainT = typename std::decay<T>::type;
                 new (m_storage) PlainT(std::forward<Args>(args)...);
-                m_index = VariantDetail::Index::GetIndexOf<T, Ts...>();
+                m_index = VariantDetail::Index::GetIndexOf<PlainT, Ts...>();
                 AWS_ASSERT(m_index != -1);
             }
 
             Variant &operator=(const Variant &other)
             {
-                if (this != &other)
+                AWS_ASSERT(other.m_index != -1);
+                if (this != &other && other.m_index != -1)
                 {
                     if (m_index != other.m_index)
                     {
                         Destroy();
-                        CopyConstructUtil<0, Ts...>(other);
+                        m_index = other.m_index;
+                        VisitorUtil<0, Ts...>::VisitBinary(this, other, CopyMoveConstructor());
                     }
                     else
                     {
-                        CopyAssignUtil<0, Ts...>(other);
+                        VisitorUtil<0, Ts...>::VisitBinary(this, other, CopyMoveAssigner());
                     }
                 }
                 return *this;
@@ -228,16 +223,18 @@ namespace Aws
 
             Variant &operator=(Variant &&other)
             {
-                if (this != &other)
+                AWS_ASSERT(other.m_index != -1);
+                if (this != &other && other.m_index != -1)
                 {
                     if (m_index != other.m_index)
                     {
                         Destroy();
-                        MoveConstructUtil<0, Ts...>(std::move(other));
+                        m_index = other.m_index;
+                        VisitorUtil<0, Ts...>::VisitBinary(this, std::move(other), CopyMoveConstructor());
                     }
                     else
                     {
-                        MoveAssignUtil<0, Ts...>(std::move(other));
+                        VisitorUtil<0, Ts...>::VisitBinary(this, std::move(other), CopyMoveAssigner());
                     };
                 }
                 return *this;
@@ -258,7 +255,7 @@ namespace Aws
 
                 using PlainT = typename std::decay<T>::type;
                 new (m_storage) PlainT(std::forward<Args>(args)...);
-                m_index = VariantDetail::Index::GetIndexOf<T, Ts...>();
+                m_index = VariantDetail::Index::GetIndexOf<PlainT, Ts...>();
                 AWS_ASSERT(m_index != -1);
 
                 T *value = reinterpret_cast<T *>(m_storage);
@@ -271,7 +268,7 @@ namespace Aws
                 static_assert(Index < AlternativeCount, "Unknown alternative index to emplace");
                 using AlternativeT = typename ThisVariantAlternative<Index>::type;
 
-                return emplace<AlternativeT, Args...>(args...);
+                return emplace<AlternativeT, Args...>(std::forward<Args>(args)...);
             }
 
             template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1> bool holds_alternative() const
@@ -280,13 +277,10 @@ namespace Aws
                 return m_index == VariantDetail::Index::GetIndexOf<T, Ts...>();
             }
 
-            template <size_t Index> constexpr bool holds_alternative() const { return Index < AlternativeCount; }
-
-            template <typename T> bool holds_alternative() const { return false; }
-
             /* non-const get */
             template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1> T &get()
             {
+                AWS_FATAL_ASSERT(holds_alternative<T>());
                 T *value = reinterpret_cast<T *>(m_storage);
                 return *value;
             }
@@ -307,7 +301,7 @@ namespace Aws
             template <std::size_t Index> auto get() -> typename ThisVariantAlternative<Index>::type &
             {
                 static_assert(Index < AlternativeCount, "Unknown alternative index to get");
-                AWS_ASSERT(Index == m_index);
+                AWS_FATAL_ASSERT(holds_alternative<Index>());
                 using AlternativeT = typename ThisVariantAlternative<Index>::type;
                 AlternativeT *ret = reinterpret_cast<AlternativeT *>(m_storage);
                 return *ret;
@@ -316,6 +310,7 @@ namespace Aws
             /* const get */
             template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1> const T &get() const
             {
+                AWS_FATAL_ASSERT(holds_alternative<T>());
                 const T *value = reinterpret_cast<const T *>(m_storage);
                 return *value;
             }
@@ -387,192 +382,190 @@ namespace Aws
 
             ~Variant() { Destroy(); }
 
+            template <typename VisitorT> void Visit(VisitorT &&visitor)
+            {
+                return VisitorUtil<0, Ts...>::Visit(this, std::forward<VisitorT>(visitor));
+            }
+
           private:
             static constexpr std::size_t STORAGE_SIZE = VariantDetail::ParameterPackSize::GetMaxSizeOf<Ts...>();
 
             alignas(VariantDetail::ParameterPackSize::AlignAsPack<Ts...>()) char m_storage[STORAGE_SIZE];
-            VariantDetail::Index::VariantIndex m_index = -1;
-#if defined(DEBUG_BUILD)
+            IndexT m_index = -1;
+#if defined(AWS_CRT_ENABLE_VARIANT_DEBUG)
             VariantDetail::VariantDebug::VariantDebugBrowser<Ts...> browser = m_storage;
-#endif /* defined(DEBUG_BUILD) */
+#endif /* defined(AWS_CRT_ENABLE_VARIANT_DEBUG) */
+
+            template <size_t Index> constexpr bool holds_alternative() const { return Index == m_index; }
+
+            struct Destroyer
+            {
+                template <typename AlternativeT> void operator()(AlternativeT &&value) const
+                {
+                    using PlaintT = typename std::remove_reference<AlternativeT>::type;
+                    value.~PlaintT();
+                }
+            };
 
             void Destroy()
             {
-                if (m_index != -1)
-                {
-                    DestroyUtil<Ts...>(m_index);
-                }
+                AWS_FATAL_ASSERT(m_index != -1);
+                Visit(Destroyer());
+
                 m_index = -1;
             }
 
-            template <typename First, typename Second, typename... Rest>
-            void DestroyUtil(const std::size_t requestedToDestroy, std::size_t curIndex = 0)
+            struct CopyMoveConstructor
             {
-                if (curIndex == requestedToDestroy)
+                template <typename AlternativeT> void operator()(AlternativeT &&value, AlternativeT &&other) const
                 {
-                    First *value = reinterpret_cast<First *>(m_storage);
-                    value->~First();
+                    using PlaintT = typename std::remove_reference<AlternativeT>::type;
+                    new (&value) PlaintT(std::move<AlternativeT>(other));
                 }
-                else
-                {
-                    DestroyUtil<Second, Rest...>(requestedToDestroy, ++curIndex);
-                }
-            }
 
-            template <typename Last> void DestroyUtil(const std::size_t requestedToDestroy, std::size_t curIndex = 0)
+                template <typename AlternativeT, typename ConstAlternativeT>
+                void operator()(AlternativeT &&value, ConstAlternativeT &other) const
+                {
+                    using PlaintT = typename std::remove_reference<AlternativeT>::type;
+                    using PlaintOtherT =
+                        typename std::remove_const<typename std::remove_reference<AlternativeT>::type>::type;
+                    static_assert(std::is_same<PlaintT, PlaintOtherT>::value, "Incompatible types");
+
+                    new (&value) PlaintT(other);
+                }
+            };
+
+            struct CopyMoveAssigner
             {
-                AWS_ASSERT(
-                    requestedToDestroy == curIndex); // attempting to destroy unknown alternative type in a Variant
-                if (curIndex == requestedToDestroy)
+                template <typename AlternativeT> void operator()(AlternativeT &&value, AlternativeT &&other) const
                 {
-                    Last *value = reinterpret_cast<Last *>(m_storage);
-                    value->~Last();
+                    value = std::move(other);
                 }
-            }
 
-            template <short Index, typename First, typename Second, typename... Rest>
-            void CopyConstructUtil(const Variant &other)
+                template <typename AlternativeT, typename ConstAlternativeT>
+                void operator()(AlternativeT &&value, ConstAlternativeT &other) const
+                {
+                    using PlaintT = typename std::remove_reference<AlternativeT>::type;
+                    using PlaintOtherT =
+                        typename std::remove_const<typename std::remove_reference<AlternativeT>::type>::type;
+                    static_assert(std::is_same<PlaintT, PlaintOtherT>::value, "Incompatible types");
+
+                    value = std::move(other);
+                }
+            };
+
+            template <IndexT Index, typename... Args> struct VisitorUtil;
+
+            template <IndexT Index, typename First, typename Second, typename... Rest>
+            struct VisitorUtil<Index, First, Second, Rest...>
             {
-                static_assert(Index < AlternativeCount, "Attempting to construct unknown Index Type");
-
-                if (Index == other.m_index)
+                template <typename VisitorStruct> static void Visit(Variant *pThis, VisitorStruct &&visitor)
                 {
-                    using AlternativeT = typename ThisVariantAlternative<Index>::type;
-                    new (m_storage) AlternativeT(other.get<Index>());
-                    m_index = Index;
-                    AWS_ASSERT(m_index != -1);
-                }
-                else
-                {
-                    CopyConstructUtil<Index + 1, Second, Rest...>(other);
-                }
-            }
+                    static_assert(Index < AlternativeCount, "Attempting to visit unknown Index Type");
 
-            template <short Index, typename Last> void CopyConstructUtil(const Variant &other)
+                    if (Index == pThis->m_index)
+                    {
+                        using AlternativeT = typename ThisVariantAlternative<Index>::type;
+                        AlternativeT *value = reinterpret_cast<AlternativeT *>(pThis->m_storage);
+                        visitor(*value);
+                    }
+                    else
+                    {
+                        VisitorUtil<Index + 1, Second, Rest...>::Visit(pThis, std::forward<VisitorStruct>(visitor));
+                    }
+                }
+
+                template <typename VisitorStruct>
+                static void VisitBinary(Variant<Ts...> *pThis, Variant<Ts...> &&other, VisitorStruct &&visitor)
+                {
+                    static_assert(Index < AlternativeCount, "Attempting to visit unknown Index Type");
+
+                    if (Index == pThis->m_index)
+                    {
+                        using AlternativeT = typename ThisVariantAlternative<Index>::type;
+                        AlternativeT *value = reinterpret_cast<AlternativeT *>(pThis->m_storage);
+                        visitor(*value, other.get<AlternativeT>());
+                    }
+                    else
+                    {
+                        VisitorUtil<Index + 1, Second, Rest...>::VisitBinary(
+                            pThis, std::forward<Variant<Ts...>>(other), std::forward<VisitorStruct>(visitor));
+                    }
+                }
+
+                template <typename VisitorStruct>
+                static void VisitBinary(Variant<Ts...> *pThis, const Variant<Ts...> &other, VisitorStruct &&visitor)
+                {
+                    static_assert(Index < AlternativeCount, "Attempting to visit unknown Index Type");
+
+                    if (Index == pThis->m_index)
+                    {
+                        using AlternativeT = typename ThisVariantAlternative<Index>::type;
+                        AlternativeT *value = reinterpret_cast<AlternativeT *>(pThis->m_storage);
+                        const AlternativeT &otherValue = other.get<AlternativeT>();
+                        visitor(*value, otherValue);
+                    }
+                    else
+                    {
+                        VisitorUtil<Index + 1, Second, Rest...>::VisitBinary(
+                            pThis, other, std::forward<VisitorStruct>(visitor));
+                    }
+                }
+            };
+
+            template <IndexT Index, typename Last> struct VisitorUtil<Index, Last>
             {
-                static_assert(Index < AlternativeCount, "Attempting to construct unknown Index Type");
+                template <typename VisitorStruct> static void Visit(Variant *pThis, VisitorStruct &&visitor)
+                {
+                    static_assert(Index < AlternativeCount, "Attempting to visit unknown Index Type");
 
-                if (Index == other.m_index)
-                {
-                    using AlternativeT = typename ThisVariantAlternative<Index>::type;
-                    new (m_storage) AlternativeT(other.get<Index>());
-                    m_index = Index;
-                    AWS_ASSERT(m_index != -1);
+                    if (Index == pThis->m_index)
+                    {
+                        using AlternativeT = typename ThisVariantAlternative<Index>::type;
+                        AlternativeT *value = reinterpret_cast<AlternativeT *>(pThis->m_storage);
+                        visitor(*value);
+                    }
+                    else
+                    {
+                        AWS_FATAL_ASSERT(!"Unknown variant alternative to visit!");
+                    }
                 }
-                else
-                {
-                    AWS_ASSERT(!"Unknown variant alternative type in other!");
-                }
-            }
 
-            template <short Index, typename First, typename Second, typename... Rest>
-            void MoveConstructUtil(Variant &&other)
-            {
-                static_assert(Index < AlternativeCount, "Attempting to construct unknown Index Type");
+                template <typename VisitorStruct>
+                static void VisitBinary(Variant<Ts...> *pThis, Variant<Ts...> &&other, VisitorStruct &&visitor)
+                {
+                    static_assert(Index < AlternativeCount, "Attempting to visit unknown Index Type");
 
-                if (Index == other.m_index)
-                {
-                    using AlternativeT = typename ThisVariantAlternative<Index>::type;
-                    new (m_storage) AlternativeT(std::move(other.get<Index>()));
-                    m_index = Index;
-                    AWS_ASSERT(m_index != -1);
+                    if (Index == pThis->m_index)
+                    {
+                        using AlternativeT = typename ThisVariantAlternative<Index>::type;
+                        AlternativeT *value = reinterpret_cast<AlternativeT *>(pThis->m_storage);
+                        visitor(*value, other.get<AlternativeT>());
+                    }
+                    else
+                    {
+                        AWS_FATAL_ASSERT(!"Unknown variant alternative to visit!");
+                    }
                 }
-                else
-                {
-                    MoveConstructUtil<Index + 1, Second, Rest...>(std::move(other));
-                }
-            }
 
-            template <short Index, typename Last> void MoveConstructUtil(Variant &&other)
-            {
-                static_assert(Index < AlternativeCount, "Attempting to construct unknown Index Type");
+                template <typename VisitorStruct>
+                static void VisitBinary(Variant<Ts...> *pThis, const Variant<Ts...> &other, VisitorStruct &&visitor)
+                {
+                    static_assert(Index < AlternativeCount, "Attempting to visit unknown Index Type");
 
-                if (Index == other.m_index)
-                {
-                    using AlternativeT = typename ThisVariantAlternative<Index>::type;
-                    new (m_storage) AlternativeT(std::move(other.get<Index>()));
-                    m_index = Index;
-                    AWS_ASSERT(m_index != -1);
+                    if (Index == pThis->m_index)
+                    {
+                        using AlternativeT = typename ThisVariantAlternative<Index>::type;
+                        AlternativeT *value = reinterpret_cast<AlternativeT *>(pThis->m_storage);
+                        const AlternativeT &otherValue = other.get<AlternativeT>();
+                        visitor(*value, otherValue);
+                    }
+                    else
+                    {
+                        AWS_FATAL_ASSERT(!"Unknown variant alternative to visit!");
+                    }
                 }
-                else
-                {
-                    AWS_ASSERT(!"Unknown variant alternative type in other!");
-                }
-            }
-
-            template <short Index, typename First, typename Second, typename... Rest>
-            void CopyAssignUtil(const Variant &other)
-            {
-                static_assert(Index < AlternativeCount, "Attempting to construct unknown Index Type");
-
-                if (Index == other.m_index)
-                {
-                    using AlternativeT = typename ThisVariantAlternative<Index>::type;
-                    AlternativeT *value = reinterpret_cast<AlternativeT *>(m_storage);
-                    *value = other.get<Index>();
-                    m_index = Index;
-                    AWS_ASSERT(m_index != -1);
-                }
-                else
-                {
-                    CopyAssignUtil<Index + 1, Second, Rest...>(other);
-                }
-            }
-
-            template <short Index, typename Last> void CopyAssignUtil(const Variant &other)
-            {
-                static_assert(Index < AlternativeCount, "Attempting to construct unknown Index Type");
-
-                if (Index == other.m_index)
-                {
-                    using AlternativeT = typename ThisVariantAlternative<Index>::type;
-                    AlternativeT *value = reinterpret_cast<AlternativeT *>(m_storage);
-                    *value = other.get<Index>();
-                    m_index = Index;
-                    AWS_ASSERT(m_index != -1);
-                }
-                else
-                {
-                    AWS_ASSERT(!"Unknown variant alternative type in other!");
-                }
-            }
-
-            template <short Index, typename First, typename Second, typename... Rest>
-            void MoveAssignUtil(Variant &&other)
-            {
-                static_assert(Index < AlternativeCount, "Attempting to construct unknown Index Type");
-
-                if (Index == other.m_index)
-                {
-                    using AlternativeT = typename ThisVariantAlternative<Index>::type;
-                    AlternativeT *value = reinterpret_cast<AlternativeT *>(m_storage);
-                    *value = std::move(other.get<Index>());
-                    m_index = Index;
-                    AWS_ASSERT(m_index != -1);
-                }
-                else
-                {
-                    MoveAssignUtil<Index + 1, Second, Rest...>(std::move(other));
-                }
-            }
-
-            template <short Index, typename Last> void MoveAssignUtil(Variant &&other)
-            {
-                static_assert(Index < AlternativeCount, "Attempting to construct unknown Index Type");
-
-                if (Index == other.m_index)
-                {
-                    using AlternativeT = typename ThisVariantAlternative<Index>::type;
-                    AlternativeT *value = reinterpret_cast<AlternativeT *>(m_storage);
-                    *value = std::move(other.get<Index>());
-                    m_index = Index;
-                    AWS_ASSERT(m_index != -1);
-                }
-                else
-                {
-                    AWS_ASSERT(!"Unknown variant alternative type in other!");
-                }
-            }
+            };
         };
 
         /* Helper template to get an actual type from an Index */

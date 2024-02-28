@@ -71,7 +71,7 @@ static int s_VariantConstructor(struct aws_allocator *allocator, void *ctx)
         }
         {
             using VariantStringCharInt = Aws::Crt::Variant<Aws::Crt::String, int, char>;
-            VariantStringCharInt var1{Aws::Crt::VariantInPlaceInitT<Aws::Crt::String>(), s_variant_test_str};
+            VariantStringCharInt var1{Aws::Crt::InPlaceTypeT<Aws::Crt::String>(), s_variant_test_str};
             ASSERT_STR_EQUALS(s_variant_test_str, var1.get<0>().c_str());
             ASSERT_STR_EQUALS(s_variant_test_str, var1.get<Aws::Crt::String>().c_str());
 
@@ -135,7 +135,7 @@ static int s_VariantConstructor(struct aws_allocator *allocator, void *ctx)
                 int childState = 0;
                 {
                     MyTestVariant myTestVariant{
-                        Aws::Crt::VariantInPlaceInitT<MyTestVirtualClassChild>(), &parentState, &childState};
+                        Aws::Crt::InPlaceTypeT<MyTestVirtualClassChild>(), &parentState, &childState};
                     // constructor of MyTestVirtualClassChild was called only once, destructor was not called (yet)
                     ASSERT_INT_EQUALS(1, parentState);
                     ASSERT_INT_EQUALS(2, childState);
@@ -150,7 +150,7 @@ static int s_VariantConstructor(struct aws_allocator *allocator, void *ctx)
                 int childState = 0;
                 {
                     MyTestVariant myTestVariant{
-                        Aws::Crt::VariantInPlaceInitT<MyTestVirtualClassChild>(), &parentState, &childState};
+                        Aws::Crt::InPlaceTypeT<MyTestVirtualClassChild>(), &parentState, &childState};
                     myTestVariant.emplace<MyTestVirtualClass>(&parentState);
                     // both were destructed but only a parent got constructed once again
                     ASSERT_INT_EQUALS(-8, parentState);
@@ -188,7 +188,7 @@ static int s_VariantOperatorEquals(struct aws_allocator *allocator, void *ctx)
             var1 = var2;
             ASSERT_INT_EQUALS(10, var1.get<int>());
 
-            VariantIntCharString varStr1{Aws::Crt::VariantInPlaceInitT<Aws::Crt::String>(), s_variant_test_str};
+            VariantIntCharString varStr1{Aws::Crt::InPlaceTypeT<Aws::Crt::String>(), s_variant_test_str};
             ASSERT_STR_EQUALS(s_variant_test_str, varStr1.get<2>().c_str());
             VariantIntCharString varStr2;
             ASSERT_INT_EQUALS(0, varStr2.get<int>());
@@ -200,6 +200,14 @@ static int s_VariantOperatorEquals(struct aws_allocator *allocator, void *ctx)
             ASSERT_STR_EQUALS(s_variant_test_str, varStr3.get<Aws::Crt::String>().c_str());
             ASSERT_STR_EQUALS(s_variant_test_str, varStr3.get_if<2>()->c_str());
             ASSERT_TRUE(varStr1.get<Aws::Crt::String>().empty());
+
+            VariantIntCharString varStr4(varStr3);
+            ASSERT_STR_EQUALS(s_variant_test_str, varStr3.get_if<2>()->c_str()); // not moved
+            ASSERT_STR_EQUALS(s_variant_test_str, varStr4.get_if<2>()->c_str()); // copied
+
+            varStr1 = std::move(varStr4);
+            ASSERT_TRUE(varStr4.get<2>().empty());                           // moved from
+            ASSERT_STR_EQUALS(s_variant_test_str, varStr1.get<2>().c_str()); // moved here
         }
     }
 
@@ -207,6 +215,32 @@ static int s_VariantOperatorEquals(struct aws_allocator *allocator, void *ctx)
 }
 
 AWS_TEST_CASE(VariantOperatorEquals, s_VariantOperatorEquals)
+
+struct TestStringOnlyVisitor
+{
+    /* can't specialize member function templates, so using such syntax of dummy structs */
+    template <typename... Args> struct MyVisitUtil
+    {
+        static void Visit(Args &...)
+        {
+            ; // not a string
+        }
+    };
+
+    template <typename AlternativeT> void operator()(AlternativeT &val) const
+    {
+        MyVisitUtil<typename std::remove_reference<AlternativeT>::type>::Visit(val);
+    }
+};
+
+template <> struct TestStringOnlyVisitor::MyVisitUtil<Aws::Crt::String>
+{
+    static void Visit(Aws::Crt::String &val)
+    {
+        auto index = val.find("another");
+        val.replace(index, 7, "visited");
+    }
+};
 
 static int s_VariantEmplace(struct aws_allocator *allocator, void *ctx)
 {
@@ -223,8 +257,17 @@ static int s_VariantEmplace(struct aws_allocator *allocator, void *ctx)
             var1.emplace<int>(65535);
             ASSERT_INT_EQUALS(65535, var1.get<int>());
 
+            var1.emplace<0>(1337);
+            ASSERT_INT_EQUALS(1337, var1.get<int>());
+
             var1.emplace<Aws::Crt::String>(Aws::Crt::String("This is a string."));
             ASSERT_STR_EQUALS("This is a string.", var1.get<Aws::Crt::String>().c_str());
+
+            var1.emplace<2>(Aws::Crt::String("This is another string."));
+            ASSERT_STR_EQUALS("This is another string.", var1.get<Aws::Crt::String>().c_str());
+
+            var1.Visit(TestStringOnlyVisitor());
+            ASSERT_STR_EQUALS("This is visited string.", var1.get<Aws::Crt::String>().c_str());
         }
     }
 

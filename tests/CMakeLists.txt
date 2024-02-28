@@ -275,8 +275,6 @@ if(AWS_WARNINGS_ARE_ERRORS)
     endif()
 endif()
 
-target_compile_definitions(${TEST_BINARY_NAME} PRIVATE $<$<CONFIG:Debug>:DEBUG_BUILD>)
-
 add_custom_command(TARGET ${TEST_BINARY_NAME} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_CURRENT_SOURCE_DIR}/resources $<TARGET_FILE_DIR:${TEST_BINARY_NAME}>)
