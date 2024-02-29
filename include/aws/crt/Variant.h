@@ -140,20 +140,16 @@ namespace Aws
 
             Variant(const Variant &other)
             {
+                AWS_FATAL_ASSERT(other.m_index != -1);
                 m_index = other.m_index;
-                if (other.m_index != -1)
-                {
-                    VisitorUtil<0, Ts...>::VisitBinary(this, other, CopyMoveConstructor());
-                }
+                VisitorUtil<0, Ts...>::VisitBinary(this, other, CopyMoveConstructor());
             }
 
             Variant(Variant &&other)
             {
+                AWS_FATAL_ASSERT(other.m_index != -1);
                 m_index = other.m_index;
-                if (other.m_index != -1)
-                {
-                    VisitorUtil<0, Ts...>::VisitBinary(this, std::move(other), CopyMoveConstructor());
-                }
+                VisitorUtil<0, Ts...>::VisitBinary(this, std::move(other), CopyMoveConstructor());
             }
 
             template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1> Variant(const T &val)
@@ -204,9 +200,9 @@ namespace Aws
 
             Variant &operator=(const Variant &other)
             {
-                AWS_ASSERT(other.m_index != -1);
-                if (this != &other && other.m_index != -1)
+                if (this != &other)
                 {
+                    AWS_FATAL_ASSERT(other.m_index != -1);
                     if (m_index != other.m_index)
                     {
                         Destroy();
@@ -223,9 +219,9 @@ namespace Aws
 
             Variant &operator=(Variant &&other)
             {
-                AWS_ASSERT(other.m_index != -1);
-                if (this != &other && other.m_index != -1)
+                if (this != &other)
                 {
+                    AWS_FATAL_ASSERT(other.m_index != -1);
                     if (m_index != other.m_index)
                     {
                         Destroy();
@@ -450,7 +446,7 @@ namespace Aws
                         typename std::remove_const<typename std::remove_reference<AlternativeT>::type>::type;
                     static_assert(std::is_same<PlaintT, PlaintOtherT>::value, "Incompatible types");
 
-                    value = std::move(other);
+                    value = other;
                 }
             };
 
