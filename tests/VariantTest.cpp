@@ -275,3 +275,93 @@ static int s_VariantEmplace(struct aws_allocator *allocator, void *ctx)
 }
 
 AWS_TEST_CASE(VariantEmplace, s_VariantEmplace)
+
+/* This is an example of a template visitor that accepts an alternative template and handles as a template */
+struct TestVisitor
+{
+    Aws::Crt::String m_visitorResult;
+
+    template <typename AlternativeT> void operator()(AlternativeT &val)
+    {
+        Aws::Crt::StringStream stringStream;
+        stringStream << "Alternative value: " << val;
+        m_visitorResult = stringStream.str();
+    }
+};
+
+/* This is an example of a visitor that accepts an alternative template and has a specialization for types for custom
+ * logic per type */
+struct TestVisitorCustomizedPerType
+{
+    Aws::Crt::String m_visitorResult;
+    /* can't specialize member function templates, so using such syntax of dummy structs */
+    template <typename... Args> struct MyVisitUtil
+    {
+    };
+
+    template <typename AlternativeT> void operator()(AlternativeT &val)
+    {
+        using TypedRealVisitor = MyVisitUtil<typename std::remove_reference<AlternativeT>::type>;
+        m_visitorResult = TypedRealVisitor::Visit(val);
+    }
+};
+
+template <> struct TestVisitorCustomizedPerType::MyVisitUtil<Aws::Crt::String>
+{
+    static Aws::Crt::String Visit(Aws::Crt::String &val) { return Aws::Crt::String("String has: " + val); }
+};
+template <> struct TestVisitorCustomizedPerType::MyVisitUtil<int>
+{
+    static Aws::Crt::String Visit(int &val)
+    {
+        Aws::Crt::StringStream stringStream;
+        stringStream << "Int has: " << val;
+        return stringStream.str();
+    }
+};
+template <> struct TestVisitorCustomizedPerType::MyVisitUtil<char>
+{
+    static Aws::Crt::String Visit(char &val)
+    {
+        Aws::Crt::StringStream stringStream;
+        stringStream << "Char has: " << val;
+        return stringStream.str();
+    }
+};
+
+static int s_VariantVisitor(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        {
+            using VariantStringIntChar = Aws::Crt::Variant<int, char, Aws::Crt::String>;
+            TestVisitor visitor;
+            TestVisitorCustomizedPerType specializedVisitor;
+
+            VariantStringIntChar var1(char('a'));
+
+            var1.Visit(visitor);
+            ASSERT_STR_EQUALS("Alternative value: a", visitor.m_visitorResult.c_str());
+            var1.Visit(specializedVisitor);
+            ASSERT_STR_EQUALS("Char has: a", specializedVisitor.m_visitorResult.c_str());
+
+            var1.emplace<int>(5061992);
+            var1.Visit(visitor);
+            ASSERT_STR_EQUALS("Alternative value: 5061992", visitor.m_visitorResult.c_str());
+            var1.Visit(specializedVisitor);
+            ASSERT_STR_EQUALS("Int has: 5061992", specializedVisitor.m_visitorResult.c_str());
+
+            var1.emplace<Aws::Crt::String>("Meow");
+            var1.Visit(visitor);
+            ASSERT_STR_EQUALS("Alternative value: Meow", visitor.m_visitorResult.c_str());
+            var1.Visit(specializedVisitor);
+            ASSERT_STR_EQUALS("String has: Meow", specializedVisitor.m_visitorResult.c_str());
+        }
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(VariantVisitor, s_VariantVisitor)
