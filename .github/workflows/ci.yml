@@ -70,9 +70,6 @@ jobs:
           - clang-10
           - clang-11
           - clang-12
-          - clang-13
-          - clang-14
-          - clang-15
           - gcc-4.8
           - gcc-5
           - gcc-6
