@@ -69,11 +69,15 @@ jobs:
           - clang-9
           - clang-10
           - clang-11
+          - clang-12
           - gcc-4.8
           - gcc-5
           - gcc-6
           - gcc-7
           - gcc-8
+          - gcc-9
+          - gcc-10
+          - gcc-11
     steps:
       # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
       - name: Build ${{ env.PACKAGE_NAME }}
