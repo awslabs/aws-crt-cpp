@@ -190,7 +190,7 @@ static int s_TestSHA1ResourceSafety(struct aws_allocator *allocator, void *)
         };
         Aws::Crt::String expectedStr = Aws::Crt::String(reinterpret_cast<const char *>(expected), sizeof(expected));
 
-        apiHandle.SetBYOCryptoNewSHAaCallback([&](size_t digestSize, Aws::Crt::Allocator *allocator) {
+        apiHandle.SetBYOCryptoNewSHA1Callback([&](size_t digestSize, Aws::Crt::Allocator *allocator) {
             return Aws::Crt::MakeShared<ByoCryptoHashInterceptor>(allocator, digestSize, allocator, expectedStr);
         });
 
