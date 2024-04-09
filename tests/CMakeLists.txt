@@ -66,10 +66,15 @@ add_test_case(SHA256ResourceSafety)
 add_test_case(MD5ResourceSafety)
 add_test_case(SHA1ResourceSafety)
 add_test_case(SHA256HMACResourceSafety)
-add_test_case(AES_256_CBC_Generated_Materials_ResourceSafety)
-add_test_case(AES_256_CTR_Generated_Materials_ResourceSafety)
-add_test_case(AES_256_GCM_Generated_Materials_ResourceSafety)
-add_test_case(AES_256_Keywrap_Generated_Materials_ResourceSafety)
+
+# TODO: disable aes byo tests for now. c-cal side is missing ability to override
+# aes constructors. those need to be implemented first before we can support it.
+if(NOT BYO_CRYPTO)
+    add_test_case(AES_256_CBC_Generated_Materials_ResourceSafety)
+    add_test_case(AES_256_CTR_Generated_Materials_ResourceSafety)
+    add_test_case(AES_256_GCM_Generated_Materials_ResourceSafety)
+    add_test_case(AES_256_Keywrap_Generated_Materials_ResourceSafety)
+endif()
 
 if(NOT BYO_CRYPTO)
     add_net_test_case(HttpDownloadNoBackPressureHTTP1_1)
