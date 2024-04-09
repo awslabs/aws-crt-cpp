@@ -1,10 +1,14 @@
+/*! \cond DOXYGEN_PRIVATE
+** Hide API from this file in doxygen. Set DOXYGEN_PRIVATE in doxygen
+** config to enable this file for doxygen.
+*/
 /**
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/mqtt/Mqtt5Client.h>
-#include <aws/crt/mqtt/Mqtt5ClientCore.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
+#include <aws/crt/mqtt/private/Mqtt5ClientCore.h>
 
 #include <aws/crt/Api.h>
 #include <aws/crt/StlAllocator.h>
@@ -461,6 +465,8 @@ namespace Aws
                 clientOptions.client_termination_handler_user_data = this;
 
                 m_client = aws_mqtt5_client_new(allocator, &clientOptions);
+
+                m_mqtt5to3AdapterOptions = Mqtt5to3AdapterOptions::NewMqtt5to3AdapterOptions(options);
             }
 
             Mqtt5ClientCore::~Mqtt5ClientCore() {}
@@ -469,7 +475,7 @@ namespace Aws
                 const Mqtt5ClientOptions &options,
                 Allocator *allocator) noexcept
             {
-                /* Copied from MqttClient.cpp:ln754 (MqttClient::NewConnection) */
+                /* Copied from MqttClient.cpp: MqttClient::NewConnection) */
                 /* As the constructor is private, make share would not work here. We do make_share manually. */
                 Mqtt5ClientCore *toSeat =
                     reinterpret_cast<Mqtt5ClientCore *>(aws_mem_acquire(allocator, sizeof(Mqtt5ClientCore)));
@@ -515,7 +521,7 @@ namespace Aws
                 pubCallbackData->allocator = m_allocator;
                 pubCallbackData->onPublishCompletion = onPublishCompletionCallback;
 
-                aws_mqtt5_publish_completion_options options;
+                aws_mqtt5_publish_completion_options options{};
 
                 options.completion_callback = Mqtt5ClientCore::s_publishCompletionCallback;
                 options.completion_user_data = pubCallbackData;
@@ -549,7 +555,7 @@ namespace Aws
                 subCallbackData->allocator = m_allocator;
                 subCallbackData->onSubscribeCompletion = onSubscribeCompletionCallback;
 
-                aws_mqtt5_subscribe_completion_options options;
+                aws_mqtt5_subscribe_completion_options options{};
 
                 options.completion_callback = Mqtt5ClientCore::s_subscribeCompletionCallback;
                 options.completion_user_data = subCallbackData;
@@ -582,7 +588,7 @@ namespace Aws
                 unSubCallbackData->allocator = m_allocator;
                 unSubCallbackData->onUnsubscribeCompletion = onUnsubscribeCompletionCallback;
 
-                aws_mqtt5_unsubscribe_completion_options options;
+                aws_mqtt5_unsubscribe_completion_options options{};
 
                 options.completion_callback = Mqtt5ClientCore::s_unsubscribeCompletionCallback;
                 options.completion_user_data = unSubCallbackData;
@@ -607,6 +613,46 @@ namespace Aws
                 }
             }
 
+            Mqtt5to3AdapterOptions::Mqtt5to3AdapterOptions() {}
+
+            ScopedResource<Mqtt5to3AdapterOptions> Mqtt5to3AdapterOptions::NewMqtt5to3AdapterOptions(
+                const Mqtt5ClientOptions &options) noexcept
+            {
+                Allocator *allocator = options.m_allocator;
+                ScopedResource<Mqtt5to3AdapterOptions> adapterOptions = ScopedResource<Mqtt5to3AdapterOptions>(
+                    Crt::New<Mqtt5to3AdapterOptions>(allocator),
+                    [allocator](Mqtt5to3AdapterOptions *options) { Crt::Delete(options, allocator); });
+                adapterOptions->m_mqtt3Options.allocator = options.m_allocator;
+                adapterOptions->m_hostname = options.m_hostName;
+                adapterOptions->m_mqtt3Options.hostName = adapterOptions->m_hostname.c_str();
+                adapterOptions->m_mqtt3Options.port = options.m_port;
+                adapterOptions->m_mqtt3Options.socketOptions = options.m_socketOptions;
+                if (options.m_proxyOptions.has_value())
+                    adapterOptions->m_proxyOptions = options.m_proxyOptions.value();
+                if (options.m_tlsConnectionOptions.has_value())
+                {
+                    adapterOptions->m_mqtt3Options.tlsConnectionOptions = options.m_tlsConnectionOptions.value();
+                    adapterOptions->m_mqtt3Options.useTls = true;
+                }
+                if (options.websocketHandshakeTransform)
+                {
+                    adapterOptions->m_mqtt3Options.useWebsocket = true;
+                    adapterOptions->m_websocketHandshakeTransform = options.websocketHandshakeTransform;
+
+                    auto signerTransform = [&adapterOptions](
+                                               std::shared_ptr<Crt::Http::HttpRequest> req,
+                                               const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete) {
+                        adapterOptions->m_websocketHandshakeTransform(std::move(req), onComplete);
+                    };
+                    adapterOptions->m_webSocketInterceptor = std::move(signerTransform);
+                }
+                else
+                {
+                    adapterOptions->m_mqtt3Options.useWebsocket = false;
+                }
+                return adapterOptions;
+            }
         } // namespace Mqtt5
     }     // namespace Crt
 } // namespace Aws
+/*! \endcond */

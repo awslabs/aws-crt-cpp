@@ -7,6 +7,7 @@
 #include <aws/crt/auth/Credentials.h>
 #include <aws/crt/auth/Sigv4Signing.h>
 #include <aws/crt/http/HttpRequestResponse.h>
+#include <aws/crt/io/Uri.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
 
 #include <aws/iot/Mqtt5Client.h>
@@ -184,6 +185,29 @@ namespace Aws
             return result;
         }
 
+        Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsPkcs12(
+            const Crt::String hostName,
+            const struct Pkcs12Options &options,
+            Crt::Allocator *allocator) noexcept
+        {
+            Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
+            result->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitClientWithMtlsPkcs12(
+                options.pkcs12_file.c_str(), options.pkcs12_password.c_str(), allocator);
+            if (!result->m_tlsConnectionOptions.value())
+            {
+                int error_code = result->m_tlsConnectionOptions->LastError();
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT5_GENERAL,
+                    "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
+                    error_code,
+                    aws_error_debug_str(error_code));
+                delete result;
+                return nullptr;
+            }
+            result->WithHostName(hostName);
+            return result;
+        }
+
         Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWindowsCertStorePath(
             const Crt::String hostName,
             const char *windowsCertStorePath,
@@ -284,9 +308,15 @@ namespace Aws
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithPort(uint16_t port) noexcept
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithPort(uint32_t port) noexcept
         {
             m_port = port;
+            return *this;
+        }
+
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithBootstrap(Crt::Io::ClientBootstrap *bootStrap) noexcept
+        {
+            m_options->WithBootstrap(bootStrap);
             return *this;
         }
 
@@ -350,13 +380,20 @@ namespace Aws
         Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithOfflineQueueBehavior(
             ClientOperationQueueBehaviorType operationQueueBehavior) noexcept
         {
-            m_options->WithAckTimeoutSeconds(operationQueueBehavior);
+            m_options->WithOfflineQueueBehavior(operationQueueBehavior);
             return *this;
         }
 
         Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithReconnectOptions(ReconnectOptions reconnectOptions) noexcept
         {
             m_options->WithReconnectOptions(reconnectOptions);
+            return *this;
+        }
+
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithTopicAliasingOptions(
+            TopicAliasingOptions topicAliasingOptions) noexcept
+        {
+            m_options->WithTopicAliasingOptions(topicAliasingOptions);
             return *this;
         }
 
@@ -372,10 +409,15 @@ namespace Aws
             return *this;
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithAckTimeoutSeconds(uint32_t ackTimeoutSeconds) noexcept
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithAckTimeoutSec(uint32_t ackTimeoutSec) noexcept
         {
-            m_options->WithAckTimeoutSeconds(ackTimeoutSeconds);
+            m_options->WithAckTimeoutSec(ackTimeoutSec);
             return *this;
+        }
+
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithAckTimeoutSeconds(uint32_t ackTimeoutSec) noexcept
+        {
+            return WithAckTimeoutSec(ackTimeoutSec);
         }
 
         Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithSdkName(const Crt::String &sdkName)
@@ -437,7 +479,7 @@ namespace Aws
                 return nullptr;
             }
 
-            uint16_t port = m_port;
+            uint32_t port = m_port;
 
             if (!port) // port is default to 0
             {
@@ -688,7 +730,17 @@ namespace Aws
 
         Mqtt5CustomAuthConfig &Aws::Iot::Mqtt5CustomAuthConfig::WithTokenSignature(Crt::String tokenSignature)
         {
-            m_tokenSignature = std::move(tokenSignature);
+            if (tokenSignature.find('%') != tokenSignature.npos)
+            {
+                // We can assume that a base 64 value that contains a '%' character has already been uri encoded
+                m_tokenSignature = std::move(tokenSignature);
+            }
+            else
+            {
+                m_tokenSignature =
+                    Aws::Crt::Io::EncodeQueryParameterValue(aws_byte_cursor_from_c_str(tokenSignature.c_str()));
+            }
+
             return *this;
         }
 

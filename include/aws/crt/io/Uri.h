@@ -80,7 +80,7 @@ namespace Aws
                  * be set to 0. In that case, it is your responsibility to determine the correct port
                  * based on the protocol you're using.
                  */
-                uint16_t GetPort() const noexcept;
+                uint32_t GetPort() const noexcept;
 
                 /** @return the Path and Query portion of the URI. In the case of Http, this likely the value for the
                  * URI parameter.
@@ -97,6 +97,9 @@ namespace Aws
                 int m_lastError;
                 bool m_isInit;
             };
+
+            AWS_CRT_CPP_API Aws::Crt::String EncodeQueryParameterValue(ByteCursor paramValue);
+
         } // namespace Io
     }     // namespace Crt
 } // namespace Aws

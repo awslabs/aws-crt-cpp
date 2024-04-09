@@ -129,6 +129,14 @@ namespace Aws
                 PublishPacket &WithMessageExpiryIntervalSec(uint32_t second) noexcept;
 
                 /**
+                 * Sets the opic alias to use, if possible, when encoding this packet.  Only used if the
+                 * client's outbound topic aliasing mode is set to Manual.
+                 *
+                 * See [MQTT5 Topic Alias](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901113)
+                 */
+                PublishPacket &WithTopicAlias(uint16_t topicAlias) noexcept;
+
+                /**
                  * Sets the opaque topic string intended to assist with request/response implementations.  Not
                  * internally meaningful to MQTT5 or this client.
                  *
@@ -256,6 +264,18 @@ namespace Aws
                 const Crt::Optional<uint32_t> &getMessageExpiryIntervalSec() const noexcept;
 
                 /**
+                 * Sent publishes - Topic alias to use, if possible, when encoding this packet.  Only used if the
+                 * client's outbound topic aliasing mode is set to Manual.
+                 *
+                 * Received publishes - topic alias used by the server when transmitting the publish to the client.
+                 *
+                 * See [MQTT5 Topic Alias](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901113)
+                 *
+                 * @return the topic alias, if any, associated with this PUBLISH packet
+                 */
+                const Crt::Optional<uint16_t> &getTopicAlias() const noexcept;
+
+                /**
                  * Opaque topic string intended to assist with request/response implementations.  Not internally
                  * meaningful to MQTT5 or this client.
                  *
@@ -376,6 +396,16 @@ namespace Aws
                 Crt::Optional<uint32_t> m_messageExpiryIntervalSec;
 
                 /**
+                 * Sent publishes - Topic alias to use, if possible, when encoding this packet.  Only used if the
+                 * client's outbound topic aliasing mode is set to Manual.
+                 *
+                 * Received publishes - topic alias used by the server when transmitting the publish to the client.
+                 *
+                 * See [MQTT5 Topic Alias](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901113)
+                 */
+                Crt::Optional<uint16_t> m_topicAlias;
+
+                /**
                  * Opaque topic string intended to assist with request/response implementations.  Not internally
                  * meaningful to MQTT5 or this client.
                  *
@@ -470,11 +500,40 @@ namespace Aws
                 uint16_t getReceiveMaximumFromServer() const noexcept;
 
                 /**
+                 * @deprecated the function is deprecated, please use
+                 * `NegotiatedSettings::getMaximumPacketSizeToServer()`
+                 *
                  * @return The maximum packet size the server is willing to accept.
                  */
                 uint32_t getMaximumPacketSizeBytes() const noexcept;
 
                 /**
+                 * @return The maximum packet size the server is willing to accept.
+                 */
+                uint32_t getMaximumPacketSizeToServer() const noexcept;
+
+                /**
+                 * @return returns the maximum allowed topic alias value on publishes sent from client to server
+                 */
+                uint16_t getTopicAliasMaximumToServer() const noexcept;
+
+                /**
+                 * @return returns the maximum allowed topic alias value on publishes sent from server to client
+                 */
+                uint16_t getTopicAliasMaximumToClient() const noexcept;
+
+                /**
+                 * The maximum amount of time in seconds between client packets. The client should use PINGREQs to
+                 * ensure this limit is not breached.  The server will disconnect the client for inactivity if no MQTT
+                 * packet is received in a time interval equal to 1.5 x this value.
+                 *
+                 * @return The maximum amount of time in seconds between client packets.
+                 */
+                uint16_t getServerKeepAliveSec() const noexcept;
+
+                /**
+                 * @deprecated The function is deprecated, please use `NegotiatedSettings::getServerKeepAliveSec()`
+                 *
                  * The maximum amount of time in seconds between client packets. The client should use PINGREQs to
                  * ensure this limit is not breached.  The server will disconnect the client for inactivity if no MQTT
                  * packet is received in a time interval equal to 1.5 x this value.
@@ -491,17 +550,17 @@ namespace Aws
                 /**
                  * @return Whether the server supports wildcard subscriptions.
                  */
-                bool getWildcardSubscriptionsAvaliable() const noexcept;
+                bool getWildcardSubscriptionsAvailable() const noexcept;
 
                 /**
                  * @return Whether the server supports subscription identifiers
                  */
-                bool getSubscriptionIdentifiersAvaliable() const noexcept;
+                bool getSubscriptionIdentifiersAvailable() const noexcept;
 
                 /**
                  * @return Whether the server supports shared subscriptions
                  */
-                bool getSharedSubscriptionsAvaliable() const noexcept;
+                bool getSharedSubscriptionsAvailable() const noexcept;
 
                 /**
                  * @return Whether the client has rejoined an existing session.
@@ -546,6 +605,16 @@ namespace Aws
                 uint32_t m_maximumPacketSizeBytes;
 
                 /**
+                 * the maximum allowed topic alias value on publishes sent from client to server
+                 */
+                uint16_t m_topicAliasMaximumToServer;
+
+                /**
+                 * the maximum allowed topic alias value on publishes sent from server to client
+                 */
+                uint16_t m_topicAliasMaximumToClient;
+
+                /**
                  * The maximum amount of time in seconds between client packets.  The client should use PINGREQs to
                  * ensure this limit is not breached.  The server will disconnect the client for inactivity if no MQTT
                  * packet is received in a time interval equal to 1.5 x this value.
@@ -560,17 +629,17 @@ namespace Aws
                 /**
                  * Whether the server supports wildcard subscriptions.
                  */
-                bool m_wildcardSubscriptionsAvaliable;
+                bool m_wildcardSubscriptionsAvailable;
 
                 /**
                  * Whether the server supports subscription identifiers
                  */
-                bool m_subscriptionIdentifiersAvaliable;
+                bool m_subscriptionIdentifiersAvailable;
 
                 /**
                  * Whether the server supports shared subscriptions
                  */
-                bool m_sharedSubscriptionsAvaliable;
+                bool m_sharedSubscriptionsAvailable;
 
                 /**
                  * Whether the client has rejoined an existing session.
@@ -889,6 +958,8 @@ namespace Aws
                 const Crt::Optional<uint16_t> &getReceiveMaximum() const noexcept;
 
                 /**
+                 * @deprecated The function is deprecated, please use `ConnectPacket::getMaximumPacketSizeToServer()`
+                 *
                  * Notifies the server of the maximum packet size the client is willing to handle.  If
                  * omitted or null, then no limit beyond the natural limits of MQTT packet size is requested.
                  *
@@ -898,6 +969,17 @@ namespace Aws
                  * @return The maximum packet size the client is willing to handle
                  */
                 const Crt::Optional<uint32_t> &getMaximumPacketSizeBytes() const noexcept;
+
+                /**
+                 * Notifies the server of the maximum packet size the client is willing to handle.  If
+                 * omitted or null, then no limit beyond the natural limits of MQTT packet size is requested.
+                 *
+                 * See [MQTT5 Maximum Packet
+                 * Size](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901050)
+                 *
+                 * @return The maximum packet size the client is willing to handle
+                 */
+                const Crt::Optional<uint32_t> &getMaximumPacketSizeToServer() const noexcept;
 
                 /**
                  * A time interval, in seconds, that the server should wait (for a session reconnection) before sending
@@ -1125,6 +1207,20 @@ namespace Aws
                  * @return A time interval, in seconds, that the server will persist this connection's MQTT session
                  * state for.
                  */
+                const Crt::Optional<uint32_t> &getSessionExpiryIntervalSec() const noexcept;
+
+                /**
+                 * @deprecated The function is deprecated, please use `ConnAckPacket::getSessionExpiryIntervalSec()`.
+                 *
+                 * A time interval, in seconds, that the server will persist this connection's MQTT session state
+                 * for.  If present, this value overrides any session expiry specified in the preceding CONNECT packet.
+                 *
+                 * See [MQTT5 Session Expiry
+                 * Interval](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901082)
+                 *
+                 * @return A time interval, in seconds, that the server will persist this connection's MQTT session
+                 * state for.
+                 */
                 const Crt::Optional<uint32_t> &getSessionExpiryInterval() const noexcept;
 
                 /**
@@ -1221,7 +1317,7 @@ namespace Aws
                  *
                  * @return Whether the server supports wildcard subscriptions.
                  */
-                const Crt::Optional<bool> &getWildcardSubscriptionsAvaliable() const noexcept;
+                const Crt::Optional<bool> &getWildcardSubscriptionsAvailable() const noexcept;
 
                 /**
                  * Indicates whether the server supports subscription identifiers.  If null, subscription identifiers
@@ -1232,7 +1328,7 @@ namespace Aws
                  *
                  * @return whether the server supports subscription identifiers.
                  */
-                const Crt::Optional<bool> &getSubscriptionIdentifiersAvaliable() const noexcept;
+                const Crt::Optional<bool> &getSubscriptionIdentifiersAvailable() const noexcept;
 
                 /**
                  * Indicates whether the server supports shared subscription topic filters.  If null, shared
@@ -1243,9 +1339,21 @@ namespace Aws
                  *
                  * @return whether the server supports shared subscription topic filters.
                  */
-                const Crt::Optional<bool> &getSharedSubscriptionsAvaliable() const noexcept;
+                const Crt::Optional<bool> &getSharedSubscriptionsAvailable() const noexcept;
 
                 /**
+                 * Server-requested override of the keep alive interval, in seconds.  If null, the keep alive value sent
+                 * by the client should be used.
+                 *
+                 * See [MQTT5 Server Keep
+                 * Alive](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901094)
+                 *
+                 * @return Server-requested override of the keep alive interval, in seconds
+                 */
+                const Crt::Optional<uint16_t> &getServerKeepAliveSec() const noexcept;
+
+                /**
+                 * @deprecated The function is deprecated, please use `ConnAckPacket::getServerKeepAliveSec()`.
                  * Server-requested override of the keep alive interval, in seconds.  If null, the keep alive value sent
                  * by the client should be used.
                  *
@@ -1310,7 +1418,7 @@ namespace Aws
                  * See [MQTT5 Session Expiry
                  * Interval](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901082)
                  */
-                Crt::Optional<uint32_t> m_sessionExpiryInterval;
+                Crt::Optional<uint32_t> m_sessionExpiryIntervalSec;
 
                 /**
                  * The maximum amount of in-flight QoS 1 or 2 messages that the server is willing to handle at once.  If
@@ -1378,7 +1486,7 @@ namespace Aws
                  * See [MQTT5 Wildcard Subscriptions
                  * Available](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901091)
                  */
-                Crt::Optional<bool> m_wildcardSubscriptionsAvaliable;
+                Crt::Optional<bool> m_wildcardSubscriptionsAvailable;
 
                 /**
                  * Indicates whether the server supports subscription identifiers.  If undefined, subscription
@@ -1387,7 +1495,7 @@ namespace Aws
                  * See [MQTT5 Subscription Identifiers
                  * Available](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901092)
                  */
-                Crt::Optional<bool> m_subscriptionIdentifiersAvaliable;
+                Crt::Optional<bool> m_subscriptionIdentifiersAvailable;
 
                 /**
                  * Indicates whether the server supports shared subscription topic filters.  If undefined, shared
@@ -1396,7 +1504,7 @@ namespace Aws
                  * See [MQTT5 Shared Subscriptions
                  * Available](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901093)
                  */
-                Crt::Optional<bool> m_sharedSubscriptionsAvaliable;
+                Crt::Optional<bool> m_sharedSubscriptionsAvailable;
 
                 /**
                  * Server-requested override of the keep alive interval, in seconds.  If undefined, the keep alive value
@@ -1405,7 +1513,7 @@ namespace Aws
                  * See [MQTT5 Server Keep
                  * Alive](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901094)
                  */
-                Crt::Optional<uint16_t> m_serverKeepAlive;
+                Crt::Optional<uint16_t> m_serverKeepAliveSec;
 
                 /**
                  * A value that can be used in the creation of a response topic associated with this connection.
@@ -1830,6 +1938,20 @@ namespace Aws
                  * @param retain bool
                  * @return The Subscription Object after setting the reason string.
                  */
+                Subscription &WithRetainAsPublished(bool retain) noexcept;
+
+                /**
+                 * @deprecated The function is deprecated, please use `Subscription::WithRetainAsPublished(bool)`.
+                 *
+                 * Sets should the server not send publishes to a client when that client was the one who sent the
+                 * publish? The value will be default to false.
+                 *
+                 * See [MQTT5 Subscription
+                 * Options](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901169)
+                 *
+                 * @param retain bool
+                 * @return The Subscription Object after setting the reason string.
+                 */
                 Subscription &WithRetain(bool retain) noexcept;
 
                 /**
@@ -1887,7 +2009,7 @@ namespace Aws
                  * See [MQTT5 Subscription
                  * Options](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901169)
                  */
-                bool m_retain;
+                bool m_retainAsPublished;
 
                 /**
                  * Should retained messages on matching topics be sent in reaction to this subscription?  If undefined,

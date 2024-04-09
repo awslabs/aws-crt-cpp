@@ -6,7 +6,7 @@
 #include <aws/crt/Config.h>
 #include <aws/crt/Exports.h>
 #include <aws/crt/auth/Sigv4Signing.h>
-#include <aws/crt/mqtt/MqttClient.h>
+#include <aws/crt/mqtt/MqttConnection.h>
 #include <aws/iot/MqttCommon.h>
 
 #if !BYO_CRYPTO
@@ -37,7 +37,7 @@ namespace Aws
              */
             MqttClientConnectionConfig(
                 const Crt::String &endpoint,
-                uint16_t port,
+                uint32_t port,
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext);
 
@@ -60,7 +60,7 @@ namespace Aws
              */
             MqttClientConnectionConfig(
                 const Crt::String &endpoint,
-                uint16_t port,
+                uint32_t port,
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext,
                 Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
@@ -81,13 +81,13 @@ namespace Aws
 
             MqttClientConnectionConfig(
                 const Crt::String &endpoint,
-                uint16_t port,
+                uint32_t port,
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext,
                 const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions);
 
             Crt::String m_endpoint;
-            uint16_t m_port;
+            uint32_t m_port;
             Crt::Io::TlsContext m_context;
             Crt::Io::SocketOptions m_socketOptions;
             Crt::Mqtt::OnWebSocketHandshakeIntercept m_webSocketInterceptor;
@@ -149,6 +149,19 @@ namespace Aws
                 Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
+             * Sets the builder up for MTLS using a PKCS12 file and password. These are files on disk and must be in the
+             * PEM format.
+             *
+             * NOTE: This only works on MacOS devices.
+             *
+             * @param options The PKCS12 options to use. Has to contain a PKCS12 filepath and password.
+             * @param allocator memory allocator to use
+             */
+            MqttClientConnectionConfigBuilder(
+                const struct Pkcs12Options &options,
+                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
+
+            /**
              * Sets the builder up for MTLS, using a certificate in a Windows certificate store.
              *
              * NOTE: This only works on Windows.
@@ -206,7 +219,7 @@ namespace Aws
              *
              * @return this builder object
              */
-            MqttClientConnectionConfigBuilder &WithPortOverride(uint16_t port) noexcept;
+            MqttClientConnectionConfigBuilder &WithPortOverride(uint32_t port) noexcept;
 
             /**
              * Sets the certificate authority for the endpoint you're connecting to. This is a path to a file on disk
@@ -330,10 +343,14 @@ namespace Aws
              *                 username is set then no username will be passed with the MQTT connection.
              * @param authorizerName The name of the custom authorizer. If an empty string is passed, then
              *                       'x-amz-customauthorizer-name' will not be added with the MQTT connection.
-             * @param authorizerSignature The signature of the custom authorizer. If an empty string is passed, then
-             *                            'x-amz-customauthorizer-signature' will not be added with the MQTT connection.
+             * @param authorizerSignature The signature of the custom authorizer.
+             *                            NOTE: This will NOT work without the token key name and token value, which
+             * requires using the non-depreciated API.
              * @param password The password to use with the custom authorizer. If null is passed, then no password will
              *                 be set.
+             *
+             * @deprecated Please use the full WithCustomAuthorizer function that includes `tokenKeyName` and
+             *             `tokenValue`. This version is left for backwards compatibility purposes.
              *
              * @return this builder object
              */
@@ -342,6 +359,36 @@ namespace Aws
                 const Crt::String &authorizerName,
                 const Crt::String &authorizerSignature,
                 const Crt::String &password) noexcept;
+
+            /**
+             * Sets the custom authorizer settings. This function will modify the username, port, and TLS options.
+             *
+             * @param username The username to use with the custom authorizer. If an empty string is passed, it will
+             *                 check to see if a username has already been set (via WithUsername function). If no
+             *                 username is set then no username will be passed with the MQTT connection.
+             * @param authorizerName The name of the custom authorizer. If an empty string is passed, then
+             *                       'x-amz-customauthorizer-name' will not be added with the MQTT connection.
+             * @param authorizerSignature The signature of the custom authorizer. If an empty string is passed, then
+             *                            'x-amz-customauthorizer-signature' will not be added with the MQTT connection.
+             *                            The signature must be based on the private key associated with the custom
+             *                            authorizer. The signature must be base64 encoded.
+             * @param password The password to use with the custom authorizer. If null is passed, then no password will
+             *                 be set.
+             * @param tokenKeyName Used to extract the custom authorizer token from MQTT username query-string
+             *                     properties. Required if the custom authorizer has signing enabled. It is strongly
+             *                     suggested to URL encode this value; the SDK will not do so for you.
+             * @param tokenValue An opaque token value. Required if the custom authorizer has signing enabled. This
+             *                   value must be signed by the private key associated with the custom authorizer and
+             *                   the result placed in the authorizerSignature argument.
+             * @return this builder object
+             */
+            MqttClientConnectionConfigBuilder &WithCustomAuthorizer(
+                const Crt::String &username,
+                const Crt::String &authorizerName,
+                const Crt::String &authorizerSignature,
+                const Crt::String &password,
+                const Crt::String &tokenKeyName,
+                const Crt::String &tokenValue) noexcept;
 
             /**
              * Sets username for the connection
@@ -390,7 +437,7 @@ namespace Aws
 
             Crt::Allocator *m_allocator;
             Crt::String m_endpoint;
-            uint16_t m_portOverride;
+            uint32_t m_portOverride;
             Crt::Io::SocketOptions m_socketOptions;
             Crt::Io::TlsContextOptions m_contextOptions;
             Crt::Optional<WebsocketConfig> m_websocketConfig;

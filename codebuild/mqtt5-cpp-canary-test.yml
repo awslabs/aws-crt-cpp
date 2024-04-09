@@ -7,7 +7,7 @@ env:
     CANARY_TPS: 50
     CANARY_CLIENT_COUNT: 10
     CANARY_LOG_LEVEL: 'ERROR'
-    BUILDER_VERSION: v0.9.21
+    BUILDER_VERSION: v0.9.44
     BUILDER_SOURCE: releases
     BUILDER_HOST: https://d19elf31gohf1l.cloudfront.net
     PACKAGE_NAME: aws-crt-cpp

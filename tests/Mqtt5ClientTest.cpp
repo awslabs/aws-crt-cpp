@@ -12,11 +12,134 @@
 #include <aws/iot/MqttCommon.h>
 #include <aws/testing/aws_test_harness.h>
 
+#include <atomic>
 #include <utility>
-#if !BYO_CRYPTO
 
 using namespace Aws::Crt;
 using namespace Aws::Crt::Mqtt5;
+
+//////////////////////////////////////////////////////////
+// Creation Test Cases [New-UC] (runs regardless of byo-crypto)
+//////////////////////////////////////////////////////////
+
+static void s_setupConnectionLifeCycle(
+    Mqtt5::Mqtt5ClientOptions &mqtt5Options,
+    std::promise<bool> &connectionPromise,
+    std::promise<void> &stoppedPromise,
+    const char *clientName = "Client")
+{
+    mqtt5Options.WithClientConnectionSuccessCallback(
+        [&connectionPromise, clientName](const OnConnectionSuccessEventData &) {
+            printf("[MQTT5]%s Connection Success.\n", clientName);
+            connectionPromise.set_value(true);
+        });
+
+    mqtt5Options.WithClientConnectionFailureCallback([&connectionPromise,
+                                                      clientName](const OnConnectionFailureEventData &eventData) {
+        printf("[MQTT5]%s Connection failed with error : %s\n", clientName, aws_error_debug_str(eventData.errorCode));
+        connectionPromise.set_value(false);
+    });
+
+    mqtt5Options.WithClientStoppedCallback([&stoppedPromise, clientName](const OnStoppedEventData &) {
+        printf("[MQTT5]%s Stopped\n", clientName);
+        stoppedPromise.set_value();
+    });
+}
+
+/*
+ * [New-UC1] Happy path. Minimal creation and cleanup
+ */
+static int s_TestMqtt5NewClientMin(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    // Hardcoded the host name and port for creation test
+    mqtt5Options.WithHostName("localhost").WithPort(1883);
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(mqtt5Client);
+
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5NewClientMinimal, s_TestMqtt5NewClientMin)
+
+/*
+ * [New-UC2] Maximum creation and cleanup
+ */
+static int s_TestMqtt5NewClientFull(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    // Hardcoded the host name and port for creation test
+    mqtt5Options.WithHostName("localhost").WithPort(1883);
+
+    Aws::Crt::Io::SocketOptions socketOptions;
+    socketOptions.SetConnectTimeoutMs(3000);
+
+    Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+    ASSERT_TRUE(eventLoopGroup);
+
+    Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+    ASSERT_TRUE(defaultHostResolver);
+
+    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+    ASSERT_TRUE(allocator);
+    clientBootstrap.EnableBlockingShutdown();
+
+    // Setup will
+    const Aws::Crt::String TEST_TOPIC = "test/MQTT5_Binding_CPP/s_TestMqtt5NewClientFull";
+    ByteBuf will_payload = Aws::Crt::ByteBufFromCString("Will Test");
+    std::shared_ptr<Mqtt5::PublishPacket> will = std::make_shared<Mqtt5::PublishPacket>(
+        TEST_TOPIC, ByteCursorFromByteBuf(will_payload), Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+
+    std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect = std::make_shared<Aws::Crt::Mqtt5::ConnectPacket>();
+    packetConnect->WithClientId("s_TestMqtt5DirectConnectionFull" + Aws::Crt::UUID().ToString())
+        .WithKeepAliveIntervalSec(1000)
+        .WithMaximumPacketSizeBytes(1000L)
+        .WithReceiveMaximum(1000)
+        .WithRequestProblemInformation(true)
+        .WithRequestResponseInformation(true)
+        .WithSessionExpiryIntervalSec(1000L)
+        .WithWill(will)
+        .WithWillDelayIntervalSec(1000);
+
+    Aws::Crt::Mqtt5::UserProperty userProperty("PropertyName", "PropertyValue");
+    packetConnect->WithUserProperty(std::move(userProperty));
+
+    Aws::Crt::Mqtt5::ReconnectOptions reconnectOptions = {
+        Mqtt5::JitterMode::AWS_EXPONENTIAL_BACKOFF_JITTER_FULL, 1000, 1000, 1000};
+
+    mqtt5Options.WithConnectOptions(packetConnect);
+    mqtt5Options.WithBootstrap(&clientBootstrap);
+    mqtt5Options.WithSocketOptions(socketOptions);
+    mqtt5Options.WithSessionBehavior(Mqtt5::ClientSessionBehaviorType::AWS_MQTT5_CSBT_REJOIN_POST_SUCCESS);
+    mqtt5Options.WithClientExtendedValidationAndFlowControl(
+        Mqtt5::ClientExtendedValidationAndFlowControl::AWS_MQTT5_EVAFCO_NONE);
+    mqtt5Options.WithOfflineQueueBehavior(
+        Mqtt5::ClientOperationQueueBehaviorType::AWS_MQTT5_COQBT_FAIL_QOS0_PUBLISH_ON_DISCONNECT);
+    mqtt5Options.WithReconnectOptions(reconnectOptions);
+    mqtt5Options.WithPingTimeoutMs(10000);
+    mqtt5Options.WithConnackTimeoutMs(10000);
+    mqtt5Options.WithAckTimeoutSec(60000);
+
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(mqtt5Client);
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5NewClientFull, s_TestMqtt5NewClientFull)
+
+//////////////////////////////////////////////////////////
+// Tests that run only without byo-crypto
+//////////////////////////////////////////////////////////
+
+#if !BYO_CRYPTO
 
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_direct_hostName, "AWS_TEST_MQTT5_DIRECT_MQTT_HOST");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_direct_port, "AWS_TEST_MQTT5_DIRECT_MQTT_PORT");
@@ -47,37 +170,8 @@ AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_certificate, "AWS_TEST_MQTT5
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_private_key, "AWS_TEST_MQTT5_KEY_FILE");
 
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_hostname, "AWS_TEST_MQTT5_IOT_CORE_HOST");
-AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_certificate, "AWS_TEST_MQTT5_IOT_CERTIFICATE_PATH");
-AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_key, "AWS_TEST_MQTT5_IOT_KEY_PATH");
-
-AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_nosign_custom_auth_name,
-    "AWS_TEST_MQTT5_IOT_CORE_NO_SIGNING_AUTHORIZER_NAME");
-AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_nosign_custom_auth_username,
-    "AWS_TEST_MQTT5_IOT_CORE_NO_SIGNING_AUTHORIZER_USERNAME");
-AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_nosign_custom_auth_password,
-    "AWS_TEST_MQTT5_IOT_CORE_NO_SIGNING_AUTHORIZER_PASSWORD");
-
-AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_sign_custom_auth_name,
-    "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_NAME");
-AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_sign_custom_auth_username,
-    "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_USERNAME");
-AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_sign_custom_auth_password,
-    "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_PASSWORD");
-AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_sign_custom_auth_tokenvalue,
-    "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_TOKEN");
-AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_sign_custom_auth_tokenkey,
-    "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_TOKEN_KEY_NAME");
-AWS_STATIC_STRING_FROM_LITERAL(
-    s_mqtt5_test_envName_iot_sign_custom_auth_tokensignature,
-    "AWS_TEST_MQTT5_IOT_CORE_SIGNING_AUTHORIZER_TOKEN_SIGNATURE");
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_certificate, "AWS_TEST_MQTT5_IOT_CORE_RSA_CERT");
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_key, "AWS_TEST_MQTT5_IOT_CORE_RSA_KEY");
 
 enum Mqtt5TestType
 {
@@ -111,7 +205,7 @@ struct Mqtt5TestEnvVars
                     return;
                 }
                 m_hostname_string = aws_string_c_str(m_hostname);
-                m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
+                m_port_value = static_cast<uint32_t>(atoi(aws_string_c_str(m_port)));
                 break;
             }
             case MQTT5CONNECT_DIRECT_BASIC_AUTH:
@@ -132,7 +226,7 @@ struct Mqtt5TestEnvVars
                     return;
                 }
                 m_hostname_string = aws_string_c_str(m_hostname);
-                m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
+                m_port_value = static_cast<uint32_t>(atoi(aws_string_c_str(m_port)));
                 m_username_string = aws_string_c_str(m_username);
                 m_password_cursor = ByteCursorFromArray(m_password->bytes, m_password->len);
                 break;
@@ -154,7 +248,7 @@ struct Mqtt5TestEnvVars
                     return;
                 }
                 m_hostname_string = aws_string_c_str(m_hostname);
-                m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
+                m_port_value = static_cast<uint32_t>(atoi(aws_string_c_str(m_port)));
                 m_certificate_path_string = aws_string_c_str(m_certificate_path);
                 m_private_key_path_string = aws_string_c_str(m_private_key_path);
                 break;
@@ -175,7 +269,7 @@ struct Mqtt5TestEnvVars
                 }
                 {
                     m_hostname_string = aws_string_c_str(m_hostname);
-                    m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
+                    m_port_value = static_cast<uint32_t>(atoi(aws_string_c_str(m_port)));
                 }
                 break;
             }
@@ -199,7 +293,7 @@ struct Mqtt5TestEnvVars
                 }
                 {
                     m_hostname_string = aws_string_c_str(m_hostname);
-                    m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
+                    m_port_value = static_cast<uint32_t>(atoi(aws_string_c_str(m_port)));
                     m_username_string = aws_string_c_str(m_username);
                     m_password_cursor = ByteCursorFromArray(m_password->bytes, m_password->len);
                 }
@@ -224,7 +318,7 @@ struct Mqtt5TestEnvVars
                 }
                 {
                     m_hostname_string = aws_string_c_str(m_hostname);
-                    m_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_port)));
+                    m_port_value = static_cast<uint32_t>(atoi(aws_string_c_str(m_port)));
                     m_certificate_path_string = aws_string_c_str(m_certificate_path);
                     m_private_key_path_string = aws_string_c_str(m_private_key_path);
                 }
@@ -266,7 +360,7 @@ struct Mqtt5TestEnvVars
         if (m_error == AWS_OP_SUCCESS && m_httpproxy_hostname != NULL && m_httpproxy_port != NULL)
         {
             m_httpproxy_hostname_string = aws_string_c_str(m_httpproxy_hostname);
-            m_httpproxy_port_value = static_cast<uint16_t>(atoi(aws_string_c_str(m_httpproxy_port)));
+            m_httpproxy_port_value = static_cast<uint32_t>(atoi(aws_string_c_str(m_httpproxy_port)));
         }
     }
 
@@ -336,42 +430,18 @@ struct Mqtt5TestEnvVars
     struct aws_string *m_httpproxy_port = NULL;
 
     Aws::Crt::String m_hostname_string;
-    uint16_t m_port_value;
+    uint32_t m_port_value;
     Aws::Crt::String m_username_string;
     Aws::Crt::ByteCursor m_password_cursor;
     Aws::Crt::String m_certificate_path_string;
     Aws::Crt::String m_private_key_path_string;
     Aws::Crt::String m_httpproxy_hostname_string;
-    uint16_t m_httpproxy_port_value;
+    uint32_t m_httpproxy_port_value;
 };
 
 //////////////////////////////////////////////////////////
 // Test Helper
 //////////////////////////////////////////////////////////
-static void s_setupConnectionLifeCycle(
-    Mqtt5::Mqtt5ClientOptions &mqtt5Options,
-    std::promise<bool> &connectionPromise,
-    std::promise<void> &stoppedPromise,
-    const char *clientName = "Client")
-{
-    mqtt5Options.WithClientConnectionSuccessCallback(
-        [&connectionPromise, clientName](const OnConnectionSuccessEventData &) {
-            printf("[MQTT5]%s Connection Success.", clientName);
-            connectionPromise.set_value(true);
-        });
-
-    mqtt5Options.WithClientConnectionFailureCallback(
-        [&connectionPromise, clientName](const OnConnectionFailureEventData &eventData) {
-            printf("[MQTT5]%s Connection failed with error : %s", clientName, aws_error_debug_str(eventData.errorCode));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Options.WithClientStoppedCallback([&stoppedPromise, clientName](const OnStoppedEventData &) {
-        printf("[MQTT5]%s Stopped", clientName);
-        stoppedPromise.set_value();
-    });
-}
-
 static void s_setupConnectionLifeCycle(
     Aws::Iot::Mqtt5ClientBuilder *mqtt5Builder,
     std::promise<bool> &connectionPromise,
@@ -395,101 +465,6 @@ static void s_setupConnectionLifeCycle(
         stoppedPromise.set_value();
     });
 }
-
-//////////////////////////////////////////////////////////
-// Creation Test Cases [New-UC]
-//////////////////////////////////////////////////////////
-
-/*
- * [New-UC1] Happy path. Minimal creation and cleanup
- */
-static int s_TestMqtt5NewClientMin(Aws::Crt::Allocator *allocator, void *)
-{
-    ApiHandle apiHandle(allocator);
-
-    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
-    // Hardcoded the host name and port for creation test
-    mqtt5Options.WithHostName("localhost").WithPort(1883);
-
-    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
-    ASSERT_TRUE(mqtt5Client);
-
-    return AWS_OP_SUCCESS;
-}
-
-AWS_TEST_CASE(Mqtt5NewClientMinimal, s_TestMqtt5NewClientMin)
-
-/*
- * [New-UC2] Maximum creation and cleanup
- */
-static int s_TestMqtt5NewClientFull(Aws::Crt::Allocator *allocator, void *)
-{
-    ApiHandle apiHandle(allocator);
-
-    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
-    // Hardcoded the host name and port for creation test
-    mqtt5Options.WithHostName("localhost").WithPort(1883);
-
-    Aws::Crt::Io::SocketOptions socketOptions;
-    socketOptions.SetConnectTimeoutMs(3000);
-
-    Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
-    ASSERT_TRUE(eventLoopGroup);
-
-    Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
-    ASSERT_TRUE(defaultHostResolver);
-
-    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
-    ASSERT_TRUE(allocator);
-    clientBootstrap.EnableBlockingShutdown();
-
-    // Setup will
-    const Aws::Crt::String TEST_TOPIC = "test/MQTT5_Binding_CPP/s_TestMqtt5NewClientFull";
-    ByteBuf will_payload = Aws::Crt::ByteBufFromCString("Will Test");
-    std::shared_ptr<Mqtt5::PublishPacket> will = std::make_shared<Mqtt5::PublishPacket>(
-        TEST_TOPIC, ByteCursorFromByteBuf(will_payload), Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
-
-    std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect = std::make_shared<Aws::Crt::Mqtt5::ConnectPacket>();
-    packetConnect->WithClientId("s_TestMqtt5DirectConnectionFull" + Aws::Crt::UUID().ToString())
-        .WithKeepAliveIntervalSec(1000)
-        .WithMaximumPacketSizeBytes(1000L)
-        .WithReceiveMaximum(1000)
-        .WithRequestProblemInformation(true)
-        .WithRequestResponseInformation(true)
-        .WithSessionExpiryIntervalSec(1000L)
-        .WithWill(will)
-        .WithWillDelayIntervalSec(1000);
-
-    Aws::Crt::Mqtt5::UserProperty userProperty("PropertyName", "PropertyValue");
-    packetConnect->WithUserProperty(std::move(userProperty));
-
-    Aws::Crt::Mqtt5::ReconnectOptions reconnectOptions = {
-        Mqtt5::JitterMode::AWS_EXPONENTIAL_BACKOFF_JITTER_FULL, 1000, 1000, 1000};
-
-    mqtt5Options.WithConnectOptions(packetConnect);
-    mqtt5Options.WithBootstrap(&clientBootstrap);
-    mqtt5Options.WithSocketOptions(socketOptions);
-    mqtt5Options.WithSessionBehavior(Mqtt5::ClientSessionBehaviorType::AWS_MQTT5_CSBT_REJOIN_POST_SUCCESS);
-    mqtt5Options.WithClientExtendedValidationAndFlowControl(
-        Mqtt5::ClientExtendedValidationAndFlowControl::AWS_MQTT5_EVAFCO_NONE);
-    mqtt5Options.WithOfflineQueueBehavior(
-        Mqtt5::ClientOperationQueueBehaviorType::AWS_MQTT5_COQBT_FAIL_QOS0_PUBLISH_ON_DISCONNECT);
-    mqtt5Options.WithReconnectOptions(reconnectOptions);
-    mqtt5Options.WithPingTimeoutMs(1000);
-    mqtt5Options.WithConnackTimeoutMs(100);
-    mqtt5Options.WithAckTimeoutSeconds(1000);
-
-    std::promise<bool> connectionPromise;
-    std::promise<void> stoppedPromise;
-
-    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
-
-    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
-    ASSERT_TRUE(mqtt5Client);
-    return AWS_OP_SUCCESS;
-}
-
-AWS_TEST_CASE(Mqtt5NewClientFull, s_TestMqtt5NewClientFull)
 
 //////////////////////////////////////////////////////////
 // Direct Connect Test Cases [ConnDC-UC]
@@ -526,7 +501,6 @@ static int s_TestMqtt5DirectConnectionMinimal(Aws::Crt::Allocator *allocator, vo
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5DirectConnectionMinimal, s_TestMqtt5DirectConnectionMinimal)
 
 /*
@@ -566,7 +540,6 @@ static int s_TestMqtt5DirectConnectionWithBasicAuth(Aws::Crt::Allocator *allocat
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5DirectConnectionWithBasicAuth, s_TestMqtt5DirectConnectionWithBasicAuth)
 
 /*
@@ -611,13 +584,11 @@ static int s_TestMqtt5DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, vo
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5DirectConnectionWithTLS, s_TestMqtt5DirectConnectionWithTLS)
 
 /*
  * [ConnDC-UC4] Direct connection with mutual TLS
  */
-
 static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
@@ -644,24 +615,23 @@ static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocat
     Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
     ASSERT_TRUE(tlsContext);
     Aws::Crt::Io::TlsConnectionOptions tlsConnection = tlsContext.NewConnectionOptions();
-
     ASSERT_TRUE(tlsConnection);
+    ASSERT_TRUE(tlsConnection.SetAlpnList("x-amzn-mqtt-ca"));
     mqtt5Options.WithTlsConnectionOptions(tlsConnection);
 
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
     ASSERT_TRUE(mqtt5Client->Start());
-    connectionPromise.get_future().get();
+    ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5DirectConnectionWithMutualTLS, s_TestMqtt5DirectConnectionWithMutualTLS)
 
-///*
-// * [ConnDC-UC5] Direct connection with HttpProxy options
-// */
+/*
+ * [ConnDC-UC5] Direct connection with HttpProxy options
+ */
 static int s_TestMqtt5DirectConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_TLS);
@@ -711,7 +681,6 @@ static int s_TestMqtt5DirectConnectionWithHttpProxy(Aws::Crt::Allocator *allocat
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5DirectConnectionWithHttpProxy, s_TestMqtt5DirectConnectionWithHttpProxy)
 
 /*
@@ -777,9 +746,9 @@ static int s_TestMqtt5DirectConnectionFull(Aws::Crt::Allocator *allocator, void 
     mqtt5Options.WithOfflineQueueBehavior(
         Mqtt5::ClientOperationQueueBehaviorType::AWS_MQTT5_COQBT_FAIL_QOS0_PUBLISH_ON_DISCONNECT);
     mqtt5Options.WithReconnectOptions(reconnectOptions);
-    mqtt5Options.WithPingTimeoutMs(1000);
-    mqtt5Options.WithConnackTimeoutMs(100);
-    mqtt5Options.WithAckTimeoutSeconds(1000);
+    mqtt5Options.WithPingTimeoutMs(10000);
+    mqtt5Options.WithConnackTimeoutMs(10000);
+    mqtt5Options.WithAckTimeoutSec(60000);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -848,12 +817,11 @@ static int s_TestMqtt5WSConnectionMinimal(Aws::Crt::Allocator *allocator, void *
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
     ASSERT_TRUE(mqtt5Client->Start());
-    connectionPromise.get_future().get();
+    ASSERT_TRUE(connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5WSConnectionMinimal, s_TestMqtt5WSConnectionMinimal)
 
 /*
@@ -915,7 +883,6 @@ static int s_TestMqtt5WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, 
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5WSConnectionWithBasicAuth, s_TestMqtt5WSConnectionWithBasicAuth)
 
 /*
@@ -981,13 +948,11 @@ static int s_TestMqtt5WSConnectionWithTLS(Aws::Crt::Allocator *allocator, void *
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5WSConnectionWithTLS, s_TestMqtt5WSConnectionWithTLS)
 
 /*
  * [ConnDC-UC4] Websocket connection with mutual TLS
  */
-
 static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, void *)
 {
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
@@ -1049,12 +1014,10 @@ static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, 
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5WSConnectionWithMutualTLS, s_TestMqtt5WSConnectionWithMutualTLS)
 
 /*
  * ConnWS-UC5] Websocket connection with HttpProxy options
- *
  */
 static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, void *)
 {
@@ -1131,7 +1094,6 @@ static int s_TestMqtt5WSConnectionWithHttpProxy(Aws::Crt::Allocator *allocator, 
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5WSConnectionWithHttpProxy, s_TestMqtt5WSConnectionWithHttpProxy)
 
 /*
@@ -1197,9 +1159,9 @@ static int s_TestMqtt5WSConnectionFull(Aws::Crt::Allocator *allocator, void *)
     mqtt5Options.WithOfflineQueueBehavior(
         Mqtt5::ClientOperationQueueBehaviorType::AWS_MQTT5_COQBT_FAIL_QOS0_PUBLISH_ON_DISCONNECT);
     mqtt5Options.WithReconnectOptions(reconnectOptions);
-    mqtt5Options.WithPingTimeoutMs(1000);
-    mqtt5Options.WithConnackTimeoutMs(100);
-    mqtt5Options.WithAckTimeoutSeconds(1000);
+    mqtt5Options.WithPingTimeoutMs(10000);
+    mqtt5Options.WithConnackTimeoutMs(10000);
+    mqtt5Options.WithAckTimeoutSec(60000);
 
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -1240,7 +1202,7 @@ static int s_TestMqtt5WSConnectionFull(Aws::Crt::Allocator *allocator, void *)
 AWS_TEST_CASE(Mqtt5WSConnectionFull, s_TestMqtt5WSConnectionFull)
 
 ////////////////////////////////////////////////////////////
-//// Negative Connect Tests with Incorrect Data [ConnNegativeID-UC]
+// Negative Connect Tests with Incorrect Data [ConnNegativeID-UC]
 ////////////////////////////////////////////////////////////
 
 /*
@@ -1448,7 +1410,6 @@ static int s_TestMqtt5IncorrectBasicAuth(Aws::Crt::Allocator *allocator, void *)
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5IncorrectBasicAuth, s_TestMqtt5IncorrectBasicAuth)
 
 // [ConnNegativeID-UC6] Client Websocket Handshake Failure test
@@ -1495,7 +1456,6 @@ static int s_TestMqtt5IncorrectWSConnect(Aws::Crt::Allocator *allocator, void *)
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5IncorrectWSConnect, s_TestMqtt5IncorrectWSConnect)
 
 /*
@@ -1564,7 +1524,6 @@ static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void
     stopped1Promise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5DoubleClientIDFailure, s_TestMqtt5DoubleClientIDFailure)
 
 //////////////////////////////////////////////////////////
@@ -1621,7 +1580,6 @@ static int s_TestMqtt5NegotiatedSettingsHappy(Aws::Crt::Allocator *allocator, vo
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5NegotiatedSettingsHappy, s_TestMqtt5NegotiatedSettingsHappy)
 
 /*
@@ -1667,7 +1625,7 @@ static int s_TestMqtt5NegotiatedSettingsFull(Aws::Crt::Allocator *allocator, voi
         std::shared_ptr<NegotiatedSettings> settings = eventData.negotiatedSettings;
         ASSERT_TRUE(settings->getSessionExpiryIntervalSec() == SESSION_EXPIRY_INTERVAL_SEC);
         ASSERT_TRUE(settings->getClientId() == CLIENT_ID);
-        ASSERT_TRUE(settings->getServerKeepAlive() == KEEP_ALIVE_INTERVAL);
+        ASSERT_TRUE(settings->getServerKeepAliveSec() == KEEP_ALIVE_INTERVAL);
         connectionPromise.set_value(true);
         return 0;
     });
@@ -1681,7 +1639,6 @@ static int s_TestMqtt5NegotiatedSettingsFull(Aws::Crt::Allocator *allocator, voi
     stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5NegotiatedSettingsFull, s_TestMqtt5NegotiatedSettingsFull)
 
 /*
@@ -1722,7 +1679,7 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
     mqtt5Options.WithClientConnectionSuccessCallback([&](const OnConnectionSuccessEventData &eventData) {
         std::shared_ptr<NegotiatedSettings> settings = eventData.negotiatedSettings;
         uint16_t receivedmax = settings->getReceiveMaximumFromServer();
-        uint32_t max_package = settings->getMaximumPacketSizeBytes();
+        uint32_t max_package = settings->getMaximumPacketSizeToServer();
         ASSERT_FALSE(receivedmax == RECEIVE_MAX);
         ASSERT_FALSE(max_package == PACKET_MAX);
         ASSERT_FALSE(settings->getRejoinedSession());
@@ -1741,7 +1698,6 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
 
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5NegotiatedSettingsLimit, s_TestMqtt5NegotiatedSettingsLimit)
 
 /*
@@ -1815,7 +1771,6 @@ static int s_TestMqtt5NegotiatedSettingsRejoinAlways(Aws::Crt::Allocator *alloca
 
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5NegotiatedSettingsRejoinAlways, s_TestMqtt5NegotiatedSettingsRejoinAlways)
 
 //////////////////////////////////////////////////////////
@@ -1897,7 +1852,6 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
 
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5SubUnsub, s_TestMqtt5SubUnsub)
 
 /*
@@ -1961,7 +1915,9 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *)
     /* Subscribe to test topic */
     Mqtt5::Subscription subscription(TEST_TOPIC, Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
     std::shared_ptr<Mqtt5::SubscribePacket> subscribe = std::make_shared<Mqtt5::SubscribePacket>(allocator);
+
     subscribe->WithSubscription(std::move(subscription));
+
     std::promise<void> subscribed;
     ASSERT_TRUE(subscriber->Subscribe(
         subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
@@ -1981,8 +1937,218 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *)
 
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5WillTest, s_TestMqtt5WillTest)
+
+/*
+ *  Shared Subscription test
+ */
+static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    String currentUUID = Aws::Crt::UUID().ToString();
+
+    const String TEST_TOPIC = "test/MQTT5_Binding_CPP_" + currentUUID;
+    const String sharedTopicFilter = "$share/crttest/test/MQTT5_Binding_CPP_" + currentUUID;
+
+    const int MESSAGE_NUMBER = 10;
+    std::atomic<int> client_messages(0);
+    bool client1_received = false;
+    bool client2_received = false;
+
+    std::vector<int> receivedMessages(MESSAGE_NUMBER);
+    for (int i = 0; i < MESSAGE_NUMBER; i++)
+    {
+        receivedMessages.push_back(0);
+    }
+
+    Aws::Iot::Mqtt5ClientBuilder *subscribe_builder =
+        Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+            mqtt5TestVars.m_hostname_string,
+            mqtt5TestVars.m_certificate_path_string.c_str(),
+            mqtt5TestVars.m_private_key_path_string.c_str(),
+            allocator);
+    ASSERT_TRUE(subscribe_builder);
+
+    std::promise<void> client_received;
+
+    auto get_on_message_callback = [&](bool &received) {
+        return [&](const PublishReceivedEventData &eventData) -> int {
+            String topic = eventData.publishPacket->getTopic();
+            if (topic == TEST_TOPIC)
+            {
+                ByteCursor payload = eventData.publishPacket->getPayload();
+                String message_string = String((const char *)payload.ptr, payload.len);
+                int message_int = atoi(message_string.c_str());
+                ASSERT_TRUE(message_int < MESSAGE_NUMBER);
+                ++receivedMessages[message_int];
+                received = true; // this line has changed
+
+                bool exchanged = false;
+                int desired = 11;
+                int tested = 10;
+                client_messages++;
+                exchanged = client_messages.compare_exchange_strong(tested, desired);
+                if (exchanged == true)
+                {
+                    client_received.set_value();
+                }
+            }
+            return 0;
+        };
+    };
+    auto onMessage_client1 = get_on_message_callback(client1_received);
+    auto onMessage_client2 = get_on_message_callback(client2_received);
+
+    subscribe_builder->WithPublishReceivedCallback(onMessage_client1);
+
+    Aws::Iot::Mqtt5ClientBuilder *subscribe_builder2 =
+        Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+            mqtt5TestVars.m_hostname_string,
+            mqtt5TestVars.m_certificate_path_string.c_str(),
+            mqtt5TestVars.m_private_key_path_string.c_str(),
+            allocator);
+    ASSERT_TRUE(subscribe_builder2);
+
+    subscribe_builder2->WithPublishReceivedCallback(onMessage_client2);
+
+    Aws::Iot::Mqtt5ClientBuilder *publish_builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+        mqtt5TestVars.m_hostname_string,
+        mqtt5TestVars.m_certificate_path_string.c_str(),
+        mqtt5TestVars.m_private_key_path_string.c_str(),
+        allocator);
+    ASSERT_TRUE(publish_builder);
+
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+
+    std::promise<bool> connectionPromise2;
+    std::promise<void> stoppedPromise2;
+
+    std::promise<bool> connectionPromise3;
+    std::promise<void> stoppedPromise3;
+
+    std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect = std::make_shared<Aws::Crt::Mqtt5::ConnectPacket>();
+
+    /* first subscriber */
+    /* set a different client id so we are not disconnected from the server */
+    packetConnect->WithClientId("s_TestMqtt5SharedSubscriptionTest" + Aws::Crt::UUID().ToString());
+    subscribe_builder->WithConnectOptions(packetConnect);
+    s_setupConnectionLifeCycle(subscribe_builder, connectionPromise, stoppedPromise, "Subscriber 1");
+    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = subscribe_builder->Build();
+    ASSERT_TRUE(mqtt5Client);
+
+    /* second subscriber */
+    /* set a different client id so we are not disconnected from the server */
+    packetConnect->WithClientId("s_TestMqtt5SharedSubscriptionTest" + Aws::Crt::UUID().ToString());
+    subscribe_builder2->WithConnectOptions(packetConnect);
+    s_setupConnectionLifeCycle(subscribe_builder2, connectionPromise2, stoppedPromise2, "Subscriber 2");
+    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client2 = subscribe_builder2->Build();
+    ASSERT_TRUE(mqtt5Client2);
+
+    /* publisher */
+    /* set a different client id so we are not disconnected from the server */
+    packetConnect->WithClientId("s_TestMqtt5SharedSubscriptionTest" + Aws::Crt::UUID().ToString());
+    publish_builder->WithConnectOptions(packetConnect);
+    s_setupConnectionLifeCycle(publish_builder, connectionPromise3, stoppedPromise3, "Publisher");
+    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Publisher = publish_builder->Build();
+    ASSERT_TRUE(mqtt5Publisher);
+
+    /* Connect all clients */
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(mqtt5Client2->Start());
+    ASSERT_TRUE(mqtt5Publisher->Start());
+
+    /* Wait for all clents to connect */
+    ASSERT_TRUE(connectionPromise.get_future().get());
+    ASSERT_TRUE(connectionPromise2.get_future().get());
+    ASSERT_TRUE(connectionPromise3.get_future().get());
+
+    /* Subscribe to test topic */
+    Mqtt5::Subscription subscription(sharedTopicFilter, Mqtt5::QOS::AWS_MQTT5_QOS_AT_MOST_ONCE, allocator);
+    std::shared_ptr<Mqtt5::SubscribePacket> subscribe = std::make_shared<Mqtt5::SubscribePacket>(allocator);
+    subscribe->WithSubscription(std::move(subscription));
+
+    /* Subscribe to test topic */
+    Mqtt5::Subscription subscription2(sharedTopicFilter, Mqtt5::QOS::AWS_MQTT5_QOS_AT_MOST_ONCE, allocator);
+    std::shared_ptr<Mqtt5::SubscribePacket> subscribe2 = std::make_shared<Mqtt5::SubscribePacket>(allocator);
+    subscribe2->WithSubscription(std::move(subscription2));
+
+    std::promise<void> suback;
+    auto onSubAck = [&](int, std::shared_ptr<SubAckPacket>) { suback.set_value(); };
+
+    /* subscribe first client */
+    ASSERT_TRUE(mqtt5Client->Subscribe(subscribe, onSubAck));
+    suback.get_future().wait();
+
+    suback = std::promise<void>();
+
+    /* subscribe second client */
+    ASSERT_TRUE(mqtt5Client2->Subscribe(subscribe2, onSubAck));
+    suback.get_future().wait();
+
+    /* Publish message 10 to test topic */
+    for (int i = 0; i < MESSAGE_NUMBER; i++)
+    {
+        std::string payload = std::to_string(i);
+        std::shared_ptr<Mqtt5::PublishPacket> publish = std::make_shared<Mqtt5::PublishPacket>(
+            TEST_TOPIC, ByteCursorFromCString(payload.c_str()), Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+        ASSERT_TRUE(mqtt5Publisher->Publish(publish));
+    }
+
+    /* Wait for all packets to be received on both clients */
+    client_received.get_future().wait();
+
+    /* Unsubscribe from the topic from both clients*/
+    Vector<String> unsubList;
+    unsubList.push_back(TEST_TOPIC);
+    std::shared_ptr<Mqtt5::UnsubscribePacket> unsubscribe_client1 =
+        std::make_shared<Mqtt5::UnsubscribePacket>(allocator);
+    unsubscribe_client1->WithTopicFilters(unsubList);
+    ASSERT_TRUE(mqtt5Client->Unsubscribe(unsubscribe_client1));
+
+    std::shared_ptr<Mqtt5::UnsubscribePacket> unsubscribe_client2 =
+        std::make_shared<Mqtt5::UnsubscribePacket>(allocator);
+    unsubscribe_client2->WithTopicFilters(unsubList);
+    ASSERT_TRUE(mqtt5Client2->Unsubscribe(unsubscribe_client2));
+
+    /* make sure all messages are received */
+    ASSERT_INT_EQUALS(MESSAGE_NUMBER + 1, client_messages); /* We are adding one at the end, so 10 messages received */
+
+    /* makes sure both clients received at least one message */
+    ASSERT_TRUE(client1_received);
+    ASSERT_TRUE(client2_received);
+
+    /* make sure all messages are received  with no duplicates*/
+    for (int i = 0; i < MESSAGE_NUMBER; i++)
+    {
+        ASSERT_TRUE(receivedMessages[i] > 0);
+    }
+    /* Stop all clients */
+    ASSERT_TRUE(mqtt5Client->Stop());
+    ASSERT_TRUE(mqtt5Client2->Stop());
+    ASSERT_TRUE(mqtt5Publisher->Stop());
+
+    /* Wait for all clents to disconnect */
+    stoppedPromise.get_future().get();
+    stoppedPromise2.get_future().get();
+    stoppedPromise3.get_future().get();
+
+    delete subscribe_builder;
+    delete subscribe_builder2;
+    delete publish_builder;
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(Mqtt5SharedSubscriptionTest, s_TestMqtt5SharedSubscriptionTest)
 
 //////////////////////////////////////////////////////////
 // Error Operation Tests [ErrorOp-UC]
@@ -2030,7 +2196,6 @@ static int s_TestMqtt5NullPublish(Aws::Crt::Allocator *allocator, void *)
 
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5NullPublish, s_TestMqtt5NullPublish)
 
 /*
@@ -2074,7 +2239,6 @@ static int s_TestMqtt5NullSubscribe(Aws::Crt::Allocator *allocator, void *)
 
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5NullSubscribe, s_TestMqtt5NullSubscribe)
 
 /*
@@ -2119,41 +2283,7 @@ static int s_TestMqtt5NullUnsubscribe(Aws::Crt::Allocator *allocator, void *)
 
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5NullUnsubscribe, s_TestMqtt5NullUnsubscribe)
-
-static int s_TestMqtt5NullConnectPacket(Aws::Crt::Allocator *allocator, void *)
-{
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
-    if (!mqtt5TestVars)
-    {
-        printf("Environment Variables are not set for the test, skip the test");
-        return AWS_OP_SKIP;
-    }
-
-    ApiHandle apiHandle(allocator);
-    // A long and invlid client id;
-    Aws::Crt::String CLIENT_ID =
-        "AClientIDGreaterThan128charactersToMakeAInvalidClientIDAndNULLCONNECTPACKETAClientIDGr"
-        "eaterThan128charactersToMakeAInvalidClientIDAndNULLCONNECTPACKETAClientIDGreaterThan12"
-        "8charactersToMakeAInvalidClientIDAndNULLCONNECTPACKET" +
-        Aws::Crt::UUID().ToString();
-
-    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
-    mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string).WithPort(mqtt5TestVars.m_port_value);
-
-    std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect = std::make_shared<Aws::Crt::Mqtt5::ConnectPacket>();
-    packetConnect->WithClientId(CLIENT_ID);
-    mqtt5Options.WithConnectOptions(packetConnect);
-
-    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
-    ASSERT_FALSE(mqtt5Client);
-    ASSERT_TRUE(LastError() == AWS_ERROR_MQTT5_CLIENT_OPTIONS_VALIDATION);
-
-    return AWS_OP_SUCCESS;
-}
-
-AWS_TEST_CASE(Mqtt5NullConnectPacket, s_TestMqtt5NullConnectPacket)
 
 //////////////////////////////////////////////////////////
 // QoS1 Test Cases [QoS1-UC]
@@ -2230,7 +2360,7 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *)
 
     subscribed.get_future().get();
 
-    /* Publish message 10 to test topic */
+    /* Publish 10 messages to test topic */
     for (int i = 0; i < MESSAGE_NUMBER; i++)
     {
         std::string payload = std::to_string(i);
@@ -2254,7 +2384,6 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *)
 
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5QoS1SubPub, s_TestMqtt5QoS1SubPub)
 
 ///*
@@ -2368,360 +2497,7 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *)
     stopped1Promise.get_future().get();
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5RetainSetAndClear, s_TestMqtt5RetainSetAndClear)
-
-//////////////////////////////////////////////////////////////
-// IoT Builder Test
-//////////////////////////////////////////////////////////////
-/* Testing direct connect with mTLS (cert and key) */
-static int s_TestIoTMqtt5ConnectWithmTLS(Aws::Crt::Allocator *allocator, void *)
-{
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
-    if (!mqtt5TestVars)
-    {
-        printf("Environment Variables are not set for the test, skip the test");
-        return AWS_OP_SKIP;
-    }
-
-    ApiHandle apiHandle(allocator);
-
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
-        mqtt5TestVars.m_hostname_string,
-        mqtt5TestVars.m_certificate_path_string.c_str(),
-        mqtt5TestVars.m_private_key_path_string.c_str(),
-        allocator);
-
-    ASSERT_TRUE(builder);
-
-    std::promise<bool> connectionPromise;
-    std::promise<void> stoppedPromise;
-
-    s_setupConnectionLifeCycle(builder, connectionPromise, stoppedPromise);
-
-    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
-
-    ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->Start());
-    ASSERT_TRUE(connectionPromise.get_future().get());
-    ASSERT_TRUE(mqtt5Client->Stop());
-    stoppedPromise.get_future().get();
-
-    delete builder;
-    return AWS_OP_SUCCESS;
-}
-AWS_TEST_CASE(IoTMqtt5ConnectWithmTLS, s_TestIoTMqtt5ConnectWithmTLS)
-
-/*
- * IoT Builder with websocket connect
- */
-static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, void *)
-{
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
-    if (!mqtt5TestVars)
-    {
-        printf("Environment Variables are not set for the test, skip the test");
-        return AWS_OP_SKIP;
-    }
-
-    ApiHandle apiHandle(allocator);
-
-    // Create websocket configuration
-    Aws::Crt::Auth::CredentialsProviderChainDefaultConfig defaultConfig;
-    std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> provider =
-        Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(defaultConfig);
-    if (!provider)
-    {
-        fprintf(stderr, "Failure to create credentials provider!\n");
-        exit(-1);
-    }
-    Aws::Iot::WebsocketConfig websocketConfig("us-east-1", provider);
-
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWebsocket(
-        mqtt5TestVars.m_hostname_string, websocketConfig, allocator);
-    ASSERT_TRUE(builder);
-
-    std::promise<bool> connectionPromise;
-    std::promise<void> stoppedPromise;
-
-    s_setupConnectionLifeCycle(builder, connectionPromise, stoppedPromise);
-
-    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
-
-    ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->Start());
-    ASSERT_TRUE(connectionPromise.get_future().get());
-    ASSERT_TRUE(mqtt5Client->Stop());
-    stoppedPromise.get_future().get();
-
-    delete builder;
-    return AWS_OP_SUCCESS;
-}
-
-AWS_TEST_CASE(IoTMqtt5ConnectWithWebsocket, s_TestIoTMqtt5ConnectWithWebsocket)
-
-/*
- * Custom Auth (signing) connect
- */
-static int s_TestIoTMqtt5ConnectWithSigningCustomAuth(Aws::Crt::Allocator *allocator, void *)
-{
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
-    if (!mqtt5TestVars)
-    {
-        printf("Environment Variables are not set for the test, skip the test");
-        return AWS_OP_SKIP;
-    }
-
-    ApiHandle apiHandle(allocator);
-
-    struct aws_string *authname = NULL;
-    struct aws_string *username = NULL;
-    struct aws_string *password = NULL;
-    struct aws_string *tokenKeyname = NULL;
-    struct aws_string *tokenValue = NULL;
-    struct aws_string *tokenSignature = NULL;
-
-    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_name, &authname);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_username, &username);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_password, &password);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenkey, &tokenKeyname);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenvalue, &tokenValue);
-    error |=
-        aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokensignature, &tokenSignature);
-
-    if (error != AWS_OP_SUCCESS)
-    {
-        printf("Environment Variables are not set for the test, skip the test");
-        return AWS_OP_SKIP;
-    }
-
-    Aws::Iot::Mqtt5CustomAuthConfig authConfig(allocator);
-    authConfig.WithAuthorizerName(aws_string_c_str(authname));
-    authConfig.WithUsername(aws_string_c_str(username));
-    authConfig.WithPassword(ByteCursorFromString(aws_string_c_str(password)));
-    authConfig.WithTokenKeyName(aws_string_c_str(tokenKeyname));
-    authConfig.WithTokenValue(aws_string_c_str(tokenValue));
-    authConfig.WithTokenSignature(aws_string_c_str(tokenSignature));
-
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizer(
-        mqtt5TestVars.m_hostname_string, authConfig, allocator);
-    ASSERT_TRUE(builder);
-
-    std::promise<bool> connectionPromise;
-    std::promise<void> stoppedPromise;
-
-    s_setupConnectionLifeCycle(builder, connectionPromise, stoppedPromise);
-
-    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
-
-    ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->Start());
-    ASSERT_TRUE(connectionPromise.get_future().get());
-    ASSERT_TRUE(mqtt5Client->Stop());
-    stoppedPromise.get_future().get();
-
-    aws_string_destroy(authname);
-    aws_string_destroy(username);
-    aws_string_destroy(password);
-    aws_string_destroy(tokenKeyname);
-    aws_string_destroy(tokenValue);
-    aws_string_destroy(tokenSignature);
-
-    delete builder;
-    return AWS_OP_SUCCESS;
-}
-AWS_TEST_CASE(IoTMqtt5ConnectWithSigningCustomAuth, s_TestIoTMqtt5ConnectWithSigningCustomAuth)
-
-/*
- * Custom Auth (no signing) connect
- */
-static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *allocator, void *)
-{
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
-    if (!mqtt5TestVars)
-    {
-        printf("Environment Variables are not set for the test, skip the test");
-        return AWS_OP_SKIP;
-    }
-
-    struct aws_string *authname = NULL;
-    struct aws_string *username = NULL;
-    struct aws_string *password = NULL;
-
-    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_name, &authname);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_username, &username);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_password, &password);
-
-    if (error != AWS_OP_SUCCESS)
-    {
-        printf("Environment Variables are not set for the test, skip the test");
-        return AWS_OP_SKIP;
-    }
-
-    ApiHandle apiHandle(allocator);
-    Aws::Iot::Mqtt5CustomAuthConfig authConfig(allocator);
-    authConfig.WithAuthorizerName(aws_string_c_str(authname));
-    authConfig.WithUsername(aws_string_c_str(username));
-    authConfig.WithPassword(ByteCursorFromString(aws_string_c_str(password)));
-
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizer(
-        mqtt5TestVars.m_hostname_string, authConfig, allocator);
-    ASSERT_TRUE(builder);
-    std::promise<bool> connectionPromise;
-    std::promise<void> stoppedPromise;
-
-    s_setupConnectionLifeCycle(builder, connectionPromise, stoppedPromise);
-
-    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
-
-    ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->Start());
-    ASSERT_TRUE(connectionPromise.get_future().get());
-    ASSERT_TRUE(mqtt5Client->Stop());
-    stoppedPromise.get_future().get();
-
-    aws_string_destroy(authname);
-    aws_string_destroy(username);
-    aws_string_destroy(password);
-
-    delete builder;
-    return AWS_OP_SUCCESS;
-}
-AWS_TEST_CASE(IoTMqtt5ConnectWithNoSigningCustomAuth, s_TestIoTMqtt5ConnectWithNoSigningCustomAuth)
-
-/*
- * Custom Auth (no signing) connect - websockets
- */
-static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets(Aws::Crt::Allocator *allocator, void *)
-{
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
-    if (!mqtt5TestVars)
-    {
-        printf("Environment Variables are not set for the test, skip the test");
-        return AWS_OP_SKIP;
-    }
-
-    struct aws_string *authname = NULL;
-    struct aws_string *username = NULL;
-    struct aws_string *password = NULL;
-
-    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_name, &authname);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_username, &username);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_nosign_custom_auth_password, &password);
-
-    if (error != AWS_OP_SUCCESS)
-    {
-        printf("Environment Variables are not set for the test, skip the test");
-        return AWS_OP_SKIP;
-    }
-
-    ApiHandle apiHandle(allocator);
-    Aws::Iot::Mqtt5CustomAuthConfig authConfig(allocator);
-    authConfig.WithAuthorizerName(aws_string_c_str(authname));
-    authConfig.WithUsername(aws_string_c_str(username));
-    authConfig.WithPassword(ByteCursorFromString(aws_string_c_str(password)));
-
-    Aws::Iot::WebsocketConfig websocketConfig("us-east-1");
-
-    Aws::Iot::Mqtt5ClientBuilder *builder =
-        Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
-            mqtt5TestVars.m_hostname_string, authConfig, websocketConfig, allocator);
-    ASSERT_TRUE(builder);
-    std::promise<bool> connectionPromise;
-    std::promise<void> stoppedPromise;
-
-    s_setupConnectionLifeCycle(builder, connectionPromise, stoppedPromise);
-
-    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
-
-    ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->Start());
-    ASSERT_TRUE(connectionPromise.get_future().get());
-    ASSERT_TRUE(mqtt5Client->Stop());
-    stoppedPromise.get_future().get();
-
-    aws_string_destroy(authname);
-    aws_string_destroy(username);
-    aws_string_destroy(password);
-
-    delete builder;
-    return AWS_OP_SUCCESS;
-}
-AWS_TEST_CASE(IoTMqtt5ConnectWithNoSigningCustomAuthWebsockets, s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets)
-
-/*
- * Custom Auth (signing) connect - websockets
- */
-static int s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Allocator *allocator, void *)
-{
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
-    if (!mqtt5TestVars)
-    {
-        printf("Environment Variables are not set for the test, skip the test");
-        return AWS_OP_SKIP;
-    }
-
-    ApiHandle apiHandle(allocator);
-
-    struct aws_string *authname = NULL;
-    struct aws_string *username = NULL;
-    struct aws_string *password = NULL;
-    struct aws_string *tokenKeyname = NULL;
-    struct aws_string *tokenValue = NULL;
-    struct aws_string *tokenSignature = NULL;
-
-    int error = aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_name, &authname);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_username, &username);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_password, &password);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenkey, &tokenKeyname);
-    error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokenvalue, &tokenValue);
-    error |=
-        aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_sign_custom_auth_tokensignature, &tokenSignature);
-
-    if (error != AWS_OP_SUCCESS)
-    {
-        printf("Environment Variables are not set for the test, skip the test");
-        return AWS_OP_SKIP;
-    }
-
-    Aws::Iot::Mqtt5CustomAuthConfig authConfig(allocator);
-    authConfig.WithAuthorizerName(aws_string_c_str(authname));
-    authConfig.WithUsername(aws_string_c_str(username));
-    authConfig.WithPassword(ByteCursorFromString(aws_string_c_str(password)));
-    authConfig.WithTokenKeyName(aws_string_c_str(tokenKeyname));
-    authConfig.WithTokenValue(aws_string_c_str(tokenValue));
-    authConfig.WithTokenSignature(aws_string_c_str(tokenSignature));
-
-    Aws::Iot::WebsocketConfig websocketConfig("us-east-1");
-
-    Aws::Iot::Mqtt5ClientBuilder *builder =
-        Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
-            mqtt5TestVars.m_hostname_string, authConfig, websocketConfig, allocator);
-    ASSERT_TRUE(builder);
-    std::promise<bool> connectionPromise;
-    std::promise<void> stoppedPromise;
-
-    s_setupConnectionLifeCycle(builder, connectionPromise, stoppedPromise);
-
-    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
-
-    ASSERT_TRUE(mqtt5Client);
-    ASSERT_TRUE(mqtt5Client->Start());
-    ASSERT_TRUE(connectionPromise.get_future().get());
-    ASSERT_TRUE(mqtt5Client->Stop());
-    stoppedPromise.get_future().get();
-
-    aws_string_destroy(authname);
-    aws_string_destroy(username);
-    aws_string_destroy(password);
-    aws_string_destroy(tokenKeyname);
-    aws_string_destroy(tokenValue);
-    aws_string_destroy(tokenSignature);
-
-    delete builder;
-    return AWS_OP_SUCCESS;
-}
-AWS_TEST_CASE(IoTMqtt5ConnectWithSigningCustomAuthWebsockets, s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets)
 
 //////////////////////////////////////////////////////////
 // Interruption tests [IT-UC]
@@ -2773,7 +2549,6 @@ static int s_TestMqtt5InterruptSub(Aws::Crt::Allocator *allocator, void *)
     delete builder;
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5InterruptSub, s_TestMqtt5InterruptSub)
 
 /*
@@ -2823,7 +2598,6 @@ static int s_TestMqtt5InterruptUnsub(Aws::Crt::Allocator *allocator, void *)
     delete builder;
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5InterruptUnsub, s_TestMqtt5InterruptUnsub)
 
 /*
@@ -2873,7 +2647,6 @@ static int s_TestMqtt5InterruptPublishQoS1(Aws::Crt::Allocator *allocator, void 
     delete builder;
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5InterruptPublishQoS1, s_TestMqtt5InterruptPublishQoS1)
 
 //////////////////////////////////////////////////////////
@@ -2937,7 +2710,862 @@ static int s_TestMqtt5OperationStatisticsSimple(Aws::Crt::Allocator *allocator, 
 
     return AWS_OP_SUCCESS;
 }
-
 AWS_TEST_CASE(Mqtt5OperationStatisticsSimple, s_TestMqtt5OperationStatisticsSimple)
 
-#endif // !BYO_CRYPTO
+/* Mqtt5-to-Mqtt3 Adapter Test */
+
+/* Test Helper Functions */
+/* Test connect and disconnect with MqttConnection Interface */
+static int s_ConnectAndDisconnectThroughMqtt3(std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection)
+{
+    std::promise<bool> connectionCompletedPromise;
+    std::promise<void> connectionClosedPromise;
+    auto onConnectionCompleted =
+        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
+            (void)returnCode;
+            if (errorCode)
+            {
+                connectionCompletedPromise.set_value(false);
+            }
+            else
+            {
+                connectionCompletedPromise.set_value(true);
+            }
+        };
+    auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
+    connection->OnConnectionCompleted = std::move(onConnectionCompleted);
+    connection->OnDisconnect = std::move(onDisconnect);
+
+    // Mqtt5 Test client policy only allows client id start with "test-"
+    Aws::Crt::UUID Uuid;
+    Aws::Crt::String uuidStr = "test-" + Uuid.ToString();
+
+    if (!connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/))
+    {
+        printf("Failed to connect");
+        return AWS_OP_ERR;
+    }
+    if (connectionCompletedPromise.get_future().get() == false)
+    {
+        printf("Connection failed");
+        return AWS_OP_ERR;
+    }
+    if (connection->Disconnect())
+    {
+        connectionClosedPromise.get_future().wait();
+    }
+    return AWS_OP_SUCCESS;
+}
+
+/* Test connect and disconnect with Mqtt5 Interface */
+static int s_AdapterConenctAndDisconnectThroughMqtt5(
+    Mqtt5::Mqtt5ClientOptions &mqtt5Options,
+    Aws::Crt::Allocator *allocator,
+    const char *clientName = "Client")
+{
+
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise, clientName);
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(mqtt5Client);
+    std::shared_ptr<Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    ASSERT_TRUE(mqttConnection && *mqttConnection);
+
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(connectionPromise.get_future().get());
+    ASSERT_TRUE(mqtt5Client->Stop());
+    stoppedPromise.get_future().get();
+
+    return AWS_OP_SUCCESS;
+}
+
+/*
+ * [Mqtt5to3Adapter-UC1] Happy path. Minimal creation and cleanup
+ */
+static int s_TestMqtt5to3AdapterNewConnectionMin(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    // Hardcoded the host name and port for creation test
+    mqtt5Options.WithHostName("localhost").WithPort(1883);
+    Aws::Crt::Io::SocketOptions socketOptions;
+    socketOptions.SetConnectTimeoutMs(3000);
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(mqtt5Client);
+    std::shared_ptr<Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    ASSERT_TRUE(mqttConnection);
+
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5to3AdapterNewConnectionMin, s_TestMqtt5to3AdapterNewConnectionMin)
+
+/*
+ * [Mqtt5to3Adapter-UC2] Maximum creation and cleanup
+ */
+static int s_TestMqtt5to3AdapterNewClientFull(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    // Hardcoded the host name and port for creation test
+    mqtt5Options.WithHostName("localhost").WithPort(1883);
+
+    Aws::Crt::Io::SocketOptions socketOptions;
+    socketOptions.SetConnectTimeoutMs(3000);
+
+    Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+    ASSERT_TRUE(eventLoopGroup);
+
+    Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+    ASSERT_TRUE(defaultHostResolver);
+
+    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+    ASSERT_TRUE(allocator);
+    clientBootstrap.EnableBlockingShutdown();
+
+    // Setup will
+    const Aws::Crt::String TEST_TOPIC = "test/MQTT5_Binding_CPP/s_TestMqtt5NewClientFull";
+    ByteBuf will_payload = Aws::Crt::ByteBufFromCString("Will Test");
+    std::shared_ptr<Mqtt5::PublishPacket> will = std::make_shared<Mqtt5::PublishPacket>(
+        TEST_TOPIC, ByteCursorFromByteBuf(will_payload), Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+
+    std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect = std::make_shared<Aws::Crt::Mqtt5::ConnectPacket>();
+    packetConnect->WithClientId("s_TestMqtt5DirectConnectionFull" + Aws::Crt::UUID().ToString())
+        .WithKeepAliveIntervalSec(1000)
+        .WithMaximumPacketSizeBytes(1000L)
+        .WithReceiveMaximum(1000)
+        .WithRequestProblemInformation(true)
+        .WithRequestResponseInformation(true)
+        .WithSessionExpiryIntervalSec(1000L)
+        .WithWill(will)
+        .WithWillDelayIntervalSec(1000);
+
+    Aws::Crt::Mqtt5::UserProperty userProperty("PropertyName", "PropertyValue");
+    packetConnect->WithUserProperty(std::move(userProperty));
+
+    Aws::Crt::Mqtt5::ReconnectOptions reconnectOptions = {
+        Mqtt5::JitterMode::AWS_EXPONENTIAL_BACKOFF_JITTER_FULL, 1000, 1000, 1000};
+
+    mqtt5Options.WithConnectOptions(packetConnect);
+    mqtt5Options.WithBootstrap(&clientBootstrap);
+    mqtt5Options.WithSocketOptions(socketOptions);
+    mqtt5Options.WithSessionBehavior(Mqtt5::ClientSessionBehaviorType::AWS_MQTT5_CSBT_REJOIN_POST_SUCCESS);
+    mqtt5Options.WithClientExtendedValidationAndFlowControl(
+        Mqtt5::ClientExtendedValidationAndFlowControl::AWS_MQTT5_EVAFCO_NONE);
+    mqtt5Options.WithOfflineQueueBehavior(
+        Mqtt5::ClientOperationQueueBehaviorType::AWS_MQTT5_COQBT_FAIL_QOS0_PUBLISH_ON_DISCONNECT);
+    mqtt5Options.WithReconnectOptions(reconnectOptions);
+    mqtt5Options.WithPingTimeoutMs(10000);
+    mqtt5Options.WithConnackTimeoutMs(10000);
+    mqtt5Options.WithAckTimeoutSec(60000);
+
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(mqtt5Client);
+    std::shared_ptr<Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    ASSERT_TRUE(mqttConnection && *mqttConnection);
+
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5to3AdapterNewClientFull, s_TestMqtt5to3AdapterNewClientFull)
+
+/*
+ * [Mqtt5to3Adapter-UC3] Happy path. Minimal direct connection through Mqtt3 Interface
+ */
+static int s_TestMqtt5to3AdapterDirectConnectionMinimalThroughMqtt3(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+    Aws::Crt::Io::SocketOptions socketOptions;
+    socketOptions.SetConnectTimeoutMs(3000);
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+
+    mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string);
+    mqtt5Options.WithPort(mqtt5TestVars.m_port_value);
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(mqtt5Client);
+    std::shared_ptr<Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    ASSERT_TRUE(mqttConnection);
+    int connectResult = s_ConnectAndDisconnectThroughMqtt3(mqttConnection);
+    ASSERT_SUCCESS(connectResult);
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(
+    Mqtt5to3AdapterDirectConnectionMinimalThroughMqtt3,
+    s_TestMqtt5to3AdapterDirectConnectionMinimalThroughMqtt3)
+
+/*
+ * [Mqtt5to3Adapter-UC4] Websocket creation and connection through Mqtt3 Interface
+ */
+static int s_TestMqtt5to3AdapterWSConnectionMinimalThroughMqtt3(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string);
+    mqtt5Options.WithPort(mqtt5TestVars.m_port_value);
+
+    Aws::Crt::Io::SocketOptions socketOptions;
+    socketOptions.SetConnectTimeoutMs(3000);
+
+    Aws::Crt::Auth::CredentialsProviderChainDefaultConfig defaultConfig;
+    std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> provider =
+        Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(defaultConfig);
+
+    ASSERT_TRUE(provider);
+
+    Aws::Iot::WebsocketConfig config("us-east-1", provider);
+
+    int Mqtt5WebSocket = 0;
+    int Mqtt3WebSocket = 0;
+
+    mqtt5Options.WithWebsocketHandshakeTransformCallback(
+        [config, &Mqtt5WebSocket](
+            std::shared_ptr<Aws::Crt::Http::HttpRequest> req,
+            const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete) {
+            auto signingComplete =
+                [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
+                    onComplete(req1, errorCode);
+                };
+
+            auto signerConfig = config.CreateSigningConfigCb();
+
+            config.Signer->SignRequest(req, *signerConfig, signingComplete);
+            Mqtt5WebSocket = 1;
+        });
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(mqtt5Client);
+
+    std::shared_ptr<Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    ASSERT_TRUE(mqttConnection);
+
+    mqttConnection->WebsocketInterceptor =
+        [config, &Mqtt3WebSocket](
+            std::shared_ptr<Aws::Crt::Http::HttpRequest> req,
+            const Aws::Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete) {
+            auto signingComplete =
+                [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
+                    onComplete(req1, errorCode);
+                };
+
+            auto signerConfig = config.CreateSigningConfigCb();
+
+            config.Signer->SignRequest(req, *signerConfig, signingComplete);
+            Mqtt3WebSocket = 1;
+        };
+
+    int connectResult = s_ConnectAndDisconnectThroughMqtt3(mqttConnection);
+    ASSERT_SUCCESS(connectResult);
+    ASSERT_TRUE(Mqtt3WebSocket == 1);
+    ASSERT_TRUE(Mqtt5WebSocket == 0);
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5to3AdapterWSConnectionMinimalThroughMqtt3, s_TestMqtt5to3AdapterWSConnectionMinimalThroughMqtt3)
+
+/*
+ * [Mqtt5to3Adapter-UC5] IoT MutalTLS creation and cleanup with Mqtt5ClientBuilder through Mqtt3 Interface
+ */
+static int s_TestMqtt5to3AdapterWithIoTConnectionThroughMqtt3(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+        mqtt5TestVars.m_hostname_string,
+        mqtt5TestVars.m_certificate_path_string.c_str(),
+        mqtt5TestVars.m_private_key_path_string.c_str(),
+        allocator);
+    ASSERT_TRUE(builder);
+
+    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
+    ASSERT_TRUE(mqtt5Client);
+
+    // Created a Mqtt311 Connection from mqtt5Client. The options are setup by the builder.
+    std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    ASSERT_TRUE(mqttConnection);
+    delete builder;
+    int connectResult = s_ConnectAndDisconnectThroughMqtt3(mqttConnection);
+    ASSERT_SUCCESS(connectResult);
+
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5to3AdapterWithIoTConnectionThroughMqtt3, s_TestMqtt5to3AdapterWithIoTConnectionThroughMqtt3)
+
+/*
+ * [Mqtt5to3Adapter-UC6] MutalTLS connection through Mqtt3 Interface
+ */
+static int s_TestMqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt3(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string);
+    mqtt5Options.WithPort(443);
+
+    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
+        mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str(), allocator);
+
+    Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+    ASSERT_TRUE(tlsContext);
+    Aws::Crt::Io::TlsConnectionOptions tlsConnection = tlsContext.NewConnectionOptions();
+    ASSERT_TRUE(tlsConnection);
+    ASSERT_TRUE(tlsConnection.SetAlpnList("x-amzn-mqtt-ca"));
+    mqtt5Options.WithTlsConnectionOptions(tlsConnection);
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(mqtt5Client);
+    // Created a Mqtt311 Connection from mqtt5Client. The options are setup by the builder.
+    std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    ASSERT_TRUE(mqttConnection);
+    int connectResult = s_ConnectAndDisconnectThroughMqtt3(mqttConnection);
+    ASSERT_SUCCESS(connectResult);
+
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(
+    Mqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt3,
+    s_TestMqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt3)
+
+/*
+ * [Mqtt5to3Adapter-UC7] Happy path. Minimal direct connection through Mqtt5 Interface
+ */
+static int s_TestMqtt5to3AdapterDirectConnectionMinimalThroughMqtt5(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+    Aws::Crt::Io::SocketOptions socketOptions;
+    socketOptions.SetConnectTimeoutMs(3000);
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+
+    mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string);
+    mqtt5Options.WithPort(mqtt5TestVars.m_port_value);
+
+    return s_AdapterConenctAndDisconnectThroughMqtt5(mqtt5Options, allocator);
+}
+AWS_TEST_CASE(
+    Mqtt5to3AdapterDirectConnectionMinimalThroughMqtt5,
+    s_TestMqtt5to3AdapterDirectConnectionMinimalThroughMqtt5)
+
+/*
+ * [Mqtt5to3Adapter-UC8] Websocket creation and connection through Mqtt5 Interface
+ */
+static int s_TestMqtt5to3AdapterWSConnectionMinimalThroughMqtt5(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_WS);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string);
+    mqtt5Options.WithPort(mqtt5TestVars.m_port_value);
+
+    Aws::Crt::Io::SocketOptions socketOptions;
+    socketOptions.SetConnectTimeoutMs(3000);
+
+    Aws::Crt::Auth::CredentialsProviderChainDefaultConfig defaultConfig;
+    std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> provider =
+        Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(defaultConfig);
+
+    ASSERT_TRUE(provider);
+
+    Aws::Iot::WebsocketConfig config("us-east-1", provider);
+
+    int Mqtt5WebSocket = 0;
+    int Mqtt3WebSocket = 0;
+
+    mqtt5Options.WithWebsocketHandshakeTransformCallback(
+        [config, &Mqtt5WebSocket](
+            std::shared_ptr<Aws::Crt::Http::HttpRequest> req,
+            const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete) {
+            auto signingComplete =
+                [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
+                    onComplete(req1, errorCode);
+                };
+
+            auto signerConfig = config.CreateSigningConfigCb();
+
+            config.Signer->SignRequest(req, *signerConfig, signingComplete);
+            Mqtt5WebSocket = 1;
+        });
+
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(mqtt5Client);
+
+    std::shared_ptr<Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    ASSERT_TRUE(mqttConnection);
+
+    mqttConnection->WebsocketInterceptor =
+        [config, &Mqtt3WebSocket](
+            std::shared_ptr<Aws::Crt::Http::HttpRequest> req,
+            const Aws::Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete) {
+            auto signingComplete =
+                [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode) {
+                    onComplete(req1, errorCode);
+                };
+
+            auto signerConfig = config.CreateSigningConfigCb();
+
+            config.Signer->SignRequest(req, *signerConfig, signingComplete);
+            Mqtt3WebSocket = 1;
+        };
+
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(connectionPromise.get_future().get());
+    ASSERT_TRUE(mqtt5Client->Stop());
+    stoppedPromise.get_future().get();
+
+    ASSERT_TRUE(Mqtt3WebSocket == 0);
+    ASSERT_TRUE(Mqtt5WebSocket == 1);
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5to3AdapterWSConnectionMinimalThroughMqtt5, s_TestMqtt5to3AdapterWSConnectionMinimalThroughMqtt5)
+
+/*
+ * [Mqtt5to3Adapter-UC9] IoT MutalTLS creation and cleanup with Mqtt5ClientBuilder through Mqtt5 Interface
+ */
+static int s_TestMqtt5to3AdapterWithIoTConnectionThroughMqtt5(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+        mqtt5TestVars.m_hostname_string,
+        mqtt5TestVars.m_certificate_path_string.c_str(),
+        mqtt5TestVars.m_private_key_path_string.c_str(),
+        allocator);
+    ASSERT_TRUE(builder);
+
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+
+    s_setupConnectionLifeCycle(builder, connectionPromise, stoppedPromise);
+
+    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
+    ASSERT_TRUE(mqtt5Client);
+    // Created a Mqtt311 Connection from mqtt5Client. The options are setup by the builder.
+    std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    ASSERT_TRUE(mqttConnection);
+
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(connectionPromise.get_future().get());
+
+    /* Stop immediately */
+    ASSERT_TRUE(mqtt5Client->Stop());
+    stoppedPromise.get_future().get();
+
+    delete builder;
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5to3AdapterWithIoTConnectionThroughMqtt5, s_TestMqtt5to3AdapterWithIoTConnectionThroughMqtt5)
+
+/*
+ * [Mqtt5to3Adapter-UC10] MutalTLS connection through Mqtt5 Interface
+ */
+static int s_TestMqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt5(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string);
+    mqtt5Options.WithPort(443);
+
+    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
+        mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str(), allocator);
+
+    Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+    ASSERT_TRUE(tlsContext);
+    Aws::Crt::Io::TlsConnectionOptions tlsConnection = tlsContext.NewConnectionOptions();
+    ASSERT_TRUE(tlsConnection);
+    ASSERT_TRUE(tlsConnection.SetAlpnList("x-amzn-mqtt-ca"));
+    mqtt5Options.WithTlsConnectionOptions(tlsConnection);
+
+    return s_AdapterConenctAndDisconnectThroughMqtt5(mqtt5Options, allocator);
+}
+AWS_TEST_CASE(
+    Mqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt5,
+    s_TestMqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt5)
+
+/*
+ * [Mqtt5to3Adapter-UC11] Test sub/unsub/publish operations through adapter
+ */
+static int s_TestMqtt5to3AdapterOperations(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+        mqtt5TestVars.m_hostname_string,
+        mqtt5TestVars.m_certificate_path_string.c_str(),
+        mqtt5TestVars.m_private_key_path_string.c_str(),
+        allocator);
+    ASSERT_TRUE(builder);
+
+    bool subscribed = false;
+    bool published = false;
+    bool unsubscribed = false;
+    uint8_t received = 0;
+    std::mutex mutex;
+    std::condition_variable cv;
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+
+    String testUUID = Aws::Crt::UUID().ToString();
+    String testTopic = "test/MQTT5to3Adapter_" + testUUID;
+    ByteBuf testPayload = Aws::Crt::ByteBufFromCString("PUBLISH ME!");
+
+    s_setupConnectionLifeCycle(builder, connectionPromise, stoppedPromise);
+
+    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
+    ASSERT_TRUE(mqtt5Client);
+    // Created a Mqtt311 Connection from mqtt5Client. The options are setup by the builder.
+    std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    ASSERT_TRUE(mqttConnection);
+
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(connectionPromise.get_future().get());
+
+    auto onMessage = [&](Mqtt::MqttConnection &, const String &topic, const ByteBuf &payload, bool, Mqtt::QOS, bool) {
+        printf("GOT MESSAGE topic=%s payload=" PRInSTR "\n", topic.c_str(), AWS_BYTE_BUF_PRI(payload));
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            ++received;
+        }
+        cv.notify_one();
+    };
+    auto onSubAck = [&](Mqtt::MqttConnection &, uint16_t packetId, const Aws::Crt::String &topic, Mqtt::QOS qos, int) {
+        printf("SUBACK id=%d topic=%s qos=%d\n", packetId, topic.c_str(), qos);
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            subscribed = true;
+        }
+        cv.notify_one();
+    };
+    auto onPubAck = [&](Mqtt::MqttConnection &, uint16_t packetId, int) {
+        printf("PUBLISHED id=%d\n", packetId);
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            published = true;
+        }
+        cv.notify_one();
+    };
+    auto onUnsubAck = [&](Mqtt::MqttConnection &, uint16_t packetId, int) {
+        printf("UNSUBACK id=%d\n", packetId);
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            unsubscribed = true;
+        }
+        cv.notify_one();
+    };
+
+    mqttConnection->Subscribe(
+        testTopic.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, std::move(onMessage), std::move(onSubAck));
+
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        cv.wait(lock, [&]() { return subscribed; });
+    }
+
+    mqttConnection->Publish(testTopic.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, testPayload, onPubAck);
+
+    // wait for publish
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        cv.wait(lock, [&]() { return published; });
+    }
+
+    // Sleep and wait for message recieved
+    aws_thread_current_sleep(2000 * 1000 * 1000);
+
+    mqttConnection->Unsubscribe(testTopic.c_str(), onUnsubAck);
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        cv.wait(lock, [&]() { return subscribed; });
+    }
+    published = false;
+    mqttConnection->Publish(testTopic.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, testPayload, onPubAck);
+
+    // wait for publish
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        cv.wait(lock, [&]() { return published; });
+    }
+
+    /* Stop immediately */
+    ASSERT_TRUE(mqtt5Client->Stop());
+    stoppedPromise.get_future().get();
+
+    delete builder;
+
+    ASSERT_TRUE(received == 1);
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5to3AdapterOperations, s_TestMqtt5to3AdapterOperations)
+
+/*
+ * [Mqtt5to3Adapter-UC11] Test s_TestMqtt5to3AdapterNullPubAck
+ * The unit test would have memory leak if the callback data for incomplete publish was not released.
+ */
+static int s_TestMqtt5to3AdapterNullPubAck(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+        mqtt5TestVars.m_hostname_string,
+        mqtt5TestVars.m_certificate_path_string.c_str(),
+        mqtt5TestVars.m_private_key_path_string.c_str(),
+        allocator);
+    ASSERT_TRUE(builder);
+
+    String testUUID = Aws::Crt::UUID().ToString();
+    String testTopic = "test/MQTT5to3Adapter_" + testUUID;
+    ByteBuf testPayload = Aws::Crt::ByteBufFromCString("PUBLISH ME!");
+
+    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
+    ASSERT_TRUE(mqtt5Client);
+    // Created a Mqtt311 Connection from mqtt5Client. The options are setup by the builder.
+    std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> mqttConnection =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    ASSERT_TRUE(mqttConnection);
+
+    // Publish an offline message to create an incomplete publish operation
+    mqttConnection->Publish(testTopic.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, testPayload, NULL);
+
+    delete builder;
+
+    // If the incomplete operation callback was not called, there would be a memory leak as the callback data was not
+    // released
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5to3AdapterNullPubAck, s_TestMqtt5to3AdapterNullPubAck)
+
+/*
+ * [Mqtt5to3Adapter-UC11] Test one mqtt5 client with multiple adapters
+ */
+static int s_TestMqtt5to3AdapterMultipleAdapters(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+    String randomID = Aws::Crt::UUID().ToString();
+    String testTopic1 = "test/topic1_" + randomID;
+    String testTopic2 = "test/topic2_" + randomID;
+
+    ApiHandle apiHandle(allocator);
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string);
+    mqtt5Options.WithPort(443);
+
+    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
+        mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str(), allocator);
+
+    Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+    ASSERT_TRUE(tlsContext);
+    Aws::Crt::Io::TlsConnectionOptions tlsConnection = tlsContext.NewConnectionOptions();
+    ASSERT_TRUE(tlsConnection);
+    ASSERT_TRUE(tlsConnection.SetAlpnList("x-amzn-mqtt-ca"));
+    mqtt5Options.WithTlsConnectionOptions(tlsConnection);
+
+    /* Setup Mqtt5 Client lifecycle evetns */
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(mqtt5Client);
+    // Created a Mqtt311 Connection from mqtt5Client. The options are setup by the builder.
+    std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> mqttConnection1 =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    ASSERT_TRUE(mqttConnection1);
+
+    // Created a Mqtt311 Connection from mqtt5Client. The options are setup by the builder.
+    std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> mqttConnection2 =
+        Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
+    ASSERT_TRUE(mqttConnection2);
+
+    size_t received1 = 0;
+    size_t received2 = 0;
+    std::mutex mutex;
+    std::condition_variable cv;
+    bool subscribed1 = false;
+    bool subscribed2 = false;
+    bool published = false;
+    ByteBuf testPayload = Aws::Crt::ByteBufFromCString("PUBLISH ME!");
+
+    auto onMessage1 = [&](Mqtt::MqttConnection &, const String &topic, const ByteBuf &payload, bool, Mqtt::QOS, bool) {
+        printf("GOT MESSAGE topic=%s payload=" PRInSTR "\n", topic.c_str(), AWS_BYTE_BUF_PRI(payload));
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            ++received1;
+        }
+        cv.notify_one();
+    };
+    auto onSubAck1 = [&](Mqtt::MqttConnection &, uint16_t packetId, const Aws::Crt::String &topic, Mqtt::QOS qos, int) {
+        printf("SUBACK id=%d topic=%s qos=%d\n", packetId, topic.c_str(), qos);
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            subscribed1 = true;
+        }
+        cv.notify_one();
+    };
+
+    auto onMessage2 = [&](Mqtt::MqttConnection &, const String &topic, const ByteBuf &payload, bool, Mqtt::QOS, bool) {
+        printf("GOT MESSAGE topic=%s payload=" PRInSTR "\n", topic.c_str(), AWS_BYTE_BUF_PRI(payload));
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            ++received2;
+        }
+        cv.notify_one();
+    };
+    auto onSubAck2 = [&](Mqtt::MqttConnection &, uint16_t packetId, const Aws::Crt::String &topic, Mqtt::QOS qos, int) {
+        printf("SUBACK id=%d topic=%s qos=%d\n", packetId, topic.c_str(), qos);
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            subscribed2 = true;
+        }
+        cv.notify_one();
+    };
+
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(connectionPromise.get_future().get());
+
+    mqttConnection1->Subscribe(testTopic1.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, onMessage1, onSubAck1);
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        cv.wait(lock, [&]() { return subscribed1; });
+    }
+
+    mqttConnection2->Subscribe(testTopic2.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, onMessage2, onSubAck2);
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        cv.wait(lock, [&]() { return subscribed2; });
+    }
+
+    auto onPubAck = [&](Mqtt::MqttConnection &, uint16_t packetId, int) {
+        printf("PUBLISHED id=%d\n", packetId);
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            published = true;
+        }
+        cv.notify_one();
+    };
+
+    // Publish to testTopic1
+    mqttConnection1->Publish(testTopic1.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, testPayload, onPubAck);
+    // wait for publish
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        cv.wait(lock, [&]() { return published; });
+    }
+
+    published = false;
+    // Publish to testTopic2
+    mqttConnection1->Publish(testTopic2.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, testPayload, onPubAck);
+    // wait for publish
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        cv.wait(lock, [&]() { return published; });
+    }
+
+    // Sleep and wait for message recieved
+    aws_thread_current_sleep(2000 * 1000 * 1000);
+    ASSERT_TRUE(mqtt5Client->Stop());
+    stoppedPromise.get_future().get();
+
+    ASSERT_TRUE(received1 == 1);
+    ASSERT_TRUE(received2 == 1);
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(Mqtt5to3AdapterMultipleAdapters, s_TestMqtt5to3AdapterMultipleAdapters)
+
+#endif // !BYO_CRYPTO∏

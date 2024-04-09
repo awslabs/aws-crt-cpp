@@ -97,6 +97,16 @@ namespace Aws
             Crt::String ServiceName;
         };
 
+        /**
+         * A simple struct to hold the options for creating a PKCS12 builder. Used to differentiate the
+         * PKCS12 builder from other options in the mTLS builders.
+         */
+        struct Pkcs12Options
+        {
+            Crt::String pkcs12_file;
+            Crt::String pkcs12_password;
+        };
+
     } // namespace Iot
 } // namespace Aws
 

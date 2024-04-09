@@ -107,8 +107,7 @@ namespace Aws
              * The digital signature of the token value in the {@link tokenValue} property.  The signature must be based
              * on the private key associated with the custom authorizer.  The signature must be base64 encoded.
              *
-             * Required if the custom authorizer has signing enabled.  It is strongly suggested to URL-encode this
-             * value; the SDK will not do so for you.
+             * Required if the custom authorizer has signing enabled.
              */
             Crt::Optional<Crt::String> m_tokenSignature;
 
@@ -171,6 +170,22 @@ namespace Aws
             static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithMtlsPkcs11(
                 const Crt::String hostName,
                 const Crt::Io::TlsContextPkcs11Options &pkcs11Options,
+                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
+
+            /**
+             * Sets the builder up for MTLS, using a PKCS#12 file for private key operations.
+             *
+             * NOTE: This only works on MacOS devices.
+             *
+             * @param hostName - AWS IoT endpoint to connect to
+             * @param options The PKCS12 options to use.
+             * @param allocator - memory allocator to use
+             *
+             * @return Mqtt5ClientBuilder
+             */
+            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithMtlsPkcs12(
+                const Crt::String hostName,
+                const struct Pkcs12Options &options,
                 Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
@@ -251,7 +266,17 @@ namespace Aws
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &WithPort(uint16_t port) noexcept;
+            Mqtt5ClientBuilder &WithPort(uint32_t port) noexcept;
+
+            /**
+             * Set booststrap for mqtt5 client
+             *
+             * @param bootStrap bootstrap used for mqtt5 client. The default ClientBootstrap see
+             * Aws::Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap.
+             *
+             * @return this option object
+             */
+            Mqtt5ClientBuilder &WithBootstrap(Crt::Io::ClientBootstrap *bootStrap) noexcept;
 
             /**
              * Sets the certificate authority for the endpoint you're connecting to. This is a path to a file on disk
@@ -344,6 +369,14 @@ namespace Aws
             Mqtt5ClientBuilder &WithReconnectOptions(ReconnectOptions reconnectOptions) noexcept;
 
             /**
+             * Sets the topic aliasing behavior that the client should use.
+             *
+             * @param topicAliasingOptions topic aliasing behavior options to use
+             * @return this builder object
+             */
+            Mqtt5ClientBuilder &WithTopicAliasingOptions(TopicAliasingOptions topicAliasingOptions) noexcept;
+
+            /**
              * Sets minConnectedTimeToResetReconnectDelayMs, amount of time that must elapse with an established
              * connection before the reconnect delay is reset to the minimum. This helps alleviate bandwidth-waste
              * in fast reconnect cycles due to permission failures on operations.
@@ -379,11 +412,23 @@ namespace Aws
              * Sets Operation Timeout(Seconds). Time interval to wait for an ack after sending a QoS 1+ PUBLISH,
              * SUBSCRIBE, or UNSUBSCRIBE before failing the operation.
              *
-             * @param ackTimeoutSeconds
+             * @param ackTimeoutSec
              *
              * @return this option object
              */
-            Mqtt5ClientBuilder &WithAckTimeoutSeconds(uint32_t ackTimeoutSeconds) noexcept;
+            Mqtt5ClientBuilder &WithAckTimeoutSec(uint32_t ackTimeoutSec) noexcept;
+
+            /**
+             * @deprecated the function is deprecated, please use `Mqtt5ClientBuilder::WithAckTimeoutSec(uint32_t)`
+             *
+             * Sets Operation Timeout(Seconds). Time interval to wait for an ack after sending a QoS 1+ PUBLISH,
+             * SUBSCRIBE, or UNSUBSCRIBE before failing the operation.
+             *
+             * @param ackTimeoutSec
+             *
+             * @return this option object
+             */
+            Mqtt5ClientBuilder &WithAckTimeoutSeconds(uint32_t ackTimeoutSec) noexcept;
 
             /**
              * Overrides the default SDK Name to send as a metric in the MQTT CONNECT packet.
@@ -497,16 +542,11 @@ namespace Aws
             /**
              * Network port of the MQTT server to connect to.
              */
-            uint16_t m_port;
-
-            /**
-             * Client bootstrap to use.  In almost all cases, this can be left undefined.
-             */
-            Io::ClientBootstrap *m_bootstrap;
+            uint32_t m_port;
 
             /**
              * TLS context for secure socket connections.
-             * If undefined, then a plaintext connection will be used.
+             * If undefined, a plaintext connection will be used.
              */
             Crt::Optional<Crt::Io::TlsContextOptions> m_tlsConnectionOptions;
 

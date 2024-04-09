@@ -1,3 +1,7 @@
+/*! \cond DOXYGEN_PRIVATE
+** Hide API from this file in doxygen. Set DOXYGEN_PRIVATE in doxygen
+** config to enable this file for doxygen.
+*/
 #pragma once
 /**
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -23,7 +27,8 @@ namespace Aws
              */
             class AWS_CRT_CPP_API Mqtt5ClientCore final : public std::enable_shared_from_this<Mqtt5ClientCore>
             {
-                friend Mqtt5Client;
+                friend class Mqtt5Client;
+                friend class Mqtt::MqttConnection;
 
               public:
                 /**
@@ -107,6 +112,17 @@ namespace Aws
               private:
                 Mqtt5ClientCore(const Mqtt5ClientOptions &options, Allocator *allocator = ApiAllocator()) noexcept;
 
+                /**
+                 * Create a new connection object over plain text from the Mqtt5Client. The client must outlive
+                 * all of its connection instances. The Mqtt5 Options will be overwritten by the options passed in here.
+                 *
+                 * @param options the options from Mqtt5Client used to support the MqttConnection
+                 *
+                 * @return std::shared_ptr<Crt::Mqtt::MqttConnection>
+                 */
+                std::shared_ptr<Crt::Mqtt::MqttConnection> NewConnection(
+                    const Mqtt5::Mqtt5to3AdapterOptions *options) noexcept;
+
                 /* Static Callbacks */
                 static void s_publishCompletionCallback(
                     enum aws_mqtt5_packet_type packet_type,
@@ -175,6 +191,11 @@ namespace Aws
                 std::shared_ptr<Mqtt5ClientCore> m_selfReference;
 
                 /*
+                 * The Mqtt5to3 Adapter Options. Used to create a mqtt311 connection from mqtt5 client
+                 */
+                ScopedResource<Mqtt5to3AdapterOptions> m_mqtt5to3AdapterOptions;
+
+                /*
                  * The callback flag used to indicate if it is safe to invoke the callbacks
                  */
                 enum CallbackFlag
@@ -192,6 +213,48 @@ namespace Aws
                 Allocator *m_allocator;
             };
 
+            /**
+             * The extra options required to build MqttConnection from Mqtt5Client
+             */
+            class Mqtt5to3AdapterOptions
+            {
+                friend class Mqtt5ClientOptions;
+                friend class Mqtt5ClientCore;
+                friend class Mqtt::MqttConnection;
+
+              public:
+                /* Default constructor */
+                Mqtt5to3AdapterOptions();
+                /*
+                 * Allocate and create a new Mqtt5to3AdapterOptions. This function is internally used by Mqtt5Client to
+                 * support the Mqtt5to3Adapter.
+                 *
+                 * @return Mqtt5to3AdapterOptions
+                 */
+                static ScopedResource<Mqtt5to3AdapterOptions> NewMqtt5to3AdapterOptions(
+                    const Mqtt5ClientOptions &options) noexcept;
+
+              private:
+                Mqtt::MqttConnectionOptions m_mqtt3Options;
+
+                /* Reserve to store memory for m_mqtt3options.hostname */
+                String m_hostname;
+
+                /*
+                 * The transform function invoked during websocket handshake.
+                 */
+                Crt::Mqtt::OnWebSocketHandshakeIntercept m_webSocketInterceptor;
+
+                /* Store the user intercept handshake function */
+                OnWebSocketHandshakeIntercept m_websocketHandshakeTransform;
+
+                /**
+                 * Configures (tunneling) HTTP proxy usage when establishing MQTT connections
+                 */
+                Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
+            };
+
         } // namespace Mqtt5
     }     // namespace Crt
 } // namespace Aws
+/*! \endcond */

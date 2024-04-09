@@ -56,6 +56,54 @@ static int s_OptionalMoveSafety(struct aws_allocator *allocator, void *ctx)
 
 AWS_TEST_CASE(OptionalMoveSafety, s_OptionalMoveSafety)
 
+class EmplaceTester
+{
+  public:
+    int a;
+    static size_t ctorCallCount;
+    static size_t dtorCallCount;
+    EmplaceTester(int val) : a(val) { ctorCallCount += 1; }
+    ~EmplaceTester()
+    {
+        a = -1337;
+        dtorCallCount += 1;
+    }
+    EmplaceTester(const EmplaceTester &) = delete;
+    EmplaceTester(EmplaceTester &&) = delete;
+};
+size_t EmplaceTester::ctorCallCount = 0;
+size_t EmplaceTester::dtorCallCount = 0;
+
+static int s_OptionalEmplace(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        Aws::Crt::Optional<Aws::Crt::String> str1{Aws::Crt::InPlace, s_test_str};
+        ASSERT_STR_EQUALS(s_test_str, str1->c_str());
+
+        ASSERT_INT_EQUALS(0, EmplaceTester::ctorCallCount);
+        ASSERT_INT_EQUALS(0, EmplaceTester::dtorCallCount);
+        // Aws::Crt::Optional<MyTestClass> opt1(MyTestClass(5)); // error: call to deleted constructor of 'MyTestClass'
+        Aws::Crt::Optional<EmplaceTester> opt1{Aws::Crt::InPlace, 5}; // but this is allowed
+        ASSERT_INT_EQUALS(5, opt1->a);
+        ASSERT_INT_EQUALS(1, EmplaceTester::ctorCallCount);
+        ASSERT_INT_EQUALS(0, EmplaceTester::dtorCallCount);
+
+        opt1.emplace(100);
+        ASSERT_INT_EQUALS(100, opt1->a);
+        // If optional already contains a value before the call, the contained value is destroyed.
+        ASSERT_INT_EQUALS(2, EmplaceTester::ctorCallCount);
+        ASSERT_INT_EQUALS(1, EmplaceTester::dtorCallCount);
+    }
+    ASSERT_INT_EQUALS(2, EmplaceTester::dtorCallCount);
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(OptionalEmplace, s_OptionalEmplace)
+
 class CopyMoveTester
 {
   public:

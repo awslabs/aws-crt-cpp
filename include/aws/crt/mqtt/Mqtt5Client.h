@@ -5,6 +5,7 @@
  */
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
+#include <aws/crt/mqtt/MqttClient.h>
 
 namespace Aws
 {
@@ -27,13 +28,126 @@ namespace Aws
             class UnSubAckPacket;
             class Mqtt5ClientCore;
 
+            class Mqtt5to3AdapterOptions;
+
+            /**
+             * An enumeration that controls how the client applies topic aliasing to outbound publish packets.
+             *
+             * Topic alias behavior is described in
+             * https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901113
+             */
+            enum class OutboundTopicAliasBehaviorType
+            {
+
+                /**
+                 * Maps to Disabled.  This keeps the client from being broken (by default) if the broker
+                 * topic aliasing implementation has a problem.
+                 */
+                Default = AWS_MQTT5_COTABT_DEFAULT,
+
+                /**
+                 * Outbound aliasing is the user's responsibility.  Client will cache and use
+                 * previously-established aliases if they fall within the negotiated limits of the connection.
+                 *
+                 * The user must still always submit a full topic in their publishes because disconnections disrupt
+                 * topic alias mappings unpredictably.  The client will properly use a requested alias when the
+                 * most-recently-seen binding for a topic alias value matches the alias and topic in the publish packet.
+                 */
+                Manual = AWS_MQTT5_COTABT_MANUAL,
+
+                /**
+                 * (Recommended) The client will ignore any user-specified topic aliasing and instead use an LRU cache
+                 * to drive alias usage.
+                 */
+                LRU = AWS_MQTT5_COTABT_LRU,
+
+                /**
+                 * Completely disable outbound topic aliasing.
+                 */
+                Disabled = AWS_MQTT5_COTABT_DISABLED,
+            };
+
+            /**
+             * An enumeration that controls whether or not the client allows the broker to send publishes that use topic
+             * aliasing.
+             *
+             * Topic alias behavior is described in
+             * https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901113
+             */
+            enum class InboundTopicAliasBehaviorType
+            {
+
+                /**
+                 * Maps to Disabled.  This keeps the client from being broken (by default) if the broker
+                 * topic aliasing implementation has a problem.
+                 */
+                Default = AWS_MQTT5_CITABT_DEFAULT,
+
+                /**
+                 * Allow the server to send PUBLISH packets to the client that use topic aliasing
+                 */
+                Enabled = AWS_MQTT5_CITABT_ENABLED,
+
+                /**
+                 * Forbid the server from sending PUBLISH packets to the client that use topic aliasing
+                 */
+                Disabled = AWS_MQTT5_CITABT_DISABLED,
+            };
+
+            /**
+             * Configuration for all client topic aliasing behavior.
+             */
+            struct AWS_CRT_CPP_API TopicAliasingOptions
+            {
+
+                /**
+                 * Controls what kind of outbound topic aliasing behavior the client should attempt to use.
+                 *
+                 * If topic aliasing is not supported by the server, this setting has no effect and any attempts to
+                 * directly manipulate the topic alias id in outbound publishes will be ignored.
+                 *
+                 * If left undefined, then outbound topic aliasing is disabled.
+                 */
+                Crt::Optional<OutboundTopicAliasBehaviorType> m_outboundBehavior;
+
+                /**
+                 * If outbound topic aliasing is set to LRU, this controls the maximum size of the cache.  If outbound
+                 * topic aliasing is set to LRU and this is zero or undefined, a sensible default is used (25).  If
+                 * outbound topic aliasing is not set to LRU, then this setting has no effect.
+                 *
+                 * The final size of the cache is determined by the minimum of this setting and the value of the
+                 * topic_alias_maximum property of the received CONNACK.  If the received CONNACK does not have an
+                 * explicit positive value for that field, outbound topic aliasing is disabled for the duration of that
+                 * connection.
+                 */
+                Crt::Optional<uint16_t> m_outboundCacheMaxSize;
+
+                /**
+                 * Controls whether or not the client allows the broker to use topic aliasing when sending publishes.
+                 * Even if inbound topic aliasing is enabled, it is up to the server to choose whether or not to use it.
+                 *
+                 * If left undefined, then inbound topic aliasing is disabled.
+                 */
+                Crt::Optional<InboundTopicAliasBehaviorType> m_inboundBehavior;
+
+                /**
+                 * If inbound topic aliasing is enabled, this will control the size of the inbound alias cache.  If
+                 * inbound aliases are enabled and this is zero or undefined, then a sensible default will be used (25).
+                 * If inbound aliases are disabled, this setting has no effect.
+                 *
+                 * Behaviorally, this value overrides anything present in the topic_alias_maximum field of
+                 * the CONNECT packet options.
+                 */
+                Crt::Optional<uint16_t> m_inboundCacheMaxSize;
+            };
+
             struct AWS_CRT_CPP_API ReconnectOptions
             {
                 /**
                  * Controls how the reconnect delay is modified in order to smooth out the distribution of reconnection
                  * attempt timepoints for a large set of reconnecting clients.
                  */
-                JitterMode m_reconnectMode;
+                ExponentialBackoffJitterMode m_reconnectMode;
 
                 /**
                  * Minimum amount of time to wait to reconnect after a disconnect.  Exponential backoff is performed
@@ -55,28 +169,30 @@ namespace Aws
                 uint64_t m_minConnectedTimeToResetReconnectDelayMs;
             };
 
-            /* Simple statistics about the current state of the client's queue of operations */
+            /**
+             * Simple statistics about the current state of the client's queue of operations
+             */
             struct AWS_CRT_CPP_API Mqtt5ClientOperationStatistics
             {
-                /*
+                /**
                  * total number of operations submitted to the client that have not yet been completed.  Unacked
                  * operations are a subset of this.
                  */
                 uint64_t incompleteOperationCount;
 
-                /*
+                /**
                  * total packet size of operations submitted to the client that have not yet been completed.  Unacked
                  * operations are a subset of this.
                  */
                 uint64_t incompleteOperationSize;
 
-                /*
+                /**
                  * total number of operations that have been sent to the server and are waiting for a corresponding ACK
                  * before they can be completed.
                  */
                 uint64_t unackedOperationCount;
 
-                /*
+                /**
                  * total packet size of operations that have been sent to the server and are waiting for a corresponding
                  * ACK before they can be completed.
                  */
@@ -214,6 +330,8 @@ namespace Aws
              */
             class AWS_CRT_CPP_API Mqtt5Client final : public std::enable_shared_from_this<Mqtt5Client>
             {
+                friend class Mqtt::MqttConnection;
+
               public:
                 /**
                  * Factory function for mqtt5 client
@@ -265,47 +383,47 @@ namespace Aws
                  * Notifies the MQTT5 client that you want it to transition to the stopped state, disconnecting any
                  * existing connection and stopping subsequent reconnect attempts.
                  *
-                 * @param disconnectOptions (optional) properties of a DISCONNECT packet to send as part of the shutdown
+                 * @param disconnectPacket (optional) properties of a DISCONNECT packet to send as part of the shutdown
                  * process
                  *
                  * @return bool: true if operation succeed, otherwise false
                  */
-                bool Stop(std::shared_ptr<DisconnectPacket> disconnectOptions) noexcept;
+                bool Stop(std::shared_ptr<DisconnectPacket> disconnectPacket) noexcept;
 
                 /**
                  * Tells the client to attempt to send a PUBLISH packet
                  *
-                 * @param publishOptions: packet PUBLISH to send to the server
+                 * @param publishPacket: packet PUBLISH to send to the server
                  * @param onPublishCompletionCallback: callback on publish complete, default to NULL
                  *
                  * @return true if the publish operation succeed otherwise false
                  */
                 bool Publish(
-                    std::shared_ptr<PublishPacket> publishOptions,
+                    std::shared_ptr<PublishPacket> publishPacket,
                     OnPublishCompletionHandler onPublishCompletionCallback = NULL) noexcept;
 
                 /**
                  * Tells the client to attempt to subscribe to one or more topic filters.
                  *
-                 * @param subscribeOptions: SUBSCRIBE packet to send to the server
+                 * @param subscribePacket: SUBSCRIBE packet to send to the server
                  * @param onSubscribeCompletionCallback: callback on subscribe complete, default to NULL
                  *
                  * @return true if the subscription operation succeed otherwise false
                  */
                 bool Subscribe(
-                    std::shared_ptr<SubscribePacket> subscribeOptions,
+                    std::shared_ptr<SubscribePacket> subscribePacket,
                     OnSubscribeCompletionHandler onSubscribeCompletionCallback = NULL) noexcept;
 
                 /**
                  * Tells the client to attempt to unsubscribe to one or more topic filters.
                  *
-                 * @param unsubscribeOptions: UNSUBSCRIBE packet to send to the server
+                 * @param unsubscribePacket: UNSUBSCRIBE packet to send to the server
                  * @param onUnsubscribeCompletionCallback: callback on unsubscribe complete, default to NULL
                  *
                  * @return true if the unsubscription operation succeed otherwise false
                  */
                 bool Unsubscribe(
-                    std::shared_ptr<UnsubscribePacket> unsubscribeOptions,
+                    std::shared_ptr<UnsubscribePacket> unsubscribePacket,
                     OnUnsubscribeCompletionHandler onUnsubscribeCompletionCallback = NULL) noexcept;
 
                 /**
@@ -331,9 +449,8 @@ namespace Aws
              */
             class AWS_CRT_CPP_API Mqtt5ClientOptions final
             {
-
-                friend class Mqtt5Client;
                 friend class Mqtt5ClientCore;
+                friend class Mqtt5to3AdapterOptions;
 
               public:
                 /**
@@ -357,7 +474,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &WithPort(uint16_t port) noexcept;
+                Mqtt5ClientOptions &WithPort(uint32_t port) noexcept;
 
                 /**
                  * Set booststrap for mqtt5 client
@@ -400,11 +517,11 @@ namespace Aws
                 /**
                  * Sets mqtt5 connection options
                  *
-                 * @param packetConnect package connection options
+                 * @param connectPacket package connection options
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &WithConnectOptions(std::shared_ptr<ConnectPacket> packetConnect) noexcept;
+                Mqtt5ClientOptions &WithConnectOptions(std::shared_ptr<ConnectPacket> connectPacket) noexcept;
 
                 /**
                  * Sets session behavior. Overrides how the MQTT5 client should behave with respect to MQTT sessions.
@@ -451,6 +568,14 @@ namespace Aws
                 Mqtt5ClientOptions &WithReconnectOptions(ReconnectOptions reconnectOptions) noexcept;
 
                 /**
+                 * Sets the topic aliasing behavior for the client.
+                 *
+                 * @param topicAliasingOptions topic aliasing behavior options to use
+                 * @return this options object
+                 */
+                Mqtt5ClientOptions &WithTopicAliasingOptions(TopicAliasingOptions topicAliasingOptions) noexcept;
+
+                /**
                  * Sets ping timeout (ms). Time interval to wait after sending a PINGREQ for a PINGRESP to arrive.
                  * If one does not arrive, the client will close the current connection.
                  *
@@ -471,14 +596,26 @@ namespace Aws
                 Mqtt5ClientOptions &WithConnackTimeoutMs(uint32_t connackTimeoutMs) noexcept;
 
                 /**
+                 * @deprecated The function is deprecated, please use `Mqtt5ClientOptions::WithAckTimeoutSec(uint32_t)`
+                 *
                  * Sets Operation Timeout(Seconds). Time interval to wait for an ack after sending a QoS 1+ PUBLISH,
                  * SUBSCRIBE, or UNSUBSCRIBE before failing the operation.
                  *
-                 * @param ackTimeoutSeconds
+                 * @param ackTimeoutSec
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &WithAckTimeoutSeconds(uint32_t ackTimeoutSeconds) noexcept;
+                Mqtt5ClientOptions &WithAckTimeoutSeconds(uint32_t ackTimeoutSec) noexcept;
+
+                /**
+                 * Sets Operation Timeout(Seconds). Time interval to wait for an ack after sending a QoS 1+ PUBLISH,
+                 * SUBSCRIBE, or UNSUBSCRIBE before failing the operation.
+                 *
+                 * @param ackTimeoutSec
+                 *
+                 * @return this option object
+                 */
+                Mqtt5ClientOptions &WithAckTimeoutSec(uint32_t ackTimeoutSec) noexcept;
 
                 /**
                  * Sets callback for transform HTTP request.
@@ -617,7 +754,7 @@ namespace Aws
                 /**
                  * Network port of the MQTT server to connect to.
                  */
-                uint16_t m_port;
+                uint32_t m_port;
 
                 /**
                  * Client bootstrap to use.  In almost all cases, this can be left undefined.
@@ -632,7 +769,7 @@ namespace Aws
 
                 /**
                  * TLS context for secure socket connections.
-                 * If undefined, then a plaintext connection will be used.
+                 * If undefined, a plaintext connection will be used.
                  */
                 Crt::Optional<Crt::Io::TlsConnectionOptions> m_tlsConnectionOptions;
 
@@ -670,6 +807,11 @@ namespace Aws
                  * Reconnect options, includes retryJitterMode, min reconnect delay time and max reconnect delay time
                  */
                 ReconnectOptions m_reconnectionOptions;
+
+                /**
+                 * Controls client topic aliasing behavior
+                 */
+                aws_mqtt5_client_topic_alias_options m_topicAliasingOptions;
 
                 /**
                  * Time interval to wait after sending a PINGREQ for a PINGRESP to arrive.  If one does not arrive, the

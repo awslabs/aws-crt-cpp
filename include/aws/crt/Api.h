@@ -176,6 +176,20 @@ namespace Aws
              */
             static Io::HostResolver *GetOrCreateStaticDefaultHostResolver();
 
+#pragma pack(push, 1)
+            struct Version
+            {
+                uint16_t major;
+                uint16_t minor;
+                uint16_t patch;
+            };
+#pragma pack(pop)
+            /**
+             * Gets the version of the AWS-CRT-CPP library
+             * @return Version representing the library version
+             */
+            Version GetCrtVersion() const;
+
           private:
             void InitializeLoggingCommon(struct aws_logger_standard_options &options);
 
@@ -195,6 +209,8 @@ namespace Aws
             static Io::HostResolver *s_static_default_host_resolver;
             static std::mutex s_lock_default_host_resolver;
             static void ReleaseStaticDefaultHostResolver();
+
+            Version m_version = {0, 0, 0};
         };
 
         /**
