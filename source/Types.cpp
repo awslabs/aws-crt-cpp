@@ -61,8 +61,7 @@ namespace Aws
             {
                 Vector<uint8_t> output(allocationSize, 0x00);
                 ByteBuf tempBuf = aws_byte_buf_from_empty_array(output.data(), output.capacity());
-                
-                ::Base64Decode(toDecode, tempBuf);
+                UnsafeInteropHelpers::Base64Decode(toDecode, tempBuf);
 
                 if (tempBuf.len == allocationSize)
                 {
