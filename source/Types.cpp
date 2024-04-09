@@ -125,7 +125,7 @@ namespace Aws
                     aws_base64_encode(&toEncode, &output);
                 }
             }
-        }
+        } // namespace UnsafeInteropHelpers
 
     } // namespace Crt
 } // namespace Aws

@@ -202,7 +202,8 @@ namespace Aws
             return hash->SeatForCInterop(hash);
         }
 
-        void ApiHandle::SetBYOCryptoNewSHA1Callback(Crypto::CreateHashCallback &&callback) {
+        void ApiHandle::SetBYOCryptoNewSHA1Callback(Crypto::CreateHashCallback &&callback) 
+        {
             s_BYOCryptoNewSHA1Callback = std::move(callback);
             aws_set_sha1_new_fn(s_Sha1New);
         }
@@ -303,8 +304,7 @@ namespace Aws
 
         void ApiHandle::SetBYOCryptoNewSHA1Callback(Crypto::CreateHashCallback &&)
         {
-            AWS_LOGF_WARN(
-                AWS_LS_IO_TLS, "SetBYOCryptoNewSHA1Callback() has no effect unless compiled with BYO_CRYPTO");
+            AWS_LOGF_WARN(AWS_LS_IO_TLS, "SetBYOCryptoNewSHA1Callback() has no effect unless compiled with BYO_CRYPTO");
         }
 
         void ApiHandle::SetBYOCryptoNewSHA256HMACCallback(Crypto::CreateHMACCallback &&)

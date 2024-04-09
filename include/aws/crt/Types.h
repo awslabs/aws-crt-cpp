@@ -79,7 +79,7 @@ namespace Aws
             // out.len will not be incremented if the string was unable to be decoded.
             AWS_CRT_CPP_API void Base64Decode(const ByteCursor &decode, ByteBuf &out) noexcept;
             AWS_CRT_CPP_API void Base64Encode(const ByteCursor &encode, ByteBuf &out) noexcept;
-        }
+        } // namespace UnsafeInteropHelpers
 
         template <typename RawType, typename TargetType> using TypeConvertor = std::function<TargetType(RawType)>;
 
