@@ -180,6 +180,40 @@ static int s_TestSHA256ResourceSafety(struct aws_allocator *allocator, void *)
 
 AWS_TEST_CASE(SHA256ResourceSafety, s_TestSHA256ResourceSafety)
 
+static int s_TestSHA1ResourceSafety(struct aws_allocator *allocator, void *)
+{
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+        uint8_t expected[] = {
+            0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea, 0x41, 0x41, 0x40, 0xde, 0x5d, 0xae, 0x22, 0x23,
+            0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17, 0x7a, 0x9c, 0xb4, 0x10, 0xff, 0x61, 0xf2, 0x00, 0x15, 0xad,
+        };
+        Aws::Crt::String expectedStr = Aws::Crt::String(reinterpret_cast<const char *>(expected), sizeof(expected));
+
+        apiHandle.SetBYOCryptoNewSHAaCallback([&](size_t digestSize, Aws::Crt::Allocator *allocator) {
+            return Aws::Crt::MakeShared<ByoCryptoHashInterceptor>(allocator, digestSize, allocator, expectedStr);
+        });
+
+        Aws::Crt::Crypto::Hash sha1 = Aws::Crt::Crypto::Hash::CreateSHA1(allocator);
+        ASSERT_TRUE(sha1);
+
+        Aws::Crt::ByteCursor input = aws_byte_cursor_from_c_str("abc");
+
+        uint8_t output[Aws::Crt::Crypto::SHA1_DIGEST_SIZE] = {0};
+        Aws::Crt::ByteBuf outputBuf = Aws::Crt::ByteBufFromEmptyArray(output, sizeof(output));
+
+        ASSERT_TRUE(sha1.Update(input));
+        ASSERT_TRUE(sha1.Digest(outputBuf));
+        ASSERT_FALSE(sha1);
+
+        ASSERT_BIN_ARRAYS_EQUALS(expectedStr.c_str(), expectedStr.length(), outputBuf.buffer, outputBuf.len);
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(SHA1ResourceSafety, s_TestSHA1ResourceSafety)
+
 static int s_TestMD5ResourceSafety(struct aws_allocator *allocator, void *)
 {
     {

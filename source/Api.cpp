@@ -23,6 +23,7 @@ namespace Aws
     {
         static Crypto::CreateHashCallback s_BYOCryptoNewMD5Callback;
         static Crypto::CreateHashCallback s_BYOCryptoNewSHA256Callback;
+        static Crypto::CreateHashCallback s_BYOCryptoNewSHA1Callback;
         static Crypto::CreateHMACCallback s_BYOCryptoNewSHA256HMACCallback;
         static Io::NewClientTlsHandlerCallback s_BYOCryptoNewClientTlsHandlerCallback;
         static Io::NewTlsContextImplCallback s_BYOCryptoNewTlsContextImplCallback;
@@ -182,6 +183,30 @@ namespace Aws
             aws_set_sha256_new_fn(s_Sha256New);
         }
 
+        static struct aws_hash *s_Sha1New(struct aws_allocator *allocator)
+        {
+            if (!s_BYOCryptoNewSHA1Callback)
+            {
+                AWS_LOGF_ERROR(
+                    AWS_LS_IO_TLS,
+                    "Must call ApiHandle::SetBYOCryptoNewSHA1Callback() before SHA1 hash can be created");
+                aws_raise_error(AWS_ERROR_UNIMPLEMENTED);
+                return nullptr;
+            }
+
+            auto hash = s_BYOCryptoNewSHA1Callback(AWS_SHA1_LEN, allocator);
+            if (!hash)
+            {
+                return nullptr;
+            }
+            return hash->SeatForCInterop(hash);
+        }
+
+        void ApiHandle::SetBYOCryptoNewSHA1Callback(Crypto::CreateHashCallback &&callback) {
+            s_BYOCryptoNewSHA1Callback = std::move(callback);
+            aws_set_sha1_new_fn(s_Sha1New);
+        }
+
         static struct aws_hmac *s_sha256HMACNew(struct aws_allocator *allocator, const struct aws_byte_cursor *secret)
         {
             if (!s_BYOCryptoNewSHA256HMACCallback)
@@ -274,6 +299,12 @@ namespace Aws
         {
             AWS_LOGF_WARN(
                 AWS_LS_IO_TLS, "SetBYOCryptoNewSHA256Callback() has no effect unless compiled with BYO_CRYPTO");
+        }
+
+        void ApiHandle::SetBYOCryptoNewSHA1Callback(Crypto::CreateHashCallback &&)
+        {
+            AWS_LOGF_WARN(
+                AWS_LS_IO_TLS, "SetBYOCryptoNewSHA1Callback() has no effect unless compiled with BYO_CRYPTO");
         }
 
         void ApiHandle::SetBYOCryptoNewSHA256HMACCallback(Crypto::CreateHMACCallback &&)
