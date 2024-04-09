@@ -202,7 +202,7 @@ namespace Aws
             return hash->SeatForCInterop(hash);
         }
 
-        void ApiHandle::SetBYOCryptoNewSHA1Callback(Crypto::CreateHashCallback &&callback) 
+        void ApiHandle::SetBYOCryptoNewSHA1Callback(Crypto::CreateHashCallback &&callback)
         {
             s_BYOCryptoNewSHA1Callback = std::move(callback);
             aws_set_sha1_new_fn(s_Sha1New);
