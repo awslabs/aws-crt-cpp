@@ -72,10 +72,7 @@ namespace Aws
                 toMove.m_hash = nullptr;
             }
 
-            Hash::operator bool() const noexcept
-            {
-                return m_hash != nullptr && m_hash->good;
-            }
+            Hash::operator bool() const noexcept { return m_hash != nullptr && m_hash->good; }
 
             Hash &Hash::operator=(Hash &&toMove)
             {

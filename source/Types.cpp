@@ -61,7 +61,8 @@ namespace Aws
             {
                 Vector<uint8_t> output(allocationSize, 0x00);
                 ByteBuf tempBuf = aws_byte_buf_from_empty_array(output.data(), output.capacity());
-                UnsafeInteropHelpers::Base64Decode(toDecode, tempBuf);
+                
+                ::Base64Decode(toDecode, tempBuf);
 
                 if (tempBuf.len == allocationSize)
                 {
@@ -111,7 +112,7 @@ namespace Aws
                 }
             }
 
-            void Base64Encode(const ByteCursor &toEncode, ByteBuf& output) noexcept
+            void Base64Encode(const ByteCursor &toEncode, ByteBuf &output) noexcept
             {
                 size_t allocation_size = 0;
 
