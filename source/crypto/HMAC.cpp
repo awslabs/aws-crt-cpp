@@ -103,7 +103,7 @@ namespace Aws
             bool HMAC::Digest(ByteBuf &output, size_t truncateTo) noexcept
             {
                 if (!*this)
-                { 
+                {
                     return false;
                 }
 

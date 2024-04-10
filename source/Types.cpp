@@ -65,11 +65,11 @@ namespace Aws
             Vector<uint8_t> output(allocationSize, 0x00);
             ByteBuf tempBuf = aws_byte_buf_from_empty_array(output.data(), output.capacity());
 
-            if (AWS_OP_SUCCESS != aws_base64_decode(&toDecode, &tempBuf)) 
+            if (AWS_OP_SUCCESS != aws_base64_decode(&toDecode, &tempBuf))
             {
-                return {}; 
+                return {};
             }
-            
+
             return output;
         }
 

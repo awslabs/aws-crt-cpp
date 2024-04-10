@@ -13,7 +13,7 @@ namespace Aws
     {
         namespace Crypto
         {
-            SymmetricCipher::SymmetricCipher(aws_symmetric_cipher *cipher) noexcept 
+            SymmetricCipher::SymmetricCipher(aws_symmetric_cipher *cipher) noexcept
                 : m_cipher(cipher, aws_symmetric_cipher_destroy), m_lastError(0)
             {
                 if (cipher == nullptr)
@@ -98,8 +98,8 @@ namespace Aws
                 const Optional<ByteCursor> &iv,
                 Allocator *allocator) noexcept
             {
-                return { aws_aes_cbc_256_new(
-                    allocator, key.has_value() ? &key.value() : nullptr, iv.has_value() ? &iv.value() : nullptr) };
+                return {aws_aes_cbc_256_new(
+                    allocator, key.has_value() ? &key.value() : nullptr, iv.has_value() ? &iv.value() : nullptr)};
             }
 
             SymmetricCipher SymmetricCipher::CreateAES_256_CTR_Cipher(
@@ -107,8 +107,8 @@ namespace Aws
                 const Optional<ByteCursor> &iv,
                 Allocator *allocator) noexcept
             {
-                return { aws_aes_ctr_256_new(
-                    allocator, key.has_value() ? &key.value() : nullptr, iv.has_value() ? &iv.value() : nullptr) };
+                return {aws_aes_ctr_256_new(
+                    allocator, key.has_value() ? &key.value() : nullptr, iv.has_value() ? &iv.value() : nullptr)};
             }
 
             SymmetricCipher SymmetricCipher::CreateAES_256_GCM_Cipher(
@@ -118,19 +118,19 @@ namespace Aws
                 const Optional<ByteCursor> &aad,
                 Allocator *allocator) noexcept
             {
-                return { aws_aes_gcm_256_new(
+                return {aws_aes_gcm_256_new(
                     allocator,
                     key.has_value() ? &key.value() : nullptr,
                     iv.has_value() ? &iv.value() : nullptr,
                     tag.has_value() ? &tag.value() : nullptr,
-                    aad.has_value() ? &aad.value() : nullptr) };
+                    aad.has_value() ? &aad.value() : nullptr)};
             }
 
             SymmetricCipher SymmetricCipher::CreateAES_256_KeyWrap_Cipher(
                 const Optional<ByteCursor> &key,
                 Allocator *allocator) noexcept
             {
-                return { aws_aes_keywrap_256_new(allocator, key.has_value() ? &key.value() : nullptr) };
+                return {aws_aes_keywrap_256_new(allocator, key.has_value() ? &key.value() : nullptr)};
             }
         } // namespace Crypto
     }     // namespace Crt

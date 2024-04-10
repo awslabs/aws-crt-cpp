@@ -102,7 +102,7 @@ namespace Aws
                     m_lastError = aws_last_error();
                     return false;
                 }
-                return true;                
+                return true;
             }
 
             bool Hash::Digest(ByteBuf &output, size_t truncateTo) noexcept
@@ -128,7 +128,6 @@ namespace Aws
                 }
 
                 return Digest(output, truncateTo);
-
             }
 
             size_t Hash::DigestSize() const noexcept
