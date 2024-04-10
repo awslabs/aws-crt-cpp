@@ -63,7 +63,7 @@ namespace Aws
             }
 
             Vector<uint8_t> output(allocationSize, 0x00);
-            ByteBuf tempBuf = aws_byte_buf_from_empty_array(output.data(), output.capacity());
+            ByteBuf tempBuf = aws_byte_buf_from_empty_array(output.data(), output.size());
 
             if (AWS_OP_SUCCESS != aws_base64_decode(&toDecode, &tempBuf))
             {
@@ -84,7 +84,7 @@ namespace Aws
             }
 
             String outputStr(allocationSize, 0x00);
-            auto tempBuf = aws_byte_buf_from_empty_array(outputStr.data(), outputStr.capacity());
+            auto tempBuf = aws_byte_buf_from_empty_array(outputStr.data(), outputStr.size());
 
             if (AWS_OP_SUCCESS != aws_base64_encode(&toEncode, &tempBuf))
             {
