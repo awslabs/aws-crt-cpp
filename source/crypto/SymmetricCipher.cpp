@@ -29,7 +29,8 @@ namespace Aws
 
             bool SymmetricCipher::Encrypt(const ByteCursor &toEncrypt, ByteBuf &out) noexcept
             {
-                if (!*this) {
+                if (!*this) 
+                {
                     m_lastError = AWS_ERROR_INVALID_STATE;
                     return false;
                 }
@@ -45,7 +46,8 @@ namespace Aws
 
             bool SymmetricCipher::FinalizeEncryption(ByteBuf &out) noexcept
             {
-                if (!*this) {
+                if (!*this) 
+                {
                     m_lastError = AWS_ERROR_INVALID_STATE;
                     return false;
                 }
@@ -61,7 +63,8 @@ namespace Aws
 
             bool SymmetricCipher::Decrypt(const ByteCursor &toDecrypt, ByteBuf &out) noexcept
             {
-                if (!*this) {
+                if (!*this) 
+                {
                     m_lastError = AWS_ERROR_INVALID_STATE;
                     return false;
                 }
@@ -77,7 +80,8 @@ namespace Aws
 
             bool SymmetricCipher::FinalizeDecryption(ByteBuf &out) noexcept
             {
-                if (!*this) {
+                if (!*this) 
+                {
                     m_lastError = AWS_ERROR_INVALID_STATE;
                     return false;
                 }
@@ -93,7 +97,8 @@ namespace Aws
 
             bool SymmetricCipher::Reset() noexcept
             {
-                if (!*this) {
+                if (!*this) 
+                {
                     m_lastError = AWS_ERROR_INVALID_STATE;
                     return false;
                 }
