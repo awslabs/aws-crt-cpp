@@ -29,6 +29,11 @@ namespace Aws
 
             bool SymmetricCipher::Encrypt(const ByteCursor &toEncrypt, ByteBuf &out) noexcept
             {
+                if (!*this) {
+                    m_lastError = AWS_ERROR_INVALID_STATE;
+                    return false;
+                }
+
                 if (aws_symmetric_cipher_encrypt(m_cipher.get(), toEncrypt, &out) != AWS_OP_SUCCESS)
                 {
                     m_lastError = Aws::Crt::LastError();
@@ -40,6 +45,11 @@ namespace Aws
 
             bool SymmetricCipher::FinalizeEncryption(ByteBuf &out) noexcept
             {
+                if (!*this) {
+                    m_lastError = AWS_ERROR_INVALID_STATE;
+                    return false;
+                }
+
                 if (aws_symmetric_cipher_finalize_encryption(m_cipher.get(), &out) != AWS_OP_SUCCESS)
                 {
                     m_lastError = Aws::Crt::LastError();
@@ -51,6 +61,11 @@ namespace Aws
 
             bool SymmetricCipher::Decrypt(const ByteCursor &toDecrypt, ByteBuf &out) noexcept
             {
+                if (!*this) {
+                    m_lastError = AWS_ERROR_INVALID_STATE;
+                    return false;
+                }
+
                 if (aws_symmetric_cipher_decrypt(m_cipher.get(), toDecrypt, &out) != AWS_OP_SUCCESS)
                 {
                     m_lastError = Aws::Crt::LastError();
@@ -62,6 +77,11 @@ namespace Aws
 
             bool SymmetricCipher::FinalizeDecryption(ByteBuf &out) noexcept
             {
+                if (!*this) {
+                    m_lastError = AWS_ERROR_INVALID_STATE;
+                    return false;
+                }
+
                 if (aws_symmetric_cipher_finalize_decryption(m_cipher.get(), &out) != AWS_OP_SUCCESS)
                 {
                     m_lastError = Aws::Crt::LastError();
@@ -73,6 +93,11 @@ namespace Aws
 
             bool SymmetricCipher::Reset() noexcept
             {
+                if (!*this) {
+                    m_lastError = AWS_ERROR_INVALID_STATE;
+                    return false;
+                }
+
                 if (aws_symmetric_cipher_reset(m_cipher.get()) != AWS_OP_SUCCESS)
                 {
                     m_lastError = Aws::Crt::LastError();
