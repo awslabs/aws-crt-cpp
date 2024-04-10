@@ -97,7 +97,7 @@ namespace Aws
 
             bool SymmetricCipher::Reset() noexcept
             {
-                if (!*this)
+                if (m_cipher.get() == nullptr)
                 {
                     m_lastError = AWS_ERROR_INVALID_STATE;
                     return false;
