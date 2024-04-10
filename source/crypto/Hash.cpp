@@ -92,47 +92,43 @@ namespace Aws
 
             bool Hash::Update(const ByteCursor &toHash) noexcept
             {
-                if (*this)
+                if (!*this)
                 {
-                    if (aws_hash_update(m_hash, &toHash))
-                    {
-                        m_lastError = aws_last_error();
-                        return false;
-                    }
-                    return true;
+                    return false;
                 }
 
-                return false;
+                if (AWS_OP_SUCCESS != aws_hash_update(m_hash, &toHash))
+                {
+                    m_lastError = aws_last_error();
+                    return false;
+                }
+                return true;                
             }
 
             bool Hash::Digest(ByteBuf &output, size_t truncateTo) noexcept
             {
-                if (*this)
+                if (!*this)
                 {
-                    if (aws_hash_finalize(m_hash, &output, truncateTo) != AWS_OP_SUCCESS)
-                    {
-                        m_lastError = aws_last_error();
-                        return false;
-                    }
-                    return true;
+                    return false;
                 }
 
-                return false;
+                if (aws_hash_finalize(m_hash, &output, truncateTo) != AWS_OP_SUCCESS)
+                {
+                    m_lastError = aws_last_error();
+                    return false;
+                }
+                return true;
             }
 
             bool Hash::ComputeOneShot(const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
             {
-                if (*this)
+                if (!*this || !Update(input))
                 {
-                    if (!Update(input))
-                    {
-                        return false;
-                    }
-
-                    return Digest(output, truncateTo);
+                    return false;
                 }
 
-                return false;
+                return Digest(output, truncateTo);
+
             }
 
             size_t Hash::DigestSize() const noexcept

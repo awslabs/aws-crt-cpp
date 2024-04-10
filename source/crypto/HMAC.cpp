@@ -86,59 +86,54 @@ namespace Aws
 
             bool HMAC::Update(const ByteCursor &toHMAC) noexcept
             {
-                if (*this)
+                if (!*this)
                 {
-                    if (aws_hmac_update(m_hmac, &toHMAC))
-                    {
-                        m_lastError = aws_last_error();
-                        m_good = false;
-                        return false;
-                    }
-                    return true;
+                    return false;
                 }
 
-                return false;
+                if (AWS_OP_SUCCESS != aws_hmac_update(m_hmac, &toHMAC))
+                {
+                    m_lastError = aws_last_error();
+                    m_good = false;
+                    return false;
+                }
+                return true;
             }
 
             bool HMAC::Digest(ByteBuf &output, size_t truncateTo) noexcept
             {
-                if (*this)
-                {
-                    m_good = false;
-                    if (aws_hmac_finalize(m_hmac, &output, truncateTo))
-                    {
-                        m_lastError = aws_last_error();
-                        return false;
-                    }
-                    return true;
+                if (!*this)
+                { 
+                    return false;
                 }
 
-                return false;
+                m_good = false;
+                if (AWS_OP_SUCCESS != aws_hmac_finalize(m_hmac, &output, truncateTo))
+                {
+                    m_lastError = aws_last_error();
+                    return false;
+                }
+                return true;
             }
 
             bool HMAC::ComputeOneShot(const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
             {
-                if (*this)
+                if (!*this || !Update(input))
                 {
-                    if (!Update(input))
-                    {
-                        return false;
-                    }
-
-                    return Digest(output, truncateTo);
+                    return false;
                 }
 
-                return false;
+                return Digest(output, truncateTo);
             }
 
             size_t HMAC::DigestSize() const noexcept
             {
-                if (*this)
+                if (!*this)
                 {
-                    return m_hmac->digest_size;
+                    return 0;
                 }
 
-                return 0;
+                return m_hmac->digest_size;
             }
 
             aws_hmac_vtable ByoHMAC::s_Vtable = {

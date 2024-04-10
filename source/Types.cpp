@@ -57,19 +57,20 @@ namespace Aws
 
             size_t allocationSize = 0;
 
-            if (aws_base64_compute_decoded_len(&toDecode, &allocationSize) == AWS_OP_SUCCESS)
+            if (AWS_OP_SUCCESS != aws_base64_compute_decoded_len(&toDecode, &allocationSize))
             {
-                Vector<uint8_t> output(allocationSize, 0x00);
-                ByteBuf tempBuf = aws_byte_buf_from_empty_array(output.data(), output.capacity());
-                UnsafeInteropHelpers::Base64Decode(toDecode, tempBuf);
-
-                if (tempBuf.len == allocationSize)
-                {
-                    return output;
-                }
+                return {};
             }
+                
+            Vector<uint8_t> output(allocationSize, 0x00);
+            ByteBuf tempBuf = aws_byte_buf_from_empty_array(output.data(), output.capacity());
 
-            return {};
+            if (AWS_OP_SUCCESS != aws_base64_decode(&toDecode, &tempBuf)) 
+            {
+                return {}; 
+            }
+            
+            return output;
         }
 
         String Base64Encode(const Vector<uint8_t> &encode) noexcept
@@ -77,55 +78,26 @@ namespace Aws
             auto toEncode = aws_byte_cursor_from_array((const void *)encode.data(), encode.size());
 
             size_t allocationSize = 0;
-            if (aws_base64_compute_encoded_len(toEncode.len, &allocationSize) == AWS_OP_SUCCESS)
+            if (AWS_OP_SUCCESS != aws_base64_compute_encoded_len(toEncode.len, &allocationSize))
             {
-                String outputStr(allocationSize, 0x00);
-                auto tempBuf = aws_byte_buf_from_empty_array(outputStr.data(), outputStr.capacity());
-                UnsafeInteropHelpers::Base64Encode(toEncode, tempBuf);
-
-                // encoding appends a null terminator, and accounts for it in the encoded length,
-                // which makes the string 1 character too long
-                if (tempBuf.len == allocationSize - 1)
-                {
-                    outputStr.pop_back();
-                    return outputStr;
-                }
+                return {};
             }
 
-            return {};
+            String outputStr(allocationSize, 0x00);
+            auto tempBuf = aws_byte_buf_from_empty_array(outputStr.data(), outputStr.capacity());
+
+            if (AWS_OP_SUCCESS != aws_base64_encode(&toEncode, &tempBuf))
+            {
+                return {};
+            }
+
+            // encoding appends a null terminator, and accounts for it in the encoded length,
+            // which makes the string 1 character too long
+            if (outputStr.back() == 0)
+            {
+                outputStr.pop_back();
+            }
+            return outputStr;
         }
-
-        namespace UnsafeInteropHelpers
-        {
-            void Base64Decode(const ByteCursor &toDecode, ByteBuf &out) noexcept
-            {
-                size_t allocation_size = 0;
-                if (aws_base64_compute_decoded_len(&toDecode, &allocation_size) == AWS_OP_SUCCESS)
-                {
-                    if (out.capacity - out.len < allocation_size)
-                    {
-                        return;
-                    }
-
-                    aws_base64_decode(&toDecode, &out);
-                }
-            }
-
-            void Base64Encode(const ByteCursor &toEncode, ByteBuf &output) noexcept
-            {
-                size_t allocation_size = 0;
-
-                if (aws_base64_compute_encoded_len(toEncode.len, &allocation_size) == AWS_OP_SUCCESS)
-                {
-                    if (output.capacity - output.len < allocation_size)
-                    {
-                        return;
-                    }
-
-                    aws_base64_encode(&toEncode, &output);
-                }
-            }
-        } // namespace UnsafeInteropHelpers
-
     } // namespace Crt
 } // namespace Aws

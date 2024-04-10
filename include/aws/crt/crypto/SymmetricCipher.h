@@ -22,9 +22,8 @@ namespace Aws
               public:
                 SymmetricCipher(const SymmetricCipher &) = delete;
                 SymmetricCipher &operator=(const SymmetricCipher &) = delete;
-                SymmetricCipher(SymmetricCipher &&) noexcept;
-                SymmetricCipher &operator=(SymmetricCipher &&) noexcept;
-                ~SymmetricCipher();
+                SymmetricCipher(SymmetricCipher &&) noexcept = default;
+                SymmetricCipher &operator=(SymmetricCipher &&) noexcept = default;
 
                 /**
                  * Creates an AES 256 CBC mode cipher using a provided key and iv.
@@ -139,7 +138,7 @@ namespace Aws
 
               private:
                 SymmetricCipher(aws_symmetric_cipher *cipher) noexcept;
-                aws_symmetric_cipher *m_cipher;
+                std::unique_ptr<aws_symmetric_cipher, void (*)(struct aws_symmetric_cipher *cipher)> m_cipher;
                 int m_lastError;
             };
         } // namespace Crypto
