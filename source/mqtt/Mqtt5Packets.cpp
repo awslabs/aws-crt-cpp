@@ -1061,6 +1061,11 @@ namespace Aws
                 raw_options.user_properties = m_userPropertiesStorage;
                 raw_options.user_property_count = m_userProperties.size();
 
+                if (m_subscriptionIdentifier.has_value())
+                {
+                    raw_options.subscription_identifier = &m_subscriptionIdentifier.value();
+                }
+
                 return true;
             }
 
