@@ -138,7 +138,7 @@ namespace Aws
 
               private:
                 SymmetricCipher(aws_symmetric_cipher *cipher) noexcept;
-                std::unique_ptr<aws_symmetric_cipher, void (*)(struct aws_symmetric_cipher *cipher)> m_cipher;
+                ScopedResource<struct aws_symmetric_cipher> m_cipher;
                 int m_lastError;
             };
         } // namespace Crypto
