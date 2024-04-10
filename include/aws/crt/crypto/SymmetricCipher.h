@@ -114,6 +114,9 @@ namespace Aws
                  */
                 bool FinalizeDecryption(ByteBuf &out) noexcept;
 
+                /**
+                 * Reset to cipher to new state.
+                 */
                 bool Reset() noexcept;
 
                 /**
