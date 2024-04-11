@@ -51,53 +51,53 @@ namespace Aws
             return aws_byte_cursor_from_array(array, len);
         }
 
-        Vector<uint8_t> Base64Decode(const String &decode)
+        Vector<uint8_t> Base64Decode(const String &decode) noexcept
         {
             ByteCursor toDecode = ByteCursorFromString(decode);
 
-            size_t allocation_size = 0;
+            size_t allocationSize = 0;
 
-            if (aws_base64_compute_decoded_len(&toDecode, &allocation_size) == AWS_OP_SUCCESS)
+            if (AWS_OP_SUCCESS != aws_base64_compute_decoded_len(&toDecode, &allocationSize))
             {
-                Vector<uint8_t> output(allocation_size, 0x00);
-                ByteBuf tempBuf = aws_byte_buf_from_array(output.data(), output.size());
-                tempBuf.len = 0;
-
-                if (aws_base64_decode(&toDecode, &tempBuf) == AWS_OP_SUCCESS)
-                {
-                    return output;
-                }
+                return {};
             }
 
-            return {};
+            Vector<uint8_t> output(allocationSize, 0x00);
+            ByteBuf tempBuf = aws_byte_buf_from_empty_array(output.data(), output.size());
+
+            if (AWS_OP_SUCCESS != aws_base64_decode(&toDecode, &tempBuf))
+            {
+                return {};
+            }
+
+            return output;
         }
 
-        String Base64Encode(const Vector<uint8_t> &encode)
+        String Base64Encode(const Vector<uint8_t> &encode) noexcept
         {
-            ByteCursor toEncode = aws_byte_cursor_from_array((const void *)encode.data(), encode.size());
+            auto toEncode = aws_byte_cursor_from_array((const void *)encode.data(), encode.size());
 
-            size_t allocation_size = 0;
-
-            if (aws_base64_compute_encoded_len(encode.size(), &allocation_size) == AWS_OP_SUCCESS)
+            size_t allocationSize = 0;
+            if (AWS_OP_SUCCESS != aws_base64_compute_encoded_len(toEncode.len, &allocationSize))
             {
-                String output(allocation_size, 0x00);
-                ByteBuf tempBuf = aws_byte_buf_from_array(output.data(), output.size());
-                tempBuf.len = 0;
-
-                if (aws_base64_encode(&toEncode, &tempBuf) == AWS_OP_SUCCESS)
-                {
-                    // encoding appends a null terminator, and accounts for it in the encoded length,
-                    // which makes the string 1 character too long
-                    if (output.back() == 0)
-                    {
-                        output.pop_back();
-                    }
-                    return output;
-                }
+                return {};
             }
 
-            return {};
-        }
+            String outputStr(allocationSize, 0x00);
+            auto tempBuf = aws_byte_buf_from_empty_array(outputStr.data(), outputStr.size());
 
+            if (AWS_OP_SUCCESS != aws_base64_encode(&toEncode, &tempBuf))
+            {
+                return {};
+            }
+
+            // encoding appends a null terminator, and accounts for it in the encoded length,
+            // which makes the string 1 character too long
+            if (outputStr.back() == 0)
+            {
+                outputStr.pop_back();
+            }
+            return outputStr;
+        }
     } // namespace Crt
 } // namespace Aws

@@ -19,7 +19,13 @@ namespace Aws
                 ByteBuf &output,
                 size_t truncateTo) noexcept
             {
-                return aws_sha256_hmac_compute(allocator, &secret, &input, &output, truncateTo) == AWS_OP_SUCCESS;
+                auto hmac = HMAC::CreateSHA256HMAC(allocator, secret);
+                if (hmac)
+                {
+                    return hmac.ComputeOneShot(input, output, truncateTo);
+                }
+
+                return false;
             }
 
             bool ComputeSHA256HMAC(
@@ -28,7 +34,7 @@ namespace Aws
                 ByteBuf &output,
                 size_t truncateTo) noexcept
             {
-                return aws_sha256_hmac_compute(ApiAllocator(), &secret, &input, &output, truncateTo) == AWS_OP_SUCCESS;
+                return ComputeSHA256HMAC(ApiAllocator(), secret, input, output, truncateTo);
             }
 
             HMAC::HMAC(aws_hmac *hmac) noexcept : m_hmac(hmac), m_good(false), m_lastError(0)
@@ -80,34 +86,54 @@ namespace Aws
 
             bool HMAC::Update(const ByteCursor &toHMAC) noexcept
             {
-                if (*this)
+                if (!*this)
                 {
-                    if (aws_hmac_update(m_hmac, &toHMAC))
-                    {
-                        m_lastError = aws_last_error();
-                        m_good = false;
-                        return false;
-                    }
-                    return true;
+                    return false;
                 }
 
-                return false;
+                if (AWS_OP_SUCCESS != aws_hmac_update(m_hmac, &toHMAC))
+                {
+                    m_lastError = aws_last_error();
+                    m_good = false;
+                    return false;
+                }
+                return true;
             }
 
             bool HMAC::Digest(ByteBuf &output, size_t truncateTo) noexcept
             {
-                if (*this)
+                if (!*this)
                 {
-                    m_good = false;
-                    if (aws_hmac_finalize(m_hmac, &output, truncateTo))
-                    {
-                        m_lastError = aws_last_error();
-                        return false;
-                    }
-                    return true;
+                    return false;
                 }
 
-                return false;
+                m_good = false;
+                if (AWS_OP_SUCCESS != aws_hmac_finalize(m_hmac, &output, truncateTo))
+                {
+                    m_lastError = aws_last_error();
+                    return false;
+                }
+                return true;
+            }
+
+            bool HMAC::ComputeOneShot(const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
+            {
+                if (!*this || !Update(input))
+                {
+                    return false;
+                }
+
+                return Digest(output, truncateTo);
+            }
+
+            size_t HMAC::DigestSize() const noexcept
+            {
+                if (!*this)
+                {
+                    return 0;
+                }
+
+                return m_hmac->digest_size;
             }
 
             aws_hmac_vtable ByoHMAC::s_Vtable = {

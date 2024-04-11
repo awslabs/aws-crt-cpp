@@ -15,8 +15,9 @@ namespace Aws
     {
         namespace Crypto
         {
-            static const size_t SHA256_DIGEST_SIZE = 32;
-            static const size_t MD5_DIGEST_SIZE = 16;
+            static const size_t SHA1_DIGEST_SIZE = AWS_SHA1_LEN;
+            static const size_t SHA256_DIGEST_SIZE = AWS_SHA256_LEN;
+            static const size_t MD5_DIGEST_SIZE = AWS_MD5_LEN;
 
             /**
              * Computes a SHA256 Hash over input, and writes the digest to output. If truncateTo is non-zero, the digest
@@ -60,6 +61,26 @@ namespace Aws
             bool AWS_CRT_CPP_API ComputeMD5(const ByteCursor &input, ByteBuf &output, size_t truncateTo = 0) noexcept;
 
             /**
+             * Computes a SHA1 Hash over input, and writes the digest to output. If truncateTo is non-zero, the digest
+             * will be truncated to the value of truncateTo. Returns true on success. If this function fails,
+             * Aws::Crt::LastError() will contain the error that occurred. Unless you're using 'truncateTo',
+             * output should have a minimum capacity of MD5_DIGEST_SIZE.
+             */
+            bool AWS_CRT_CPP_API ComputeSHA1(
+                Allocator *allocator,
+                const ByteCursor &input,
+                ByteBuf &output,
+                size_t truncateTo = 0) noexcept;
+
+            /**
+             * Computes a SHA1 Hash using the default allocator over input, and writes the digest to output. If
+             * truncateTo is non-zero, the digest will be truncated to the value of truncateTo. Returns true on success.
+             * If this function fails, Aws::Crt::LastError() will contain the error that occurred. Unless you're using
+             * 'truncateTo', output should have a minimum capacity of SHA1_DIGEST_SIZE.
+             */
+            bool AWS_CRT_CPP_API ComputeSHA1(const ByteCursor &input, ByteBuf &output, size_t truncateTo = 0) noexcept;
+
+            /**
              * Streaming Hash object. The typical use case is for computing the hash of an object that is too large to
              * load into memory. You can call Update() multiple times as you load chunks of data into memory. When
              * you're finished simply call Digest(). After Digest() is called, this object is no longer usable.
@@ -76,7 +97,7 @@ namespace Aws
                 /**
                  * Returns true if the instance is in a valid state, false otherwise.
                  */
-                inline operator bool() const noexcept { return m_good; }
+                operator bool() const noexcept;
 
                 /**
                  * Returns the value of the last aws error encountered by operations on this instance.
@@ -87,6 +108,11 @@ namespace Aws
                  * Creates an instance of a Streaming SHA256 Hash.
                  */
                 static Hash CreateSHA256(Allocator *allocator = ApiAllocator()) noexcept;
+
+                /**
+                 * Creates an instance of a Stream SHA1 Hash.
+                 */
+                static Hash CreateSHA1(Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
                  * Creates an instance of a Streaming MD5 Hash.
@@ -101,18 +127,36 @@ namespace Aws
 
                 /**
                  * Finishes the running hash operation and writes the digest into output. The available capacity of
-                 * output must be large enough for the digest. See: SHA256_DIGEST_SIZE and MD5_DIGEST_SIZE for size
-                 * hints. 'truncateTo' is for if you want truncated output (e.g. you only want the first 16 bytes of a
-                 * SHA256 digest. Returns true on success. Call LastError() for the reason this call failed.
+                 * output must be large enough for the digest. See: SHA1_DIGEST_SIZE, SHA256_DIGEST_SIZE and
+                 * MD5_DIGEST_SIZE for size hints. 'truncateTo' is for if you want truncated output (e.g. you only want
+                 * the first 16 bytes of a SHA256 digest. Returns true on success. Call LastError() for the reason this
+                 * call failed.
                  */
                 bool Digest(ByteBuf &output, size_t truncateTo = 0) noexcept;
+
+                /**
+                 * Computes the hash of input and writes the digest into output. The available capacity of
+                 * output must be large enough for the digest. See: SHA1_DIGEST_SIZE, SHA256_DIGEST_SIZE and
+                 * MD5_DIGEST_SIZE for size hints. 'truncateTo' is for if you want truncated output (e.g. you only want
+                 * the first 16 bytes of a SHA256 digest. Returns true on success. Call LastError() for the reason this
+                 * call failed.
+                 *
+                 * This is an API a user would use for smaller size inputs. For larger, streaming inputs, use
+                 * multiple calls to Update() for each buffer, followed by a single call to Digest().
+                 */
+                bool ComputeOneShot(const ByteCursor &input, ByteBuf &output, size_t truncateTo = 0) noexcept;
+
+                /**
+                 * Returns the size of the digest for this hash algorithm. If this object is not valid, it will
+                 * return 0 instead.
+                 */
+                size_t DigestSize() const noexcept;
 
               private:
                 Hash(aws_hash *hash) noexcept;
                 Hash() = delete;
 
                 aws_hash *m_hash;
-                bool m_good;
                 int m_lastError;
             };
 

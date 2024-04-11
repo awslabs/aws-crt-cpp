@@ -18,31 +18,41 @@ namespace Aws
                 ByteBuf &output,
                 size_t truncateTo) noexcept
             {
-                return aws_sha256_compute(allocator, &input, &output, truncateTo) == AWS_OP_SUCCESS;
+                auto hash = Hash::CreateSHA256(allocator);
+                return hash.ComputeOneShot(input, output, truncateTo);
             }
 
             bool ComputeSHA256(const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
             {
-                return aws_sha256_compute(ApiAllocator(), &input, &output, truncateTo) == AWS_OP_SUCCESS;
+                return ComputeSHA256(ApiAllocator(), input, output, truncateTo);
+            }
+
+            bool ComputeSHA1(Allocator *allocator, const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
+            {
+                auto hash = Hash::CreateSHA1(allocator);
+                return hash.ComputeOneShot(input, output, truncateTo);
+            }
+
+            bool ComputeSHA1(const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
+            {
+                return ComputeSHA1(ApiAllocator(), input, output, truncateTo);
             }
 
             bool ComputeMD5(Allocator *allocator, const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
             {
-                return aws_md5_compute(allocator, &input, &output, truncateTo) == AWS_OP_SUCCESS;
+                auto hash = Hash::CreateMD5(allocator);
+                return hash.ComputeOneShot(input, output, truncateTo);
             }
 
             bool ComputeMD5(const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
             {
-                return aws_md5_compute(ApiAllocator(), &input, &output, truncateTo) == AWS_OP_SUCCESS;
+                auto hash = Hash::CreateMD5(ApiAllocator());
+                return hash.ComputeOneShot(input, output, truncateTo);
             }
 
-            Hash::Hash(aws_hash *hash) noexcept : m_hash(hash), m_good(false), m_lastError(0)
+            Hash::Hash(aws_hash *hash) noexcept : m_hash(hash), m_lastError(0)
             {
-                if (hash)
-                {
-                    m_good = true;
-                }
-                else
+                if (!hash)
                 {
                     m_lastError = aws_last_error();
                 }
@@ -57,11 +67,12 @@ namespace Aws
                 }
             }
 
-            Hash::Hash(Hash &&toMove) : m_hash(toMove.m_hash), m_good(toMove.m_good), m_lastError(toMove.m_lastError)
+            Hash::Hash(Hash &&toMove) : m_hash(toMove.m_hash), m_lastError(toMove.m_lastError)
             {
                 toMove.m_hash = nullptr;
-                toMove.m_good = false;
             }
+
+            Hash::operator bool() const noexcept { return m_hash != nullptr && m_hash->good; }
 
             Hash &Hash::operator=(Hash &&toMove)
             {
@@ -77,36 +88,56 @@ namespace Aws
 
             Hash Hash::CreateMD5(Allocator *allocator) noexcept { return Hash(aws_md5_new(allocator)); }
 
+            Hash Hash::CreateSHA1(Allocator *allocator) noexcept { return Hash(aws_sha1_new(allocator)); }
+
             bool Hash::Update(const ByteCursor &toHash) noexcept
             {
-                if (*this)
+                if (!*this)
                 {
-                    if (aws_hash_update(m_hash, &toHash))
-                    {
-                        m_lastError = aws_last_error();
-                        m_good = false;
-                        return false;
-                    }
-                    return true;
+                    return false;
                 }
 
-                return false;
+                if (AWS_OP_SUCCESS != aws_hash_update(m_hash, &toHash))
+                {
+                    m_lastError = aws_last_error();
+                    return false;
+                }
+                return true;
             }
 
             bool Hash::Digest(ByteBuf &output, size_t truncateTo) noexcept
             {
-                if (*this)
+                if (!*this)
                 {
-                    m_good = false;
-                    if (aws_hash_finalize(m_hash, &output, truncateTo))
-                    {
-                        m_lastError = aws_last_error();
-                        return false;
-                    }
-                    return true;
+                    return false;
                 }
 
-                return false;
+                if (aws_hash_finalize(m_hash, &output, truncateTo) != AWS_OP_SUCCESS)
+                {
+                    m_lastError = aws_last_error();
+                    return false;
+                }
+                return true;
+            }
+
+            bool Hash::ComputeOneShot(const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
+            {
+                if (!*this || !Update(input))
+                {
+                    return false;
+                }
+
+                return Digest(output, truncateTo);
+            }
+
+            size_t Hash::DigestSize() const noexcept
+            {
+                if (m_hash != nullptr)
+                {
+                    return m_hash->digest_size;
+                }
+
+                return 0;
             }
 
             aws_hash_vtable ByoHash::s_Vtable = {
