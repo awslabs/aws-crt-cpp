@@ -14,6 +14,7 @@
 #include <aws/http/http.h>
 #include <aws/mqtt/mqtt.h>
 #include <aws/s3/s3.h>
+#include <aws/cal/cal.h>
 
 #include <thread>
 
@@ -48,6 +49,7 @@ namespace Aws
             aws_s3_library_init(allocator);
             aws_event_stream_library_init(allocator);
             aws_sdkutils_library_init(allocator);
+            aws_cal_library_init(allocator);
 
             JsonObject::OnLibraryInit();
         }
@@ -78,6 +80,7 @@ namespace Aws
             aws_mqtt_library_clean_up();
             aws_event_stream_library_clean_up();
             aws_sdkutils_library_clean_up();
+            aws_cal_library_clean_up();
 
             s_BYOCryptoNewMD5Callback = nullptr;
             s_BYOCryptoNewSHA256Callback = nullptr;
