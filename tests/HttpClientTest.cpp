@@ -2,7 +2,11 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include <aws/common/byte_buf.h>
 #include <aws/crt/Api.h>
+#include <aws/crt/auth/Credentials.h>
+#include <aws/crt/auth/Signing.h>
+#include <aws/crt/auth/Sigv4Signing.h>
 #include <aws/crt/crypto/Hash.h>
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/http/HttpRequestResponse.h>
@@ -14,8 +18,35 @@
 #include <fstream>
 #include <iostream>
 #include <mutex>
+#include <stdint.h>
 
 using namespace Aws::Crt;
+
+class SignWaiter
+{
+  public:
+    SignWaiter() : m_lock(), m_signal(), m_done(false) {}
+
+    void OnSigningComplete(const std::shared_ptr<Aws::Crt::Http::HttpRequest> &, int)
+    {
+        std::unique_lock<std::mutex> lock(m_lock);
+        m_done = true;
+        m_signal.notify_one();
+    }
+
+    void Wait()
+    {
+        {
+            std::unique_lock<std::mutex> lock(m_lock);
+            m_signal.wait(lock, [this]() { return m_done == true; });
+        }
+    }
+
+  private:
+    std::mutex m_lock;
+    std::condition_variable m_signal;
+    bool m_done;
+};
 
 #if !BYO_CRYPTO
 
@@ -155,9 +186,9 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, Byt
         std::ofstream downloadedFile(fileName.c_str(), std::ios_base::binary);
         ASSERT_TRUE(downloadedFile);
 
-        Http::HttpRequest request;
+        auto request = Aws::Crt::MakeShared<Aws::Crt::Http::HttpRequest>(allocator);
         Http::HttpRequestOptions requestOptions;
-        requestOptions.request = &request;
+        requestOptions.request = request.get();
 
         bool streamCompleted = false;
         requestOptions.onStreamComplete = [&](Http::HttpStream &, int errorCode) {
@@ -180,14 +211,73 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, Byt
             downloadedFile.write((const char *)data.ptr, data.len);
         };
 
-        request.SetMethod(ByteCursorFromCString("GET"));
-        request.SetPath(uri.GetPathAndQuery());
+        request->SetMethod(ByteCursorFromCString("POST"));
+        request->SetPath(ByteCursorFromCString("/"));
 
         Http::HttpHeader hostHeader;
         hostHeader.name = ByteCursorFromCString("host");
         hostHeader.value = uri.GetHostName();
-        request.AddHeader(hostHeader);
+        request->AddHeader(hostHeader);
+        Http::HttpHeader content_type_header;
+        content_type_header.name = ByteCursorFromCString("content-type");
+        content_type_header.value = ByteCursorFromCString("application/x-amz-json-1.1");
+        request->AddHeader(content_type_header);
+        Http::HttpHeader target_header;
+        target_header.name = ByteCursorFromCString("x-amz-target");
+        target_header.value = ByteCursorFromCString("Logs_20140328.CreateLogGroup");
+        request->AddHeader(target_header);
+        auto accessKey = "";
+        const char secretAccessKey[] = "";
+        auto token = "";
+        auto credentialsForRequest = Aws::Crt::MakeShared<Aws::Crt::Auth::Credentials>(
+            allocator,
+            aws_byte_cursor_from_c_str(accessKey),
+            aws_byte_cursor_from_c_str(secretAccessKey),
+            aws_byte_cursor_from_c_str(token),
+            UINT64_MAX);
+        auto signer = Aws::Crt::MakeShared<Aws::Crt::Auth::Sigv4HttpRequestSigner>(allocator, allocator);
+        Aws::Crt::Auth::AwsSigningConfig signingConfig(allocator);
+        signingConfig.SetRegion("us-west-2");
+        signingConfig.SetSigningAlgorithm(Aws::Crt::Auth::SigningAlgorithm::SigV4);
+        signingConfig.SetSignatureType(Aws::Crt::Auth::SignatureType::HttpRequestViaHeaders);
+        signingConfig.SetService("logs");
+        signingConfig.SetSigningTimepoint(Aws::Crt::DateTime::Now());
+        // signingConfig.SetSignedBodyValue(Aws::Crt::Auth::SignedBodyValue::UnsignedPayloadStr());
+        // signingConfig.SetUseDoubleUriEncode(false);
+        // signingConfig.SetShouldNormalizeUriPath(true);
+        // signingConfig.SetSignedBodyHeader(Aws::Crt::Auth::SignedBodyHeaderType::XAmzContentSha256);
+        signingConfig.SetCredentials(credentialsForRequest);
+        auto body = std::make_shared<std::stringstream>("{\"logGroupName\": \"my-test-log-group\"}");
+        // std::shared_ptr<Io::StdIOStreamInputStream> bodyStream =
+        //     MakeShared<Io::StdIOStreamInputStream>(allocator, body, allocator);
 
+        const char *logGroupRequestBodyStr = "{\"logGroupName\": \"my-test-log-group\"}";
+        std::shared_ptr<Aws::Crt::Io::IStream> bodyStream =
+            std::make_shared<std::istringstream>(logGroupRequestBodyStr);
+        // logGroupRequest->SetBody(createLogGroupBodyStream);
+
+        int64_t dataLen = 37;
+        // if (!bodyStream->GetLength(dataLen))
+        // {
+        //     std::cerr << "failed to get length of input stream.\n";
+        //     exit(1);
+        // }
+        if (dataLen > 0)
+        {
+            std::string contentLength = std::to_string(dataLen);
+            Http::HttpHeader contentLengthHeader;
+            contentLengthHeader.name = ByteCursorFromCString("content-length");
+            contentLengthHeader.value = ByteCursorFromCString(contentLength.c_str());
+            request->AddHeader(contentLengthHeader);
+            request->SetBody(bodyStream);
+        }
+
+        SignWaiter waiter;
+        signer->SignRequest(
+            request, signingConfig, [&](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &a, int errorCode) {
+                waiter.OnSigningComplete(a, errorCode);
+            });
+        waiter.Wait();
         auto stream = connection->NewClientStream(requestOptions);
         ASSERT_TRUE(stream->Activate());
 
@@ -208,7 +298,7 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, Byt
 static int s_TestHttpDownloadNoBackPressureHTTP1_1(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
-    ByteCursor cursor = ByteCursorFromCString("https://aws-crt-test-stuff.s3.amazonaws.com/http_test_doc.txt");
+    ByteCursor cursor = ByteCursorFromCString("https://logs.us-west-2.amazonaws.com");
     return s_TestHttpDownloadNoBackPressure(allocator, cursor, false /*h2Required*/);
 }
 
