@@ -2286,7 +2286,8 @@ static int s_TestMqtt5NullUnsubscribe(Aws::Crt::Allocator *allocator, void *)
 AWS_TEST_CASE(Mqtt5NullUnsubscribe, s_TestMqtt5NullUnsubscribe)
 
 /*
- * Reuse unsubscribe packet test
+ * Reuse unsubscribe packet test.
+ * The scenario in this test once caused memory leak, so the test ensures the issue is fixed for good.
  */
 static int s_TestMqtt5ReuseUnsubscribePacket(Aws::Crt::Allocator *allocator, void *)
 {
@@ -2299,11 +2300,11 @@ static int s_TestMqtt5ReuseUnsubscribePacket(Aws::Crt::Allocator *allocator, voi
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client);
 
-    /* Subscribe to empty subscribe packet*/
     Vector<String> unsubList{TEST_TOPIC};
     std::shared_ptr<Mqtt5::UnsubscribePacket> unsubscribe = std::make_shared<Mqtt5::UnsubscribePacket>(allocator);
     unsubscribe->WithTopicFilters(unsubList);
     ASSERT_TRUE(mqtt5Client->Unsubscribe(unsubscribe));
+    /* Unsubscribe once again using the same UnsubscribePacket. */
     ASSERT_TRUE(mqtt5Client->Unsubscribe(unsubscribe));
 
     ASSERT_TRUE(mqtt5Client->Stop());

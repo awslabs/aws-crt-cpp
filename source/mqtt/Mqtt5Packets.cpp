@@ -138,7 +138,7 @@ namespace Aws
                 const Crt::Vector<String> &stringVector,
                 Allocator *allocator)
             {
-                AWS_ZERO_STRUCT(dst);
+                aws_array_list_clean_up(&dst);
 
                 if (aws_array_list_init_dynamic(&dst, allocator, stringVector.size(), sizeof(aws_byte_cursor)) !=
                     AWS_OP_SUCCESS)
