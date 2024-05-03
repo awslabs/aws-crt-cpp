@@ -152,8 +152,8 @@ namespace Aws
                     allocator,
                     key.has_value() ? &key.value() : nullptr,
                     iv.has_value() ? &iv.value() : nullptr,
-                    tag.has_value() ? &tag.value() : nullptr,
-                    aad.has_value() ? &aad.value() : nullptr)};
+                    aad.has_value() ? &aad.value() : nullptr,
+                    tag.has_value() ? &tag.value() : nullptr)};
             }
 
             SymmetricCipher SymmetricCipher::CreateAES_256_KeyWrap_Cipher(
