@@ -235,6 +235,7 @@ if(NOT BYO_CRYPTO)
     add_net_test_case(Mqtt5NullPublish)
     add_net_test_case(Mqtt5NullSubscribe)
     add_net_test_case(Mqtt5NullUnsubscribe)
+    add_net_test_case(Mqtt5ReuseUnsubscribePacket)
     add_net_test_case(Mqtt5QoS1SubPub)
     add_net_test_case(Mqtt5RetainSetAndClear)
 
