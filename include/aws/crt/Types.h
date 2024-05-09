@@ -57,6 +57,7 @@ namespace Aws
         AWS_CRT_CPP_API ByteBuf ByteBufFromEmptyArray(const uint8_t *array, size_t len) noexcept;
         AWS_CRT_CPP_API ByteBuf ByteBufFromArray(const uint8_t *array, size_t capacity) noexcept;
         AWS_CRT_CPP_API ByteBuf ByteBufNewCopy(Allocator *alloc, const uint8_t *array, size_t len);
+        AWS_CRT_CPP_API ByteBuf ByteBufInit(Allocator *alloc, size_t len);
         AWS_CRT_CPP_API void ByteBufDelete(ByteBuf &);
 
         AWS_CRT_CPP_API ByteCursor ByteCursorFromCString(const char *str) noexcept;

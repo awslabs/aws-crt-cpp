@@ -3,6 +3,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include <aws/cal/symmetric_cipher.h>
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
 
@@ -16,6 +17,13 @@ namespace Aws
         {
             static const size_t AES_256_CIPHER_BLOCK_SIZE = 16u;
             static const size_t AES_256_KEY_SIZE_BYTES = 32u;
+
+            enum class SymmetricCipherState
+            {
+                Ready = AWS_SYMMETRIC_CIPHER_READY,
+                Finalized = AWS_SYMMETRIC_CIPHER_FINALIZED,
+                Error = AWS_SYMMETRIC_CIPHER_ERROR,
+            };
 
             class AWS_CRT_CPP_API SymmetricCipher final
             {
@@ -70,6 +78,12 @@ namespace Aws
                  * Returns true if the instance is in a valid state, false otherwise.
                  */
                 operator bool() const noexcept;
+
+                /**
+                 * Returns current state of the cipher instance. ready to be used, finalized, or in a error state.
+                 * If the cipher is in a finalized or error state it may not be used anymore
+                 **/
+                SymmetricCipherState GetState() const noexcept;
 
                 /**
                  * Returns the value of the last aws error encountered by operations on this instance.
