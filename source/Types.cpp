@@ -30,6 +30,13 @@ namespace Aws
             return retVal;
         }
 
+        ByteBuf ByteBufInit(Allocator *alloc, size_t len)
+        {
+            ByteBuf buff;
+            aws_byte_buf_init(&buff, alloc, len);
+            return buff;
+        }
+
         void ByteBufDelete(ByteBuf &buf) { aws_byte_buf_clean_up(&buf); }
 
         ByteCursor ByteCursorFromCString(const char *str) noexcept { return aws_byte_cursor_from_c_str(str); }

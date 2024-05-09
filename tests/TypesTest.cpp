@@ -119,3 +119,21 @@ static int s_byte_cursor_array_list_to_vector(struct aws_allocator *allocator, v
 }
 
 AWS_TEST_CASE(TestByteCursorArrayListToVector, s_byte_cursor_array_list_to_vector)
+
+static int s_byte_buff_init_delete(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+        const auto targetLength = 8;
+        auto byteBuff = ByteBufInit(allocator, targetLength);
+        ASSERT_UINT_EQUALS(targetLength, byteBuff.len);
+        ASSERT_TRUE(byteBuff.buffer != nullptr);
+        ByteBufDelete(byteBuff);
+        ASSERT_UINT_EQUALS(targetLength, 0);
+        ASSERT_TRUE(byteBuff.buffer == nullptr);
+        return 0;
+    }
+}
+
+AWS_TEST_CASE(TestByteBufInitDelete, s_byte_buff_init_delete)

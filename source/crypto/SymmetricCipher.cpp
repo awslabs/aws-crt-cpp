@@ -5,8 +5,6 @@
 #include <aws/crt/Api.h>
 #include <aws/crt/crypto/SymmetricCipher.h>
 
-#include <aws/cal/symmetric_cipher.h>
-
 namespace Aws
 {
     namespace Crt
@@ -25,6 +23,15 @@ namespace Aws
             SymmetricCipher::operator bool() const noexcept
             {
                 return m_cipher != nullptr ? aws_symmetric_cipher_is_good(m_cipher.get()) : false;
+            }
+
+            SymmetricCipherState SymmetricCipher::GetState() const noexcept
+            {
+                if (m_cipher == nullptr)
+                {
+                    return SymmetricCipherState::Error;
+                }
+                return static_cast<SymmetricCipherState>(aws_symmetric_cipher_get_state(m_cipher.get()));
             }
 
             bool SymmetricCipher::Encrypt(const ByteCursor &toEncrypt, ByteBuf &out) noexcept
