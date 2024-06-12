@@ -353,7 +353,6 @@ namespace Aws
                 int LastError() const noexcept { return m_lastError ? m_lastError : AWS_ERROR_UNKNOWN; }
 
               private:
-                Allocator *m_allocator;
                 struct aws_cbor_decoder *m_decoder;
                 /* Error */
                 int m_lastError;
