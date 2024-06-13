@@ -6,7 +6,6 @@
 
 #include <aws/common/cbor.h>
 
-#include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
 
 namespace Aws
