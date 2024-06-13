@@ -157,5 +157,5 @@ namespace Aws
                 bool SetResponseCode(int response) noexcept;
             };
         } // namespace Http
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

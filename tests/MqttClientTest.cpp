@@ -147,17 +147,18 @@ static int s_ConnectAndDisconnect(std::shared_ptr<Aws::Crt::Mqtt::MqttConnection
     std::promise<bool> connectionCompletedPromise;
     std::promise<void> connectionClosedPromise;
     auto onConnectionCompleted =
-        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
-            (void)returnCode;
-            if (errorCode)
-            {
-                connectionCompletedPromise.set_value(false);
-            }
-            else
-            {
-                connectionCompletedPromise.set_value(true);
-            }
-        };
+        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool)
+    {
+        (void)returnCode;
+        if (errorCode)
+        {
+            connectionCompletedPromise.set_value(false);
+        }
+        else
+        {
+            connectionCompletedPromise.set_value(true);
+        }
+    };
     auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);

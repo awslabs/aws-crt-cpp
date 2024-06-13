@@ -208,5 +208,5 @@ namespace Aws
             using CreateHashCallback = std::function<std::shared_ptr<ByoHash>(size_t digestSize, Allocator *)>;
 
         } // namespace Crypto
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

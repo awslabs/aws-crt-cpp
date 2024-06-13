@@ -10,7 +10,10 @@ namespace Aws
     {
         namespace Io
         {
-            Uri::Uri() noexcept : m_lastError(AWS_ERROR_SUCCESS), m_isInit(false) { AWS_ZERO_STRUCT(m_uri); }
+            Uri::Uri() noexcept : m_lastError(AWS_ERROR_SUCCESS), m_isInit(false)
+            {
+                AWS_ZERO_STRUCT(m_uri);
+            }
 
             Uri::~Uri()
             {
@@ -125,21 +128,45 @@ namespace Aws
                 return *this;
             }
 
-            ByteCursor Uri::GetScheme() const noexcept { return m_uri.scheme; }
+            ByteCursor Uri::GetScheme() const noexcept
+            {
+                return m_uri.scheme;
+            }
 
-            ByteCursor Uri::GetAuthority() const noexcept { return m_uri.authority; }
+            ByteCursor Uri::GetAuthority() const noexcept
+            {
+                return m_uri.authority;
+            }
 
-            ByteCursor Uri::GetPath() const noexcept { return m_uri.path; }
+            ByteCursor Uri::GetPath() const noexcept
+            {
+                return m_uri.path;
+            }
 
-            ByteCursor Uri::GetQueryString() const noexcept { return m_uri.query_string; }
+            ByteCursor Uri::GetQueryString() const noexcept
+            {
+                return m_uri.query_string;
+            }
 
-            ByteCursor Uri::GetHostName() const noexcept { return m_uri.host_name; }
+            ByteCursor Uri::GetHostName() const noexcept
+            {
+                return m_uri.host_name;
+            }
 
-            uint32_t Uri::GetPort() const noexcept { return m_uri.port; }
+            uint32_t Uri::GetPort() const noexcept
+            {
+                return m_uri.port;
+            }
 
-            ByteCursor Uri::GetPathAndQuery() const noexcept { return m_uri.path_and_query; }
+            ByteCursor Uri::GetPathAndQuery() const noexcept
+            {
+                return m_uri.path_and_query;
+            }
 
-            ByteCursor Uri::GetFullUri() const noexcept { return ByteCursorFromByteBuf(m_uri.uri_str); }
+            ByteCursor Uri::GetFullUri() const noexcept
+            {
+                return ByteCursorFromByteBuf(m_uri.uri_str);
+            }
 
             Aws::Crt::String EncodeQueryParameterValue(ByteCursor paramValue)
             {
@@ -155,5 +182,5 @@ namespace Aws
                 return encoded_value;
             }
         } // namespace Io
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

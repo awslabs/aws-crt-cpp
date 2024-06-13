@@ -458,5 +458,5 @@ namespace Aws
                 std::shared_ptr<MqttConnectionCore> m_connectionCore;
             };
         } // namespace Mqtt
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

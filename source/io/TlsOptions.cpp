@@ -24,7 +24,10 @@ namespace Aws
                 }
             }
 
-            TlsContextOptions::TlsContextOptions() noexcept : m_isInit(false) { AWS_ZERO_STRUCT(m_options); }
+            TlsContextOptions::TlsContextOptions() noexcept : m_isInit(false)
+            {
+                AWS_ZERO_STRUCT(m_options);
+            }
 
             TlsContextOptions::TlsContextOptions(TlsContextOptions &&other) noexcept
             {
@@ -139,9 +142,15 @@ namespace Aws
                 return ctxOptions;
             }
 
-            int TlsContextOptions::LastError() const noexcept { return LastErrorOrUnknown(); }
+            int TlsContextOptions::LastError() const noexcept
+            {
+                return LastErrorOrUnknown();
+            }
 
-            bool TlsContextOptions::IsAlpnSupported() noexcept { return aws_tls_is_alpn_available(); }
+            bool TlsContextOptions::IsAlpnSupported() noexcept
+            {
+                return aws_tls_is_alpn_available();
+            }
 
             bool TlsContextOptions::SetAlpnList(const char *alpn_list) noexcept
             {
@@ -186,11 +195,20 @@ namespace Aws
             {
             }
 
-            void TlsContextPkcs11Options::SetUserPin(const String &pin) noexcept { m_userPin = pin; }
+            void TlsContextPkcs11Options::SetUserPin(const String &pin) noexcept
+            {
+                m_userPin = pin;
+            }
 
-            void TlsContextPkcs11Options::SetSlotId(const uint64_t id) noexcept { m_slotId = id; }
+            void TlsContextPkcs11Options::SetSlotId(const uint64_t id) noexcept
+            {
+                m_slotId = id;
+            }
 
-            void TlsContextPkcs11Options::SetTokenLabel(const String &label) noexcept { m_tokenLabel = label; }
+            void TlsContextPkcs11Options::SetTokenLabel(const String &label) noexcept
+            {
+                m_tokenLabel = label;
+            }
 
             void TlsContextPkcs11Options::SetPrivateKeyObjectLabel(const String &label) noexcept
             {
@@ -416,11 +434,15 @@ namespace Aws
                 underlying_tls_ctx->alloc = allocator;
                 underlying_tls_ctx->impl = impl;
 
-                aws_ref_count_init(&underlying_tls_ctx->ref_count, underlying_tls_ctx, [](void *userdata) {
-                    auto dying_ctx = static_cast<aws_tls_ctx *>(userdata);
-                    ApiHandle::GetBYOCryptoDeleteTlsContextImplCallback()(dying_ctx->impl);
-                    aws_mem_release(dying_ctx->alloc, dying_ctx);
-                });
+                aws_ref_count_init(
+                    &underlying_tls_ctx->ref_count,
+                    underlying_tls_ctx,
+                    [](void *userdata)
+                    {
+                        auto dying_ctx = static_cast<aws_tls_ctx *>(userdata);
+                        ApiHandle::GetBYOCryptoDeleteTlsContextImplCallback()(dying_ctx->impl);
+                        aws_mem_release(dying_ctx->alloc, dying_ctx);
+                    });
 
                 m_ctx.reset(underlying_tls_ctx, aws_tls_ctx_release);
 #else
@@ -470,7 +492,10 @@ namespace Aws
                 aws_byte_buf_init(&m_protocolByteBuf, allocator, 16);
             }
 
-            TlsChannelHandler::~TlsChannelHandler() { aws_byte_buf_clean_up(&m_protocolByteBuf); }
+            TlsChannelHandler::~TlsChannelHandler()
+            {
+                aws_byte_buf_clean_up(&m_protocolByteBuf);
+            }
 
             void TlsChannelHandler::CompleteTlsNegotiation(int errorCode)
             {
@@ -486,7 +511,7 @@ namespace Aws
             }
 
         } // namespace Io
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws
 
 #if BYO_CRYPTO

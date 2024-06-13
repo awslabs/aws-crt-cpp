@@ -232,5 +232,5 @@ namespace Aws
             }
 
         } // namespace Http
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

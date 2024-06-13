@@ -100,5 +100,5 @@ namespace Aws
                 bool m_enableBlockingShutdown;
             };
         } // namespace Io
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

@@ -112,5 +112,5 @@ namespace Aws
                 struct aws_http_proxy_strategy *m_strategy;
             };
         } // namespace Http
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

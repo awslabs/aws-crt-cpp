@@ -205,9 +205,8 @@ namespace Aws
                 AWS_ASSERT(m_connectionCore != nullptr);
                 return m_connectionCore->SetOnMessageHandler(
                     [onPublish](
-                        MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
-                        onPublish(connection, topic, payload);
-                    });
+                        MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool)
+                    { onPublish(connection, topic, payload); });
             }
 
             bool MqttConnection::SetOnMessageHandler(OnMessageReceivedHandler &&onMessage) noexcept
@@ -227,9 +226,8 @@ namespace Aws
                     topicFilter,
                     qos,
                     [onPublish](
-                        MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
-                        onPublish(connection, topic, payload);
-                    },
+                        MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool)
+                    { onPublish(connection, topic, payload); },
                     std::move(onSubAck));
             }
 
@@ -258,9 +256,8 @@ namespace Aws
                     newTopicFilters.emplace_back(
                         pair.first,
                         [pubHandler](
-                            MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool) {
-                            pubHandler(connection, topic, payload);
-                        });
+                            MqttConnection &connection, const String &topic, const ByteBuf &payload, bool, QOS, bool)
+                        { pubHandler(connection, topic, payload); });
                 }
                 return m_connectionCore->Subscribe(newTopicFilters, qos, std::move(onOpComplete));
             }
@@ -299,5 +296,5 @@ namespace Aws
                 return m_connectionCore->GetOperationStatistics();
             }
         } // namespace Mqtt
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

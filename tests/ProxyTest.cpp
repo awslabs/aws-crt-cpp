@@ -154,18 +154,19 @@ static void s_InitializeProxiedRawConnection(ProxyIntegrationTestState &testStat
     std::shared_ptr<Http::HttpClientConnection> connection;
 
     testState.m_connectionOptions.OnConnectionSetupCallback =
-        [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode) {
-            {
-                std::lock_guard<std::mutex> lockGuard(testState.m_lock);
+        [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode)
+    {
+        {
+            std::lock_guard<std::mutex> lockGuard(testState.m_lock);
 
-                acquisitionErrorCode = errorCode;
-                if (!errorCode)
-                {
-                    connection = newConnection;
-                }
+            acquisitionErrorCode = errorCode;
+            if (!errorCode)
+            {
+                connection = newConnection;
             }
-            testState.m_signal.notify_one();
-        };
+        }
+        testState.m_signal.notify_one();
+    };
 
     testState.m_connectionOptions.OnConnectionShutdownCallback = [&](HttpClientConnection & /*newConnection*/,
                                                                      int /*errorCode*/) {};
@@ -184,7 +185,8 @@ static void s_AcquireProxyTestHttpConnection(ProxyIntegrationTestState &testStat
     int acquisitionErrorCode = 0;
     std::shared_ptr<Http::HttpClientConnection> connection;
 
-    auto onConnectionAvailable = [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode) {
+    auto onConnectionAvailable = [&](std::shared_ptr<Http::HttpClientConnection> newConnection, int errorCode)
+    {
         {
             std::lock_guard<std::mutex> lockGuard(testState.m_lock);
 
@@ -391,7 +393,8 @@ static void s_MakeForwardingTestRequest(ProxyIntegrationTestState &testState)
     HttpRequestOptions requestOptions;
     requestOptions.request = testState.m_request.get();
 
-    requestOptions.onIncomingBody = [&testState](Http::HttpStream &, const ByteCursor &data) {
+    requestOptions.onIncomingBody = [&testState](Http::HttpStream &, const ByteCursor &data)
+    {
         std::lock_guard<std::mutex> lock(testState.m_lock);
 
         Aws::Crt::String dataString((const char *)data.ptr, data.len);
@@ -399,15 +402,17 @@ static void s_MakeForwardingTestRequest(ProxyIntegrationTestState &testState)
     };
 
     requestOptions.onIncomingHeaders =
-        [&testState](Http::HttpStream &, enum aws_http_header_block, const Http::HttpHeader *, std::size_t) {
-            std::lock_guard<std::mutex> lock(testState.m_lock);
-            if (testState.m_streamStatusCode == 0)
-            {
-                testState.m_streamStatusCode = testState.m_stream->GetResponseStatusCode();
-            }
-        };
+        [&testState](Http::HttpStream &, enum aws_http_header_block, const Http::HttpHeader *, std::size_t)
+    {
+        std::lock_guard<std::mutex> lock(testState.m_lock);
+        if (testState.m_streamStatusCode == 0)
+        {
+            testState.m_streamStatusCode = testState.m_stream->GetResponseStatusCode();
+        }
+    };
 
-    requestOptions.onStreamComplete = [&testState](Http::HttpStream & /*stream*/, int /*errorCode*/) {
+    requestOptions.onStreamComplete = [&testState](Http::HttpStream & /*stream*/, int /*errorCode*/)
+    {
         {
             std::lock_guard<std::mutex> lock(testState.m_lock);
             testState.m_streamComplete = true;
@@ -760,7 +765,8 @@ static int s_InitializeX509Provider(ProxyIntegrationTestState &testState)
 static int s_X509GetCredentials(ProxyIntegrationTestState &testState)
 {
 
-    auto credentialsResolved = [&testState](std::shared_ptr<Credentials> credentials, int /*errorCode*/) {
+    auto credentialsResolved = [&testState](std::shared_ptr<Credentials> credentials, int /*errorCode*/)
+    {
         {
             std::lock_guard<std::mutex> lock(testState.m_lock);
             testState.m_credentials = credentials;
@@ -918,15 +924,17 @@ static int s_ConnectToIotCore(ProxyIntegrationTestState &testState)
 {
 
     testState.m_mqttConnection->OnConnectionCompleted =
-        [&testState](Mqtt::MqttConnection &, int errorCode, Mqtt::ReturnCode, bool) {
-            std::lock_guard<std::mutex> lock(testState.m_lock);
+        [&testState](Mqtt::MqttConnection &, int errorCode, Mqtt::ReturnCode, bool)
+    {
+        std::lock_guard<std::mutex> lock(testState.m_lock);
 
-            testState.m_mqttConnectComplete = true;
-            testState.m_mqttErrorCode = errorCode;
-            testState.m_signal.notify_one();
-        };
+        testState.m_mqttConnectComplete = true;
+        testState.m_mqttErrorCode = errorCode;
+        testState.m_signal.notify_one();
+    };
 
-    testState.m_mqttConnection->OnDisconnect = [&testState](Mqtt::MqttConnection &) {
+    testState.m_mqttConnection->OnDisconnect = [&testState](Mqtt::MqttConnection &)
+    {
         std::lock_guard<std::mutex> lock(testState.m_lock);
 
         testState.m_mqttDisconnectComplete = true;

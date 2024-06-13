@@ -243,9 +243,15 @@ namespace Aws
                 return nullptr;
             }
 
-            bool HttpClientConnection::IsOpen() const noexcept { return aws_http_connection_is_open(m_connection); }
+            bool HttpClientConnection::IsOpen() const noexcept
+            {
+                return aws_http_connection_is_open(m_connection);
+            }
 
-            void HttpClientConnection::Close() noexcept { aws_http_connection_close(m_connection); }
+            void HttpClientConnection::Close() noexcept
+            {
+                aws_http_connection_close(m_connection);
+            }
 
             HttpVersion HttpClientConnection::GetVersion() noexcept
             {
@@ -320,7 +326,10 @@ namespace Aws
                 }
             }
 
-            HttpClientConnection &HttpStream::GetConnection() const noexcept { return *m_connection; }
+            HttpClientConnection &HttpStream::GetConnection() const noexcept
+            {
+                return *m_connection;
+            }
 
             HttpClientStream::HttpClientStream(const std::shared_ptr<HttpClientConnection> &connection) noexcept
                 : HttpStream(connection)
@@ -396,5 +405,5 @@ namespace Aws
             {
             }
         } // namespace Http
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

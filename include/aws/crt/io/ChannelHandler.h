@@ -119,7 +119,7 @@ namespace Aws
                 /**
                  * Directs the channel handler to reset all of the internal statistics it tracks about itself.
                  */
-                virtual void ResetStatistics(){};
+                virtual void ResetStatistics() {};
 
                 /**
                  * Adds a pointer to the handler's internal statistics (if they exist) to a list of statistics
@@ -234,5 +234,5 @@ namespace Aws
                 static void s_GatherStatistics(struct aws_channel_handler *, struct aws_array_list *statsList);
             };
         } // namespace Io
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

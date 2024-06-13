@@ -348,5 +348,5 @@ namespace Aws
                 Allocator *m_allocator;
             };
         } // namespace Auth
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

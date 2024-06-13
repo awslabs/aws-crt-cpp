@@ -151,17 +151,18 @@ static int s_TestIoTMqtt311ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *a
     std::promise<bool> connectionCompletedPromise;
     std::promise<void> connectionClosedPromise;
     auto onConnectionCompleted =
-        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
-            (void)returnCode;
-            if (errorCode)
-            {
-                connectionCompletedPromise.set_value(false);
-            }
-            else
-            {
-                connectionCompletedPromise.set_value(true);
-            }
-        };
+        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool)
+    {
+        (void)returnCode;
+        if (errorCode)
+        {
+            connectionCompletedPromise.set_value(false);
+        }
+        else
+        {
+            connectionCompletedPromise.set_value(true);
+        }
+    };
     auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
@@ -238,17 +239,18 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuth(Aws::Crt::Allocator *all
     std::promise<bool> connectionCompletedPromise;
     std::promise<void> connectionClosedPromise;
     auto onConnectionCompleted =
-        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
-            (void)returnCode;
-            if (errorCode)
-            {
-                connectionCompletedPromise.set_value(false);
-            }
-            else
-            {
-                connectionCompletedPromise.set_value(true);
-            }
-        };
+        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool)
+    {
+        (void)returnCode;
+        if (errorCode)
+        {
+            connectionCompletedPromise.set_value(false);
+        }
+        else
+        {
+            connectionCompletedPromise.set_value(true);
+        }
+    };
     auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
@@ -328,17 +330,18 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuthUnencoded(Aws::Crt::Alloc
     std::promise<bool> connectionCompletedPromise;
     std::promise<void> connectionClosedPromise;
     auto onConnectionCompleted =
-        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
-            (void)returnCode;
-            if (errorCode)
-            {
-                connectionCompletedPromise.set_value(false);
-            }
-            else
-            {
-                connectionCompletedPromise.set_value(true);
-            }
-        };
+        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool)
+    {
+        (void)returnCode;
+        if (errorCode)
+        {
+            connectionCompletedPromise.set_value(false);
+        }
+        else
+        {
+            connectionCompletedPromise.set_value(true);
+        }
+    };
     auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
@@ -425,17 +428,18 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Allo
     std::promise<bool> connectionCompletedPromise;
     std::promise<void> connectionClosedPromise;
     auto onConnectionCompleted =
-        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
-            (void)returnCode;
-            if (errorCode)
-            {
-                connectionCompletedPromise.set_value(false);
-            }
-            else
-            {
-                connectionCompletedPromise.set_value(true);
-            }
-        };
+        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool)
+    {
+        (void)returnCode;
+        if (errorCode)
+        {
+            connectionCompletedPromise.set_value(false);
+        }
+        else
+        {
+            connectionCompletedPromise.set_value(true);
+        }
+    };
     auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
@@ -524,17 +528,18 @@ static int s_TestIoTMqtt311ConnectWithSigningCustomAuthWebsocketsUnencoded(Aws::
     std::promise<bool> connectionCompletedPromise;
     std::promise<void> connectionClosedPromise;
     auto onConnectionCompleted =
-        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
-            (void)returnCode;
-            if (errorCode)
-            {
-                connectionCompletedPromise.set_value(false);
-            }
-            else
-            {
-                connectionCompletedPromise.set_value(true);
-            }
-        };
+        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool)
+    {
+        (void)returnCode;
+        if (errorCode)
+        {
+            connectionCompletedPromise.set_value(false);
+        }
+        else
+        {
+            connectionCompletedPromise.set_value(true);
+        }
+    };
     auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
@@ -624,17 +629,18 @@ static int s_TestIoTMqtt311ConnectWithPKCS11(Aws::Crt::Allocator *allocator, voi
     std::promise<bool> connectionCompletedPromise;
     std::promise<void> connectionClosedPromise;
     auto onConnectionCompleted =
-        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
-            (void)returnCode;
-            if (errorCode)
-            {
-                connectionCompletedPromise.set_value(false);
-            }
-            else
-            {
-                connectionCompletedPromise.set_value(true);
-            }
-        };
+        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool)
+    {
+        (void)returnCode;
+        if (errorCode)
+        {
+            connectionCompletedPromise.set_value(false);
+        }
+        else
+        {
+            connectionCompletedPromise.set_value(true);
+        }
+    };
     auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
@@ -710,17 +716,18 @@ static int s_TestIoTMqtt311ConnectWithPKCS12(Aws::Crt::Allocator *allocator, voi
     std::promise<bool> connectionCompletedPromise;
     std::promise<void> connectionClosedPromise;
     auto onConnectionCompleted =
-        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
-            (void)returnCode;
-            if (errorCode)
-            {
-                connectionCompletedPromise.set_value(false);
-            }
-            else
-            {
-                connectionCompletedPromise.set_value(true);
-            }
-        };
+        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool)
+    {
+        (void)returnCode;
+        if (errorCode)
+        {
+            connectionCompletedPromise.set_value(false);
+        }
+        else
+        {
+            connectionCompletedPromise.set_value(true);
+        }
+    };
     auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
@@ -785,17 +792,18 @@ static int s_TestIoTMqtt311ConnectWithWindowsCert(Aws::Crt::Allocator *allocator
     std::promise<bool> connectionCompletedPromise;
     std::promise<void> connectionClosedPromise;
     auto onConnectionCompleted =
-        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
-            (void)returnCode;
-            if (errorCode)
-            {
-                connectionCompletedPromise.set_value(false);
-            }
-            else
-            {
-                connectionCompletedPromise.set_value(true);
-            }
-        };
+        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool)
+    {
+        (void)returnCode;
+        if (errorCode)
+        {
+            connectionCompletedPromise.set_value(false);
+        }
+        else
+        {
+            connectionCompletedPromise.set_value(true);
+        }
+    };
     auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
@@ -854,17 +862,18 @@ static int s_TestIoTMqtt311ConnectWSDefault(Aws::Crt::Allocator *allocator, void
     std::promise<bool> connectionCompletedPromise;
     std::promise<void> connectionClosedPromise;
     auto onConnectionCompleted =
-        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
-            (void)returnCode;
-            if (errorCode)
-            {
-                connectionCompletedPromise.set_value(false);
-            }
-            else
-            {
-                connectionCompletedPromise.set_value(true);
-            }
-        };
+        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool)
+    {
+        (void)returnCode;
+        if (errorCode)
+        {
+            connectionCompletedPromise.set_value(false);
+        }
+        else
+        {
+            connectionCompletedPromise.set_value(true);
+        }
+    };
     auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
@@ -934,17 +943,18 @@ static int s_TestIoTMqtt311ConnectWSStatic(Aws::Crt::Allocator *allocator, void 
     std::promise<bool> connectionCompletedPromise;
     std::promise<void> connectionClosedPromise;
     auto onConnectionCompleted =
-        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
-            (void)returnCode;
-            if (errorCode)
-            {
-                connectionCompletedPromise.set_value(false);
-            }
-            else
-            {
-                connectionCompletedPromise.set_value(true);
-            }
-        };
+        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool)
+    {
+        (void)returnCode;
+        if (errorCode)
+        {
+            connectionCompletedPromise.set_value(false);
+        }
+        else
+        {
+            connectionCompletedPromise.set_value(true);
+        }
+    };
     auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
@@ -1016,17 +1026,18 @@ static int s_TestIoTMqtt311ConnectWSCognito(Aws::Crt::Allocator *allocator, void
     std::promise<bool> connectionCompletedPromise;
     std::promise<void> connectionClosedPromise;
     auto onConnectionCompleted =
-        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
-            (void)returnCode;
-            if (errorCode)
-            {
-                connectionCompletedPromise.set_value(false);
-            }
-            else
-            {
-                connectionCompletedPromise.set_value(true);
-            }
-        };
+        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool)
+    {
+        (void)returnCode;
+        if (errorCode)
+        {
+            connectionCompletedPromise.set_value(false);
+        }
+        else
+        {
+            connectionCompletedPromise.set_value(true);
+        }
+    };
     auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
@@ -1094,17 +1105,18 @@ static int s_TestIoTMqtt311ConnectWSProfile(Aws::Crt::Allocator *allocator, void
     std::promise<bool> connectionCompletedPromise;
     std::promise<void> connectionClosedPromise;
     auto onConnectionCompleted =
-        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
-            (void)returnCode;
-            if (errorCode)
-            {
-                connectionCompletedPromise.set_value(false);
-            }
-            else
-            {
-                connectionCompletedPromise.set_value(true);
-            }
-        };
+        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool)
+    {
+        (void)returnCode;
+        if (errorCode)
+        {
+            connectionCompletedPromise.set_value(false);
+        }
+        else
+        {
+            connectionCompletedPromise.set_value(true);
+        }
+    };
     auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);
@@ -1173,17 +1185,18 @@ static int s_TestIoTMqtt311ConnectWSEnvironment(Aws::Crt::Allocator *allocator, 
     std::promise<bool> connectionCompletedPromise;
     std::promise<void> connectionClosedPromise;
     auto onConnectionCompleted =
-        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool) {
-            (void)returnCode;
-            if (errorCode)
-            {
-                connectionCompletedPromise.set_value(false);
-            }
-            else
-            {
-                connectionCompletedPromise.set_value(true);
-            }
-        };
+        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool)
+    {
+        (void)returnCode;
+        if (errorCode)
+        {
+            connectionCompletedPromise.set_value(false);
+        }
+        else
+        {
+            connectionCompletedPromise.set_value(true);
+        }
+    };
     auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
     connection->OnConnectionCompleted = std::move(onConnectionCompleted);
     connection->OnDisconnect = std::move(onDisconnect);

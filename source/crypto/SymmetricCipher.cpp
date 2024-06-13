@@ -121,14 +121,20 @@ namespace Aws
                 return true;
             }
 
-            ByteCursor SymmetricCipher::GetKey() const noexcept { return aws_symmetric_cipher_get_key(m_cipher.get()); }
+            ByteCursor SymmetricCipher::GetKey() const noexcept
+            {
+                return aws_symmetric_cipher_get_key(m_cipher.get());
+            }
 
             ByteCursor SymmetricCipher::GetIV() const noexcept
             {
                 return aws_symmetric_cipher_get_initialization_vector(m_cipher.get());
             }
 
-            ByteCursor SymmetricCipher::GetTag() const noexcept { return aws_symmetric_cipher_get_tag(m_cipher.get()); }
+            ByteCursor SymmetricCipher::GetTag() const noexcept
+            {
+                return aws_symmetric_cipher_get_tag(m_cipher.get());
+            }
 
             SymmetricCipher SymmetricCipher::CreateAES_256_CBC_Cipher(
                 const Optional<ByteCursor> &key,
@@ -170,5 +176,5 @@ namespace Aws
                 return {aws_aes_keywrap_256_new(allocator, key.has_value() ? &key.value() : nullptr)};
             }
         } // namespace Crypto
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

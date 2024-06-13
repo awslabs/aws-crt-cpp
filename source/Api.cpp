@@ -131,7 +131,10 @@ namespace Aws
             aws_logger_set(&m_logger);
         }
 
-        void ApiHandle::SetShutdownBehavior(ApiHandleShutdownBehavior behavior) { m_shutdownBehavior = behavior; }
+        void ApiHandle::SetShutdownBehavior(ApiHandleShutdownBehavior behavior)
+        {
+            m_shutdownBehavior = behavior;
+        }
 
 #if BYO_CRYPTO
         static struct aws_hash *s_MD5New(struct aws_allocator *allocator)
@@ -406,11 +409,20 @@ namespace Aws
             return s_BYOCryptoIsTlsAlpnSupportedCallback;
         }
 
-        ApiHandle::Version ApiHandle::GetCrtVersion() const { return m_version; }
+        ApiHandle::Version ApiHandle::GetCrtVersion() const
+        {
+            return m_version;
+        }
 
-        const char *ErrorDebugString(int error) noexcept { return aws_error_debug_str(error); }
+        const char *ErrorDebugString(int error) noexcept
+        {
+            return aws_error_debug_str(error);
+        }
 
-        int LastError() noexcept { return aws_last_error(); }
+        int LastError() noexcept
+        {
+            return aws_last_error();
+        }
 
         int LastErrorOrUnknown() noexcept
         {

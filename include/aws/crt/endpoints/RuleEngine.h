@@ -151,5 +151,5 @@ namespace Aws
                 aws_endpoints_rule_engine *m_ruleEngine;
             };
         } // namespace Endpoints
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

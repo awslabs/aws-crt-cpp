@@ -299,9 +299,8 @@ namespace Aws
 
                 auto onInterceptComplete =
                     [complete_fn,
-                     complete_ctx](const std::shared_ptr<Http::HttpRequest> &transformedRequest, int errorCode) {
-                        complete_fn(transformedRequest->GetUnderlyingMessage(), errorCode, complete_ctx);
-                    };
+                     complete_ctx](const std::shared_ptr<Http::HttpRequest> &transformedRequest, int errorCode)
+                { complete_fn(transformedRequest->GetUnderlyingMessage(), errorCode, complete_ctx); };
 
                 client_core->websocketInterceptor(request, onInterceptComplete);
             }
@@ -499,9 +498,15 @@ namespace Aws
                 return shared_client;
             }
 
-            Mqtt5ClientCore::operator bool() const noexcept { return m_client != nullptr; }
+            Mqtt5ClientCore::operator bool() const noexcept
+            {
+                return m_client != nullptr;
+            }
 
-            int Mqtt5ClientCore::LastError() const noexcept { return aws_last_error(); }
+            int Mqtt5ClientCore::LastError() const noexcept
+            {
+                return aws_last_error();
+            }
 
             bool Mqtt5ClientCore::Publish(
                 std::shared_ptr<PublishPacket> publishOptions,
@@ -641,9 +646,8 @@ namespace Aws
 
                     auto signerTransform = [&adapterOptions](
                                                std::shared_ptr<Crt::Http::HttpRequest> req,
-                                               const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete) {
-                        adapterOptions->m_websocketHandshakeTransform(std::move(req), onComplete);
-                    };
+                                               const Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete)
+                    { adapterOptions->m_websocketHandshakeTransform(std::move(req), onComplete); };
                     adapterOptions->m_webSocketInterceptor = std::move(signerTransform);
                 }
                 else
@@ -653,6 +657,6 @@ namespace Aws
                 return adapterOptions;
             }
         } // namespace Mqtt5
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws
 /*! \endcond */
