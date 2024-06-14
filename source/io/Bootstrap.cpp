@@ -97,16 +97,25 @@ namespace Aws
                 }
             }
 
-            ClientBootstrap::operator bool() const noexcept { return m_lastError == AWS_ERROR_SUCCESS; }
+            ClientBootstrap::operator bool() const noexcept
+            {
+                return m_lastError == AWS_ERROR_SUCCESS;
+            }
 
-            int ClientBootstrap::LastError() const noexcept { return m_lastError; }
+            int ClientBootstrap::LastError() const noexcept
+            {
+                return m_lastError;
+            }
 
             void ClientBootstrap::SetShutdownCompleteCallback(OnClientBootstrapShutdownComplete callback)
             {
                 m_callbackData->ShutdownCallback = std::move(callback);
             }
 
-            void ClientBootstrap::EnableBlockingShutdown() noexcept { m_enableBlockingShutdown = true; }
+            void ClientBootstrap::EnableBlockingShutdown() noexcept
+            {
+                m_enableBlockingShutdown = true;
+            }
 
             aws_client_bootstrap *ClientBootstrap::GetUnderlyingHandle() const noexcept
             {
@@ -118,5 +127,5 @@ namespace Aws
                 return nullptr;
             }
         } // namespace Io
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

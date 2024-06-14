@@ -26,9 +26,15 @@ namespace Aws
                 }
             }
 
-            HttpMessage::~HttpMessage() { m_message = aws_http_message_release(m_message); }
+            HttpMessage::~HttpMessage()
+            {
+                m_message = aws_http_message_release(m_message);
+            }
 
-            std::shared_ptr<Aws::Crt::Io::InputStream> HttpMessage::GetBody() const noexcept { return m_bodyStream; }
+            std::shared_ptr<Aws::Crt::Io::InputStream> HttpMessage::GetBody() const noexcept
+            {
+                return m_bodyStream;
+            }
 
             bool HttpMessage::SetBody(const std::shared_ptr<Aws::Crt::Io::IStream> &body) noexcept
             {
@@ -57,7 +63,10 @@ namespace Aws
                 return true;
             }
 
-            size_t HttpMessage::GetHeaderCount() const noexcept { return aws_http_message_get_header_count(m_message); }
+            size_t HttpMessage::GetHeaderCount() const noexcept
+            {
+                return aws_http_message_get_header_count(m_message);
+            }
 
             Optional<HttpHeader> HttpMessage::GetHeader(size_t index) const noexcept
             {
@@ -147,5 +156,5 @@ namespace Aws
                 return aws_http_message_set_response_status(m_message, response) == AWS_OP_SUCCESS;
             }
         } // namespace Http
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

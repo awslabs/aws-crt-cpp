@@ -126,5 +126,5 @@ namespace Aws
                 uint64_t unackedOperationSize;
             };
         } // namespace Mqtt
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

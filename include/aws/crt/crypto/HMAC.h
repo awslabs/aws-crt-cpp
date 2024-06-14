@@ -164,5 +164,5 @@ namespace Aws
                 std::function<std::shared_ptr<ByoHMAC>(size_t digestSize, const ByteCursor &secret, Allocator *)>;
 
         } // namespace Crypto
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

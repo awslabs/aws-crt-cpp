@@ -9,13 +9,22 @@ namespace Aws
     namespace Crt
     {
 
-        Allocator *DefaultAllocatorImplementation() noexcept { return aws_default_allocator(); }
+        Allocator *DefaultAllocatorImplementation() noexcept
+        {
+            return aws_default_allocator();
+        }
 
-        Allocator *DefaultAllocator() noexcept { return DefaultAllocatorImplementation(); }
+        Allocator *DefaultAllocator() noexcept
+        {
+            return DefaultAllocatorImplementation();
+        }
 
         Allocator *g_allocator = Aws::Crt::DefaultAllocatorImplementation();
 
-        Allocator *ApiAllocator() noexcept { return g_allocator; }
+        Allocator *ApiAllocator() noexcept
+        {
+            return g_allocator;
+        }
 
     } // namespace Crt
 } // namespace Aws

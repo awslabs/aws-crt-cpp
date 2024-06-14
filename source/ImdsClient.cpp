@@ -452,6 +452,6 @@ namespace Aws
                 return aws_imds_client_get_instance_info(m_client, s_onInstanceInfoAcquired, wrappedCallbackArgs);
             }
         } // namespace Imds
-    }     // namespace Crt
+    } // namespace Crt
 
 } // namespace Aws

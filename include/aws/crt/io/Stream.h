@@ -169,5 +169,5 @@ namespace Aws
                 std::shared_ptr<Aws::Crt::Io::IStream> m_stream;
             };
         } // namespace Io
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

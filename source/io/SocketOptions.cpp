@@ -24,5 +24,5 @@ namespace Aws
                 options.keepalive = false;
             }
         } // namespace Io
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

@@ -34,7 +34,10 @@ namespace Aws
             other.m_value = nullptr;
         }
 
-        JsonObject::~JsonObject() { aws_json_value_destroy(m_value); }
+        JsonObject::~JsonObject()
+        {
+            aws_json_value_destroy(m_value);
+        }
 
         JsonObject &JsonObject::operator=(const JsonObject &other)
         {
@@ -103,7 +106,10 @@ namespace Aws
             return WithNewKeyValue(key, aws_json_value_new_boolean(ApiAllocator(), value));
         }
 
-        JsonObject &JsonObject::WithBool(const String &key, bool value) { return WithBool(key.c_str(), value); }
+        JsonObject &JsonObject::WithBool(const String &key, bool value)
+        {
+            return WithBool(key.c_str(), value);
+        }
 
         JsonObject &JsonObject::AsBool(bool value)
         {
@@ -135,14 +141,20 @@ namespace Aws
             return WithDouble(key.c_str(), static_cast<double>(value));
         }
 
-        JsonObject &JsonObject::AsInt64(int64_t value) { return AsDouble(static_cast<double>(value)); }
+        JsonObject &JsonObject::AsInt64(int64_t value)
+        {
+            return AsDouble(static_cast<double>(value));
+        }
 
         JsonObject &JsonObject::WithDouble(const char *key, double value)
         {
             return WithNewKeyValue(key, aws_json_value_new_number(ApiAllocator(), value));
         }
 
-        JsonObject &JsonObject::WithDouble(const String &key, double value) { return WithDouble(key.c_str(), value); }
+        JsonObject &JsonObject::WithDouble(const String &key, double value)
+        {
+            return WithDouble(key.c_str(), value);
+        }
 
         JsonObject &JsonObject::AsDouble(double value)
         {
@@ -205,11 +217,20 @@ namespace Aws
             return WithNewKeyValue(key.c_str(), NewArray(std::move(array)));
         }
 
-        JsonObject &JsonObject::AsArray(const Vector<JsonObject> &array) { return AsNewValue(NewArray(array)); }
+        JsonObject &JsonObject::AsArray(const Vector<JsonObject> &array)
+        {
+            return AsNewValue(NewArray(array));
+        }
 
-        JsonObject &JsonObject::AsArray(Vector<JsonObject> &&array) { return AsNewValue(NewArray(std::move(array))); }
+        JsonObject &JsonObject::AsArray(Vector<JsonObject> &&array)
+        {
+            return AsNewValue(NewArray(std::move(array)));
+        }
 
-        JsonObject &JsonObject::AsNull() { return AsNewValue(aws_json_value_new_null(ApiAllocator())); }
+        JsonObject &JsonObject::AsNull()
+        {
+            return AsNewValue(aws_json_value_new_null(ApiAllocator()));
+        }
 
         JsonObject &JsonObject::WithObject(const char *key, const JsonObject &value)
         {
@@ -256,7 +277,10 @@ namespace Aws
             return false;
         }
 
-        bool JsonObject::operator!=(const JsonObject &other) const { return !(*this == other); }
+        bool JsonObject::operator!=(const JsonObject &other) const
+        {
+            return !(*this == other);
+        }
 
         std::unique_ptr<String> JsonObject::s_errorMessage;
         std::unique_ptr<String> JsonObject::s_okMessage;
@@ -278,7 +302,10 @@ namespace Aws
             return m_value == nullptr ? *s_errorMessage : *s_okMessage;
         }
 
-        JsonView JsonObject::View() const { return JsonView(*this); }
+        JsonView JsonObject::View() const
+        {
+            return JsonView(*this);
+        }
 
         JsonView::JsonView() : m_value(nullptr) {}
 
@@ -292,7 +319,10 @@ namespace Aws
             return *this;
         }
 
-        String JsonView::GetString(const String &key) const { return GetString(key.c_str()); }
+        String JsonView::GetString(const String &key) const
+        {
+            return GetString(key.c_str());
+        }
 
         String JsonView::GetString(const char *key) const
         {
@@ -326,7 +356,10 @@ namespace Aws
             return "";
         }
 
-        bool JsonView::GetBool(const String &key) const { return GetBool(key.c_str()); }
+        bool JsonView::GetBool(const String &key) const
+        {
+            return GetBool(key.c_str());
+        }
 
         bool JsonView::GetBool(const char *key) const
         {
@@ -360,19 +393,40 @@ namespace Aws
             return false;
         }
 
-        int JsonView::GetInteger(const String &key) const { return static_cast<int>(GetDouble(key)); }
+        int JsonView::GetInteger(const String &key) const
+        {
+            return static_cast<int>(GetDouble(key));
+        }
 
-        int JsonView::GetInteger(const char *key) const { return static_cast<int>(GetDouble(key)); }
+        int JsonView::GetInteger(const char *key) const
+        {
+            return static_cast<int>(GetDouble(key));
+        }
 
-        int JsonView::AsInteger() const { return static_cast<int>(AsDouble()); }
+        int JsonView::AsInteger() const
+        {
+            return static_cast<int>(AsDouble());
+        }
 
-        int64_t JsonView::GetInt64(const String &key) const { return static_cast<int64_t>(GetDouble(key)); }
+        int64_t JsonView::GetInt64(const String &key) const
+        {
+            return static_cast<int64_t>(GetDouble(key));
+        }
 
-        int64_t JsonView::GetInt64(const char *key) const { return static_cast<int64_t>(GetDouble(key)); }
+        int64_t JsonView::GetInt64(const char *key) const
+        {
+            return static_cast<int64_t>(GetDouble(key));
+        }
 
-        int64_t JsonView::AsInt64() const { return static_cast<int64_t>(AsDouble()); }
+        int64_t JsonView::AsInt64() const
+        {
+            return static_cast<int64_t>(AsDouble());
+        }
 
-        double JsonView::GetDouble(const String &key) const { return GetDouble(key.c_str()); }
+        double JsonView::GetDouble(const String &key) const
+        {
+            return GetDouble(key.c_str());
+        }
 
         double JsonView::GetDouble(const char *key) const
         {
@@ -406,7 +460,10 @@ namespace Aws
             return 0.0;
         }
 
-        JsonView JsonView::GetJsonObject(const String &key) const { return GetJsonObject(key.c_str()); }
+        JsonView JsonView::GetJsonObject(const String &key) const
+        {
+            return GetJsonObject(key.c_str());
+        }
 
         JsonView JsonView::GetJsonObject(const char *key) const
         {
@@ -424,7 +481,10 @@ namespace Aws
             return JsonView();
         }
 
-        JsonObject JsonView::GetJsonObjectCopy(const String &key) const { return GetJsonObjectCopy(key.c_str()); }
+        JsonObject JsonView::GetJsonObjectCopy(const String &key) const
+        {
+            return GetJsonObjectCopy(key.c_str());
+        }
 
         JsonObject JsonView::GetJsonObjectCopy(const char *key) const
         {
@@ -456,7 +516,10 @@ namespace Aws
             return JsonView();
         }
 
-        Vector<JsonView> JsonView::GetArray(const String &key) const { return GetArray(key.c_str()); }
+        Vector<JsonView> JsonView::GetArray(const String &key) const
+        {
+            return GetArray(key.c_str());
+        }
 
         Vector<JsonView> JsonView::GetArray(const char *key) const
         {
@@ -480,7 +543,8 @@ namespace Aws
             {
                 aws_json_const_iterate_array(
                     m_value,
-                    [](size_t index, const aws_json_value *value, bool *out_should_continue, void *user_data) {
+                    [](size_t index, const aws_json_value *value, bool *out_should_continue, void *user_data)
+                    {
                         (void)index;
                         (void)out_should_continue;
                         auto returnArray = static_cast<Vector<JsonView> *>(user_data);
@@ -503,7 +567,8 @@ namespace Aws
                     [](const aws_byte_cursor *key,
                        const aws_json_value *value,
                        bool *out_should_continue,
-                       void *user_data) {
+                       void *user_data)
+                    {
                         (void)out_should_continue;
                         auto valueMap = static_cast<Map<String, JsonView> *>(user_data);
                         valueMap->emplace(
@@ -516,7 +581,10 @@ namespace Aws
             return valueMap;
         }
 
-        bool JsonView::ValueExists(const String &key) const { return ValueExists(key.c_str()); }
+        bool JsonView::ValueExists(const String &key) const
+        {
+            return ValueExists(key.c_str());
+        }
 
         bool JsonView::ValueExists(const char *key) const
         {
@@ -532,7 +600,10 @@ namespace Aws
             return false;
         }
 
-        bool JsonView::KeyExists(const String &key) const { return KeyExists(key.c_str()); }
+        bool JsonView::KeyExists(const String &key) const
+        {
+            return KeyExists(key.c_str());
+        }
 
         bool JsonView::KeyExists(const char *key) const
         {
@@ -544,13 +615,25 @@ namespace Aws
             return false;
         }
 
-        bool JsonView::IsObject() const { return m_value != nullptr && aws_json_value_is_object(m_value); }
+        bool JsonView::IsObject() const
+        {
+            return m_value != nullptr && aws_json_value_is_object(m_value);
+        }
 
-        bool JsonView::IsBool() const { return m_value != nullptr && aws_json_value_is_boolean(m_value); }
+        bool JsonView::IsBool() const
+        {
+            return m_value != nullptr && aws_json_value_is_boolean(m_value);
+        }
 
-        bool JsonView::IsString() const { return m_value != nullptr && aws_json_value_is_string(m_value); }
+        bool JsonView::IsString() const
+        {
+            return m_value != nullptr && aws_json_value_is_string(m_value);
+        }
 
-        bool JsonView::IsNumber() const { return m_value != nullptr && aws_json_value_is_number(m_value); }
+        bool JsonView::IsNumber() const
+        {
+            return m_value != nullptr && aws_json_value_is_number(m_value);
+        }
 
         bool JsonView::IsIntegerType() const
         {
@@ -580,9 +663,15 @@ namespace Aws
             return false;
         }
 
-        bool JsonView::IsListType() const { return m_value != nullptr && aws_json_value_is_array(m_value); }
+        bool JsonView::IsListType() const
+        {
+            return m_value != nullptr && aws_json_value_is_array(m_value);
+        }
 
-        bool JsonView::IsNull() const { return m_value != nullptr && aws_json_value_is_null(m_value); }
+        bool JsonView::IsNull() const
+        {
+            return m_value != nullptr && aws_json_value_is_null(m_value);
+        }
 
         String JsonView::Write(bool treatAsObject, bool readable) const
         {
@@ -610,10 +699,19 @@ namespace Aws
             return resultString;
         }
 
-        String JsonView::WriteCompact(bool treatAsObject) const { return Write(treatAsObject, false /*readable*/); }
+        String JsonView::WriteCompact(bool treatAsObject) const
+        {
+            return Write(treatAsObject, false /*readable*/);
+        }
 
-        String JsonView::WriteReadable(bool treatAsObject) const { return Write(treatAsObject, true /*readable*/); }
+        String JsonView::WriteReadable(bool treatAsObject) const
+        {
+            return Write(treatAsObject, true /*readable*/);
+        }
 
-        JsonObject JsonView::Materialize() const { return m_value; }
+        JsonObject JsonView::Materialize() const
+        {
+            return m_value;
+        }
     } // namespace Crt
 } // namespace Aws

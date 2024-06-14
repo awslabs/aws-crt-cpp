@@ -62,7 +62,10 @@ namespace Aws
             return aws_date_time_diff(&m_date_time, &other.m_date_time) > 0;
         }
 
-        bool DateTime::operator!=(const DateTime &other) const noexcept { return !(*this == other); }
+        bool DateTime::operator!=(const DateTime &other) const noexcept
+        {
+            return !(*this == other);
+        }
 
         bool DateTime::operator<=(const DateTime &other) const noexcept
         {
@@ -123,9 +126,15 @@ namespace Aws
             return *this;
         }
 
-        DateTime::operator bool() const noexcept { return m_good; }
+        DateTime::operator bool() const noexcept
+        {
+            return m_good;
+        }
 
-        int DateTime::GetLastError() const noexcept { return aws_last_error(); }
+        int DateTime::GetLastError() const noexcept
+        {
+            return aws_last_error();
+        }
 
         bool DateTime::ToLocalTimeString(DateFormat format, ByteBuf &outputBuf) const noexcept
         {
@@ -141,9 +150,15 @@ namespace Aws
                 AWS_ERROR_SUCCESS);
         }
 
-        double DateTime::SecondsWithMSPrecision() const noexcept { return aws_date_time_as_epoch_secs(&m_date_time); }
+        double DateTime::SecondsWithMSPrecision() const noexcept
+        {
+            return aws_date_time_as_epoch_secs(&m_date_time);
+        }
 
-        uint64_t DateTime::Millis() const noexcept { return aws_date_time_as_millis(&m_date_time); }
+        uint64_t DateTime::Millis() const noexcept
+        {
+            return aws_date_time_as_millis(&m_date_time);
+        }
 
         std::chrono::system_clock::time_point DateTime::UnderlyingTimestamp() const noexcept
         {
@@ -170,7 +185,10 @@ namespace Aws
             return static_cast<DayOfWeek>(aws_date_time_day_of_week(&m_date_time, localTime));
         }
 
-        uint8_t DateTime::GetHour(bool localTime) const noexcept { return aws_date_time_hour(&m_date_time, localTime); }
+        uint8_t DateTime::GetHour(bool localTime) const noexcept
+        {
+            return aws_date_time_hour(&m_date_time, localTime);
+        }
 
         uint8_t DateTime::GetMinute(bool localTime) const noexcept
         {
@@ -182,7 +200,10 @@ namespace Aws
             return aws_date_time_second(&m_date_time, localTime);
         }
 
-        bool DateTime::IsDST(bool localTime) const noexcept { return aws_date_time_dst(&m_date_time, localTime); }
+        bool DateTime::IsDST(bool localTime) const noexcept
+        {
+            return aws_date_time_dst(&m_date_time, localTime);
+        }
 
         DateTime DateTime::Now() noexcept
         {

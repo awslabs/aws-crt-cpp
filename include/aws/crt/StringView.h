@@ -824,7 +824,7 @@ namespace Aws
                     return basic_string_view<char>(s, length);
                 }
 
-                inline basic_string_view<wchar_t> operator"" _sv(const wchar_t *s, size_t length) noexcept
+                inline basic_string_view<wchar_t> operator"" _sv(const wchar_t * s, size_t length) noexcept
                 {
                     return basic_string_view<wchar_t>(s, length);
                 }

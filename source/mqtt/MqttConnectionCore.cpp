@@ -528,9 +528,8 @@ namespace Aws
 
                 auto onInterceptComplete =
                     [completeFn,
-                     completeCtx](const std::shared_ptr<Http::HttpRequest> &transformedRequest, int errorCode) {
-                        completeFn(transformedRequest->GetUnderlyingMessage(), errorCode, completeCtx);
-                    };
+                     completeCtx](const std::shared_ptr<Http::HttpRequest> &transformedRequest, int errorCode)
+                { completeFn(transformedRequest->GetUnderlyingMessage(), errorCode, completeCtx); };
 
                 if (connection->WebsocketInterceptor)
                 {
@@ -538,7 +537,10 @@ namespace Aws
                 }
             }
 
-            MqttConnectionCore::operator bool() const noexcept { return m_underlyingConnection != nullptr; }
+            MqttConnectionCore::operator bool() const noexcept
+            {
+                return m_underlyingConnection != nullptr;
+            }
 
             void MqttConnectionCore::Destroy()
             {
@@ -555,7 +557,10 @@ namespace Aws
                 }
             }
 
-            int MqttConnectionCore::LastError() const noexcept { return aws_last_error(); }
+            int MqttConnectionCore::LastError() const noexcept
+            {
+                return aws_last_error();
+            }
 
             bool MqttConnectionCore::SetWill(const char *topic, QOS qos, bool retain, const ByteBuf &payload) noexcept
             {
@@ -919,6 +924,6 @@ namespace Aws
                 return m_operationStatistics;
             }
         } // namespace Mqtt
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws
 /*! \endcond */

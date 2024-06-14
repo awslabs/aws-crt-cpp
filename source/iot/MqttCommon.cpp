@@ -32,7 +32,8 @@ namespace Aws
             auto credsProviderRef = CredentialsProvider;
             auto signingRegionCopy = SigningRegion;
             auto serviceNameCopy = ServiceName;
-            CreateSigningConfigCb = [allocator, credsProviderRef, signingRegionCopy, serviceNameCopy]() {
+            CreateSigningConfigCb = [allocator, credsProviderRef, signingRegionCopy, serviceNameCopy]()
+            {
                 auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
                 signerConfig->SetRegion(signingRegionCopy);
                 signerConfig->SetService(serviceNameCopy);
@@ -61,7 +62,8 @@ namespace Aws
             auto credsProviderRef = CredentialsProvider;
             auto signingRegionCopy = SigningRegion;
             auto serviceNameCopy = ServiceName;
-            CreateSigningConfigCb = [allocator, credsProviderRef, signingRegionCopy, serviceNameCopy]() {
+            CreateSigningConfigCb = [allocator, credsProviderRef, signingRegionCopy, serviceNameCopy]()
+            {
                 auto signerConfig = Aws::Crt::MakeShared<Crt::Auth::AwsSigningConfig>(allocator);
                 signerConfig->SetRegion(signingRegionCopy);
                 signerConfig->SetService(serviceNameCopy);

@@ -17,7 +17,10 @@ namespace Aws
     {
         namespace VariantDetail
         {
-            template <typename T> constexpr const T &ConstExprMax(const T &a, const T &b) { return (a < b) ? b : a; }
+            template <typename T> constexpr const T &ConstExprMax(const T &a, const T &b)
+            {
+                return (a < b) ? b : a;
+            }
 
             namespace ParameterPackSize
             {
@@ -77,7 +80,10 @@ namespace Aws
                 }
 
                 // a case when the template parameter pack is empty (i.e. Variant<>)
-                template <typename T> constexpr bool ContainsType() { return false; }
+                template <typename T> constexpr bool ContainsType()
+                {
+                    return false;
+                }
 
                 template <typename T, typename... Ts> struct HasType
                 {
@@ -109,8 +115,8 @@ namespace Aws
                     }
                 };
             } // namespace VariantDebug
-#endif        /* defined(AWS_CRT_ENABLE_VARIANT_DEBUG) */
-        }     // namespace VariantDetail
+#endif /* defined(AWS_CRT_ENABLE_VARIANT_DEBUG) */
+        } // namespace VariantDetail
 
         template <std::size_t Index, typename... Ts> class VariantAlternative;
 

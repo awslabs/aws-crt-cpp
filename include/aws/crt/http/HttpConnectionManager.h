@@ -123,5 +123,5 @@ namespace Aws
                 friend class ManagedConnection;
             };
         } // namespace Http
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

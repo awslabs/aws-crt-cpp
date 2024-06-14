@@ -101,5 +101,5 @@ namespace Aws
             AWS_CRT_CPP_API Aws::Crt::String EncodeQueryParameterValue(ByteCursor paramValue);
 
         } // namespace Io
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

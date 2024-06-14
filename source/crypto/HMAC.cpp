@@ -195,5 +195,5 @@ namespace Aws
                 return success ? AWS_OP_SUCCESS : AWS_OP_ERR;
             }
         } // namespace Crypto
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

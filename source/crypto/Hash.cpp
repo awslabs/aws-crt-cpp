@@ -72,7 +72,10 @@ namespace Aws
                 toMove.m_hash = nullptr;
             }
 
-            Hash::operator bool() const noexcept { return m_hash != nullptr && m_hash->good; }
+            Hash::operator bool() const noexcept
+            {
+                return m_hash != nullptr && m_hash->good;
+            }
 
             Hash &Hash::operator=(Hash &&toMove)
             {
@@ -84,11 +87,20 @@ namespace Aws
                 return *this;
             }
 
-            Hash Hash::CreateSHA256(Allocator *allocator) noexcept { return Hash(aws_sha256_new(allocator)); }
+            Hash Hash::CreateSHA256(Allocator *allocator) noexcept
+            {
+                return Hash(aws_sha256_new(allocator));
+            }
 
-            Hash Hash::CreateMD5(Allocator *allocator) noexcept { return Hash(aws_md5_new(allocator)); }
+            Hash Hash::CreateMD5(Allocator *allocator) noexcept
+            {
+                return Hash(aws_md5_new(allocator));
+            }
 
-            Hash Hash::CreateSHA1(Allocator *allocator) noexcept { return Hash(aws_sha1_new(allocator)); }
+            Hash Hash::CreateSHA1(Allocator *allocator) noexcept
+            {
+                return Hash(aws_sha1_new(allocator));
+            }
 
             bool Hash::Update(const ByteCursor &toHash) noexcept
             {
@@ -201,5 +213,5 @@ namespace Aws
                 return success ? AWS_OP_SUCCESS : AWS_OP_ERR;
             }
         } // namespace Crypto
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

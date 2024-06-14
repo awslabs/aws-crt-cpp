@@ -361,13 +361,25 @@ namespace Aws
                 aws_byte_buf_clean_up(&m_passowrdStorage);
             }
 
-            uint16_t ConnectPacket::getKeepAliveIntervalSec() const noexcept { return m_keepAliveIntervalSec; }
+            uint16_t ConnectPacket::getKeepAliveIntervalSec() const noexcept
+            {
+                return m_keepAliveIntervalSec;
+            }
 
-            const Crt::String &ConnectPacket::getClientId() const noexcept { return m_clientId; }
+            const Crt::String &ConnectPacket::getClientId() const noexcept
+            {
+                return m_clientId;
+            }
 
-            const Crt::Optional<Crt::String> &ConnectPacket::getUsername() const noexcept { return m_username; }
+            const Crt::Optional<Crt::String> &ConnectPacket::getUsername() const noexcept
+            {
+                return m_username;
+            }
 
-            const Crt::Optional<Crt::ByteCursor> &ConnectPacket::getPassword() const noexcept { return m_password; }
+            const Crt::Optional<Crt::ByteCursor> &ConnectPacket::getPassword() const noexcept
+            {
+                return m_password;
+            }
 
             const Crt::Optional<uint32_t> &ConnectPacket::getSessionExpiryIntervalSec() const noexcept
             {
@@ -615,13 +627,25 @@ namespace Aws
                 return true;
             }
 
-            const ByteCursor &PublishPacket::getPayload() const noexcept { return m_payload; }
+            const ByteCursor &PublishPacket::getPayload() const noexcept
+            {
+                return m_payload;
+            }
 
-            Mqtt5::QOS PublishPacket::getQOS() const noexcept { return m_qos; }
+            Mqtt5::QOS PublishPacket::getQOS() const noexcept
+            {
+                return m_qos;
+            }
 
-            bool PublishPacket::getRetain() const noexcept { return m_retain; }
+            bool PublishPacket::getRetain() const noexcept
+            {
+                return m_retain;
+            }
 
-            const Crt::String &PublishPacket::getTopic() const noexcept { return m_topicName; }
+            const Crt::String &PublishPacket::getTopic() const noexcept
+            {
+                return m_topicName;
+            }
 
             const Crt::Optional<PayloadFormatIndicator> &PublishPacket::getPayloadFormatIndicator() const noexcept
             {
@@ -633,7 +657,10 @@ namespace Aws
                 return m_messageExpiryIntervalSec;
             }
 
-            const Crt::Optional<uint16_t> &PublishPacket::getTopicAlias() const noexcept { return m_topicAlias; }
+            const Crt::Optional<uint16_t> &PublishPacket::getTopicAlias() const noexcept
+            {
+                return m_topicAlias;
+            }
 
             const Crt::Optional<ByteCursor> &PublishPacket::getResponseTopic() const noexcept
             {
@@ -650,7 +677,10 @@ namespace Aws
                 return m_subscriptionIdentifiers;
             }
 
-            const Crt::Optional<ByteCursor> &PublishPacket::getContentType() const noexcept { return m_contentType; }
+            const Crt::Optional<ByteCursor> &PublishPacket::getContentType() const noexcept
+            {
+                return m_contentType;
+            }
 
             const Crt::Vector<UserProperty> &PublishPacket::getUserProperties() const noexcept
             {
@@ -748,7 +778,10 @@ namespace Aws
                 return *this;
             }
 
-            DisconnectReasonCode DisconnectPacket::getReasonCode() const noexcept { return m_reasonCode; }
+            DisconnectReasonCode DisconnectPacket::getReasonCode() const noexcept
+            {
+                return m_reasonCode;
+            }
 
             const Crt::Optional<uint32_t> &DisconnectPacket::getSessionExpiryIntervalSec() const noexcept
             {
@@ -798,9 +831,15 @@ namespace Aws
                 setUserProperties(m_userProperties, packet.user_properties, packet.user_property_count);
             }
 
-            PubAckReasonCode PubAckPacket::getReasonCode() const noexcept { return m_reasonCode; }
+            PubAckReasonCode PubAckPacket::getReasonCode() const noexcept
+            {
+                return m_reasonCode;
+            }
 
-            const Crt::Optional<Crt::String> &PubAckPacket::getReasonString() const noexcept { return m_reasonString; }
+            const Crt::Optional<Crt::String> &PubAckPacket::getReasonString() const noexcept
+            {
+                return m_reasonString;
+            }
 
             const Crt::Vector<UserProperty> &PubAckPacket::getUserProperties() const noexcept
             {
@@ -830,9 +869,15 @@ namespace Aws
                 setPacketStringOptional(m_serverReference, packet.server_reference);
             }
 
-            bool ConnAckPacket::getSessionPresent() const noexcept { return m_sessionPresent; }
+            bool ConnAckPacket::getSessionPresent() const noexcept
+            {
+                return m_sessionPresent;
+            }
 
-            ConnectReasonCode ConnAckPacket::getReasonCode() const noexcept { return m_reasonCode; }
+            ConnectReasonCode ConnAckPacket::getReasonCode() const noexcept
+            {
+                return m_reasonCode;
+            }
 
             const Crt::Optional<uint32_t> &ConnAckPacket::getSessionExpiryIntervalSec() const noexcept
             {
@@ -849,9 +894,15 @@ namespace Aws
                 return m_receiveMaximum;
             }
 
-            const Crt::Optional<QOS> &ConnAckPacket::getMaximumQOS() const noexcept { return m_maximumQOS; }
+            const Crt::Optional<QOS> &ConnAckPacket::getMaximumQOS() const noexcept
+            {
+                return m_maximumQOS;
+            }
 
-            const Crt::Optional<bool> &ConnAckPacket::getRetainAvailable() const noexcept { return m_retainAvailable; }
+            const Crt::Optional<bool> &ConnAckPacket::getRetainAvailable() const noexcept
+            {
+                return m_retainAvailable;
+            }
 
             const Crt::Optional<uint32_t> &ConnAckPacket::getMaximumPacketSize() const noexcept
             {
@@ -868,9 +919,15 @@ namespace Aws
                 return m_topicAliasMaximum;
             }
 
-            const Crt::Optional<String> &ConnAckPacket::getReasonString() const noexcept { return m_reasonString; }
+            const Crt::Optional<String> &ConnAckPacket::getReasonString() const noexcept
+            {
+                return m_reasonString;
+            }
 
-            const Vector<UserProperty> &ConnAckPacket::getUserProperty() const noexcept { return m_userProperties; }
+            const Vector<UserProperty> &ConnAckPacket::getUserProperty() const noexcept
+            {
+                return m_userProperties;
+            }
 
             const Crt::Optional<bool> &ConnAckPacket::getWildcardSubscriptionsAvailable() const noexcept
             {
@@ -936,7 +993,10 @@ namespace Aws
                 m_noLocal = noLocal;
                 return *this;
             }
-            Subscription &Subscription::WithRetain(bool retain) noexcept { return WithRetainAsPublished(retain); }
+            Subscription &Subscription::WithRetain(bool retain) noexcept
+            {
+                return WithRetainAsPublished(retain);
+            }
             Subscription &Subscription::WithRetainAsPublished(bool retain) noexcept
             {
                 m_retainAsPublished = retain;
@@ -1089,14 +1149,20 @@ namespace Aws
                 }
             }
 
-            const Crt::Optional<Crt::String> &SubAckPacket::getReasonString() const noexcept { return m_reasonString; }
+            const Crt::Optional<Crt::String> &SubAckPacket::getReasonString() const noexcept
+            {
+                return m_reasonString;
+            }
 
             const Crt::Vector<UserProperty> &SubAckPacket::getUserProperties() const noexcept
             {
                 return m_userProperties;
             }
 
-            const Crt::Vector<SubAckReasonCode> &SubAckPacket::getReasonCodes() const noexcept { return m_reasonCodes; }
+            const Crt::Vector<SubAckReasonCode> &SubAckPacket::getReasonCodes() const noexcept
+            {
+                return m_reasonCodes;
+            }
 
             UnsubscribePacket::UnsubscribePacket(Allocator *allocator) noexcept
                 : m_allocator(allocator), m_userPropertiesStorage(nullptr)
@@ -1217,7 +1283,10 @@ namespace Aws
                     negotiated_settings.client_id_storage.len);
             }
 
-            Mqtt5::QOS NegotiatedSettings::getMaximumQOS() const noexcept { return m_maximumQOS; }
+            Mqtt5::QOS NegotiatedSettings::getMaximumQOS() const noexcept
+            {
+                return m_maximumQOS;
+            }
 
             uint32_t NegotiatedSettings::getSessionExpiryIntervalSec() const noexcept
             {
@@ -1249,11 +1318,20 @@ namespace Aws
                 return m_topicAliasMaximumToClient;
             }
 
-            uint16_t NegotiatedSettings::getServerKeepAliveSec() const noexcept { return m_serverKeepAliveSec; }
+            uint16_t NegotiatedSettings::getServerKeepAliveSec() const noexcept
+            {
+                return m_serverKeepAliveSec;
+            }
 
-            uint16_t NegotiatedSettings::getServerKeepAlive() const noexcept { return getServerKeepAliveSec(); }
+            uint16_t NegotiatedSettings::getServerKeepAlive() const noexcept
+            {
+                return getServerKeepAliveSec();
+            }
 
-            bool NegotiatedSettings::getRetainAvailable() const noexcept { return m_retainAvailable; }
+            bool NegotiatedSettings::getRetainAvailable() const noexcept
+            {
+                return m_retainAvailable;
+            }
 
             bool NegotiatedSettings::getWildcardSubscriptionsAvailable() const noexcept
             {
@@ -1270,18 +1348,30 @@ namespace Aws
                 return m_sharedSubscriptionsAvailable;
             }
 
-            bool NegotiatedSettings::getRejoinedSession() const noexcept { return m_rejoinedSession; }
+            bool NegotiatedSettings::getRejoinedSession() const noexcept
+            {
+                return m_rejoinedSession;
+            }
 
-            const Crt::String &NegotiatedSettings::getClientId() const noexcept { return m_clientId; }
+            const Crt::String &NegotiatedSettings::getClientId() const noexcept
+            {
+                return m_clientId;
+            }
 
             PublishResult::PublishResult() : m_ack(nullptr), m_errorCode(0) {}
 
-            PublishResult::PublishResult(std::shared_ptr<PubAckPacket> puback) : m_errorCode(0) { m_ack = puback; }
+            PublishResult::PublishResult(std::shared_ptr<PubAckPacket> puback) : m_errorCode(0)
+            {
+                m_ack = puback;
+            }
 
             PublishResult::PublishResult(int error) : m_ack(nullptr), m_errorCode(error) {}
 
-            PublishResult::~PublishResult() noexcept { m_ack.reset(); }
+            PublishResult::~PublishResult() noexcept
+            {
+                m_ack.reset();
+            }
 
         } // namespace Mqtt5
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

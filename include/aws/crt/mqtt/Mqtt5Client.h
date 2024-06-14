@@ -838,5 +838,5 @@ namespace Aws
             };
 
         } // namespace Mqtt5
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws
