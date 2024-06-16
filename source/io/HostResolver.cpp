@@ -79,6 +79,7 @@ namespace Aws
 
                 size_t len = hostAddresses ? aws_array_list_length(hostAddresses) : 0;
                 Vector<HostAddress> addresses;
+                addresses.reserve(len);
 
                 for (size_t i = 0; i < len; ++i)
                 {
