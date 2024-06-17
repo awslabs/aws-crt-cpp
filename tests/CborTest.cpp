@@ -137,10 +137,10 @@ static void s_encode_timestamp_helper(
     Cbor::CborEncoder &encoder,
     const std::chrono::system_clock::time_point &timePoint) noexcept
 {
-    // Get the duration since epoch
-    auto duration = timePoint.time_since_epoch();
-    // Convert the duration to seconds (using double for potential fractional seconds)
-    double seconds = std::chrono::duration<double>(duration).count();
+    /* Get seconds with MS precision. */
+    std::chrono::duration<double, std::chrono::seconds::period> timestamp(timePoint.time_since_epoch());
+    double seconds = timestamp.count();
+
     encoder.WriteTag(AWS_CBOR_TAG_EPOCH_TIME);
     // Use the encoder to write the duration in seconds
     encoder.WriteFloat(seconds);
@@ -228,7 +228,7 @@ static bool s_check_time_point_equals_ms_precision(
 static int s_CborTimeStampTest(struct aws_allocator *allocator, void *ctx)
 {
     /**
-     * Simply test every method works.
+     * Example of how timestamp will be encoded and decoded with `std::chrono::system_clock::time_point`
      */
     (void)ctx;
     {
