@@ -21,19 +21,43 @@ namespace Aws
                 m_encoder = aws_cbor_encoder_new(allocator);
             }
 
-            CborEncoder::~CborEncoder() noexcept { aws_cbor_encoder_destroy(m_encoder); }
+            CborEncoder::~CborEncoder() noexcept
+            {
+                aws_cbor_encoder_destroy(m_encoder);
+            }
 
-            ByteCursor CborEncoder::GetEncodedData() noexcept { return aws_cbor_encoder_get_encoded_data(m_encoder); }
-            void CborEncoder::Reset() noexcept { aws_cbor_encoder_reset(m_encoder); }
+            ByteCursor CborEncoder::GetEncodedData() noexcept
+            {
+                return aws_cbor_encoder_get_encoded_data(m_encoder);
+            }
+            void CborEncoder::Reset() noexcept
+            {
+                aws_cbor_encoder_reset(m_encoder);
+            }
 
-            void CborEncoder::WriteUint(uint64_t value) noexcept { aws_cbor_encoder_write_uint(m_encoder, value); }
-            void CborEncoder::WriteNegInt(uint64_t value) noexcept { aws_cbor_encoder_write_negint(m_encoder, value); }
+            void CborEncoder::WriteUint(uint64_t value) noexcept
+            {
+                aws_cbor_encoder_write_uint(m_encoder, value);
+            }
+            void CborEncoder::WriteNegInt(uint64_t value) noexcept
+            {
+                aws_cbor_encoder_write_negint(m_encoder, value);
+            }
 
-            void CborEncoder::WriteFloat(double value) noexcept { aws_cbor_encoder_write_float(m_encoder, value); }
+            void CborEncoder::WriteFloat(double value) noexcept
+            {
+                aws_cbor_encoder_write_float(m_encoder, value);
+            }
 
-            void CborEncoder::WriteBytes(ByteCursor value) noexcept { aws_cbor_encoder_write_bytes(m_encoder, value); }
+            void CborEncoder::WriteBytes(ByteCursor value) noexcept
+            {
+                aws_cbor_encoder_write_bytes(m_encoder, value);
+            }
 
-            void CborEncoder::WriteText(ByteCursor value) noexcept { aws_cbor_encoder_write_text(m_encoder, value); }
+            void CborEncoder::WriteText(ByteCursor value) noexcept
+            {
+                aws_cbor_encoder_write_text(m_encoder, value);
+            }
 
             void CborEncoder::WriteArrayStart(size_t number_entries) noexcept
             {
@@ -50,21 +74,45 @@ namespace Aws
                 aws_cbor_encoder_write_tag(m_encoder, tag_number);
             }
 
-            void CborEncoder::WriteNull() noexcept { aws_cbor_encoder_write_null(m_encoder); }
+            void CborEncoder::WriteNull() noexcept
+            {
+                aws_cbor_encoder_write_null(m_encoder);
+            }
 
-            void CborEncoder::WriteUndefined() noexcept { aws_cbor_encoder_write_undefined(m_encoder); }
+            void CborEncoder::WriteUndefined() noexcept
+            {
+                aws_cbor_encoder_write_undefined(m_encoder);
+            }
 
-            void CborEncoder::WriteBool(bool value) noexcept { aws_cbor_encoder_write_bool(m_encoder, value); }
+            void CborEncoder::WriteBool(bool value) noexcept
+            {
+                aws_cbor_encoder_write_bool(m_encoder, value);
+            }
 
-            void CborEncoder::WriteBreak() noexcept { aws_cbor_encoder_write_break(m_encoder); }
+            void CborEncoder::WriteBreak() noexcept
+            {
+                aws_cbor_encoder_write_break(m_encoder);
+            }
 
-            void CborEncoder::WriteIndefBytesStart() noexcept { aws_cbor_encoder_write_indef_bytes_start(m_encoder); }
+            void CborEncoder::WriteIndefBytesStart() noexcept
+            {
+                aws_cbor_encoder_write_indef_bytes_start(m_encoder);
+            }
 
-            void CborEncoder::WriteIndefTextStart() noexcept { aws_cbor_encoder_write_indef_text_start(m_encoder); }
+            void CborEncoder::WriteIndefTextStart() noexcept
+            {
+                aws_cbor_encoder_write_indef_text_start(m_encoder);
+            }
 
-            void CborEncoder::WriteIndefArrayStart() noexcept { aws_cbor_encoder_write_indef_array_start(m_encoder); }
+            void CborEncoder::WriteIndefArrayStart() noexcept
+            {
+                aws_cbor_encoder_write_indef_array_start(m_encoder);
+            }
 
-            void CborEncoder::WriteIndefMapStart() noexcept { aws_cbor_encoder_write_indef_map_start(m_encoder); }
+            void CborEncoder::WriteIndefMapStart() noexcept
+            {
+                aws_cbor_encoder_write_indef_map_start(m_encoder);
+            }
 
             /*****************************************************
              *
@@ -76,7 +124,10 @@ namespace Aws
                 m_decoder = aws_cbor_decoder_new(allocator, src);
             }
 
-            CborDecoder::~CborDecoder() noexcept { aws_cbor_decoder_destroy(m_decoder); }
+            CborDecoder::~CborDecoder() noexcept
+            {
+                aws_cbor_decoder_destroy(m_decoder);
+            }
 
             size_t CborDecoder::GetRemainingLength() noexcept
             {
@@ -205,5 +256,5 @@ namespace Aws
             }
 
         } // namespace Cbor
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

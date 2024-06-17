@@ -53,7 +53,7 @@ namespace Aws
                 IndefMapStart = AWS_CBOR_TYPE_INDEF_MAP_START,
             };
 
-            class AWS_CRT_CPP_API CborEncoder
+            class AWS_CRT_CPP_API CborEncoder final
             {
               public:
                 CborEncoder(const CborEncoder &) = delete;
@@ -208,7 +208,7 @@ namespace Aws
                 struct aws_cbor_encoder *m_encoder;
             };
 
-            class AWS_CRT_CPP_API CborDecoder
+            class AWS_CRT_CPP_API CborDecoder final
             {
 
               public:

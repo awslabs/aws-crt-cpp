@@ -132,3 +132,124 @@ static int s_CborSanityTest(struct aws_allocator *allocator, void *ctx)
 }
 
 AWS_TEST_CASE(CborSanityTest, s_CborSanityTest)
+
+static void s_encode_timestamp_helper(
+    Cbor::CborEncoder &encoder,
+    const std::chrono::system_clock::time_point &timePoint) noexcept
+{
+    // Get the duration since epoch
+    auto duration = timePoint.time_since_epoch();
+    // Convert the duration to seconds (using double for potential fractional seconds)
+    double seconds = std::chrono::duration<double>(duration).count();
+    encoder.WriteTag(AWS_CBOR_TAG_EPOCH_TIME);
+    // Use the encoder to write the duration in seconds
+    encoder.WriteFloat(seconds);
+}
+
+static int s_decode_timestamp_helper(Cbor::CborDecoder &decoder, std::chrono::system_clock::time_point &outTimePoint)
+{
+    Cbor::CborType out_type = Cbor::CborType::Unknown;
+    if (!decoder.PeekType(out_type) && out_type != Cbor::CborType::Tag)
+    {
+        return AWS_OP_ERR;
+    }
+    uint64_t tag_val = 0;
+    if (!decoder.PopNextTagVal(tag_val) && tag_val != AWS_CBOR_TAG_EPOCH_TIME)
+    {
+        return AWS_OP_ERR;
+    }
+    if (decoder.PeekType(out_type))
+    {
+        switch (out_type)
+        {
+            case Cbor::CborType::Uint:
+            case Cbor::CborType::NegInt:
+            {
+                int64_t secs_timestamp = 0;
+                uint64_t unsigned_val = 0;
+                if (out_type == Cbor::CborType::Uint)
+                {
+                    decoder.PopNextUnsignedIntVal(unsigned_val);
+                    if (unsigned_val > INT64_MAX)
+                    {
+                        /* Overflow */
+                        return AWS_OP_ERR;
+                    }
+                    secs_timestamp = (int64_t)unsigned_val;
+                }
+                else
+                {
+                    decoder.PopNextNegativeIntVal(unsigned_val);
+                    if (unsigned_val > INT64_MAX)
+                    {
+                        /* Overflow */
+                        return AWS_OP_ERR;
+                    }
+                    /* convert the encoded number to real negative number */
+                    secs_timestamp = (int64_t)(-1 - unsigned_val);
+                }
+                std::chrono::duration<int64_t, std::chrono::seconds::period> timestamp(secs_timestamp);
+                outTimePoint = std::chrono::system_clock::time_point(timestamp);
+                return AWS_OP_SUCCESS;
+            }
+            case Cbor::CborType::Float:
+            {
+                double double_val = 0;
+                decoder.PopNextFloatVal(double_val);
+                std::chrono::duration<double, std::chrono::seconds::period> timestamp(double_val);
+                outTimePoint = std::chrono::system_clock::time_point(
+                    std::chrono::duration_cast<std::chrono::milliseconds>(timestamp));
+                return AWS_OP_SUCCESS;
+            }
+            default:
+                break;
+        }
+    }
+    return AWS_OP_ERR;
+}
+
+static bool s_check_time_point_equals_ms_precision(
+    const std::chrono::time_point<std::chrono::system_clock> &a,
+    const std::chrono::time_point<std::chrono::system_clock> &b)
+{
+    using Ms = std::chrono::milliseconds;
+    auto a_ms = std::chrono::duration_cast<Ms>(a.time_since_epoch());
+    auto b_ms = std::chrono::duration_cast<Ms>(b.time_since_epoch());
+    if (a_ms == b_ms)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+static int s_CborTimeStampTest(struct aws_allocator *allocator, void *ctx)
+{
+    /**
+     * Simply test every method works.
+     */
+    (void)ctx;
+    {
+        ApiHandle apiHandle(allocator);
+        Cbor::CborEncoder encoder(allocator);
+        const std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
+
+        s_encode_timestamp_helper(encoder, now);
+        ByteCursor cursor = encoder.GetEncodedData();
+
+        Cbor::CborDecoder decoder(allocator, cursor);
+        std::chrono::time_point<std::chrono::system_clock> decoded;
+        ASSERT_SUCCESS(s_decode_timestamp_helper(decoder, decoded));
+
+        /* We only check the ms precision */
+        ASSERT_TRUE(s_check_time_point_equals_ms_precision(decoded, now));
+        auto length = decoder.GetRemainingLength();
+        ASSERT_UINT_EQUALS(0, length);
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(CborTimeStampTest, s_CborTimeStampTest)

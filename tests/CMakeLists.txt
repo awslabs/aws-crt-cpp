@@ -275,6 +275,7 @@ if(AWS_HAS_CI_ENVIRONMENT AND NOT BYO_CRYPTO)
 endif()
 
 add_test_case(CborSanityTest)
+add_test_case(CborTimeStampTest)
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 
