@@ -156,9 +156,9 @@ static int s_TestSHA256ResourceSafety(struct aws_allocator *allocator, void *)
         };
         Aws::Crt::String expectedStr = Aws::Crt::String(reinterpret_cast<const char *>(expected), sizeof(expected));
 
-        apiHandle.SetBYOCryptoNewSHA256Callback([&](size_t digestSize, Aws::Crt::Allocator *allocator) {
-            return Aws::Crt::MakeShared<ByoCryptoHashInterceptor>(allocator, digestSize, allocator, expectedStr);
-        });
+        apiHandle.SetBYOCryptoNewSHA256Callback(
+            [&](size_t digestSize, Aws::Crt::Allocator *allocator)
+            { return Aws::Crt::MakeShared<ByoCryptoHashInterceptor>(allocator, digestSize, allocator, expectedStr); });
 
         Aws::Crt::Crypto::Hash sha256 = Aws::Crt::Crypto::Hash::CreateSHA256(allocator);
         ASSERT_TRUE(sha256);
@@ -190,9 +190,9 @@ static int s_TestSHA1ResourceSafety(struct aws_allocator *allocator, void *)
         };
         Aws::Crt::String expectedStr = Aws::Crt::String(reinterpret_cast<const char *>(expected), sizeof(expected));
 
-        apiHandle.SetBYOCryptoNewSHA1Callback([&](size_t digestSize, Aws::Crt::Allocator *allocator) {
-            return Aws::Crt::MakeShared<ByoCryptoHashInterceptor>(allocator, digestSize, allocator, expectedStr);
-        });
+        apiHandle.SetBYOCryptoNewSHA1Callback(
+            [&](size_t digestSize, Aws::Crt::Allocator *allocator)
+            { return Aws::Crt::MakeShared<ByoCryptoHashInterceptor>(allocator, digestSize, allocator, expectedStr); });
 
         Aws::Crt::Crypto::Hash sha1 = Aws::Crt::Crypto::Hash::CreateSHA1(allocator);
         ASSERT_TRUE(sha1);
@@ -238,9 +238,9 @@ static int s_TestMD5ResourceSafety(struct aws_allocator *allocator, void *)
         };
         Aws::Crt::String expectedStr = Aws::Crt::String(reinterpret_cast<const char *>(expected), sizeof(expected));
 
-        apiHandle.SetBYOCryptoNewMD5Callback([&](size_t digestSize, struct aws_allocator *allocator) {
-            return Aws::Crt::MakeShared<ByoCryptoHashInterceptor>(allocator, digestSize, allocator, expectedStr);
-        });
+        apiHandle.SetBYOCryptoNewMD5Callback(
+            [&](size_t digestSize, struct aws_allocator *allocator)
+            { return Aws::Crt::MakeShared<ByoCryptoHashInterceptor>(allocator, digestSize, allocator, expectedStr); });
 
         Aws::Crt::Crypto::Hash md5 = Aws::Crt::Crypto::Hash::CreateMD5(allocator);
         ASSERT_TRUE(md5);

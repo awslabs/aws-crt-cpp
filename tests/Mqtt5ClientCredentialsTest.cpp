@@ -124,21 +124,25 @@ static void s_setupConnectionLifeCycle(
     const char *clientName = "Client")
 {
     mqtt5Builder->WithClientConnectionSuccessCallback(
-        [&connectionPromise, clientName](const OnConnectionSuccessEventData &) {
+        [&connectionPromise, clientName](const OnConnectionSuccessEventData &)
+        {
             printf("[MQTT5]%s Connection Success.", clientName);
             connectionPromise.set_value(true);
         });
 
     mqtt5Builder->WithClientConnectionFailureCallback(
-        [&connectionPromise, clientName](const OnConnectionFailureEventData &eventData) {
+        [&connectionPromise, clientName](const OnConnectionFailureEventData &eventData)
+        {
             printf("[MQTT5]%s Connection failed with error : %s", clientName, aws_error_debug_str(eventData.errorCode));
             connectionPromise.set_value(false);
         });
 
-    mqtt5Builder->WithClientStoppedCallback([&stoppedPromise, clientName](const OnStoppedEventData &) {
-        printf("[MQTT5]%s Stopped", clientName);
-        stoppedPromise.set_value();
-    });
+    mqtt5Builder->WithClientStoppedCallback(
+        [&stoppedPromise, clientName](const OnStoppedEventData &)
+        {
+            printf("[MQTT5]%s Stopped", clientName);
+            stoppedPromise.set_value();
+        });
 }
 
 static int s_CheckClientAndStop(

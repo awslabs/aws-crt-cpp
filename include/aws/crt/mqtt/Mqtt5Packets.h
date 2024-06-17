@@ -577,7 +577,7 @@ namespace Aws
                  */
                 const Crt::String &getClientId() const noexcept;
 
-                virtual ~NegotiatedSettings(){};
+                virtual ~NegotiatedSettings() {};
                 NegotiatedSettings(const NegotiatedSettings &) = delete;
                 NegotiatedSettings(NegotiatedSettings &&) noexcept = delete;
                 NegotiatedSettings &operator=(const NegotiatedSettings &) = delete;
@@ -1388,7 +1388,7 @@ namespace Aws
                  */
                 const Crt::Optional<String> &getServerReference() const noexcept;
 
-                virtual ~ConnAckPacket(){};
+                virtual ~ConnAckPacket() {};
                 ConnAckPacket(const ConnAckPacket &) = delete;
                 ConnAckPacket(ConnAckPacket &&) noexcept = delete;
                 ConnAckPacket &operator=(const ConnAckPacket &) = delete;
@@ -1802,7 +1802,7 @@ namespace Aws
                  */
                 const Crt::Vector<UserProperty> &getUserProperties() const noexcept;
 
-                virtual ~PubAckPacket(){};
+                virtual ~PubAckPacket() {};
                 PubAckPacket(const PubAckPacket &toCopy) noexcept = delete;
                 PubAckPacket(PubAckPacket &&toMove) noexcept = delete;
                 PubAckPacket &operator=(const PubAckPacket &toCopy) noexcept = delete;
@@ -1968,7 +1968,7 @@ namespace Aws
 
                 bool initializeRawOptions(aws_mqtt5_subscription_view &raw_options) const noexcept;
 
-                virtual ~Subscription(){};
+                virtual ~Subscription() {};
                 Subscription(const Subscription &) noexcept;
                 Subscription(Subscription &&) noexcept;
                 Subscription &operator=(const Subscription &) noexcept;
@@ -2404,5 +2404,5 @@ namespace Aws
             };
 
         } // namespace Mqtt5
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

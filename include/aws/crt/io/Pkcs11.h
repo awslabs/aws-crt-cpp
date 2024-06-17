@@ -112,5 +112,5 @@ namespace Aws
                 aws_pkcs11_lib *impl = nullptr;
             };
         } // namespace Io
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

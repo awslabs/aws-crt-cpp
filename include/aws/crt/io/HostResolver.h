@@ -119,5 +119,5 @@ namespace Aws
                     void *user_data);
             };
         } // namespace Io
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

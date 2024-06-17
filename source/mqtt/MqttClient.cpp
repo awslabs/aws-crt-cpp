@@ -55,9 +55,15 @@ namespace Aws
                 return *this;
             }
 
-            MqttClient::operator bool() const noexcept { return m_client != nullptr; }
+            MqttClient::operator bool() const noexcept
+            {
+                return m_client != nullptr;
+            }
 
-            int MqttClient::LastError() const noexcept { return aws_last_error(); }
+            int MqttClient::LastError() const noexcept
+            {
+                return aws_last_error();
+            }
 
             std::shared_ptr<MqttConnection> MqttClient::NewConnection(
                 const char *hostName,
@@ -107,5 +113,5 @@ namespace Aws
                 return MqttConnection::s_CreateMqttConnection(m_client, std::move(connectionOptions));
             }
         } // namespace Mqtt
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

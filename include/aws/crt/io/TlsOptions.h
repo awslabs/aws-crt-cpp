@@ -449,5 +449,5 @@ namespace Aws
                 Allocator *allocator)>;
 
         } // namespace Io
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

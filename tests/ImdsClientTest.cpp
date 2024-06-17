@@ -63,7 +63,8 @@ static int s_TestImdsClientGetInstanceInfo(struct aws_allocator *allocator, void
         int error = 0;
         InstanceInfo info;
 
-        auto callback = [&](const InstanceInfo &instanceInfo, int errorCode, void *) {
+        auto callback = [&](const InstanceInfo &instanceInfo, int errorCode, void *)
+        {
             std::unique_lock<std::mutex> ulock(lock);
             info = instanceInfo;
             error = errorCode;
@@ -114,7 +115,8 @@ static int s_TestImdsClientGetCredentials(struct aws_allocator *allocator, void 
         InstanceInfo info;
 
         std::string role;
-        auto roleCallback = [&](const StringView &resource, int errorCode, void *) {
+        auto roleCallback = [&](const StringView &resource, int errorCode, void *)
+        {
             std::unique_lock<std::mutex> ulock(lock);
             role = std::string(resource.data(), resource.size());
             error = errorCode;
@@ -129,7 +131,8 @@ static int s_TestImdsClientGetCredentials(struct aws_allocator *allocator, void 
         }
 
         std::shared_ptr<Auth::Credentials> creds(nullptr);
-        auto callback = [&](const Auth::Credentials &credentials, int errorCode, void *) {
+        auto callback = [&](const Auth::Credentials &credentials, int errorCode, void *)
+        {
             std::unique_lock<std::mutex> ulock(lock);
             creds = Aws::Crt::MakeShared<Credentials>(allocator, credentials.GetUnderlyingHandle());
             error = errorCode;

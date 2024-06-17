@@ -159,5 +159,5 @@ namespace Aws
                 int m_lastError;
             };
         } // namespace Crypto
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

@@ -187,9 +187,10 @@ static int s_Sigv4SigningTestSimple(struct aws_allocator *allocator, void *ctx)
         SignWaiter waiter;
 
         ASSERT_TRUE(signer->SignRequest(
-            request, signingConfig, [&](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request, int errorCode) {
-                waiter.OnSigningComplete(request, errorCode);
-            }));
+            request,
+            signingConfig,
+            [&](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request, int errorCode)
+            { waiter.OnSigningComplete(request, errorCode); }));
         waiter.Wait();
     }
 
@@ -234,9 +235,10 @@ static int s_Sigv4SigningTestCredentials(struct aws_allocator *allocator, void *
         SignWaiter waiter;
 
         ASSERT_TRUE(signer->SignRequest(
-            request, signingConfig, [&](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request, int errorCode) {
-                waiter.OnSigningComplete(request, errorCode);
-            }));
+            request,
+            signingConfig,
+            [&](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request, int errorCode)
+            { waiter.OnSigningComplete(request, errorCode); }));
         waiter.Wait();
     }
 
@@ -283,9 +285,10 @@ static int s_Sigv4SigningTestUnsignedPayload(struct aws_allocator *allocator, vo
         SignWaiter waiter;
 
         ASSERT_TRUE(signer->SignRequest(
-            request, signingConfig, [&](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request, int errorCode) {
-                waiter.OnSigningComplete(request, errorCode);
-            }));
+            request,
+            signingConfig,
+            [&](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request, int errorCode)
+            { waiter.OnSigningComplete(request, errorCode); }));
         waiter.Wait();
     }
 
@@ -406,9 +409,10 @@ static int s_Sigv4aSigningTestCredentials(struct aws_allocator *allocator, void 
         SignWaiter waiter;
 
         ASSERT_TRUE(signer->SignRequest(
-            request, signingConfig, [&](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request, int errorCode) {
-                waiter.OnSigningComplete(request, errorCode);
-            }));
+            request,
+            signingConfig,
+            [&](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &request, int errorCode)
+            { waiter.OnSigningComplete(request, errorCode); }));
 
         waiter.Wait();
 

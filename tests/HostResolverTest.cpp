@@ -30,7 +30,8 @@ static int s_TestDefaultResolution(struct aws_allocator *allocator, void *)
 
         auto onHostResolved = [&](Aws::Crt::Io::HostResolver &,
                                   const Aws::Crt::Vector<Aws::Crt::Io::HostAddress> &addresses,
-                                  int errorCode) {
+                                  int errorCode)
+        {
             {
                 std::lock_guard<std::mutex> lock(semaphoreLock);
                 addressCount = addresses.size();

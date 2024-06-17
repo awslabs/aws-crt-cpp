@@ -117,5 +117,5 @@ namespace Aws
                 aws_mqtt_client *m_client;
             };
         } // namespace Mqtt
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

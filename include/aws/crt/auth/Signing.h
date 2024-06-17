@@ -95,5 +95,5 @@ namespace Aws
             };
 
         } // namespace Auth
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

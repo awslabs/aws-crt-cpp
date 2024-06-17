@@ -153,5 +153,5 @@ namespace Aws
                 aws_socket_options options;
             };
         } // namespace Io
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

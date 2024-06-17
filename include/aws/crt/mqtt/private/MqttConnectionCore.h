@@ -390,6 +390,6 @@ namespace Aws
                 std::shared_ptr<MqttConnectionCore> m_self;
             };
         } // namespace Mqtt
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws
 /*! \endcond */

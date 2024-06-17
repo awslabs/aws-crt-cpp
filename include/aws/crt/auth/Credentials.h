@@ -581,5 +581,5 @@ namespace Aws
                 aws_credentials_provider *m_provider;
             };
         } // namespace Auth
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

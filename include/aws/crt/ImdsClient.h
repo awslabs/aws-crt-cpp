@@ -382,5 +382,5 @@ namespace Aws
             };
 
         } // namespace Imds
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws

@@ -17,5 +17,5 @@ namespace Aws
                 return aws_device_random_buffer_append(&output, lengthToGenerate) == AWS_OP_SUCCESS;
             }
         } // namespace Crypto
-    }     // namespace Crt
+    } // namespace Crt
 } // namespace Aws
