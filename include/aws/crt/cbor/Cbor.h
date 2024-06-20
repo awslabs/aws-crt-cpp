@@ -17,7 +17,7 @@ namespace Aws
             /**
              * The types used by APIs, not 1:1 with major types.
              * It's an extension for CBOR major type in RFC8949 section 3.1.
-             * Major type 0 - Uint
+             * Major type 0 - UInt
              * Major type 1 - NegInt
              * Major type 2 - Bytes / IndefBytesStart
              * Major type 3 - Text / IndefTextStart
@@ -35,7 +35,7 @@ namespace Aws
             enum class CborType
             {
                 Unknown = AWS_CBOR_TYPE_UNKNOWN,
-                Uint = AWS_CBOR_TYPE_UINT,
+                UInt = AWS_CBOR_TYPE_UINT,
                 NegInt = AWS_CBOR_TYPE_NEGINT,
                 Float = AWS_CBOR_TYPE_FLOAT,
                 Bytes = AWS_CBOR_TYPE_BYTES,
@@ -61,7 +61,7 @@ namespace Aws
                 CborEncoder &operator=(const CborEncoder &) = delete;
                 CborEncoder &operator=(CborEncoder &&) = delete;
 
-                CborEncoder(Allocator *allocator) noexcept;
+                CborEncoder(Allocator *allocator = ApiAllocator()) noexcept;
                 ~CborEncoder() noexcept;
 
                 /**
@@ -83,7 +83,7 @@ namespace Aws
                  *
                  * @param value value to encode.
                  */
-                void WriteUint(uint64_t value) noexcept;
+                void WriteUInt(uint64_t value) noexcept;
 
                 /**
                  * Encode a AWS_CBOR_TYPE_NEGINT value to "smallest possible" in encoder's buffer.
@@ -223,7 +223,7 @@ namespace Aws
                  * @param allocator
                  * @param src The src data to decode from.
                  */
-                CborDecoder(Allocator *allocator, ByteCursor src) noexcept;
+                CborDecoder(ByteCursor src, Allocator *allocator = ApiAllocator()) noexcept;
                 ~CborDecoder() noexcept;
 
                 /**
@@ -238,10 +238,11 @@ namespace Aws
                  * Decode the next element and store it in the decoder cache if there was no element cached.
                  * If there was an element cached, just return the type of the cached element.
                  *
-                 * @param out_type
-                 * @return success/failure
+                 * @return If successful, return the type of next element
+                 *         If not, return will be none and Aws::Crt::LastError() can be
+                 *          used to retrieve CRT error code.
                  */
-                bool PeekType(CborType &out_type) noexcept;
+                Optional<CborType> PeekType() noexcept;
 
                 /**
                  * Consume the next data item, includes all the content within the data item.
@@ -249,7 +250,7 @@ namespace Aws
                  * As an example for the following CBOR, this function will consume all the data
                  * as it's only one CBOR data item, an indefinite map with 2 key, value pair:
                  * 0xbf6346756ef563416d7421ff
-                 * BF           -- Start indefinite-length map
+                 * BF          -- Start indefinite-length map
                  *   63        -- First key, UTF-8 string length 3
                  *      46756e --   "Fun"
                  *   F5        -- First value, true
@@ -260,7 +261,7 @@ namespace Aws
                  *
                  * Notes: this function will not ensure the data item is well-formed.
                  *
-                 * @return success/failure
+                 * @return true if the operation succeed, false otherwise and LastError() will contain the errorCode.
                  */
                 bool ConsumeNextWholeDataItem() noexcept;
 
@@ -271,7 +272,7 @@ namespace Aws
                  * 0xBF, "Start indefinite-length map", not any content of the map represented.
                  * The next element to decode will start from 0x63.
                  * 0xbf6346756ef563416d7421ff
-                 * BF           -- Start indefinite-length map
+                 * BF          -- Start indefinite-length map
                  *   63        -- First key, UTF-8 string length 3
                  *      46756e --   "Fun"
                  *   F5        -- First value, true
@@ -280,7 +281,7 @@ namespace Aws
                  *   21        -- Second value, -2
                  *   FF        -- "break"
                  *
-                 * @return success/failure
+                 * @return true if the operation succeed, false otherwise and LastError() will contain the errorCode.
                  */
                 bool ConsumeNextSingleElement() noexcept;
 
@@ -288,21 +289,22 @@ namespace Aws
                  * Get the next element based on the type. If the next element doesn't match the expected type, an error
                  * will be raised. If the next element has already been cached, it will consume the cached item when no
                  * error was returned. Specifically:
-                 *  - Uint - PopNextUnsignedIntVal
+                 *  - UInt - PopNextUnsignedIntVal
                  *  - NegInt - PopNextNegativeIntVal, it represents (-1 - &out)
                  *  - Float - PopNextFloatVal
                  *  - Bytes - PopNextBytesVal
                  *  - Text - PopNextTextVal
                  *
-                 * @param out
-                 * @return success/failure
+                 * @return If successful, return the next element
+                 *         If not, return will be none and Aws::Crt::LastError() can be
+                 *          used to retrieve CRT error code.
                  */
-                bool PopNextUnsignedIntVal(uint64_t &out) noexcept;
-                bool PopNextNegativeIntVal(uint64_t &out) noexcept;
-                bool PopNextFloatVal(double &out) noexcept;
-                bool PopNextBooleanVal(bool &out) noexcept;
-                bool PopNextBytesVal(ByteCursor &out) noexcept;
-                bool PopNextTextVal(ByteCursor &out) noexcept;
+                Optional<uint64_t> PopNextUnsignedIntVal() noexcept;
+                Optional<uint64_t> PopNextNegativeIntVal() noexcept;
+                Optional<double> PopNextFloatVal() noexcept;
+                Optional<bool> PopNextBooleanVal() noexcept;
+                Optional<ByteCursor> PopNextBytesVal() noexcept;
+                Optional<ByteCursor> PopNextTextVal() noexcept;
 
                 /**
                  * Get the next ArrayStart element. Only consume the ArrayStart element and set the size of array to
@@ -315,10 +317,11 @@ namespace Aws
                  * - Call ConsumeNextSingleElement to pop the indefinite-length start.
                  * - Decode the next data item until Break is read.
                  *
-                 * @param out_size Store the size of array if succeeded.
-                 * @return success/failure
+                 * @return If successful, return the size of array
+                 *         If not, return will be none and Aws::Crt::LastError() can be
+                 *          used to retrieve CRT error code.
                  */
-                bool PopNextArrayStart(uint64_t &out_size) noexcept;
+                Optional<uint64_t> PopNextArrayStart() noexcept;
 
                 /**
                  * Get the next MapStart element. Only consume the MapStart element and set the size of array to
@@ -331,20 +334,22 @@ namespace Aws
                  * - Call ConsumeNextSingleElement to pop the indefinite-length start.
                  * - Decode the next data item until Break is read.
                  *
-                 * @param out_size Store the size of map if succeeded.
-                 * @return success/failure
+                 * @return If successful, return the size of map
+                 *         If not, return will be none and Aws::Crt::LastError() can be
+                 *          used to retrieve CRT error code.
                  */
-                bool PopNextMapStart(uint64_t &out_size) noexcept;
+                Optional<uint64_t> PopNextMapStart() noexcept;
 
                 /**
                  * Get the next Tag element. Only consume the Tag element and set the tag value to out_tag_val,
                  * not the content of the tagged value. The next CBOR data item will be the content of the tagged value
                  * for a valid CBOR data.
                  *
-                 * @param out_tag_val Store the tag value if succeeded.
-                 * @return success/failure
+                 * @return If successful, return the tag value
+                 *         If not, return will be none and Aws::Crt::LastError() can be
+                 *          used to retrieve CRT error code.
                  */
-                bool PopNextTagVal(uint64_t &out_tag_val) noexcept;
+                Optional<uint64_t> PopNextTagVal() noexcept;
 
                 /**
                  * @return the value of the last aws error encountered by operations on this instance.

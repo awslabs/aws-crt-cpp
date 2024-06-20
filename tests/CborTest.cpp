@@ -29,7 +29,7 @@ static int s_CborSanityTest(struct aws_allocator *allocator, void *ctx)
         auto expected_tag_val = 999ULL;
         bool expected_bool_val = true;
 
-        encoder.WriteUint(expected_uint_val);
+        encoder.WriteUInt(expected_uint_val);
         encoder.WriteNegInt(expected_negint_val);
         encoder.WriteFloat(expected_float_val);
         encoder.WriteBytes(expected_bytes_val);
@@ -48,80 +48,71 @@ static int s_CborSanityTest(struct aws_allocator *allocator, void *ctx)
 
         ByteCursor cursor = encoder.GetEncodedData();
 
-        Cbor::CborDecoder decoder(allocator, cursor);
-        Cbor::CborType out_type = Cbor::CborType::Unknown;
+        Cbor::CborDecoder decoder(cursor, allocator);
 
-        // Check for Uint
-        uint64_t uint_val;
-        ASSERT_TRUE(decoder.PeekType(out_type) && out_type == Cbor::CborType::Uint);
-        ASSERT_TRUE(decoder.PopNextUnsignedIntVal(uint_val) && uint_val == expected_uint_val);
+        // Check for UInt
+        ASSERT_TRUE(decoder.PeekType().value() == Cbor::CborType::UInt);
+        ASSERT_TRUE(decoder.PopNextUnsignedIntVal().value() == expected_uint_val);
 
         // Check for NegInt
-        uint64_t negint_val;
-        ASSERT_TRUE(decoder.PeekType(out_type) && out_type == Cbor::CborType::NegInt);
-        ASSERT_TRUE(decoder.PopNextNegativeIntVal(negint_val) && negint_val == expected_negint_val);
+        ASSERT_TRUE(decoder.PeekType().value() == Cbor::CborType::NegInt);
+        ASSERT_TRUE(decoder.PopNextNegativeIntVal().value() == expected_negint_val);
 
         // Check for Float
-        double float_val;
-        ASSERT_TRUE(decoder.PeekType(out_type) && out_type == Cbor::CborType::Float);
-        ASSERT_TRUE(decoder.PopNextFloatVal(float_val) && float_val == expected_float_val);
+        ASSERT_TRUE(decoder.PeekType().value() == Cbor::CborType::Float);
+        ASSERT_TRUE(decoder.PopNextFloatVal().value() == expected_float_val);
 
         // Check for Bytes
-        ByteCursor bytes_val;
-        ASSERT_TRUE(decoder.PeekType(out_type) && out_type == Cbor::CborType::Bytes);
-        ASSERT_TRUE(decoder.PopNextBytesVal(bytes_val) && aws_byte_cursor_eq(&bytes_val, &expected_bytes_val));
+        ASSERT_TRUE(decoder.PeekType().value() == Cbor::CborType::Bytes);
+        ByteCursor decoded_val = decoder.PopNextBytesVal().value();
+        ASSERT_TRUE(aws_byte_cursor_eq(&decoded_val, &expected_bytes_val));
 
         // Check for Text
-        ByteCursor text_val;
-        ASSERT_TRUE(decoder.PeekType(out_type) && out_type == Cbor::CborType::Text);
-        ASSERT_TRUE(decoder.PopNextTextVal(text_val) && aws_byte_cursor_eq(&text_val, &expected_text_val));
+        ASSERT_TRUE(decoder.PeekType().value() == Cbor::CborType::Text);
+        decoded_val = decoder.PopNextTextVal().value();
+        ASSERT_TRUE(aws_byte_cursor_eq(&decoded_val, &expected_text_val));
 
         // Check for ArrayStart
-        uint64_t array_size;
-        ASSERT_TRUE(decoder.PeekType(out_type) && out_type == Cbor::CborType::ArrayStart);
-        ASSERT_TRUE(decoder.PopNextArrayStart(array_size) && array_size == expected_array_size);
+        ASSERT_TRUE(decoder.PeekType().value() == Cbor::CborType::ArrayStart);
+        ASSERT_TRUE(decoder.PopNextArrayStart().value() == expected_array_size);
 
         // Check for MapStart
-        uint64_t map_size;
-        ASSERT_TRUE(decoder.PeekType(out_type) && out_type == Cbor::CborType::MapStart);
-        ASSERT_TRUE(decoder.PopNextMapStart(map_size) && map_size == expected_map_size);
-
+        ASSERT_TRUE(decoder.PeekType().value() == Cbor::CborType::MapStart);
+        ASSERT_TRUE(decoder.PopNextMapStart().value() == expected_map_size);
         // Check for Tag
-        uint64_t tag_val;
-        ASSERT_TRUE(decoder.PeekType(out_type) && out_type == Cbor::CborType::Tag);
-        ASSERT_TRUE(decoder.PopNextTagVal(tag_val) && tag_val == expected_tag_val);
+        ASSERT_TRUE(decoder.PeekType().value() == Cbor::CborType::Tag);
+        ASSERT_TRUE(decoder.PopNextTagVal().value() == expected_tag_val);
 
         // Check for Bool
-        bool bool_val;
-        ASSERT_TRUE(decoder.PeekType(out_type) && out_type == Cbor::CborType::Bool);
-        ASSERT_TRUE(decoder.PopNextBooleanVal(bool_val) && bool_val == expected_bool_val);
+        ASSERT_TRUE(decoder.PeekType().value() == Cbor::CborType::Bool);
+        ASSERT_TRUE(decoder.PopNextBooleanVal().value() == expected_bool_val);
 
         // Check for Null
-        ASSERT_TRUE(decoder.PeekType(out_type) && out_type == Cbor::CborType::Null);
+        ASSERT_TRUE(decoder.PeekType().value() == Cbor::CborType::Null);
         ASSERT_TRUE(decoder.ConsumeNextWholeDataItem());
 
         // Check for Undefined
-        ASSERT_TRUE(decoder.PeekType(out_type) && out_type == Cbor::CborType::Undefined);
+        ASSERT_TRUE(decoder.PeekType().value() == Cbor::CborType::Undefined);
         ASSERT_TRUE(decoder.ConsumeNextWholeDataItem());
 
         // Check for Break
-        ASSERT_TRUE(decoder.PeekType(out_type) && out_type == Cbor::CborType::Break);
+        ASSERT_TRUE(decoder.PeekType().value() == Cbor::CborType::Break);
         ASSERT_TRUE(decoder.ConsumeNextSingleElement());
 
         // Check for IndefBytesStart
-        ASSERT_TRUE(decoder.PeekType(out_type) && out_type == Cbor::CborType::IndefBytesStart);
+        ASSERT_TRUE(decoder.PeekType().value() == Cbor::CborType::IndefBytesStart);
         ASSERT_TRUE(decoder.ConsumeNextSingleElement());
 
         // Check for IndefTextStart
-        ASSERT_TRUE(decoder.PeekType(out_type) && out_type == Cbor::CborType::IndefTextStart);
+        ASSERT_TRUE(decoder.PeekType().value() == Cbor::CborType::IndefTextStart);
         ASSERT_TRUE(decoder.ConsumeNextSingleElement());
 
         // Check for IndefArrayStart
-        ASSERT_TRUE(decoder.PeekType(out_type) && out_type == Cbor::CborType::IndefArrayStart);
+        ASSERT_TRUE(decoder.PeekType().value() == Cbor::CborType::IndefArrayStart);
         ASSERT_TRUE(decoder.ConsumeNextSingleElement());
 
         // Check for IndefMapStart
-        ASSERT_TRUE(decoder.PeekType(out_type) && out_type == Cbor::CborType::IndefMapStart);
+        ASSERT_TRUE(decoder.PeekType().value() == Cbor::CborType::IndefMapStart);
         ASSERT_TRUE(decoder.ConsumeNextSingleElement());
 
         auto length = decoder.GetRemainingLength();
@@ -148,63 +139,59 @@ static void s_encode_timestamp_helper(
 
 static int s_decode_timestamp_helper(Cbor::CborDecoder &decoder, std::chrono::system_clock::time_point &outTimePoint)
 {
-    Cbor::CborType out_type = Cbor::CborType::Unknown;
-    if (!decoder.PeekType(out_type) && out_type != Cbor::CborType::Tag)
+    if (decoder.PeekType().value() != Cbor::CborType::Tag)
     {
         return AWS_OP_ERR;
     }
-    uint64_t tag_val = 0;
-    if (!decoder.PopNextTagVal(tag_val) && tag_val != AWS_CBOR_TAG_EPOCH_TIME)
+    if (decoder.PopNextTagVal().value() != AWS_CBOR_TAG_EPOCH_TIME)
     {
         return AWS_OP_ERR;
     }
-    if (decoder.PeekType(out_type))
+    Cbor::CborType out_type = decoder.PeekType().value();
+    switch (out_type)
     {
-        switch (out_type)
+        case Cbor::CborType::UInt:
+        case Cbor::CborType::NegInt:
         {
-            case Cbor::CborType::Uint:
-            case Cbor::CborType::NegInt:
+            int64_t secs_timestamp = 0;
+            uint64_t unsigned_val = 0;
+            if (out_type == Cbor::CborType::UInt)
             {
-                int64_t secs_timestamp = 0;
-                uint64_t unsigned_val = 0;
-                if (out_type == Cbor::CborType::Uint)
+                unsigned_val = decoder.PopNextUnsignedIntVal().value();
+                if (unsigned_val > INT64_MAX)
                 {
-                    decoder.PopNextUnsignedIntVal(unsigned_val);
-                    if (unsigned_val > INT64_MAX)
-                    {
-                        /* Overflow */
-                        return AWS_OP_ERR;
-                    }
-                    secs_timestamp = (int64_t)unsigned_val;
+                    /* Overflow */
+                    return AWS_OP_ERR;
                 }
-                else
-                {
-                    decoder.PopNextNegativeIntVal(unsigned_val);
-                    if (unsigned_val > INT64_MAX)
-                    {
-                        /* Overflow */
-                        return AWS_OP_ERR;
-                    }
-                    /* convert the encoded number to real negative number */
-                    secs_timestamp = (int64_t)(-1 - unsigned_val);
-                }
-                std::chrono::duration<int64_t, std::chrono::seconds::period> timestamp(secs_timestamp);
-                outTimePoint = std::chrono::system_clock::time_point(timestamp);
-                return AWS_OP_SUCCESS;
+                secs_timestamp = (int64_t)unsigned_val;
             }
-            case Cbor::CborType::Float:
+            else
             {
-                double double_val = 0;
-                decoder.PopNextFloatVal(double_val);
-                std::chrono::duration<double, std::chrono::seconds::period> timestamp(double_val);
-                outTimePoint = std::chrono::system_clock::time_point(
-                    std::chrono::duration_cast<std::chrono::milliseconds>(timestamp));
-                return AWS_OP_SUCCESS;
+                unsigned_val = decoder.PopNextNegativeIntVal().value();
+                if (unsigned_val > INT64_MAX)
+                {
+                    /* Overflow */
+                    return AWS_OP_ERR;
+                }
+                /* convert the encoded number to real negative number */
+                secs_timestamp = (int64_t)(-1 - unsigned_val);
             }
-            default:
-                break;
+            std::chrono::duration<int64_t, std::chrono::seconds::period> timestamp(secs_timestamp);
+            outTimePoint = std::chrono::system_clock::time_point(timestamp);
+            return AWS_OP_SUCCESS;
         }
+        case Cbor::CborType::Float:
+        {
+            double double_val = decoder.PopNextFloatVal().value();
+            std::chrono::duration<double, std::chrono::seconds::period> timestamp(double_val);
+            outTimePoint =
+                std::chrono::system_clock::time_point(std::chrono::duration_cast<std::chrono::milliseconds>(timestamp));
+            return AWS_OP_SUCCESS;
+        }
+        default:
+            break;
     }
+
     return AWS_OP_ERR;
 }
 
@@ -239,7 +226,7 @@ static int s_CborTimeStampTest(struct aws_allocator *allocator, void *ctx)
         s_encode_timestamp_helper(encoder, now);
         ByteCursor cursor = encoder.GetEncodedData();
 
-        Cbor::CborDecoder decoder(allocator, cursor);
+        Cbor::CborDecoder decoder(cursor);
         std::chrono::time_point<std::chrono::system_clock> decoded;
         ASSERT_SUCCESS(s_decode_timestamp_helper(decoder, decoded));
 

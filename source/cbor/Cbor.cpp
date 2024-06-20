@@ -35,7 +35,7 @@ namespace Aws
                 aws_cbor_encoder_reset(m_encoder);
             }
 
-            void CborEncoder::WriteUint(uint64_t value) noexcept
+            void CborEncoder::WriteUInt(uint64_t value) noexcept
             {
                 aws_cbor_encoder_write_uint(m_encoder, value);
             }
@@ -119,7 +119,7 @@ namespace Aws
              * CborDecoder
              *
              *****************************************************/
-            CborDecoder::CborDecoder(Crt::Allocator *allocator, ByteCursor src) noexcept
+            CborDecoder::CborDecoder(ByteCursor src, Crt::Allocator *allocator) noexcept
             {
                 m_decoder = aws_cbor_decoder_new(allocator, src);
             }
@@ -134,16 +134,15 @@ namespace Aws
                 return aws_cbor_decoder_get_remaining_length(m_decoder);
             }
 
-            bool CborDecoder::PeekType(CborType &out_type) noexcept
+            Optional<CborType> CborDecoder::PeekType() noexcept
             {
                 enum aws_cbor_type out_type_c = AWS_CBOR_TYPE_UNKNOWN;
                 if (aws_cbor_decoder_peek_type(m_decoder, &out_type_c) != AWS_OP_SUCCESS)
                 {
                     m_lastError = aws_last_error();
-                    return false;
+                    return Optional<CborType>();
                 }
-                out_type = (CborType)out_type_c;
-                return true;
+                return Optional<CborType>((CborType)out_type_c);
             }
             bool CborDecoder::ConsumeNextWholeDataItem() noexcept
             {
@@ -165,94 +164,103 @@ namespace Aws
                 return true;
             }
 
-            bool CborDecoder::PopNextUnsignedIntVal(uint64_t &out) noexcept
+            Optional<uint64_t> CborDecoder::PopNextUnsignedIntVal() noexcept
             {
+                uint64_t out = 0;
                 if (aws_cbor_decoder_pop_next_unsigned_int_val(m_decoder, &out) != AWS_OP_SUCCESS)
                 {
                     m_lastError = aws_last_error();
-                    return false;
+                    return Optional<uint64_t>();
                 }
-                return true;
+                return Optional<uint64_t>(out);
             }
 
-            bool CborDecoder::PopNextNegativeIntVal(uint64_t &out) noexcept
+            Optional<uint64_t> CborDecoder::PopNextNegativeIntVal() noexcept
             {
+                uint64_t out = 0;
                 if (aws_cbor_decoder_pop_next_negative_int_val(m_decoder, &out) != AWS_OP_SUCCESS)
                 {
                     m_lastError = aws_last_error();
-                    return false;
+                    return Optional<uint64_t>();
                 }
-                return true;
+                return Optional<uint64_t>(out);
             }
 
-            bool CborDecoder::PopNextFloatVal(double &out) noexcept
+            Optional<double> CborDecoder::PopNextFloatVal() noexcept
             {
+                double out = 0;
                 if (aws_cbor_decoder_pop_next_float_val(m_decoder, &out) != AWS_OP_SUCCESS)
                 {
                     m_lastError = aws_last_error();
-                    return false;
+                    return Optional<double>();
                 }
-                return true;
+                return Optional<double>(out);
             }
 
-            bool CborDecoder::PopNextBooleanVal(bool &out) noexcept
+            Optional<bool> CborDecoder::PopNextBooleanVal() noexcept
             {
+                bool out = false;
                 if (aws_cbor_decoder_pop_next_boolean_val(m_decoder, &out) != AWS_OP_SUCCESS)
                 {
                     m_lastError = aws_last_error();
-                    return false;
+                    return Optional<bool>();
                 }
-                return true;
+                return Optional<bool>(out);
             }
 
-            bool CborDecoder::PopNextBytesVal(ByteCursor &out) noexcept
+            Optional<ByteCursor> CborDecoder::PopNextBytesVal() noexcept
             {
+                ByteCursor out = {0};
                 if (aws_cbor_decoder_pop_next_bytes_val(m_decoder, &out) != AWS_OP_SUCCESS)
                 {
                     m_lastError = aws_last_error();
-                    return false;
+                    return Optional<ByteCursor>();
                 }
-                return true;
+                return Optional<ByteCursor>(out);
             }
 
-            bool CborDecoder::PopNextTextVal(ByteCursor &out) noexcept
+            Optional<ByteCursor> CborDecoder::PopNextTextVal() noexcept
             {
+                ByteCursor out = {0};
                 if (aws_cbor_decoder_pop_next_text_val(m_decoder, &out) != AWS_OP_SUCCESS)
                 {
                     m_lastError = aws_last_error();
-                    return false;
+                    return Optional<ByteCursor>();
                 }
-                return true;
+                return Optional<ByteCursor>(out);
             }
 
-            bool CborDecoder::PopNextArrayStart(uint64_t &out_size) noexcept
+            Optional<uint64_t> CborDecoder::PopNextArrayStart() noexcept
             {
+                uint64_t out_size = 0;
                 if (aws_cbor_decoder_pop_next_array_start(m_decoder, &out_size) != AWS_OP_SUCCESS)
                 {
                     m_lastError = aws_last_error();
-                    return false;
+                    return Optional<uint64_t>();
                 }
-                return true;
+                return Optional<uint64_t>(out_size);
             }
 
-            bool CborDecoder::PopNextMapStart(uint64_t &out_size) noexcept
+            Optional<uint64_t> CborDecoder::PopNextMapStart() noexcept
             {
+                uint64_t out_size = 0;
                 if (aws_cbor_decoder_pop_next_map_start(m_decoder, &out_size) != AWS_OP_SUCCESS)
                 {
                     m_lastError = aws_last_error();
-                    return false;
+                    return Optional<uint64_t>();
                 }
-                return true;
+                return Optional<uint64_t>(out_size);
             }
 
-            bool CborDecoder::PopNextTagVal(uint64_t &out_tag_val) noexcept
+            Optional<uint64_t> CborDecoder::PopNextTagVal() noexcept
             {
+                uint64_t out_tag_val = 0;
                 if (aws_cbor_decoder_pop_next_tag_val(m_decoder, &out_tag_val) != AWS_OP_SUCCESS)
                 {
                     m_lastError = aws_last_error();
-                    return false;
+                    return Optional<uint64_t>();
                 }
-                return true;
+                return Optional<uint64_t>(out_tag_val);
             }
 
         } // namespace Cbor
