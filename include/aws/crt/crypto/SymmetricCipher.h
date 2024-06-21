@@ -132,14 +132,14 @@ namespace Aws
 
                 /**
                  * Returns the key used for this cipher. This key is not copied from the cipher so do not mutate this
-                 * data. Copy if if you need to pass it around anywhere.
+                 * data. Copy if you need to pass it around anywhere.
                  */
                 ByteCursor GetKey() const noexcept;
 
                 /**
                  * Returns the initialization vector used for this cipher.
                  * This IV is not copied from the cipher so do not mutate this
-                 * data. Copy if if you need to pass it around anywhere.
+                 * data. Copy if you need to pass it around anywhere.
                  */
                 ByteCursor GetIV() const noexcept;
 
