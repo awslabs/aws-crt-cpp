@@ -54,15 +54,12 @@ namespace Aws
                 /**
                  * Creates an AES 256 GCM mode cipher using a provided key, iv, tag, and aad if provided.
                  * Key and iv will be generated if not provided.
-                 * Tag and AAD values are not generated. Provide tag if you're trying to decrypt
-                 * a payload. The tag will be used to verify the payload has not been tampered with
-                 * upon decryption operations.
+                 * AAD values are not generated.
                  * Provide AAD if you need to provide additional auth info.
                  */
                 static SymmetricCipher CreateAES_256_GCM_Cipher(
                     const Optional<ByteCursor> &key = Optional<ByteCursor>(),
                     const Optional<ByteCursor> &iv = Optional<ByteCursor>(),
-                    const Optional<ByteCursor> &tag = Optional<ByteCursor>(),
                     const Optional<ByteCursor> &aad = Optional<ByteCursor>(),
                     Allocator *allocator = ApiAllocator()) noexcept;
 
@@ -149,9 +146,15 @@ namespace Aws
                 /**
                  * Returns the encryption tag generated during encryption operations for this cipher in GCM mode.
                  * This tag is not copied from the cipher so do not mutate this
-                 * data. Copy if if you need to pass it around anywhere.
+                 * data. Copy if you need to pass it around anywhere.
                  */
                 ByteCursor GetTag() const noexcept;
+
+                /**
+                 * Sets the tag used during decryption operations for this cipher in GCM mode.
+                 * No-op outside of GCM mode. In GCM mode, encrypt operation overrides the value of the tag.
+                 */
+                void SetTag(ByteCursor tag) const noexcept;
 
               private:
                 SymmetricCipher(aws_symmetric_cipher *cipher) noexcept;

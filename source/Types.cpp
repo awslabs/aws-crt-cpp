@@ -33,6 +33,7 @@ namespace Aws
             return retVal;
         }
 
+
         ByteBuf ByteBufInit(Allocator *alloc, size_t len)
         {
             ByteBuf buff;
