@@ -140,9 +140,14 @@ static int s_TestAES_256_GCM_Generated_Materials_ResourceSafety(struct aws_alloc
 
         ASSERT_FALSE(gcmCipher);
 
+        auto tagCur = gcmCipher.GetTag();
+        auto tagBuf = Aws::Crt::ByteBufNewCopy(allocator, tagCur.ptr, tagCur.len);
+        tagCur = Aws::Crt::ByteCursorFromByteBuf(tagBuf);
+
         ASSERT_TRUE(gcmCipher.Reset());
         ASSERT_TRUE(gcmCipher.GetState() == Aws::Crt::Crypto::SymmetricCipherState::Ready);
 
+        gcmCipher.SetTag(tagCur);
         auto decryptInput = Aws::Crt::ByteCursorFromByteBuf(outputBuf);
         outputBuf.len = 0;
 
@@ -169,6 +174,8 @@ static int s_TestAES_256_GCM_Generated_Materials_ResourceSafety(struct aws_alloc
         ASSERT_TRUE(gcmCipher.GetState() == Aws::Crt::Crypto::SymmetricCipherState::Ready);
         ASSERT_BIN_ARRAYS_EQUALS(keyCur.ptr, keyCur.len, gcmCipher.GetKey().ptr, gcmCipher.GetKey().len);
         ASSERT_UINT_EQUALS(Aws::Crt::Crypto::AES_256_CIPHER_BLOCK_SIZE - 4, gcmCipher.GetIV().len);
+
+        Aws::Crt::ByteBufDelete(tagBuf);
     }
 
     return AWS_OP_SUCCESS;
