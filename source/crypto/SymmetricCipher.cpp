@@ -136,6 +136,11 @@ namespace Aws
                 return aws_symmetric_cipher_get_tag(m_cipher.get());
             }
 
+            void SymmetricCipher::SetTag(ByteCursor tag) const noexcept
+            {
+                return aws_symmetric_cipher_set_tag(m_cipher.get(), tag);
+            }
+
             SymmetricCipher SymmetricCipher::CreateAES_256_CBC_Cipher(
                 const Optional<ByteCursor> &key,
                 const Optional<ByteCursor> &iv,
@@ -157,7 +162,6 @@ namespace Aws
             SymmetricCipher SymmetricCipher::CreateAES_256_GCM_Cipher(
                 const Optional<ByteCursor> &key,
                 const Optional<ByteCursor> &iv,
-                const Optional<ByteCursor> &tag,
                 const Optional<ByteCursor> &aad,
                 Allocator *allocator) noexcept
             {
@@ -165,8 +169,7 @@ namespace Aws
                     allocator,
                     key.has_value() ? &key.value() : nullptr,
                     iv.has_value() ? &iv.value() : nullptr,
-                    aad.has_value() ? &aad.value() : nullptr,
-                    tag.has_value() ? &tag.value() : nullptr)};
+                    aad.has_value() ? &aad.value() : nullptr)};
             }
 
             SymmetricCipher SymmetricCipher::CreateAES_256_KeyWrap_Cipher(
