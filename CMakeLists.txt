@@ -171,8 +171,8 @@ file(GLOB AWS_CRT_ENDPOINT_HEADERS
     "include/aws/crt/endpoints/*.h"
 )
 
-file(GLOB AWS_CRT_EXTERNAL_HEADERS
-    "include/aws/crt/external/*.h"
+file(GLOB AWS_CRT_CBOR_HEADERS
+    "include/aws/crt/cbor/*.h"
 )
 
 file(GLOB AWS_CRT_PUBLIC_HEADERS
@@ -184,6 +184,7 @@ file(GLOB AWS_CRT_PUBLIC_HEADERS
     ${AWS_CRT_MQTT_HEADERS}
     ${AWS_CRT_HTTP_HEADERS}
     ${AWS_CRT_ENDPOINT_HEADERS}
+    ${AWS_CRT_CBOR_HEADERS}
 )
 
 if(BUILD_DEPS)
@@ -193,7 +194,6 @@ endif()
 
 file(GLOB AWS_CRT_CPP_HEADERS
     ${AWS_CRT_PUBLIC_HEADERS}
-    ${AWS_CRT_EXTERNAL_HEADERS}
 )
 
 file(GLOB AWS_CRT_SRC
@@ -228,8 +228,8 @@ file(GLOB AWS_CRT_ENDPOINTS_SRC
     "source/endpoints/*.cpp"
 )
 
-file(GLOB AWS_CRT_EXTERNAL_SRC
-    "source/external/*.cpp"
+file(GLOB AWS_CRT_CBOR_SRC
+    "source/cbor/*.cpp"
 )
 
 file(GLOB AWS_CRT_CPP_SRC
@@ -241,7 +241,7 @@ file(GLOB AWS_CRT_CPP_SRC
     ${AWS_CRT_MQTT_SRC}
     ${AWS_CRT_HTTP_SRC}
     ${AWS_CRT_ENDPOINTS_SRC}
-    ${AWS_CRT_EXTERNAL_SRC}
+    ${AWS_CRT_CBOR_SRC}
 )
 
 if(WIN32)
@@ -254,6 +254,7 @@ if(WIN32)
         source_group("Header Files\\aws\\crt\\mqtt" FILES ${AWS_CRT_MQTT_HEADERS})
         source_group("Header Files\\aws\\crt\\http" FILES ${AWS_CRT_HTTP_HEADERS})
         source_group("Header Files\\aws\\crt\\endpoints" FILES ${AWS_CRT_ENDPOINT_HEADERS})
+        source_group("Header Files\\aws\\crt\\cbor" FILES ${AWS_CRT_CBOR_HEADERS})
 
         source_group("Source Files" FILES ${AWS_CRT_SRC})
         source_group("Source Files\\auth" FILES ${AWS_CRT_AUTH_SRC})
@@ -263,6 +264,7 @@ if(WIN32)
         source_group("Source Files\\mqtt" FILES ${AWS_CRT_MQTT_SRC})
         source_group("Source Files\\http" FILES ${AWS_CRT_HTTP_SRC})
         source_group("Source Files\\endpoints" FILES ${AWS_CRT_ENDPOINTS_SRC})
+        source_group("Source Files\\cbor" FILES ${AWS_CRT_CBOR_SRC})
     endif()
 endif()
 
@@ -332,6 +334,7 @@ install(FILES ${AWS_CRT_IOT_HEADERS} DESTINATION "include/aws/iot" COMPONENT Dev
 install(FILES ${AWS_CRT_MQTT_HEADERS} DESTINATION "include/aws/crt/mqtt" COMPONENT Development)
 install(FILES ${AWS_CRT_HTTP_HEADERS} DESTINATION "include/aws/crt/http" COMPONENT Development)
 install(FILES ${AWS_CRT_ENDPOINT_HEADERS} DESTINATION "include/aws/crt/endpoints" COMPONENT Development)
+install(FILES ${AWS_CRT_CBOR_HEADERS} DESTINATION "include/aws/crt/cbor" COMPONENT Development)
 
 install(
     TARGETS ${PROJECT_NAME}
