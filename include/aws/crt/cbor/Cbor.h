@@ -239,7 +239,7 @@ namespace Aws
                  * If there was an element cached, just return the type of the cached element.
                  *
                  * @return If successful, return the type of next element
-                 *         If not, return will be none and Aws::Crt::LastError() can be
+                 *         If not, return will be none and LastError() can be
                  *          used to retrieve CRT error code.
                  */
                 Optional<CborType> PeekType() noexcept;
@@ -296,7 +296,7 @@ namespace Aws
                  *  - Text - PopNextTextVal
                  *
                  * @return If successful, return the next element
-                 *         If not, return will be none and Aws::Crt::LastError() can be
+                 *         If not, return will be none and LastError() can be
                  *          used to retrieve CRT error code.
                  */
                 Optional<uint64_t> PopNextUnsignedIntVal() noexcept;
@@ -318,7 +318,7 @@ namespace Aws
                  * - Decode the next data item until Break is read.
                  *
                  * @return If successful, return the size of array
-                 *         If not, return will be none and Aws::Crt::LastError() can be
+                 *         If not, return will be none and LastError() can be
                  *          used to retrieve CRT error code.
                  */
                 Optional<uint64_t> PopNextArrayStart() noexcept;
@@ -335,7 +335,7 @@ namespace Aws
                  * - Decode the next data item until Break is read.
                  *
                  * @return If successful, return the size of map
-                 *         If not, return will be none and Aws::Crt::LastError() can be
+                 *         If not, return will be none and LastError() can be
                  *          used to retrieve CRT error code.
                  */
                 Optional<uint64_t> PopNextMapStart() noexcept;
@@ -346,7 +346,7 @@ namespace Aws
                  * for a valid CBOR data.
                  *
                  * @return If successful, return the tag value
-                 *         If not, return will be none and Aws::Crt::LastError() can be
+                 *         If not, return will be none and LastError() can be
                  *          used to retrieve CRT error code.
                  */
                 Optional<uint64_t> PopNextTagVal() noexcept;
