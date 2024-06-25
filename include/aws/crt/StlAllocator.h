@@ -51,6 +51,10 @@ namespace Aws
                 return static_cast<RawPointer>(aws_mem_acquire(m_allocator, n * sizeof(T)));
             }
 
+#if _LIBCPP_STD_VER > 20
+            std::allocation_result<T *> allocate_at_least(size_type n) { return {allocate(n), n}; }
+#endif
+
             void deallocate(RawPointer p, size_type)
             {
                 AWS_ASSERT(m_allocator);
