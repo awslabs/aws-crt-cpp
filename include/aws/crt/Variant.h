@@ -148,14 +148,14 @@ namespace Aws
             {
                 AWS_FATAL_ASSERT(other.m_index != -1);
                 m_index = other.m_index;
-                VisitorUtil<(Variant::IndexT)0, Ts...>::VisitBinary(this, other, CopyMoveConstructor());
+                VisitorUtil<0, Ts...>::VisitBinary(this, other, CopyMoveConstructor());
             }
 
             Variant(Variant &&other)
             {
                 AWS_FATAL_ASSERT(other.m_index != -1);
                 m_index = other.m_index;
-                VisitorUtil<(Variant::IndexT)0, Ts...>::VisitBinary(this, std::move(other), CopyMoveConstructor());
+                VisitorUtil<0, Ts...>::VisitBinary(this, std::move(other), CopyMoveConstructor());
             }
 
             template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1> Variant(const T &val)
@@ -213,11 +213,11 @@ namespace Aws
                     {
                         Destroy();
                         m_index = other.m_index;
-                        VisitorUtil<(Variant::IndexT)0, Ts...>::VisitBinary(this, other, CopyMoveConstructor());
+                        VisitorUtil<0, Ts...>::VisitBinary(this, other, CopyMoveConstructor());
                     }
                     else
                     {
-                        VisitorUtil<(Variant::IndexT)0, Ts...>::VisitBinary(this, other, CopyMoveAssigner());
+                        VisitorUtil<0, Ts...>::VisitBinary(this, other, CopyMoveAssigner());
                     }
                 }
                 return *this;
@@ -232,11 +232,11 @@ namespace Aws
                     {
                         Destroy();
                         m_index = other.m_index;
-                        VisitorUtil<(Variant::IndexT)0, Ts...>::VisitBinary(this, std::move(other), CopyMoveConstructor());
+                        VisitorUtil<0, Ts...>::VisitBinary(this, std::move(other), CopyMoveConstructor());
                     }
                     else
                     {
-                        VisitorUtil<(Variant::IndexT)0, Ts...>::VisitBinary(this, std::move(other), CopyMoveAssigner());
+                        VisitorUtil<0, Ts...>::VisitBinary(this, std::move(other), CopyMoveAssigner());
                     };
                 }
                 return *this;
@@ -386,7 +386,7 @@ namespace Aws
 
             template <typename VisitorT> void Visit(VisitorT &&visitor)
             {
-                return VisitorUtil<(Variant::IndexT)0, Ts...>::Visit(this, std::forward<VisitorT>(visitor));
+                return VisitorUtil<0, Ts...>::Visit(this, std::forward<VisitorT>(visitor));
             }
 
           private:
@@ -473,7 +473,7 @@ namespace Aws
                     }
                     else
                     {
-                        VisitorUtil<Index + (IndexT)1, Second, Rest...>::Visit(pThis, std::forward<VisitorStruct>(visitor));
+                        VisitorUtil<Index + 1, Second, Rest...>::Visit(pThis, std::forward<VisitorStruct>(visitor));
                     }
                 }
 
@@ -490,7 +490,7 @@ namespace Aws
                     }
                     else
                     {
-                        VisitorUtil<Index + (IndexT)1, Second, Rest...>::VisitBinary(
+                        VisitorUtil<Index + 1, Second, Rest...>::VisitBinary(
                             pThis, std::forward<Variant<Ts...>>(other), std::forward<VisitorStruct>(visitor));
                     }
                 }
@@ -509,7 +509,7 @@ namespace Aws
                     }
                     else
                     {
-                        VisitorUtil<Index + (IndexT)1, Second, Rest...>::VisitBinary(
+                        VisitorUtil<Index + 1, Second, Rest...>::VisitBinary(
                             pThis, other, std::forward<VisitorStruct>(visitor));
                     }
                 }
