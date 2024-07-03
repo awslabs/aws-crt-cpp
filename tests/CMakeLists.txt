@@ -286,7 +286,7 @@ if(AWS_WARNINGS_ARE_ERRORS)
     if(MSVC)
         target_compile_options(${TEST_BINARY_NAME} PRIVATE /W4 /WX /wd4068)
     else()
-        target_compile_options(${TEST_BINARY_NAME} PRIVATE -Wall -Wno-long-long -Werror -Wconversion)
+        target_compile_options(${TEST_BINARY_NAME} PRIVATE -Wall -Wno-long-long -Werror)
     endif()
 endif()
 

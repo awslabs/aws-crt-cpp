@@ -473,7 +473,8 @@ namespace Aws
                     }
                     else
                     {
-                        VisitorUtil<static_cast<IndexT>(Index + 1), Second, Rest...>::Visit(pThis, std::forward<VisitorStruct>(visitor));
+                        VisitorUtil<static_cast<IndexT>(Index + 1), Second, Rest...>::Visit(
+                            pThis, std::forward<VisitorStruct>(visitor));
                     }
                 }
 
