@@ -473,7 +473,7 @@ namespace Aws
                     }
                     else
                     {
-                        VisitorUtil<Index + 1, Second, Rest...>::Visit(pThis, std::forward<VisitorStruct>(visitor));
+                        VisitorUtil<static_cast<IndexT>(Index + 1), Second, Rest...>::Visit(pThis, std::forward<VisitorStruct>(visitor));
                     }
                 }
 
@@ -490,7 +490,7 @@ namespace Aws
                     }
                     else
                     {
-                        VisitorUtil<Index + 1, Second, Rest...>::VisitBinary(
+                        VisitorUtil<static_cast<IndexT>(Index + 1), Second, Rest...>::VisitBinary(
                             pThis, std::forward<Variant<Ts...>>(other), std::forward<VisitorStruct>(visitor));
                     }
                 }
@@ -509,7 +509,7 @@ namespace Aws
                     }
                     else
                     {
-                        VisitorUtil<Index + 1, Second, Rest...>::VisitBinary(
+                        VisitorUtil<static_cast<IndexT>(Index + 1), Second, Rest...>::VisitBinary(
                             pThis, other, std::forward<VisitorStruct>(visitor));
                     }
                 }
