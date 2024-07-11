@@ -15,6 +15,7 @@ namespace Aws
 
             SocketOptions::SocketOptions()
             {
+                AWS_ZERO_STRUCT(options);
                 options.type = AWS_SOCKET_STREAM;
                 options.domain = AWS_SOCKET_IPV4;
                 options.connect_timeout_ms = DEFAULT_SOCKET_TIME_MSEC;
