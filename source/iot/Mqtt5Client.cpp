@@ -601,6 +601,10 @@ namespace Aws
                     m_options->WithHttpProxyOptions(m_proxyOptions.value());
                 }
             }
+            else if (m_proxyOptions.has_value())
+            {
+                m_options->WithHttpProxyOptions(m_proxyOptions.value());
+            }
 
             return Crt::Mqtt5::Mqtt5Client::NewMqtt5Client(*m_options, m_allocator);
         }
