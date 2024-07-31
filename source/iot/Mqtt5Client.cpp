@@ -571,6 +571,8 @@ namespace Aws
                 m_options->WithConnectOptions(m_connectOptions);
             }
 
+            bool proxyOptionsSet = false;
+
             if (m_websocketConfig.has_value())
             {
                 auto websocketConfig = m_websocketConfig.value();
@@ -595,13 +597,16 @@ namespace Aws
                 if (useWebsocketProxyOptions)
                 {
                     m_options->WithHttpProxyOptions(m_websocketConfig->ProxyOptions.value());
+                    proxyOptionsSet = true;
                 }
                 else if (m_proxyOptions.has_value())
                 {
                     m_options->WithHttpProxyOptions(m_proxyOptions.value());
+                    proxyOptionsSet = true;
                 }
             }
-            else if (m_proxyOptions.has_value())
+
+            if (m_proxyOptions.has_value() && !proxyOptionsSet)
             {
                 m_options->WithHttpProxyOptions(m_proxyOptions.value());
             }
