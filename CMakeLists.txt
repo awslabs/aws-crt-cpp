@@ -86,20 +86,20 @@ if(BUILD_DEPS)
         if(NOT USE_OPENSSL)
             include(AwsPrebuildDependency)
 
-            set(AWS_LC_CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+            set(AWSLC_CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
             # temporarily disable certain warnings as errors for the aws-lc build
             if(NOT MSVC)
                 check_c_compiler_flag(-Wno-stringop-overflow HAS_WNO_STRINGOP_OVERFLOW)
 
                 if(HAS_WNO_STRINGOP_OVERFLOW)
-                    set(AWS_LC_CMAKE_C_FLAGS "${AWS_LC_CMAKE_C_FLAGS} -Wno-stringop-overflow")
+                    set(AWSLC_CMAKE_C_FLAGS "${AWSLC_CMAKE_C_FLAGS} -Wno-stringop-overflow")
                 endif()
 
                 check_c_compiler_flag(-Wno-array-parameter HAS_WNO_ARRAY_PARAMETER)
 
                 if(HAS_WNO_ARRAY_PARAMETER)
-                    set(AWS_LC_CMAKE_C_FLAGS "${AWS_LC_CMAKE_C_FLAGS} -Wno-array-parameter")
+                    set(AWSLC_CMAKE_C_FLAGS "${AWSLC_CMAKE_C_FLAGS} -Wno-array-parameter")
                 endif()
             endif()
 
@@ -112,7 +112,7 @@ if(BUILD_DEPS)
                     -DDISABLE_PERL=ON
                     -DBUILD_LIBSSL=OFF
                     -DBUILD_TESTING=OFF
-                    -DCMAKE_C_FLAGS=${AWS_LC_CMAKE_C_FLAGS}
+                    -DCMAKE_C_FLAGS=${AWSLC_CMAKE_C_FLAGS}
             )
         endif()
 
