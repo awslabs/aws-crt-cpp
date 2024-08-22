@@ -299,8 +299,8 @@ namespace Aws
             Mqtt5ClientBuilder &WithCertificateAuthority(const Crt::ByteCursor &cert) noexcept;
 
             /**
-             * Overrides the socket properties of the underlying MQTT connections made by the client.  Leave undefined to use
-             * defaults (no TCP keep alive, 10 second socket timeout).
+             * Overrides the socket properties of the underlying MQTT connections made by the client.  Leave undefined
+             * to use defaults (no TCP keep alive, 10 second socket timeout).
              *
              * @param socketOptions - The socket properties of the underlying MQTT connections made by the client
              * @return - The Mqtt5ClientBuilder
