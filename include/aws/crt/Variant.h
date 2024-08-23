@@ -53,7 +53,7 @@ namespace Aws
             {
                 using VariantIndex = short;
 
-                template <typename T, typename Last> constexpr VariantIndex GetIndexOf(VariantIndex curIndex = -1)
+                template <typename T, typename Last> constexpr VariantIndex GetIndexOf(VariantIndex curIndex = 0)
                 {
                     return std::is_same<T, Last>::value ? curIndex : -1;
                 }
