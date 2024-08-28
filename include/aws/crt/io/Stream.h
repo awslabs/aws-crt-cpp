@@ -114,6 +114,19 @@ namespace Aws
                  */
                 virtual bool ReadImpl(ByteBuf &buffer) noexcept = 0;
 
+                /***
+                 * Read up-to buffer::capacity - buffer::len immediately available bytes into buffer::buffer
+                 * Increment buffer::len by the amount you read in.
+                 *
+                 * @return true if nothing went wrong.
+                 * Return true even if you read 0 bytes because the end-of-file has been reached.
+                 * Return true even if you read 0 bytes because data is not currently available.
+                 *
+                 * Return false if an actual failure condition occurs,
+                 * you SHOULD also raise an error via aws_raise_error().
+                 */
+                virtual bool ReadSomeImpl(ByteBuf &buffer) noexcept = 0;
+
                 /**
                  * @return the current status of the stream.
                  */
@@ -135,6 +148,15 @@ namespace Aws
                  * if a failure occurs.
                  */
                 virtual bool SeekImpl(int64_t offset, StreamSeekBasis seekBasis) noexcept = 0;
+
+                /**
+                 * Peeks the stream
+                 *
+                 * Essentially calls peek on the underlying istream
+                 *
+                 * @return return value of the underlying istream::peek
+                 */
+                virtual int64_t PeekImpl() const noexcept = 0;
 
               private:
                 static int s_Seek(aws_input_stream *stream, int64_t offset, enum aws_stream_seek_basis basis);
@@ -161,9 +183,11 @@ namespace Aws
 
               protected:
                 bool ReadImpl(ByteBuf &buffer) noexcept override;
+                bool ReadSomeImpl(ByteBuf &buffer) noexcept override;
                 StreamStatus GetStatusImpl() const noexcept override;
                 int64_t GetLengthImpl() const noexcept override;
                 bool SeekImpl(OffsetType offsetType, StreamSeekBasis seekBasis) noexcept override;
+                int64_t PeekImpl() const noexcept override;
 
               private:
                 std::shared_ptr<Aws::Crt::Io::IStream> m_stream;
