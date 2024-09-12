@@ -435,6 +435,8 @@ namespace Aws
 
                 virtual ~Mqtt5Client();
 
+                struct aws_mqtt5_client *GetUnderlyingHandle() const noexcept;
+
               private:
                 Mqtt5Client(const Mqtt5ClientOptions &options, Allocator *allocator = ApiAllocator()) noexcept;
 
