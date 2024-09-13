@@ -12,17 +12,17 @@ namespace Aws
     {
         namespace Checksum
         {
-            uint32_t ComputeCRC32(const ByteCursor &input, uint32_t previousCRC32 = 0)
+            uint32_t ComputeCRC32(const ByteCursor &input, uint32_t previousCRC32)
             {
                 return aws_checksums_crc32(input.ptr, input.len, previousCRC32);
             }
 
-            uint32_t ComputeCRC32C(const ByteCursor &input, uint32_t previousCRC32C = 0)
+            uint32_t ComputeCRC32C(const ByteCursor &input, uint32_t previousCRC32C)
             {
                 return aws_checksums_crc32c(input.ptr, input.len, previousCRC32C);
             }
 
-            uint64_t ComputeCRC64NVME(const ByteCursor &input, uint64_t previousCRC64NVME = 0)
+            uint64_t ComputeCRC64NVME(const ByteCursor &input, uint64_t previousCRC64NVME)
             {
                 return aws_checksums_crc64nvme(input.ptr, input.len, previousCRC64NVME);
             }
