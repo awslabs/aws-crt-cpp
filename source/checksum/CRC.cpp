@@ -1,0 +1,32 @@
+/**
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0.
+ */
+#include <aws/crt/checksum/CRC.h>
+
+#include <aws/checksums/crc.h>
+
+namespace Aws
+{
+    namespace Crt
+    {
+        namespace Checksum
+        {
+            uint32_t ComputeCRC32(const ByteCursor &input, uint32_t previousCRC32 = 0)
+            {
+                return aws_checksums_crc32(input.ptr, input.len, previousCRC32);
+            }
+
+            uint32_t ComputeCRC32C(const ByteCursor &input, uint32_t previousCRC32C = 0)
+            {
+                return aws_checksums_crc32c(input.ptr, input.len, previousCRC32C);
+            }
+
+            uint64_t ComputeCRC64NVME(const ByteCursor &input, uint64_t previousCRC64NVME = 0)
+            {
+                return aws_checksums_crc64nvme(input.ptr, input.len, previousCRC64NVME);
+            }
+
+        } // namespace Checksum
+    } // namespace Crt
+} // namespace Aws
