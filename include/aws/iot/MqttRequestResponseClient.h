@@ -68,73 +68,10 @@ namespace RequestResponse
     using SubscriptionStatusEventHandler = std::function<void(SubscriptionStatusEvent &&)>;
 
     struct AWS_CRT_CPP_API IncomingPublishEvent {
-        Aws::Crt::Vector<uint8_t> payload;
+        Aws::Crt::ByteCursor payload;
     };
 
     using IncomingPublishEventHandler = std::function<void(IncomingPublishEvent &&)>;
-
-    /**
- * A response path is a pair of values - MQTT topic and a JSON path - that describe how a response to
- * an MQTT-based request may arrive.  For a given request type, there may be multiple response paths and each
- * one is associated with a separate JSON schema for the response body.
-     */
-    struct AWS_CRT_CPP_API ResponsePath {
-
-        /**
-     * MQTT topic that a response may arrive on.
-         */
-        Aws::Crt::String topic;
-
-        /**
-     * JSON path for finding correlation tokens within payloads that arrive on this path's topic.
-         */
-        Aws::Crt::Optional<Aws::Crt::String> correlationTokenJsonPath;
-    };
-
-    /**
- * Configuration options for an MQTT-based request-response operation.
-     */
-    struct AWS_CRT_CPP_API RequestResponseOperationOptions {
-
-        /**
-     * Set of topic filters that should be subscribed to in order to cover all possible response paths.  Sometimes
-     * using wildcards can cut down on the subscriptions needed; other times that isn't valid.
-         */
-        Aws::Crt::Vector<Aws::Crt::String> subscriptionTopicFilters;
-
-        /**
-     * Set of all possible response paths associated with this request type.
-         */
-        Aws::Crt::Vector<ResponsePath> responsePaths;
-
-        /**
-     * Topic to publish the request to once response subscriptions have been established.
-         */
-        Aws::Crt::String publishTopic;
-
-        /**
-     * Payload to publish to 'publishTopic' in order to initiate the request
-         */
-        Aws::Crt::Vector<uint8_t> payload;
-
-        /**
-     * Correlation token embedded in the request that must be found in a response message.  This can be null
-     * to support certain services which don't use correlation tokens.  In that case, the client
-     * only allows one token-less request at a time.
-         */
-        Aws::Crt::Optional<Aws::Crt::String> correlationToken;
-    };
-
-    /**
- * Configuration options for an MQTT-based streaming operation.
-     */
-    struct AWS_CRT_CPP_API StreamingOperationOptions {
-
-        /**
-     * Topic filter that the streaming operation should listen on
-         */
-        Aws::Crt::String subscriptionTopicFilter;
-    };
 
     /**
  * Encapsulates a response to an AWS IoT Core MQTT-based service request
@@ -145,12 +82,12 @@ namespace RequestResponse
      * MQTT Topic that the response was received on.  Different topics map to different types within the
      * service model, so we need this value in order to know what to deserialize the payload into.
          */
-        struct aws_byte_cursor topic;
+        Aws::Crt::ByteCursor topic;
 
         /**
      * Payload of the response that correlates to a submitted request.
          */
-        struct aws_byte_cursor payload;
+        Aws::Crt::ByteCursor payload;
     };
 
     template <typename R, typename E> struct Result {
@@ -228,6 +165,21 @@ namespace RequestResponse
 
     using UnmodeledResultHandler = std::function<void(UnmodeledResult &&)>;
 
+    struct AWS_CRT_CPP_API StreamingOperationOptions {
+        Aws::Crt::ByteCursor subscriptionTopicFilter;
+
+        SubscriptionStatusEventHandler subscriptionStatusEventHandler;
+
+        IncomingPublishEventHandler  incomingPublishEventHandler;
+    };
+
+    class AWS_CRT_CPP_API IStreamingOperation {
+      public:
+
+        virtual ~IStreamingOperation() = 0;
+
+    };
+
     /**
  * MQTT-based request-response client configuration options
      */
@@ -260,15 +212,17 @@ namespace RequestResponse
 
             static MqttRequestResponseClient *newFrom311(const Aws::Crt::Mqtt::MqttConnection &protocolClient, RequestResponseClientOptions &&options, Aws::Crt::Allocator *allocator = Aws::Crt::ApiAllocator());
 
-            int submitRequest(const RequestResponseOperationOptions &requestOptions, UnmodeledResultHandler &&resultHandler);
+            int submitRequest(const aws_mqtt_request_operation_options &requestOptions, UnmodeledResultHandler &&resultHandler);
+
+            std::shared_ptr<IStreamingOperation> createStream(StreamingOperationOptions &&options);
 
         private:
 
-          MqttRequestResponseClient(Aws::Crt::Allocator *allocator, std::shared_ptr<MqttRequestResponseClientImpl> impl);
+          MqttRequestResponseClient(Aws::Crt::Allocator *allocator, MqttRequestResponseClientImpl *impl);
 
           Aws::Crt::Allocator *m_allocator;
 
-            std::shared_ptr<MqttRequestResponseClientImpl> m_impl;
+          MqttRequestResponseClientImpl *m_impl;
     };
 
 
