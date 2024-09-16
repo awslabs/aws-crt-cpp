@@ -15,217 +15,217 @@
 
 #include <functional>
 
-namespace Aws {
-
-namespace Crt {
-namespace Mqtt {
-    class MqttConnection;
-}
-
-namespace Mqtt5 {
-    class Mqtt5Client;
-}
-}
-
-namespace Iot {
-namespace RequestResponse
+namespace Aws
 {
 
-    class MqttRequestResponseClientImpl;
-
-    /**
- * The type of change to the state of a streaming operation subscription
-     */
-    enum class SubscriptionStatusEventType
+    namespace Crt
     {
+        namespace Mqtt
+        {
+            class MqttConnection;
+        }
 
-        /**
-     * The streaming operation is successfully subscribed to its topic (filter)
-         */
-        SubscriptionEstablished = ARRSSET_SUBSCRIPTION_ESTABLISHED,
+        namespace Mqtt5
+        {
+            class Mqtt5Client;
+        }
+    } // namespace Crt
 
-        /**
-     * The streaming operation has temporarily lost its subscription to its topic (filter)
-         */
-        SubscriptionLost = ARRSSET_SUBSCRIPTION_LOST,
-
-        /**
-     * The streaming operation has entered a terminal state where it has given up trying to subscribe
-     * to its topic (filter).  This is always due to user error (bad topic filter or IoT Core permission policy).
-         */
-        SubscriptionHalted = ARRSSET_SUBSCRIPTION_HALTED,
-    };
-
-    /**
- * An event that describes a change in subscription status for a streaming operation.
-     */
-    struct AWS_CRT_CPP_API SubscriptionStatusEvent
+    namespace Iot
     {
-        SubscriptionStatusEventType type;
-        int errorCode;
-    };
+        namespace RequestResponse
+        {
 
-    using SubscriptionStatusEventHandler = std::function<void(SubscriptionStatusEvent &&)>;
+            class MqttRequestResponseClientImpl;
 
-    struct AWS_CRT_CPP_API IncomingPublishEvent {
-        Aws::Crt::ByteCursor payload;
-    };
+            /**
+             * The type of change to the state of a streaming operation subscription
+             */
+            enum class SubscriptionStatusEventType
+            {
 
-    using IncomingPublishEventHandler = std::function<void(IncomingPublishEvent &&)>;
+                /**
+                 * The streaming operation is successfully subscribed to its topic (filter)
+                 */
+                SubscriptionEstablished = ARRSSET_SUBSCRIPTION_ESTABLISHED,
 
-    /**
- * Encapsulates a response to an AWS IoT Core MQTT-based service request
-     */
-    struct AWS_CRT_CPP_API Response {
+                /**
+                 * The streaming operation has temporarily lost its subscription to its topic (filter)
+                 */
+                SubscriptionLost = ARRSSET_SUBSCRIPTION_LOST,
 
-        /**
-     * MQTT Topic that the response was received on.  Different topics map to different types within the
-     * service model, so we need this value in order to know what to deserialize the payload into.
-         */
-        Aws::Crt::ByteCursor topic;
+                /**
+                 * The streaming operation has entered a terminal state where it has given up trying to subscribe
+                 * to its topic (filter).  This is always due to user error (bad topic filter or IoT Core permission
+                 * policy).
+                 */
+                SubscriptionHalted = ARRSSET_SUBSCRIPTION_HALTED,
+            };
 
-        /**
-     * Payload of the response that correlates to a submitted request.
-         */
-        Aws::Crt::ByteCursor payload;
-    };
+            /**
+             * An event that describes a change in subscription status for a streaming operation.
+             */
+            struct AWS_CRT_CPP_API SubscriptionStatusEvent
+            {
+                SubscriptionStatusEventType type;
+                int errorCode;
+            };
 
-    template <typename R, typename E> struct Result {
-      public:
+            using SubscriptionStatusEventHandler = std::function<void(SubscriptionStatusEvent &&)>;
 
-        Result() = delete;
-        Result(const Result &result) = default;
-        Result(Result &&result) = default;
+            struct AWS_CRT_CPP_API IncomingPublishEvent
+            {
+                Aws::Crt::ByteCursor payload;
+            };
 
-        Result(const R &response) :
-          rawResult(response)
-        {}
+            using IncomingPublishEventHandler = std::function<void(IncomingPublishEvent &&)>;
 
-        Result(R &&response) :
-              rawResult(std::move(response))
-        {}
+            /**
+             * Encapsulates a response to an AWS IoT Core MQTT-based service request
+             */
+            struct AWS_CRT_CPP_API UnmodeledResponse
+            {
 
-        Result(const E &error) :
-              rawResult(error)
-        {}
+                /**
+                 * MQTT Topic that the response was received on.  Different topics map to different types within the
+                 * service model, so we need this value in order to know what to deserialize the payload into.
+                 */
+                Aws::Crt::ByteCursor topic;
 
-        Result(E &&error) :
-              rawResult(std::move(error))
-        {}
+                /**
+                 * Payload of the response that correlates to a submitted request.
+                 */
+                Aws::Crt::ByteCursor payload;
+            };
 
-        ~Result() = default;
+            template <typename R, typename E> struct Result
+            {
+              public:
+                Result() = delete;
+                Result(const Result &result) = default;
+                Result(Result &&result) = default;
 
-        Result &operator=(const Result &result) = default;
-        Result &operator=(Result &&result) = default;
+                Result(const R &response) : rawResult(response) {}
 
-        Result &operator=(const R &response) {
-            this->rawResult = response;
+                Result(R &&response) : rawResult(std::move(response)) {}
 
-            return *this;
-        }
+                Result(const E &error) : rawResult(error) {}
 
-        Result &operator=(R &&response) {
-            this->rawResult = std::move(response);
+                Result(E &&error) : rawResult(std::move(error)) {}
 
-            return *this;
-        }
+                ~Result() = default;
 
-        Result &operator=(const E &error) {
-            this->rawResult = error;
-        }
+                Result &operator=(const Result &result) = default;
+                Result &operator=(Result &&result) = default;
 
-        Result &operator=(E &&error) {
-            this->rawResult = std::move(error);
+                Result &operator=(const R &response)
+                {
+                    this->rawResult = response;
 
-            return *this;
-        }
+                    return *this;
+                }
 
-        bool isSuccess() const {
-            return rawResult.holds_alternative<R>();
-        }
+                Result &operator=(R &&response)
+                {
+                    this->rawResult = std::move(response);
 
-        const R &getResponse() const {
-            AWS_FATAL_ASSERT(isSuccess());
+                    return *this;
+                }
 
-            return rawResult.get<Response>();
-        }
+                Result &operator=(const E &error) { this->rawResult = error; }
 
-        const E &getError() const {
-            AWS_FATAL_ASSERT(!isSuccess());
+                Result &operator=(E &&error)
+                {
+                    this->rawResult = std::move(error);
 
-            return rawResult.get<int>();
-        }
+                    return *this;
+                }
 
-      private:
+                bool isSuccess() const { return rawResult.template holds_alternative<R>(); }
 
-        Aws::Crt::Variant<R, E> rawResult;
-    };
+                const R &getResponse() const
+                {
+                    AWS_FATAL_ASSERT(isSuccess());
 
-    using UnmodeledResult = Result<Response, int>;
+                    return rawResult.template get<R>();
+                }
 
-    using UnmodeledResultHandler = std::function<void(UnmodeledResult &&)>;
+                const E &getError() const
+                {
+                    AWS_FATAL_ASSERT(!isSuccess());
 
-    struct AWS_CRT_CPP_API StreamingOperationOptions {
-        Aws::Crt::ByteCursor subscriptionTopicFilter;
+                    return rawResult.template get<E>();
+                }
 
-        SubscriptionStatusEventHandler subscriptionStatusEventHandler;
+              private:
+                Aws::Crt::Variant<R, E> rawResult;
+            };
 
-        IncomingPublishEventHandler  incomingPublishEventHandler;
-    };
+            using UnmodeledResult = Result<UnmodeledResponse, int>;
 
-    class AWS_CRT_CPP_API IStreamingOperation {
-      public:
+            using UnmodeledResultHandler = std::function<void(UnmodeledResult &&)>;
 
-        virtual ~IStreamingOperation() = 0;
+            struct AWS_CRT_CPP_API StreamingOperationOptions
+            {
+                Aws::Crt::ByteCursor subscriptionTopicFilter;
 
-    };
+                SubscriptionStatusEventHandler subscriptionStatusEventHandler;
 
-    /**
- * MQTT-based request-response client configuration options
-     */
-    struct AWS_CRT_CPP_API RequestResponseClientOptions {
+                IncomingPublishEventHandler incomingPublishEventHandler;
+            };
 
-        /**
-     * Maximum number of subscriptions that the client will concurrently use for request-response operations
-         */
-        uint32_t maxRequestResponseSubscriptions;
+            class AWS_CRT_CPP_API IStreamingOperation
+            {
+              public:
+                virtual ~IStreamingOperation() = 0;
 
-        /**
-     * Maximum number of subscriptions that the client will concurrently use for streaming operations
-         */
-        uint32_t maxStreamingSubscriptions;
+                virtual void activate() = 0;
+            };
 
-        /**
-     * Duration, in seconds, that a request-response operation will wait for completion before giving up
-         */
-        uint32_t operationTimeoutInSeconds;
-    };
+            /**
+             * MQTT-based request-response client configuration options
+             */
+            struct AWS_CRT_CPP_API RequestResponseClientOptions
+            {
 
+                /**
+                 * Maximum number of subscriptions that the client will concurrently use for request-response operations
+                 */
+                uint32_t maxRequestResponseSubscriptions;
 
+                /**
+                 * Maximum number of subscriptions that the client will concurrently use for streaming operations
+                 */
+                uint32_t maxStreamingSubscriptions;
 
-    class AWS_CRT_CPP_API MqttRequestResponseClient {
-        public:
+                /**
+                 * Duration, in seconds, that a request-response operation will wait for completion before giving up
+                 */
+                uint32_t operationTimeoutInSeconds;
+            };
 
-            virtual ~MqttRequestResponseClient();
+            class AWS_CRT_CPP_API IMqttRequestResponseClient
+            {
+              public:
+                virtual ~IMqttRequestResponseClient() = 0;
 
-            static MqttRequestResponseClient *newFrom5(const Aws::Crt::Mqtt5::Mqtt5Client &protocolClient, RequestResponseClientOptions &&options, Aws::Crt::Allocator *allocator = Aws::Crt::ApiAllocator());
+                virtual int submitRequest(
+                    const aws_mqtt_request_operation_options &requestOptions,
+                    UnmodeledResultHandler &&resultHandler) = 0;
 
-            static MqttRequestResponseClient *newFrom311(const Aws::Crt::Mqtt::MqttConnection &protocolClient, RequestResponseClientOptions &&options, Aws::Crt::Allocator *allocator = Aws::Crt::ApiAllocator());
+                virtual std::shared_ptr<IStreamingOperation> createStream(StreamingOperationOptions &&options) = 0;
 
-            int submitRequest(const aws_mqtt_request_operation_options &requestOptions, UnmodeledResultHandler &&resultHandler);
+                static IMqttRequestResponseClient *newFrom5(
+                    const Aws::Crt::Mqtt5::Mqtt5Client &protocolClient,
+                    RequestResponseClientOptions &&options,
+                    Aws::Crt::Allocator *allocator = Aws::Crt::ApiAllocator());
 
-            std::shared_ptr<IStreamingOperation> createStream(StreamingOperationOptions &&options);
+                static IMqttRequestResponseClient *newFrom311(
+                    const Aws::Crt::Mqtt::MqttConnection &protocolClient,
+                    RequestResponseClientOptions &&options,
+                    Aws::Crt::Allocator *allocator = Aws::Crt::ApiAllocator());
+            };
 
-        private:
-
-          MqttRequestResponseClient(Aws::Crt::Allocator *allocator, MqttRequestResponseClientImpl *impl);
-
-          Aws::Crt::Allocator *m_allocator;
-
-          MqttRequestResponseClientImpl *m_impl;
-    };
-
-
-} // RequestResponse
-} // Iot
-} // Aws
+        } // namespace RequestResponse
+    } // namespace Iot
+} // namespace Aws
