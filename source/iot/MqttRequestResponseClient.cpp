@@ -419,7 +419,7 @@ namespace Aws
 
             IMqttRequestResponseClient *IMqttRequestResponseClient::newFrom5(
                 const Aws::Crt::Mqtt5::Mqtt5Client &protocolClient,
-                RequestResponseClientOptions &&options,
+                const RequestResponseClientOptions &options,
                 Aws::Crt::Allocator *allocator)
             {
                 auto clientImpl = Aws::Crt::New<MqttRequestResponseClientImpl>(allocator, allocator);
@@ -448,7 +448,7 @@ namespace Aws
 
             IMqttRequestResponseClient *IMqttRequestResponseClient::newFrom311(
                 const Aws::Crt::Mqtt::MqttConnection &protocolClient,
-                RequestResponseClientOptions &&options,
+                const RequestResponseClientOptions &options,
                 Aws::Crt::Allocator *allocator)
             {
                 auto clientImpl = Aws::Crt::New<MqttRequestResponseClientImpl>(allocator, allocator);

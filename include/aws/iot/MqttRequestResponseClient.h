@@ -217,12 +217,12 @@ namespace Aws
 
                 static IMqttRequestResponseClient *newFrom5(
                     const Aws::Crt::Mqtt5::Mqtt5Client &protocolClient,
-                    RequestResponseClientOptions &&options,
+                    const RequestResponseClientOptions &options,
                     Aws::Crt::Allocator *allocator = Aws::Crt::ApiAllocator());
 
                 static IMqttRequestResponseClient *newFrom311(
                     const Aws::Crt::Mqtt::MqttConnection &protocolClient,
-                    RequestResponseClientOptions &&options,
+                    const RequestResponseClientOptions &options,
                     Aws::Crt::Allocator *allocator = Aws::Crt::ApiAllocator());
             };
 
