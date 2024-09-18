@@ -177,7 +177,7 @@ namespace Aws
             class AWS_CRT_CPP_API IStreamingOperation
             {
               public:
-                virtual ~IStreamingOperation() = 0;
+                virtual ~IStreamingOperation() = default;
 
                 virtual void activate() = 0;
             };
@@ -207,7 +207,7 @@ namespace Aws
             class AWS_CRT_CPP_API IMqttRequestResponseClient
             {
               public:
-                virtual ~IMqttRequestResponseClient() = 0;
+                virtual ~IMqttRequestResponseClient() = default;
 
                 virtual int submitRequest(
                     const aws_mqtt_request_operation_options &requestOptions,
