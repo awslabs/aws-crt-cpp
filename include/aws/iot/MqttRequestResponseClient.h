@@ -167,8 +167,6 @@ namespace Aws
 
             struct AWS_CRT_CPP_API StreamingOperationOptions
             {
-                Aws::Crt::ByteCursor subscriptionTopicFilter;
-
                 SubscriptionStatusEventHandler subscriptionStatusEventHandler;
             };
 
