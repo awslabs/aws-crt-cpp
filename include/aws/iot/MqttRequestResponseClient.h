@@ -213,7 +213,7 @@ namespace Aws
                     const aws_mqtt_request_operation_options &requestOptions,
                     UnmodeledResultHandler &&resultHandler) = 0;
 
-                virtual std::shared_ptr<IStreamingOperation> createStream(StreamingOperationOptions &&options) = 0;
+                virtual std::shared_ptr<IStreamingOperation> createStream(const StreamingOperationOptions &options) = 0;
 
                 static IMqttRequestResponseClient *newFrom5(
                     const Aws::Crt::Mqtt5::Mqtt5Client &protocolClient,

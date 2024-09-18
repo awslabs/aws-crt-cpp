@@ -77,7 +77,7 @@ namespace Aws
               public:
                 StreamingOperationImpl(
                     struct aws_mqtt_rr_client_operation *stream,
-                    StreamingOperationOptions &&options,
+                    const StreamingOperationOptions &options,
                     struct aws_event_loop *protocolLoop);
                 virtual ~StreamingOperationImpl();
 
@@ -113,9 +113,9 @@ namespace Aws
 
             StreamingOperationImpl::StreamingOperationImpl(
                 struct aws_mqtt_rr_client_operation *stream,
-                StreamingOperationOptions &&options,
+                const StreamingOperationOptions &options,
                 struct aws_event_loop *protocolLoop)
-                : m_config(std::move(options)), m_stream(stream), m_protocolLoop(protocolLoop), m_lock(),
+                : m_config(options), m_stream(stream), m_protocolLoop(protocolLoop), m_lock(),
                   m_closed(false)
             {
                 aws_rw_lock_init(&m_lock);
@@ -217,7 +217,7 @@ namespace Aws
               public:
                 static std::shared_ptr<IStreamingOperation> create(
                     Aws::Crt::Allocator *allocator,
-                    StreamingOperationOptions &&options,
+                    const StreamingOperationOptions &options,
                     struct aws_mqtt_request_response_client *client);
 
                 StreamingOperation(const std::shared_ptr<StreamingOperationImpl> &impl);
@@ -235,7 +235,7 @@ namespace Aws
 
             std::shared_ptr<IStreamingOperation> StreamingOperation::create(
                 Aws::Crt::Allocator *allocator,
-                StreamingOperationOptions &&options,
+                const StreamingOperationOptions &options,
                 struct aws_mqtt_request_response_client *client)
             {
                 StreamingOperationImplHandle *implHandle = Aws::Crt::New<StreamingOperationImplHandle>(allocator);
@@ -256,7 +256,7 @@ namespace Aws
                 }
 
                 auto impl = Aws::Crt::MakeShared<StreamingOperationImpl>(
-                    allocator, stream, std::move(options), aws_mqtt_request_response_client_get_event_loop(client));
+                    allocator, stream, options, aws_mqtt_request_response_client_get_event_loop(client));
                 auto streamingOperation = Aws::Crt::MakeShared<StreamingOperation>(allocator, impl);
 
                 return streamingOperation;
@@ -334,7 +334,7 @@ namespace Aws
                     const aws_mqtt_request_operation_options &requestOptions,
                     UnmodeledResultHandler &&resultHandler) noexcept;
 
-                std::shared_ptr<IStreamingOperation> createStream(StreamingOperationOptions &&options);
+                std::shared_ptr<IStreamingOperation> createStream(const StreamingOperationOptions &options);
 
                 Aws::Crt::Allocator *getAllocator() const { return m_allocator; }
 
@@ -387,9 +387,9 @@ namespace Aws
             }
 
             std::shared_ptr<IStreamingOperation> MqttRequestResponseClientImpl::createStream(
-                StreamingOperationOptions &&options)
+                const StreamingOperationOptions &options)
             {
-                return StreamingOperation::create(m_allocator, std::move(options), m_client);
+                return StreamingOperation::create(m_allocator, options, m_client);
             }
 
             //////////////////////////////////////////////////////////
@@ -411,7 +411,7 @@ namespace Aws
                     const aws_mqtt_request_operation_options &requestOptions,
                     UnmodeledResultHandler &&resultHandler);
 
-                std::shared_ptr<IStreamingOperation> createStream(StreamingOperationOptions &&options);
+                std::shared_ptr<IStreamingOperation> createStream(const StreamingOperationOptions &options);
 
               private:
                 MqttRequestResponseClientImpl *m_impl;
@@ -483,9 +483,9 @@ namespace Aws
             }
 
             std::shared_ptr<IStreamingOperation> MqttRequestResponseClient::createStream(
-                StreamingOperationOptions &&options)
+                const StreamingOperationOptions &options)
             {
-                return m_impl->createStream(std::move(options));
+                return m_impl->createStream(options);
             }
 
             MqttRequestResponseClient::MqttRequestResponseClient(MqttRequestResponseClientImpl *impl) : m_impl(impl) {}
