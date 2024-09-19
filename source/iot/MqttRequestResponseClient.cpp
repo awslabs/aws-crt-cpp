@@ -252,12 +252,16 @@ namespace Aws
                     aws_mqtt_request_response_client_create_streaming_operation(client, &streamingOptions);
                 if (!stream)
                 {
+                    Aws::Crt::Delete(implHandle, allocator);
                     return nullptr;
                 }
 
                 auto impl = Aws::Crt::MakeShared<StreamingOperationImpl>(
                     allocator, stream, options, aws_mqtt_request_response_client_get_event_loop(client));
                 auto streamingOperation = Aws::Crt::MakeShared<StreamingOperation>(allocator, impl);
+
+                implHandle->m_allocator = allocator;
+                implHandle->m_impl = impl;
 
                 return streamingOperation;
             }
