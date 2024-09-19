@@ -28,7 +28,7 @@ namespace Aws
         {
             class Mqtt5Client;
         }
-    }
+    } // namespace Crt
 
     namespace Iot
     {
@@ -64,20 +64,24 @@ namespace Aws
             class AWS_CRT_CPP_API SubscriptionStatusEvent
             {
               public:
-                SubscriptionStatusEvent() : m_type(SubscriptionStatusEventType::SubscriptionEstablished), m_errorCode(0) {}
+                SubscriptionStatusEvent() : m_type(SubscriptionStatusEventType::SubscriptionEstablished), m_errorCode(0)
+                {
+                }
                 SubscriptionStatusEvent(const SubscriptionStatusEvent &rhs) = default;
                 SubscriptionStatusEvent(SubscriptionStatusEvent &&rhs) = default;
                 ~SubscriptionStatusEvent() = default;
 
-                SubscriptionStatusEvent &operator =(const SubscriptionStatusEvent &rhs) = default;
-                SubscriptionStatusEvent &operator =(SubscriptionStatusEvent &&rhs) = default;
+                SubscriptionStatusEvent &operator=(const SubscriptionStatusEvent &rhs) = default;
+                SubscriptionStatusEvent &operator=(SubscriptionStatusEvent &&rhs) = default;
 
-                SubscriptionStatusEvent &WithType(SubscriptionStatusEventType type) {
+                SubscriptionStatusEvent &WithType(SubscriptionStatusEventType type)
+                {
                     m_type = type;
                     return *this;
                 }
 
-                SubscriptionStatusEvent &WithErrorCode(int errorCode) {
+                SubscriptionStatusEvent &WithErrorCode(int errorCode)
+                {
                     m_errorCode = errorCode;
                     return *this;
                 }
@@ -86,7 +90,6 @@ namespace Aws
                 int GetErrorCode() const { return m_errorCode; }
 
               private:
-
                 SubscriptionStatusEventType m_type;
                 int m_errorCode;
             };
@@ -102,10 +105,11 @@ namespace Aws
                 IncomingPublishEvent(IncomingPublishEvent &&rhs) = default;
                 ~IncomingPublishEvent() = default;
 
-                IncomingPublishEvent &operator =(const IncomingPublishEvent &rhs) = default;
-                IncomingPublishEvent &operator =(IncomingPublishEvent &&rhs) = default;
+                IncomingPublishEvent &operator=(const IncomingPublishEvent &rhs) = default;
+                IncomingPublishEvent &operator=(IncomingPublishEvent &&rhs) = default;
 
-                IncomingPublishEvent &WithPayload(Aws::Crt::ByteCursor payload) {
+                IncomingPublishEvent &WithPayload(Aws::Crt::ByteCursor payload)
+                {
                     m_payload = payload;
                     return *this;
                 }
@@ -113,7 +117,6 @@ namespace Aws
                 Aws::Crt::ByteCursor GetPayload() const { return m_payload; }
 
               private:
-
                 Aws::Crt::ByteCursor m_payload;
             };
 
@@ -127,7 +130,8 @@ namespace Aws
             class AWS_CRT_CPP_API UnmodeledResponse
             {
               public:
-                UnmodeledResponse() : m_topic(), m_payload() {
+                UnmodeledResponse() : m_topic(), m_payload()
+                {
                     AWS_ZERO_STRUCT(m_payload);
                     AWS_ZERO_STRUCT(m_topic);
                 }
@@ -135,15 +139,17 @@ namespace Aws
                 UnmodeledResponse(UnmodeledResponse &&rhs) = default;
                 ~UnmodeledResponse() = default;
 
-                UnmodeledResponse &operator =(const UnmodeledResponse &rhs) = default;
-                UnmodeledResponse &operator =(UnmodeledResponse &&rhs) = default;
+                UnmodeledResponse &operator=(const UnmodeledResponse &rhs) = default;
+                UnmodeledResponse &operator=(UnmodeledResponse &&rhs) = default;
 
-                UnmodeledResponse &WithPayload(Aws::Crt::ByteCursor payload) {
+                UnmodeledResponse &WithPayload(Aws::Crt::ByteCursor payload)
+                {
                     m_payload = payload;
                     return *this;
                 }
 
-                UnmodeledResponse &WithTopic(Aws::Crt::ByteCursor topic) {
+                UnmodeledResponse &WithTopic(Aws::Crt::ByteCursor topic)
+                {
                     m_topic = topic;
                     return *this;
                 }
@@ -153,7 +159,6 @@ namespace Aws
                 Aws::Crt::ByteCursor GetTopic() const { return m_topic; }
 
               private:
-
                 /**
                  * MQTT Topic that the response was received on.  Different topics map to different types within the
                  * service model, so we need this value in order to know what to deserialize the payload into.
@@ -230,11 +235,9 @@ namespace Aws
 
             using UnmodeledResultHandler = std::function<void(UnmodeledResult &&)>;
 
-            template<typename T>
-            class StreamingOperationOptions
+            template <typename T> class StreamingOperationOptions
             {
               public:
-
                 StreamingOperationOptions() = default;
                 StreamingOperationOptions(const StreamingOperationOptions &rhs) = default;
                 StreamingOperationOptions(StreamingOperationOptions &&rhs) = default;
@@ -243,21 +246,26 @@ namespace Aws
                 StreamingOperationOptions &operator=(const StreamingOperationOptions &rhs) = default;
                 StreamingOperationOptions &operator=(StreamingOperationOptions &&rhs) = default;
 
-                StreamingOperationOptions &WithSubscriptionStatusEventHandler(const SubscriptionStatusEventHandler &handler) {
+                StreamingOperationOptions &WithSubscriptionStatusEventHandler(
+                    const SubscriptionStatusEventHandler &handler)
+                {
                     m_subscriptionStatusEventHandler = handler;
                     return *this;
                 }
 
-                StreamingOperationOptions &WithStreamHandler(const std::function<void(T &&)> &handler) {
+                StreamingOperationOptions &WithStreamHandler(const std::function<void(T &&)> &handler)
+                {
                     m_streamHandler = handler;
                     return *this;
                 }
 
-                const SubscriptionStatusEventHandler &GetSubscriptionStatusEventHandler() const { return m_subscriptionStatusEventHandler; }
+                const SubscriptionStatusEventHandler &GetSubscriptionStatusEventHandler() const
+                {
+                    return m_subscriptionStatusEventHandler;
+                }
                 const std::function<void(T &&)> &GetStreamHandler() const { return m_streamHandler; }
 
               private:
-
                 SubscriptionStatusEventHandler m_subscriptionStatusEventHandler;
 
                 std::function<void(T &&)> m_streamHandler;
@@ -267,10 +275,8 @@ namespace Aws
             struct AWS_CRT_CPP_API StreamingOperationOptionsInternal
             {
               public:
-                StreamingOperationOptionsInternal() :
-                    subscriptionTopicFilter(),
-                    subscriptionStatusEventHandler(),
-                    incomingPublishEventHandler()
+                StreamingOperationOptionsInternal()
+                    : subscriptionTopicFilter(), subscriptionStatusEventHandler(), incomingPublishEventHandler()
                 {
                     AWS_ZERO_STRUCT(subscriptionTopicFilter);
                 }
@@ -304,17 +310,21 @@ namespace Aws
                 RequestResponseClientOptions &operator=(const RequestResponseClientOptions &rhs) = default;
                 RequestResponseClientOptions &operator=(RequestResponseClientOptions &&rhs) = default;
 
-                RequestResponseClientOptions &WithMaxRequestResponseSubscriptions(uint32_t maxRequestResponseSubscriptions) {
+                RequestResponseClientOptions &WithMaxRequestResponseSubscriptions(
+                    uint32_t maxRequestResponseSubscriptions)
+                {
                     m_maxRequestResponseSubscriptions = maxRequestResponseSubscriptions;
                     return *this;
                 }
 
-                RequestResponseClientOptions &WithMaxStreamingSubscriptions(uint32_t maxStreamingSubscriptions) {
+                RequestResponseClientOptions &WithMaxStreamingSubscriptions(uint32_t maxStreamingSubscriptions)
+                {
                     m_maxStreamingSubscriptions = maxStreamingSubscriptions;
                     return *this;
                 }
 
-                RequestResponseClientOptions &WithOperationTimeoutInSeconds(uint32_t operationTimeoutInSeconds) {
+                RequestResponseClientOptions &WithOperationTimeoutInSeconds(uint32_t operationTimeoutInSeconds)
+                {
                     m_operationTimeoutInSeconds = operationTimeoutInSeconds;
                     return *this;
                 }
@@ -349,8 +359,8 @@ namespace Aws
                     const aws_mqtt_request_operation_options &requestOptions,
                     UnmodeledResultHandler &&resultHandler) = 0;
 
-                virtual std::shared_ptr<IStreamingOperation> CreateStream(const StreamingOperationOptionsInternal &options) = 0;
-
+                virtual std::shared_ptr<IStreamingOperation> CreateStream(
+                    const StreamingOperationOptionsInternal &options) = 0;
             };
 
             AWS_CRT_CPP_API std::shared_ptr<IMqttRequestResponseClient> NewClientFrom5(

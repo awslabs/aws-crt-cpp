@@ -95,7 +95,6 @@ namespace Aws
                 static void OnTerminatedCallback(void *user_data);
 
               private:
-
                 StreamingOperationOptionsInternal m_config;
 
                 struct aws_mqtt_rr_client_operation *m_stream;
@@ -120,8 +119,7 @@ namespace Aws
                 struct aws_mqtt_rr_client_operation *stream,
                 const StreamingOperationOptionsInternal &options,
                 struct aws_event_loop *protocolLoop)
-                : m_config(options), m_stream(stream), m_protocolLoop(protocolLoop), m_lock(),
-                  m_closed(false)
+                : m_config(options), m_stream(stream), m_protocolLoop(protocolLoop), m_lock(), m_closed(false)
             {
                 aws_rw_lock_init(&m_lock);
             }
@@ -220,7 +218,6 @@ namespace Aws
             class StreamingOperation : public IStreamingOperation
             {
               public:
-
                 static std::shared_ptr<IStreamingOperation> Create(
                     Aws::Crt::Allocator *allocator,
                     const StreamingOperationOptionsInternal &options,
@@ -232,7 +229,6 @@ namespace Aws
                 virtual void Open();
 
               private:
-
                 std::shared_ptr<StreamingOperationImpl> m_impl;
             };
 
@@ -417,7 +413,6 @@ namespace Aws
             class MqttRequestResponseClient : public IMqttRequestResponseClient
             {
               public:
-
                 explicit MqttRequestResponseClient(MqttRequestResponseClientImpl *impl);
                 virtual ~MqttRequestResponseClient();
 
@@ -425,10 +420,10 @@ namespace Aws
                     const aws_mqtt_request_operation_options &requestOptions,
                     UnmodeledResultHandler &&resultHandler) override;
 
-                std::shared_ptr<IStreamingOperation> CreateStream(const StreamingOperationOptionsInternal &options) override;
+                std::shared_ptr<IStreamingOperation> CreateStream(
+                    const StreamingOperationOptionsInternal &options) override;
 
               private:
-
                 MqttRequestResponseClientImpl *m_impl;
             };
 
