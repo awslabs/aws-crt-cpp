@@ -127,7 +127,7 @@ namespace Aws
             class AWS_CRT_CPP_API UnmodeledResponse
             {
               public:
-                UnmodeledResponse() : m_payload(), m_topic() {
+                UnmodeledResponse() : m_topic(), m_payload() {
                     AWS_ZERO_STRUCT(m_payload);
                     AWS_ZERO_STRUCT(m_topic);
                 }
