@@ -166,7 +166,7 @@ namespace Aws
                 Aws::Crt::ByteCursor m_payload;
             };
 
-            template <typename R, typename E> struct Result
+            template <typename R, typename E> class Result
             {
               public:
                 Result() = delete;
@@ -231,7 +231,7 @@ namespace Aws
             using UnmodeledResultHandler = std::function<void(UnmodeledResult &&)>;
 
             template<typename T>
-            class AWS_CRT_CPP_API StreamingOperationOptions
+            class StreamingOperationOptions
             {
               public:
 
