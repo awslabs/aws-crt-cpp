@@ -165,9 +165,12 @@ namespace Aws
 
             using UnmodeledResultHandler = std::function<void(UnmodeledResult &&)>;
 
+            template<typename T>
             struct AWS_CRT_CPP_API StreamingOperationOptions
             {
                 SubscriptionStatusEventHandler subscriptionStatusEventHandler;
+
+                std::function<void(T &&)> streamHandler;
             };
 
             struct AWS_CRT_CPP_API StreamingOperationOptionsInternal
@@ -184,7 +187,7 @@ namespace Aws
               public:
                 virtual ~IStreamingOperation() = default;
 
-                virtual void activate() = 0;
+                virtual void open() = 0;
             };
 
             /**
@@ -220,12 +223,12 @@ namespace Aws
 
                 virtual std::shared_ptr<IStreamingOperation> createStream(const StreamingOperationOptionsInternal &options) = 0;
 
-                static IMqttRequestResponseClient *newFrom5(
+                static std::shared_ptr<IMqttRequestResponseClient> newFrom5(
                     const Aws::Crt::Mqtt5::Mqtt5Client &protocolClient,
                     const RequestResponseClientOptions &options,
                     Aws::Crt::Allocator *allocator = Aws::Crt::ApiAllocator());
 
-                static IMqttRequestResponseClient *newFrom311(
+                static std::shared_ptr<IMqttRequestResponseClient> newFrom311(
                     const Aws::Crt::Mqtt::MqttConnection &protocolClient,
                     const RequestResponseClientOptions &options,
                     Aws::Crt::Allocator *allocator = Aws::Crt::ApiAllocator());

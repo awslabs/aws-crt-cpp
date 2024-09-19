@@ -81,7 +81,7 @@ namespace Aws
                     struct aws_event_loop *protocolLoop);
                 virtual ~StreamingOperationImpl();
 
-                void activate();
+                void open();
 
                 void close();
 
@@ -129,7 +129,7 @@ namespace Aws
                 aws_rw_lock_clean_up(&m_lock);
             }
 
-            void StreamingOperationImpl::activate()
+            void StreamingOperationImpl::open()
             {
                 {
                     StreamReadLock rlock(&m_lock, m_protocolLoop);
@@ -220,10 +220,10 @@ namespace Aws
                     const StreamingOperationOptionsInternal &options,
                     struct aws_mqtt_request_response_client *client);
 
-                StreamingOperation(const std::shared_ptr<StreamingOperationImpl> &impl);
+                explicit StreamingOperation(const std::shared_ptr<StreamingOperationImpl> &impl);
                 virtual ~StreamingOperation();
 
-                virtual void activate();
+                virtual void open();
 
               private:
                 std::shared_ptr<StreamingOperationImpl> m_impl;
@@ -267,9 +267,9 @@ namespace Aws
                 m_impl->close();
             }
 
-            void StreamingOperation::activate()
+            void StreamingOperation::open()
             {
-                m_impl->activate();
+                m_impl->open();
             }
 
             //////////////////////////////////////////////////////////
@@ -417,7 +417,7 @@ namespace Aws
                 MqttRequestResponseClientImpl *m_impl;
             };
 
-            IMqttRequestResponseClient *IMqttRequestResponseClient::newFrom5(
+            std::shared_ptr<IMqttRequestResponseClient> IMqttRequestResponseClient::newFrom5(
                 const Aws::Crt::Mqtt5::Mqtt5Client &protocolClient,
                 const RequestResponseClientOptions &options,
                 Aws::Crt::Allocator *allocator)
@@ -435,7 +435,7 @@ namespace Aws
                 struct aws_mqtt_request_response_client *rrClient =
                     aws_mqtt_request_response_client_new_from_mqtt5_client(
                         allocator, protocolClient.GetUnderlyingHandle(), &rrClientOptions);
-                if (!rrClient)
+                if (nullptr == rrClient)
                 {
                     Aws::Crt::Delete(clientImpl, clientImpl->getAllocator());
                     return nullptr;
@@ -443,10 +443,10 @@ namespace Aws
 
                 clientImpl->seatClient(rrClient);
 
-                return Aws::Crt::New<MqttRequestResponseClient>(allocator, clientImpl);
+                return Aws::Crt::MakeShared<MqttRequestResponseClient>(allocator, clientImpl);
             }
 
-            IMqttRequestResponseClient *IMqttRequestResponseClient::newFrom311(
+            std::shared_ptr<IMqttRequestResponseClient> IMqttRequestResponseClient::newFrom311(
                 const Aws::Crt::Mqtt::MqttConnection &protocolClient,
                 const RequestResponseClientOptions &options,
                 Aws::Crt::Allocator *allocator)
@@ -464,7 +464,7 @@ namespace Aws
                 struct aws_mqtt_request_response_client *rrClient =
                     aws_mqtt_request_response_client_new_from_mqtt311_client(
                         allocator, protocolClient.GetUnderlyingConnection(), &rrClientOptions);
-                if (!rrClient)
+                if (nullptr == rrClient)
                 {
                     Aws::Crt::Delete(clientImpl, clientImpl->getAllocator());
                     return nullptr;
@@ -472,7 +472,7 @@ namespace Aws
 
                 clientImpl->seatClient(rrClient);
 
-                return Aws::Crt::New<MqttRequestResponseClient>(allocator, clientImpl);
+                return Aws::Crt::MakeShared<MqttRequestResponseClient>(allocator, clientImpl);
             }
 
             int MqttRequestResponseClient::submitRequest(
