@@ -72,7 +72,7 @@ namespace Aws
                 bool m_taken;
             };
 
-            class AWS_CRT_CPP_API StreamingOperationImpl
+            class StreamingOperationImpl
             {
               public:
                 StreamingOperationImpl(
@@ -81,18 +81,21 @@ namespace Aws
                     struct aws_event_loop *protocolLoop);
                 virtual ~StreamingOperationImpl();
 
-                void open();
+                void Open();
 
-                void close();
+                void Close();
 
-                static void onSubscriptionStatusCallback(
+                static void OnSubscriptionStatusCallback(
                     enum aws_rr_streaming_subscription_event_type status,
                     int error_code,
                     void *user_data);
-                static void onIncomingPublishCallback(struct aws_byte_cursor payload, void *user_data);
-                static void onTerminatedCallback(void *user_data);
+
+                static void OnIncomingPublishCallback(struct aws_byte_cursor payload, void *user_data);
+
+                static void OnTerminatedCallback(void *user_data);
 
               private:
+
                 StreamingOperationOptionsInternal m_config;
 
                 struct aws_mqtt_rr_client_operation *m_stream;
@@ -106,6 +109,8 @@ namespace Aws
 
             struct StreamingOperationImplHandle
             {
+                StreamingOperationImplHandle() : m_allocator(nullptr), m_impl(nullptr) {}
+
                 Aws::Crt::Allocator *m_allocator;
 
                 std::shared_ptr<StreamingOperationImpl> m_impl;
@@ -129,7 +134,7 @@ namespace Aws
                 aws_rw_lock_clean_up(&m_lock);
             }
 
-            void StreamingOperationImpl::open()
+            void StreamingOperationImpl::Open()
             {
                 {
                     StreamReadLock rlock(&m_lock, m_protocolLoop);
@@ -141,7 +146,7 @@ namespace Aws
                 }
             }
 
-            void StreamingOperationImpl::close()
+            void StreamingOperationImpl::Close()
             {
                 struct aws_mqtt_rr_client_operation *toRelease = nullptr;
 
@@ -162,13 +167,13 @@ namespace Aws
                 }
             }
 
-            void StreamingOperationImpl::onSubscriptionStatusCallback(
+            void StreamingOperationImpl::OnSubscriptionStatusCallback(
                 enum aws_rr_streaming_subscription_event_type status,
                 int error_code,
                 void *user_data)
             {
 
-                StreamingOperationImplHandle *handle = static_cast<StreamingOperationImplHandle *>(user_data);
+                auto *handle = static_cast<StreamingOperationImplHandle *>(user_data);
                 StreamingOperationImpl *impl = handle->m_impl.get();
 
                 {
@@ -177,17 +182,17 @@ namespace Aws
                     if (!impl->m_closed)
                     {
                         SubscriptionStatusEvent event;
-                        event.type = SubscriptionStatusEventType(status);
-                        event.errorCode = error_code;
+                        event.WithType(SubscriptionStatusEventType(status));
+                        event.WithErrorCode(error_code);
 
                         impl->m_config.subscriptionStatusEventHandler(std::move(event));
                     }
                 }
             }
 
-            void StreamingOperationImpl::onIncomingPublishCallback(struct aws_byte_cursor payload, void *user_data)
+            void StreamingOperationImpl::OnIncomingPublishCallback(struct aws_byte_cursor payload, void *user_data)
             {
-                StreamingOperationImplHandle *handle = static_cast<StreamingOperationImplHandle *>(user_data);
+                auto *handle = static_cast<StreamingOperationImplHandle *>(user_data);
                 StreamingOperationImpl *impl = handle->m_impl.get();
 
                 {
@@ -196,16 +201,16 @@ namespace Aws
                     if (!impl->m_closed)
                     {
                         IncomingPublishEvent event;
-                        event.payload = payload;
+                        event.WithPayload(payload);
 
                         impl->m_config.incomingPublishEventHandler(std::move(event));
                     }
                 }
             }
 
-            void StreamingOperationImpl::onTerminatedCallback(void *user_data)
+            void StreamingOperationImpl::OnTerminatedCallback(void *user_data)
             {
-                StreamingOperationImplHandle *handle = static_cast<StreamingOperationImplHandle *>(user_data);
+                auto *handle = static_cast<StreamingOperationImplHandle *>(user_data);
 
                 Aws::Crt::Delete(handle, handle->m_allocator);
             }
@@ -215,7 +220,8 @@ namespace Aws
             class StreamingOperation : public IStreamingOperation
             {
               public:
-                static std::shared_ptr<IStreamingOperation> create(
+
+                static std::shared_ptr<IStreamingOperation> Create(
                     Aws::Crt::Allocator *allocator,
                     const StreamingOperationOptionsInternal &options,
                     struct aws_mqtt_request_response_client *client);
@@ -223,9 +229,10 @@ namespace Aws
                 explicit StreamingOperation(const std::shared_ptr<StreamingOperationImpl> &impl);
                 virtual ~StreamingOperation();
 
-                virtual void open();
+                virtual void Open();
 
               private:
+
                 std::shared_ptr<StreamingOperationImpl> m_impl;
             };
 
@@ -233,24 +240,24 @@ namespace Aws
             {
             }
 
-            std::shared_ptr<IStreamingOperation> StreamingOperation::create(
+            std::shared_ptr<IStreamingOperation> StreamingOperation::Create(
                 Aws::Crt::Allocator *allocator,
                 const StreamingOperationOptionsInternal &options,
                 struct aws_mqtt_request_response_client *client)
             {
-                StreamingOperationImplHandle *implHandle = Aws::Crt::New<StreamingOperationImplHandle>(allocator);
+                auto *implHandle = Aws::Crt::New<StreamingOperationImplHandle>(allocator);
 
                 struct aws_mqtt_streaming_operation_options streamingOptions;
                 AWS_ZERO_STRUCT(streamingOptions);
                 streamingOptions.topic_filter = options.subscriptionTopicFilter;
-                streamingOptions.subscription_status_callback = StreamingOperationImpl::onSubscriptionStatusCallback;
-                streamingOptions.incoming_publish_callback = StreamingOperationImpl::onIncomingPublishCallback;
-                streamingOptions.terminated_callback = StreamingOperationImpl::onTerminatedCallback;
+                streamingOptions.subscription_status_callback = StreamingOperationImpl::OnSubscriptionStatusCallback;
+                streamingOptions.incoming_publish_callback = StreamingOperationImpl::OnIncomingPublishCallback;
+                streamingOptions.terminated_callback = StreamingOperationImpl::OnTerminatedCallback;
                 streamingOptions.user_data = implHandle;
 
                 struct aws_mqtt_rr_client_operation *stream =
                     aws_mqtt_request_response_client_create_streaming_operation(client, &streamingOptions);
-                if (!stream)
+                if (nullptr == stream)
                 {
                     Aws::Crt::Delete(implHandle, allocator);
                     return nullptr;
@@ -268,18 +275,20 @@ namespace Aws
 
             StreamingOperation::~StreamingOperation()
             {
-                m_impl->close();
+                m_impl->Close();
             }
 
-            void StreamingOperation::open()
+            void StreamingOperation::Open()
             {
-                m_impl->open();
+                m_impl->Open();
             }
 
             //////////////////////////////////////////////////////////
 
             struct IncompleteRequest
             {
+                IncompleteRequest() : m_allocator(nullptr), m_handler() {}
+
                 struct aws_allocator *m_allocator;
 
                 UnmodeledResultHandler m_handler;
@@ -297,8 +306,8 @@ namespace Aws
                 const struct aws_byte_cursor *payload)
             {
                 UnmodeledResponse response;
-                response.topic = *response_topic;
-                response.payload = *payload;
+                response.WithTopic(*response_topic);
+                response.WithPayload(*payload);
 
                 UnmodeledResult result(response);
                 incompleteRequest->m_handler(std::move(result));
@@ -310,7 +319,7 @@ namespace Aws
                 int error_code,
                 void *user_data)
             {
-                struct IncompleteRequest *incompleteRequest = static_cast<struct IncompleteRequest *>(user_data);
+                auto *incompleteRequest = static_cast<IncompleteRequest *>(user_data);
 
                 if (error_code != AWS_ERROR_SUCCESS)
                 {
@@ -324,23 +333,23 @@ namespace Aws
                 Aws::Crt::Delete(incompleteRequest, incompleteRequest->m_allocator);
             }
 
-            class AWS_CRT_CPP_API MqttRequestResponseClientImpl
+            class MqttRequestResponseClientImpl
             {
               public:
-                MqttRequestResponseClientImpl(Aws::Crt::Allocator *allocator) noexcept;
+                explicit MqttRequestResponseClientImpl(Aws::Crt::Allocator *allocator) noexcept;
                 ~MqttRequestResponseClientImpl();
 
-                void seatClient(struct aws_mqtt_request_response_client *client);
+                void SeatClient(struct aws_mqtt_request_response_client *client);
 
-                void close() noexcept;
+                void Close() noexcept;
 
-                int submitRequest(
+                int SubmitRequest(
                     const aws_mqtt_request_operation_options &requestOptions,
                     UnmodeledResultHandler &&resultHandler) noexcept;
 
-                std::shared_ptr<IStreamingOperation> createStream(const StreamingOperationOptionsInternal &options);
+                std::shared_ptr<IStreamingOperation> CreateStream(const StreamingOperationOptionsInternal &options);
 
-                Aws::Crt::Allocator *getAllocator() const { return m_allocator; }
+                Aws::Crt::Allocator *GetAllocator() const { return m_allocator; }
 
               private:
                 Aws::Crt::Allocator *m_allocator;
@@ -358,22 +367,22 @@ namespace Aws
                 AWS_FATAL_ASSERT(m_client == nullptr);
             }
 
-            void MqttRequestResponseClientImpl::seatClient(struct aws_mqtt_request_response_client *client)
+            void MqttRequestResponseClientImpl::SeatClient(struct aws_mqtt_request_response_client *client)
             {
                 m_client = client;
             }
 
-            void MqttRequestResponseClientImpl::close() noexcept
+            void MqttRequestResponseClientImpl::Close() noexcept
             {
                 aws_mqtt_request_response_client_release(m_client);
                 m_client = nullptr;
             }
 
-            int MqttRequestResponseClientImpl::submitRequest(
+            int MqttRequestResponseClientImpl::SubmitRequest(
                 const aws_mqtt_request_operation_options &requestOptions,
                 UnmodeledResultHandler &&resultHandler) noexcept
             {
-                IncompleteRequest *incompleteRequest = Aws::Crt::New<IncompleteRequest>(m_allocator);
+                auto *incompleteRequest = Aws::Crt::New<IncompleteRequest>(m_allocator);
                 incompleteRequest->m_allocator = m_allocator;
                 incompleteRequest->m_handler = std::move(resultHandler);
 
@@ -382,7 +391,7 @@ namespace Aws
                 rawOptions.user_data = incompleteRequest;
 
                 int result = aws_mqtt_request_response_client_submit_request(m_client, &rawOptions);
-                if (result)
+                if (result != AWS_OP_SUCCESS)
                 {
                     Aws::Crt::Delete(incompleteRequest, incompleteRequest->m_allocator);
                 }
@@ -390,10 +399,10 @@ namespace Aws
                 return result;
             }
 
-            std::shared_ptr<IStreamingOperation> MqttRequestResponseClientImpl::createStream(
+            std::shared_ptr<IStreamingOperation> MqttRequestResponseClientImpl::CreateStream(
                 const StreamingOperationOptionsInternal &options)
             {
-                return StreamingOperation::create(m_allocator, options, m_client);
+                return StreamingOperation::Create(m_allocator, options, m_client);
             }
 
             //////////////////////////////////////////////////////////
@@ -402,37 +411,59 @@ namespace Aws
             {
                 auto *impl = static_cast<MqttRequestResponseClientImpl *>(user_data);
 
-                Aws::Crt::Delete(impl, impl->getAllocator());
+                Aws::Crt::Delete(impl, impl->GetAllocator());
             }
 
             class MqttRequestResponseClient : public IMqttRequestResponseClient
             {
               public:
-                MqttRequestResponseClient(MqttRequestResponseClientImpl *impl);
+
+                explicit MqttRequestResponseClient(MqttRequestResponseClientImpl *impl);
                 virtual ~MqttRequestResponseClient();
 
-                int submitRequest(
+                int SubmitRequest(
                     const aws_mqtt_request_operation_options &requestOptions,
-                    UnmodeledResultHandler &&resultHandler);
+                    UnmodeledResultHandler &&resultHandler) override;
 
-                std::shared_ptr<IStreamingOperation> createStream(const StreamingOperationOptionsInternal &options);
+                std::shared_ptr<IStreamingOperation> CreateStream(const StreamingOperationOptionsInternal &options) override;
 
               private:
+
                 MqttRequestResponseClientImpl *m_impl;
             };
 
-            std::shared_ptr<IMqttRequestResponseClient> IMqttRequestResponseClient::newFrom5(
+            int MqttRequestResponseClient::SubmitRequest(
+                const aws_mqtt_request_operation_options &requestOptions,
+                UnmodeledResultHandler &&resultHandler)
+            {
+                return m_impl->SubmitRequest(requestOptions, std::move(resultHandler));
+            }
+
+            std::shared_ptr<IStreamingOperation> MqttRequestResponseClient::CreateStream(
+                const StreamingOperationOptionsInternal &options)
+            {
+                return m_impl->CreateStream(options);
+            }
+
+            MqttRequestResponseClient::MqttRequestResponseClient(MqttRequestResponseClientImpl *impl) : m_impl(impl) {}
+
+            MqttRequestResponseClient::~MqttRequestResponseClient()
+            {
+                m_impl->Close();
+            }
+
+            std::shared_ptr<IMqttRequestResponseClient> NewClientFrom5(
                 const Aws::Crt::Mqtt5::Mqtt5Client &protocolClient,
                 const RequestResponseClientOptions &options,
                 Aws::Crt::Allocator *allocator)
             {
-                auto clientImpl = Aws::Crt::New<MqttRequestResponseClientImpl>(allocator, allocator);
+                auto *clientImpl = Aws::Crt::New<MqttRequestResponseClientImpl>(allocator, allocator);
 
                 struct aws_mqtt_request_response_client_options rrClientOptions;
                 AWS_ZERO_STRUCT(rrClientOptions);
-                rrClientOptions.max_request_response_subscriptions = options.maxRequestResponseSubscriptions;
-                rrClientOptions.max_streaming_subscriptions = options.maxStreamingSubscriptions;
-                rrClientOptions.operation_timeout_seconds = options.operationTimeoutInSeconds;
+                rrClientOptions.max_request_response_subscriptions = options.GetMaxRequestResponseSubscriptions();
+                rrClientOptions.max_streaming_subscriptions = options.GetMaxStreamingSubscriptions();
+                rrClientOptions.operation_timeout_seconds = options.GetOperationTimeoutInSeconds();
                 rrClientOptions.terminated_callback = s_onClientTermination;
                 rrClientOptions.user_data = clientImpl;
 
@@ -441,27 +472,27 @@ namespace Aws
                         allocator, protocolClient.GetUnderlyingHandle(), &rrClientOptions);
                 if (nullptr == rrClient)
                 {
-                    Aws::Crt::Delete(clientImpl, clientImpl->getAllocator());
+                    Aws::Crt::Delete(clientImpl, clientImpl->GetAllocator());
                     return nullptr;
                 }
 
-                clientImpl->seatClient(rrClient);
+                clientImpl->SeatClient(rrClient);
 
                 return Aws::Crt::MakeShared<MqttRequestResponseClient>(allocator, clientImpl);
             }
 
-            std::shared_ptr<IMqttRequestResponseClient> IMqttRequestResponseClient::newFrom311(
+            std::shared_ptr<IMqttRequestResponseClient> NewClientFrom311(
                 const Aws::Crt::Mqtt::MqttConnection &protocolClient,
                 const RequestResponseClientOptions &options,
                 Aws::Crt::Allocator *allocator)
             {
-                auto clientImpl = Aws::Crt::New<MqttRequestResponseClientImpl>(allocator, allocator);
+                auto *clientImpl = Aws::Crt::New<MqttRequestResponseClientImpl>(allocator, allocator);
 
                 struct aws_mqtt_request_response_client_options rrClientOptions;
                 AWS_ZERO_STRUCT(rrClientOptions);
-                rrClientOptions.max_request_response_subscriptions = options.maxRequestResponseSubscriptions;
-                rrClientOptions.max_streaming_subscriptions = options.maxStreamingSubscriptions;
-                rrClientOptions.operation_timeout_seconds = options.operationTimeoutInSeconds;
+                rrClientOptions.max_request_response_subscriptions = options.GetMaxRequestResponseSubscriptions();
+                rrClientOptions.max_streaming_subscriptions = options.GetMaxStreamingSubscriptions();
+                rrClientOptions.operation_timeout_seconds = options.GetOperationTimeoutInSeconds();
                 rrClientOptions.terminated_callback = s_onClientTermination;
                 rrClientOptions.user_data = clientImpl;
 
@@ -470,33 +501,13 @@ namespace Aws
                         allocator, protocolClient.GetUnderlyingConnection(), &rrClientOptions);
                 if (nullptr == rrClient)
                 {
-                    Aws::Crt::Delete(clientImpl, clientImpl->getAllocator());
+                    Aws::Crt::Delete(clientImpl, clientImpl->GetAllocator());
                     return nullptr;
                 }
 
-                clientImpl->seatClient(rrClient);
+                clientImpl->SeatClient(rrClient);
 
                 return Aws::Crt::MakeShared<MqttRequestResponseClient>(allocator, clientImpl);
-            }
-
-            int MqttRequestResponseClient::submitRequest(
-                const aws_mqtt_request_operation_options &requestOptions,
-                UnmodeledResultHandler &&resultHandler)
-            {
-                return m_impl->submitRequest(requestOptions, std::move(resultHandler));
-            }
-
-            std::shared_ptr<IStreamingOperation> MqttRequestResponseClient::createStream(
-                const StreamingOperationOptionsInternal &options)
-            {
-                return m_impl->createStream(options);
-            }
-
-            MqttRequestResponseClient::MqttRequestResponseClient(MqttRequestResponseClientImpl *impl) : m_impl(impl) {}
-
-            MqttRequestResponseClient::~MqttRequestResponseClient()
-            {
-                m_impl->close();
             }
         } // namespace RequestResponse
     } // namespace Iot
