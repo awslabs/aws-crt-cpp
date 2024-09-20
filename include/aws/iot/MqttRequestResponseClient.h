@@ -173,7 +173,11 @@ namespace Aws
                     return *this;
                 }
 
-                Result &operator=(const E &error) { this->m_rawResult = error; return *this; }
+                Result &operator=(const E &error)
+                {
+                    this->m_rawResult = error;
+                    return *this;
+                }
 
                 Result &operator=(E &&error)
                 {

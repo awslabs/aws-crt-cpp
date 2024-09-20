@@ -21,16 +21,9 @@ namespace Aws
             class StreamReadLock
             {
               public:
-                StreamReadLock(struct aws_rw_lock *lock)
-                    : m_lock(lock)
-                {
-                    aws_rw_lock_rlock(lock);
-                }
+                StreamReadLock(struct aws_rw_lock *lock) : m_lock(lock) { aws_rw_lock_rlock(lock); }
 
-                ~StreamReadLock()
-                {
-                    aws_rw_lock_runlock(m_lock);
-                }
+                ~StreamReadLock() { aws_rw_lock_runlock(m_lock); }
 
               private:
                 struct aws_rw_lock *m_lock;
@@ -168,7 +161,7 @@ namespace Aws
                 {
                     StreamReadLock readLock(&impl->m_lock);
 
-                    if (!impl->m_closed)
+                    if (!impl->m_closed && impl->m_config.subscriptionStatusEventHandler)
                     {
                         SubscriptionStatusEvent event;
                         event.WithType(SubscriptionStatusEventType(status));
@@ -187,7 +180,7 @@ namespace Aws
                 {
                     StreamReadLock readLock(&impl->m_lock);
 
-                    if (!impl->m_closed)
+                    if (!impl->m_closed && impl->m_config.incomingPublishEventHandler)
                     {
                         IncomingPublishEvent event;
                         event.WithPayload(payload);
