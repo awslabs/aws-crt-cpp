@@ -21,28 +21,19 @@ namespace Aws
             class StreamReadLock
             {
               public:
-                StreamReadLock(struct aws_rw_lock *lock, struct aws_event_loop *protocolLoop)
-                    : m_lock(lock), m_taken(false)
+                StreamReadLock(struct aws_rw_lock *lock)
+                    : m_lock(lock)
                 {
-                    if (!aws_event_loop_thread_is_callers_thread(protocolLoop))
-                    {
-                        m_taken = true;
-                        aws_rw_lock_rlock(lock);
-                    }
+                    aws_rw_lock_rlock(lock);
                 }
 
                 ~StreamReadLock()
                 {
-                    if (m_taken)
-                    {
-                        aws_rw_lock_runlock(m_lock);
-                    }
+                    aws_rw_lock_runlock(m_lock);
                 }
 
               private:
                 struct aws_rw_lock *m_lock;
-
-                bool m_taken;
             };
 
             class StreamWriteLock
@@ -135,7 +126,7 @@ namespace Aws
             void StreamingOperationImpl::Open()
             {
                 {
-                    StreamReadLock rlock(&m_lock, m_protocolLoop);
+                    StreamReadLock rlock(&m_lock);
 
                     if (!m_closed)
                     {
@@ -175,7 +166,7 @@ namespace Aws
                 StreamingOperationImpl *impl = handle->m_impl.get();
 
                 {
-                    StreamReadLock readLock(&impl->m_lock, impl->m_protocolLoop);
+                    StreamReadLock readLock(&impl->m_lock);
 
                     if (!impl->m_closed)
                     {
@@ -194,7 +185,7 @@ namespace Aws
                 StreamingOperationImpl *impl = handle->m_impl.get();
 
                 {
-                    StreamReadLock readLock(&impl->m_lock, impl->m_protocolLoop);
+                    StreamReadLock readLock(&impl->m_lock);
 
                     if (!impl->m_closed)
                     {

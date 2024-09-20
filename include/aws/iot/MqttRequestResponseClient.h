@@ -64,16 +64,6 @@ namespace Aws
             class AWS_CRT_CPP_API SubscriptionStatusEvent
             {
               public:
-                SubscriptionStatusEvent() : m_type(SubscriptionStatusEventType::SubscriptionEstablished), m_errorCode(0)
-                {
-                }
-                SubscriptionStatusEvent(const SubscriptionStatusEvent &rhs) = default;
-                SubscriptionStatusEvent(SubscriptionStatusEvent &&rhs) = default;
-                ~SubscriptionStatusEvent() = default;
-
-                SubscriptionStatusEvent &operator=(const SubscriptionStatusEvent &rhs) = default;
-                SubscriptionStatusEvent &operator=(SubscriptionStatusEvent &&rhs) = default;
-
                 SubscriptionStatusEvent &WithType(SubscriptionStatusEventType type)
                 {
                     m_type = type;
@@ -90,8 +80,8 @@ namespace Aws
                 int GetErrorCode() const { return m_errorCode; }
 
               private:
-                SubscriptionStatusEventType m_type;
-                int m_errorCode;
+                SubscriptionStatusEventType m_type = SubscriptionStatusEventType::SubscriptionEstablished;
+                int m_errorCode = 0;
             };
 
             using SubscriptionStatusEventHandler = std::function<void(SubscriptionStatusEvent &&)>;
@@ -101,12 +91,6 @@ namespace Aws
             {
               public:
                 IncomingPublishEvent() : m_payload() { AWS_ZERO_STRUCT(m_payload); }
-                IncomingPublishEvent(const IncomingPublishEvent &rhs) = default;
-                IncomingPublishEvent(IncomingPublishEvent &&rhs) = default;
-                ~IncomingPublishEvent() = default;
-
-                IncomingPublishEvent &operator=(const IncomingPublishEvent &rhs) = default;
-                IncomingPublishEvent &operator=(IncomingPublishEvent &&rhs) = default;
 
                 IncomingPublishEvent &WithPayload(Aws::Crt::ByteCursor payload)
                 {
@@ -135,12 +119,6 @@ namespace Aws
                     AWS_ZERO_STRUCT(m_payload);
                     AWS_ZERO_STRUCT(m_topic);
                 }
-                UnmodeledResponse(const UnmodeledResponse &rhs) = default;
-                UnmodeledResponse(UnmodeledResponse &&rhs) = default;
-                ~UnmodeledResponse() = default;
-
-                UnmodeledResponse &operator=(const UnmodeledResponse &rhs) = default;
-                UnmodeledResponse &operator=(UnmodeledResponse &&rhs) = default;
 
                 UnmodeledResponse &WithPayload(Aws::Crt::ByteCursor payload)
                 {
@@ -175,18 +153,11 @@ namespace Aws
             {
               public:
                 Result() = delete;
-                Result(const Result &result) = default;
-                Result(Result &&result) = default;
 
                 explicit Result(const R &response) : m_rawResult(response) {}
                 explicit Result(R &&response) : m_rawResult(std::move(response)) {}
                 explicit Result(const E &error) : m_rawResult(error) {}
                 explicit Result(E &&error) : m_rawResult(std::move(error)) {}
-
-                ~Result() = default;
-
-                Result &operator=(const Result &result) = default;
-                Result &operator=(Result &&result) = default;
 
                 Result &operator=(const R &response)
                 {
@@ -202,7 +173,7 @@ namespace Aws
                     return *this;
                 }
 
-                Result &operator=(const E &error) { this->m_rawResult = error; }
+                Result &operator=(const E &error) { this->m_rawResult = error; return *this; }
 
                 Result &operator=(E &&error)
                 {
@@ -238,14 +209,6 @@ namespace Aws
             template <typename T> class StreamingOperationOptions
             {
               public:
-                StreamingOperationOptions() = default;
-                StreamingOperationOptions(const StreamingOperationOptions &rhs) = default;
-                StreamingOperationOptions(StreamingOperationOptions &&rhs) = default;
-                ~StreamingOperationOptions() = default;
-
-                StreamingOperationOptions &operator=(const StreamingOperationOptions &rhs) = default;
-                StreamingOperationOptions &operator=(StreamingOperationOptions &&rhs) = default;
-
                 StreamingOperationOptions &WithSubscriptionStatusEventHandler(
                     const SubscriptionStatusEventHandler &handler)
                 {
@@ -302,14 +265,6 @@ namespace Aws
             class AWS_CRT_CPP_API RequestResponseClientOptions
             {
               public:
-                RequestResponseClientOptions() = default;
-                RequestResponseClientOptions(const RequestResponseClientOptions &rhs) = default;
-                RequestResponseClientOptions(RequestResponseClientOptions &&rhs) = default;
-                ~RequestResponseClientOptions() = default;
-
-                RequestResponseClientOptions &operator=(const RequestResponseClientOptions &rhs) = default;
-                RequestResponseClientOptions &operator=(RequestResponseClientOptions &&rhs) = default;
-
                 RequestResponseClientOptions &WithMaxRequestResponseSubscriptions(
                     uint32_t maxRequestResponseSubscriptions)
                 {
