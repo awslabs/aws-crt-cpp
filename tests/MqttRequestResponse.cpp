@@ -1,0 +1,517 @@
+/**
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0.
+ */
+
+#include <aws/common/environment.h>
+#include <aws/crt/Api.h>
+#include <aws/crt/JsonObject.h>
+#include <aws/crt/Types.h>
+#include <aws/crt/UUID.h>
+#include <aws/crt/mqtt/Mqtt5Packets.h>
+#include <aws/iot/Mqtt5Client.h>
+#include <aws/iot/MqttCommon.h>
+#include <aws/iot/MqttRequestResponseClient.h>
+#include <aws/testing/aws_test_harness.h>
+
+#include <atomic>
+#include <utility>
+
+enum ProtocolType
+{
+    Mqtt5,
+    Mqtt311
+};
+
+AWS_STATIC_STRING_FROM_LITERAL(s_rrEnvVariableHost, "AWS_TEST_MQTT5_IOT_CORE_HOST");
+AWS_STATIC_STRING_FROM_LITERAL(s_rrEnvVariableCertificatePath, "AWS_TEST_MQTT5_IOT_CORE_RSA_CERT");
+AWS_STATIC_STRING_FROM_LITERAL(s_rrEnvVariablePrivateKeyPath, "AWS_TEST_MQTT5_IOT_CORE_RSA_KEY");
+
+struct TestState;
+
+struct ResponseTracker
+{
+    ResponseTracker() : state(nullptr), topic(), payload(), errorCode(AWS_ERROR_SUCCESS), complete(false) {}
+
+    TestState *state;
+    Aws::Crt::String topic;
+    Aws::Crt::String payload;
+    int errorCode;
+    bool complete;
+};
+
+struct TestState
+{
+    TestState(Aws::Crt::Allocator *allocator) : allocator(allocator) {}
+
+    Aws::Crt::Allocator *allocator;
+
+    std::mutex lock;
+    std::condition_variable signal;
+
+    bool connected = false;
+
+    Aws::Crt::Vector<std::shared_ptr<ResponseTracker>> responseTrackers;
+};
+
+static void s_waitForConnected(struct TestState *state)
+{
+    {
+        std::unique_lock<std::mutex> lock(state->lock);
+        state->signal.wait(lock, [state] { return state->connected; });
+    }
+}
+
+static void s_updateConnected(struct TestState *state, bool connected)
+{
+    {
+        std::lock_guard<std::mutex> lock(state->lock);
+        state->connected = connected;
+    }
+    state->signal.notify_one();
+}
+
+static std::shared_ptr<ResponseTracker> s_addResponseTracker(TestState *state)
+{
+    std::shared_ptr<ResponseTracker> tracker = Aws::Crt::MakeShared<ResponseTracker>(state->allocator);
+    tracker->state = state;
+    {
+        std::unique_lock<std::mutex> lock(state->lock);
+        state->responseTrackers.push_back(tracker);
+    }
+
+    return tracker;
+}
+
+static void s_waitForResponse(ResponseTracker *responseTracker)
+{
+    TestState *state = responseTracker->state;
+    {
+        std::unique_lock<std::mutex> lock(state->lock);
+        state->signal.wait(lock, [responseTracker] { return responseTracker->complete; });
+    }
+}
+
+static void s_completeResponseWithSuccess(
+    ResponseTracker *responseTracker,
+    Aws::Crt::ByteCursor topic,
+    Aws::Crt::ByteCursor payload)
+{
+    TestState *state = responseTracker->state;
+    {
+        std::unique_lock<std::mutex> lock(state->lock);
+        responseTracker->topic = Aws::Crt::String((const char *)topic.ptr, topic.len);
+        responseTracker->payload.assign((const uint8_t *)payload.ptr, (const uint8_t *)payload.ptr + payload.len);
+        responseTracker->complete = true;
+    }
+    state->signal.notify_one();
+}
+
+static void s_completeResponseWithError(ResponseTracker *responseTracker, int errorCode)
+{
+    TestState *state = responseTracker->state;
+    {
+        std::unique_lock<std::mutex> lock(state->lock);
+        responseTracker->errorCode = errorCode;
+        responseTracker->complete = true;
+    }
+    state->signal.notify_one();
+}
+
+static void s_onRequestComplete(Aws::Iot::RequestResponse::UnmodeledResult &&result, ResponseTracker *responseTracker)
+{
+    if (result.IsSuccess())
+    {
+        const auto &response = result.GetResponse();
+        s_completeResponseWithSuccess(responseTracker, response.GetTopic(), response.GetPayload());
+    }
+    else
+    {
+        s_completeResponseWithError(responseTracker, result.GetError());
+    }
+}
+
+struct TestContext
+{
+    std::shared_ptr<Aws::Iot::RequestResponse::IMqttRequestResponseClient> client;
+    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> protocolClient5;
+    std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> protocolClient311;
+};
+
+static void s_startProtocolClient(TestContext &context)
+{
+    if (context.protocolClient5)
+    {
+        context.protocolClient5->Start();
+    }
+    else
+    {
+        auto uuid = Aws::Crt::UUID().ToString();
+        context.protocolClient311->Connect(uuid.c_str(), true, 30, 15, 5000);
+    }
+}
+
+static TestContext s_CreateClient(
+    Aws::Crt::Allocator *allocator,
+    ProtocolType protocol,
+    struct TestState *state,
+    Aws::Iot::RequestResponse::RequestResponseClientOptions *options = NULL)
+{
+    TestContext context;
+
+    struct aws_string *host = NULL;
+    struct aws_string *certificatePath = NULL;
+    struct aws_string *privateKeyPath = NULL;
+
+    if (aws_get_environment_value(allocator, s_rrEnvVariableHost, &host))
+    {
+        goto done;
+    }
+
+    if (aws_get_environment_value(allocator, s_rrEnvVariableCertificatePath, &certificatePath))
+    {
+        goto done;
+    }
+
+    if (aws_get_environment_value(allocator, s_rrEnvVariablePrivateKeyPath, &privateKeyPath))
+    {
+        goto done;
+    }
+
+    Aws::Iot::RequestResponse::RequestResponseClientOptions finalOptions;
+    if (options != nullptr)
+    {
+        finalOptions = *options;
+    }
+    else
+    {
+        finalOptions.WithMaxRequestResponseSubscriptions(4);
+        finalOptions.WithMaxStreamingSubscriptions(2);
+        finalOptions.WithOperationTimeoutInSeconds(5);
+    }
+
+    if (protocol == ProtocolType::Mqtt5)
+    {
+        Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
+            aws_string_c_str(certificatePath), aws_string_c_str(privateKeyPath), allocator);
+        Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+
+        Aws::Crt::Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+        mqtt5Options.WithHostName(Aws::Crt::String(aws_string_c_str(host)));
+        mqtt5Options.WithPort(8883);
+        mqtt5Options.WithTlsConnectionOptions(tlsContext.NewConnectionOptions());
+
+        mqtt5Options.WithClientConnectionSuccessCallback(
+            [state](const Aws::Crt::Mqtt5::OnConnectionSuccessEventData &event) { s_updateConnected(state, true); });
+        mqtt5Options.WithClientDisconnectionCallback([state](const Aws::Crt::Mqtt5::OnDisconnectionEventData &event)
+                                                     { s_updateConnected(state, false); });
+
+        context.protocolClient5 = Aws::Crt::Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+        context.client = Aws::Iot::RequestResponse::NewClientFrom5(*context.protocolClient5, finalOptions, allocator);
+    }
+    else
+    {
+        Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
+            aws_string_c_str(certificatePath), aws_string_c_str(privateKeyPath), allocator);
+        Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+
+        Aws::Crt::Io::SocketOptions socketOptions;
+        socketOptions.SetConnectTimeoutMs(3000);
+
+        Aws::Crt::Mqtt::MqttClient client;
+        context.protocolClient311 =
+            client.NewConnection(aws_string_c_str(host), 8883, socketOptions, tlsContext, false);
+
+        context.protocolClient311->OnConnectionSuccess =
+            [state](Aws::Crt::Mqtt::MqttConnection &connection, Aws::Crt::Mqtt::OnConnectionSuccessData *callbackData)
+        { s_updateConnected(state, true); };
+        context.protocolClient311->OnDisconnect = [state](Aws::Crt::Mqtt::MqttConnection &connection)
+        { s_updateConnected(state, false); };
+
+        context.client =
+            Aws::Iot::RequestResponse::NewClientFrom311(*context.protocolClient311, finalOptions, allocator);
+    }
+
+done:
+
+    aws_string_destroy(host);
+    aws_string_destroy(certificatePath);
+    aws_string_destroy(privateKeyPath);
+
+    return context;
+}
+
+static int s_MqttRequestResponse_CreateDestroy5(Aws::Crt::Allocator *allocator, void *)
+{
+    {
+        Aws::Crt::ApiHandle handle;
+        struct TestState state(allocator);
+
+        auto context = s_CreateClient(allocator, ProtocolType::Mqtt5, &state);
+        if (!context.client)
+        {
+            return AWS_OP_SKIP;
+        }
+    }
+
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(MqttRequestResponse_CreateDestroy5, s_MqttRequestResponse_CreateDestroy5)
+
+static int s_MqttRequestResponse_CreateDestroy311(Aws::Crt::Allocator *allocator, void *)
+{
+    {
+        Aws::Crt::ApiHandle handle;
+        struct TestState state(allocator);
+
+        auto context = s_CreateClient(allocator, ProtocolType::Mqtt311, &state);
+        if (!context.client)
+        {
+            return AWS_OP_SKIP;
+        }
+    }
+
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(MqttRequestResponse_CreateDestroy311, s_MqttRequestResponse_CreateDestroy311)
+
+static int s_SubmitGetNamedShadowRejectedRequest(TestContext &context, TestState *state, bool useCorrelationToken)
+{
+    std::shared_ptr<ResponseTracker> tracker = s_addResponseTracker(state);
+    ResponseTracker *rawResponseTracker = tracker.get();
+
+    Aws::Crt::JsonObject jsonObject;
+    auto uuid = Aws::Crt::UUID().ToString();
+    jsonObject.WithString("clientToken", uuid);
+    Aws::Crt::String payloadWithCorrelationToken = jsonObject.View().WriteCompact(true);
+
+    struct aws_mqtt_request_operation_options requestOptions;
+    AWS_ZERO_STRUCT(requestOptions);
+
+    struct aws_byte_cursor subscription_topic_filters[1] = {
+        aws_byte_cursor_from_c_str("$aws/things/NoSuchThing/shadow/name/Derp/get/+"),
+    };
+    requestOptions.subscription_topic_filters = subscription_topic_filters;
+    requestOptions.subscription_topic_filter_count = 1;
+
+    struct aws_mqtt_request_operation_response_path responsePaths[2];
+    responsePaths[0].topic = aws_byte_cursor_from_c_str("$aws/things/NoSuchThing/shadow/name/Derp/get/accepted");
+    responsePaths[1].topic = aws_byte_cursor_from_c_str("$aws/things/NoSuchThing/shadow/name/Derp/get/rejected");
+    if (useCorrelationToken)
+    {
+        responsePaths[0].correlation_token_json_path = aws_byte_cursor_from_c_str("clientToken");
+        responsePaths[1].correlation_token_json_path = aws_byte_cursor_from_c_str("clientToken");
+        requestOptions.correlation_token = Aws::Crt::ByteCursorFromString(uuid);
+        requestOptions.serialized_request = Aws::Crt::ByteCursorFromString(payloadWithCorrelationToken);
+    }
+    else
+    {
+        requestOptions.serialized_request = aws_byte_cursor_from_c_str("{}");
+    }
+
+    requestOptions.response_paths = responsePaths;
+    requestOptions.response_path_count = 2;
+    requestOptions.publish_topic = aws_byte_cursor_from_c_str("$aws/things/NoSuchThing/shadow/name/Derp/get");
+    requestOptions.user_data = rawResponseTracker;
+
+    int result = context.client->SubmitRequest(
+        requestOptions,
+        [state, rawResponseTracker](Aws::Iot::RequestResponse::UnmodeledResult &&result)
+        { s_onRequestComplete(std::move(result), rawResponseTracker); });
+    ASSERT_INT_EQUALS(AWS_OP_SUCCESS, result);
+
+    s_waitForResponse(rawResponseTracker);
+
+    {
+        std::lock_guard<std::mutex> lock(state->lock);
+        ASSERT_INT_EQUALS(AWS_ERROR_SUCCESS, tracker->errorCode);
+
+        ASSERT_TRUE(
+            tracker->topic == Aws::Crt::String((const char *)responsePaths[1].topic.ptr, responsePaths[1].topic.len));
+        ASSERT_TRUE(tracker->payload.find("No shadow exists with name") != std::string::npos);
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+static int s_doGetNamedShadowSuccessRejectedTest(
+    Aws::Crt::Allocator *allocator,
+    ProtocolType protocol,
+    bool useCorrelationToken)
+{
+
+    Aws::Crt::ApiHandle handle;
+    struct TestState state(allocator);
+
+    auto context = s_CreateClient(allocator, protocol, &state);
+    if (!context.client)
+    {
+        return AWS_OP_SKIP;
+    }
+
+    s_startProtocolClient(context);
+    s_waitForConnected(&state);
+
+    return s_SubmitGetNamedShadowRejectedRequest(context, &state, useCorrelationToken);
+}
+
+static int s_MqttRequestResponse_GetNamedShadowSuccessRejected311(Aws::Crt::Allocator *allocator, void *)
+{
+    return s_doGetNamedShadowSuccessRejectedTest(allocator, ProtocolType::Mqtt311, true);
+}
+AWS_TEST_CASE(
+    MqttRequestResponse_GetNamedShadowSuccessRejected311,
+    s_MqttRequestResponse_GetNamedShadowSuccessRejected311)
+
+static int s_MqttRequestResponse_GetNamedShadowSuccessRejected5(Aws::Crt::Allocator *allocator, void *)
+{
+    return s_doGetNamedShadowSuccessRejectedTest(allocator, ProtocolType::Mqtt5, true);
+}
+AWS_TEST_CASE(MqttRequestResponse_GetNamedShadowSuccessRejected5, s_MqttRequestResponse_GetNamedShadowSuccessRejected5)
+
+static int s_MqttRequestResponse_GetNamedShadowSuccessRejectedNoCorrelationToken311(
+    Aws::Crt::Allocator *allocator,
+    void *)
+{
+    return s_doGetNamedShadowSuccessRejectedTest(allocator, ProtocolType::Mqtt311, false);
+}
+AWS_TEST_CASE(
+    MqttRequestResponse_GetNamedShadowSuccessRejectedNoCorrelationToken311,
+    s_MqttRequestResponse_GetNamedShadowSuccessRejectedNoCorrelationToken311)
+
+static int s_MqttRequestResponse_GetNamedShadowSuccessRejectedNoCorrelationToken5(
+    Aws::Crt::Allocator *allocator,
+    void *)
+{
+    return s_doGetNamedShadowSuccessRejectedTest(allocator, ProtocolType::Mqtt5, false);
+}
+AWS_TEST_CASE(
+    MqttRequestResponse_GetNamedShadowSuccessRejectedNoCorrelationToken5,
+    s_MqttRequestResponse_GetNamedShadowSuccessRejectedNoCorrelationToken5)
+
+static int s_SubmitUpdateNamedShadowAcceptedRequest(TestContext &context, TestState *state, bool useCorrelationToken)
+{
+    std::shared_ptr<ResponseTracker> tracker = s_addResponseTracker(state);
+    ResponseTracker *rawResponseTracker = tracker.get();
+
+    auto shadowName = Aws::Crt::UUID().ToString();
+    char acceptedTopic[128];
+    snprintf(acceptedTopic, AWS_ARRAY_SIZE(acceptedTopic), "$aws/things/NoSuchThing/shadow/name/%s/update/accepted", shadowName.c_str());
+    char rejectedTopic[128];
+    snprintf(rejectedTopic, AWS_ARRAY_SIZE(rejectedTopic), "$aws/things/NoSuchThing/shadow/name/%s/update/rejected", shadowName.c_str());
+
+    auto clientToken = Aws::Crt::UUID().ToString();
+    auto stateToken = Aws::Crt::UUID().ToString();
+    char desiredState[256];
+    snprintf(desiredState, AWS_ARRAY_SIZE(desiredState), "{\"magic\":\"%s\"}", stateToken.c_str());
+
+    char payload[512];
+
+    struct aws_mqtt_request_operation_options requestOptions;
+    AWS_ZERO_STRUCT(requestOptions);
+
+    struct aws_byte_cursor subscription_topic_filters[2] = {
+        aws_byte_cursor_from_c_str(acceptedTopic),
+        aws_byte_cursor_from_c_str(rejectedTopic),
+    };
+    requestOptions.subscription_topic_filters = subscription_topic_filters;
+    requestOptions.subscription_topic_filter_count = 2;
+
+    struct aws_mqtt_request_operation_response_path responsePaths[2];
+    responsePaths[0].topic = aws_byte_cursor_from_c_str(acceptedTopic);
+    responsePaths[1].topic = aws_byte_cursor_from_c_str(rejectedTopic);
+    if (useCorrelationToken)
+    {
+        responsePaths[0].correlation_token_json_path = aws_byte_cursor_from_c_str("clientToken");
+        responsePaths[1].correlation_token_json_path = aws_byte_cursor_from_c_str("clientToken");
+        requestOptions.correlation_token = Aws::Crt::ByteCursorFromString(clientToken);
+        snprintf(payload, AWS_ARRAY_SIZE(payload), "{\"clientToken\":\"%s\",\"state\":{\"desired\":%s}}", clientToken.c_str(), desiredState);
+    }
+    else
+    {
+        snprintf(payload, AWS_ARRAY_SIZE(payload), "{\"state\":{\"desired\":\"%s\"}}", desiredState);
+    }
+
+    requestOptions.serialized_request = aws_byte_cursor_from_c_str(payload);
+
+    requestOptions.response_paths = responsePaths;
+    requestOptions.response_path_count = 2;
+
+    char publishTopic[128];
+    snprintf(publishTopic, AWS_ARRAY_SIZE(publishTopic), "$aws/things/NoSuchThing/shadow/name/%s/update", shadowName.c_str());
+
+    requestOptions.publish_topic = aws_byte_cursor_from_c_str(publishTopic);
+    requestOptions.user_data = rawResponseTracker;
+
+    int result = context.client->SubmitRequest(
+        requestOptions,
+        [state, rawResponseTracker](Aws::Iot::RequestResponse::UnmodeledResult &&result)
+        { s_onRequestComplete(std::move(result), rawResponseTracker); });
+    ASSERT_INT_EQUALS(AWS_OP_SUCCESS, result);
+
+    s_waitForResponse(rawResponseTracker);
+
+    {
+        std::lock_guard<std::mutex> lock(state->lock);
+        ASSERT_INT_EQUALS(AWS_ERROR_SUCCESS, tracker->errorCode);
+
+        ASSERT_TRUE(
+            tracker->topic == Aws::Crt::String((const char *)responsePaths[0].topic.ptr, responsePaths[0].topic.len));
+        ASSERT_TRUE(tracker->payload.length() > 0);
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+static int s_doUpdateNamedShadowSuccessAcceptedTest(
+    Aws::Crt::Allocator *allocator,
+    ProtocolType protocol,
+    bool useCorrelationToken)
+{
+
+    Aws::Crt::ApiHandle handle;
+    struct TestState state(allocator);
+
+    auto context = s_CreateClient(allocator, protocol, &state);
+    if (!context.client)
+    {
+        return AWS_OP_SKIP;
+    }
+
+    s_startProtocolClient(context);
+    s_waitForConnected(&state);
+
+    return s_SubmitUpdateNamedShadowAcceptedRequest(context, &state, useCorrelationToken);
+}
+
+static int s_MqttRequestResponse_UpdateNamedShadowSuccessAccepted311(Aws::Crt::Allocator *allocator, void *)
+{
+    return s_doUpdateNamedShadowSuccessAcceptedTest(allocator, ProtocolType::Mqtt311, true);
+}
+AWS_TEST_CASE(
+    MqttRequestResponse_UpdateNamedShadowSuccessAccepted311,
+    s_MqttRequestResponse_UpdateNamedShadowSuccessAccepted311)
+
+static int s_MqttRequestResponse_UpdateNamedShadowSuccessAccepted5(Aws::Crt::Allocator *allocator, void *)
+{
+    return s_doUpdateNamedShadowSuccessAcceptedTest(allocator, ProtocolType::Mqtt5, true);
+}
+AWS_TEST_CASE(
+    MqttRequestResponse_UpdateNamedShadowSuccessAccepted5,
+    s_MqttRequestResponse_UpdateNamedShadowSuccessAccepted5)
+
+static int s_MqttRequestResponse_UpdateNamedShadowSuccessAcceptedNoCorrelationToken311(Aws::Crt::Allocator *allocator, void *)
+{
+    return s_doUpdateNamedShadowSuccessAcceptedTest(allocator, ProtocolType::Mqtt311, false);
+}
+AWS_TEST_CASE(
+    MqttRequestResponse_UpdateNamedShadowSuccessAcceptedNoCorrelationToken311,
+    s_MqttRequestResponse_UpdateNamedShadowSuccessAcceptedNoCorrelationToken311)
+
+static int s_MqttRequestResponse_UpdateNamedShadowSuccessAcceptedNoCorrelationToken5(Aws::Crt::Allocator *allocator, void *)
+{
+    return s_doUpdateNamedShadowSuccessAcceptedTest(allocator, ProtocolType::Mqtt5, false);
+}
+AWS_TEST_CASE(
+    MqttRequestResponse_UpdateNamedShadowSuccessAcceptedNoCorrelationToken5,
+    s_MqttRequestResponse_UpdateNamedShadowSuccessAcceptedNoCorrelationToken5)

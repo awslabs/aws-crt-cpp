@@ -260,6 +260,20 @@ if(NOT BYO_CRYPTO)
     add_net_test_case(Mqtt5to3AdapterOperations)
     add_net_test_case(Mqtt5to3AdapterNullPubAck)
     add_net_test_case(Mqtt5to3AdapterMultipleAdapters)
+
+    # Mqtt Request-Response
+    add_net_test_case(MqttRequestResponse_CreateDestroy5)
+    add_net_test_case(MqttRequestResponse_CreateDestroy311)
+    add_net_test_case(MqttRequestResponse_GetNamedShadowSuccessRejected311)
+    add_net_test_case(MqttRequestResponse_GetNamedShadowSuccessRejected5)
+    add_net_test_case(MqttRequestResponse_GetNamedShadowSuccessRejectedNoCorrelationToken311)
+    add_net_test_case(MqttRequestResponse_GetNamedShadowSuccessRejectedNoCorrelationToken5)
+
+    add_net_test_case(MqttRequestResponse_UpdateNamedShadowSuccessAccepted311)
+    add_net_test_case(MqttRequestResponse_UpdateNamedShadowSuccessAccepted5)
+    add_net_test_case(MqttRequestResponse_UpdateNamedShadowSuccessAcceptedNoCorrelationToken311)
+    add_net_test_case(MqttRequestResponse_UpdateNamedShadowSuccessAcceptedNoCorrelationToken5)
+
 endif()
 
 add_test_case(RuleEngine)
