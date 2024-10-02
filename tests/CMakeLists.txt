@@ -283,9 +283,12 @@ if(NOT BYO_CRYPTO)
 
     add_net_test_case(MqttRequestResponse_ShadowUpdatedStreamOpenCloseSuccess5)
     add_net_test_case(MqttRequestResponse_ShadowUpdatedStreamOpenCloseSuccess311)
+    add_net_test_case(MqttRequestResponse_ShadowUpdatedStreamClientClosed5)
+    add_net_test_case(MqttRequestResponse_ShadowUpdatedStreamClientClosed311)
     add_net_test_case(MqttRequestResponse_ShadowUpdatedStreamIncomingPublishSuccess5)
     add_net_test_case(MqttRequestResponse_ShadowUpdatedStreamIncomingPublishSuccess311)
-    add_net_test_case(MqttRequestResponse_ShadowUpdatedStreamSubscriptionEvents5)
+
+
 
 
 
