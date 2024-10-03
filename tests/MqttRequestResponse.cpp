@@ -866,7 +866,7 @@ static std::shared_ptr<Aws::Iot::RequestResponse::IStreamingOperation> s_CreateV
     const Aws::Crt::String &topicFilter)
 {
     Aws::Iot::RequestResponse::StreamingOperationOptionsInternal config;
-    AWS_ZERO_STRUCT(config);
+
     config.subscriptionStatusEventHandler = [state](Aws::Iot::RequestResponse::SubscriptionStatusEvent &&event)
     { s_onSubscriptionStatusEvent(std::move(event), state); };
     config.incomingPublishEventHandler = [state](Aws::Iot::RequestResponse::IncomingPublishEvent &&event)
