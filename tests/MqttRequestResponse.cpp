@@ -379,11 +379,38 @@ static int s_SubmitGetNamedShadowRejectedRequest(TestContext &context, TestState
     jsonObject.WithString("clientToken", uuid);
     Aws::Crt::String payloadWithCorrelationToken = jsonObject.View().WriteCompact(true);
 
+    auto shadowName = Aws::Crt::UUID().ToString();
+
+    char subscriptionTopicFilter[256];
+    snprintf(
+        subscriptionTopicFilter,
+        AWS_ARRAY_SIZE(subscriptionTopicFilter),
+        "$aws/things/NoSuchThing/shadow/name/%s/get/+",
+        shadowName.c_str());
+
+    char acceptedTopic[256];
+    snprintf(
+        acceptedTopic,
+        AWS_ARRAY_SIZE(acceptedTopic),
+        "$aws/things/NoSuchThing/shadow/name/%s/get/accepted",
+        shadowName.c_str());
+
+    char rejectedTopic[256];
+    snprintf(
+        rejectedTopic,
+        AWS_ARRAY_SIZE(rejectedTopic),
+        "$aws/things/NoSuchThing/shadow/name/%s/get/rejected",
+        shadowName.c_str());
+
+    char publishTopic[256];
+    snprintf(
+        publishTopic, AWS_ARRAY_SIZE(publishTopic), "$aws/things/NoSuchThing/shadow/name/%s/get", shadowName.c_str());
+
     struct aws_mqtt_request_operation_options requestOptions;
     AWS_ZERO_STRUCT(requestOptions);
 
     struct aws_byte_cursor subscription_topic_filters[1] = {
-        aws_byte_cursor_from_c_str("$aws/things/NoSuchThing/shadow/name/Derp/get/+"),
+        aws_byte_cursor_from_c_str(subscriptionTopicFilter),
     };
     requestOptions.subscription_topic_filters = subscription_topic_filters;
     requestOptions.subscription_topic_filter_count = 1;
@@ -391,8 +418,8 @@ static int s_SubmitGetNamedShadowRejectedRequest(TestContext &context, TestState
     struct aws_mqtt_request_operation_response_path responsePaths[2];
     AWS_ZERO_STRUCT(responsePaths[0]);
     AWS_ZERO_STRUCT(responsePaths[1]);
-    responsePaths[0].topic = aws_byte_cursor_from_c_str("$aws/things/NoSuchThing/shadow/name/Derp/get/accepted");
-    responsePaths[1].topic = aws_byte_cursor_from_c_str("$aws/things/NoSuchThing/shadow/name/Derp/get/rejected");
+    responsePaths[0].topic = aws_byte_cursor_from_c_str(acceptedTopic);
+    responsePaths[1].topic = aws_byte_cursor_from_c_str(rejectedTopic);
     if (useCorrelationToken)
     {
         responsePaths[0].correlation_token_json_path = aws_byte_cursor_from_c_str("clientToken");
@@ -407,7 +434,7 @@ static int s_SubmitGetNamedShadowRejectedRequest(TestContext &context, TestState
 
     requestOptions.response_paths = responsePaths;
     requestOptions.response_path_count = 2;
-    requestOptions.publish_topic = aws_byte_cursor_from_c_str("$aws/things/NoSuchThing/shadow/name/Derp/get");
+    requestOptions.publish_topic = aws_byte_cursor_from_c_str(publishTopic);
     requestOptions.user_data = rawResponseTracker;
 
     int result = context.client->SubmitRequest(
@@ -649,11 +676,34 @@ static int s_SubmitGetNamedShadowTimeoutRequest(TestContext &context, TestState 
     jsonObject.WithString("clientToken", uuid);
     Aws::Crt::String payloadWithCorrelationToken = jsonObject.View().WriteCompact(true);
 
+    auto shadowName = Aws::Crt::UUID().ToString();
+
+    char subscriptionTopicFilter[256];
+    snprintf(
+        subscriptionTopicFilter,
+        AWS_ARRAY_SIZE(subscriptionTopicFilter),
+        "$aws/things/NoSuchThing/shadow/name/%s/get/+",
+        shadowName.c_str());
+
+    char acceptedTopic[256];
+    snprintf(
+        acceptedTopic,
+        AWS_ARRAY_SIZE(acceptedTopic),
+        "$aws/things/NoSuchThing/shadow/name/%s/get/accepted",
+        shadowName.c_str());
+
+    char rejectedTopic[256];
+    snprintf(
+        rejectedTopic,
+        AWS_ARRAY_SIZE(rejectedTopic),
+        "$aws/things/NoSuchThing/shadow/name/%s/get/rejected",
+        shadowName.c_str());
+
     struct aws_mqtt_request_operation_options requestOptions;
     AWS_ZERO_STRUCT(requestOptions);
 
     struct aws_byte_cursor subscription_topic_filters[1] = {
-        aws_byte_cursor_from_c_str("$aws/things/NoSuchThing/shadow/name/Derp/get/+"),
+        aws_byte_cursor_from_c_str(subscriptionTopicFilter),
     };
     requestOptions.subscription_topic_filters = subscription_topic_filters;
     requestOptions.subscription_topic_filter_count = 1;
@@ -661,8 +711,8 @@ static int s_SubmitGetNamedShadowTimeoutRequest(TestContext &context, TestState 
     struct aws_mqtt_request_operation_response_path responsePaths[2];
     AWS_ZERO_STRUCT(responsePaths[0]);
     AWS_ZERO_STRUCT(responsePaths[1]);
-    responsePaths[0].topic = aws_byte_cursor_from_c_str("$aws/things/NoSuchThing/shadow/name/Derp/get/accepted");
-    responsePaths[1].topic = aws_byte_cursor_from_c_str("$aws/things/NoSuchThing/shadow/name/Derp/get/rejected");
+    responsePaths[0].topic = aws_byte_cursor_from_c_str(acceptedTopic);
+    responsePaths[1].topic = aws_byte_cursor_from_c_str(rejectedTopic);
     if (useCorrelationToken)
     {
         responsePaths[0].correlation_token_json_path = aws_byte_cursor_from_c_str("clientToken");
