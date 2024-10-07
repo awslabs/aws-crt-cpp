@@ -540,7 +540,7 @@ static int s_SubmitUpdateNamedShadowAcceptedRequest(TestContext &context, TestSt
     }
     else
     {
-        snprintf(payload, AWS_ARRAY_SIZE(payload), "{\"state\":{\"desired\":\"%s\"}}", desiredState);
+        snprintf(payload, AWS_ARRAY_SIZE(payload), "{\"state\":{\"desired\":%s}}", desiredState);
     }
 
     AWS_LOGF_INFO(AWS_LS_MQTT_GENERAL, "***UpdateNamedShadowPayload: %s", payload);
