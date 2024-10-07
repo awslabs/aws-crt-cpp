@@ -570,6 +570,8 @@ static int s_SubmitUpdateNamedShadowAcceptedRequest(TestContext &context, TestSt
         std::lock_guard<std::mutex> lock(state->lock);
         ASSERT_INT_EQUALS(AWS_ERROR_SUCCESS, tracker->errorCode);
 
+        AWS_LOGF_INFO(AWS_LS_MQTT_GENERAL, "**Temp-Request-response-test-payload: %s", tracker->payload.c_str());
+
         ASSERT_TRUE(
             tracker->topic == Aws::Crt::String((const char *)responsePaths[0].topic.ptr, responsePaths[0].topic.len));
         ASSERT_TRUE(tracker->payload.length() > 0);
