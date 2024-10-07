@@ -412,7 +412,7 @@ static int s_SubmitGetNamedShadowRejectedRequest(TestContext &context, TestState
 
     int result = context.client->SubmitRequest(
         requestOptions,
-        [state, rawResponseTracker](Aws::Iot::RequestResponse::UnmodeledResult &&result)
+        [rawResponseTracker](Aws::Iot::RequestResponse::UnmodeledResult &&result)
         { s_onRequestComplete(std::move(result), rawResponseTracker); });
     ASSERT_INT_EQUALS(AWS_OP_SUCCESS, result);
 
@@ -543,6 +543,8 @@ static int s_SubmitUpdateNamedShadowAcceptedRequest(TestContext &context, TestSt
         snprintf(payload, AWS_ARRAY_SIZE(payload), "{\"state\":{\"desired\":\"%s\"}}", desiredState);
     }
 
+    AWS_LOGF_INFO(AWS_LS_MQTT_GENERAL, "***UpdateNamedShadowPayload: %s", payload);
+
     requestOptions.serialized_request = aws_byte_cursor_from_c_str(payload);
 
     requestOptions.response_paths = responsePaths;
@@ -560,7 +562,7 @@ static int s_SubmitUpdateNamedShadowAcceptedRequest(TestContext &context, TestSt
 
     int result = context.client->SubmitRequest(
         requestOptions,
-        [state, rawResponseTracker](Aws::Iot::RequestResponse::UnmodeledResult &&result)
+        [rawResponseTracker](Aws::Iot::RequestResponse::UnmodeledResult &&result)
         { s_onRequestComplete(std::move(result), rawResponseTracker); });
     ASSERT_INT_EQUALS(AWS_OP_SUCCESS, result);
 
@@ -680,7 +682,7 @@ static int s_SubmitGetNamedShadowTimeoutRequest(TestContext &context, TestState 
 
     int result = context.client->SubmitRequest(
         requestOptions,
-        [state, rawResponseTracker](Aws::Iot::RequestResponse::UnmodeledResult &&result)
+        [rawResponseTracker](Aws::Iot::RequestResponse::UnmodeledResult &&result)
         { s_onRequestComplete(std::move(result), rawResponseTracker); });
     ASSERT_INT_EQUALS(AWS_OP_SUCCESS, result);
 
@@ -792,7 +794,7 @@ static int s_SubmitGetNamedShadowFailureOnCloseRequest(TestContext &context, Tes
 
     int result = context.client->SubmitRequest(
         requestOptions,
-        [state, rawResponseTracker](Aws::Iot::RequestResponse::UnmodeledResult &&result)
+        [rawResponseTracker](Aws::Iot::RequestResponse::UnmodeledResult &&result)
         { s_onRequestComplete(std::move(result), rawResponseTracker); });
     ASSERT_INT_EQUALS(AWS_OP_SUCCESS, result);
 
