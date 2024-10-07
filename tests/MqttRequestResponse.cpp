@@ -265,9 +265,17 @@ static TestContext s_CreateClient(
         mqtt5Options.WithTlsConnectionOptions(tlsContext.NewConnectionOptions());
 
         mqtt5Options.WithClientConnectionSuccessCallback(
-            [state](const Aws::Crt::Mqtt5::OnConnectionSuccessEventData &event) { s_updateConnected(state, true); });
-        mqtt5Options.WithClientDisconnectionCallback([state](const Aws::Crt::Mqtt5::OnDisconnectionEventData &event)
-                                                     { s_updateConnected(state, false); });
+            [state](const Aws::Crt::Mqtt5::OnConnectionSuccessEventData &event)
+            {
+                (void)event;
+                s_updateConnected(state, true);
+            });
+        mqtt5Options.WithClientDisconnectionCallback(
+            [state](const Aws::Crt::Mqtt5::OnDisconnectionEventData &event)
+            {
+                (void)event;
+                s_updateConnected(state, false);
+            });
 
         context.protocolClient5 = Aws::Crt::Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
         context.client = Aws::Iot::RequestResponse::NewClientFrom5(*context.protocolClient5, finalOptions, allocator);
@@ -287,9 +295,16 @@ static TestContext s_CreateClient(
 
         context.protocolClient311->OnConnectionSuccess =
             [state](Aws::Crt::Mqtt::MqttConnection &connection, Aws::Crt::Mqtt::OnConnectionSuccessData *callbackData)
-        { s_updateConnected(state, true); };
+        {
+            (void)connection;
+            (void)callbackData;
+            s_updateConnected(state, true);
+        };
         context.protocolClient311->OnDisconnect = [state](Aws::Crt::Mqtt::MqttConnection &connection)
-        { s_updateConnected(state, false); };
+        {
+            (void)connection;
+            s_updateConnected(state, false);
+        };
 
         context.client =
             Aws::Iot::RequestResponse::NewClientFrom311(*context.protocolClient311, finalOptions, allocator);
@@ -330,7 +345,12 @@ void s_publishToProtocolClient(
             AWS_MQTT_QOS_AT_MOST_ONCE,
             false,
             payloadBuffer,
-            [](Aws::Crt::Mqtt::MqttConnection &connection, uint16_t packetId, int errorCode) {});
+            [](Aws::Crt::Mqtt::MqttConnection &connection, uint16_t packetId, int errorCode)
+            {
+                (void)connection;
+                (void)packetId;
+                (void)errorCode;
+            });
         aws_byte_buf_clean_up(&payloadBuffer);
     }
 }
@@ -570,8 +590,6 @@ static int s_SubmitUpdateNamedShadowAcceptedRequest(TestContext &context, TestSt
         snprintf(payload, AWS_ARRAY_SIZE(payload), "{\"state\":{\"desired\":%s}}", desiredState);
     }
 
-    AWS_LOGF_INFO(AWS_LS_MQTT_GENERAL, "***UpdateNamedShadowPayload: %s", payload);
-
     requestOptions.serialized_request = aws_byte_cursor_from_c_str(payload);
 
     requestOptions.response_paths = responsePaths;
@@ -598,8 +616,6 @@ static int s_SubmitUpdateNamedShadowAcceptedRequest(TestContext &context, TestSt
     {
         std::lock_guard<std::mutex> lock(state->lock);
         ASSERT_INT_EQUALS(AWS_ERROR_SUCCESS, tracker->errorCode);
-
-        AWS_LOGF_INFO(AWS_LS_MQTT_GENERAL, "**Temp-Request-response-test-payload: %s", tracker->payload.c_str());
 
         ASSERT_TRUE(
             tracker->topic == Aws::Crt::String((const char *)responsePaths[0].topic.ptr, responsePaths[0].topic.len));
