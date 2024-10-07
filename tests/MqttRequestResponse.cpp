@@ -222,6 +222,7 @@ static TestContext s_CreateClient(
 {
     TestContext context;
 
+    Aws::Iot::RequestResponse::RequestResponseClientOptions finalOptions;
     struct aws_string *host = NULL;
     struct aws_string *certificatePath = NULL;
     struct aws_string *privateKeyPath = NULL;
@@ -241,7 +242,6 @@ static TestContext s_CreateClient(
         goto done;
     }
 
-    Aws::Iot::RequestResponse::RequestResponseClientOptions finalOptions;
     if (options != nullptr)
     {
         finalOptions = *options;
