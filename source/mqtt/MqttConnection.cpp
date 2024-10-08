@@ -194,7 +194,7 @@ namespace Aws
                 return m_connectionCore->Disconnect();
             }
 
-            aws_mqtt_client_connection *MqttConnection::GetUnderlyingConnection() noexcept
+            aws_mqtt_client_connection *MqttConnection::GetUnderlyingConnection() const noexcept
             {
                 AWS_ASSERT(m_connectionCore != nullptr);
                 return m_connectionCore->GetUnderlyingConnection();
