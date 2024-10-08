@@ -173,3 +173,21 @@ static int s_TestRuleEngine(struct aws_allocator *allocator, void *ctx)
 }
 
 AWS_TEST_CASE(RuleEngine, s_TestRuleEngine)
+
+static int s_TestRuleEngineContextParams(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
+    Aws::Crt::Endpoints::RequestContext context(allocator);
+    context.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
+    context.AddBoolean(ByteCursorFromCString("AValidBoolParam"), false);
+    context.AddStringArray(ByteCursorFromCString("StringArray1"), {});
+    context.AddStringArray(
+        ByteCursorFromCString("StringArray2"), {ByteCursorFromCString("a"), ByteCursorFromCString("b")});
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(RuleEngineContextParams, s_TestRuleEngineContextParams)

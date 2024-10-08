@@ -189,7 +189,7 @@ namespace Aws
 
                 /**
                  * Complete the hash computation and write the final digest to output.
-                 * This cannote be called more than once.
+                 * This cannot be called more than once.
                  * If truncate_to is something other than 0, the output must be truncated to that number of bytes.
                  * Raise an AWS error and return false to indicate failure.
                  */

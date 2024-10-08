@@ -5,6 +5,7 @@
 
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/io/Stream.h>
+#include <iostream>
 
 #include <aws/io/stream.h>
 
@@ -150,6 +151,26 @@ namespace Aws
                 return status.is_valid && !status.is_end_of_stream;
             }
 
+            bool StdIOStreamInputStream::ReadSomeImpl(ByteBuf &buffer) noexcept
+            {
+                // I have no idea why "readsome() doesn't work at all" for the original dev. It works well for me
+                // Jokes aside, read will always block and try to read till eof
+                // readsome will return available bytes without waiting for eof and without closing the stream.
+                auto actuallyRead = m_stream->readsome(
+                    reinterpret_cast<char *>(buffer.buffer + buffer.len), buffer.capacity - buffer.len);
+
+                buffer.len += static_cast<size_t>(actuallyRead);
+
+                if (actuallyRead > 0 || (actuallyRead == 0 && m_stream->eof()))
+                {
+                    return true;
+                }
+
+                auto status = GetStatusImpl();
+
+                return status.is_valid && !status.is_end_of_stream;
+            }
+
             StreamStatus StdIOStreamInputStream::GetStatusImpl() const noexcept
             {
                 StreamStatus status;
@@ -205,6 +226,11 @@ namespace Aws
                 m_stream->seekg(static_cast<stdOffType>(offset), seekDir);
 
                 return true;
+            }
+
+            int64_t StdIOStreamInputStream::PeekImpl() const noexcept
+            {
+                return m_stream->peek();
             }
         } // namespace Io
     } // namespace Crt

@@ -148,6 +148,10 @@ file(GLOB AWS_CRT_AUTH_HEADERS
     "include/aws/crt/auth/*.h"
 )
 
+file(GLOB AWS_CRT_CHECKSUM_HEADERS
+    "include/aws/crt/checksum/*.h"
+)
+
 file(GLOB AWS_CRT_CRYPTO_HEADERS
     "include/aws/crt/crypto/*.h"
 )
@@ -179,6 +183,7 @@ file(GLOB AWS_CRT_CBOR_HEADERS
 file(GLOB AWS_CRT_PUBLIC_HEADERS
     ${AWS_CRT_HEADERS}
     ${AWS_CRT_AUTH_HEADERS}
+    ${AWS_CRT_CHECKSUM_HEADERS}
     ${AWS_CRT_CRYPTO_HEADERS}
     ${AWS_CRT_IO_HEADERS}
     ${AWS_CRT_IOT_HEADERS}
@@ -203,6 +208,10 @@ file(GLOB AWS_CRT_SRC
 
 file(GLOB AWS_CRT_AUTH_SRC
     "source/auth/*.cpp"
+)
+
+file(GLOB AWS_CRT_CHECKSUM_SRC
+    "source/checksum/*.cpp"
 )
 
 file(GLOB AWS_CRT_CRYPTO_SRC
@@ -236,6 +245,7 @@ file(GLOB AWS_CRT_CBOR_SRC
 file(GLOB AWS_CRT_CPP_SRC
     ${AWS_CRT_SRC}
     ${AWS_CRT_AUTH_SRC}
+    ${AWS_CRT_CHECKSUM_SRC}
     ${AWS_CRT_CRYPTO_SRC}
     ${AWS_CRT_IO_SRC}
     ${AWS_CRT_IOT_SRC}
@@ -249,6 +259,7 @@ if(WIN32)
     if(MSVC)
         source_group("Header Files\\aws\\crt" FILES ${AWS_CRT_HEADERS})
         source_group("Header Files\\aws\\crt\\auth" FILES ${AWS_CRT_AUTH_HEADERS})
+        source_group("Header Files\\aws\\crt\\checksum" FILES ${AWS_CRT_CHECKSUM_HEADERS})
         source_group("Header Files\\aws\\crt\\crypto" FILES ${AWS_CRT_CRYPTO_HEADERS})
         source_group("Header Files\\aws\\crt\\io" FILES ${AWS_CRT_IO_HEADERS})
         source_group("Header Files\\aws\\iot" FILES ${AWS_CRT_IOT_HEADERS})
@@ -259,6 +270,7 @@ if(WIN32)
 
         source_group("Source Files" FILES ${AWS_CRT_SRC})
         source_group("Source Files\\auth" FILES ${AWS_CRT_AUTH_SRC})
+        source_group("Source Files\\checksum" FILES ${AWS_CRT_CHECKSUM_SRC})
         source_group("Source Files\\crypto" FILES ${AWS_CRT_CRYPTO_SRC})
         source_group("Source Files\\io" FILES ${AWS_CRT_IO_SRC})
         source_group("Source Files\\iot" FILES ${AWS_CRT_IOT_SRC})
@@ -329,6 +341,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC ${DEP_AWS_LIBS})
 
 install(FILES ${AWS_CRT_HEADERS} DESTINATION "include/aws/crt" COMPONENT Development)
 install(FILES ${AWS_CRT_AUTH_HEADERS} DESTINATION "include/aws/crt/auth" COMPONENT Development)
+install(FILES ${AWS_CRT_CHECKSUM_HEADERS} DESTINATION "include/aws/crt/crypto" COMPONENT Development)
 install(FILES ${AWS_CRT_CRYPTO_HEADERS} DESTINATION "include/aws/crt/crypto" COMPONENT Development)
 install(FILES ${AWS_CRT_IO_HEADERS} DESTINATION "include/aws/crt/io" COMPONENT Development)
 install(FILES ${AWS_CRT_IOT_HEADERS} DESTINATION "include/aws/iot" COMPONENT Development)
