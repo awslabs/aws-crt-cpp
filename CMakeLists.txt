@@ -104,7 +104,7 @@ if(BUILD_DEPS)
             endif()
 
             # s2n-tls uses libcrypto during its configuration, so we need to prebuild aws-lc.
-            prebuild_dependency(
+            aws_prebuild_dependency(
                 DEPENDENCY_NAME AWSLC
                 SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/crt/aws-lc
                 CMAKE_ARGUMENTS
