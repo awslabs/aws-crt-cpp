@@ -13,6 +13,7 @@
 #include <iterator>
 #include <limits>
 #include <stddef.h>
+#include <string>
 #include <type_traits>
 
 #if __cplusplus >= 201703L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L)
@@ -859,6 +860,6 @@ namespace std
         const Aws::Crt::basic_string_view<CharT, Traits> &val) const noexcept
     {
         auto str = std::basic_string<CharT, Traits>(val.data(), val.size());
-        return std::hash<std::basic_string<CharT, Traits>>()(str);
+        return std::hash<std::basic_string<CharT, Traits>>{}(str);
     }
 } // namespace std

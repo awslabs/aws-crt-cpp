@@ -80,35 +80,36 @@ if(BUILD_DEPS)
 
     if(UNIX AND NOT APPLE AND NOT BYO_CRYPTO)
         if(NOT USE_OPENSSL)
-            set(DISABLE_PERL ON CACHE BOOL "Disable Perl for AWS-LC.")
-            set(DISABLE_GO ON CACHE BOOL "Disable Go for AWS-LC.")
-            set(BUILD_LIBSSL OFF CACHE BOOL "Build libssl for AWS-LC.")
+            include(AwsPrebuildDependency)
+
+            set(AWSLC_CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
             # temporarily disable certain warnings as errors for the aws-lc build
-            set(OLD_CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-
             if(NOT MSVC)
                 check_c_compiler_flag(-Wno-stringop-overflow HAS_WNO_STRINGOP_OVERFLOW)
 
                 if(HAS_WNO_STRINGOP_OVERFLOW)
-                    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-stringop-overflow")
+                    set(AWSLC_CMAKE_C_FLAGS "${AWSLC_CMAKE_C_FLAGS} -Wno-stringop-overflow")
                 endif()
 
                 check_c_compiler_flag(-Wno-array-parameter HAS_WNO_ARRAY_PARAMETER)
 
                 if(HAS_WNO_ARRAY_PARAMETER)
-                    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-array-parameter")
+                    set(AWSLC_CMAKE_C_FLAGS "${AWSLC_CMAKE_C_FLAGS} -Wno-array-parameter")
                 endif()
             endif()
 
-            add_subdirectory(crt/aws-lc)
-
-            # restore previous build flags
-            set(CMAKE_C_FLAGS "${OLD_CMAKE_C_FLAGS}")
-
-            set(SEARCH_LIBCRYPTO OFF CACHE BOOL "Let S2N use libcrypto from AWS-LC.")
-        else()
-            set(SEARCH_LIBCRYPTO ON CACHE BOOL "Let S2N search libcrypto in the system.")
+            # s2n-tls uses libcrypto during its configuration, so we need to prebuild aws-lc.
+            prebuild_dependency(
+                DEPENDENCY_NAME AWSLC
+                SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/crt/aws-lc
+                CMAKE_ARGUMENTS
+                    -DDISABLE_GO=ON
+                    -DDISABLE_PERL=ON
+                    -DBUILD_LIBSSL=OFF
+                    -DBUILD_TESTING=OFF
+                    -DCMAKE_C_FLAGS=${AWSLC_CMAKE_C_FLAGS}
+            )
         endif()
 
         set(UNSAFE_TREAT_WARNINGS_AS_ERRORS OFF CACHE BOOL "Disable warnings-as-errors when building S2N")
@@ -143,6 +144,10 @@ file(GLOB AWS_CRT_AUTH_HEADERS
     "include/aws/crt/auth/*.h"
 )
 
+file(GLOB AWS_CRT_CHECKSUM_HEADERS
+    "include/aws/crt/checksum/*.h"
+)
+
 file(GLOB AWS_CRT_CRYPTO_HEADERS
     "include/aws/crt/crypto/*.h"
 )
@@ -174,6 +179,7 @@ file(GLOB AWS_CRT_CBOR_HEADERS
 file(GLOB AWS_CRT_PUBLIC_HEADERS
     ${AWS_CRT_HEADERS}
     ${AWS_CRT_AUTH_HEADERS}
+    ${AWS_CRT_CHECKSUM_HEADERS}
     ${AWS_CRT_CRYPTO_HEADERS}
     ${AWS_CRT_IO_HEADERS}
     ${AWS_CRT_IOT_HEADERS}
@@ -198,6 +204,10 @@ file(GLOB AWS_CRT_SRC
 
 file(GLOB AWS_CRT_AUTH_SRC
     "source/auth/*.cpp"
+)
+
+file(GLOB AWS_CRT_CHECKSUM_SRC
+    "source/checksum/*.cpp"
 )
 
 file(GLOB AWS_CRT_CRYPTO_SRC
@@ -231,6 +241,7 @@ file(GLOB AWS_CRT_CBOR_SRC
 file(GLOB AWS_CRT_CPP_SRC
     ${AWS_CRT_SRC}
     ${AWS_CRT_AUTH_SRC}
+    ${AWS_CRT_CHECKSUM_SRC}
     ${AWS_CRT_CRYPTO_SRC}
     ${AWS_CRT_IO_SRC}
     ${AWS_CRT_IOT_SRC}
@@ -244,6 +255,7 @@ if(WIN32)
     if(MSVC)
         source_group("Header Files\\aws\\crt" FILES ${AWS_CRT_HEADERS})
         source_group("Header Files\\aws\\crt\\auth" FILES ${AWS_CRT_AUTH_HEADERS})
+        source_group("Header Files\\aws\\crt\\checksum" FILES ${AWS_CRT_CHECKSUM_HEADERS})
         source_group("Header Files\\aws\\crt\\crypto" FILES ${AWS_CRT_CRYPTO_HEADERS})
         source_group("Header Files\\aws\\crt\\io" FILES ${AWS_CRT_IO_HEADERS})
         source_group("Header Files\\aws\\iot" FILES ${AWS_CRT_IOT_HEADERS})
@@ -254,6 +266,7 @@ if(WIN32)
 
         source_group("Source Files" FILES ${AWS_CRT_SRC})
         source_group("Source Files\\auth" FILES ${AWS_CRT_AUTH_SRC})
+        source_group("Source Files\\checksum" FILES ${AWS_CRT_CHECKSUM_SRC})
         source_group("Source Files\\crypto" FILES ${AWS_CRT_CRYPTO_SRC})
         source_group("Source Files\\io" FILES ${AWS_CRT_IO_SRC})
         source_group("Source Files\\iot" FILES ${AWS_CRT_IOT_SRC})
@@ -325,6 +338,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC ${DEP_AWS_LIBS})
 
 install(FILES ${AWS_CRT_HEADERS} DESTINATION "include/aws/crt" COMPONENT Development)
 install(FILES ${AWS_CRT_AUTH_HEADERS} DESTINATION "include/aws/crt/auth" COMPONENT Development)
+install(FILES ${AWS_CRT_CHECKSUM_HEADERS} DESTINATION "include/aws/crt/crypto" COMPONENT Development)
 install(FILES ${AWS_CRT_CRYPTO_HEADERS} DESTINATION "include/aws/crt/crypto" COMPONENT Development)
 install(FILES ${AWS_CRT_IO_HEADERS} DESTINATION "include/aws/crt/io" COMPONENT Development)
 install(FILES ${AWS_CRT_IOT_HEADERS} DESTINATION "include/aws/iot" COMPONENT Development)

@@ -344,6 +344,12 @@ namespace Aws
             return *this;
         }
 
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithSocketOptions(Crt::Io::SocketOptions socketOptions) noexcept
+        {
+            m_options->WithSocketOptions(std::move(socketOptions));
+            return *this;
+        }
+
         Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithHttpProxyOptions(
             const Crt::Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept
         {
