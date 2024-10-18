@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.9)
 
 if(POLICY CMP0077)
     cmake_policy(SET CMP0077 NEW)
@@ -104,7 +104,7 @@ if(BUILD_DEPS)
             endif()
 
             # s2n-tls uses libcrypto during its configuration, so we need to prebuild aws-lc.
-            prebuild_dependency(
+            aws_prebuild_dependency(
                 DEPENDENCY_NAME AWSLC
                 SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/crt/aws-lc
                 CMAKE_ARGUMENTS
@@ -296,6 +296,7 @@ endif()
 
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
+set_target_properties(${PROJECT_NAME} PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
 
 aws_prepare_symbol_visibility_args(${PROJECT_NAME} "AWS_CRT_CPP")
 
