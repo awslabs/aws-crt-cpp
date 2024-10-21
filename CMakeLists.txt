@@ -302,6 +302,9 @@ endif()
 
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
+set_target_properties(${PROJECT_NAME} PROPERTIES VERSION 0.0.0)
+set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0)
+
 
 aws_prepare_symbol_visibility_args(${PROJECT_NAME} "AWS_CRT_CPP")
 
