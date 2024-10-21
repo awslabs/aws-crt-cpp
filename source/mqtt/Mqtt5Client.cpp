@@ -174,6 +174,11 @@ namespace Aws
                 return m_operationStatistics;
             }
 
+            struct aws_mqtt5_client *Mqtt5Client::GetUnderlyingHandle() const noexcept
+            {
+                return m_client_core->GetUnderlyingHandle();
+            }
+
             /*****************************************************
              *
              * Mqtt5ClientOptions

@@ -669,7 +669,7 @@ namespace Aws
                            m_underlyingConnection, MqttConnectionCore::s_onDisconnect, this) == AWS_OP_SUCCESS;
             }
 
-            aws_mqtt_client_connection *MqttConnectionCore::GetUnderlyingConnection() noexcept
+            aws_mqtt_client_connection *MqttConnectionCore::GetUnderlyingConnection() const noexcept
             {
                 return m_underlyingConnection;
             }

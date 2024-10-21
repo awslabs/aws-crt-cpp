@@ -404,6 +404,7 @@ namespace Aws
             {
                 template <typename AlternativeT> void operator()(AlternativeT &&value) const
                 {
+                    (void)value;
                     using PlaintT = typename std::remove_reference<AlternativeT>::type;
                     value.~PlaintT();
                 }
