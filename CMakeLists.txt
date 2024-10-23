@@ -83,8 +83,8 @@ if(BUILD_DEPS)
     add_subdirectory(crt/aws-c-common)
 
     if(UNIX AND NOT APPLE AND NOT BYO_CRYPTO)
+        include(AwsPrebuildDependency)
         if(NOT USE_OPENSSL)
-            include(AwsPrebuildDependency)
 
             set(AWSLC_CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
@@ -116,8 +116,14 @@ if(BUILD_DEPS)
             )
         endif()
 
-        set(UNSAFE_TREAT_WARNINGS_AS_ERRORS OFF CACHE BOOL "Disable warnings-as-errors when building S2N")
-        add_subdirectory(crt/s2n)
+        # prebuild s2n-tls.
+        aws_prebuild_dependency(
+            DEPENDENCY_NAME S2N
+            SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/crt/s2n
+            CMAKE_ARGUMENTS
+                -DUNSAFE_TREAT_WARNINGS_AS_ERRORS=OFF
+                -DBUILD_TESTING=OFF
+        )
     endif()
 
     add_subdirectory(crt/aws-c-sdkutils)
