@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.9)
 
 if(POLICY CMP0077)
     cmake_policy(SET CMP0077 NEW)
@@ -83,40 +83,47 @@ if(BUILD_DEPS)
     add_subdirectory(crt/aws-c-common)
 
     if(UNIX AND NOT APPLE AND NOT BYO_CRYPTO)
+        include(AwsPrebuildDependency)
         if(NOT USE_OPENSSL)
-            set(DISABLE_PERL ON CACHE BOOL "Disable Perl for AWS-LC.")
-            set(DISABLE_GO ON CACHE BOOL "Disable Go for AWS-LC.")
-            set(BUILD_LIBSSL OFF CACHE BOOL "Build libssl for AWS-LC.")
+
+            set(AWSLC_CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
             # temporarily disable certain warnings as errors for the aws-lc build
-            set(OLD_CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-
             if(NOT MSVC)
                 check_c_compiler_flag(-Wno-stringop-overflow HAS_WNO_STRINGOP_OVERFLOW)
 
                 if(HAS_WNO_STRINGOP_OVERFLOW)
-                    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-stringop-overflow")
+                    set(AWSLC_CMAKE_C_FLAGS "${AWSLC_CMAKE_C_FLAGS} -Wno-stringop-overflow")
                 endif()
 
                 check_c_compiler_flag(-Wno-array-parameter HAS_WNO_ARRAY_PARAMETER)
 
                 if(HAS_WNO_ARRAY_PARAMETER)
-                    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-array-parameter")
+                    set(AWSLC_CMAKE_C_FLAGS "${AWSLC_CMAKE_C_FLAGS} -Wno-array-parameter")
                 endif()
             endif()
 
-            add_subdirectory(crt/aws-lc)
-
-            # restore previous build flags
-            set(CMAKE_C_FLAGS "${OLD_CMAKE_C_FLAGS}")
-
-            set(SEARCH_LIBCRYPTO OFF CACHE BOOL "Let S2N use libcrypto from AWS-LC.")
-        else()
-            set(SEARCH_LIBCRYPTO ON CACHE BOOL "Let S2N search libcrypto in the system.")
+            # s2n-tls uses libcrypto during its configuration, so we need to prebuild aws-lc.
+            aws_prebuild_dependency(
+                DEPENDENCY_NAME AWSLC
+                SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/crt/aws-lc
+                CMAKE_ARGUMENTS
+                    -DDISABLE_GO=ON
+                    -DDISABLE_PERL=ON
+                    -DBUILD_LIBSSL=OFF
+                    -DBUILD_TESTING=OFF
+                    -DCMAKE_C_FLAGS=${AWSLC_CMAKE_C_FLAGS}
+            )
         endif()
 
-        set(UNSAFE_TREAT_WARNINGS_AS_ERRORS OFF CACHE BOOL "Disable warnings-as-errors when building S2N")
-        add_subdirectory(crt/s2n)
+        # prebuild s2n-tls.
+        aws_prebuild_dependency(
+            DEPENDENCY_NAME S2N
+            SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/crt/s2n
+            CMAKE_ARGUMENTS
+                -DUNSAFE_TREAT_WARNINGS_AS_ERRORS=OFF
+                -DBUILD_TESTING=OFF
+        )
     endif()
 
     add_subdirectory(crt/aws-c-sdkutils)
@@ -295,6 +302,7 @@ endif()
 
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
+set_target_properties(${PROJECT_NAME} PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
 
 aws_prepare_symbol_visibility_args(${PROJECT_NAME} "AWS_CRT_CPP")
 
