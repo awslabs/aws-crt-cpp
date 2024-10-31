@@ -221,23 +221,24 @@ static TestContext s_CreateClient(
     Aws::Iot::RequestResponse::RequestResponseClientOptions *options = NULL)
 {
     TestContext context;
+    Aws::Iot::RequestResponse::RequestResponseClientOptions finalOptions;
 
     Aws::Iot::RequestResponse::RequestResponseClientOptions finalOptions;
     struct aws_string *host = NULL;
     struct aws_string *certificatePath = NULL;
     struct aws_string *privateKeyPath = NULL;
 
-    if (aws_get_environment_value(allocator, s_rrEnvVariableHost, &host))
+    if (aws_get_environment_value(allocator, s_rrEnvVariableHost, &host) || !host)
     {
         goto done;
     }
 
-    if (aws_get_environment_value(allocator, s_rrEnvVariableCertificatePath, &certificatePath))
+    if (aws_get_environment_value(allocator, s_rrEnvVariableCertificatePath, &certificatePath) || !certificatePath)
     {
         goto done;
     }
 
-    if (aws_get_environment_value(allocator, s_rrEnvVariablePrivateKeyPath, &privateKeyPath))
+    if (aws_get_environment_value(allocator, s_rrEnvVariablePrivateKeyPath, &privateKeyPath) || !privateKeyPath)
     {
         goto done;
     }

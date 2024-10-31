@@ -18,6 +18,12 @@ namespace Aws
         namespace RequestResponse
         {
 
+            /*
+             * RAII wrapper around taking a read lock for a referenced read-write lock.
+             *
+             * Used to protect the stream from destruction while in a callback or Open() call.  Protects the
+             * m_closed field of StreamingOperationImpl.
+             */
             class StreamReadLock
             {
               public:
@@ -29,6 +35,15 @@ namespace Aws
                 struct aws_rw_lock *m_lock;
             };
 
+            /*
+             * RAII wrapper around taking a *conditional* write lock for a referenced read-write lock.  Protects the
+             * m_closed field of StreamingOperationImpl.
+             *
+             * Used to block callbacks while destruction is triggered.  Only ever used by the stream destructor.
+             * We conditionally take the lock because if we're already in the event loop thread we're safe and we
+             * are probably (but not guaranteed to be) in a callback.  This prevents deadlock from trying to upgrade
+             * an already taken read lock to a write lock, which is not supported by the underlying read-write lock.
+             */
             class StreamWriteLock
             {
               public:
