@@ -136,7 +136,6 @@ jobs:
     strategy:
       matrix:
         compiler: [gcc-4.8, gcc-11] # oldest, latest
-
     steps:
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
     - name: Build ${{ env.PACKAGE_NAME }}
