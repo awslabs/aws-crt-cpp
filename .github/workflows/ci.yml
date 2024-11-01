@@ -17,6 +17,11 @@ env:
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_REGION: us-east-1
 
+# cancel in-progress builds after a new commit
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+  
 jobs:
   linux-compat-use-openssl:
     runs-on: ubuntu-22.04 # latest
@@ -62,6 +67,7 @@ jobs:
   linux-compiler-compat:
     runs-on: ubuntu-22.04 # latest
     strategy:
+      fail-fast: false
       matrix:
         compiler:
           - clang-3
