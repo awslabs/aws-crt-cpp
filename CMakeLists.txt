@@ -302,7 +302,13 @@ endif()
 
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
-set_target_properties(${PROJECT_NAME} PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
+
+# Hide symbols by default
+# Except for ancient GCC, because it leads to crashes in shared-lib builds
+# see: https://github.com/awslabs/aws-crt-cpp/pull/675
+if(NOT (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.0"))
+    set_target_properties(${PROJECT_NAME} PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
+endif()
 
 aws_prepare_symbol_visibility_args(${PROJECT_NAME} "AWS_CRT_CPP")
 
