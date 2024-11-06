@@ -116,14 +116,9 @@ if(BUILD_DEPS)
             )
         endif()
 
-        # prebuild s2n-tls.
-        aws_prebuild_dependency(
-            DEPENDENCY_NAME S2N
-            SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/crt/s2n
-            CMAKE_ARGUMENTS
-                -DUNSAFE_TREAT_WARNINGS_AS_ERRORS=OFF
-                -DBUILD_TESTING=OFF
-        )
+        list(INSERT CMAKE_FIND_ROOT_PATH 0 ${CMAKE_PREFIX_PATH})
+
+        add_subdirectory(crt/s2n)
     endif()
 
     add_subdirectory(crt/aws-c-sdkutils)
