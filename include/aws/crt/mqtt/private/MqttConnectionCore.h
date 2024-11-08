@@ -151,7 +151,7 @@ namespace Aws
                 bool Disconnect() noexcept;
 
                 /// @private
-                aws_mqtt_client_connection *GetUnderlyingConnection() noexcept;
+                aws_mqtt_client_connection *GetUnderlyingConnection() const noexcept;
 
                 /**
                  * @internal

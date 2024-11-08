@@ -260,6 +260,38 @@ if(NOT BYO_CRYPTO)
     add_net_test_case(Mqtt5to3AdapterOperations)
     add_net_test_case(Mqtt5to3AdapterNullPubAck)
     add_net_test_case(Mqtt5to3AdapterMultipleAdapters)
+
+    # Mqtt Request-Response
+    add_net_test_case(MqttRequestResponse_CreateDestroy5)
+    add_net_test_case(MqttRequestResponse_CreateDestroy311)
+    add_net_test_case(MqttRequestResponse_GetNamedShadowSuccessRejected311)
+    add_net_test_case(MqttRequestResponse_GetNamedShadowSuccessRejected5)
+    add_net_test_case(MqttRequestResponse_GetNamedShadowSuccessRejectedNoCorrelationToken311)
+    add_net_test_case(MqttRequestResponse_GetNamedShadowSuccessRejectedNoCorrelationToken5)
+    add_net_test_case(MqttRequestResponse_UpdateNamedShadowSuccessAccepted311)
+    add_net_test_case(MqttRequestResponse_UpdateNamedShadowSuccessAccepted5)
+    add_net_test_case(MqttRequestResponse_UpdateNamedShadowSuccessAcceptedNoCorrelationToken311)
+    add_net_test_case(MqttRequestResponse_UpdateNamedShadowSuccessAcceptedNoCorrelationToken5)
+    add_net_test_case(MqttRequestResponse_GetNamedShadowTimeout311)
+    add_net_test_case(MqttRequestResponse_GetNamedShadowTimeout5)
+    add_net_test_case(MqttRequestResponse_GetNamedShadowTimeoutNoCorrelationToken311)
+    add_net_test_case(MqttRequestResponse_GetNamedShadowTimeoutNoCorrelationToken5)
+    add_net_test_case(MqttRequestResponse_GetNamedShadowFailureOnClose311)
+    add_net_test_case(MqttRequestResponse_GetNamedShadowFailureOnClose5)
+    add_net_test_case(MqttRequestResponse_GetNamedShadowFailureOnCloseNoCorrelationToken311)
+    add_net_test_case(MqttRequestResponse_GetNamedShadowFailureOnCloseNoCorrelationToken5)
+
+    add_net_test_case(MqttRequestResponse_ShadowUpdatedStreamOpenCloseSuccess5)
+    add_net_test_case(MqttRequestResponse_ShadowUpdatedStreamOpenCloseSuccess311)
+    add_net_test_case(MqttRequestResponse_ShadowUpdatedStreamClientClosed5)
+    add_net_test_case(MqttRequestResponse_ShadowUpdatedStreamClientClosed311)
+    add_net_test_case(MqttRequestResponse_ShadowUpdatedStreamIncomingPublishSuccess5)
+    add_net_test_case(MqttRequestResponse_ShadowUpdatedStreamIncomingPublishSuccess311)
+
+
+
+
+
 endif()
 
 add_test_case(RuleEngine)
