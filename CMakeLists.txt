@@ -83,8 +83,8 @@ if(BUILD_DEPS)
     add_subdirectory(crt/aws-c-common)
 
     if(UNIX AND NOT APPLE AND NOT BYO_CRYPTO)
-        include(AwsPrebuildDependency)
         if(NOT USE_OPENSSL)
+            include(AwsPrebuildDependency)
 
             set(AWSLC_CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
@@ -116,14 +116,8 @@ if(BUILD_DEPS)
             )
         endif()
 
-        # prebuild s2n-tls.
-        aws_prebuild_dependency(
-            DEPENDENCY_NAME S2N
-            SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/crt/s2n
-            CMAKE_ARGUMENTS
-                -DUNSAFE_TREAT_WARNINGS_AS_ERRORS=OFF
-                -DBUILD_TESTING=OFF
-        )
+        set(UNSAFE_TREAT_WARNINGS_AS_ERRORS OFF CACHE BOOL "Disable warnings-as-errors when building S2N")
+        add_subdirectory(crt/s2n)
     endif()
 
     add_subdirectory(crt/aws-c-sdkutils)
@@ -302,7 +296,13 @@ endif()
 
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
-set_target_properties(${PROJECT_NAME} PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
+
+# Hide symbols by default
+# Except for ancient GCC, because it leads to crashes in shared-lib builds
+# see: https://github.com/awslabs/aws-crt-cpp/pull/675
+if(NOT (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.0"))
+    set_target_properties(${PROJECT_NAME} PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
+endif()
 
 aws_prepare_symbol_visibility_args(${PROJECT_NAME} "AWS_CRT_CPP")
 
@@ -348,7 +348,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC ${DEP_AWS_LIBS})
 
 install(FILES ${AWS_CRT_HEADERS} DESTINATION "include/aws/crt" COMPONENT Development)
 install(FILES ${AWS_CRT_AUTH_HEADERS} DESTINATION "include/aws/crt/auth" COMPONENT Development)
-install(FILES ${AWS_CRT_CHECKSUM_HEADERS} DESTINATION "include/aws/crt/crypto" COMPONENT Development)
+install(FILES ${AWS_CRT_CHECKSUM_HEADERS} DESTINATION "include/aws/crt/checksum" COMPONENT Development)
 install(FILES ${AWS_CRT_CRYPTO_HEADERS} DESTINATION "include/aws/crt/crypto" COMPONENT Development)
 install(FILES ${AWS_CRT_IO_HEADERS} DESTINATION "include/aws/crt/io" COMPONENT Development)
 install(FILES ${AWS_CRT_IOT_HEADERS} DESTINATION "include/aws/iot" COMPONENT Development)
