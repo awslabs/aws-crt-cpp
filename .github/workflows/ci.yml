@@ -38,7 +38,7 @@ jobs:
   # that are up-to-date (AL2) or don't provide OpenSSL development packages that is found in CMake (alpine)
   # or are not able to connect on the socket even with the correct setup (manylinux2014)
   linux-compat:
-    runs-on: ubuntu-22.04 # latest
+    runs-on: ubuntu-24.04 # latest
     strategy:
       fail-fast: false
       matrix:
