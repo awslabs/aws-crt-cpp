@@ -17,7 +17,8 @@ namespace Aws
          * Stateful allocator variant that uses an underlying CRT allocator
          * @tparam T type that allocator can allocate
          */
-        template <typename T> class StlAllocator : public std::allocator<T>
+        template <typename T> class AWS_CRT_CPP_API StlAllocator : public std::allocator<T>
+        //template <typename T> class StlAllocator : public std::allocator<T>
         {
           public:
             using Base = std::allocator<T>;
