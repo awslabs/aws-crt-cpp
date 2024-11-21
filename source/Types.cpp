@@ -6,6 +6,8 @@
 
 #include <aws/common/encoding.h>
 
+template class std::basic_string<char, std::char_traits<char>, Aws::Crt::StlAllocator<char>>;
+
 namespace Aws
 {
     namespace Crt
