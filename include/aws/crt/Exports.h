@@ -39,5 +39,5 @@
 #        define AWS_CRT_CPP_API
 #    endif // __GNUC__ >= 4 || defined(__clang__)
 #    define AWS_CRT_CPP_TEMPLATE_DECLARATION extern template class AWS_CRT_CPP_API
-#    define AWS_CRT_CPP_TEMPLATE_DEFINITION template class AWS_CRT_CPP_API
+#    define AWS_CRT_CPP_TEMPLATE_DEFINITION template class
 #endif
