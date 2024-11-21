@@ -8,6 +8,7 @@ _build
 build
 _build_*
 cmake-build*
+Testing/
 
 include/aws/crt/Config.h
 

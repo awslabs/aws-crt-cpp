@@ -23,7 +23,7 @@ struct aws_byte_buf;
 struct aws_byte_cursor;
 struct aws_socket_options;
 
-extern template class AWS_CRT_CPP_API std::basic_string<char, std::char_traits<char>, Aws::Crt::StlAllocator<char>>;
+extern template class std::basic_string<char, std::char_traits<char>, Aws::Crt::StlAllocator<char>>;
 
 namespace Aws
 {
