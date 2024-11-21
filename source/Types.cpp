@@ -6,7 +6,7 @@
 
 #include <aws/common/encoding.h>
 
-template class AWS_CRT_CPP_API std::basic_string<char, std::char_traits<char>, Aws::Crt::StlAllocator<char>>;
+AWS_CRT_CPP_TEMPLATE_DEFINITION std::basic_string<char, std::char_traits<char>, Aws::Crt::StlAllocator<char>>;
 
 namespace Aws
 {

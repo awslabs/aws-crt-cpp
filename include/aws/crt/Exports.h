@@ -28,6 +28,8 @@
 #    else
 #        define AWS_CRT_CPP_API
 #    endif // AWS_CRT_CPP_USE_IMPORT_EXPORT
+#    define AWS_CRT_CPP_TEMPLATE_DECLARATION extern template class
+#    define AWS_CRT_CPP_TEMPLATE_DEFINITION template class AWS_CRT_CPP_API
 
 #else // defined (USE_WINDOWS_DLL_SEMANTICS) || defined (WIN32)
 #    if ((__GNUC__ >= 4) || defined(__clang__)) && defined(AWS_CRT_CPP_USE_IMPORT_EXPORT) &&                           \
@@ -36,4 +38,6 @@
 #    else
 #        define AWS_CRT_CPP_API
 #    endif // __GNUC__ >= 4 || defined(__clang__)
+#    define AWS_CRT_CPP_TEMPLATE_DECLARATION extern template class AWS_CRT_CPP_API
+#    define AWS_CRT_CPP_TEMPLATE_DEFINITION template class AWS_CRT_CPP_API
 #endif
