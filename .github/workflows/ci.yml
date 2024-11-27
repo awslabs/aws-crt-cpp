@@ -145,9 +145,6 @@ jobs:
 
   linux-glibcxx-ancient-abi:
     runs-on: ubuntu-22.04 # latest
-    strategy:
-      matrix:
-        compiler: [gcc-11] # oldest, latest
     steps:
         # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
     - name: Build ${{ env.PACKAGE_NAME }}

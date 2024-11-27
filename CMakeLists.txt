@@ -298,9 +298,17 @@ set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
 
 # Hide symbols by default
-# Except for ancient GCC, because it leads to crashes in shared-lib builds
-# see: https://github.com/awslabs/aws-crt-cpp/pull/675
-if(NOT (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.0"))
+# Except where it causes problems, and the situation is weird enough that it's not worth investigating further.
+string(FIND "${CMAKE_CXX_FLAGS}" "-D_GLIBCXX_USE_CXX11_ABI=0" found_ancient_abi_flag)
+if(found_ancient_abi_flag GREATER -1)
+    # We've seen people set _GLIBCXX_USE_CXX11_ABI=0 which forces GCC to use it's pre-C++11 string implementation.
+    # This leads to crashes on shared-lib builds.
+    message(STATUS "Cannot deal with hidden symbols when _GLIBCXX_USE_CXX11_ABI=0 is set, making everything visible")
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.0")
+    # Ancient GCC leads to crashes in shared-lib builds
+    # see: https://github.com/awslabs/aws-crt-cpp/pull/675
+    message(STATUS "Your compiler is too old to deal with hidden symbols, making everything visible")
+else()
     set_target_properties(${PROJECT_NAME} PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
 endif()
 
