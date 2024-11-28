@@ -298,9 +298,19 @@ set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
 
 # Hide symbols by default
-# Except for ancient GCC, because it leads to crashes in shared-lib builds
-# see: https://github.com/awslabs/aws-crt-cpp/pull/675
-if(NOT (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.0"))
+# Except where it causes problems, and the situation is weird enough that it's not worth investigating further.
+#
+# We've seen people set _GLIBCXX_USE_CXX11_ABI=0 which forces GCC to use it's pre-C++11 string implementation,
+# which leads to crashes on shared-lib builds. Search every variant of CXX_FLAGS to see if it's set.
+string(FIND "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG} ${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${CMAKE_CXX_FLAGS_MINSIZEREL}"
+       "-D_GLIBCXX_USE_CXX11_ABI=0" found_ancient_abi_flag)
+if(found_ancient_abi_flag GREATER -1)
+    message(WARNING "_GLIBCXX_USE_CXX11_ABI=0 is set. Making all symbols visible to prevent weird crashes")
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.0")
+    # Ancient GCC leads to crashes in shared-lib builds
+    # see: https://github.com/awslabs/aws-crt-cpp/pull/675
+    message(WARNING "Ancient compiler (${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}). Making all symbols visible to prevent weird crashes")
+else()
     set_target_properties(${PROJECT_NAME} PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
 endif()
 
