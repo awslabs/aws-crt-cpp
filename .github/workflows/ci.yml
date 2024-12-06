@@ -96,7 +96,6 @@ jobs:
           - gcc-9
           - gcc-10
           - gcc-11
-          - gcc-13
     steps:
     - uses: aws-actions/configure-aws-credentials@v4
       with:
