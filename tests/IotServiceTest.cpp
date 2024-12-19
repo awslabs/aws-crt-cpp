@@ -15,6 +15,7 @@
 #include <condition_variable>
 #include <fstream>
 #include <mutex>
+#include <thread>
 #include <utility>
 
 #include <aws/io/logging.h>
