@@ -287,7 +287,7 @@ static TestContext s_CreateClient(
         Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
 
         Aws::Crt::Io::SocketOptions socketOptions;
-        socketOptions.SetConnectTimeoutMs(3000);
+        socketOptions.SetConnectTimeoutMs(10000);
 
         Aws::Crt::Mqtt::MqttClient client;
         context.protocolClient311 =
