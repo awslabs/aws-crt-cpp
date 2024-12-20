@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.9...3.31)
 
 if(POLICY CMP0077)
     cmake_policy(SET CMP0077 NEW)
@@ -31,19 +31,7 @@ project("aws-crt-cpp"
 
 include(CTest)
 
-if(DEFINED CMAKE_PREFIX_PATH)
-    file(TO_CMAKE_PATH "${CMAKE_PREFIX_PATH}" CMAKE_PREFIX_PATH)
-endif()
-
-if(DEFINED CMAKE_INSTALL_PREFIX)
-    file(TO_CMAKE_PATH "${CMAKE_INSTALL_PREFIX}" CMAKE_INSTALL_PREFIX)
-endif()
-
-if(UNIX AND NOT APPLE)
-    include(GNUInstallDirs)
-elseif(NOT DEFINED CMAKE_INSTALL_LIBDIR)
-    set(CMAKE_INSTALL_LIBDIR "lib")
-endif()
+include(GNUInstallDirs)
 
 if(${CMAKE_INSTALL_LIBDIR} STREQUAL "lib64")
     set(FIND_LIBRARY_USE_LIB64_PATHS true)
@@ -64,13 +52,6 @@ set(GENERATED_ROOT_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(GENERATED_INCLUDE_DIR "${GENERATED_ROOT_DIR}/include")
 set(GENERATED_CONFIG_HEADER "${GENERATED_INCLUDE_DIR}/aws/crt/Config.h")
 configure_file(include/aws/crt/Config.h.in ${GENERATED_CONFIG_HEADER} @ONLY)
-
-# This is required in order to append /lib/cmake to each element in CMAKE_PREFIX_PATH
-set(AWS_MODULE_DIR "/${CMAKE_INSTALL_LIBDIR}/cmake")
-string(REPLACE ";" "${AWS_MODULE_DIR};" AWS_MODULE_PATH "${CMAKE_PREFIX_PATH}${AWS_MODULE_DIR}")
-
-# Append that generated list to the module search path
-list(APPEND CMAKE_MODULE_PATH ${AWS_MODULE_PATH})
 
 if(BUILD_DEPS)
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/crt/aws-c-common/cmake")
@@ -132,6 +113,9 @@ if(BUILD_DEPS)
     add_subdirectory(crt/aws-c-s3)
     set(BUILD_TESTING ${BUILD_TESTING_PREV})
 else()
+    # this is required so we can use aws-c-common's CMake modules
+    find_package(aws-c-common REQUIRED)
+
     include(AwsFindPackage)
     set(IN_SOURCE_BUILD OFF)
 endif()
@@ -356,23 +340,23 @@ aws_add_sanitizers(${PROJECT_NAME})
 
 target_link_libraries(${PROJECT_NAME} PUBLIC ${DEP_AWS_LIBS})
 
-install(FILES ${AWS_CRT_HEADERS} DESTINATION "include/aws/crt" COMPONENT Development)
-install(FILES ${AWS_CRT_AUTH_HEADERS} DESTINATION "include/aws/crt/auth" COMPONENT Development)
-install(FILES ${AWS_CRT_CHECKSUM_HEADERS} DESTINATION "include/aws/crt/checksum" COMPONENT Development)
-install(FILES ${AWS_CRT_CRYPTO_HEADERS} DESTINATION "include/aws/crt/crypto" COMPONENT Development)
-install(FILES ${AWS_CRT_IO_HEADERS} DESTINATION "include/aws/crt/io" COMPONENT Development)
-install(FILES ${AWS_CRT_IOT_HEADERS} DESTINATION "include/aws/iot" COMPONENT Development)
-install(FILES ${AWS_CRT_MQTT_HEADERS} DESTINATION "include/aws/crt/mqtt" COMPONENT Development)
-install(FILES ${AWS_CRT_HTTP_HEADERS} DESTINATION "include/aws/crt/http" COMPONENT Development)
-install(FILES ${AWS_CRT_ENDPOINT_HEADERS} DESTINATION "include/aws/crt/endpoints" COMPONENT Development)
-install(FILES ${AWS_CRT_CBOR_HEADERS} DESTINATION "include/aws/crt/cbor" COMPONENT Development)
+install(FILES ${AWS_CRT_HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/aws/crt" COMPONENT Development)
+install(FILES ${AWS_CRT_AUTH_HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/aws/crt/auth" COMPONENT Development)
+install(FILES ${AWS_CRT_CHECKSUM_HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/aws/crt/checksum" COMPONENT Development)
+install(FILES ${AWS_CRT_CRYPTO_HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/aws/crt/crypto" COMPONENT Development)
+install(FILES ${AWS_CRT_IO_HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/aws/crt/io" COMPONENT Development)
+install(FILES ${AWS_CRT_IOT_HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/aws/iot" COMPONENT Development)
+install(FILES ${AWS_CRT_MQTT_HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/aws/crt/mqtt" COMPONENT Development)
+install(FILES ${AWS_CRT_HTTP_HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/aws/crt/http" COMPONENT Development)
+install(FILES ${AWS_CRT_ENDPOINT_HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/aws/crt/endpoints" COMPONENT Development)
+install(FILES ${AWS_CRT_CBOR_HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/aws/crt/cbor" COMPONENT Development)
 
 install(
     TARGETS ${PROJECT_NAME}
     EXPORT ${PROJECT_NAME}-targets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Development
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Development
-    RUNTIME DESTINATION bin COMPONENT Runtime
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT Runtime
 )
 
 if(BUILD_SHARED_LIBS)
@@ -382,7 +366,7 @@ else()
 endif()
 
 install(EXPORT "${PROJECT_NAME}-targets"
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}/cmake/${TARGET_DIR}"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/${TARGET_DIR}"
     NAMESPACE AWS::
     COMPONENT Development)
 
@@ -398,11 +382,11 @@ write_basic_package_version_file(
 )
 
 install(FILES "${GENERATED_ROOT_DIR}/${PROJECT_NAME}-config.cmake"
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}/cmake/"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/"
     COMPONENT Development)
 
 install(FILES "${GENERATED_ROOT_DIR}/${PROJECT_NAME}-config-version.cmake"
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}/cmake/"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/"
     COMPONENT Development)
 
 if(NOT CMAKE_CROSSCOMPILING)
