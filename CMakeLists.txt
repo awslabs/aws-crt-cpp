@@ -26,12 +26,7 @@ project("aws-crt-cpp"
     VERSION ${SIMPLE_VERSION})
 
 include(CTest)
-
 include(GNUInstallDirs)
-
-if(${CMAKE_INSTALL_LIBDIR} STREQUAL "lib64")
-    set(FIND_LIBRARY_USE_LIB64_PATHS true)
-endif()
 
 if(NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 11)
