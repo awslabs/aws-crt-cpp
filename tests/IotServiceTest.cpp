@@ -609,7 +609,6 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
         // Disconnect the client by interrupting it with another client with the same ID
         // which will cause the will to be sent
         auto interruptConnection = mqttClient.NewConnection(envVars.inputHost.c_str(), 8883, socketOptions, tlsContext);
-        // interruptConnection->SetWill(topicStr.c_str(), QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, payload);
         std::mutex interruptMutex;
         std::condition_variable interruptCv;
         bool interruptConnected = false;
@@ -641,8 +640,8 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
         interruptConnection->OnConnectionCompleted = interruptOnConnectionCompleted;
         interruptConnection->OnDisconnect = interruptOnDisconnect;
 
-        bool continueConnecting;
-        do
+        bool continueConnecting = true;
+        while (continueConnecting)
         {
             interruptConnection->Connect((Aws::Crt::String("test-01-") + uuidStr).c_str(), true);
             {
@@ -650,7 +649,7 @@ static int s_TestIotWillTest(Aws::Crt::Allocator *allocator, void *ctx)
                 interruptCv.wait(lock, [&]() { return interruptConnectionAttemptComplete; });
                 continueConnecting = !interruptConnected;
             }
-        } while (continueConnecting);
+        }
 
         // wait for message received callback - meaning the will was sent
         {
