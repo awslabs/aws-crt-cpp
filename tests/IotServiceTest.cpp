@@ -249,6 +249,7 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
                 }
                 else
                 {
+                    connectionAttemptComplete = false;
                     std::this_thread::sleep_for(std::chrono::seconds(2));
                 }
             }
