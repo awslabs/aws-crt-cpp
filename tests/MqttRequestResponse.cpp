@@ -40,6 +40,12 @@ struct ResponseTracker
     bool complete;
 };
 
+struct TestPublishEvent
+{
+    Aws::Crt::String topic;
+    Aws::Crt::String payload;
+};
+
 struct TestState
 {
     TestState(Aws::Crt::Allocator *allocator) : allocator(allocator) {}
@@ -54,7 +60,7 @@ struct TestState
     Aws::Crt::Vector<std::shared_ptr<ResponseTracker>> responseTrackers;
 
     Aws::Crt::Vector<Aws::Iot::RequestResponse::SubscriptionStatusEvent> subscriptionStatusEvents;
-    Aws::Crt::Vector<Aws::Crt::String> incomingPublishEvents;
+    Aws::Crt::Vector<TestPublishEvent> incomingPublishEvents;
 };
 
 static void s_waitForConnected(struct TestState *state)
@@ -168,17 +174,20 @@ static void s_onIncomingPublishEvent(Aws::Iot::RequestResponse::IncomingPublishE
     {
         std::unique_lock<std::mutex> lock(state->lock);
 
+        auto topicCursor = event.GetTopic();
+        Aws::Crt::String topicAsString((const char *)topicCursor.ptr, topicCursor.len);
+
         auto payloadCursor = event.GetPayload();
         Aws::Crt::String payloadAsString((const char *)payloadCursor.ptr, payloadCursor.len);
 
-        state->incomingPublishEvents.push_back(payloadAsString);
+        state->incomingPublishEvents.push_back({std::move(topicAsString), std::move(payloadAsString)});
     }
     state->signal.notify_one();
 }
 
 static void s_waitForIncomingPublishWithPredicate(
     TestState *state,
-    const std::function<bool(const Aws::Crt::String &)> &predicate)
+    const std::function<bool(const TestPublishEvent &)> &predicate)
 {
     {
         std::unique_lock<std::mutex> lock(state->lock);
@@ -189,7 +198,7 @@ static void s_waitForIncomingPublishWithPredicate(
                 return std::any_of(
                     state->incomingPublishEvents.cbegin(),
                     state->incomingPublishEvents.cend(),
-                    [=](const Aws::Crt::String &payload) { return predicate(payload); });
+                    [=](const TestPublishEvent &publishEvent) { return predicate(publishEvent); });
             });
     }
 }
@@ -1077,7 +1086,9 @@ static int s_doShadowUpdatedStreamIncomingPublishTest(Aws::Crt::Allocator *alloc
     s_publishToProtocolClient(context, uuid, s_publishPayload, allocator);
 
     s_waitForIncomingPublishWithPredicate(
-        &state, [](const Aws::Crt::String &payload) { return payload == Aws::Crt::String(s_publishPayload); });
+        &state,
+        [&uuid](const TestPublishEvent &publishEvent)
+        { return publishEvent.topic == uuid && publishEvent.payload == Aws::Crt::String(s_publishPayload); });
 
     return AWS_OP_SUCCESS;
 }
