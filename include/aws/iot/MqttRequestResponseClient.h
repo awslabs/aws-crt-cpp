@@ -121,22 +121,10 @@ namespace Aws
                 /**
                  * Default constructor
                  */
-                IncomingPublishEvent() : m_payload(), m_topic()
+                IncomingPublishEvent() : m_topic(), m_payload()
                 {
-                    AWS_ZERO_STRUCT(m_payload);
                     AWS_ZERO_STRUCT(m_topic);
-                }
-
-                /**
-                 * Sets the message payload associated with this event.  The event does not own this payload.
-                 *
-                 * @param payload the message payload associated with this event
-                 * @return reference to this
-                 */
-                IncomingPublishEvent &WithPayload(Aws::Crt::ByteCursor payload)
-                {
-                    m_payload = payload;
-                    return *this;
+                    AWS_ZERO_STRUCT(m_payload);
                 }
 
                 /**
@@ -152,11 +140,16 @@ namespace Aws
                 }
 
                 /**
-                 * Gets the message payload associated with this event.
+                 * Sets the message payload associated with this event.  The event does not own this payload.
                  *
-                 * @return the message payload associated with this event
+                 * @param payload the message payload associated with this event
+                 * @return reference to this
                  */
-                Aws::Crt::ByteCursor GetPayload() const { return m_payload; }
+                IncomingPublishEvent &WithPayload(Aws::Crt::ByteCursor payload)
+                {
+                    m_payload = payload;
+                    return *this;
+                }
 
                 /**
                  * Gets the message response topic associated with this event.
@@ -165,9 +158,16 @@ namespace Aws
                  */
                 Aws::Crt::ByteCursor GetTopic() const { return m_topic; }
 
+                /**
+                 * Gets the message payload associated with this event.
+                 *
+                 * @return the message payload associated with this event
+                 */
+                Aws::Crt::ByteCursor GetPayload() const { return m_payload; }
+
               private:
-                Aws::Crt::ByteCursor m_payload;
                 Aws::Crt::ByteCursor m_topic;
+                Aws::Crt::ByteCursor m_payload;
             };
 
             /**
