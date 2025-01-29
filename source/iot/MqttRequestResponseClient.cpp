@@ -89,7 +89,10 @@ namespace Aws
                     int error_code,
                     void *user_data);
 
-                static void OnIncomingPublishCallback(struct aws_byte_cursor payload, void *user_data);
+                static void OnIncomingPublishCallback(
+                    struct aws_byte_cursor payload,
+                    struct aws_byte_cursor topic,
+                    void *user_data);
 
                 static void OnTerminatedCallback(void *user_data);
 
@@ -187,7 +190,10 @@ namespace Aws
                 }
             }
 
-            void StreamingOperationImpl::OnIncomingPublishCallback(struct aws_byte_cursor payload, void *user_data)
+            void StreamingOperationImpl::OnIncomingPublishCallback(
+                struct aws_byte_cursor payload,
+                struct aws_byte_cursor topic,
+                void *user_data)
             {
                 auto *handle = static_cast<StreamingOperationImplHandle *>(user_data);
                 StreamingOperationImpl *impl = handle->m_impl.get();
@@ -198,7 +204,7 @@ namespace Aws
                     if (!impl->m_closed && impl->m_config.incomingPublishEventHandler)
                     {
                         IncomingPublishEvent event;
-                        event.WithPayload(payload);
+                        event.WithTopic(topic).WithPayload(payload);
 
                         impl->m_config.incomingPublishEventHandler(std::move(event));
                     }
