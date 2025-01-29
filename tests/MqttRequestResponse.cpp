@@ -42,8 +42,8 @@ struct ResponseTracker
 
 struct TestPublishEvent
 {
-    Aws::Crt::String topic;
     Aws::Crt::String payload;
+    Aws::Crt::String topic;
 };
 
 struct TestState
@@ -174,13 +174,13 @@ static void s_onIncomingPublishEvent(Aws::Iot::RequestResponse::IncomingPublishE
     {
         std::unique_lock<std::mutex> lock(state->lock);
 
-        auto topicCursor = event.GetTopic();
-        Aws::Crt::String topicAsString((const char *)topicCursor.ptr, topicCursor.len);
-
         auto payloadCursor = event.GetPayload();
         Aws::Crt::String payloadAsString((const char *)payloadCursor.ptr, payloadCursor.len);
 
-        state->incomingPublishEvents.push_back({std::move(topicAsString), std::move(payloadAsString)});
+        auto topicCursor = event.GetTopic();
+        Aws::Crt::String topicAsString((const char *)topicCursor.ptr, topicCursor.len);
+
+        state->incomingPublishEvents.push_back({std::move(payloadAsString), std::move(topicAsString)});
     }
     state->signal.notify_one();
 }
@@ -1088,7 +1088,7 @@ static int s_doShadowUpdatedStreamIncomingPublishTest(Aws::Crt::Allocator *alloc
     s_waitForIncomingPublishWithPredicate(
         &state,
         [&uuid](const TestPublishEvent &publishEvent)
-        { return publishEvent.topic == uuid && publishEvent.payload == Aws::Crt::String(s_publishPayload); });
+        { return publishEvent.payload == Aws::Crt::String(s_publishPayload) && publishEvent.topic == uuid; });
 
     return AWS_OP_SUCCESS;
 }
