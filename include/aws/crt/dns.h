@@ -5,14 +5,10 @@
  */
 #include <aws/crt/Exports.h>
 
-namespace Aws
-{
-    namespace Crt
-    {
-
-        namespace dns
-        {
-            AWS_CRT_CPP_API bool IsValidIpV6(const char *host, bool is_uri_encoded);
-        }
-    }
-}
+namespace Aws {
+namespace Crt {
+namespace dns {
+AWS_CRT_CPP_API bool IsValidIpV6(const char* host, bool is_uri_encoded);
+}  // namespace dns
+}  // namespace Crt
+}  // namespace Aws
