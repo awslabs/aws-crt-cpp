@@ -4,8 +4,8 @@
  */
 
 #include <aws/common/host_utils.h>
-#include <aws/crt/Types.h>
 #include <aws/crt/DnsUtils.h>
+#include <aws/crt/Types.h>
 
 namespace Aws
 {
