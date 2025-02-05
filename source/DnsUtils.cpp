@@ -5,13 +5,13 @@
 
 #include <aws/common/host_utils.h>
 #include <aws/crt/Types.h>
-#include <aws/crt/dns.h>
+#include <aws/crt/DnsUtils.h>
 
 namespace Aws
 {
     namespace Crt
     {
-        namespace dns
+        namespace DnsUtils
         {
 
             bool IsValidIpV6(const char *host, bool is_uri_encoded)
@@ -19,6 +19,6 @@ namespace Aws
                 return aws_host_utils_is_ipv6(Aws::Crt::ByteCursorFromCString(host), is_uri_encoded);
             }
 
-        } // namespace dns
+        } // namespace DnsUtils
     } // namespace Crt
 } // namespace Aws
