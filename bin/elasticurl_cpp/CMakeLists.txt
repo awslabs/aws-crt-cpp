@@ -1,7 +1,5 @@
 project(elasticurl_cpp CXX)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_PREFIX_PATH}/lib/cmake")
-
 file(GLOB ELASTICURL_CPP_SRC
         "*.cpp"
         )
@@ -43,5 +41,5 @@ install(TARGETS ${ELASTICURL_CPP_PROJECT_NAME}
         EXPORT ${ELASTICURL_CPP_PROJECT_NAME}-targets
         COMPONENT Runtime
         RUNTIME
-        DESTINATION bin
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
         COMPONENT Runtime)

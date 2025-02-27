@@ -1,7 +1,5 @@
 project(mqtt5_canary CXX)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_PREFIX_PATH}/lib/cmake")
-
 file(GLOB MQTT5_CANARY_SRC
         "*.cpp"
         )
@@ -43,5 +41,5 @@ install(TARGETS ${MQTT5_CANARY_PROJECT_NAME}
         EXPORT ${MQTT5_CANARY_PROJECT_NAME}-targets
         COMPONENT Runtime
         RUNTIME
-        DESTINATION bin
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
         COMPONENT Runtime)
