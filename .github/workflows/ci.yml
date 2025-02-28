@@ -49,7 +49,7 @@ jobs:
   # that are up-to-date (AL2) or don't provide OpenSSL development packages that is found in CMake (alpine)
   # or are not able to connect on the socket even with the correct setup (manylinux2014)
   linux-compat:
-    runs-on: ubuntu-22.04 # temporarily downgrade to old ubuntu until https://github.com/actions/runner-images/issues/11471 resolves
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -68,7 +68,7 @@ jobs:
         role-to-assume: ${{ env.CRT_CI_ROLE }}
         aws-region: ${{ env.AWS_DEFAULT_REGION }}
     - name: Install qemu/docker
-      run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+      run: docker run --privileged --rm tonistiigi/binfmt --install all
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
