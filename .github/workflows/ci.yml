@@ -38,8 +38,6 @@ jobs:
       with:
         role-to-assume: ${{ env.CRT_CI_ROLE }}
         aws-region: ${{ env.AWS_DEFAULT_REGION }}
-    - name: Install qemu/docker
-      run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
@@ -121,7 +119,7 @@ jobs:
         aws-region: ${{ env.AWS_DEFAULT_REGION }}
     # set arm arch
     - name: Install qemu/docker
-      run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+      run: docker run --privileged --rm tonistiigi/binfmt --install linux/arm/v7
 
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
