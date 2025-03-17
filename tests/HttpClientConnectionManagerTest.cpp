@@ -36,7 +36,7 @@ static int s_TestHttpClientConnectionManagerResourceSafety(struct aws_allocator 
         // Ensure that if PQ TLS ciphers are supported on the current platform, that setting them works when connecting
         // to S3. This TlsCipherPreference has post quantum ciphers at the top of it's preference list (that will be
         // ignored if S3 doesn't support them) followed by regular TLS ciphers that can be chosen and negotiated by S3.
-        aws_tls_cipher_pref tls_cipher_pref = AWS_IO_TLS_CIPHER_PREF_PQ_TLSv1_0_2021_05;
+        aws_tls_cipher_pref tls_cipher_pref = AWS_IO_TLS_CIPHER_PREF_PQ_DEFAULT;
 
         if (aws_tls_is_cipher_pref_supported(tls_cipher_pref))
         {
