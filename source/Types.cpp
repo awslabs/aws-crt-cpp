@@ -110,12 +110,8 @@ namespace Aws
                 return {};
             }
 
-            // encoding appends a null terminator, and accounts for it in the encoded length,
-            // which makes the string 1 character too long
-            if (outputStr.back() == 0)
-            {
-                outputStr.pop_back();
-            }
+            AWS_ASSERT(outputStr.length() == tempBuf.len);
+
             return outputStr;
         }
     } // namespace Crt
