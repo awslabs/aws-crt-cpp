@@ -44,6 +44,7 @@ struct TestPublishEvent
 {
     Aws::Crt::String topic;
     Aws::Crt::String payload;
+    Aws::Crt::Optional<Aws::Crt::String> contentType;
 };
 
 struct TestState
@@ -180,7 +181,18 @@ static void s_onIncomingPublishEvent(Aws::Iot::RequestResponse::IncomingPublishE
         auto payloadCursor = event.GetPayload();
         Aws::Crt::String payloadAsString((const char *)payloadCursor.ptr, payloadCursor.len);
 
-        state->incomingPublishEvents.push_back({std::move(topicAsString), std::move(payloadAsString)});
+        auto contentTypeCursor = event.GetContentType();
+        Aws::Crt::Optional<Aws::Crt::String> contentTypeAsString;
+        if (contentTypeCursor)
+        {
+            contentTypeAsString = Aws::Crt::String((const char *)contentTypeCursor->ptr, contentTypeCursor->len);
+        }
+
+        state->incomingPublishEvents.push_back({
+            std::move(topicAsString),
+            std::move(payloadAsString),
+            std::move(contentTypeAsString),
+        });
     }
     state->signal.notify_one();
 }
@@ -332,6 +344,7 @@ void s_publishToProtocolClient(
     TestContext &context,
     Aws::Crt::String topic,
     Aws::Crt::String payload,
+    Aws::Crt::Optional<Aws::Crt::String> contentType,
     Aws::Crt::Allocator *allocator)
 {
     if (context.protocolClient5)
@@ -341,6 +354,11 @@ void s_publishToProtocolClient(
             topic,
             Aws::Crt::ByteCursorFromString(payload),
             Aws::Crt::Mqtt5::QOS::AWS_MQTT5_QOS_AT_MOST_ONCE);
+        if (contentType)
+        {
+            Aws::Crt::ByteCursor contentTypeCursor{contentType->length(), (uint8_t *)contentType->c_str()};
+            packet->WithContentType(contentTypeCursor);
+        }
         context.protocolClient5->Publish(packet);
     }
     else
@@ -1083,12 +1101,23 @@ static int s_doShadowUpdatedStreamIncomingPublishTest(Aws::Crt::Allocator *alloc
     s_waitForSubscriptionStatusEvent(
         &state, Aws::Iot::RequestResponse::SubscriptionStatusEventType::SubscriptionEstablished, AWS_ERROR_SUCCESS);
 
-    s_publishToProtocolClient(context, uuid, s_publishPayload, allocator);
+    Aws::Crt::String contentType("application/json");
+    s_publishToProtocolClient(context, uuid, s_publishPayload, contentType, allocator);
 
     s_waitForIncomingPublishWithPredicate(
         &state,
-        [&uuid](const TestPublishEvent &publishEvent)
-        { return publishEvent.topic == uuid && publishEvent.payload == Aws::Crt::String(s_publishPayload); });
+        [&context, &uuid, &contentType](const TestPublishEvent &publishEvent)
+        {
+            if (publishEvent.topic != uuid || publishEvent.payload != Aws::Crt::String(s_publishPayload))
+            {
+                return false;
+            }
+            if (context.protocolClient5 && (!publishEvent.contentType || *publishEvent.contentType != contentType))
+            {
+                return false;
+            }
+            return true;
+        });
 
     return AWS_OP_SUCCESS;
 }

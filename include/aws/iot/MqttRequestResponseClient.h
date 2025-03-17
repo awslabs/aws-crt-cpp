@@ -151,6 +151,12 @@ namespace Aws
                     return *this;
                 }
 
+                IncomingPublishEvent &WithContentType(Aws::Crt::ByteCursor contentType)
+                {
+                    m_contentType = contentType;
+                    return *this;
+                }
+
                 /**
                  * Gets the message response topic associated with this event.
                  *
@@ -165,9 +171,19 @@ namespace Aws
                  */
                 Aws::Crt::ByteCursor GetPayload() const { return m_payload; }
 
+                /**
+                 * Gets the message content type associated with this event.
+                 *
+                 * @return the message content type associated with this event
+                 */
+                Aws::Crt::Optional<Aws::Crt::ByteCursor> GetContentType() const { return m_contentType; }
+
               private:
                 Aws::Crt::ByteCursor m_topic;
                 Aws::Crt::ByteCursor m_payload;
+                Aws::Crt::Optional<Aws::Crt::ByteCursor> m_contentType;
+                Aws::Crt::Optional<Aws::Crt::Map<Aws::Crt::String, Aws::Crt::String>> m_userProperties;
+                Aws::Crt::Optional<uint32_t> m_messageExpiryIntervalSeconds;
             };
 
             /**

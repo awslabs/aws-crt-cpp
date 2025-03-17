@@ -160,6 +160,15 @@ namespace Aws
                 PublishPacket &WithCorrelationData(ByteCursor correlationData) noexcept;
 
                 /**
+                 * Sets the property specifying the content type of the payload. Not internally meaningful to MQTT5.
+                 *
+                 * See [MQTT5 Content Type](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901118)
+                 * @param contentType The property specifying the content type of the payload.
+                 * @return The PublishPacket Object after setting the content type.
+                 */
+                PublishPacket &WithContentType(ByteCursor contentType) noexcept;
+
+                /**
                  * Sets the list of MQTT5 user properties included with the packet.
                  *
                  * See [MQTT5 User

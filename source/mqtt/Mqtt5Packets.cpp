@@ -572,6 +572,12 @@ namespace Aws
                 return *this;
             }
 
+            PublishPacket &PublishPacket::WithContentType(ByteCursor contentType) noexcept
+            {
+                setPacketByteBufOptional(m_contentType, m_contentTypeStorage, m_allocator, &contentType);
+                return *this;
+            }
+
             PublishPacket &PublishPacket::WithUserProperties(const Vector<UserProperty> &userProperties) noexcept
             {
                 m_userProperties = userProperties;
@@ -618,6 +624,10 @@ namespace Aws
                 if (m_correlationData.has_value())
                 {
                     raw_options.correlation_data = &m_correlationData.value();
+                }
+                if (m_contentType.has_value())
+                {
+                    raw_options.content_type = &m_contentType.value();
                 }
 
                 s_AllocateUnderlyingUserProperties(m_userPropertiesStorage, m_userProperties, m_allocator);

@@ -90,8 +90,7 @@ namespace Aws
                     void *user_data);
 
                 static void OnIncomingPublishCallback(
-                    struct aws_byte_cursor payload,
-                    struct aws_byte_cursor topic,
+                    const struct aws_mqtt_request_response_publish_event *publish_event,
                     void *user_data);
 
                 static void OnTerminatedCallback(void *user_data);
@@ -191,8 +190,7 @@ namespace Aws
             }
 
             void StreamingOperationImpl::OnIncomingPublishCallback(
-                struct aws_byte_cursor payload,
-                struct aws_byte_cursor topic,
+                const struct aws_mqtt_request_response_publish_event *publish_event,
                 void *user_data)
             {
                 auto *handle = static_cast<StreamingOperationImplHandle *>(user_data);
@@ -204,8 +202,11 @@ namespace Aws
                     if (!impl->m_closed && impl->m_config.incomingPublishEventHandler)
                     {
                         IncomingPublishEvent event;
-                        event.WithTopic(topic).WithPayload(payload);
-
+                        event.WithTopic(publish_event->topic).WithPayload(publish_event->payload);
+                        if (publish_event->content_type)
+                        {
+                            event.WithContentType(*publish_event->content_type);
+                        }
                         impl->m_config.incomingPublishEventHandler(std::move(event));
                     }
                 }
