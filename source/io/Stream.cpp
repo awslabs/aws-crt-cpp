@@ -134,7 +134,7 @@ namespace Aws
 
             bool StdIOStreamInputStream::ReadImpl(ByteBuf &buffer) noexcept
             {
-                // so this blocks, but readsome() doesn't work at all, so this is the best we've got.
+                // std::basic_istream::read() is blocking, it reads till the buffer is full or it hits EOF.
                 // if you don't like this, don't use std::input_stream and implement your own version
                 // of Aws::Crt::Io::InputStream.
                 m_stream->read(reinterpret_cast<char *>(buffer.buffer + buffer.len), buffer.capacity - buffer.len);
@@ -146,29 +146,28 @@ namespace Aws
                     return true;
                 }
 
-                auto status = GetStatusImpl();
-
-                return status.is_valid && !status.is_end_of_stream;
+                aws_raise_error(AWS_IO_STREAM_READ_FAILED);
+                return false;
             }
 
             bool StdIOStreamInputStream::ReadSomeImpl(ByteBuf &buffer) noexcept
             {
-                // I have no idea why "readsome() doesn't work at all" for the original dev. It works well for me
-                // Jokes aside, read will always block and try to read till eof
-                // readsome will return available bytes without waiting for eof and without closing the stream.
+                // readsome only returns available bytes without ever waiting for EOF and without closing the stream.
+                // Note that readsome may need to be paired with actual blocking I/O (e.g. peek())
+                // or it will continually produce 0 bytes.
                 auto actuallyRead = m_stream->readsome(
                     reinterpret_cast<char *>(buffer.buffer + buffer.len), buffer.capacity - buffer.len);
 
                 buffer.len += static_cast<size_t>(actuallyRead);
 
-                if (actuallyRead > 0 || (actuallyRead == 0 && m_stream->eof()))
+                // if 0 bytes processed, check if underlying stream has failed
+                if (actuallyRead == 0 && m_stream->fail())
                 {
-                    return true;
+                    aws_raise_error(AWS_IO_STREAM_READ_FAILED);
+                    return false;
                 }
 
-                auto status = GetStatusImpl();
-
-                return status.is_valid && !status.is_end_of_stream;
+                return true;
             }
 
             StreamStatus StdIOStreamInputStream::GetStatusImpl() const noexcept
