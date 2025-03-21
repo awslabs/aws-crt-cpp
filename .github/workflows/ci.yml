@@ -131,7 +131,7 @@ jobs:
     strategy:
       matrix:
         compiler: [gcc-8, clang-9]
-        cxx-std: ["11", "14", "17", "20", "23"]
+        cxx-std: ["11", "14", "17", "20"]
     steps:
     - uses: aws-actions/configure-aws-credentials@v4
       with:
