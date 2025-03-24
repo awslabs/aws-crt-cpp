@@ -7,7 +7,7 @@ on:
       - 'docs'
 
 env:
-  BUILDER_VERSION: v0.9.73
+  BUILDER_VERSION: v0.9.76
   BUILDER_SOURCE: releases
   BUILDER_HOST: https://d19elf31gohf1l.cloudfront.net
   PACKAGE_NAME: aws-crt-cpp
@@ -131,18 +131,17 @@ jobs:
     strategy:
       matrix:
         compiler: [gcc-8, clang-9]
-        std: [c++11, c++14, c++17, c++2a]
+        cxx-std: ["11", "14", "17", "20"]
     steps:
     - uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: ${{ env.CRT_CI_ROLE }}
         aws-region: ${{ env.AWS_DEFAULT_REGION }}
     # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
-    - name: Build ${{ env.PACKAGE_NAME }} with ${{ matrix.std }}
+    - name: Build ${{ env.PACKAGE_NAME }} with cxx${{ matrix.cxx-std }}
       run: |
-        export CXXFLAGS=-std=${{ matrix.std }}
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }} --cmake-extra=-DUSE_OPENSSL=ON
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }} --cmake-extra=-DUSE_OPENSSL=ON --cmake-extra=-DCMAKE_CXX_STANDARD=${{ matrix.cxx-std }}
 
   byo-crypto:
     runs-on: ubuntu-24.04 # latest
