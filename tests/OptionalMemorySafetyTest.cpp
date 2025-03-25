@@ -107,7 +107,9 @@ AWS_TEST_CASE(OptionalEmplace, s_OptionalEmplace)
 class CopyMoveTester
 {
   public:
-    struct Initer{};
+    struct Initer
+    {
+    };
 
     CopyMoveTester() = default;
     explicit CopyMoveTester(const Initer &) : m_initer_copied(true) {}

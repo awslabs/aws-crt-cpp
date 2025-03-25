@@ -83,21 +83,15 @@ namespace Aws
                 }
             }
 
-            template <typename... Args> explicit Optional(Aws::Crt::InPlaceT, Args &&...args)
+            template <typename... Args> explicit Optional(Aws::Crt::InPlaceT, Args &&... args)
             {
                 new (m_storage) T(std::forward<Args>(args)...);
                 m_value = reinterpret_cast<T *>(m_storage);
             }
 
-            Optional<T> &operator=(const Optional &other)
-            {
-                return assign(other);
-            }
+            Optional<T> &operator=(const Optional &other) { return assign(other); }
 
-            template <typename U = T> Optional<T> &operator=(const Optional<U> &other)
-            {
-                return assign(other);
-            }
+            template <typename U = T> Optional<T> &operator=(const Optional<U> &other) { return assign(other); }
 
             template <typename U = T> Optional<T> &operator=(Optional<U> &&other)
             {
@@ -130,7 +124,7 @@ namespace Aws
                 return *this;
             }
 
-            template <typename... Args> T &emplace(Args &&...args)
+            template <typename... Args> T &emplace(Args &&... args)
             {
                 reset();
 
