@@ -83,7 +83,7 @@ namespace Aws
                 }
             }
 
-            template <typename... Args> explicit Optional(Aws::Crt::InPlaceT, Args &&... args)
+            template <typename... Args> explicit Optional(Aws::Crt::InPlaceT, Args &&...args)
             {
                 new (m_storage) T(std::forward<Args>(args)...);
                 m_value = reinterpret_cast<T *>(m_storage);
@@ -124,7 +124,7 @@ namespace Aws
                 return *this;
             }
 
-            template <typename... Args> T &emplace(Args &&... args)
+            template <typename... Args> T &emplace(Args &&...args)
             {
                 reset();
 
