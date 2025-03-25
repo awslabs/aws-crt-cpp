@@ -5,7 +5,6 @@
  */
 
 #include <aws/crt/mqtt/Mqtt5Client.h>
-#include <aws/crt/mqtt/Mqtt5Packets.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
 
 namespace Aws
@@ -28,11 +27,17 @@ namespace Aws
                 const Crt::String &getName() const noexcept { return m_name; };
                 const Crt::String &getValue() const noexcept { return m_value; }
 
+                // TODO Remove.
                 ~UserProperty() noexcept;
                 UserProperty(const UserProperty &toCopy) noexcept;
                 UserProperty(UserProperty &&toMove) noexcept;
                 UserProperty &operator=(const UserProperty &toCopy) noexcept;
                 UserProperty &operator=(UserProperty &&toMove) noexcept;
+
+                bool operator==(const UserProperty &other) const
+                {
+                    return m_name == other.m_name && m_value == other.m_value;
+                }
 
               private:
                 Crt::String m_name;
@@ -42,6 +47,7 @@ namespace Aws
             class AWS_CRT_CPP_API IPacket
             {
               public:
+                // TODO virtual ~IPacket() = default;
                 virtual PacketType getType() = 0;
             };
 

@@ -207,6 +207,18 @@ namespace Aws
                         {
                             event.WithContentType(*publish_event->content_type);
                         }
+                        if (publish_event->user_property_count > 0)
+                        {
+                            Aws::Crt::Vector<UserPropertyView> userProperties;
+                            userProperties.reserve(publish_event->user_property_count);
+                            for (size_t i = 0; i < publish_event->user_property_count; ++i)
+                            {
+                                userProperties.emplace_back(
+                                    publish_event->user_properties[i].name,
+                                    publish_event->user_properties[i].value);
+                            }
+                            event.WithUserProperties(std::move(userProperties));
+                        }
                         impl->m_config.incomingPublishEventHandler(std::move(event));
                     }
                 }

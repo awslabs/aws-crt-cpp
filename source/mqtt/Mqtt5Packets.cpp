@@ -88,6 +88,7 @@ namespace Aws
                     optional.reset();
                 }
             }
+
             void setUserProperties(
                 Vector<UserProperty> &userProperties,
                 const struct aws_mqtt5_user_property *properties,
@@ -95,11 +96,12 @@ namespace Aws
             {
                 for (size_t i = 0; i < propertyCount; ++i)
                 {
-                    userProperties.push_back(UserProperty(
+                    userProperties.emplace_back(
                         Aws::Crt::String((const char *)properties[i].name.ptr, properties[i].name.len),
-                        Aws::Crt::String((const char *)properties[i].value.ptr, properties[i].value.len)));
+                        Aws::Crt::String((const char *)properties[i].value.ptr, properties[i].value.len));
                 }
             }
+
             template <typename T> void setNullableFromOptional(const T *&nullable, const Optional<T> &optional)
             {
                 if (optional.has_value())
@@ -586,7 +588,7 @@ namespace Aws
 
             PublishPacket &PublishPacket::WithUserProperties(Vector<UserProperty> &&userProperties) noexcept
             {
-                m_userProperties = userProperties;
+                m_userProperties = std::move(userProperties);
                 return *this;
             }
 
@@ -778,7 +780,7 @@ namespace Aws
 
             DisconnectPacket &DisconnectPacket::WithUserProperties(Vector<UserProperty> &&userProperties) noexcept
             {
-                m_userProperties = userProperties;
+                m_userProperties = std::move(userProperties);
                 return *this;
             }
 

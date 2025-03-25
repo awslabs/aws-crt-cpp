@@ -45,6 +45,7 @@ struct TestPublishEvent
     Aws::Crt::String topic;
     Aws::Crt::String payload;
     Aws::Crt::Optional<Aws::Crt::String> contentType;
+    Aws::Crt::Optional<Aws::Crt::Vector<Aws::Crt::Mqtt5::UserProperty>> userProperties;
 };
 
 struct TestState
@@ -188,11 +189,27 @@ static void s_onIncomingPublishEvent(Aws::Iot::RequestResponse::IncomingPublishE
             contentTypeAsString = Aws::Crt::String((const char *)contentTypeCursor->ptr, contentTypeCursor->len);
         }
 
-        state->incomingPublishEvents.push_back({
-            std::move(topicAsString),
-            std::move(payloadAsString),
-            std::move(contentTypeAsString),
-        });
+        const auto &userPropertiesView = event.GetUserProperties();
+        Aws::Crt::Vector<Aws::Crt::Mqtt5::UserProperty> userProperties;
+        if (userPropertiesView)
+        {
+            std::transform(
+                std::begin(*userPropertiesView),
+                std::end(*userPropertiesView),
+                std::back_inserter(userProperties),
+                [](const Aws::Iot::RequestResponse::UserPropertyView &userPropertyView)
+                {
+                    return Aws::Crt::Mqtt5::UserProperty(
+                        Aws::Crt::String((const char *)userPropertyView.m_name.ptr, userPropertyView.m_name.len),
+                        Aws::Crt::String((const char *)userPropertyView.m_value.ptr, userPropertyView.m_value.len));
+                });
+        }
+
+        state->incomingPublishEvents.push_back(
+            {std::move(topicAsString),
+             std::move(payloadAsString),
+             std::move(contentTypeAsString),
+             std::move(userProperties)});
     }
     state->signal.notify_one();
 }
@@ -345,6 +362,7 @@ void s_publishToProtocolClient(
     Aws::Crt::String topic,
     Aws::Crt::String payload,
     Aws::Crt::Optional<Aws::Crt::String> contentType,
+    const Aws::Crt::Optional<Aws::Crt::Vector<Aws::Crt::Mqtt5::UserProperty>> &userProperties,
     Aws::Crt::Allocator *allocator)
 {
     if (context.protocolClient5)
@@ -358,6 +376,10 @@ void s_publishToProtocolClient(
         {
             Aws::Crt::ByteCursor contentTypeCursor{contentType->length(), (uint8_t *)contentType->c_str()};
             packet->WithContentType(contentTypeCursor);
+        }
+        if (userProperties)
+        {
+            packet->WithUserProperties(*userProperties);
         }
         context.protocolClient5->Publish(packet);
     }
@@ -1102,20 +1124,33 @@ static int s_doShadowUpdatedStreamIncomingPublishTest(Aws::Crt::Allocator *alloc
         &state, Aws::Iot::RequestResponse::SubscriptionStatusEventType::SubscriptionEstablished, AWS_ERROR_SUCCESS);
 
     Aws::Crt::String contentType("application/json");
-    s_publishToProtocolClient(context, uuid, s_publishPayload, contentType, allocator);
+    Aws::Crt::Vector<Aws::Crt::Mqtt5::UserProperty> userProperties{
+        {"property_1", "value_1"},
+        {"property_2", "value_2"},
+    };
+    s_publishToProtocolClient(context, uuid, s_publishPayload, contentType, userProperties, allocator);
 
     s_waitForIncomingPublishWithPredicate(
         &state,
-        [&context, &uuid, &contentType](const TestPublishEvent &publishEvent)
+        [&context, &uuid, &contentType, &userProperties](const TestPublishEvent &publishEvent)
         {
             if (publishEvent.topic != uuid || publishEvent.payload != Aws::Crt::String(s_publishPayload))
             {
                 return false;
             }
-            if (context.protocolClient5 && (!publishEvent.contentType || *publishEvent.contentType != contentType))
+            if (context.protocolClient5)
             {
-                return false;
+                if (!publishEvent.contentType || *publishEvent.contentType != contentType)
+                {
+                    return false;
+                }
+                if (!publishEvent.userProperties || publishEvent.userProperties->size() != userProperties.size() ||
+                    *publishEvent.userProperties != userProperties)
+                {
+                    return false;
+                }
             }
+
             return true;
         });
 
