@@ -3,6 +3,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include <aws/crt/TypeTraits.h>
 #include <aws/crt/Utility.h>
 #include <utility>
 
@@ -38,7 +39,11 @@ namespace Aws
                 }
             }
 
-            template <typename U = T> Optional &operator=(U &&u)
+            template <
+                typename U = T,
+                typename std::enable_if<!IsSpecializationOf<typename std::decay<U>::type, Optional>::value, bool>::
+                    type = true>
+            Optional &operator=(U &&u)
             {
                 if (m_value)
                 {
@@ -84,80 +89,28 @@ namespace Aws
                 m_value = reinterpret_cast<T *>(m_storage);
             }
 
-            Optional &operator=(const Optional &other)
+            Optional<T> &operator=(const Optional &other)
             {
-                if (this == &other)
-                {
-                    return *this;
-                }
-
-                if (m_value)
-                {
-                    if (other.m_value)
-                    {
-                        *m_value = *other.m_value;
-                    }
-                    else
-                    {
-                        m_value->~T();
-                        m_value = nullptr;
-                    }
-
-                    return *this;
-                }
-
-                if (other.m_value)
-                {
-                    new (m_storage) T(*other.m_value);
-                    m_value = reinterpret_cast<T *>(m_storage);
-                }
-
-                return *this;
+                return assign(other);
             }
 
             template <typename U = T> Optional<T> &operator=(const Optional<U> &other)
             {
-                if (this == &other)
-                {
-                    return *this;
-                }
-
-                if (m_value)
-                {
-                    if (other.m_value)
-                    {
-                        *m_value = *other.m_value;
-                    }
-                    else
-                    {
-                        m_value->~T();
-                        m_value = nullptr;
-                    }
-
-                    return *this;
-                }
-
-                if (other.m_value)
-                {
-                    new (m_storage) T(*other.m_value);
-                    m_value = reinterpret_cast<T *>(m_storage);
-                }
-
-                return *this;
+                return assign(other);
             }
 
             template <typename U = T> Optional<T> &operator=(Optional<U> &&other)
             {
-                if (this == &other)
+                if ((void *)this == (void *)&other)
                 {
                     return *this;
                 }
 
                 if (m_value)
                 {
-                    if (other.m_value)
+                    if (other.has_value())
                     {
-                        *m_value = std::forward<U>(*other.m_value);
+                        *m_value = std::forward<U>(other.value());
                     }
                     else
                     {
@@ -168,9 +121,9 @@ namespace Aws
                     return *this;
                 }
 
-                if (other.m_value)
+                if (other.has_value())
                 {
-                    new (m_storage) T(std::forward<U>(*other.m_value));
+                    new (m_storage) T(std::forward<U>(other.value()));
                     m_value = reinterpret_cast<T *>(m_storage);
                 }
 
@@ -213,6 +166,39 @@ namespace Aws
             }
 
           private:
+            template <typename U = T> Optional &assign(const Optional<U> &other)
+            {
+                if ((void *)this == (void *)&other)
+                {
+                    return *this;
+                }
+
+                if (m_value)
+                {
+                    // Optional<U> is a completely different class from the C++ specifics pov. So, we can use only
+                    // public members of `other`.
+                    if (other.has_value())
+                    {
+                        *m_value = other.value();
+                    }
+                    else
+                    {
+                        m_value->~T();
+                        m_value = nullptr;
+                    }
+
+                    return *this;
+                }
+
+                if (other.has_value())
+                {
+                    new (m_storage) T(other.value());
+                    m_value = reinterpret_cast<T *>(m_storage);
+                }
+
+                return *this;
+            }
+
             alignas(T) char m_storage[sizeof(T)];
             T *m_value;
         };
