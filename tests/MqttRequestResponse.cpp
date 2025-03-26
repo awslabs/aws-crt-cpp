@@ -46,6 +46,7 @@ struct TestPublishEvent
     Aws::Crt::String payload;
     Aws::Crt::Optional<Aws::Crt::String> contentType;
     Aws::Crt::Optional<Aws::Crt::Vector<Aws::Crt::Mqtt5::UserProperty>> userProperties;
+    Aws::Crt::Optional<uint32_t> messageExpiryIntervalSeconds;
 };
 
 struct TestState
@@ -205,11 +206,14 @@ static void s_onIncomingPublishEvent(Aws::Iot::RequestResponse::IncomingPublishE
                 });
         }
 
+        auto messageExpiryIntervalSeconds = event.GetMessageExpiryIntervalSeconds();
+
         state->incomingPublishEvents.push_back(
             {std::move(topicAsString),
              std::move(payloadAsString),
              std::move(contentTypeAsString),
-             std::move(userProperties)});
+             std::move(userProperties),
+             std::move(messageExpiryIntervalSeconds)});
     }
     state->signal.notify_one();
 }
@@ -361,8 +365,9 @@ void s_publishToProtocolClient(
     TestContext &context,
     Aws::Crt::String topic,
     Aws::Crt::String payload,
-    Aws::Crt::Optional<Aws::Crt::String> contentType,
+    const Aws::Crt::Optional<Aws::Crt::String> &contentType,
     const Aws::Crt::Optional<Aws::Crt::Vector<Aws::Crt::Mqtt5::UserProperty>> &userProperties,
+    const Aws::Crt::Optional<uint32_t> &messageExpiryIntervalSeconds,
     Aws::Crt::Allocator *allocator)
 {
     if (context.protocolClient5)
@@ -380,6 +385,10 @@ void s_publishToProtocolClient(
         if (userProperties)
         {
             packet->WithUserProperties(*userProperties);
+        }
+        if (messageExpiryIntervalSeconds)
+        {
+            packet->WithMessageExpiryIntervalSec(*messageExpiryIntervalSeconds);
         }
         context.protocolClient5->Publish(packet);
     }
@@ -1128,11 +1137,14 @@ static int s_doShadowUpdatedStreamIncomingPublishTest(Aws::Crt::Allocator *alloc
         {"property_1", "value_1"},
         {"property_2", "value_2"},
     };
-    s_publishToProtocolClient(context, uuid, s_publishPayload, contentType, userProperties, allocator);
+    uint32_t messageExpiryIntervalSeconds = 8;
+    s_publishToProtocolClient(
+        context, uuid, s_publishPayload, contentType, userProperties, messageExpiryIntervalSeconds, allocator);
 
     s_waitForIncomingPublishWithPredicate(
         &state,
-        [&context, &uuid, &contentType, &userProperties](const TestPublishEvent &publishEvent)
+        [&context, &uuid, &contentType, &userProperties, messageExpiryIntervalSeconds](
+            const TestPublishEvent &publishEvent)
         {
             if (publishEvent.topic != uuid || publishEvent.payload != Aws::Crt::String(s_publishPayload))
             {
@@ -1146,6 +1158,11 @@ static int s_doShadowUpdatedStreamIncomingPublishTest(Aws::Crt::Allocator *alloc
                 }
                 if (!publishEvent.userProperties || publishEvent.userProperties->size() != userProperties.size() ||
                     *publishEvent.userProperties != userProperties)
+                {
+                    return false;
+                }
+                if (!publishEvent.messageExpiryIntervalSeconds ||
+                    *publishEvent.messageExpiryIntervalSeconds != messageExpiryIntervalSeconds)
                 {
                     return false;
                 }

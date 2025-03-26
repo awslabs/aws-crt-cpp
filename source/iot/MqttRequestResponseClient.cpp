@@ -214,10 +214,13 @@ namespace Aws
                             for (size_t i = 0; i < publish_event->user_property_count; ++i)
                             {
                                 userProperties.emplace_back(
-                                    publish_event->user_properties[i].name,
-                                    publish_event->user_properties[i].value);
+                                    publish_event->user_properties[i].name, publish_event->user_properties[i].value);
                             }
                             event.WithUserProperties(std::move(userProperties));
+                        }
+                        if (publish_event->message_expiry_interval_seconds != nullptr)
+                        {
+                            event.WithMessageExpiryIntervalSeconds(*publish_event->message_expiry_interval_seconds);
                         }
                         impl->m_config.incomingPublishEventHandler(std::move(event));
                     }

@@ -191,6 +191,18 @@ namespace Aws
                 }
 
                 /**
+                 * Sets the message expiry interval seconds associated with this event.
+                 *
+                 * @param messageExpiryIntervalSeconds the message expiry interval seconds associated with this event
+                 * @return reference to this
+                 */
+                IncomingPublishEvent &WithMessageExpiryIntervalSeconds(uint32_t messageExpiryIntervalSeconds)
+                {
+                    m_messageExpiryIntervalSeconds = messageExpiryIntervalSeconds;
+                    return *this;
+                }
+
+                /**
                  * Gets the message response topic associated with this event.
                  *
                  * @return the message response topic associated with this event
@@ -209,7 +221,7 @@ namespace Aws
                  *
                  * @return the message content type associated with this event
                  */
-                Aws::Crt::Optional<Aws::Crt::ByteCursor> GetContentType() const { return m_contentType; }
+                const Aws::Crt::Optional<Aws::Crt::ByteCursor> &GetContentType() const { return m_contentType; }
 
                 /**
                  * Gets the message user properties associated with this event.
@@ -218,6 +230,11 @@ namespace Aws
                 const Aws::Crt::Optional<Aws::Crt::Vector<UserPropertyView>> &GetUserProperties() const
                 {
                     return m_userProperties;
+                }
+
+                const Aws::Crt::Optional<uint32_t> &GetMessageExpiryIntervalSeconds() const
+                {
+                    return m_messageExpiryIntervalSeconds;
                 }
 
               private:
