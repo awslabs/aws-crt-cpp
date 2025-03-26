@@ -184,8 +184,8 @@ static int s_decode_timestamp_helper(Cbor::CborDecoder &decoder, std::chrono::sy
         {
             double double_val = decoder.PopNextFloatVal().value();
             std::chrono::duration<double, std::chrono::seconds::period> timestamp(double_val);
-            outTimePoint =
-                std::chrono::system_clock::time_point(std::chrono::duration_cast<std::chrono::milliseconds>(timestamp));
+            outTimePoint = std::chrono::system_clock::time_point(
+                std::chrono::duration_cast<std::chrono::system_clock::duration>(timestamp));
             return AWS_OP_SUCCESS;
         }
         default:
