@@ -41,6 +41,9 @@ namespace Aws
                 }
             }
 
+            /**
+             * Assignment operator for a case when the parameter type is not Optional.
+             */
             template <
                 typename U = T,
                 typename std::enable_if<
