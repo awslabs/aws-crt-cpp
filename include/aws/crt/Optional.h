@@ -18,6 +18,8 @@ namespace Aws
         template <typename T> class Optional
         {
           public:
+            using ValueType = T;
+
             Optional() : m_value(nullptr) {}
             Optional(const T &val)
             {
@@ -94,36 +96,7 @@ namespace Aws
 
             template <typename U = T> Optional<T> &operator=(const Optional<U> &other) { return assign(other); }
 
-            template <typename U = T> Optional<T> &operator=(Optional<U> &&other)
-            {
-                if ((void *)this == (void *)&other)
-                {
-                    return *this;
-                }
-
-                if (m_value)
-                {
-                    if (other.has_value())
-                    {
-                        *m_value = std::forward<U>(other.value());
-                    }
-                    else
-                    {
-                        m_value->~T();
-                        m_value = nullptr;
-                    }
-
-                    return *this;
-                }
-
-                if (other.has_value())
-                {
-                    new (m_storage) T(std::forward<U>(other.value()));
-                    m_value = reinterpret_cast<T *>(m_storage);
-                }
-
-                return *this;
-            }
+            template <typename U = T> Optional<T> &operator=(Optional<U> &&other) { return assign(std::move(other)); }
 
             template <typename... Args> T &emplace(Args &&...args)
             {
@@ -161,8 +134,16 @@ namespace Aws
             }
 
           private:
-            template <typename U = T> Optional &assign(const Optional<U> &other)
+            template <typename Op> Optional &assign(Op &&other)
             {
+                // U is an underlying type of the Optional type passed to this function. Depending on constness of Op,
+                // U will be either value or const ref.
+                // NOTE: std::is_const<const C&> == false, that's why std::remove_reference is needed here.
+                using U = typename std::conditional<
+                    std::is_const<typename std::remove_reference<Op>::type>::value,
+                    const typename std::decay<Op>::type::ValueType &,
+                    typename std::decay<Op>::type::ValueType>::type;
+
                 if ((void *)this == (void *)&other)
                 {
                     return *this;
@@ -174,7 +155,7 @@ namespace Aws
                     // public members of `other`.
                     if (other.has_value())
                     {
-                        *m_value = other.value();
+                        *m_value = std::forward<U>(other.value());
                     }
                     else
                     {
@@ -187,7 +168,7 @@ namespace Aws
 
                 if (other.has_value())
                 {
-                    new (m_storage) T(other.value());
+                    new (m_storage) T(std::forward<U>(other.value()));
                     m_value = reinterpret_cast<T *>(m_storage);
                 }
 
