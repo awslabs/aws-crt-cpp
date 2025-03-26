@@ -41,8 +41,9 @@ namespace Aws
 
             template <
                 typename U = T,
-                typename std::enable_if<!IsSpecializationOf<typename std::decay<U>::type, Optional>::value, bool>::
-                    type = true>
+                typename std::enable_if<
+                    !IsSpecializationOf<typename std::decay<U>::type, Aws::Crt::Optional>::value,
+                    bool>::type = true>
             Optional &operator=(U &&u)
             {
                 if (m_value)
