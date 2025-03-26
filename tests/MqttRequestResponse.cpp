@@ -1161,8 +1161,8 @@ static int s_doShadowUpdatedStreamIncomingPublishTest(Aws::Crt::Allocator *alloc
                 {
                     return false;
                 }
-                if (!publishEvent.messageExpiryIntervalSeconds ||
-                    *publishEvent.messageExpiryIntervalSeconds != messageExpiryIntervalSeconds)
+                /* We can't check for the exact value here as it'll be decremented by the server part. */
+                if (!publishEvent.messageExpiryIntervalSeconds)
                 {
                     return false;
                 }
