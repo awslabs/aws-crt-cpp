@@ -14,14 +14,14 @@ namespace Aws
          * A type trait for determining if the first template parameter is a template specialization of the second
          * template parameter. Based on p2098 (https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2020/p2098r1.pdf).
          */
-        template <typename T, template <typename...> class Primary> struct IsSpecializationOf : std::false_type
+        template <typename T, template <typename> class Primary> struct IsSpecializationOf : std::false_type
         {
         };
 
         /* Specialization for the case when the first template parameter is a template specialization of the second
          * template parameter. */
-        template <template <typename...> class Primary, typename... Args>
-        struct IsSpecializationOf<Primary<Args...>, Primary> : std::true_type
+        template <template <typename> class Primary, typename Arg>
+        struct IsSpecializationOf<Primary<Arg>, Primary> : std::true_type
         {
         };
     } // namespace Crt
