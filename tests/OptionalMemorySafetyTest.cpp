@@ -218,6 +218,11 @@ static int s_OptionalCopyAndMoveSemantics(struct aws_allocator *allocator, void 
             // operator=(const Optional<U>&), where U == T
             Aws::Crt::Optional<CopyMoveTester> copyAssignedOptional;
             Aws::Crt::Optional<CopyMoveTester> tester = CopyMoveTester();
+            // Assignment to empty Optional.
+            copyAssignedOptional = tester;
+            ASSERT_TRUE(copyAssignedOptional->m_copied);
+            ASSERT_FALSE(copyAssignedOptional->m_moved);
+            // Assignment to non-empty Optional.
             copyAssignedOptional = tester;
             ASSERT_TRUE(copyAssignedOptional->m_copied);
             ASSERT_FALSE(copyAssignedOptional->m_moved);
@@ -257,6 +262,12 @@ static int s_OptionalCopyAndMoveSemantics(struct aws_allocator *allocator, void 
             // operator=(U&&), where U == T
             Aws::Crt::Optional<CopyMoveTester> moveAssignedValue;
             CopyMoveTester tester;
+            // Assignment to empty Optional.
+            moveAssignedValue = std::move(tester);
+            ASSERT_FALSE(moveAssignedValue->m_copied);
+            ASSERT_TRUE(moveAssignedValue->m_moved);
+            // Assignment to non-empty Optional.
+            tester = CopyMoveTester();
             moveAssignedValue = std::move(tester);
             ASSERT_FALSE(moveAssignedValue->m_copied);
             ASSERT_TRUE(moveAssignedValue->m_moved);
@@ -266,6 +277,14 @@ static int s_OptionalCopyAndMoveSemantics(struct aws_allocator *allocator, void 
             // operator=(U&&), where U != T
             Aws::Crt::Optional<CopyMoveTester> moveAssignedOtherValue;
             CopyMoveTester::Initer moveIniter;
+            // Assignment to empty Optional.
+            moveAssignedOtherValue = std::move(moveIniter);
+            ASSERT_FALSE(moveAssignedOtherValue->m_copied);
+            ASSERT_FALSE(moveAssignedOtherValue->m_moved);
+            ASSERT_FALSE(moveAssignedOtherValue->m_initer_copied);
+            ASSERT_TRUE(moveAssignedOtherValue->m_initer_moved);
+            // Assignment to non-empty Optional.
+            moveIniter = CopyMoveTester::Initer();
             moveAssignedOtherValue = std::move(moveIniter);
             ASSERT_FALSE(moveAssignedOtherValue->m_copied);
             ASSERT_FALSE(moveAssignedOtherValue->m_moved);
@@ -277,6 +296,12 @@ static int s_OptionalCopyAndMoveSemantics(struct aws_allocator *allocator, void 
             // operator=(Optional<U>&&), where U == T
             Aws::Crt::Optional<CopyMoveTester> moveAssignedOptional;
             Aws::Crt::Optional<CopyMoveTester> tester = CopyMoveTester();
+            // Assignment to empty Optional.
+            moveAssignedOptional = std::move(tester);
+            ASSERT_FALSE(moveAssignedOptional->m_copied);
+            ASSERT_TRUE(moveAssignedOptional->m_moved);
+            // Assignment to non-empty Optional.
+            tester = CopyMoveTester();
             moveAssignedOptional = std::move(tester);
             ASSERT_FALSE(moveAssignedOptional->m_copied);
             ASSERT_TRUE(moveAssignedOptional->m_moved);
@@ -293,6 +318,7 @@ static int s_OptionalCopyAndMoveSemantics(struct aws_allocator *allocator, void 
             ASSERT_FALSE(moveAssignedOtherOptional->m_initer_copied);
             ASSERT_TRUE(moveAssignedOtherOptional->m_initer_moved);
             // Assignment to non-empty Optional.
+            moveIniterOptional = CopyMoveTester::Initer();
             moveAssignedOtherOptional = std::move(moveIniterOptional);
             ASSERT_FALSE(moveAssignedOtherOptional->m_copied);
             ASSERT_FALSE(moveAssignedOtherOptional->m_moved);
