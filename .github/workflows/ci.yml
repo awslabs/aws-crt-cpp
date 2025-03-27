@@ -118,6 +118,7 @@ jobs:
       with:
         role-to-assume: ${{ env.CRT_CI_ROLE }}
         aws-region: ${{ env.AWS_DEFAULT_REGION }}
+        role-duration-seconds: 7200 # 2 hours
     # set arm arch
     - name: Install qemu/docker
       run: docker run --privileged --rm tonistiigi/binfmt --install linux/arm/v7
