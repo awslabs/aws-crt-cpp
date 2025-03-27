@@ -280,7 +280,7 @@ namespace Aws
 
             ConnectPacket &ConnectPacket::WithUserProperties(Vector<UserProperty> &&userProperties) noexcept
             {
-                m_userProperties = userProperties;
+                m_userProperties = std::move(userProperties);
                 return *this;
             }
 
@@ -428,41 +428,14 @@ namespace Aws
                 return m_userProperties;
             }
 
-            UserProperty::UserProperty(Crt::String name, Crt::String value) noexcept
+            UserProperty::UserProperty(const Crt::String &name, const Crt::String &value) noexcept
+                : m_name(name), m_value(value)
+            {
+            }
+
+            UserProperty::UserProperty(Crt::String &&name, Crt::String &&value) noexcept
                 : m_name(std::move(name)), m_value(std::move(value))
             {
-            }
-
-            UserProperty::~UserProperty() noexcept {}
-
-            UserProperty::UserProperty(const UserProperty &toCopy) noexcept
-                : m_name(toCopy.getName()), m_value(toCopy.getValue())
-            {
-            }
-
-            UserProperty::UserProperty(UserProperty &&toMove) noexcept
-                : m_name(std::move(toMove.m_name)), m_value(std::move(toMove.m_value))
-            {
-            }
-
-            UserProperty &UserProperty::operator=(const UserProperty &toCopy) noexcept
-            {
-                if (&toCopy != this)
-                {
-                    m_name = toCopy.getName();
-                    m_value = toCopy.getValue();
-                }
-                return *this;
-            }
-
-            UserProperty &UserProperty::operator=(UserProperty &&toMove) noexcept
-            {
-                if (&toMove != this)
-                {
-                    m_name = std::move(toMove.m_name);
-                    m_value = std::move(toMove.m_value);
-                }
-                return *this;
             }
 
             PublishPacket::PublishPacket(const aws_mqtt5_packet_publish_view &packet, Allocator *allocator) noexcept
@@ -1086,7 +1059,7 @@ namespace Aws
 
             SubscribePacket &SubscribePacket::WithUserProperties(Vector<UserProperty> &&userProperties) noexcept
             {
-                m_userProperties = userProperties;
+                m_userProperties = std::move(userProperties);
                 return *this;
             }
 
@@ -1204,7 +1177,7 @@ namespace Aws
 
             UnsubscribePacket &UnsubscribePacket::WithUserProperties(Vector<UserProperty> &&userProperties) noexcept
             {
-                m_userProperties = userProperties;
+                m_userProperties = std::move(userProperties);
                 return *this;
             }
 

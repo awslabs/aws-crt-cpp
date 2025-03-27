@@ -114,7 +114,7 @@ namespace Aws
             /**
              * Data model for MQTT5 user properties.
              *
-             * A user property is a name-value pair of utf-8 strings that can be added to mqtt5 packets.
+             * A user property is a name-value pair of utf-8 strings that can be added to MQTT5 packets.
              */
             struct AWS_CRT_CPP_API UserPropertyView
             {

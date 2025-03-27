@@ -22,17 +22,11 @@ namespace Aws
             class AWS_CRT_CPP_API UserProperty
             {
               public:
-                UserProperty(Crt::String key, Crt::String value) noexcept;
+                UserProperty(const Crt::String &name, const Crt::String &value) noexcept;
+                UserProperty(Crt::String &&name, Crt::String &&value) noexcept;
 
                 const Crt::String &getName() const noexcept { return m_name; };
                 const Crt::String &getValue() const noexcept { return m_value; }
-
-                // TODO Remove.
-                ~UserProperty() noexcept;
-                UserProperty(const UserProperty &toCopy) noexcept;
-                UserProperty(UserProperty &&toMove) noexcept;
-                UserProperty &operator=(const UserProperty &toCopy) noexcept;
-                UserProperty &operator=(UserProperty &&toMove) noexcept;
 
                 bool operator==(const UserProperty &other) const
                 {
@@ -47,7 +41,7 @@ namespace Aws
             class AWS_CRT_CPP_API IPacket
             {
               public:
-                // TODO virtual ~IPacket() = default;
+                virtual ~IPacket() = default;
                 virtual PacketType getType() = 0;
             };
 

@@ -1143,8 +1143,7 @@ static int s_doShadowUpdatedStreamIncomingPublishTest(Aws::Crt::Allocator *alloc
 
     s_waitForIncomingPublishWithPredicate(
         &state,
-        [&context, &uuid, &contentType, &userProperties](
-            const TestPublishEvent &publishEvent)
+        [&context, &uuid, &contentType, &userProperties](const TestPublishEvent &publishEvent)
         {
             if (publishEvent.topic != uuid || publishEvent.payload != Aws::Crt::String(s_publishPayload))
             {
