@@ -65,6 +65,7 @@ jobs:
       with:
         role-to-assume: ${{ env.CRT_CI_ROLE }}
         aws-region: ${{ env.AWS_DEFAULT_REGION }}
+        role-duration-seconds: 7200 # 2 hours
     - name: Install qemu/docker
       run: docker run --privileged --rm tonistiigi/binfmt --install all
     - name: Build ${{ env.PACKAGE_NAME }}
@@ -99,7 +100,6 @@ jobs:
       with:
         role-to-assume: ${{ env.CRT_CI_ROLE }}
         aws-region: ${{ env.AWS_DEFAULT_REGION }}
-        role-duration-seconds: 7200 # 2 hours
     # We can't use the `uses: docker://image` version yet, GitHub lacks authentication for actions -> packages
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
