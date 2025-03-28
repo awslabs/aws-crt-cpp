@@ -107,7 +107,14 @@ AWS_TEST_CASE(OptionalEmplace, s_OptionalEmplace)
 class CopyMoveTester
 {
   public:
-    CopyMoveTester() : m_copied(false), m_moved(false) {}
+    struct Initer
+    {
+    };
+
+    CopyMoveTester() = default;
+    explicit CopyMoveTester(const Initer &) : m_initer_copied(true) {}
+    explicit CopyMoveTester(Initer &&) : m_initer_moved(true) {}
+
     CopyMoveTester(const CopyMoveTester &) : m_copied(true), m_moved(false) {}
     CopyMoveTester(CopyMoveTester &&) : m_copied(false), m_moved(true) {}
 
@@ -115,19 +122,43 @@ class CopyMoveTester
     {
         m_copied = true;
         m_moved = false;
+        m_initer_copied = false;
+        m_initer_moved = false;
         return *this;
     }
     CopyMoveTester &operator=(CopyMoveTester &&)
     {
         m_copied = false;
         m_moved = true;
+        m_initer_copied = false;
+        m_initer_moved = false;
+        return *this;
+    }
+
+    CopyMoveTester &operator=(const Initer &)
+    {
+        m_copied = false;
+        m_moved = false;
+        m_initer_copied = true;
+        m_initer_moved = false;
+        return *this;
+    }
+
+    CopyMoveTester &operator=(Initer &&)
+    {
+        m_copied = false;
+        m_moved = false;
+        m_initer_copied = false;
+        m_initer_moved = true;
         return *this;
     }
 
     ~CopyMoveTester() {}
 
-    bool m_copied;
-    bool m_moved;
+    bool m_copied = false;
+    bool m_moved = false;
+    bool m_initer_copied = false;
+    bool m_initer_moved = false;
 };
 
 static int s_OptionalCopyAndMoveSemantics(struct aws_allocator *allocator, void *ctx)
@@ -140,37 +171,160 @@ static int s_OptionalCopyAndMoveSemantics(struct aws_allocator *allocator, void 
         ASSERT_FALSE(initialItem.m_copied);
         ASSERT_FALSE(initialItem.m_moved);
 
-        Aws::Crt::Optional<CopyMoveTester> copyConstructedValue(initialItem);
-        ASSERT_TRUE(copyConstructedValue->m_copied);
-        ASSERT_FALSE(copyConstructedValue->m_moved);
+        {
+            // Optional(const U&), where U == T
+            Aws::Crt::Optional<CopyMoveTester> copyConstructedValue(initialItem);
+            ASSERT_TRUE(copyConstructedValue->m_copied);
+            ASSERT_FALSE(copyConstructedValue->m_moved);
 
-        Aws::Crt::Optional<CopyMoveTester> copyConstructedOptional(copyConstructedValue);
-        ASSERT_TRUE(copyConstructedOptional->m_copied);
-        ASSERT_FALSE(copyConstructedOptional->m_moved);
+            // Optional(const Optional<U>&), where U == T
+            Aws::Crt::Optional<CopyMoveTester> copyConstructedOptional(copyConstructedValue);
+            ASSERT_TRUE(copyConstructedOptional->m_copied);
+            ASSERT_FALSE(copyConstructedOptional->m_moved);
+        }
 
-        Aws::Crt::Optional<CopyMoveTester> copyAssignedValue = initialItem;
-        ASSERT_TRUE(copyAssignedValue->m_copied);
-        ASSERT_FALSE(copyAssignedValue->m_moved);
+        {
+            // operator=(const U&), where U == T
+            Aws::Crt::Optional<CopyMoveTester> copyAssignedValue;
+            // Assignment to empty Optional.
+            copyAssignedValue = initialItem;
+            ASSERT_TRUE(copyAssignedValue->m_copied);
+            ASSERT_FALSE(copyAssignedValue->m_moved);
+            // Assignment to non-empty Optional.
+            copyAssignedValue = initialItem;
+            ASSERT_TRUE(copyAssignedValue->m_copied);
+            ASSERT_FALSE(copyAssignedValue->m_moved);
+        }
 
-        Aws::Crt::Optional<CopyMoveTester> copyAssignedOptional = copyConstructedOptional;
-        ASSERT_TRUE(copyAssignedOptional->m_copied);
-        ASSERT_FALSE(copyAssignedOptional->m_moved);
+        {
+            // operator=(const U&), where U != T
+            Aws::Crt::Optional<CopyMoveTester> copyAssignedOtherValue;
+            CopyMoveTester::Initer copyIniter;
+            // Assignment to empty Optional.
+            copyAssignedOtherValue = copyIniter;
+            ASSERT_FALSE(copyAssignedOtherValue->m_copied);
+            ASSERT_FALSE(copyAssignedOtherValue->m_moved);
+            ASSERT_TRUE(copyAssignedOtherValue->m_initer_copied);
+            ASSERT_FALSE(copyAssignedOtherValue->m_initer_moved);
+            // Assignment to non-empty Optional.
+            copyAssignedOtherValue = copyIniter;
+            ASSERT_FALSE(copyAssignedOtherValue->m_copied);
+            ASSERT_FALSE(copyAssignedOtherValue->m_moved);
+            ASSERT_TRUE(copyAssignedOtherValue->m_initer_copied);
+            ASSERT_FALSE(copyAssignedOtherValue->m_initer_moved);
+        }
 
-        Aws::Crt::Optional<CopyMoveTester> moveConstructedValue(std::move(initialItem));
-        ASSERT_FALSE(moveConstructedValue->m_copied);
-        ASSERT_TRUE(moveConstructedValue->m_moved);
+        {
+            // operator=(const Optional<U>&), where U == T
+            Aws::Crt::Optional<CopyMoveTester> copyAssignedOptional;
+            Aws::Crt::Optional<CopyMoveTester> tester = CopyMoveTester();
+            // Assignment to empty Optional.
+            copyAssignedOptional = tester;
+            ASSERT_TRUE(copyAssignedOptional->m_copied);
+            ASSERT_FALSE(copyAssignedOptional->m_moved);
+            // Assignment to non-empty Optional.
+            copyAssignedOptional = tester;
+            ASSERT_TRUE(copyAssignedOptional->m_copied);
+            ASSERT_FALSE(copyAssignedOptional->m_moved);
+        }
 
-        Aws::Crt::Optional<CopyMoveTester> moveConstructedOptional(std::move(moveConstructedValue));
-        ASSERT_FALSE(moveConstructedOptional->m_copied);
-        ASSERT_TRUE(moveConstructedOptional->m_moved);
+        {
+            // operator=(const Optional<U>&), where U != T
+            Aws::Crt::Optional<CopyMoveTester> copyAssignedOtherOptional;
+            Aws::Crt::Optional<CopyMoveTester::Initer> copyIniterOptional = CopyMoveTester::Initer();
+            // Assignment to empty Optional.
+            copyAssignedOtherOptional = copyIniterOptional;
+            ASSERT_FALSE(copyAssignedOtherOptional->m_copied);
+            ASSERT_FALSE(copyAssignedOtherOptional->m_moved);
+            ASSERT_TRUE(copyAssignedOtherOptional->m_initer_copied);
+            ASSERT_FALSE(copyAssignedOtherOptional->m_initer_moved);
+            // Assignment to non-empty Optional.
+            copyAssignedOtherOptional = copyIniterOptional;
+            ASSERT_FALSE(copyAssignedOtherOptional->m_copied);
+            ASSERT_FALSE(copyAssignedOtherOptional->m_moved);
+            ASSERT_TRUE(copyAssignedOtherOptional->m_initer_copied);
+            ASSERT_FALSE(copyAssignedOtherOptional->m_initer_moved);
+        }
 
-        Aws::Crt::Optional<CopyMoveTester> moveAssignedValue = std::move(*moveConstructedOptional);
-        ASSERT_FALSE(moveAssignedValue->m_copied);
-        ASSERT_TRUE(moveAssignedValue->m_moved);
+        {
+            // Optional(U&&), where U == T
+            Aws::Crt::Optional<CopyMoveTester> moveConstructedValue(std::move(initialItem));
+            ASSERT_FALSE(moveConstructedValue->m_copied);
+            ASSERT_TRUE(moveConstructedValue->m_moved);
 
-        Aws::Crt::Optional<CopyMoveTester> moveAssignedOptional = std::move(moveAssignedValue);
-        ASSERT_FALSE(moveAssignedOptional->m_copied);
-        ASSERT_TRUE(moveAssignedOptional->m_moved);
+            // Optional(Optional<U>&&), where U == T
+            Aws::Crt::Optional<CopyMoveTester> moveConstructedOptional(std::move(moveConstructedValue));
+            ASSERT_FALSE(moveConstructedOptional->m_copied);
+            ASSERT_TRUE(moveConstructedOptional->m_moved);
+        }
+
+        {
+            // operator=(U&&), where U == T
+            Aws::Crt::Optional<CopyMoveTester> moveAssignedValue;
+            CopyMoveTester tester;
+            // Assignment to empty Optional.
+            moveAssignedValue = std::move(tester);
+            ASSERT_FALSE(moveAssignedValue->m_copied);
+            ASSERT_TRUE(moveAssignedValue->m_moved);
+            // Assignment to non-empty Optional.
+            tester = CopyMoveTester();
+            moveAssignedValue = std::move(tester);
+            ASSERT_FALSE(moveAssignedValue->m_copied);
+            ASSERT_TRUE(moveAssignedValue->m_moved);
+        }
+
+        {
+            // operator=(U&&), where U != T
+            Aws::Crt::Optional<CopyMoveTester> moveAssignedOtherValue;
+            CopyMoveTester::Initer moveIniter;
+            // Assignment to empty Optional.
+            moveAssignedOtherValue = std::move(moveIniter);
+            ASSERT_FALSE(moveAssignedOtherValue->m_copied);
+            ASSERT_FALSE(moveAssignedOtherValue->m_moved);
+            ASSERT_FALSE(moveAssignedOtherValue->m_initer_copied);
+            ASSERT_TRUE(moveAssignedOtherValue->m_initer_moved);
+            // Assignment to non-empty Optional.
+            moveIniter = CopyMoveTester::Initer();
+            moveAssignedOtherValue = std::move(moveIniter);
+            ASSERT_FALSE(moveAssignedOtherValue->m_copied);
+            ASSERT_FALSE(moveAssignedOtherValue->m_moved);
+            ASSERT_FALSE(moveAssignedOtherValue->m_initer_copied);
+            ASSERT_TRUE(moveAssignedOtherValue->m_initer_moved);
+        }
+
+        {
+            // operator=(Optional<U>&&), where U == T
+            Aws::Crt::Optional<CopyMoveTester> moveAssignedOptional;
+            Aws::Crt::Optional<CopyMoveTester> tester = CopyMoveTester();
+            // Assignment to empty Optional.
+            moveAssignedOptional = std::move(tester);
+            ASSERT_FALSE(moveAssignedOptional->m_copied);
+            ASSERT_TRUE(moveAssignedOptional->m_moved);
+            // Assignment to non-empty Optional.
+            tester = CopyMoveTester();
+            moveAssignedOptional = std::move(tester);
+            ASSERT_FALSE(moveAssignedOptional->m_copied);
+            ASSERT_TRUE(moveAssignedOptional->m_moved);
+        }
+
+        {
+            // operator=(Optional<U>&&), where U != T
+            Aws::Crt::Optional<CopyMoveTester> moveAssignedOtherOptional;
+            Aws::Crt::Optional<CopyMoveTester::Initer> moveIniterOptional = CopyMoveTester::Initer();
+            // Assignment to empty Optional.
+            moveAssignedOtherOptional = std::move(moveIniterOptional);
+            ASSERT_FALSE(moveAssignedOtherOptional->m_copied);
+            ASSERT_FALSE(moveAssignedOtherOptional->m_moved);
+            ASSERT_FALSE(moveAssignedOtherOptional->m_initer_copied);
+            ASSERT_TRUE(moveAssignedOtherOptional->m_initer_moved);
+            // Assignment to non-empty Optional.
+            moveIniterOptional = CopyMoveTester::Initer();
+            moveAssignedOtherOptional = std::move(moveIniterOptional);
+            ASSERT_FALSE(moveAssignedOtherOptional->m_copied);
+            ASSERT_FALSE(moveAssignedOtherOptional->m_moved);
+            ASSERT_FALSE(moveAssignedOtherOptional->m_initer_copied);
+            ASSERT_TRUE(moveAssignedOtherOptional->m_initer_moved);
+        }
     }
 
     return AWS_OP_SUCCESS;
