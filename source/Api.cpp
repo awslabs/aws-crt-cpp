@@ -9,6 +9,7 @@
 #include <aws/crt/io/TlsOptions.h>
 
 #include <aws/auth/auth.h>
+#include <aws/checksums/checksums.h>
 #include <aws/common/ref_count.h>
 #include <aws/event-stream/event_stream.h>
 #include <aws/http/http.h>
@@ -48,6 +49,7 @@ namespace Aws
             aws_s3_library_init(allocator);
             aws_event_stream_library_init(allocator);
             aws_sdkutils_library_init(allocator);
+            aws_checksums_library_init(allocator);
 
             JsonObject::OnLibraryInit();
         }
@@ -78,6 +80,7 @@ namespace Aws
             aws_mqtt_library_clean_up();
             aws_event_stream_library_clean_up();
             aws_sdkutils_library_clean_up();
+            aws_checksums_library_clean_up();
 
             s_BYOCryptoNewMD5Callback = nullptr;
             s_BYOCryptoNewSHA256Callback = nullptr;
