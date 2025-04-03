@@ -285,6 +285,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSI
     # Ancient GCC leads to crashes in shared-lib builds
     # see: https://github.com/awslabs/aws-crt-cpp/pull/675
     message(WARNING "Ancient compiler (${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}). Making all symbols visible to prevent weird crashes")
+    add_definitions(-DANCIENT_COMPILER)
 else()
     set_target_properties(${PROJECT_NAME} PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
 endif()
