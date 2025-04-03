@@ -820,13 +820,13 @@ namespace Aws
         {
             inline namespace string_view_literals
             {
-                #if !defined(__clang__) && defined(__GNUC__) && (__GNUC__ == 4 && __GNUC_MINOR__ <= 8)
-                /* On GCC <= 4.8, use old syntax for literal operator (with space after ""). It can't do the modern syntax */
-                #    define OPERATOR_LITERAL_SV operator"" _sv
-                #else
-                /* else use modern syntax (no space after "") to avoid -Wdeprecated-literal-operator warning on Clang 16+ */
-                #    define OPERATOR_LITERAL_SV operator""_sv
-                #endif
+#if !defined(__clang__) && defined(__GNUC__) && (__GNUC__ == 4 && __GNUC_MINOR__ <= 8)
+/* On GCC <= 4.8, use old syntax for literal operator (with space after ""). It can't do the modern syntax */
+#    define OPERATOR_LITERAL_SV operator"" _sv
+#else
+/* else use modern syntax (no space after "") to avoid -Wdeprecated-literal-operator warning on Clang 16+ */
+#    define OPERATOR_LITERAL_SV operator""_sv
+#endif
 
                 inline basic_string_view<char> OPERATOR_LITERAL_SV(const char *s, size_t length) noexcept
                 {
