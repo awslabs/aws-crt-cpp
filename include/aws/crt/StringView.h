@@ -820,47 +820,34 @@ namespace Aws
         {
             inline namespace string_view_literals
             {
-#if defined(ANCIENT_COMPILER)
-                inline basic_string_view<char> operator"" _sv(const char *s, size_t length) noexcept
-                {
-                    return basic_string_view<char>(s, length);
-                }
-
-                inline basic_string_view<wchar_t> operator"" _sv(const wchar_t * s, size_t length) noexcept
-                {
-                    return basic_string_view<wchar_t>(s, length);
-                }
-
-                inline basic_string_view<char16_t> operator"" _sv(const char16_t *s, size_t length) noexcept
-                {
-                    return basic_string_view<char16_t>(s, length);
-                }
-
-                inline basic_string_view<char32_t> operator"" _sv(const char32_t *s, size_t length) noexcept
-                {
-                    return basic_string_view<char32_t>(s, length);
-                }
+#if defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ >= 9)))
+/* modern syntax for literal operator (no space after ""), but not supported till GCC 4.9+  */
+#    define OPERATOR_LITERAL_SV operator""_sv
 #else
-                inline basic_string_view<char> operator""_sv(const char *s, size_t length) noexcept
+/* deprecated syntax (with space after ""), generates warnings in Clang 16+ */
+#    define OPERATOR_LITERAL_SV operator"" _sv
+#endif
+                inline basic_string_view<char> OPERATOR_LITERAL_SV(const char *s, size_t length) noexcept
                 {
                     return basic_string_view<char>(s, length);
                 }
 
-                inline basic_string_view<wchar_t> operator""_sv(const wchar_t *s, size_t length) noexcept
+                inline basic_string_view<wchar_t> OPERATOR_LITERAL_SV(const wchar_t *s, size_t length) noexcept
                 {
                     return basic_string_view<wchar_t>(s, length);
                 }
 
-                inline basic_string_view<char16_t> operator""_sv(const char16_t *s, size_t length) noexcept
+                inline basic_string_view<char16_t> OPERATOR_LITERAL_SV(const char16_t *s, size_t length) noexcept
                 {
                     return basic_string_view<char16_t>(s, length);
                 }
 
-                inline basic_string_view<char32_t> operator""_sv(const char32_t *s, size_t length) noexcept
+                inline basic_string_view<char32_t> OPERATOR_LITERAL_SV(const char32_t *s, size_t length) noexcept
                 {
                     return basic_string_view<char32_t>(s, length);
                 }
-#endif
+
+#undef OPERATOR_LITERAL_SV
             } // namespace string_view_literals
 
         } // namespace literals
