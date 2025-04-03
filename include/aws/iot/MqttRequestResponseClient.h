@@ -10,6 +10,7 @@
 #include <aws/crt/Optional.h>
 #include <aws/crt/Types.h>
 #include <aws/crt/Variant.h>
+#include <aws/crt/mqtt/Mqtt5Packets.h>
 #include <aws/mqtt/request-response/request_response_client.h>
 
 #include <functional>
@@ -111,6 +112,20 @@ namespace Aws
             using SubscriptionStatusEventHandler = std::function<void(SubscriptionStatusEvent &&)>;
 
             /**
+             * Data model for MQTT5 user properties.
+             *
+             * A user property is a name-value pair of utf-8 strings that can be added to MQTT5 packets.
+             */
+            struct AWS_CRT_CPP_API UserPropertyView
+            {
+                UserPropertyView(Aws::Crt::ByteCursor name, Aws::Crt::ByteCursor value) : m_name(name), m_value(value)
+                {
+                }
+                Aws::Crt::ByteCursor m_name;
+                Aws::Crt::ByteCursor m_value;
+            };
+
+            /**
              * An event that describes an incoming publish message received on a streaming operation.
              *
              * @internal
@@ -152,6 +167,42 @@ namespace Aws
                 }
 
                 /**
+                 * Sets the message content type associated with this event. The event does not own this content type.
+                 *
+                 * @param contentType the message content type associated with this event
+                 * @return reference to this
+                 */
+                IncomingPublishEvent &WithContentType(Aws::Crt::ByteCursor contentType)
+                {
+                    m_contentType = contentType;
+                    return *this;
+                }
+
+                /**
+                 * Sets the message user properties associated with this event.
+                 *
+                 * @param userProperties the message user properties associated with this event
+                 * @return reference to this
+                 */
+                IncomingPublishEvent &WithUserProperties(Aws::Crt::Vector<UserPropertyView> userProperties)
+                {
+                    m_userProperties = std::move(userProperties);
+                    return *this;
+                }
+
+                /**
+                 * Sets the message expiry interval seconds associated with this event.
+                 *
+                 * @param messageExpiryIntervalSeconds the message expiry interval seconds associated with this event
+                 * @return reference to this
+                 */
+                IncomingPublishEvent &WithMessageExpiryIntervalSeconds(uint32_t messageExpiryIntervalSeconds)
+                {
+                    m_messageExpiryIntervalSeconds = messageExpiryIntervalSeconds;
+                    return *this;
+                }
+
+                /**
                  * Gets the message response topic associated with this event.
                  *
                  * @return the message response topic associated with this event
@@ -165,9 +216,33 @@ namespace Aws
                  */
                 Aws::Crt::ByteCursor GetPayload() const { return m_payload; }
 
+                /**
+                 * Gets the message content type associated with this event.
+                 *
+                 * @return the message content type associated with this event
+                 */
+                const Aws::Crt::Optional<Aws::Crt::ByteCursor> &GetContentType() const { return m_contentType; }
+
+                /**
+                 * Gets the message user properties associated with this event.
+                 * @return the message user properties associated with this event
+                 */
+                const Aws::Crt::Optional<Aws::Crt::Vector<UserPropertyView>> &GetUserProperties() const
+                {
+                    return m_userProperties;
+                }
+
+                const Aws::Crt::Optional<uint32_t> &GetMessageExpiryIntervalSeconds() const
+                {
+                    return m_messageExpiryIntervalSeconds;
+                }
+
               private:
                 Aws::Crt::ByteCursor m_topic;
                 Aws::Crt::ByteCursor m_payload;
+                Aws::Crt::Optional<Aws::Crt::ByteCursor> m_contentType;
+                Aws::Crt::Optional<Aws::Crt::Vector<UserPropertyView>> m_userProperties;
+                Aws::Crt::Optional<uint32_t> m_messageExpiryIntervalSeconds;
             };
 
             /**
