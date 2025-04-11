@@ -90,8 +90,7 @@ namespace Aws
                     void *user_data);
 
                 static void OnIncomingPublishCallback(
-                    struct aws_byte_cursor payload,
-                    struct aws_byte_cursor topic,
+                    const struct aws_mqtt_request_response_publish_event *publish_event,
                     void *user_data);
 
                 static void OnTerminatedCallback(void *user_data);
@@ -191,8 +190,7 @@ namespace Aws
             }
 
             void StreamingOperationImpl::OnIncomingPublishCallback(
-                struct aws_byte_cursor payload,
-                struct aws_byte_cursor topic,
+                const struct aws_mqtt_request_response_publish_event *publish_event,
                 void *user_data)
             {
                 auto *handle = static_cast<StreamingOperationImplHandle *>(user_data);
@@ -204,8 +202,26 @@ namespace Aws
                     if (!impl->m_closed && impl->m_config.incomingPublishEventHandler)
                     {
                         IncomingPublishEvent event;
-                        event.WithTopic(topic).WithPayload(payload);
-
+                        event.WithTopic(publish_event->topic).WithPayload(publish_event->payload);
+                        if (publish_event->content_type)
+                        {
+                            event.WithContentType(*publish_event->content_type);
+                        }
+                        if (publish_event->user_property_count > 0)
+                        {
+                            Aws::Crt::Vector<UserPropertyView> userProperties;
+                            userProperties.reserve(publish_event->user_property_count);
+                            for (size_t i = 0; i < publish_event->user_property_count; ++i)
+                            {
+                                userProperties.emplace_back(
+                                    publish_event->user_properties[i].name, publish_event->user_properties[i].value);
+                            }
+                            event.WithUserProperties(std::move(userProperties));
+                        }
+                        if (publish_event->message_expiry_interval_seconds != nullptr)
+                        {
+                            event.WithMessageExpiryIntervalSeconds(*publish_event->message_expiry_interval_seconds);
+                        }
                         impl->m_config.incomingPublishEventHandler(std::move(event));
                     }
                 }
