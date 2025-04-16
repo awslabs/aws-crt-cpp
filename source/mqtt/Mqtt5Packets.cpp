@@ -88,6 +88,7 @@ namespace Aws
                     optional.reset();
                 }
             }
+
             void setUserProperties(
                 Vector<UserProperty> &userProperties,
                 const struct aws_mqtt5_user_property *properties,
@@ -95,11 +96,12 @@ namespace Aws
             {
                 for (size_t i = 0; i < propertyCount; ++i)
                 {
-                    userProperties.push_back(UserProperty(
+                    userProperties.emplace_back(
                         Aws::Crt::String((const char *)properties[i].name.ptr, properties[i].name.len),
-                        Aws::Crt::String((const char *)properties[i].value.ptr, properties[i].value.len)));
+                        Aws::Crt::String((const char *)properties[i].value.ptr, properties[i].value.len));
                 }
             }
+
             template <typename T> void setNullableFromOptional(const T *&nullable, const Optional<T> &optional)
             {
                 if (optional.has_value())
@@ -278,7 +280,7 @@ namespace Aws
 
             ConnectPacket &ConnectPacket::WithUserProperties(Vector<UserProperty> &&userProperties) noexcept
             {
-                m_userProperties = userProperties;
+                m_userProperties = std::move(userProperties);
                 return *this;
             }
 
@@ -426,41 +428,14 @@ namespace Aws
                 return m_userProperties;
             }
 
-            UserProperty::UserProperty(Crt::String name, Crt::String value) noexcept
+            UserProperty::UserProperty(const Crt::String &name, const Crt::String &value) noexcept
+                : m_name(name), m_value(value)
+            {
+            }
+
+            UserProperty::UserProperty(Crt::String &&name, Crt::String &&value) noexcept
                 : m_name(std::move(name)), m_value(std::move(value))
             {
-            }
-
-            UserProperty::~UserProperty() noexcept {}
-
-            UserProperty::UserProperty(const UserProperty &toCopy) noexcept
-                : m_name(toCopy.getName()), m_value(toCopy.getValue())
-            {
-            }
-
-            UserProperty::UserProperty(UserProperty &&toMove) noexcept
-                : m_name(std::move(toMove.m_name)), m_value(std::move(toMove.m_value))
-            {
-            }
-
-            UserProperty &UserProperty::operator=(const UserProperty &toCopy) noexcept
-            {
-                if (&toCopy != this)
-                {
-                    m_name = toCopy.getName();
-                    m_value = toCopy.getValue();
-                }
-                return *this;
-            }
-
-            UserProperty &UserProperty::operator=(UserProperty &&toMove) noexcept
-            {
-                if (&toMove != this)
-                {
-                    m_name = std::move(toMove.m_name);
-                    m_value = std::move(toMove.m_value);
-                }
-                return *this;
             }
 
             PublishPacket::PublishPacket(const aws_mqtt5_packet_publish_view &packet, Allocator *allocator) noexcept
@@ -572,6 +547,12 @@ namespace Aws
                 return *this;
             }
 
+            PublishPacket &PublishPacket::WithContentType(ByteCursor contentType) noexcept
+            {
+                setPacketByteBufOptional(m_contentType, m_contentTypeStorage, m_allocator, &contentType);
+                return *this;
+            }
+
             PublishPacket &PublishPacket::WithUserProperties(const Vector<UserProperty> &userProperties) noexcept
             {
                 m_userProperties = userProperties;
@@ -580,7 +561,7 @@ namespace Aws
 
             PublishPacket &PublishPacket::WithUserProperties(Vector<UserProperty> &&userProperties) noexcept
             {
-                m_userProperties = userProperties;
+                m_userProperties = std::move(userProperties);
                 return *this;
             }
 
@@ -618,6 +599,10 @@ namespace Aws
                 if (m_correlationData.has_value())
                 {
                     raw_options.correlation_data = &m_correlationData.value();
+                }
+                if (m_contentType.has_value())
+                {
+                    raw_options.content_type = &m_contentType.value();
                 }
 
                 s_AllocateUnderlyingUserProperties(m_userPropertiesStorage, m_userProperties, m_allocator);
@@ -768,7 +753,7 @@ namespace Aws
 
             DisconnectPacket &DisconnectPacket::WithUserProperties(Vector<UserProperty> &&userProperties) noexcept
             {
-                m_userProperties = userProperties;
+                m_userProperties = std::move(userProperties);
                 return *this;
             }
 
@@ -1074,7 +1059,7 @@ namespace Aws
 
             SubscribePacket &SubscribePacket::WithUserProperties(Vector<UserProperty> &&userProperties) noexcept
             {
-                m_userProperties = userProperties;
+                m_userProperties = std::move(userProperties);
                 return *this;
             }
 
@@ -1192,7 +1177,7 @@ namespace Aws
 
             UnsubscribePacket &UnsubscribePacket::WithUserProperties(Vector<UserProperty> &&userProperties) noexcept
             {
-                m_userProperties = userProperties;
+                m_userProperties = std::move(userProperties);
                 return *this;
             }
 
