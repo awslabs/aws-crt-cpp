@@ -31,12 +31,12 @@ namespace Aws
             return *this;
         }
 
-        bool UUID::operator==(const UUID &other) noexcept
+        bool UUID::operator==(const UUID &other) const noexcept
         {
             return aws_uuid_equals(&m_uuid, &other.m_uuid);
         }
 
-        bool UUID::operator!=(const UUID &other) noexcept
+        bool UUID::operator!=(const UUID &other) const noexcept
         {
             return !aws_uuid_equals(&m_uuid, &other.m_uuid);
         }
