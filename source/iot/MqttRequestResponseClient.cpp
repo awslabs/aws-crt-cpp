@@ -90,7 +90,7 @@ namespace Aws
                     void *user_data);
 
                 static void OnIncomingPublishCallback(
-                    const struct aws_mqtt_request_response_publish_event *publish_event,
+                    const struct aws_mqtt_rr_incoming_publish_event *publish_event,
                     void *user_data);
 
                 static void OnTerminatedCallback(void *user_data);
@@ -190,7 +190,7 @@ namespace Aws
             }
 
             void StreamingOperationImpl::OnIncomingPublishCallback(
-                const struct aws_mqtt_request_response_publish_event *publish_event,
+                const struct aws_mqtt_rr_incoming_publish_event *publish_event,
                 void *user_data)
             {
                 auto *handle = static_cast<StreamingOperationImplHandle *>(user_data);
@@ -319,20 +319,18 @@ namespace Aws
 
             static void s_completeRequestWithSuccess(
                 struct IncompleteRequest *incompleteRequest,
-                const struct aws_byte_cursor *response_topic,
-                const struct aws_byte_cursor *payload)
+                const struct aws_mqtt_rr_incoming_publish_event *publish_event)
             {
                 UnmodeledResponse response;
-                response.WithTopic(*response_topic);
-                response.WithPayload(*payload);
+                response.WithTopic(publish_event->topic);
+                response.WithPayload(publish_event->payload);
 
                 UnmodeledResult result(response);
                 incompleteRequest->m_handler(std::move(result));
             }
 
             static void s_onRequestComplete(
-                const struct aws_byte_cursor *response_topic,
-                const struct aws_byte_cursor *payload,
+                const struct aws_mqtt_rr_incoming_publish_event *publish_event,
                 int error_code,
                 void *user_data)
             {
@@ -344,7 +342,7 @@ namespace Aws
                 }
                 else
                 {
-                    s_completeRequestWithSuccess(incompleteRequest, response_topic, payload);
+                    s_completeRequestWithSuccess(incompleteRequest, publish_event);
                 }
 
                 Aws::Crt::Delete(incompleteRequest, incompleteRequest->m_allocator);
