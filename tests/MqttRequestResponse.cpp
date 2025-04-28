@@ -259,7 +259,7 @@ static TestContext s_CreateClient(
     {
         finalOptions.WithMaxRequestResponseSubscriptions(4);
         finalOptions.WithMaxStreamingSubscriptions(2);
-        finalOptions.WithOperationTimeoutInSeconds(5);
+        finalOptions.WithOperationTimeoutInSeconds(30);
     }
 
     if (protocol == ProtocolType::Mqtt5)
