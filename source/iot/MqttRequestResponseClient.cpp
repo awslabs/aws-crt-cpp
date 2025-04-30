@@ -90,8 +90,7 @@ namespace Aws
                     void *user_data);
 
                 static void OnIncomingPublishCallback(
-                    struct aws_byte_cursor payload,
-                    struct aws_byte_cursor topic,
+                    const struct aws_mqtt_rr_incoming_publish_event *publish_event,
                     void *user_data);
 
                 static void OnTerminatedCallback(void *user_data);
@@ -191,8 +190,7 @@ namespace Aws
             }
 
             void StreamingOperationImpl::OnIncomingPublishCallback(
-                struct aws_byte_cursor payload,
-                struct aws_byte_cursor topic,
+                const struct aws_mqtt_rr_incoming_publish_event *publish_event,
                 void *user_data)
             {
                 auto *handle = static_cast<StreamingOperationImplHandle *>(user_data);
@@ -204,8 +202,26 @@ namespace Aws
                     if (!impl->m_closed && impl->m_config.incomingPublishEventHandler)
                     {
                         IncomingPublishEvent event;
-                        event.WithTopic(topic).WithPayload(payload);
-
+                        event.WithTopic(publish_event->topic).WithPayload(publish_event->payload);
+                        if (publish_event->content_type)
+                        {
+                            event.WithContentType(*publish_event->content_type);
+                        }
+                        if (publish_event->user_property_count > 0)
+                        {
+                            Aws::Crt::Vector<UserPropertyView> userProperties;
+                            userProperties.reserve(publish_event->user_property_count);
+                            for (size_t i = 0; i < publish_event->user_property_count; ++i)
+                            {
+                                userProperties.emplace_back(
+                                    publish_event->user_properties[i].name, publish_event->user_properties[i].value);
+                            }
+                            event.WithUserProperties(std::move(userProperties));
+                        }
+                        if (publish_event->message_expiry_interval_seconds != nullptr)
+                        {
+                            event.WithMessageExpiryIntervalSeconds(*publish_event->message_expiry_interval_seconds);
+                        }
                         impl->m_config.incomingPublishEventHandler(std::move(event));
                     }
                 }
@@ -303,20 +319,18 @@ namespace Aws
 
             static void s_completeRequestWithSuccess(
                 struct IncompleteRequest *incompleteRequest,
-                const struct aws_byte_cursor *response_topic,
-                const struct aws_byte_cursor *payload)
+                const struct aws_mqtt_rr_incoming_publish_event *publish_event)
             {
                 UnmodeledResponse response;
-                response.WithTopic(*response_topic);
-                response.WithPayload(*payload);
+                response.WithTopic(publish_event->topic);
+                response.WithPayload(publish_event->payload);
 
                 UnmodeledResult result(response);
                 incompleteRequest->m_handler(std::move(result));
             }
 
             static void s_onRequestComplete(
-                const struct aws_byte_cursor *response_topic,
-                const struct aws_byte_cursor *payload,
+                const struct aws_mqtt_rr_incoming_publish_event *publish_event,
                 int error_code,
                 void *user_data)
             {
@@ -328,7 +342,7 @@ namespace Aws
                 }
                 else
                 {
-                    s_completeRequestWithSuccess(incompleteRequest, response_topic, payload);
+                    s_completeRequestWithSuccess(incompleteRequest, publish_event);
                 }
 
                 Aws::Crt::Delete(incompleteRequest, incompleteRequest->m_allocator);

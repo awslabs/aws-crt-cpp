@@ -44,6 +44,9 @@ struct TestPublishEvent
 {
     Aws::Crt::String topic;
     Aws::Crt::String payload;
+    Aws::Crt::Optional<Aws::Crt::String> contentType;
+    Aws::Crt::Optional<Aws::Crt::Vector<Aws::Crt::Mqtt5::UserProperty>> userProperties;
+    Aws::Crt::Optional<uint32_t> messageExpiryIntervalSeconds;
 };
 
 struct TestState
@@ -180,7 +183,37 @@ static void s_onIncomingPublishEvent(Aws::Iot::RequestResponse::IncomingPublishE
         auto payloadCursor = event.GetPayload();
         Aws::Crt::String payloadAsString((const char *)payloadCursor.ptr, payloadCursor.len);
 
-        state->incomingPublishEvents.push_back({std::move(topicAsString), std::move(payloadAsString)});
+        auto contentTypeCursor = event.GetContentType();
+        Aws::Crt::Optional<Aws::Crt::String> contentTypeAsString;
+        if (contentTypeCursor)
+        {
+            contentTypeAsString = Aws::Crt::String((const char *)contentTypeCursor->ptr, contentTypeCursor->len);
+        }
+
+        const auto &userPropertiesView = event.GetUserProperties();
+        Aws::Crt::Vector<Aws::Crt::Mqtt5::UserProperty> userProperties;
+        if (userPropertiesView)
+        {
+            std::transform(
+                std::begin(*userPropertiesView),
+                std::end(*userPropertiesView),
+                std::back_inserter(userProperties),
+                [](const Aws::Iot::RequestResponse::UserPropertyView &userPropertyView)
+                {
+                    return Aws::Crt::Mqtt5::UserProperty(
+                        Aws::Crt::String((const char *)userPropertyView.m_name.ptr, userPropertyView.m_name.len),
+                        Aws::Crt::String((const char *)userPropertyView.m_value.ptr, userPropertyView.m_value.len));
+                });
+        }
+
+        auto messageExpiryIntervalSeconds = event.GetMessageExpiryIntervalSeconds();
+
+        state->incomingPublishEvents.push_back(
+            {std::move(topicAsString),
+             std::move(payloadAsString),
+             std::move(contentTypeAsString),
+             std::move(userProperties),
+             std::move(messageExpiryIntervalSeconds)});
     }
     state->signal.notify_one();
 }
@@ -332,6 +365,9 @@ void s_publishToProtocolClient(
     TestContext &context,
     Aws::Crt::String topic,
     Aws::Crt::String payload,
+    const Aws::Crt::Optional<Aws::Crt::String> &contentType,
+    const Aws::Crt::Optional<Aws::Crt::Vector<Aws::Crt::Mqtt5::UserProperty>> &userProperties,
+    const Aws::Crt::Optional<uint32_t> &messageExpiryIntervalSeconds,
     Aws::Crt::Allocator *allocator)
 {
     if (context.protocolClient5)
@@ -341,6 +377,19 @@ void s_publishToProtocolClient(
             topic,
             Aws::Crt::ByteCursorFromString(payload),
             Aws::Crt::Mqtt5::QOS::AWS_MQTT5_QOS_AT_MOST_ONCE);
+        if (contentType)
+        {
+            Aws::Crt::ByteCursor contentTypeCursor{contentType->length(), (uint8_t *)contentType->c_str()};
+            packet->WithContentType(contentTypeCursor);
+        }
+        if (userProperties)
+        {
+            packet->WithUserProperties(*userProperties);
+        }
+        if (messageExpiryIntervalSeconds)
+        {
+            packet->WithMessageExpiryIntervalSec(*messageExpiryIntervalSeconds);
+        }
         context.protocolClient5->Publish(packet);
     }
     else
@@ -1083,12 +1132,43 @@ static int s_doShadowUpdatedStreamIncomingPublishTest(Aws::Crt::Allocator *alloc
     s_waitForSubscriptionStatusEvent(
         &state, Aws::Iot::RequestResponse::SubscriptionStatusEventType::SubscriptionEstablished, AWS_ERROR_SUCCESS);
 
-    s_publishToProtocolClient(context, uuid, s_publishPayload, allocator);
+    Aws::Crt::String contentType("application/json");
+    Aws::Crt::Vector<Aws::Crt::Mqtt5::UserProperty> userProperties{
+        {"property_1", "value_1"},
+        {"property_2", "value_2"},
+    };
+    uint32_t messageExpiryIntervalSeconds = 8;
+    s_publishToProtocolClient(
+        context, uuid, s_publishPayload, contentType, userProperties, messageExpiryIntervalSeconds, allocator);
 
     s_waitForIncomingPublishWithPredicate(
         &state,
-        [&uuid](const TestPublishEvent &publishEvent)
-        { return publishEvent.topic == uuid && publishEvent.payload == Aws::Crt::String(s_publishPayload); });
+        [&context, &uuid, &contentType, &userProperties](const TestPublishEvent &publishEvent)
+        {
+            if (publishEvent.topic != uuid || publishEvent.payload != Aws::Crt::String(s_publishPayload))
+            {
+                return false;
+            }
+            if (context.protocolClient5)
+            {
+                if (!publishEvent.contentType || *publishEvent.contentType != contentType)
+                {
+                    return false;
+                }
+                if (!publishEvent.userProperties || publishEvent.userProperties->size() != userProperties.size() ||
+                    *publishEvent.userProperties != userProperties)
+                {
+                    return false;
+                }
+                /* We can't check for the exact value here as it'll be decremented by the server part. */
+                if (!publishEvent.messageExpiryIntervalSeconds)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        });
 
     return AWS_OP_SUCCESS;
 }

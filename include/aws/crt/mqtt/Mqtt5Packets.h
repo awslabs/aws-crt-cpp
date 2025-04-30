@@ -5,7 +5,6 @@
  */
 
 #include <aws/crt/mqtt/Mqtt5Client.h>
-#include <aws/crt/mqtt/Mqtt5Packets.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
 
 namespace Aws
@@ -23,16 +22,16 @@ namespace Aws
             class AWS_CRT_CPP_API UserProperty
             {
               public:
-                UserProperty(Crt::String key, Crt::String value) noexcept;
+                UserProperty(const Crt::String &name, const Crt::String &value) noexcept;
+                UserProperty(Crt::String &&name, Crt::String &&value) noexcept;
 
                 const Crt::String &getName() const noexcept { return m_name; };
                 const Crt::String &getValue() const noexcept { return m_value; }
 
-                ~UserProperty() noexcept;
-                UserProperty(const UserProperty &toCopy) noexcept;
-                UserProperty(UserProperty &&toMove) noexcept;
-                UserProperty &operator=(const UserProperty &toCopy) noexcept;
-                UserProperty &operator=(UserProperty &&toMove) noexcept;
+                bool operator==(const UserProperty &other) const
+                {
+                    return m_name == other.m_name && m_value == other.m_value;
+                }
 
               private:
                 Crt::String m_name;
@@ -42,6 +41,7 @@ namespace Aws
             class AWS_CRT_CPP_API IPacket
             {
               public:
+                virtual ~IPacket() = default;
                 virtual PacketType getType() = 0;
             };
 
@@ -158,6 +158,15 @@ namespace Aws
                  * @return The PublishPacket Object after setting the correlation data.
                  */
                 PublishPacket &WithCorrelationData(ByteCursor correlationData) noexcept;
+
+                /**
+                 * Sets the property specifying the content type of the payload. Not internally meaningful to MQTT5.
+                 *
+                 * See [MQTT5 Content Type](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901118)
+                 * @param contentType The property specifying the content type of the payload.
+                 * @return The PublishPacket Object after setting the content type.
+                 */
+                PublishPacket &WithContentType(ByteCursor contentType) noexcept;
 
                 /**
                  * Sets the list of MQTT5 user properties included with the packet.
