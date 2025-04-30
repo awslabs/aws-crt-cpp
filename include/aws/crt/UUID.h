@@ -23,8 +23,8 @@ namespace Aws
 
             UUID &operator=(const String &str) noexcept;
 
-            bool operator==(const UUID &other) noexcept;
-            bool operator!=(const UUID &other) noexcept;
+            bool operator==(const UUID &other) const noexcept;
+            bool operator!=(const UUID &other) const noexcept;
             operator String() const;
             operator ByteBuf() const noexcept;
 
