@@ -94,7 +94,7 @@ const char sample_partitions[] = R"({
     "partitions": [
       {
         "id": "aws",
-        "regionRegex": "^(us|eu|ap|sa|ca|me|af)-\\w+-\\d+$",
+        "regionRegex": "^(us|eu|ap|sa|ca|me|af)\\-\\w+\\-\\d+$",
         "regions": {
           "af-south-1": {
           },
@@ -141,7 +141,7 @@ static int s_TestRuleEngine(struct aws_allocator *allocator, void *ctx)
     ByteCursor ruleset_cur = ByteCursorFromCString(sample_ruleset);
     ByteCursor partitions_cur = ByteCursorFromCString(sample_partitions);
     Aws::Crt::Endpoints::RuleEngine engine(ruleset_cur, partitions_cur, allocator);
-
+    ASSERT_NOT_NULL(engine);
     Aws::Crt::Endpoints::RequestContext context(allocator);
     context.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
 
