@@ -185,8 +185,8 @@ namespace Aws
                 {
                     if (publish != nullptr)
                     {
-                        std::shared_ptr<PublishPacket> packet =
-                            std::make_shared<PublishPacket>(*publish, client_core->m_allocator);
+                        std::shared_ptr<PublishPacket> packet = Aws::Crt::MakeShared<PublishPacket>(
+                            client_core->m_allocator, *publish, client_core->m_allocator);
                         PublishReceivedEventData eventData;
                         eventData.publishPacket = packet;
                         client_core->onPublishReceived(eventData);
@@ -235,9 +235,12 @@ namespace Aws
                         {
                             if (publishCompletionPacket != nullptr)
                             {
-                                std::shared_ptr<PubAckPacket> packet = std::make_shared<PubAckPacket>(
-                                    *(aws_mqtt5_packet_puback_view *)publishCompletionPacket, callbackData->allocator);
-                                publish = std::make_shared<PublishResult>(std::move(packet));
+                                std::shared_ptr<PubAckPacket> packet = Aws::Crt::MakeShared<PubAckPacket>(
+                                    callbackData->allocator,
+                                    *(aws_mqtt5_packet_puback_view *)publishCompletionPacket,
+                                    callbackData->allocator);
+                                publish =
+                                    Aws::Crt::MakeShared<PublishResult>(callbackData->allocator, std::move(packet));
                             }
                             else /* This should never happened. */
                             {
@@ -248,13 +251,13 @@ namespace Aws
                         }
                         case aws_mqtt5_packet_type::AWS_MQTT5_PT_NONE:
                         {
-                            publish = std::make_shared<PublishResult>(error_code);
+                            publish = Aws::Crt::MakeShared<PublishResult>(callbackData->allocator, error_code);
                             break;
                         }
                         default: /* Invalid packet type */
                         {
                             AWS_LOGF_INFO(AWS_LS_MQTT5_CLIENT, "Invalid Packet Type.");
-                            publish = std::make_shared<PublishResult>(AWS_ERROR_UNKNOWN);
+                            publish = Aws::Crt::MakeShared<PublishResult>(callbackData->allocator, AWS_ERROR_UNKNOWN);
                             break;
                         }
                     }
@@ -342,7 +345,8 @@ namespace Aws
                     std::shared_ptr<SubAckPacket> packet = nullptr;
                     if (suback != nullptr)
                     {
-                        packet = std::make_shared<SubAckPacket>(*suback, callbackData->allocator);
+                        packet = Aws::Crt::MakeShared<SubAckPacket>(
+                            callbackData->allocator, *suback, callbackData->allocator);
                     }
 
                     if (error_code != 0)
@@ -391,7 +395,8 @@ namespace Aws
                     std::shared_ptr<UnSubAckPacket> packet = nullptr;
                     if (unsuback != nullptr)
                     {
-                        packet = std::make_shared<UnSubAckPacket>(*unsuback, callbackData->allocator);
+                        packet = Aws::Crt::MakeShared<UnSubAckPacket>(
+                            callbackData->allocator, *unsuback, callbackData->allocator);
                     }
 
                     if (error_code != 0)
