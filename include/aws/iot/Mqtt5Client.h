@@ -133,8 +133,8 @@ namespace Aws
              *
              * @return Mqtt5ClientBuilder
              */
-            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithMtlsFromPath(
-                const Crt::String hostName,
+            static Crt::ScopedResource<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithMtlsFromPath(
+                const Crt::String &hostName,
                 const char *certPath,
                 const char *pkeyPath,
                 Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
@@ -144,16 +144,16 @@ namespace Aws
              * format.
              *
              * @param hostName - AWS IoT endpoint to connect to
-             * @param certPath buffer containing the X509 certificate in a PEM format
-             * @param pkeyPath buffer containing the private key in a PEM format
+             * @param cert buffer containing the X509 certificate in a PEM format
+             * @param pkey buffer containing the private key in a PEM format
              * @param allocator memory allocator to use
              *
              * @return Mqtt5ClientBuilder
              */
-            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithMtlsFromMemory(
-                const Crt::String hostName,
-                const Crt::ByteCursor &certPath,
-                const Crt::ByteCursor &pkeyPath,
+            static Crt::ScopedResource<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithMtlsFromMemory(
+                const Crt::String &hostName,
+                const Crt::ByteCursor &cert,
+                const Crt::ByteCursor &pkey,
                 Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
@@ -167,8 +167,8 @@ namespace Aws
              *
              * @return Mqtt5ClientBuilder
              */
-            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithMtlsPkcs11(
-                const Crt::String hostName,
+            static Crt::ScopedResource<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithMtlsPkcs11(
+                const Crt::String &hostName,
                 const Crt::Io::TlsContextPkcs11Options &pkcs11Options,
                 Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
@@ -183,8 +183,8 @@ namespace Aws
              *
              * @return Mqtt5ClientBuilder
              */
-            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithMtlsPkcs12(
-                const Crt::String hostName,
+            static Crt::ScopedResource<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithMtlsPkcs12(
+                const Crt::String &hostName,
                 const struct Pkcs12Options &options,
                 Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
@@ -201,8 +201,8 @@ namespace Aws
              *
              * @return Mqtt5ClientBuilder
              */
-            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithWindowsCertStorePath(
-                const Crt::String hostName,
+            static Crt::ScopedResource<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithWindowsCertStorePath(
+                const Crt::String &hostName,
                 const char *windowsCertStorePath,
                 Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
@@ -215,8 +215,8 @@ namespace Aws
              *
              * Mqtt5ClientBuilder
              */
-            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithWebsocket(
-                const Crt::String hostName,
+            static Crt::ScopedResource<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithWebsocket(
+                const Crt::String &hostName,
                 const WebsocketConfig &config,
                 Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
@@ -229,8 +229,8 @@ namespace Aws
              *
              * Mqtt5ClientBuilder
              */
-            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithCustomAuthorizer(
-                const Crt::String hostName,
+            static Crt::ScopedResource<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithCustomAuthorizer(
+                const Crt::String &hostName,
                 const Mqtt5CustomAuthConfig &customAuthConfig,
                 Crt::Allocator *allocator) noexcept;
 
@@ -244,8 +244,8 @@ namespace Aws
              *
              * Mqtt5ClientBuilder
              */
-            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
-                const Crt::String hostName,
+            static Crt::ScopedResource<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
+                const Crt::String &hostName,
                 const Mqtt5CustomAuthConfig &customAuthConfig,
                 const WebsocketConfig &config,
                 Crt::Allocator *allocator) noexcept;
@@ -540,11 +540,84 @@ namespace Aws
              */
             Mqtt5ClientBuilder &WithPublishReceivedCallback(OnPublishReceivedHandler callback) noexcept;
 
+            /**
+             * @deprecated Use Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsFromPath instead.
+             */
+            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithMtlsFromPath(
+                const Crt::String hostName,
+                const char *certPath,
+                const char *pkeyPath,
+                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
+
+            /**
+             * @deprecated Use Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsFromMemory instead.
+             */
+            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithMtlsFromMemory(
+                const Crt::String hostName,
+                const Crt::ByteCursor &cert,
+                const Crt::ByteCursor &pkey,
+                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
+
+            /**
+             * @deprecated Use Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsPkcs11 instead.
+             */
+            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithMtlsPkcs11(
+                const Crt::String hostName,
+                const Crt::Io::TlsContextPkcs11Options &pkcs11Options,
+                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
+
+            /**
+             * @deprecated Use Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsPkcs12 instead.
+             */
+            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithMtlsPkcs12(
+                const Crt::String hostName,
+                const struct Pkcs12Options &options,
+                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
+
+            /**
+             * @deprecated Use Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithWindowsCertStorePath instead.
+             */
+            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithWindowsCertStorePath(
+                const Crt::String hostName,
+                const char *windowsCertStorePath,
+                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
+
+            /**
+             * @deprecated Use Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithWebsocket instead.
+             */
+            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithWebsocket(
+                const Crt::String hostName,
+                const WebsocketConfig &config,
+                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
+
+            /**
+             * @deprecated Use Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithCustomAuthorizer instead.
+             */
+            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithCustomAuthorizer(
+                const Crt::String hostName,
+                const Mqtt5CustomAuthConfig &customAuthConfig,
+                Crt::Allocator *allocator) noexcept;
+
+            /**
+             * @deprecated Use Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithCustomAuthorizerWebsocket instead.
+             */
+            static Mqtt5ClientBuilder *NewMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
+                const Crt::String hostName,
+                const Mqtt5CustomAuthConfig &customAuthConfig,
+                const WebsocketConfig &config,
+                Crt::Allocator *allocator) noexcept;
+
           private:
             // Common setup shared by all valid constructors
             Mqtt5ClientBuilder(Crt::Allocator *allocator) noexcept;
             // Common setup shared by all valid constructors
             Mqtt5ClientBuilder(int error, Crt::Allocator *allocator) noexcept;
+
+            /*
+             * Creates a new Mqtt5ClientBuilder instance with default values.
+             */
+            static Crt::ScopedResource<Mqtt5ClientBuilder> CreateMqtt5ClientBuilder(
+                Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             Crt::Allocator *m_allocator;
 

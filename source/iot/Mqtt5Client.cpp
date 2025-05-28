@@ -115,191 +115,194 @@ namespace Aws
         {
         }
 
-        Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
-            const Crt::String hostName,
+        Crt::ScopedResource<Mqtt5ClientBuilder> Mqtt5ClientBuilder::CreateMqtt5ClientBuilder(
+            Crt::Allocator *allocator) noexcept
+        {
+            auto *builder =
+                reinterpret_cast<Mqtt5ClientBuilder *>(aws_mem_acquire(allocator, sizeof(Mqtt5ClientBuilder)));
+            new (builder) Mqtt5ClientBuilder(allocator);
+            return Crt::ScopedResource<Mqtt5ClientBuilder>(
+                builder, [allocator](Mqtt5ClientBuilder *obj) { Crt::Delete(obj, allocator); });
+        }
+
+        Crt::ScopedResource<Mqtt5ClientBuilder> Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsFromPath(
+            const Crt::String &hostName,
             const char *certPath,
             const char *pkeyPath,
             Crt::Allocator *allocator) noexcept
         {
-            Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
-            result->m_tlsConnectionOptions =
+            auto builder = CreateMqtt5ClientBuilder(allocator);
+            builder->m_tlsConnectionOptions =
                 Crt::Io::TlsContextOptions::InitClientWithMtls(certPath, pkeyPath, allocator);
-            if (!result->m_tlsConnectionOptions.value())
+            if (!builder->m_tlsConnectionOptions.value())
             {
-                int error_code = result->m_tlsConnectionOptions->LastError();
+                int error_code = builder->m_tlsConnectionOptions->LastError();
                 AWS_LOGF_ERROR(
                     AWS_LS_MQTT5_GENERAL,
                     "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
                     error_code,
                     aws_error_debug_str(error_code));
-                delete result;
                 return nullptr;
             }
-            result->WithHostName(hostName);
-            return result;
+            builder->WithHostName(hostName);
+            return builder;
         }
 
-        Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromMemory(
-            const Crt::String hostName,
+        Crt::ScopedResource<Mqtt5ClientBuilder> Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsFromMemory(
+            const Crt::String &hostName,
             const Crt::ByteCursor &cert,
             const Crt::ByteCursor &pkey,
             Crt::Allocator *allocator) noexcept
         {
-            Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
-            result->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(cert, pkey, allocator);
-            if (!result->m_tlsConnectionOptions.value())
+            auto builder = CreateMqtt5ClientBuilder(allocator);
+            builder->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(cert, pkey, allocator);
+            if (!builder->m_tlsConnectionOptions.value())
             {
-                int error_code = result->m_tlsConnectionOptions->LastError();
+                int error_code = builder->m_tlsConnectionOptions->LastError();
                 AWS_LOGF_ERROR(
                     AWS_LS_MQTT5_GENERAL,
                     "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
                     error_code,
                     aws_error_debug_str(error_code));
-                delete result;
                 return nullptr;
             }
-            result->WithHostName(hostName);
-            return result;
+            builder->WithHostName(hostName);
+            return builder;
         }
 
-        Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsPkcs11(
-            const Crt::String hostName,
+        Crt::ScopedResource<Mqtt5ClientBuilder> Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsPkcs11(
+            const Crt::String &hostName,
             const Crt::Io::TlsContextPkcs11Options &pkcs11Options,
             Crt::Allocator *allocator) noexcept
         {
-            Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
-            result->m_tlsConnectionOptions =
+            auto builder = CreateMqtt5ClientBuilder(allocator);
+            builder->m_tlsConnectionOptions =
                 Crt::Io::TlsContextOptions::InitClientWithMtlsPkcs11(pkcs11Options, allocator);
-            if (!result->m_tlsConnectionOptions.value())
+            if (!builder->m_tlsConnectionOptions.value())
             {
-                int error_code = result->m_tlsConnectionOptions->LastError();
+                int error_code = builder->m_tlsConnectionOptions->LastError();
                 AWS_LOGF_ERROR(
                     AWS_LS_MQTT5_GENERAL,
                     "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
                     error_code,
                     aws_error_debug_str(error_code));
-                delete result;
                 return nullptr;
             }
-            result->WithHostName(hostName);
-            return result;
+            builder->WithHostName(hostName);
+            return builder;
         }
 
-        Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsPkcs12(
-            const Crt::String hostName,
-            const struct Pkcs12Options &options,
+        Crt::ScopedResource<Mqtt5ClientBuilder> Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsPkcs12(
+            const Crt::String &hostName,
+            const Pkcs12Options &options,
             Crt::Allocator *allocator) noexcept
         {
-            Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
-            result->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitClientWithMtlsPkcs12(
+            auto builder = CreateMqtt5ClientBuilder(allocator);
+            builder->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitClientWithMtlsPkcs12(
                 options.pkcs12_file.c_str(), options.pkcs12_password.c_str(), allocator);
-            if (!result->m_tlsConnectionOptions.value())
+            if (!builder->m_tlsConnectionOptions.value())
             {
-                int error_code = result->m_tlsConnectionOptions->LastError();
+                int error_code = builder->m_tlsConnectionOptions->LastError();
                 AWS_LOGF_ERROR(
                     AWS_LS_MQTT5_GENERAL,
                     "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
                     error_code,
                     aws_error_debug_str(error_code));
-                delete result;
                 return nullptr;
             }
-            result->WithHostName(hostName);
-            return result;
+            builder->WithHostName(hostName);
+            return builder;
         }
 
-        Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWindowsCertStorePath(
-            const Crt::String hostName,
+        Crt::ScopedResource<Mqtt5ClientBuilder> Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithWindowsCertStorePath(
+            const Crt::String &hostName,
             const char *windowsCertStorePath,
             Crt::Allocator *allocator) noexcept
         {
-            Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
-            result->m_tlsConnectionOptions =
+            auto builder = CreateMqtt5ClientBuilder(allocator);
+            builder->m_tlsConnectionOptions =
                 Crt::Io::TlsContextOptions::InitClientWithMtlsSystemPath(windowsCertStorePath, allocator);
-            if (!result->m_tlsConnectionOptions.value())
+            if (!builder->m_tlsConnectionOptions.value())
             {
-                int error_code = result->m_tlsConnectionOptions->LastError();
+                int error_code = builder->m_tlsConnectionOptions->LastError();
                 AWS_LOGF_ERROR(
                     AWS_LS_MQTT5_GENERAL,
                     "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
                     error_code,
                     aws_error_debug_str(error_code));
-                delete result;
                 return nullptr;
             }
-            result->WithHostName(hostName);
-            return result;
+            builder->WithHostName(hostName);
+            return builder;
         }
 
-        Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWebsocket(
-            const Crt::String hostName,
+        Crt::ScopedResource<Mqtt5ClientBuilder> Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithWebsocket(
+            const Crt::String &hostName,
             const WebsocketConfig &config,
             Crt::Allocator *allocator) noexcept
         {
-            Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
-            result->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitDefaultClient();
-            if (!result->m_tlsConnectionOptions.value())
+            auto builder = CreateMqtt5ClientBuilder(allocator);
+            builder->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitDefaultClient();
+            if (!builder->m_tlsConnectionOptions.value())
             {
-                int error_code = result->m_tlsConnectionOptions->LastError();
+                int error_code = builder->m_tlsConnectionOptions->LastError();
                 AWS_LOGF_ERROR(
                     AWS_LS_MQTT5_GENERAL,
                     "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
                     error_code,
                     aws_error_debug_str(error_code));
-                delete result;
                 return nullptr;
             }
-            result->WithHostName(hostName);
-            result->m_websocketConfig = config;
-            return result;
+            builder->WithHostName(hostName);
+            builder->m_websocketConfig = config;
+            return builder;
         }
 
-        Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizer(
-            const Crt::String hostName,
+        Crt::ScopedResource<Mqtt5ClientBuilder> Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithCustomAuthorizer(
+            const Crt::String &hostName,
             const Mqtt5CustomAuthConfig &customAuthConfig,
             Crt::Allocator *allocator) noexcept
         {
-            Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
-            result->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitDefaultClient();
-            if (!result->m_tlsConnectionOptions.value())
+            auto builder = CreateMqtt5ClientBuilder(allocator);
+            builder->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitDefaultClient();
+            if (!builder->m_tlsConnectionOptions.value())
             {
-                int error_code = result->m_tlsConnectionOptions->LastError();
+                int error_code = builder->m_tlsConnectionOptions->LastError();
                 AWS_LOGF_ERROR(
                     AWS_LS_MQTT5_GENERAL,
                     "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
                     error_code,
                     aws_error_debug_str(error_code));
-                delete result;
                 return nullptr;
             }
-            result->WithHostName(hostName);
-            result->WithCustomAuthorizer(customAuthConfig);
-            return result;
+            builder->WithHostName(hostName);
+            builder->WithCustomAuthorizer(customAuthConfig);
+            return builder;
         }
 
-        Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
-            const Crt::String hostName,
-            const Mqtt5CustomAuthConfig &customAuthConfig,
-            const WebsocketConfig &config,
-            Crt::Allocator *allocator) noexcept
+        Crt::ScopedResource<Mqtt5ClientBuilder> Mqtt5ClientBuilder::
+            CreateMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
+                const Crt::String &hostName,
+                const Mqtt5CustomAuthConfig &customAuthConfig,
+                const WebsocketConfig &config,
+                Crt::Allocator *allocator) noexcept
         {
-            Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
-            result->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitDefaultClient();
-            if (!result->m_tlsConnectionOptions.value())
+            auto builder = CreateMqtt5ClientBuilder(allocator);
+            builder->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitDefaultClient();
+            if (!builder->m_tlsConnectionOptions.value())
             {
-                int error_code = result->m_tlsConnectionOptions->LastError();
+                int error_code = builder->m_tlsConnectionOptions->LastError();
                 AWS_LOGF_ERROR(
                     AWS_LS_MQTT5_GENERAL,
                     "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
                     error_code,
                     aws_error_debug_str(error_code));
-                delete result;
                 return nullptr;
             }
-            result->WithHostName(hostName);
-            result->m_websocketConfig = config;
-            result->WithCustomAuthorizer(customAuthConfig);
-            return result;
+            builder->WithHostName(hostName);
+            builder->m_websocketConfig = config;
+            builder->WithCustomAuthorizer(customAuthConfig);
+            return builder;
         }
 
         Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithHostName(const Crt::String hostName)
@@ -778,6 +781,193 @@ namespace Aws
             }
 
             return *this;
+        }
+
+        Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+            const Crt::String hostName,
+            const char *certPath,
+            const char *pkeyPath,
+            Crt::Allocator *allocator) noexcept
+        {
+            Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
+            result->m_tlsConnectionOptions =
+                Crt::Io::TlsContextOptions::InitClientWithMtls(certPath, pkeyPath, allocator);
+            if (!result->m_tlsConnectionOptions.value())
+            {
+                int error_code = result->m_tlsConnectionOptions->LastError();
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT5_GENERAL,
+                    "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
+                    error_code,
+                    aws_error_debug_str(error_code));
+                delete result;
+                return nullptr;
+            }
+            result->WithHostName(hostName);
+            return result;
+        }
+
+        Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromMemory(
+            const Crt::String hostName,
+            const Crt::ByteCursor &cert,
+            const Crt::ByteCursor &pkey,
+            Crt::Allocator *allocator) noexcept
+        {
+            Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
+            result->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitClientWithMtls(cert, pkey, allocator);
+            if (!result->m_tlsConnectionOptions.value())
+            {
+                int error_code = result->m_tlsConnectionOptions->LastError();
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT5_GENERAL,
+                    "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
+                    error_code,
+                    aws_error_debug_str(error_code));
+                delete result;
+                return nullptr;
+            }
+            result->WithHostName(hostName);
+            return result;
+        }
+
+        Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsPkcs11(
+            const Crt::String hostName,
+            const Crt::Io::TlsContextPkcs11Options &pkcs11Options,
+            Crt::Allocator *allocator) noexcept
+        {
+            Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
+            result->m_tlsConnectionOptions =
+                Crt::Io::TlsContextOptions::InitClientWithMtlsPkcs11(pkcs11Options, allocator);
+            if (!result->m_tlsConnectionOptions.value())
+            {
+                int error_code = result->m_tlsConnectionOptions->LastError();
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT5_GENERAL,
+                    "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
+                    error_code,
+                    aws_error_debug_str(error_code));
+                delete result;
+                return nullptr;
+            }
+            result->WithHostName(hostName);
+            return result;
+        }
+
+        Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsPkcs12(
+            const Crt::String hostName,
+            const struct Pkcs12Options &options,
+            Crt::Allocator *allocator) noexcept
+        {
+            Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
+            result->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitClientWithMtlsPkcs12(
+                options.pkcs12_file.c_str(), options.pkcs12_password.c_str(), allocator);
+            if (!result->m_tlsConnectionOptions.value())
+            {
+                int error_code = result->m_tlsConnectionOptions->LastError();
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT5_GENERAL,
+                    "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
+                    error_code,
+                    aws_error_debug_str(error_code));
+                delete result;
+                return nullptr;
+            }
+            result->WithHostName(hostName);
+            return result;
+        }
+
+        Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWindowsCertStorePath(
+            const Crt::String hostName,
+            const char *windowsCertStorePath,
+            Crt::Allocator *allocator) noexcept
+        {
+            Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
+            result->m_tlsConnectionOptions =
+                Crt::Io::TlsContextOptions::InitClientWithMtlsSystemPath(windowsCertStorePath, allocator);
+            if (!result->m_tlsConnectionOptions.value())
+            {
+                int error_code = result->m_tlsConnectionOptions->LastError();
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT5_GENERAL,
+                    "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
+                    error_code,
+                    aws_error_debug_str(error_code));
+                delete result;
+                return nullptr;
+            }
+            result->WithHostName(hostName);
+            return result;
+        }
+
+        Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWebsocket(
+            const Crt::String hostName,
+            const WebsocketConfig &config,
+            Crt::Allocator *allocator) noexcept
+        {
+            Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
+            result->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitDefaultClient();
+            if (!result->m_tlsConnectionOptions.value())
+            {
+                int error_code = result->m_tlsConnectionOptions->LastError();
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT5_GENERAL,
+                    "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
+                    error_code,
+                    aws_error_debug_str(error_code));
+                delete result;
+                return nullptr;
+            }
+            result->WithHostName(hostName);
+            result->m_websocketConfig = config;
+            return result;
+        }
+
+        Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizer(
+            const Crt::String hostName,
+            const Mqtt5CustomAuthConfig &customAuthConfig,
+            Crt::Allocator *allocator) noexcept
+        {
+            Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
+            result->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitDefaultClient();
+            if (!result->m_tlsConnectionOptions.value())
+            {
+                int error_code = result->m_tlsConnectionOptions->LastError();
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT5_GENERAL,
+                    "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
+                    error_code,
+                    aws_error_debug_str(error_code));
+                delete result;
+                return nullptr;
+            }
+            result->WithHostName(hostName);
+            result->WithCustomAuthorizer(customAuthConfig);
+            return result;
+        }
+
+        Mqtt5ClientBuilder *Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
+            const Crt::String hostName,
+            const Mqtt5CustomAuthConfig &customAuthConfig,
+            const WebsocketConfig &config,
+            Crt::Allocator *allocator) noexcept
+        {
+            Mqtt5ClientBuilder *result = new Mqtt5ClientBuilder(allocator);
+            result->m_tlsConnectionOptions = Crt::Io::TlsContextOptions::InitDefaultClient();
+            if (!result->m_tlsConnectionOptions.value())
+            {
+                int error_code = result->m_tlsConnectionOptions->LastError();
+                AWS_LOGF_ERROR(
+                    AWS_LS_MQTT5_GENERAL,
+                    "Mqtt5ClientBuilder: Failed to setup TLS connection options with error %d:%s",
+                    error_code,
+                    aws_error_debug_str(error_code));
+                delete result;
+                return nullptr;
+            }
+            result->WithHostName(hostName);
+            result->m_websocketConfig = config;
+            result->WithCustomAuthorizer(customAuthConfig);
+            return result;
         }
 
     } // namespace Iot

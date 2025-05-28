@@ -449,7 +449,7 @@ struct Mqtt5TestEnvVars
 // Test Helper
 //////////////////////////////////////////////////////////
 static void s_setupConnectionLifeCycle(
-    Aws::Iot::Mqtt5ClientBuilder *mqtt5Builder,
+    Aws::Crt::ScopedResource<Aws::Iot::Mqtt5ClientBuilder> &mqtt5Builder,
     std::promise<bool> &connectionPromise,
     std::promise<void> &stoppedPromise,
     const char *clientName = "Client")
@@ -1994,12 +1994,11 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     std::condition_variable receivedMessagesSignal;
     std::vector<int> receivedMessages;
 
-    Aws::Iot::Mqtt5ClientBuilder *subscribe_builder =
-        Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
-            mqtt5TestVars.m_hostname_string,
-            mqtt5TestVars.m_certificate_path_string.c_str(),
-            mqtt5TestVars.m_private_key_path_string.c_str(),
-            allocator);
+    auto subscribe_builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsFromPath(
+        mqtt5TestVars.m_hostname_string,
+        mqtt5TestVars.m_certificate_path_string.c_str(),
+        mqtt5TestVars.m_private_key_path_string.c_str(),
+        allocator);
     ASSERT_TRUE(subscribe_builder);
 
     auto on_message_callback1 = [&](const PublishReceivedEventData &eventData)
@@ -2026,16 +2025,15 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
 
     subscribe_builder->WithPublishReceivedCallback(on_message_callback1);
 
-    Aws::Iot::Mqtt5ClientBuilder *subscribe_builder2 =
-        Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
-            mqtt5TestVars.m_hostname_string,
-            mqtt5TestVars.m_certificate_path_string.c_str(),
-            mqtt5TestVars.m_private_key_path_string.c_str(),
-            allocator);
+    auto subscribe_builder2 = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsFromPath(
+        mqtt5TestVars.m_hostname_string,
+        mqtt5TestVars.m_certificate_path_string.c_str(),
+        mqtt5TestVars.m_private_key_path_string.c_str(),
+        allocator);
     ASSERT_TRUE(subscribe_builder2);
     subscribe_builder2->WithPublishReceivedCallback(on_message_callback2);
 
-    Aws::Iot::Mqtt5ClientBuilder *publish_builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+    auto publish_builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsFromPath(
         mqtt5TestVars.m_hostname_string,
         mqtt5TestVars.m_certificate_path_string.c_str(),
         mqtt5TestVars.m_private_key_path_string.c_str(),
@@ -2145,10 +2143,6 @@ static int s_TestMqtt5SharedSubscriptionTest(Aws::Crt::Allocator *allocator, voi
     stoppedPromise.get_future().get();
     stoppedPromise2.get_future().get();
     stoppedPromise3.get_future().get();
-
-    delete subscribe_builder;
-    delete subscribe_builder2;
-    delete publish_builder;
 
     return AWS_OP_SUCCESS;
 }
@@ -2565,7 +2559,7 @@ static int s_TestMqtt5InterruptSub(Aws::Crt::Allocator *allocator, void *)
 
     ApiHandle apiHandle(allocator);
 
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsFromPath(
         mqtt5TestVars.m_hostname_string,
         mqtt5TestVars.m_certificate_path_string.c_str(),
         mqtt5TestVars.m_private_key_path_string.c_str(),
@@ -2595,7 +2589,6 @@ static int s_TestMqtt5InterruptSub(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
 
-    delete builder;
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5InterruptSub, s_TestMqtt5InterruptSub)
@@ -2614,7 +2607,7 @@ static int s_TestMqtt5InterruptUnsub(Aws::Crt::Allocator *allocator, void *)
 
     ApiHandle apiHandle(allocator);
 
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsFromPath(
         mqtt5TestVars.m_hostname_string,
         mqtt5TestVars.m_certificate_path_string.c_str(),
         mqtt5TestVars.m_private_key_path_string.c_str(),
@@ -2645,7 +2638,6 @@ static int s_TestMqtt5InterruptUnsub(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
 
-    delete builder;
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5InterruptUnsub, s_TestMqtt5InterruptUnsub)
@@ -2664,7 +2656,7 @@ static int s_TestMqtt5InterruptPublishQoS1(Aws::Crt::Allocator *allocator, void 
 
     ApiHandle apiHandle(allocator);
 
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsFromPath(
         mqtt5TestVars.m_hostname_string,
         mqtt5TestVars.m_certificate_path_string.c_str(),
         mqtt5TestVars.m_private_key_path_string.c_str(),
@@ -2694,7 +2686,6 @@ static int s_TestMqtt5InterruptPublishQoS1(Aws::Crt::Allocator *allocator, void 
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
 
-    delete builder;
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5InterruptPublishQoS1, s_TestMqtt5InterruptPublishQoS1)
@@ -3052,7 +3043,7 @@ static int s_TestMqtt5to3AdapterWithIoTConnectionThroughMqtt3(Aws::Crt::Allocato
 
     ApiHandle apiHandle(allocator);
 
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsFromPath(
         mqtt5TestVars.m_hostname_string,
         mqtt5TestVars.m_certificate_path_string.c_str(),
         mqtt5TestVars.m_private_key_path_string.c_str(),
@@ -3066,7 +3057,6 @@ static int s_TestMqtt5to3AdapterWithIoTConnectionThroughMqtt3(Aws::Crt::Allocato
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> mqttConnection =
         Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
     ASSERT_TRUE(mqttConnection);
-    delete builder;
     int connectResult = s_ConnectAndDisconnectThroughMqtt3(mqttConnection);
     ASSERT_SUCCESS(connectResult);
 
@@ -3238,7 +3228,7 @@ static int s_TestMqtt5to3AdapterWithIoTConnectionThroughMqtt5(Aws::Crt::Allocato
 
     ApiHandle apiHandle(allocator);
 
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsFromPath(
         mqtt5TestVars.m_hostname_string,
         mqtt5TestVars.m_certificate_path_string.c_str(),
         mqtt5TestVars.m_private_key_path_string.c_str(),
@@ -3264,7 +3254,6 @@ static int s_TestMqtt5to3AdapterWithIoTConnectionThroughMqtt5(Aws::Crt::Allocato
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
 
-    delete builder;
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5to3AdapterWithIoTConnectionThroughMqtt5, s_TestMqtt5to3AdapterWithIoTConnectionThroughMqtt5)
@@ -3317,7 +3306,7 @@ static int s_TestMqtt5to3AdapterOperations(Aws::Crt::Allocator *allocator, void 
 
     ApiHandle apiHandle(allocator);
 
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsFromPath(
         mqtt5TestVars.m_hostname_string,
         mqtt5TestVars.m_certificate_path_string.c_str(),
         mqtt5TestVars.m_private_key_path_string.c_str(),
@@ -3423,8 +3412,6 @@ static int s_TestMqtt5to3AdapterOperations(Aws::Crt::Allocator *allocator, void 
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
 
-    delete builder;
-
     ASSERT_TRUE(received == 1);
     return AWS_OP_SUCCESS;
 }
@@ -3445,7 +3432,7 @@ static int s_TestMqtt5to3AdapterNullPubAck(Aws::Crt::Allocator *allocator, void 
 
     ApiHandle apiHandle(allocator);
 
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsFromPath(
         mqtt5TestVars.m_hostname_string,
         mqtt5TestVars.m_certificate_path_string.c_str(),
         mqtt5TestVars.m_private_key_path_string.c_str(),
@@ -3465,8 +3452,6 @@ static int s_TestMqtt5to3AdapterNullPubAck(Aws::Crt::Allocator *allocator, void 
 
     // Publish an offline message to create an incomplete publish operation
     mqttConnection->Publish(testTopic.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, testPayload, NULL);
-
-    delete builder;
 
     // If the incomplete operation callback was not called, there would be a memory leak as the callback data was not
     // released
