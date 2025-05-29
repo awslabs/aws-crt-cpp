@@ -449,7 +449,7 @@ struct Mqtt5TestEnvVars
 // Test Helper
 //////////////////////////////////////////////////////////
 static void s_setupConnectionLifeCycle(
-    Aws::Crt::ScopedResource<Aws::Iot::Mqtt5ClientBuilder> &mqtt5Builder,
+    std::shared_ptr<Aws::Iot::Mqtt5ClientBuilder> &mqtt5Builder,
     std::promise<bool> &connectionPromise,
     std::promise<void> &stoppedPromise,
     const char *clientName = "Client")

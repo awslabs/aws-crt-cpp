@@ -118,7 +118,7 @@ static int s_GetEnvVariable(Aws::Crt::Allocator *allocator, const aws_string *va
 
 // Test Helper
 static void s_setupConnectionLifeCycle(
-    const Aws::Crt::ScopedResource<Aws::Iot::Mqtt5ClientBuilder> &mqtt5Builder,
+    const std::shared_ptr<Aws::Iot::Mqtt5ClientBuilder> &mqtt5Builder,
     std::promise<bool> &connectionPromise,
     std::promise<void> &stoppedPromise,
     const char *clientName = "Client")

@@ -131,9 +131,9 @@ namespace Aws
              * @param pkeyPath path to the private key (pem file) to use
              * @param allocator memory allocator to use
              *
-             * @return Mqtt5ClientBuilder
+             * @return std::shared_ptr of Mqtt5ClientBuilder.
              */
-            static Crt::ScopedResource<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithMtlsFromPath(
+            static std::shared_ptr<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithMtlsFromPath(
                 const Crt::String &hostName,
                 const char *certPath,
                 const char *pkeyPath,
@@ -148,9 +148,9 @@ namespace Aws
              * @param pkey buffer containing the private key in a PEM format
              * @param allocator memory allocator to use
              *
-             * @return Mqtt5ClientBuilder
+             * @return std::shared_ptr of Mqtt5ClientBuilder.
              */
-            static Crt::ScopedResource<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithMtlsFromMemory(
+            static std::shared_ptr<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithMtlsFromMemory(
                 const Crt::String &hostName,
                 const Crt::ByteCursor &cert,
                 const Crt::ByteCursor &pkey,
@@ -165,9 +165,9 @@ namespace Aws
              * @param pkcs11Options PKCS#11 options
              * @param allocator memory allocator to use
              *
-             * @return Mqtt5ClientBuilder
+             * @return std::shared_ptr of Mqtt5ClientBuilder.
              */
-            static Crt::ScopedResource<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithMtlsPkcs11(
+            static std::shared_ptr<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithMtlsPkcs11(
                 const Crt::String &hostName,
                 const Crt::Io::TlsContextPkcs11Options &pkcs11Options,
                 Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
@@ -181,9 +181,9 @@ namespace Aws
              * @param options The PKCS12 options to use.
              * @param allocator - memory allocator to use
              *
-             * @return Mqtt5ClientBuilder
+             * @return std::shared_ptr of Mqtt5ClientBuilder.
              */
-            static Crt::ScopedResource<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithMtlsPkcs12(
+            static std::shared_ptr<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithMtlsPkcs12(
                 const Crt::String &hostName,
                 const struct Pkcs12Options &options,
                 Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
@@ -199,9 +199,9 @@ namespace Aws
              *    Example: `CurrentUser\MY\A11F8A9B5DF5B98BA3508FBCA575D09570E0D2C6`
              * @param allocator memory allocator to use
              *
-             * @return Mqtt5ClientBuilder
+             * @return std::shared_ptr of Mqtt5ClientBuilder.
              */
-            static Crt::ScopedResource<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithWindowsCertStorePath(
+            static std::shared_ptr<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithWindowsCertStorePath(
                 const Crt::String &hostName,
                 const char *windowsCertStorePath,
                 Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
@@ -213,9 +213,9 @@ namespace Aws
              * @param config websocket configuration information
              * @param allocator memory allocator to use
              *
-             * Mqtt5ClientBuilder
+             * @return std::shared_ptr of Mqtt5ClientBuilder.
              */
-            static Crt::ScopedResource<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithWebsocket(
+            static std::shared_ptr<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithWebsocket(
                 const Crt::String &hostName,
                 const WebsocketConfig &config,
                 Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
@@ -227,9 +227,9 @@ namespace Aws
              * @param customAuthConfig custom authorization configuration information
              * @param allocator memory allocator to use
              *
-             * Mqtt5ClientBuilder
+             * @return std::shared_ptr of Mqtt5ClientBuilder.
              */
-            static Crt::ScopedResource<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithCustomAuthorizer(
+            static std::shared_ptr<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithCustomAuthorizer(
                 const Crt::String &hostName,
                 const Mqtt5CustomAuthConfig &customAuthConfig,
                 Crt::Allocator *allocator) noexcept;
@@ -242,9 +242,9 @@ namespace Aws
              * @param config websocket configuration information
              * @param allocator memory allocator to use
              *
-             * Mqtt5ClientBuilder
+             * @return std::shared_ptr of Mqtt5ClientBuilder.
              */
-            static Crt::ScopedResource<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
+            static std::shared_ptr<Mqtt5ClientBuilder> CreateMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
                 const Crt::String &hostName,
                 const Mqtt5CustomAuthConfig &customAuthConfig,
                 const WebsocketConfig &config,
@@ -616,7 +616,7 @@ namespace Aws
             /*
              * Creates a new Mqtt5ClientBuilder instance with default values.
              */
-            static Crt::ScopedResource<Mqtt5ClientBuilder> CreateMqtt5ClientBuilder(
+            static std::shared_ptr<Mqtt5ClientBuilder> CreateMqtt5ClientBuilder(
                 Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             Crt::Allocator *m_allocator;
