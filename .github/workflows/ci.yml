@@ -7,8 +7,8 @@ on:
       - 'docs'
 
 env:
-  BUILDER_VERSION: clang_21
-  BUILDER_SOURCE: channels
+  BUILDER_VERSION: v0.9.76
+  BUILDER_SOURCE: releases
   BUILDER_HOST: https://d19elf31gohf1l.cloudfront.net
   PACKAGE_NAME: aws-crt-cpp
   LINUX_BASE_IMAGE: ubuntu-18-x64
@@ -86,7 +86,6 @@ jobs:
           - clang-12
           - clang-15
           - clang-17
-          - clang-21
           - gcc-4.8
           - gcc-5
           - gcc-6
