@@ -146,12 +146,12 @@ static void s_ParseOptions(int argc, char **argv, ElasticurlCtx &ctx)
                 break;
             case 'd':
             {
-                ctx.InputBody = std::make_shared<std::stringstream>(aws_cli_optarg);
+                ctx.InputBody = Aws::Crt::MakeShared<std::stringstream>(ctx.allocator, aws_cli_optarg);
                 break;
             }
             case 'g':
             {
-                ctx.InputBody = std::make_shared<std::ifstream>(aws_cli_optarg, std::ios::in);
+                ctx.InputBody = Aws::Crt::MakeShared<std::ifstream>(ctx.allocator, aws_cli_optarg, std::ios::in);
                 if (!ctx.InputBody->good())
                 {
                     std::cerr << "unable to open file " << aws_cli_optarg << std::endl;
@@ -228,7 +228,7 @@ static void s_ParseOptions(int argc, char **argv, ElasticurlCtx &ctx)
 
     if (ctx.InputBody == nullptr)
     {
-        ctx.InputBody = std::make_shared<std::stringstream>("");
+        ctx.InputBody = Aws::Crt::MakeShared<std::stringstream>(ctx.allocator, "");
     }
 
     if (!ctx.uri)

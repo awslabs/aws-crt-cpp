@@ -294,7 +294,7 @@ int main(int argc, char **argv)
     std::cout << "**********************************************************" << std::endl;
     std::cout << "MQTT5: Start ConnectPacket...." << std::endl;
     std::cout << "**********************************************************" << std::endl;
-    std::shared_ptr<Mqtt5::ConnectPacket> packet_connect = std::make_shared<Mqtt5::ConnectPacket>();
+    std::shared_ptr<Mqtt5::ConnectPacket> packet_connect = Aws::Crt::MakeShared<Mqtt5::ConnectPacket>(allocator);
     packet_connect->WithReceiveMaximum(9);
     packet_connect->WithMaximumPacketSizeBytes(128 * 1024);
 
@@ -444,7 +444,8 @@ int main(int argc, char **argv)
         subscriptionList.push_back(data2);
         subscriptionList.push_back(data3);
 
-        std::shared_ptr<Mqtt5::SubscribePacket> subscribe = std::make_shared<Mqtt5::SubscribePacket>(app_ctx.allocator);
+        std::shared_ptr<Mqtt5::SubscribePacket> subscribe =
+            Aws::Crt::MakeShared<Mqtt5::SubscribePacket>(app_ctx.allocator, app_ctx.allocator);
         subscribe->WithSubscriptions(subscriptionList);
         bool subscribeSuccess = mqtt5Client->Subscribe(
             subscribe,
@@ -487,7 +488,8 @@ int main(int argc, char **argv)
          **********************************************************/
         ByteCursor payload = Aws::Crt::ByteCursorFromCString("mqtt5 publish test");
 
-        std::shared_ptr<Mqtt5::PublishPacket> publish = std::make_shared<Mqtt5::PublishPacket>(app_ctx.allocator);
+        std::shared_ptr<Mqtt5::PublishPacket> publish =
+            Aws::Crt::MakeShared<Mqtt5::PublishPacket>(app_ctx.allocator, app_ctx.allocator);
 
         publish->WithTopic("test/topic/test1");
         publish->WithPayload(payload);
@@ -543,7 +545,8 @@ int main(int argc, char **argv)
         Vector<String> topics;
         topics.push_back(topic1);
         topics.push_back(topic2);
-        std::shared_ptr<Mqtt5::UnsubscribePacket> unsub = std::make_shared<Mqtt5::UnsubscribePacket>(app_ctx.allocator);
+        std::shared_ptr<Mqtt5::UnsubscribePacket> unsub =
+            Aws::Crt::MakeShared<Mqtt5::UnsubscribePacket>(app_ctx.allocator, app_ctx.allocator);
         unsub->WithTopicFilters(topics);
         if (!mqtt5Client->Unsubscribe(unsub))
         {

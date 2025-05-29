@@ -536,7 +536,7 @@ namespace Aws
                 }
                 else
                 {
-                    m_connectOptions = std::make_shared<ConnectPacket>(m_allocator);
+                    m_connectOptions = Aws::Crt::MakeShared<ConnectPacket>(m_allocator, m_allocator);
                 }
 
                 if (m_customAuthConfig.has_value())
