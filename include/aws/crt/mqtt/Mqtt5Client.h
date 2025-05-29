@@ -433,7 +433,7 @@ namespace Aws
                  */
                 const Mqtt5ClientOperationStatistics &GetOperationStatistics() noexcept;
 
-                virtual ~Mqtt5Client();
+                ~Mqtt5Client();
 
                 struct aws_mqtt5_client *GetUnderlyingHandle() const noexcept;
 
@@ -696,7 +696,7 @@ namespace Aws
                  */
                 bool initializeRawOptions(aws_mqtt5_client_options &raw_options) const noexcept;
 
-                virtual ~Mqtt5ClientOptions();
+                ~Mqtt5ClientOptions();
                 Mqtt5ClientOptions(const Mqtt5ClientOptions &) = delete;
                 Mqtt5ClientOptions(Mqtt5ClientOptions &&) = delete;
                 Mqtt5ClientOptions &operator=(const Mqtt5ClientOptions &) = delete;
