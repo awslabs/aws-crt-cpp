@@ -86,6 +86,7 @@ jobs:
           - clang-12
           - clang-15
           - clang-17
+          - clang-21
           - gcc-4.8
           - gcc-5
           - gcc-6
