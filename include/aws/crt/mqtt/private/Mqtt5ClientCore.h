@@ -107,7 +107,7 @@ namespace Aws
                  */
                 void Close() noexcept;
 
-                virtual ~Mqtt5ClientCore();
+                ~Mqtt5ClientCore();
 
                 struct aws_mqtt5_client *GetUnderlyingHandle() const noexcept { return m_client; }
 

@@ -474,7 +474,7 @@ namespace Aws
              */
             int LastError() const noexcept { return m_lastError ? m_lastError : AWS_ERROR_UNKNOWN; }
 
-            virtual ~Mqtt5ClientBuilder()
+            ~Mqtt5ClientBuilder()
             {
                 if (m_options)
                 {
