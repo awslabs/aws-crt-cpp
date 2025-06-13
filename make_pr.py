@@ -98,6 +98,8 @@ def main():
     parser.add_argument('--pr-body', '-d', help='PR description')
     parser.add_argument('--base-branch', default="main",
                         help='Base branch for the PR (default: main)')
+    parser.add_argument('--pr-only', '-P', action='store_true',
+                        help='just do pull request')
 
     args = parser.parse_args()
     branch_name = "remove-windows-2019"
@@ -105,25 +107,29 @@ def main():
     # Set PR title to commit message if not provided
     # pr_title = args.pr_title if args.pr_title else args.commit_message
     commit_message = "remove windows-2019"
-    pr_body = "- Windows 2019 will be fully unsupported by 2025-06-30, https://github.com/actions/runner-images/issues/12045. Remove it with msvc-15 and below.\n \
-                - Use latest windows 2025 and msvc-17\n\
-                - Latest submodules"
+    pr_body = (
+        "- Windows 2019 will be fully unsupported by 2025-06-30, https://github.com/actions/runner-images/issues/12045. Remove it with msvc-15 and below.\n"
+        "- Use latest windows 2025 and msvc-17\n"
+        "- Latest submodules"
+    )
     pr_title = "remove windows-2019 and latest submodules"
-
-    # Create/switch to branch
-    create_branch(branch_name)
-
-    # Commit changes
-    committed = commit_changes(commit_message)
-
-    if committed:
-        # Push changes
-        push_changes(branch_name)
-
-        # Create PR
+    if args.pr_only:
         create_pull_request(pr_title, pr_body)
     else:
-        print("No changes to commit, skipping PR creation")
+        # Create/switch to branch
+        create_branch(branch_name)
+
+        # Commit changes
+        committed = commit_changes(commit_message)
+
+        if committed:
+            # Push changes
+            push_changes(branch_name)
+
+            # Create PR
+            create_pull_request(pr_title, pr_body)
+        else:
+            print("No changes to commit, skipping PR creation")
 
 
 if __name__ == "__main__":
