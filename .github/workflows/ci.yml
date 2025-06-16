@@ -225,7 +225,7 @@ jobs:
         ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DUSE_CPU_EXTENSIONS=OFF --cmake-extra=-DUSE_OPENSSL=ON
 
   windows:
-    runs-on: windows-2022 # latest
+    runs-on: windows-2025 # latest
     steps:
     - uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -238,8 +238,8 @@ jobs:
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
         python builder.pyz build -p ${{ env.PACKAGE_NAME }}
 
-  windows-vs14:
-    runs-on: windows-2019 # windows-2019 is last env with Visual Studio 2015 (v14.0)
+  windows-vc17:
+    runs-on: windows-2025 # latest
     strategy:
       matrix:
         arch: [x86, x64]
@@ -253,10 +253,10 @@ jobs:
         md D:\a\work
         cd D:\a\work
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
-        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --compiler msvc-14 --target windows-${{ matrix.arch }}
+        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --compiler msvc-17 --target windows-${{ matrix.arch }}
 
   windows-shared-libs:
-    runs-on: windows-2022 # latest
+    runs-on: windows-2025 # latest
     steps:
     - uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -274,7 +274,7 @@ jobs:
   # This will cause linker errors in the tests if an API is built wrong (assuming the API is tested).
   # Usually the problem is extern global variables, and the fix is offering getter functions instead.
   windows-delayload-dll:
-    runs-on: windows-2022 # latest
+    runs-on: windows-2025 # latest
     env:
       LDFLAGS: /DELAYLOAD:aws-crt-cpp.dll
     steps:
@@ -290,7 +290,7 @@ jobs:
         python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBUILD_SHARED_LIBS=ON
 
   windows-no-cpu-extensions:
-    runs-on: windows-2022 # latest
+    runs-on: windows-2025 # latest
     steps:
     - uses: aws-actions/configure-aws-credentials@v4
       with:
