@@ -40,15 +40,6 @@ if(EXISTS "${CRT_MIN_FILE}")
     include("${CRT_MIN_FILE}")
 endif()
 
-# system-installed package ≥ baseline version check used when BUILD_DEPS is OFF
-macro(require_pkg pkg cmake_sym)
-    if(DEFINED MIN_${cmake_sym}_VERSION)
-        find_package(${pkg} ${MIN_${cmake_sym}_VERSION} CONFIG REQUIRED)
-    else()
-        find_package(${pkg} CONFIG REQUIRED)  # fall back: no version info
-    endif()
-endmacro()
-
 # Ensures the baseline commit recorded in CRTMinVersions.cmake exists locally 
 # (deepens or un-shallows the clone if needed).
 # Fails if that commit is not an ancestor of the current HEAD.
@@ -237,23 +228,6 @@ else()
 
     include(AwsFindPackage)
     set(IN_SOURCE_BUILD OFF)
-
-    if(ENFORCE_SUBMODULE_VERSIONS)
-        message(STATUS "Enforcing baseline CRT versions from CRTMinVersions.cmake")
-        # Checking against installed libraries
-        require_pkg(aws-c-common       AWS_C_COMMON)
-        require_pkg(aws-c-sdkutils     AWS_C_SDKUTILS)
-        require_pkg(aws-c-io           AWS_C_IO)
-        require_pkg(aws-c-cal          AWS_C_CAL)
-        require_pkg(aws-c-compression  AWS_C_COMPRESSION)
-        require_pkg(aws-c-http         AWS_C_HTTP)
-        require_pkg(aws-c-auth         AWS_C_AUTH)
-        require_pkg(aws-c-mqtt         AWS_C_MQTT)
-        require_pkg(aws-checksums      AWS_CHECKSUMS)
-        require_pkg(aws-c-event-stream AWS_C_EVENT_STREAM)
-        require_pkg(aws-c-s3           AWS_C_S3)
-        # We are not checking aws-lc and s2n
-    endif()
 endif()
 
 include(AwsCFlags)
