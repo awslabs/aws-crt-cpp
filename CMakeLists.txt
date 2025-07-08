@@ -4,7 +4,7 @@ option(BUILD_DEPS "Builds aws common runtime dependencies as part of build. Turn
 option(BYO_CRYPTO "Don't build a tls implementation or link against a crypto interface. This feature is only for unix builds currently" OFF)
 option(USE_OPENSSL "Set this if you want to use your system's OpenSSL 1.0.2/1.1.1 compatible libcrypto" OFF)
 
-option(ENFORCE_SUBMODULE_VERSIONS "Check and enforce submodule versions to verify they are the minimum expected version or later." ON)
+option(ENFORCE_SUBMODULE_VERSIONS "Check and enforce submodule versions to verify they are the minimum expected version or later. Versioning is only checked if BUILD_DEPS is ON." ON)
 
 # Let aws-iot-device-sdk-cpp-v2 report its own version in MQTT connections (instead of reporting aws-crt-cpp's version).
 option(AWS_IOT_SDK_VERSION "Set the version reported by Aws::Iot::MqttClientConnectionConfigBuilder")
@@ -21,7 +21,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# ENFORCE_SUBMODULE_VERSIONS related macros/functions/includes/etc...
+# ENFORCE_SUBMODULE_VERSIONS related
 # ──────────────────────────────────────────────────────────────────────────────
 
 # Git is used for commit checks
@@ -114,7 +114,7 @@ endfunction()
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# end of ENFORCE_SUBMODULE_VERSIONS related macros/functions/includes/etc...
+# end of ENFORCE_SUBMODULE_VERSIONS related
 # ──────────────────────────────────────────────────────────────────────────────
 
 include(AwsGetVersion)
