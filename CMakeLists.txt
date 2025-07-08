@@ -113,7 +113,9 @@ function(check_submodule_commit name rel_path cmake_sym)
             "  HEAD      : ${cur_sha}\n"
             "  baseline  : ${baseline_sha}\n"
             "is **older** or on a divergent branch.\n"
-            "Fast-forward the submodule or regenerate CRTMinVersions.cmake.")
+            "Fast-forward the submodule or regenerate CRTMinVersions.cmake.\n"
+            "ENFORCE_SUBMODULE_VERSIONS is ON.\n"
+            "CMake can be run with submodule commit checks disabled:    -DENFORCE_SUBMODULE_VERSIONS=OFF\n")
     else()
         message(STATUS "Submodule ${name}: commit OK (≥ baseline).")
     endif()
@@ -208,7 +210,7 @@ if(BUILD_DEPS)
     if(ENFORCE_SUBMODULE_VERSIONS)
         check_submodule_commit("aws-c-sdkutils" "crt/aws-c-sdkutils" AWS_C_SDKUTILS)
         check_submodule_commit("aws-c-io" "crt/aws-c-io" AWS_C_IO)
-        check_submodule_commit("aws-c-cal" "crt/aws-c-cal" AWS_CAL)
+        check_submodule_commit("aws-c-cal" "crt/aws-c-cal" AWS_C_CAL)
         check_submodule_commit("aws-c-compression" "crt/aws-c-compression" AWS_C_COMPRESSION)
         check_submodule_commit("aws-c-http" "crt/aws-c-http" AWS_C_HTTP)
         check_submodule_commit("aws-c-auth" "crt/aws-c-auth" AWS_C_AUTH)
