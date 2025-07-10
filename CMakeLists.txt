@@ -66,6 +66,10 @@ if(BUILD_DEPS)
         if(NOT USE_OPENSSL)
             include(AwsPrebuildDependency)
 
+            if(ENFORCE_SUBMODULE_VERSIONS)
+                check_submodule_commit("aws-lc" "crt/aws-lc" AWS_LC)
+            endif()
+
             set(AWSLC_CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
             # temporarily disable certain warnings as errors for the aws-lc build
