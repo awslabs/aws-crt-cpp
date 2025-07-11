@@ -67,7 +67,7 @@ function(check_submodule_commit name rel_path cmake_sym)
                     WORKING_DIRECTORY "${_sub_dir}"
                     RESULT_VARIABLE _is_anc ERROR_QUIET)
 
-    if(_is_anc AND NOT _is_anc EQUAL 0)
+    if(_is_anc GREATER 0)
         message(FATAL_ERROR
             "Sub-module ${name} at ${_sub_dir}\n"
             "  HEAD     : ${_head}\n"
