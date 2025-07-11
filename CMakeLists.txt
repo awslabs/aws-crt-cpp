@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.9...3.31)
 option(BUILD_DEPS "Builds aws common runtime dependencies as part of build. Turn off if you want to control your dependency chain." ON)
 option(BYO_CRYPTO "Don't build a tls implementation or link against a crypto interface. This feature is only for unix builds currently" OFF)
 option(USE_OPENSSL "Set this if you want to use your system's OpenSSL 1.0.2/1.1.1 compatible libcrypto" OFF)
-
 option(ENFORCE_SUBMODULE_VERSIONS "Check and enforce submodule versions to verify they are the minimum expected version or later. Versioning is only checked if BUILD_DEPS is ON." ON)
 
 # Let aws-iot-device-sdk-cpp-v2 report its own version in MQTT connections (instead of reporting aws-crt-cpp's version).
@@ -18,7 +17,6 @@ option(ENABLE_PROXY_INTEGRATION_TESTS "Whether or not to build and run the proxy
 
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
 
 include(AwsGetVersion)
 aws_get_version(SIMPLE_VERSION FULL_VERSION GIT_HASH)

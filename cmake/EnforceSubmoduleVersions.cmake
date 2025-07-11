@@ -22,68 +22,61 @@ if(NOT GIT_FOUND)
         "  • or rerun CMake with commit checks disabled:    -DENFORCE_SUBMODULE_VERSIONS=OFF")
 endif()
 
-# Load the generated baseline table
-set(_CRT_MIN_FILE "${CMAKE_CURRENT_LIST_DIR}/CRTMinVersions.cmake")
-if(EXISTS "${_CRT_MIN_FILE}")
-    include("${_CRT_MIN_FILE}")
-endif()
+function(check_submodule_commit name rel_path cmake_sym)
+    set(_sub_dir  "${PROJECT_SOURCE_DIR}/${rel_path}")
 
-# Helper: make sure a certain commit exists in what might be a shallow clone
-function(_awscrt_ensure_commit_present sub_path commit)
+    # determine baseline from super repository (aws-crt-cpp) to get expected commit of submodule
+    # ask Git for the SHA that is stored in the super-repo’s index
     execute_process(
-        COMMAND ${GIT_EXECUTABLE} cat-file -e ${commit}^{commit}
-        WORKING_DIRECTORY "${sub_path}"
-        RESULT_VARIABLE _commit_missing
-        ERROR_QUIET)
+        COMMAND           ${GIT_EXECUTABLE} ls-tree --object-only HEAD -- "${rel_path}"
+        WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+        OUTPUT_VARIABLE   _baseline
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_VARIABLE    _err
+        RESULT_VARIABLE   _rc)
 
-    if(NOT _commit_missing EQUAL 0)
-        execute_process(        # cheap attempt
-            COMMAND ${GIT_EXECUTABLE} fetch --depth 1 origin ${commit}
-            WORKING_DIRECTORY "${sub_path}" RESULT_VARIABLE _rc ERROR_QUIET)
+    if(_rc OR "${_baseline}" STREQUAL "")
+        message(FATAL_ERROR "Could not query git-link for ${rel_path}: ${_err}")
+    endif()
 
-        if(NOT _rc EQUAL 0)   # fall-back
-            message(STATUS
-                "fetch uh-shallow on ${sub_path} to determine ancestory")
+    # ensure the commit object exists (deepens shallow clones/branches)
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} cat-file -e ${_baseline}^{commit}
+        WORKING_DIRECTORY "${_sub_dir}"
+        RESULT_VARIABLE _missing ERROR_QUIET)
+
+    if(_missing)
+        execute_process(
+            COMMAND ${GIT_EXECUTABLE} fetch --depth 1 origin ${_baseline}
+            WORKING_DIRECTORY "${_sub_dir}" RESULT_VARIABLE _rc ERROR_QUIET)
+        if(_rc)
             execute_process(
                 COMMAND ${GIT_EXECUTABLE} fetch --unshallow --tags origin
-                WORKING_DIRECTORY "${sub_path}" ERROR_QUIET)
+                WORKING_DIRECTORY "${_sub_dir}" ERROR_QUIET)
         endif()
     endif()
-endfunction()
 
-# Public function: check_submodule_commit(<name> <rel_path> <cmake_sym>)
-function(check_submodule_commit name rel_path cmake_sym)
-    # NOTE: we assume the caller is the top-level CMakeLists.txt,
-    # therefore PROJECT_SOURCE_DIR is the repo root.
-    set(_sub_dir "${PROJECT_SOURCE_DIR}/${rel_path}")
-
-    if(NOT DEFINED MIN_${cmake_sym}_COMMIT)
-        message(STATUS "Submodule ${name}: no baseline → skipping")
-        return()
-    endif()
-
-    set(_baseline "${MIN_${cmake_sym}_COMMIT}")
-    _awscrt_ensure_commit_present("${_sub_dir}" "${_baseline}")
-
-    # current HEAD
+    # ancestry check
     execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --verify HEAD
                     WORKING_DIRECTORY "${_sub_dir}"
-                    OUTPUT_VARIABLE _cur_sha OUTPUT_STRIP_TRAILING_WHITESPACE)
+                    OUTPUT_VARIABLE _head
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-    # ancestry test
     execute_process(COMMAND ${GIT_EXECUTABLE} merge-base --is-ancestor
-                            ${_baseline} ${_cur_sha}
+                            ${_baseline} ${_head}
                     WORKING_DIRECTORY "${_sub_dir}"
-                    RESULT_VARIABLE _is_ancestor ERROR_QUIET)
+                    RESULT_VARIABLE _is_anc ERROR_QUIET)
 
-    if(_is_ancestor AND NOT _is_ancestor EQUAL 0)
+    if(_is_anc AND NOT _is_anc EQUAL 0)
         message(FATAL_ERROR
-            "Submodule ${name} at ${_sub_dir}\n"
-            "  HEAD     : ${_cur_sha}\n"
+            "Sub-module ${name} at ${_sub_dir}\n"
+            "  HEAD     : ${_head}\n"
             "  baseline : ${_baseline}\n"
             "is **older** or on a divergent branch.\n"
-            "Fast-forward the submodule or regenerate CRTMinVersions.cmake.")
+            "This check can be disabled with: -DENFORCE_SUBMODULE_VERSIONS=OFF")
     else()
-        message(STATUS "Submodule ${name}: commit OK (≥ baseline)")
+        string(SUBSTRING "${_head}"     0 7 _head_short)
+        string(SUBSTRING "${_baseline}" 0 7 _base_short)
+        message(STATUS "Submodule ${name} commit:${_head_short} ≥ baseline:${_base_short}")
     endif()
 endfunction()
