@@ -28,7 +28,7 @@ function(check_submodule_commit name rel_path cmake_sym)
     # determine baseline from super repository (aws-crt-cpp) to get expected commit of submodule
     # ask Git for the SHA that is stored in the super-repo’s index
     execute_process(
-        COMMAND           ${GIT_EXECUTABLE} ls-tree --object-only HEAD -- "${rel_path}"
+        COMMAND           ${GIT_EXECUTABLE} "rev-parse" "HEAD:${rel_path}"
         WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
         OUTPUT_VARIABLE   _baseline
         OUTPUT_STRIP_TRAILING_WHITESPACE
