@@ -174,12 +174,34 @@ namespace Aws
         }
 
         template <
+            typename Derived,
+            typename Base,
+            typename std::enable_if<std::is_base_of<Base, Derived>::value, bool>::type = false>
+        ScopedResource<Base> SafeSuperCast(ScopedResource<Derived> derived)
+        {
+            (void)derived;
+            static_assert(std::is_base_of<Base, Derived>::value, "Base must be a base class of Derived");
+            return nullptr;
+        }
+
+        template <
             typename Base,
             typename Derived,
             typename std::enable_if<std::is_base_of<Base, Derived>::value, bool>::type = true>
         ScopedResource<Derived> SafeSubCast(ScopedResource<Base> base)
         {
             return ScopedResource<Derived>(static_cast<Derived *>(base.release()), base.get_deleter());
+        }
+
+        template <
+            typename Base,
+            typename Derived,
+            typename std::enable_if<std::is_base_of<Base, Derived>::value, bool>::type = false>
+        ScopedResource<Derived> SafeSubCast(ScopedResource<Base> base)
+        {
+            (void)base;
+            static_assert(std::is_base_of<Base, Derived>::value, "Base must be a base class of Derived");
+            return nullptr;
         }
     } // namespace Crt
 } // namespace Aws
