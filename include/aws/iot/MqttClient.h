@@ -101,6 +101,11 @@ namespace Aws
         };
 
         /**
+         * @deprecated Please use Aws::Iot::Mqtt5ClientBuilder for new code. There are no current plans to fully
+         * deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5 client to have
+         * access to a more robust feature set, clearer error handling, and lifetime management. More details can be
+         * found here: <URL>
+         *
          * Represents configuration parameters for building a MqttClientConnectionConfig object. You can use a single
          * instance of this class PER MqttClientConnectionConfig you want to generate. If you want to generate a config
          * for a different endpoint or port etc... you need a new instance of this class.
