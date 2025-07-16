@@ -348,7 +348,8 @@ namespace Aws
 
         Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithTlsCipherPreference(aws_tls_cipher_pref cipherPref) noexcept
         {
-            if(m_tlsConnectionOptions){
+            if (m_tlsConnectionOptions)
+            {
                 m_tlsConnectionOptions->SetTlsCipherPreference(cipherPref);
             }
             return *this;
