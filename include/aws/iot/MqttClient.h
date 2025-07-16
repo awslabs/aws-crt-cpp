@@ -300,7 +300,7 @@ namespace Aws
             /**
              * Sets the tls cipher preference for the tls context options.
              *
-             * @param cipher_pref the tls cipher preference to use for the tls context options.
+             * @param cipherPref the tls cipher preference to use for the tls context options.
              *
              * @return this builder object
              */
