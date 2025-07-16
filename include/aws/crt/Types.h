@@ -203,5 +203,6 @@ namespace Aws
             static_assert(std::is_base_of<Base, Derived>::value, "Base must be a base class of Derived");
             return nullptr;
         }
+
     } // namespace Crt
 } // namespace Aws
