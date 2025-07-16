@@ -457,7 +457,9 @@ namespace Aws
          * MqttClientConnectionConfig to use. Once NewConnection returns, you use it's return value identically
          * to how you would use Aws::Crt::Mqtt::MqttConnection
          */
-        class AWS_CRT_CPP_API MqttClient final
+        class AWS_CRT_CPP_API AWS_CRT_SOFT_DEPRECATED("Prefer Aws::Crt::Mqtt5::Mqtt5Client for new code; "
+                                                      "MQTTClient uses MQTT 3.1.1 spec and remains fully supported.")
+            MqttClient final
         {
           public:
             MqttClient(Crt::Io::ClientBootstrap &bootstrap, Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;

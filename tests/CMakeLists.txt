@@ -311,6 +311,10 @@ add_test_case(CborTimeStampTest)
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 
+# -- Silence soft-deprecation warnings inside THIS test binary --
+target_compile_definitions(${TEST_BINARY_NAME}
+    PRIVATE AWS_CRT_DISABLE_DEPRECATION_WARNINGS)
+
 aws_add_sanitizers(${TEST_BINARY_NAME})
 
  # set extra warning flags
