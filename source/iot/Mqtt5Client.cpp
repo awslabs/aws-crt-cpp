@@ -346,6 +346,14 @@ namespace Aws
             return *this;
         }
 
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithTlsCipherPreference(aws_tls_cipher_pref cipher_pref) noexcept
+        {
+            if(m_tlsConnectionOptions){
+                m_tlsConnectionOptions->SetTlsCipherPreference(cipher_pref);
+            }
+            return *this;
+        }
+
         Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithSocketOptions(Crt::Io::SocketOptions socketOptions) noexcept
         {
             m_options->WithSocketOptions(std::move(socketOptions));

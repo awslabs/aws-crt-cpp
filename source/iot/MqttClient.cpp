@@ -292,6 +292,13 @@ namespace Aws
             return *this;
         }
 
+        MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithTlsCipherPreference(
+            aws_tls_cipher_pref cipher_pref)
+        {
+            m_contextOptions.SetTlsCipherPreference(cipher_pref);
+            return *this;
+        }
+
         MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithHttpProxyOptions(
             const Crt::Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept
         {

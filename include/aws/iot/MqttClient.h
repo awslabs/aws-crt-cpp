@@ -298,6 +298,15 @@ namespace Aws
             MqttClientConnectionConfigBuilder &WithMinimumTlsVersion(aws_tls_versions minimumTlsVersion) noexcept;
 
             /**
+             * Sets the TLS Cipher Preference for the TLS context options. 
+             *
+             * @param cipher_pref the TLS cipher preference to use for the TLS context options.
+             *
+             * @return this builder object
+             */
+            MqttClientConnectionConfigBuilder &WithTlsCipherPreference(aws_tls_cipher_pref cipher_pref) noexcept;
+
+            /**
              * Sets http proxy options.
              *
              * @param proxyOptions proxy configuration options for connection establishment
