@@ -298,15 +298,14 @@ namespace Aws
              */
             Mqtt5ClientBuilder &WithCertificateAuthority(const Crt::ByteCursor &cert) noexcept;
 
-
             /**
-             * Sets the TLS Cipher Preference for the TLS context options. 
+             * Sets the tls cipher preference for the tls context options.
              *
-             * @param cipher_pref the TLS cipher preference to use for the TLS context options.
+             * @param cipherPref the tls cipher preference to use for the tls context options.
              *
              * @return this builder object
              */
-            Mqtt5ClientBuilder &WithTlsCipherPreference(aws_tls_cipher_pref cipher_pref) noexcept;
+            Mqtt5ClientBuilder &WithTlsCipherPreference(aws_tls_cipher_pref cipherPref) noexcept;
 
             /**
              * Overrides the socket properties of the underlying MQTT connections made by the client.  Leave undefined

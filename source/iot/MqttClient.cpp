@@ -293,9 +293,9 @@ namespace Aws
         }
 
         MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithTlsCipherPreference(
-            aws_tls_cipher_pref cipher_pref)
+            aws_tls_cipher_pref cipherPref) noexcept
         {
-            m_contextOptions.SetTlsCipherPreference(cipher_pref);
+            m_contextOptions.SetTlsCipherPreference(cipherPref);
             return *this;
         }
 
