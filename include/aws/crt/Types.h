@@ -176,7 +176,7 @@ namespace Aws
         template <
             typename Derived,
             typename Base,
-            typename std::enable_if<std::is_base_of<Base, Derived>::value, bool>::type = false>
+            typename std::enable_if<!std::is_base_of<Base, Derived>::value, bool>::type = true>
         ScopedResource<Base> SafeSuperCast(ScopedResource<Derived> derived)
         {
             (void)derived;
@@ -196,7 +196,7 @@ namespace Aws
         template <
             typename Base,
             typename Derived,
-            typename std::enable_if<std::is_base_of<Base, Derived>::value, bool>::type = false>
+            typename std::enable_if<!std::is_base_of<Base, Derived>::value, bool>::type = true>
         ScopedResource<Derived> SafeSubCast(ScopedResource<Base> base)
         {
             (void)base;
