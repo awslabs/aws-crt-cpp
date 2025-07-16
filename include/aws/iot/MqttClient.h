@@ -453,21 +453,25 @@ namespace Aws
         };
 
         /**
+         * @deprecated Please use Aws::Crt::Mqtt5::Mqtt5Client for new code. There are no current plans to fully
+         * deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5 client to have
+         * access to a more robust feature set, clearer error handling, and lifetime management. More details can be
+         * found here: <URL>
+         *
          * AWS IOT specific Mqtt Client. Sets defaults for using the AWS IOT service. You'll need an instance of
          * MqttClientConnectionConfig to use. Once NewConnection returns, you use it's return value identically
          * to how you would use Aws::Crt::Mqtt::MqttConnection
          */
-        class AWS_CRT_CPP_API AWS_CRT_SOFT_DEPRECATED("Prefer Aws::Crt::Mqtt5::Mqtt5Client for new code; "
-                                                      "MQTTClient uses MQTT 3.1.1 spec and remains fully supported.")
-            MqttClient final
+        class AWS_CRT_CPP_API AWS_CRT_SOFT_DEPRECATED(
+            "Please use Aws::Crt::Mqtt5::Mqtt5Client for new code. There are "
+            "no current plans to fully deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate "
+            "to the MQTT5 client to have access to a more robust feature set, clearer error handling, and lifetime "
+            "management. More details can be found here: <URL>") MqttClient final
         {
           public:
             MqttClient(Crt::Io::ClientBootstrap &bootstrap, Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
-             * @deprecated Aws::Iot::Mqtt5Client is available as a more robust and feature-rich replacement for the
-             *             MQTT 3.1.1 client.
-             *
              * Constructs a new Mqtt Client object using the static default ClientBootstrap.
              *
              * For more information on the default ClientBootstrap see
