@@ -465,6 +465,9 @@ namespace Aws
             MqttClient(Crt::Io::ClientBootstrap &bootstrap, Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
+             * @deprecated Aws::Iot::Mqtt5Client is available as a more robust and feature-rich replacement for the
+             *             MQTT 3.1.1 client.
+             *
              * Constructs a new Mqtt Client object using the static default ClientBootstrap.
              *
              * For more information on the default ClientBootstrap see
