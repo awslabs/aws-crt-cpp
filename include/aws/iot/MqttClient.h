@@ -301,8 +301,9 @@ namespace Aws
              * Sets the tls cipher preference for the tls context options.
              *
              * @param cipherPref the tls cipher preference to use for the tls context options.
-             * Warning: aws_tls_cipher_pref::AWS_IO_TLS_CIPHER_PREF_TLSV1_2_2025_07 is only supported on Linux platforms
-             * using the s2n library.
+             * Warning: Setting a custom security policy is supported only on Unix-like platforms (e.g., Linux, Android)
+             * when using the s2n library. Other platforms currently support only
+             * `AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT`.
              *
              * @return this builder object
              */
