@@ -389,8 +389,9 @@ namespace Aws
 
             void MqttRequestResponseClientImpl::Close() noexcept
             {
-                aws_mqtt_request_response_client_release(m_client);
+                auto *client = m_client;
                 m_client = nullptr;
+                aws_mqtt_request_response_client_release(client);
             }
 
             int MqttRequestResponseClientImpl::SubmitRequest(
