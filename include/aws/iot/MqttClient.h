@@ -298,6 +298,18 @@ namespace Aws
             MqttClientConnectionConfigBuilder &WithMinimumTlsVersion(aws_tls_versions minimumTlsVersion) noexcept;
 
             /**
+             * Sets the tls cipher preference for the tls context options.
+             *
+             * @param cipherPref the tls cipher preference to use for the tls context options.
+             * Warning: Setting a custom security policy is supported only on Unix-like platforms (e.g., Linux, Android)
+             * when using the s2n library. Other platforms currently support only
+             * `AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT`.
+             *
+             * @return this builder object
+             */
+            MqttClientConnectionConfigBuilder &WithTlsCipherPreference(aws_tls_cipher_pref cipherPref) noexcept;
+
+            /**
              * Sets http proxy options.
              *
              * @param proxyOptions proxy configuration options for connection establishment
