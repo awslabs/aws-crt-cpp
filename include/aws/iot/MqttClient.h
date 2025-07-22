@@ -477,6 +477,11 @@ namespace Aws
             MqttClient(Crt::Io::ClientBootstrap &bootstrap, Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
+             * @deprecated Prefer Aws::Crt::Mqtt5::Mqtt5Client for new code.  There are no current plans to fully
+             * deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5 client to
+             * have access to a more robust feature set, clearer error handling, and lifetime management. More details
+             * can be found here: <URL>
+             *
              * Constructs a new Mqtt Client object using the static default ClientBootstrap.
              *
              * For more information on the default ClientBootstrap see
@@ -485,6 +490,11 @@ namespace Aws
             MqttClient(Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
+             * @deprecated Prefer Aws::Crt::Mqtt5::Mqtt5Client for new code.  There are no current plans to fully
+             * deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5 client to
+             * have access to a more robust feature set, clearer error handling, and lifetime management. More details
+             * can be found here: <URL>
+             *
              * Creates a new mqtt connection from a connection configuration object
              * @param config mqtt connection configuration
              * @return a new mqtt connection
