@@ -288,7 +288,20 @@ namespace Aws
         MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithMinimumTlsVersion(
             aws_tls_versions minimumTlsVersion) noexcept
         {
-            m_contextOptions.SetMinimumTlsVersion(minimumTlsVersion);
+            if (m_contextOptions)
+            {
+                m_contextOptions.SetMinimumTlsVersion(minimumTlsVersion);
+            }
+            return *this;
+        }
+
+        MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithTlsCipherPreference(
+            aws_tls_cipher_pref cipherPref) noexcept
+        {
+            if (m_contextOptions)
+            {
+                m_contextOptions.SetTlsCipherPreference(cipherPref);
+            }
             return *this;
         }
 

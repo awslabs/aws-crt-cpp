@@ -233,8 +233,6 @@ jobs:
         aws-region: ${{ env.AWS_DEFAULT_REGION }}
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
-        md D:\a\work
-        cd D:\a\work
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
         python builder.pyz build -p ${{ env.PACKAGE_NAME }}
 
@@ -250,8 +248,6 @@ jobs:
         aws-region: ${{ env.AWS_DEFAULT_REGION }}
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
-        md D:\a\work
-        cd D:\a\work
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
         python builder.pyz build -p ${{ env.PACKAGE_NAME }} --compiler msvc-17 --target windows-${{ matrix.arch }}
 
@@ -264,8 +260,6 @@ jobs:
         aws-region: ${{ env.AWS_DEFAULT_REGION }}
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
-        md D:\a\work
-        cd D:\a\work
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
         python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBUILD_SHARED_LIBS=ON
 
@@ -284,8 +278,6 @@ jobs:
         aws-region: ${{ env.AWS_DEFAULT_REGION }}
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
-        md D:\a\work
-        cd D:\a\work
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
         python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBUILD_SHARED_LIBS=ON
 
@@ -298,8 +290,6 @@ jobs:
         aws-region: ${{ env.AWS_DEFAULT_REGION }}
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
-        md D:\a\work
-        cd D:\a\work
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
         python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DUSE_CPU_EXTENSIONS=OFF
 
