@@ -22,7 +22,7 @@ if(NOT GIT_FOUND)
         "  • or rerun CMake with commit checks disabled:    -DENFORCE_SUBMODULE_VERSIONS=OFF")
 endif()
 
-function(check_submodule_commit name rel_path cmake_sym)
+function(check_submodule_commit name rel_path)
     set(_sub_dir  "${PROJECT_SOURCE_DIR}/${rel_path}")
 
     # determine baseline from super repository (aws-crt-cpp) to get expected commit of submodule
