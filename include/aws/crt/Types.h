@@ -162,5 +162,47 @@ namespace Aws
 
         template <typename T> using ScopedResource = std::unique_ptr<T, std::function<void(T *)>>;
 
+        template <
+            typename Derived,
+            typename Base,
+            typename std::enable_if<std::is_base_of<Base, Derived>::value, bool>::type = true>
+        ScopedResource<Base> SafeSuperCast(ScopedResource<Derived> derived)
+        {
+            const auto &deleter = derived.get_deleter();
+            return ScopedResource<Base>(
+                derived.release(), [deleter](Base *base) { deleter(static_cast<Derived *>(base)); });
+        }
+
+        template <
+            typename Derived,
+            typename Base,
+            typename std::enable_if<!std::is_base_of<Base, Derived>::value, bool>::type = true>
+        ScopedResource<Base> SafeSuperCast(ScopedResource<Derived> derived)
+        {
+            (void)derived;
+            static_assert(std::is_base_of<Base, Derived>::value, "Base must be a base class of Derived");
+            return nullptr;
+        }
+
+        template <
+            typename Base,
+            typename Derived,
+            typename std::enable_if<std::is_base_of<Base, Derived>::value, bool>::type = true>
+        ScopedResource<Derived> SafeSubCast(ScopedResource<Base> base)
+        {
+            return ScopedResource<Derived>(static_cast<Derived *>(base.release()), base.get_deleter());
+        }
+
+        template <
+            typename Base,
+            typename Derived,
+            typename std::enable_if<!std::is_base_of<Base, Derived>::value, bool>::type = true>
+        ScopedResource<Derived> SafeSubCast(ScopedResource<Base> base)
+        {
+            (void)base;
+            static_assert(std::is_base_of<Base, Derived>::value, "Base must be a base class of Derived");
+            return nullptr;
+        }
+
     } // namespace Crt
 } // namespace Aws
