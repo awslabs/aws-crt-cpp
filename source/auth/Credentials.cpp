@@ -475,6 +475,29 @@ namespace Aws
 
                 return s_CreateWrappedProvider(aws_credentials_provider_new_sts(allocator, &raw_config), allocator);
             }
+
+            CredentialsProviderSTSWebIdentityConfig::CredentialsProviderSTSWebIdentityConfig() : Bootstrap(nullptr) {}
+
+            std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderSTSWebIdentity(
+                const CredentialsProviderSTSWebIdentityConfig &config,
+                Allocator *allocator)
+            {
+                struct aws_credentials_provider_sts_web_identity_options raw_config;
+                AWS_ZERO_STRUCT(raw_config);
+
+                raw_config.region = aws_byte_cursor_from_c_str(config.Region.c_str());
+                raw_config.role_arn = aws_byte_cursor_from_c_str(config.RoleArn.c_str());
+                raw_config.role_session_name = aws_byte_cursor_from_c_str(config.SessionName.c_str());
+                raw_config.token_file_path = aws_byte_cursor_from_c_str(config.TokenFilePath.c_str());
+
+                raw_config.bootstrap =
+                    config.Bootstrap ? config.Bootstrap->GetUnderlyingHandle()
+                                     : ApiHandle::GetOrCreateStaticDefaultClientBootstrap()->GetUnderlyingHandle();
+
+                raw_config.tls_ctx = config.TlsCtx.GetUnderlyingHandle();
+                return s_CreateWrappedProvider(
+                    aws_credentials_provider_new_sts_web_identity(allocator, &raw_config), allocator);
+            }
         } // namespace Auth
     } // namespace Crt
 } // namespace Aws
