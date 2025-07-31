@@ -564,3 +564,49 @@ static int s_STSCredentialsProviderGetSuccessProxy(struct aws_allocator *allocat
 }
 
 AWS_TEST_CASE(STSCredentialsProviderGetSuccessProxy, s_STSCredentialsProviderGetSuccessProxy)
+
+static int s_DoSTSWebIdentityCredentialsProviderFailureTest(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        ApiHandle apiHandle(allocator);
+        apiHandle.InitializeLogging(Aws::Crt::LogLevel::Trace, stderr);
+
+        Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
+        ASSERT_TRUE(eventLoopGroup);
+
+        Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+        ASSERT_TRUE(defaultHostResolver);
+
+        Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+        ASSERT_TRUE(clientBootstrap);
+        clientBootstrap.EnableBlockingShutdown();
+
+        Aws::Crt::Io::TlsContextOptions tlsOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient(allocator);
+        Aws::Crt::Io::TlsContext tlsContext(tlsOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+
+        CredentialsProviderSTSWebIdentityConfig config;
+        config.Bootstrap = &clientBootstrap;
+        config.TlsCtx = tlsContext;
+        config.RoleArn = "arn:aws:iam::123456789012:role/role-name";
+        config.Region = "us-east-1";
+        config.TokenFilePath = "/not/a/real/file/path";
+        config.SessionName = "TestingSession";
+
+        auto provider = CredentialsProvider::CreateCredentialsProviderSTSWebIdentity(config, allocator);
+        ASSERT_NOT_NULL(provider.get());
+
+        GetCredentialsWaiter waiter(provider);
+
+        auto creds = waiter.GetCredentials();
+        ASSERT_NOT_NULL(creds.get());
+        ASSERT_TRUE(creds->GetAccessKeyId().len == 0);
+        ASSERT_TRUE(creds->GetSecretAccessKey().len == 0);
+        ASSERT_TRUE(creds->GetSessionToken().len == 0);
+        ASSERT_TRUE(creds->GetExpirationTimepointInSeconds() == 0);
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(STSWebIdentityCredentialsProviderFailureTest, s_DoSTSWebIdentityCredentialsProviderFailureTest);
