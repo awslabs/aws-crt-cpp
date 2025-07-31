@@ -118,7 +118,7 @@ static int s_GetEnvVariable(Aws::Crt::Allocator *allocator, const aws_string *va
 
 // Test Helper
 static void s_setupConnectionLifeCycle(
-    Aws::Iot::Mqtt5ClientBuilder *mqtt5Builder,
+    const std::shared_ptr<Aws::Iot::Mqtt5ClientBuilder> &mqtt5Builder,
     std::promise<bool> &connectionPromise,
     std::promise<void> &stoppedPromise,
     const char *clientName = "Client")
@@ -181,7 +181,7 @@ static int s_TestIoTMqtt5ConnectWithmTLS(Aws::Crt::Allocator *allocator, void *)
 
     ApiHandle apiHandle(allocator);
 
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsFromPath(
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsFromPath(
         aws_string_c_str(endpoint), aws_string_c_str(cert), aws_string_c_str(key), allocator);
 
     ASSERT_TRUE(builder);
@@ -195,7 +195,6 @@ static int s_TestIoTMqtt5ConnectWithmTLS(Aws::Crt::Allocator *allocator, void *)
 
     ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise, &stoppedPromise));
 
-    delete builder;
     aws_string_destroy(endpoint);
     aws_string_destroy(cert);
     aws_string_destroy(key);
@@ -230,7 +229,7 @@ static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, vo
     ASSERT_TRUE(provider);
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWebsocket(
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithWebsocket(
         aws_string_c_str(endpoint), websocketConfig, allocator);
     ASSERT_TRUE(builder);
 
@@ -243,7 +242,6 @@ static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, vo
 
     ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise, &stoppedPromise));
 
-    delete builder;
     aws_string_destroy(endpoint);
     aws_string_destroy(region);
     return AWS_OP_SUCCESS;
@@ -295,7 +293,7 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuth(Aws::Crt::Allocator *alloc
     authConfig.WithTokenValue(aws_string_c_str(tokenValue));
     authConfig.WithTokenSignature(aws_string_c_str(signature));
 
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizer(
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithCustomAuthorizer(
         aws_string_c_str(endpoint), authConfig, allocator);
     ASSERT_TRUE(builder);
 
@@ -316,7 +314,6 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuth(Aws::Crt::Allocator *alloc
     aws_string_destroy(tokenKeyName);
     aws_string_destroy(tokenValue);
 
-    delete builder;
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt5ConnectWithSigningCustomAuth, s_TestIoTMqtt5ConnectWithSigningCustomAuth)
@@ -366,7 +363,7 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuthUnencoded(Aws::Crt::Allocat
     authConfig.WithTokenValue(aws_string_c_str(tokenValue));
     authConfig.WithTokenSignature(aws_string_c_str(unencodedSignature));
 
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizer(
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithCustomAuthorizer(
         aws_string_c_str(endpoint), authConfig, allocator);
     ASSERT_TRUE(builder);
 
@@ -387,7 +384,6 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuthUnencoded(Aws::Crt::Allocat
     aws_string_destroy(tokenKeyName);
     aws_string_destroy(tokenValue);
 
-    delete builder;
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt5ConnectWithSigningCustomAuthUnencoded, s_TestIoTMqtt5ConnectWithSigningCustomAuthUnencoded)
@@ -423,7 +419,7 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *all
     authConfig.WithUsername(aws_string_c_str(username));
     authConfig.WithPassword(ByteCursorFromString(aws_string_c_str(password)));
 
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizer(
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithCustomAuthorizer(
         aws_string_c_str(endpoint), authConfig, allocator);
     ASSERT_TRUE(builder);
     std::promise<bool> connectionPromise;
@@ -440,7 +436,6 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuth(Aws::Crt::Allocator *all
     aws_string_destroy(username);
     aws_string_destroy(password);
 
-    delete builder;
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt5ConnectWithNoSigningCustomAuth, s_TestIoTMqtt5ConnectWithNoSigningCustomAuth)
@@ -481,9 +476,8 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets(Aws::Crt::Allo
 
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region));
 
-    Aws::Iot::Mqtt5ClientBuilder *builder =
-        Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
-            aws_string_c_str(endpoint), authConfig, websocketConfig, allocator);
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
+        aws_string_c_str(endpoint), authConfig, websocketConfig, allocator);
     ASSERT_TRUE(builder);
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -500,7 +494,6 @@ static int s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets(Aws::Crt::Allo
     aws_string_destroy(username);
     aws_string_destroy(password);
 
-    delete builder;
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt5ConnectWithNoSigningCustomAuthWebsockets, s_TestIoTMqtt5ConnectWithNoSigningCustomAuthWebsockets)
@@ -553,9 +546,8 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Alloca
 
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region));
 
-    Aws::Iot::Mqtt5ClientBuilder *builder =
-        Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
-            aws_string_c_str(endpoint), authConfig, websocketConfig, allocator);
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
+        aws_string_c_str(endpoint), authConfig, websocketConfig, allocator);
     ASSERT_TRUE(builder);
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -575,7 +567,6 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets(Aws::Crt::Alloca
     aws_string_destroy(tokenValue);
     aws_string_destroy(signature);
 
-    delete builder;
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt5ConnectWithSigningCustomAuthWebsockets, s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsockets)
@@ -629,9 +620,8 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsocketsUnencoded(Aws::Cr
 
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region));
 
-    Aws::Iot::Mqtt5ClientBuilder *builder =
-        Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
-            aws_string_c_str(endpoint), authConfig, websocketConfig, allocator);
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithCustomAuthorizerWebsocket(
+        aws_string_c_str(endpoint), authConfig, websocketConfig, allocator);
     ASSERT_TRUE(builder);
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
@@ -651,7 +641,6 @@ static int s_TestIoTMqtt5ConnectWithSigningCustomAuthWebsocketsUnencoded(Aws::Cr
     aws_string_destroy(tokenValue);
     aws_string_destroy(unencodedSignature);
 
-    delete builder;
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(
@@ -710,7 +699,7 @@ static int s_TestIoTMqtt5ConnectWithPKCS11(Aws::Crt::Allocator *allocator, void 
     pkcs11Options.SetTokenLabel(aws_string_c_str(pkcs11_tokenLabel));
     pkcs11Options.SetPrivateKeyObjectLabel(aws_string_c_str(pkcs11_privateKeyLabel));
 
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsPkcs11(
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsPkcs11(
         aws_string_c_str(endpoint), pkcs11Options, allocator);
 
     builder->WithPort(8883);
@@ -727,7 +716,6 @@ static int s_TestIoTMqtt5ConnectWithPKCS11(Aws::Crt::Allocator *allocator, void 
 
     ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise, &stoppedPromise));
 
-    delete builder;
     aws_string_destroy(endpoint);
     aws_string_destroy(pkcs11_lib);
     aws_string_destroy(pkcs11_cert);
@@ -778,7 +766,7 @@ static int s_TestIoTMqtt5ConnectWithPKCS12(Aws::Crt::Allocator *allocator, void 
     testPkcs12Options.pkcs12_file = aws_string_c_str(pkcs12_key);
     testPkcs12Options.pkcs12_password = aws_string_c_str(pkcs12_password);
 
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithMtlsPkcs12(
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsPkcs12(
         aws_string_c_str(endpoint), testPkcs12Options, allocator);
 
     ASSERT_TRUE(builder);
@@ -792,7 +780,6 @@ static int s_TestIoTMqtt5ConnectWithPKCS12(Aws::Crt::Allocator *allocator, void 
 
     ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise, &stoppedPromise));
 
-    delete builder;
     aws_string_destroy(endpoint);
     aws_string_destroy(pkcs12_key);
     aws_string_destroy(pkcs12_password);
@@ -832,7 +819,7 @@ static int s_TestIoTMqtt5ConnectWithWindowsCert(Aws::Crt::Allocator *allocator, 
 
     Aws::Crt::ApiHandle apiHandle(allocator);
 
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWindowsCertStorePath(
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithWindowsCertStorePath(
         aws_string_c_str(endpoint), aws_string_c_str(windows_cert), allocator);
 
     ASSERT_TRUE(builder);
@@ -846,7 +833,6 @@ static int s_TestIoTMqtt5ConnectWithWindowsCert(Aws::Crt::Allocator *allocator, 
 
     ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise, &stoppedPromise));
 
-    delete builder;
     aws_string_destroy(endpoint);
     aws_string_destroy(windows_cert);
     aws_string_destroy(codebuild_buildID);
@@ -892,7 +878,7 @@ static int s_TestIoTMqtt5ConnectWSStatic(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(provider);
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWebsocket(
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithWebsocket(
         aws_string_c_str(endpoint), websocketConfig, allocator);
     ASSERT_TRUE(builder);
 
@@ -905,7 +891,6 @@ static int s_TestIoTMqtt5ConnectWSStatic(Aws::Crt::Allocator *allocator, void *)
 
     ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise, &stoppedPromise));
 
-    delete builder;
     aws_string_destroy(endpoint);
     aws_string_destroy(region);
     aws_string_destroy(accessKeyId);
@@ -952,7 +937,7 @@ static int s_TestIoTMqtt5ConnectWSCognito(Aws::Crt::Allocator *allocator, void *
     ASSERT_TRUE(provider);
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWebsocket(
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithWebsocket(
         aws_string_c_str(endpoint), websocketConfig, allocator);
     ASSERT_TRUE(builder);
 
@@ -965,7 +950,6 @@ static int s_TestIoTMqtt5ConnectWSCognito(Aws::Crt::Allocator *allocator, void *
 
     ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise, &stoppedPromise));
 
-    delete builder;
     aws_string_destroy(endpoint);
     aws_string_destroy(region);
     aws_string_destroy(cognitoEndpoint);
@@ -1008,7 +992,7 @@ static int s_TestIoTMqtt5ConnectWSProfile(Aws::Crt::Allocator *allocator, void *
     ASSERT_TRUE(provider);
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWebsocket(
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithWebsocket(
         aws_string_c_str(endpoint), websocketConfig, allocator);
     ASSERT_TRUE(builder);
 
@@ -1021,7 +1005,6 @@ static int s_TestIoTMqtt5ConnectWSProfile(Aws::Crt::Allocator *allocator, void *
 
     ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise, &stoppedPromise));
 
-    delete builder;
     aws_string_destroy(endpoint);
     aws_string_destroy(region);
     aws_string_destroy(profileCredentials);
@@ -1065,7 +1048,7 @@ static int s_TestIoTMqtt5ConnectWSEnvironment(Aws::Crt::Allocator *allocator, vo
     ASSERT_TRUE(provider);
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWebsocket(
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithWebsocket(
         aws_string_c_str(endpoint), websocketConfig, allocator);
     ASSERT_TRUE(builder);
 
@@ -1078,7 +1061,6 @@ static int s_TestIoTMqtt5ConnectWSEnvironment(Aws::Crt::Allocator *allocator, vo
 
     ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise, &stoppedPromise));
 
-    delete builder;
     aws_string_destroy(endpoint);
     aws_string_destroy(region);
     aws_string_destroy(accessKey);
@@ -1155,7 +1137,7 @@ static int s_TestIoTMqtt5ConnectWSX509(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(provider);
     Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
 
-    Aws::Iot::Mqtt5ClientBuilder *builder = Aws::Iot::Mqtt5ClientBuilder::NewMqtt5ClientBuilderWithWebsocket(
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithWebsocket(
         aws_string_c_str(endpoint), websocketConfig, allocator);
     ASSERT_TRUE(builder);
 
@@ -1168,7 +1150,6 @@ static int s_TestIoTMqtt5ConnectWSX509(Aws::Crt::Allocator *allocator, void *)
 
     ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise, &stoppedPromise));
 
-    delete builder;
     aws_string_destroy(endpoint);
     aws_string_destroy(region);
     aws_string_destroy(x509Endpoint);

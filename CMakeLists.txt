@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.9...3.31)
 option(BUILD_DEPS "Builds aws common runtime dependencies as part of build. Turn off if you want to control your dependency chain." ON)
 option(BYO_CRYPTO "Don't build a tls implementation or link against a crypto interface. This feature is only for unix builds currently" OFF)
 option(USE_OPENSSL "Set this if you want to use your system's OpenSSL 1.0.2/1.1.1 compatible libcrypto" OFF)
+option(ENFORCE_SUBMODULE_VERSIONS "Check and enforce submodule versions to verify they are the minimum expected version or later. Versioning is only checked if BUILD_DEPS is ON." ON)
 
 # Let aws-iot-device-sdk-cpp-v2 report its own version in MQTT connections (instead of reporting aws-crt-cpp's version).
 option(AWS_IOT_SDK_VERSION "Set the version reported by Aws::Iot::MqttClientConnectionConfigBuilder")
@@ -27,6 +28,8 @@ project("aws-crt-cpp"
 
 include(CTest)
 include(GNUInstallDirs)
+include(cmake/EnforceSubmoduleVersions.cmake) # for check_submodule_commit()
+
 
 if(NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 11)
@@ -52,11 +55,18 @@ if(BUILD_DEPS)
     set(IN_SOURCE_BUILD ON)
     set(BUILD_TESTING_PREV ${BUILD_TESTING})
     set(BUILD_TESTING OFF)
+    if(ENFORCE_SUBMODULE_VERSIONS)
+        check_submodule_commit("aws-c-common" "crt/aws-c-common")
+    endif()
     add_subdirectory(crt/aws-c-common)
 
     if(UNIX AND NOT APPLE AND NOT BYO_CRYPTO)
         if(NOT USE_OPENSSL)
             include(AwsPrebuildDependency)
+
+            if(ENFORCE_SUBMODULE_VERSIONS)
+                check_submodule_commit("aws-lc" "crt/aws-lc")
+            endif()
 
             set(AWSLC_CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
@@ -89,7 +99,23 @@ if(BUILD_DEPS)
         endif()
 
         set(UNSAFE_TREAT_WARNINGS_AS_ERRORS OFF CACHE BOOL "Disable warnings-as-errors when building S2N")
+        if(ENFORCE_SUBMODULE_VERSIONS)
+            check_submodule_commit("s2n" "crt/s2n")
+        endif()
         add_subdirectory(crt/s2n)
+    endif()
+
+    if(ENFORCE_SUBMODULE_VERSIONS)
+        check_submodule_commit("aws-c-sdkutils" "crt/aws-c-sdkutils")
+        check_submodule_commit("aws-c-io" "crt/aws-c-io")
+        check_submodule_commit("aws-c-cal" "crt/aws-c-cal")
+        check_submodule_commit("aws-c-compression" "crt/aws-c-compression")
+        check_submodule_commit("aws-c-http" "crt/aws-c-http")
+        check_submodule_commit("aws-c-auth" "crt/aws-c-auth")
+        check_submodule_commit("aws-c-mqtt" "crt/aws-c-mqtt")
+        check_submodule_commit("aws-checksums" "crt/aws-checksums")
+        check_submodule_commit("aws-c-event-stream" "crt/aws-c-event-stream")
+        check_submodule_commit("aws-c-s3" "crt/aws-c-s3")
     endif()
 
     add_subdirectory(crt/aws-c-sdkutils)

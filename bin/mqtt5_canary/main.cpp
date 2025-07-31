@@ -589,7 +589,7 @@ static int s_AwsMqtt5CanaryOperationPublish(
     ++g_statistic.totalOperations;
     ++g_statistic.publish_attempt;
 
-    if (testClient->client->Publish(packetPublish, [testClient](int errorcode, std::shared_ptr<PublishResult> packet) {
+    if (testClient->client->Publish(packetPublish, [testClient](int errorcode, std::shared_ptr<PublishResult> ) {
             if (errorcode != 0)
             {
                 ++g_statistic.publish_failed;
