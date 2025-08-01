@@ -36,3 +36,30 @@
 #        define AWS_CRT_CPP_API
 #    endif
 #endif
+
+/*
+ * Deprecation warnings are emitted unless callers
+ * compile with -DAWS_CRT_DISABLE_DEPRECATION_WARNINGS.
+ */
+#ifndef AWS_CRT_SOFT_DEPRECATED
+#    if !defined(AWS_CRT_DISABLE_DEPRECATION_WARNINGS)
+#        if defined(__has_attribute) /* Clang, GCC, Apple Clang, ICC all implement __has_attribute */
+#            if __has_attribute(deprecated)
+/* In these instances, we will use what's already provided */
+#                define AWS_CRT_SOFT_DEPRECATED(msg) __attribute__((deprecated(msg)))
+#            endif
+#        endif
+/* We fallback to standard C++14 or MSVC syntax */
+#        if !defined(AWS_CRT_SOFT_DEPRECATED)
+#            if __cplusplus >= 201402L /* C++14 supports [[deprecated]]   */
+#                define AWS_CRT_SOFT_DEPRECATED(msg) [[deprecated(msg)]]
+#            elif defined(_MSC_VER) /* Older MSVC                      */
+#                define AWS_CRT_SOFT_DEPRECATED(msg) __declspec(deprecated(msg))
+#            else /* Unknown compiler → bail out     */
+#                define AWS_CRT_SOFT_DEPRECATED(msg)
+#            endif
+#        endif
+#    else
+#        define AWS_CRT_SOFT_DEPRECATED(msg)
+#    endif
+#endif
