@@ -32,11 +32,6 @@ namespace Aws
             class HttpRequest;
         }
 
-        namespace Mqtt5
-        {
-            class Mqtt5ClientCore;
-        }
-
         namespace Mqtt
         {
             /**
