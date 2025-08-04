@@ -80,6 +80,11 @@ namespace Aws
                 uint64_t GetExpirationTimepointInSeconds() const noexcept;
 
                 /**
+                 * Gets the value of the accountId of aws credentials
+                 */
+                ByteCursor GetAccountId() const noexcept;
+
+                /**
                  * Validity check - returns true if the instance is valid, false otherwise
                  */
                 explicit operator bool() const noexcept;
