@@ -19,6 +19,7 @@ using namespace Aws::Crt::Auth;
 static const char *s_access_key_id = "AccessKey";
 static const char *s_secret_access_key = "Sekrit";
 static const char *s_session_token = "Token";
+static const char *s_account_id = "123456789012";
 
 class GetCredentialsWaiter
 {
@@ -109,6 +110,58 @@ static int s_TestCredentialsConstruction(struct aws_allocator *allocator, void *
 }
 
 AWS_TEST_CASE(TestCredentialsConstruction, s_TestCredentialsConstruction)
+
+static int s_TestCredentialsConstructionWithAccountId(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        ApiHandle apiHandle(allocator);
+        uint64_t expire = Aws::Crt::DateTime::Now().Millis() / 1000 + 3600;
+
+        struct aws_credentials_options creds_option;
+        AWS_ZERO_STRUCT(creds_option);
+        creds_option.access_key_id_cursor = aws_byte_cursor_from_c_str(s_access_key_id);
+        creds_option.secret_access_key_cursor = aws_byte_cursor_from_c_str(s_secret_access_key);
+        creds_option.session_token_cursor = aws_byte_cursor_from_c_str(s_session_token);
+        creds_option.account_id_cursor = aws_byte_cursor_from_c_str(s_account_id);
+        creds_option.expiration_timepoint_seconds = expire;
+
+        aws_credentials *raw_creds = aws_credentials_new_with_options(allocator, &creds_option);
+
+        ASSERT_NOT_NULL(raw_creds);
+        Credentials creds(raw_creds);
+        ASSERT_PTR_EQUALS(raw_creds, creds.GetUnderlyingHandle());
+        auto cursor = creds.GetAccessKeyId();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_access_key_id));
+        cursor = creds.GetSecretAccessKey();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_secret_access_key));
+        cursor = creds.GetSessionToken();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_session_token));
+        cursor = creds.GetAccountId();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_account_id));
+        ASSERT_UINT_EQUALS(expire, creds.GetExpirationTimepointInSeconds());
+
+        Credentials creds2(raw_creds);
+        ASSERT_TRUE(raw_creds == creds2.GetUnderlyingHandle());
+
+        // We can/should safely release the raw creds here, but remember creds still holds it by ref counting.
+        aws_credentials_release(raw_creds);
+
+        cursor = creds2.GetAccessKeyId();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_access_key_id));
+        cursor = creds2.GetSecretAccessKey();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_secret_access_key));
+        cursor = creds2.GetSessionToken();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_session_token));
+        cursor = creds.GetAccountId();
+        ASSERT_TRUE(aws_byte_cursor_eq_c_str(&cursor, s_account_id));
+        ASSERT_UINT_EQUALS(expire, creds2.GetExpirationTimepointInSeconds());
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(TestCredentialsConstructionWithAccountId, s_TestCredentialsConstructionWithAccountId)
 
 static int s_TestAnonymousCredentialsConstruction(struct aws_allocator *allocator, void *ctx)
 {
