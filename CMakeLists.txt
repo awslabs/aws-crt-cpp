@@ -337,6 +337,10 @@ if(AWS_WARNINGS_ARE_ERRORS)
     endif()
 endif()
 
+if(NOT BUILD_SHARED_LIBS AND NOT MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE -fPIC)
+endif()
+
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${GENERATED_INCLUDE_DIR}>

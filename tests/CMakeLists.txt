@@ -126,6 +126,7 @@ add_test_case(TestProviderImdsGet)
 if(NOT BYO_CRYPTO)
     add_net_test_case(TestProviderDefaultChainGet)
     add_net_test_case(TestProviderDefaultChainManualTlsContextGet)
+    add_test_case(STSWebIdentityCredentialsProviderFailureTest)
 endif()
 
 add_test_case(TestProviderDelegateGet)
