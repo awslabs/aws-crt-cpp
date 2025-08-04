@@ -104,6 +104,18 @@ namespace Aws
                 }
             }
 
+            ByteCursor Credentials::GetAccountId() const noexcept
+            {
+                if (m_credentials)
+                {
+                    return aws_credentials_get_account_id(m_credentials);
+                }
+                else
+                {
+                    return ByteCursor{0, nullptr};
+                }
+            }
+
             Credentials::operator bool() const noexcept
             {
                 return m_credentials != nullptr;
