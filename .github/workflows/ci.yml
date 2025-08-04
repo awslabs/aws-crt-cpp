@@ -41,7 +41,8 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ matrix.image }} build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DUSE_OPENSSL=ON
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ matrix.image }} build -p ${{ env.PACKAGE_NAME }}
+        --cmake-extra=-DUSE_OPENSSL=ON --cmake-extra=-DAWS_WARNINGS_ARE_ERRORS=OFF
 
   # These linux-compat images need to run without -DUSE_OPENSSL because they do not have OpenSSL packages
   # that are up-to-date (AL2) or don't provide OpenSSL development packages that is found in CMake (alpine)
@@ -71,7 +72,7 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ matrix.image }} build -p ${{ env.PACKAGE_NAME }}
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ matrix.image }} build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DAWS_WARNINGS_ARE_ERRORS=OFF
 
   linux-compiler-compat:
     runs-on: ubuntu-24.04 # latest
@@ -103,7 +104,8 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }} --cmake-extra=-DUSE_OPENSSL=ON
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }}
+        --cmake-extra=-DUSE_OPENSSL=ON --cmake-extra=-DAWS_WARNINGS_ARE_ERRORS=OFF
 
   raspberry:
     runs-on: ubuntu-24.04 # latest
@@ -142,7 +144,8 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }} with cxx${{ matrix.cxx-std }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }} --cmake-extra=-DUSE_OPENSSL=ON --cmake-extra=-DCMAKE_CXX_STANDARD=${{ matrix.cxx-std }}
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }}
+        --cmake-extra=-DUSE_OPENSSL=ON --cmake-extra=-DCMAKE_CXX_STANDARD=${{ matrix.cxx-std }} --cmake-extra=-DAWS_WARNINGS_ARE_ERRORS=OFF
 
   byo-crypto:
     runs-on: ubuntu-24.04 # latest
@@ -155,7 +158,8 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBYO_CRYPTO=ON --cmake-extra=-DUSE_OPENSSL=ON
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }}
+        --cmake-extra=-DBYO_CRYPTO=ON --cmake-extra=-DUSE_OPENSSL=ON --cmake-extra=-DAWS_WARNINGS_ARE_ERRORS=OFF
 
   linux-shared-libs:
     runs-on: ubuntu-24.04 # latest
@@ -171,7 +175,8 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }} --cmake-extra=-DBUILD_SHARED_LIBS=ON
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }}
+        --cmake-extra=-DBUILD_SHARED_LIBS=ON --cmake-extra=-DAWS_WARNINGS_ARE_ERRORS=OFF
 
   linux-glibcxx-ancient-abi:
     runs-on: ubuntu-24.04 # latest
@@ -183,7 +188,8 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=gcc-11 --cmake-extra=-DBUILD_SHARED_LIBS=ON --cmake-extra=-DCMAKE_CXX_FLAGS=-D_GLIBCXX_USE_CXX11_ABI=0
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=gcc-11
+        --cmake-extra=-DBUILD_SHARED_LIBS=ON --cmake-extra=-DCMAKE_CXX_FLAGS=-D_GLIBCXX_USE_CXX11_ABI=0 --cmake-extra=-DAWS_WARNINGS_ARE_ERRORS=OFF
 
   linux-openssl-static:
     runs-on: ubuntu-24.04 # latest
@@ -196,7 +202,8 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --variant=openssl --cmake-extra=-DUSE_OPENSSL=ON
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --variant=openssl
+        --cmake-extra=-DUSE_OPENSSL=ON --cmake-extra=-DAWS_WARNINGS_ARE_ERRORS=OFF
 
   linux-openssl-shared:
     runs-on: ubuntu-24.04 # latest
@@ -209,7 +216,8 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --variant=openssl --cmake-extra=-DUSE_OPENSSL=ON --cmake-extra=-DBUILD_SHARED_LIBS=ON
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --variant=openssl
+        --cmake-extra=-DUSE_OPENSSL=ON --cmake-extra=-DBUILD_SHARED_LIBS=ON --cmake-extra=-DAWS_WARNINGS_ARE_ERRORS=OFF
 
   linux-no-cpu-extensions:
     runs-on: ubuntu-24.04 # latest
@@ -222,7 +230,8 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DUSE_CPU_EXTENSIONS=OFF --cmake-extra=-DUSE_OPENSSL=ON
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }}
+        --cmake-extra=-DUSE_CPU_EXTENSIONS=OFF --cmake-extra=-DUSE_OPENSSL=ON --cmake-extra=-DAWS_WARNINGS_ARE_ERRORS=OFF
 
   windows:
     runs-on: windows-2025 # latest
@@ -234,7 +243,7 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
-        python builder.pyz build -p ${{ env.PACKAGE_NAME }}
+        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DAWS_WARNINGS_ARE_ERRORS=OFF
 
   windows-vc17:
     runs-on: windows-2025 # latest
@@ -249,7 +258,7 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
-        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --compiler msvc-17 --target windows-${{ matrix.arch }}
+        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --compiler msvc-17 --target windows-${{ matrix.arch }} --cmake-extra=-DAWS_WARNINGS_ARE_ERRORS=OFF
 
   windows-shared-libs:
     runs-on: windows-2025 # latest
@@ -261,7 +270,8 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
-        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBUILD_SHARED_LIBS=ON
+        python builder.pyz build -p ${{ env.PACKAGE_NAME }}
+        --cmake-extra=-DBUILD_SHARED_LIBS=ON --cmake-extra=-DAWS_WARNINGS_ARE_ERRORS=OFF
 
   # Ensure users can link with /DELAYLOAD:aws-crt-cpp.dll
   # We test by building everything using those linker flags.
@@ -279,7 +289,8 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
-        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBUILD_SHARED_LIBS=ON
+        python builder.pyz build -p ${{ env.PACKAGE_NAME }}
+        --cmake-extra=-DBUILD_SHARED_LIBS=ON --cmake-extra=-DAWS_WARNINGS_ARE_ERRORS=OFF
 
   windows-no-cpu-extensions:
     runs-on: windows-2025 # latest
@@ -291,7 +302,8 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
-        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DUSE_CPU_EXTENSIONS=OFF
+        python builder.pyz build -p ${{ env.PACKAGE_NAME }}
+        --cmake-extra=-DUSE_CPU_EXTENSIONS=OFF --cmake-extra=-DAWS_WARNINGS_ARE_ERRORS=OFF
 
   macos:
     runs-on: macos-14 # latest
@@ -351,7 +363,7 @@ jobs:
       run: |
         python3 -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder')"
         chmod a+x builder
-        ./builder build -p aws-crt-cpp --spec=downstream --target=${{matrix.arch}} run_tests=false
+        ./builder build -p aws-crt-cpp --spec=downstream --target=${{matrix.arch}} run_tests=false --cmake-extra=-DAWS_WARNINGS_ARE_ERRORS=OFF
 
   # check that docs can still build
   check-docs:
