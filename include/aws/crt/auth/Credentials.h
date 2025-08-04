@@ -491,7 +491,7 @@ namespace Aws
                 /**
                  * TLS configuration for secure socket connections.
                  */
-                Io::TlsContext TlsCtx;
+                Io::TlsConnectionOptions TlsConnectionOptions;
             };
 
             /**
