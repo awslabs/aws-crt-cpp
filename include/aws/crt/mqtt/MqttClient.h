@@ -39,15 +39,30 @@ namespace Aws
              * all function arguments need only to live through the duration of the
              * function call.
              */
-            class AWS_CRT_CPP_API MqttClient final
+            class AWS_CRT_CPP_API AWS_CRT_SOFT_DEPRECATED(
+                "Please use Aws::Crt::Mqtt5::Mqtt5Client for new code. There are "
+                "no current plans to fully deprecate the MQTT 3.1.1 client but it is highly recommended customers "
+                "migrate "
+                "to the MQTT5 client to have access to a more robust feature set, clearer error handling, and lifetime "
+                "management. More details can be found here: <URL>") MqttClient final
             {
               public:
                 /**
+                 * @deprecated Prefer Aws::Crt::Mqtt5::Mqtt5Client for new code.  There are no current plans to fully
+                 * deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5 client to
+                 * have access to a more robust feature set, clearer error handling, and lifetime management. More
+                 * details can be found here: <URL>
+                 *
                  * Initialize an MqttClient using bootstrap and allocator
                  */
                 MqttClient(Io::ClientBootstrap &bootstrap, Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
+                 * @deprecated Prefer Aws::Crt::Mqtt5::Mqtt5Client for new code.  There are no current plans to fully
+                 * deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5 client to
+                 * have access to a more robust feature set, clearer error handling, and lifetime management. More
+                 * details can be found here: <URL>
+                 *
                  * Initialize an MqttClient using a allocator and the default ClientBootstrap
                  *
                  * For more information on the default ClientBootstrap see
