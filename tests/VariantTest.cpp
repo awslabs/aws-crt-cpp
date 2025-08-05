@@ -8,6 +8,17 @@
 
 const char *s_variant_test_str = "This is a string, that should be long enough to avoid small string optimizations";
 
+struct MoveOnlyStruct
+{
+    MoveOnlyStruct() = default;
+
+    MoveOnlyStruct(MoveOnlyStruct &&) = default;
+    MoveOnlyStruct &operator=(MoveOnlyStruct &&) = default;
+
+    MoveOnlyStruct(const MoveOnlyStruct &) = delete;
+    MoveOnlyStruct &operator=(const MoveOnlyStruct &) = delete;
+};
+
 static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
@@ -41,6 +52,13 @@ static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *
             MyTestVariant2 var2aCpyAssigned;
             var2CpyAssigned = var2a;
             MyTestVariant2 var2aCpyConstructedVariant(var2aCpyAssigned);
+        }
+
+        {
+            // test with a move-only type
+            using MyTestVariant3 = Aws::Crt::Variant<MoveOnlyStruct, Aws::Crt::String>;
+            MyTestVariant3 var3(MoveOnlyStruct{});
+            MyTestVariant3 var3a = std::move(var3);
         }
     }
 
