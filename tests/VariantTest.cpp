@@ -8,17 +8,6 @@
 
 const char *s_variant_test_str = "This is a string, that should be long enough to avoid small string optimizations";
 
-struct MoveOnlyStruct
-{
-    MoveOnlyStruct() = default;
-
-    MoveOnlyStruct(MoveOnlyStruct &&) = default;
-    MoveOnlyStruct &operator=(MoveOnlyStruct &&) = default;
-
-    MoveOnlyStruct(const MoveOnlyStruct &) = delete;
-    MoveOnlyStruct &operator=(const MoveOnlyStruct &) = delete;
-};
-
 static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
@@ -56,9 +45,20 @@ static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *
 
         {
             // test with a move-only type
-            using MyTestVariant3 = Aws::Crt::Variant<MoveOnlyStruct, Aws::Crt::String>;
-            MyTestVariant3 var3(MoveOnlyStruct{});
+
+            struct TestError
+            {
+                explicit operator bool() const noexcept { return baseStatus; }
+
+                bool baseStatus;
+                int crtError;
+            };
+
+            using MyTestVariant3 = Aws::Crt::Variant<Aws::Crt::ScopedResource<Aws::Crt::String>, TestError>;
+            Aws::Crt::ScopedResource<Aws::Crt::String> ptr(new Aws::Crt::String("12345"));
+            MyTestVariant3 var3(std::move(ptr));
             MyTestVariant3 var3a = std::move(var3);
+            (void)var3a;
         }
     }
 
