@@ -390,7 +390,8 @@ jobs:
         python3 -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder')"
         chmod a+x builder
         ./builder build -p aws-crt-cpp --spec=downstream --target=${{matrix.arch}} run_tests=false \
-          --dockcross-extra-args "-e CFLAGS='-DAWS_CRT_DISABLE_DEPRECATION_WARNINGS' -e CXXFLAGS='-DAWS_CRT_DISABLE_DEPRECATION_WARNINGS'"
+        --dockcross-extra-args -e CFLAGS=-DAWS_CRT_DISABLE_DEPRECATION_WARNINGS \
+        --dockcross-extra-args -e CXXFLAGS=-DAWS_CRT_DISABLE_DEPRECATION_WARNINGS
 
   # check that docs can still build
   check-docs:
