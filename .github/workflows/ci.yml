@@ -263,7 +263,7 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
-        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra="-DAWS_CRT_DISABLE_DEPRECATION_WARNINGS"
+        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra="-DAWS_CRT_DISABLE_DEPRECATION_WARNINGS=ON"
 
   windows-vc17:
     runs-on: windows-2025 # latest
@@ -278,7 +278,7 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
-        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --compiler msvc-17 --target windows-${{ matrix.arch }} --cmake-extra="-DAWS_CRT_DISABLE_DEPRECATION_WARNINGS"
+        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --compiler msvc-17 --target windows-${{ matrix.arch }} --cmake-extra="-DAWS_CRT_DISABLE_DEPRECATION_WARNINGS=ON"
 
   windows-shared-libs:
     runs-on: windows-2025 # latest
@@ -290,7 +290,7 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
-        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBUILD_SHARED_LIBS=ON --cmake-extra="-DAWS_CRT_DISABLE_DEPRECATION_WARNINGS"
+        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBUILD_SHARED_LIBS=ON --cmake-extra="-DAWS_CRT_DISABLE_DEPRECATION_WARNINGS=ON"
 
   # Ensure users can link with /DELAYLOAD:aws-crt-cpp.dll
   # We test by building everything using those linker flags.
@@ -308,7 +308,7 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
-        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBUILD_SHARED_LIBS=ON --cmake-extra="-DAWS_CRT_DISABLE_DEPRECATION_WARNINGS"
+        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBUILD_SHARED_LIBS=ON --cmake-extra="-DAWS_CRT_DISABLE_DEPRECATION_WARNINGS=ON"
 
   windows-no-cpu-extensions:
     runs-on: windows-2025 # latest
@@ -320,7 +320,7 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }} + consumers
       run: |
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
-        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DUSE_CPU_EXTENSIONS=OFF --cmake-extra="-DAWS_CRT_DISABLE_DEPRECATION_WARNINGS"
+        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DUSE_CPU_EXTENSIONS=OFF --cmake-extra="-DAWS_CRT_DISABLE_DEPRECATION_WARNINGS=ON"
 
   macos:
     runs-on: macos-14 # latest
