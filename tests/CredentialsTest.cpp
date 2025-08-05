@@ -637,10 +637,11 @@ static int s_DoSTSWebIdentityCredentialsProviderFailureTest(struct aws_allocator
 
         Aws::Crt::Io::TlsContextOptions tlsOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient(allocator);
         Aws::Crt::Io::TlsContext tlsContext(tlsOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+        const auto connectionOptions = tlsContext.NewConnectionOptions();
 
         CredentialsProviderSTSWebIdentityConfig config;
         config.Bootstrap = &clientBootstrap;
-        config.TlsCtx = tlsContext;
+        config.TlsConnectionOptions = connectionOptions;
         config.RoleArn = "arn:aws:iam::123456789012:role/role-name";
         config.Region = "us-east-1";
         config.TokenFilePath = "/not/a/real/file/path";

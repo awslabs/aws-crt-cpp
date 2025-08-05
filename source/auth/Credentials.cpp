@@ -506,7 +506,11 @@ namespace Aws
                     config.Bootstrap ? config.Bootstrap->GetUnderlyingHandle()
                                      : ApiHandle::GetOrCreateStaticDefaultClientBootstrap()->GetUnderlyingHandle();
 
-                raw_config.tls_ctx = config.TlsCtx.GetUnderlyingHandle();
+                const auto connectionOptions = config.TlsConnectionOptions.GetUnderlyingHandle();
+                if (connectionOptions != nullptr)
+                {
+                    raw_config.tls_ctx = connectionOptions->ctx;
+                }
                 return s_CreateWrappedProvider(
                     aws_credentials_provider_new_sts_web_identity(allocator, &raw_config), allocator);
             }
