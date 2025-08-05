@@ -8,6 +8,12 @@
 
 const char *s_variant_test_str = "This is a string, that should be long enough to avoid small string optimizations";
 
+#if defined(WIN32)
+#    define AWS_VARIANTTEST_API __declspec(dllexport)
+#else
+#    define AWS_VARIANTTEST_API
+#endif
+
 static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
@@ -46,7 +52,7 @@ static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *
         {
             // test with a move-only type
 
-            struct TestError
+            struct AWS_VARIANTTEST_API TestError
             {
                 explicit operator bool() const noexcept { return baseStatus; }
 
@@ -55,7 +61,8 @@ static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *
             };
 
             using MyTestVariant3 = Aws::Crt::Variant<Aws::Crt::ScopedResource<Aws::Crt::String>, TestError>;
-            Aws::Crt::ScopedResource<Aws::Crt::String> ptr(new Aws::Crt::String("12345"));
+            Aws::Crt::ScopedResource<Aws::Crt::String> ptr(
+                new Aws::Crt::String("12345"), [](Aws::Crt::String *p) { delete p; });
             MyTestVariant3 var3(std::move(ptr));
             MyTestVariant3 var3a = std::move(var3);
             (void)var3a;
