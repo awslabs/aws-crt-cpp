@@ -61,11 +61,38 @@ static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *
             };
 
             using MyTestVariant3 = Aws::Crt::Variant<Aws::Crt::ScopedResource<Aws::Crt::String>, TestError>;
-            Aws::Crt::ScopedResource<Aws::Crt::String> ptr(
-                new Aws::Crt::String("12345"), [](Aws::Crt::String *p) { delete p; });
-            MyTestVariant3 var3(std::move(ptr));
-            MyTestVariant3 var3a = std::move(var3);
-            (void)var3a;
+
+            class FailVariantTestResult
+            {
+              public:
+                FailVariantTestResult() = default;
+                FailVariantTestResult(MyTestVariant3 &&result) : m_result(std::move(result)) {}
+
+                Aws::Crt::String *GetFirst() const noexcept
+                {
+                    if (m_result.holds_alternative<Aws::Crt::ScopedResource<Aws::Crt::String>>())
+                    {
+                        return m_result.get<Aws::Crt::ScopedResource<Aws::Crt::String>>().get();
+                    }
+
+                    return nullptr;
+                }
+
+                const TestError *GetSecond() const noexcept
+                {
+                    if (m_result.holds_alternative<TestError>())
+                    {
+                        return &m_result.get<TestError>();
+                    }
+
+                    return nullptr;
+                }
+
+              private:
+                MyTestVariant3 m_result;
+            };
+
+            FailVariantTestResult result1;
         }
     }
 
