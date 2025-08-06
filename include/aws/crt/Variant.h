@@ -15,8 +15,23 @@ namespace Aws
 {
     namespace Crt
     {
+        namespace detail
+        {
+            template <typename... Args> struct Conjunction : std::true_type
+            {
+            };
+
+            template <typename Arg, typename... Args>
+            struct Conjunction<Arg, Args...>
+                : std::conditional<Arg::value, detail::Conjunction<Args...>, std::false_type>::type
+            {
+            };
+
+        } // namespace detail
+
         namespace VariantDetail
         {
+            // TODO Pass values instead of refs.
             template <typename T> constexpr const T &ConstExprMax(const T &a, const T &b)
             {
                 return (a < b) ? b : a;
@@ -116,6 +131,33 @@ namespace Aws
                 };
             } // namespace VariantDebug
 #endif /* defined(AWS_CRT_ENABLE_VARIANT_DEBUG) */
+
+            template <bool = true> class CopyableVariantImpl
+            {
+              public:
+                CopyableVariantImpl(const CopyableVariantImpl &) = default;
+                CopyableVariantImpl &operator=(const CopyableVariantImpl &) = default;
+            };
+            template <> class CopyableVariantImpl<false>
+            {
+              public:
+                CopyableVariantImpl(const CopyableVariantImpl &) = delete;
+                CopyableVariantImpl &operator=(const CopyableVariantImpl &) = delete;
+            };
+
+            template <bool = true> class MovableVariantImpl
+            {
+              public:
+                MovableVariantImpl(MovableVariantImpl &&) = default;
+                MovableVariantImpl &operator=(MovableVariantImpl &&) = default;
+            };
+            template <> class MovableVariantImpl<false>
+            {
+              public:
+                MovableVariantImpl(MovableVariantImpl &&) = delete;
+                MovableVariantImpl &operator=(MovableVariantImpl &&) = delete;
+            };
+
         } // namespace VariantDetail
 
         template <std::size_t Index, typename... Ts> class VariantAlternative;
@@ -136,6 +178,11 @@ namespace Aws
           public:
             using IndexT = VariantDetail::Index::VariantIndex;
             static constexpr std::size_t AlternativeCount = sizeof...(Ts);
+
+            static constexpr bool is_copy_constructible = detail::Conjunction<std::is_copy_constructible<Ts>...>::value;
+            static constexpr bool is_copy_assignable = detail::Conjunction<std::is_copy_assignable<Ts>...>::value;
+            static constexpr bool is_move_constructible = detail::Conjunction<std::is_move_constructible<Ts>...>::value;
+            static constexpr bool is_move_assignable = detail::Conjunction<std::is_move_assignable<Ts>...>::value;
 
             Variant()
             {
@@ -588,5 +635,119 @@ namespace Aws
         {
             constexpr static const std::size_t Value = T::AlternativeCount;
         };
+
+        template <typename... Ts> class VariantWrapper
+        {
+          private:
+            template <std::size_t Index> using ThisVariantAlternative = VariantAlternative<Index, Ts...>;
+
+            template <typename OtherT>
+            using EnableIfOtherIsThisVariantAlternative = typename std::
+                enable_if<VariantDetail::Checker::HasType<typename std::decay<OtherT>::type, Ts...>::value, int>::type;
+
+          public:
+            using IndexT = VariantDetail::Index::VariantIndex;
+            static constexpr std::size_t AlternativeCount = sizeof...(Ts);
+
+            VariantWrapper() = default;
+
+            VariantWrapper(const VariantWrapper &) = default;
+            VariantWrapper(VariantWrapper &&) = default;
+
+            VariantWrapper &operator=(const VariantWrapper &) = default;
+            VariantWrapper &operator=(VariantWrapper &&) = default;
+
+            template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1>
+            VariantWrapper(const T &val) : m_variant(val)
+            {
+            }
+
+            template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1>
+            VariantWrapper(T &&val) : m_variant(std::forward<T>(val))
+            {
+            }
+
+            template <typename T, typename... Args>
+            explicit VariantWrapper(Aws::Crt::InPlaceTypeT<T> ipt, Args &&...args)
+                : m_variant(ipt, std::forward<Args>(args)...)
+            {
+            }
+
+            template <typename T, typename... Args, EnableIfOtherIsThisVariantAlternative<T> = 1>
+            T &emplace(Args &&...args)
+            {
+                return m_variant.emplace(std::forward<Args>(args)...);
+            }
+
+            template <std::size_t Index, typename... Args>
+            auto emplace(Args &&...args) -> typename ThisVariantAlternative<Index>::type &
+            {
+                return m_variant.emplace(std::forward<Args>(args)...);
+            }
+
+            template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1> bool holds_alternative() const
+            {
+                return m_variant.template holds_alternative<T>();
+            }
+
+            template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1> T &get()
+            {
+                return m_variant.template get<T>();
+            }
+
+            template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1> T *get_if()
+            {
+                return m_variant.template get_if<T>();
+            }
+
+            template <std::size_t Index> auto get() -> typename ThisVariantAlternative<Index>::type &
+            {
+                return m_variant.template get<Index>();
+            }
+
+            template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1> const T &get() const
+            {
+                return m_variant.template get<T>();
+            }
+
+            template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1> const T *get_if() const
+            {
+                return m_variant.template get_if<T>();
+            }
+
+            template <std::size_t Index> auto get() const -> const typename ThisVariantAlternative<Index>::type &
+            {
+                return m_variant.template get<Index>();
+            }
+
+            template <std::size_t Index>
+            using RawAlternativePointerT =
+                typename std::add_pointer<typename ThisVariantAlternative<Index>::type>::type;
+
+            template <std::size_t Index> auto get_if() -> RawAlternativePointerT<Index>
+            {
+                return m_variant.template get_if<Index>();
+            }
+
+            template <std::size_t Index>
+            using ConstRawAlternativePointerT = typename std::add_pointer<
+                typename std::add_const<typename ThisVariantAlternative<Index>::type>::type>::type;
+
+            template <std::size_t Index> auto get_if() const -> ConstRawAlternativePointerT<Index>
+            {
+                return m_variant.template get_if<Index>();
+            }
+
+            std::size_t index() const { return m_variant.index(); }
+
+            template <typename VisitorT> void Visit(VisitorT &&visitor)
+            {
+                m_variant.Visit(std::forward<VisitorT>(visitor));
+            }
+
+          private:
+            Variant<Ts...> m_variant;
+        };
+
     } // namespace Crt
 } // namespace Aws

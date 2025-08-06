@@ -21,7 +21,7 @@ static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *
         Aws::Crt::ApiHandle apiHandle(allocator);
 
         {
-            using MyTestVariant1 = Aws::Crt::Variant<int, char, Aws::Crt::String>;
+            using MyTestVariant1 = Aws::Crt::VariantWrapper<int, char, Aws::Crt::String>;
             MyTestVariant1 var1;
             MyTestVariant1 var1CpyAssigned;
             var1CpyAssigned = var1;
@@ -36,7 +36,7 @@ static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *
 
         {
             // just a different order or types
-            using MyTestVariant2 = Aws::Crt::Variant<Aws::Crt::String, int, char>;
+            using MyTestVariant2 = Aws::Crt::VariantWrapper<Aws::Crt::String, int, char>;
             MyTestVariant2 var2;
             MyTestVariant2 var2CpyAssigned;
             var2CpyAssigned = var2;
@@ -60,7 +60,7 @@ static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *
                 int crtError;
             };
 
-            using MyTestVariant3 = Aws::Crt::Variant<Aws::Crt::ScopedResource<Aws::Crt::String>, TestError>;
+            using MyTestVariant3 = Aws::Crt::VariantWrapper<Aws::Crt::ScopedResource<Aws::Crt::String>, TestError>;
 
             class FailVariantTestResult
             {
