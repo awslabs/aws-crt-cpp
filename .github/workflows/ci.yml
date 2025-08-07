@@ -28,6 +28,7 @@ jobs:
   linux-compat-use-openssl:
     runs-on: ubuntu-24.04 # latest
     strategy:
+      fail-fast: false
       matrix:
         image:
           - fedora-34-x64
@@ -134,6 +135,7 @@ jobs:
   std-compat:
     runs-on: ubuntu-24.04 # latest
     strategy:
+      fail-fast: false
       matrix:
         compiler: [gcc-8, clang-9]
         cxx-std: ["11", "14", "17", "20"]
@@ -168,6 +170,7 @@ jobs:
   linux-shared-libs:
     runs-on: ubuntu-24.04 # latest
     strategy:
+      fail-fast: false
       matrix:
         compiler: [gcc-4.8, gcc-11] # oldest, latest
     steps:
@@ -260,6 +263,7 @@ jobs:
   windows-vc17:
     runs-on: windows-2025 # latest
     strategy:
+      fail-fast: false
       matrix:
         arch: [x86, x64]
     steps:
@@ -368,6 +372,7 @@ jobs:
     name: Cross Compile ${{matrix.arch}}
     runs-on: ubuntu-24.04 # latest
     strategy:
+      fail-fast: false
       matrix:
         arch: [linux-armv6, linux-armv7, linux-arm64, android-armv7]
     steps:
@@ -418,6 +423,7 @@ jobs:
   clang-sanitizers:
     runs-on: ubuntu-24.04 # latest
     strategy:
+      fail-fast: false
       matrix:
         sanitizers: ["thread", "address,undefined"]
     steps:
