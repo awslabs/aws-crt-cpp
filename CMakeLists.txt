@@ -4,6 +4,10 @@ option(BUILD_DEPS "Builds aws common runtime dependencies as part of build. Turn
 option(BYO_CRYPTO "Don't build a tls implementation or link against a crypto interface. This feature is only for unix builds currently" OFF)
 option(USE_OPENSSL "Set this if you want to use your system's OpenSSL 1.0.2/1.1.1 compatible libcrypto" OFF)
 option(ENFORCE_SUBMODULE_VERSIONS "Check and enforce submodule versions to verify they are the minimum expected version or later. Versioning is only checked if BUILD_DEPS is ON." ON)
+option(AWS_CRT_DISABLE_DEPRECATION_WARNINGS "Define this to slience [[de[recated]] warnings coming from aws-crt-cpp headers" OFF)
+if(AWS_CRT_DISABLE_DEPRECATION_WARNINGS)
+    add_compile_definitions(AWS_CRT_DISABLE_DEPRECATION_WARNINGS)
+endif()
 
 # Let aws-iot-device-sdk-cpp-v2 report its own version in MQTT connections (instead of reporting aws-crt-cpp's version).
 option(AWS_IOT_SDK_VERSION "Set the version reported by Aws::Iot::MqttClientConnectionConfigBuilder")
