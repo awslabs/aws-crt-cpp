@@ -68,31 +68,14 @@ static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *
                 FailVariantTestResult() = default;
                 FailVariantTestResult(MyTestVariant3 &&result) : m_result(std::move(result)) {}
 
-                Aws::Crt::String *GetFirst() const noexcept
-                {
-                    if (m_result.holds_alternative<Aws::Crt::ScopedResource<Aws::Crt::String>>())
-                    {
-                        return m_result.get<Aws::Crt::ScopedResource<Aws::Crt::String>>().get();
-                    }
-
-                    return nullptr;
-                }
-
-                const TestError *GetSecond() const noexcept
-                {
-                    if (m_result.holds_alternative<TestError>())
-                    {
-                        return &m_result.get<TestError>();
-                    }
-
-                    return nullptr;
-                }
-
               private:
                 MyTestVariant3 m_result;
             };
 
             FailVariantTestResult result1;
+            FailVariantTestResult result2;
+
+            result1 = result2;
         }
     }
 
