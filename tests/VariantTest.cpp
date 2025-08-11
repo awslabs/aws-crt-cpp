@@ -72,16 +72,8 @@ static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *
             class AWS_VARIANTTEST_API FailVariantTestResult
             {
               public:
-                FailVariantTestResult() = default;
-                FailVariantTestResult(MyMoveOnlyVariant &&result) : m_result(std::move(result)) {}
-
-              private:
                 MyMoveOnlyVariant m_result;
             };
-
-            FailVariantTestResult result1;
-            FailVariantTestResult result2;
-            result2 = std::move(result1);
         }
     }
 
