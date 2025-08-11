@@ -52,30 +52,32 @@ static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *
         {
             // test with a move-only type
 
-            struct AWS_VARIANTTEST_API TestError
+            struct MoveOnlyTest
             {
-                explicit operator bool() const noexcept { return baseStatus; }
+                MoveOnlyTest() = default;
 
-                bool baseStatus;
-                int crtError;
+                MoveOnlyTest(MoveOnlyTest &&) = default;
+                MoveOnlyTest &operator=(MoveOnlyTest &&) = default;
+
+                MoveOnlyTest(const MoveOnlyTest &) = delete;
+                MoveOnlyTest &operator=(const MoveOnlyTest &) = delete;
             };
 
-            using MyTestVariant3 = Aws::Crt::VariantWrapper<Aws::Crt::ScopedResource<Aws::Crt::String>, TestError>;
+            using MyMoveOnlyVariant = Aws::Crt::VariantWrapper<MoveOnlyTest>;
 
-            class FailVariantTestResult
+            /* Regression test.
+             * AWS_CRT_CPP_API expands into __declspec(dllexport) on Windows platform when dll semantics is enabled.
+             * __declspec(dllexport) causes compiler to generate all special members of the marked class.
+             * These generated special members should be valid. */
+            class AWS_CRT_CPP_API FailVariantTestResult
             {
               public:
                 FailVariantTestResult() = default;
-                FailVariantTestResult(MyTestVariant3 &&result) : m_result(std::move(result)) {}
+                FailVariantTestResult(MyMoveOnlyVariant &&result) : m_result(std::move(result)) {}
 
               private:
-                MyTestVariant3 m_result;
+                MyMoveOnlyVariant m_result;
             };
-
-            FailVariantTestResult result1;
-            FailVariantTestResult result2;
-
-            result1 = result2;
         }
     }
 
