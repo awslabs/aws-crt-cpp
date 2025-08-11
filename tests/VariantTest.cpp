@@ -69,7 +69,7 @@ static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *
              * AWS_CRT_CPP_API expands into __declspec(dllexport) on Windows platform when dll semantics is enabled.
              * __declspec(dllexport) causes compiler to generate all special members of the marked class.
              * These generated special members should be valid. */
-            class AWS_CRT_CPP_API FailVariantTestResult
+            class AWS_VARIANTTEST_API FailVariantTestResult
             {
               public:
                 FailVariantTestResult() = default;
@@ -78,6 +78,10 @@ static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *
               private:
                 MyMoveOnlyVariant m_result;
             };
+
+            FailVariantTestResult result1;
+            FailVariantTestResult result2;
+            result2 = std::move(result1);
         }
     }
 
