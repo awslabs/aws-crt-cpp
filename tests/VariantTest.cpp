@@ -308,10 +308,6 @@ static int s_VariantWithNoDefaultConstructibleUnderlyingType(struct aws_allocato
 
     using NoDefaultConstructibleVariant = Aws::Crt::Variant<NoDefaultConstructibleTestType>;
 
-    /* Regression test.
-     * The __declspec(dllexport) directive exports class member function on Windows platform. We enable it when
-     * building shared libraries. In the past, this directive caused msvc to generate special copy members for classes
-     * containing Crt::Variant with copy-only underlying types, which led to compile-time errors. */
     struct AWS_VARIANTTEST_WINDOWS_API NoDefaultConstructibleVariantTestResult
     {
         NoDefaultConstructibleVariant m_result;
@@ -319,6 +315,7 @@ static int s_VariantWithNoDefaultConstructibleUnderlyingType(struct aws_allocato
 
     NoDefaultConstructibleTestType testType(1);
     NoDefaultConstructibleVariant variant(testType);
+    NoDefaultConstructibleVariantTestResult testResult{variant};
 
     return AWS_OP_SUCCESS;
 }
