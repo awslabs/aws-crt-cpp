@@ -38,7 +38,7 @@ namespace Aws
              * @deprecated We strongly recommend using the Aws::Crt::Mqtt5::Mqtt5Client. There are no current plans to
              * fully deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5 client
              * to access a more robust feature set, clearer error handling, and lifetime management. More details can be
-             * found here: BLOG LINK DEBUG WIP
+             * found in the GitHub Repo FAQ
              *
              * An MQTT client. This is a move-only type. Unless otherwise specified,
              * all function arguments need only to live through the duration of the
@@ -48,14 +48,14 @@ namespace Aws
                 "We strongly recommend using the Aws::Crt::Mqtt5::Mqtt5Client. There are no current plans to fully "
                 "deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5 client to "
                 "access a more robust feature set, clearer error handling, and lifetime management. More details can "
-                "be found here: BLOG LINK DEBUG WIP") MqttClient final
+                "be found in the GitHub Repo FAQ") MqttClient final
             {
               public:
                 /**
                  * @deprecated We strongly recommend using the Aws::Crt::Mqtt5::Mqtt5Client. There are no current plans
                  * to fully deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5
                  * client to access a more robust feature set, clearer error handling, and lifetime management. More
-                 * details can be found here: BLOG LINK DEBUG WIP
+                 * details can be found in the GitHub Repo FAQ
                  *
                  * Initialize an MqttClient using bootstrap and allocator
                  */
@@ -65,7 +65,7 @@ namespace Aws
                  * @deprecated We strongly recommend using the Aws::Crt::Mqtt5::Mqtt5Client. There are no current plans
                  * to fully deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5
                  * client to access a more robust feature set, clearer error handling, and lifetime management. More
-                 * details can be found here: BLOG LINK DEBUG WIP
+                 * details can be found in the GitHub Repo FAQ
                  *
                  * Initialize an MqttClient using a allocator and the default ClientBootstrap
                  *
