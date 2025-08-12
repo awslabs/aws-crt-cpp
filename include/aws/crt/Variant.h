@@ -5,6 +5,7 @@
  */
 
 #include <aws/common/assert.h>
+#include <aws/crt/TypeTraits.h>
 #include <aws/crt/Utility.h>
 
 #include <algorithm>
