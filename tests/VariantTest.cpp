@@ -64,7 +64,7 @@ static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *
                 MoveOnlyTest &operator=(const MoveOnlyTest &) = delete;
             };
 
-            using MyMoveOnlyVariant = Aws::Crt::Variant<MoveOnlyTest>;
+            using MyMoveOnlyVariant = Aws::Crt::VariantWrapper<MoveOnlyTest>;
 
             /* Regression test.
              * AWS_CRT_CPP_API expands into __declspec(dllexport) on Windows platform when dll semantics is enabled.

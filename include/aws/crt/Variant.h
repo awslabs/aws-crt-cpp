@@ -132,30 +132,51 @@ namespace Aws
             } // namespace VariantDebug
 #endif /* defined(AWS_CRT_ENABLE_VARIANT_DEBUG) */
 
-            template <bool = true> class CopyableVariantImpl
+            /* Depending on the Variant types, this struct either deletes special move members or defaults them. */
+            template <bool = true> class MovableVariant;
+
+            template <> class MovableVariant<true>
             {
               public:
-                CopyableVariantImpl(const CopyableVariantImpl &) = default;
-                CopyableVariantImpl &operator=(const CopyableVariantImpl &) = default;
+                MovableVariant() = default;
+                MovableVariant(const MovableVariant &) = default;
+                MovableVariant &operator=(const MovableVariant &) = default;
+                MovableVariant(MovableVariant &&other) = default;
+                MovableVariant &operator=(MovableVariant &&other) = default;
             };
-            template <> class CopyableVariantImpl<false>
+            template <> class MovableVariant<false>
             {
               public:
-                CopyableVariantImpl(const CopyableVariantImpl &) = delete;
-                CopyableVariantImpl &operator=(const CopyableVariantImpl &) = delete;
+                MovableVariant() = default;
+                MovableVariant(const MovableVariant &) = default;
+                MovableVariant &operator=(const MovableVariant &) = default;
+                MovableVariant(MovableVariant &&) = delete;
+                MovableVariant &operator=(MovableVariant &&) = delete;
             };
 
-            template <bool = true> class MovableVariantImpl
+            /* Depending on the Variant types, this struct either deletes special copy members or defaults them. */
+            template <bool = true> class CopyableVariant;
+
+            template <> class CopyableVariant<true>
             {
               public:
-                MovableVariantImpl(MovableVariantImpl &&) = default;
-                MovableVariantImpl &operator=(MovableVariantImpl &&) = default;
+                CopyableVariant() = default;
+                CopyableVariant(const CopyableVariant &other) = default;
+                CopyableVariant &operator=(const CopyableVariant &other) = default;
+                CopyableVariant(CopyableVariant &&) = default;
+                CopyableVariant &operator=(CopyableVariant &&) = default;
             };
-            template <> class MovableVariantImpl<false>
+
+            template <> class CopyableVariant<false>
             {
               public:
-                MovableVariantImpl(MovableVariantImpl &&) = delete;
-                MovableVariantImpl &operator=(MovableVariantImpl &&) = delete;
+                CopyableVariant() = default;
+
+                CopyableVariant(const CopyableVariant &) = delete;
+                CopyableVariant &operator=(const CopyableVariant &) = delete;
+
+                CopyableVariant(CopyableVariant &&) = default;
+                CopyableVariant &operator=(CopyableVariant &&) = default;
             };
 
         } // namespace VariantDetail
@@ -636,7 +657,10 @@ namespace Aws
             constexpr static const std::size_t Value = T::AlternativeCount;
         };
 
-        template <typename... Ts> class VariantWrapper
+        template <typename... Ts>
+        class VariantWrapper
+            : public VariantDetail::MovableVariant<detail::Conjunction<std::is_move_constructible<Ts>...>::value>,
+              public VariantDetail::CopyableVariant<detail::Conjunction<std::is_copy_constructible<Ts>...>::value>
         {
           private:
             template <std::size_t Index> using ThisVariantAlternative = VariantAlternative<Index, Ts...>;
@@ -650,12 +674,6 @@ namespace Aws
             static constexpr std::size_t AlternativeCount = sizeof...(Ts);
 
             VariantWrapper() = default;
-
-            VariantWrapper(const VariantWrapper &) = default;
-            VariantWrapper(VariantWrapper &&) = default;
-
-            VariantWrapper &operator=(const VariantWrapper &) = default;
-            VariantWrapper &operator=(VariantWrapper &&) = default;
 
             template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1>
             VariantWrapper(const T &val) : m_variant(val)
