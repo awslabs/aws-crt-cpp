@@ -15,20 +15,6 @@ namespace Aws
 {
     namespace Crt
     {
-        namespace detail
-        {
-            template <typename... Args> struct Conjunction : std::true_type
-            {
-            };
-
-            template <typename Arg, typename... Args>
-            struct Conjunction<Arg, Args...>
-                : std::conditional<Arg::value, detail::Conjunction<Args...>, std::false_type>::type
-            {
-            };
-
-        } // namespace detail
-
         namespace VariantDetail
         {
             // TODO Pass values instead of refs.
@@ -194,13 +180,6 @@ namespace Aws
               public:
                 using IndexT = VariantDetail::Index::VariantIndex;
                 static constexpr std::size_t AlternativeCount = sizeof...(Ts);
-
-                static constexpr bool is_copy_constructible =
-                    detail::Conjunction<std::is_copy_constructible<Ts>...>::value;
-                static constexpr bool is_copy_assignable = detail::Conjunction<std::is_copy_assignable<Ts>...>::value;
-                static constexpr bool is_move_constructible =
-                    detail::Conjunction<std::is_move_constructible<Ts>...>::value;
-                static constexpr bool is_move_assignable = detail::Conjunction<std::is_move_assignable<Ts>...>::value;
 
                 VariantImpl()
                 {
@@ -673,9 +652,8 @@ namespace Aws
          * @tparam Ts Types of the variant value.
          */
         template <typename... Ts>
-        class Variant
-            : public VariantDetail::MovableVariant<detail::Conjunction<std::is_move_constructible<Ts>...>::value>,
-              public VariantDetail::CopyableVariant<detail::Conjunction<std::is_copy_constructible<Ts>...>::value>
+        class Variant : public VariantDetail::MovableVariant<Conjunction<std::is_move_constructible<Ts>...>::value>,
+                        public VariantDetail::CopyableVariant<Conjunction<std::is_copy_constructible<Ts>...>::value>
         {
             /* Copyability and Movability depend only on constructors (copy and move correspondingly) of the
              * underlying types. This means that a class with move constructor but with no move assignment operator
