@@ -248,7 +248,7 @@ static int s_VariantWithMoveOnlyUnderlyingType(struct aws_allocator *allocator, 
 #    define AWS_VARIANTTEST_WINDOWS_API
 #endif
 
-    struct AWS_VARIANTTEST_WINDOWS_API FailVariantTestResult
+    struct AWS_VARIANTTEST_WINDOWS_API MoveOnlyVariantTestResult
     {
         MoveOnlyVariant m_result;
     };
@@ -290,7 +290,7 @@ static int s_VariantWithCopyOnlyUnderlyingType(struct aws_allocator *allocator, 
 #    define AWS_VARIANTTEST_WINDOWS_API
 #endif
 
-    struct AWS_VARIANTTEST_WINDOWS_API FailVariantTestResult
+    struct AWS_VARIANTTEST_WINDOWS_API CopyOnlyVariantTestResult
     {
         CopyOnlyVariant m_result;
     };
