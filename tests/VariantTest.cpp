@@ -8,6 +8,7 @@
 
 const char *s_variant_test_str = "This is a string, that should be long enough to avoid small string optimizations";
 
+// TODO ? Check for AWS_CRT_USE_WINDOWS_DLL_SEMANTICS
 #if defined(WIN32)
 #    define AWS_VARIANTTEST_API __declspec(dllexport)
 #else
@@ -21,7 +22,7 @@ static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *
         Aws::Crt::ApiHandle apiHandle(allocator);
 
         {
-            using MyTestVariant1 = Aws::Crt::VariantWrapper<int, char, Aws::Crt::String>;
+            using MyTestVariant1 = Aws::Crt::Variant<int, char, Aws::Crt::String>;
             MyTestVariant1 var1;
             MyTestVariant1 var1CpyAssigned;
             var1CpyAssigned = var1;
@@ -36,7 +37,7 @@ static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *
 
         {
             // just a different order or types
-            using MyTestVariant2 = Aws::Crt::VariantWrapper<Aws::Crt::String, int, char>;
+            using MyTestVariant2 = Aws::Crt::Variant<Aws::Crt::String, int, char>;
             MyTestVariant2 var2;
             MyTestVariant2 var2CpyAssigned;
             var2CpyAssigned = var2;
@@ -63,7 +64,7 @@ static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *
                 MoveOnlyTest &operator=(const MoveOnlyTest &) = delete;
             };
 
-            using MyMoveOnlyVariant = Aws::Crt::VariantWrapper<MoveOnlyTest>;
+            using MyMoveOnlyVariant = Aws::Crt::Variant<MoveOnlyTest>;
 
             /* Regression test.
              * AWS_CRT_CPP_API expands into __declspec(dllexport) on Windows platform when dll semantics is enabled.
