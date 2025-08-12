@@ -216,13 +216,13 @@ static int s_VariantAssignmentOperator(struct aws_allocator *allocator, void *ct
 
 AWS_TEST_CASE(VariantAssignmentOperator, s_VariantAssignmentOperator)
 
+// Test Variant with move-only underlying type.
+// If it compiles, it's considered success.
 static int s_VariantWithMoveOnlyUnderlyingType(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
 
     Aws::Crt::ApiHandle apiHandle(allocator);
-
-    // test with a move-only type
 
     struct MoveOnlyTestType
     {
@@ -257,6 +257,48 @@ static int s_VariantWithMoveOnlyUnderlyingType(struct aws_allocator *allocator, 
 }
 
 AWS_TEST_CASE(VariantWithMoveOnlyUnderlyingType, s_VariantWithMoveOnlyUnderlyingType)
+
+// Test Variant with copy-only underlying type.
+// If it compiles, it's considered success.
+static int s_VariantWithCopyOnlyUnderlyingType(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
+    struct CopyOnlyTestType
+    {
+        CopyOnlyTestType() = default;
+
+        CopyOnlyTestType(CopyOnlyTestType &&) = default;
+        CopyOnlyTestType &operator=(CopyOnlyTestType &&) = default;
+
+        CopyOnlyTestType(const CopyOnlyTestType &) = delete;
+        CopyOnlyTestType &operator=(const CopyOnlyTestType &) = delete;
+    };
+
+    using CopyOnlyVariant = Aws::Crt::Variant<CopyOnlyTestType>;
+
+    /* Regression test.
+     * The __declspec(dllexport) directive exports class member function on Windows platform. We enable it when
+     * building shared libraries. In the past, this directive caused msvc to generate special copy members for classes
+     * containing Crt::Variant with copy-only underlying types, which led to compile-time errors. */
+
+#if defined(_WIN32)
+#    define AWS_VARIANTTEST_WINDOWS_API __declspec(dllexport)
+#else
+#    define AWS_VARIANTTEST_WINDOWS_API
+#endif
+
+    struct AWS_VARIANTTEST_WINDOWS_API FailVariantTestResult
+    {
+        CopyOnlyVariant m_result;
+    };
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(VariantWithCopyOnlyUnderlyingType, s_VariantWithCopyOnlyUnderlyingType)
 
 struct TestStringOnlyVisitor
 {
