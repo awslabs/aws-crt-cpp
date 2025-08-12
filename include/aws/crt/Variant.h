@@ -671,18 +671,18 @@ namespace Aws
         /**
          * Custom implementation of a Variant type. std::variant requires C++17.
          * @tparam Ts Types of the variant value.
-         *
-         * @details Copyability and Movability depend only on constructors (copy and move correspondingly) of the
-         * underlying types. This means that a class with move constructor but with no move assignment operator might
-         * cause compilation issues. If such a type ever needs to be supported, two additional base classes need to be
-         * introduced: CopyAssignable and MoveAssignable. For now, it'll be overengineering. The same applies to copy
-         * constructor and copy assignment operator.
          */
         template <typename... Ts>
         class Variant
             : public VariantDetail::MovableVariant<detail::Conjunction<std::is_move_constructible<Ts>...>::value>,
               public VariantDetail::CopyableVariant<detail::Conjunction<std::is_copy_constructible<Ts>...>::value>
         {
+            /* Copyability and Movability depend only on constructors (copy and move correspondingly) of the
+             * underlying types. This means that a class with move constructor but with no move assignment operator
+             * might cause compilation issues. If such a type ever needs to be supported, two additional base classes
+             * need to be introduced: CopyAssignable and MoveAssignable. For now, it'll be overengineering. The same
+             * applies to copy constructor and copy assignment operator. */
+
           private:
             template <std::size_t Index> using ThisVariantAlternative = VariantDetail::VariantAlternative<Index, Ts...>;
 

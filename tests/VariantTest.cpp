@@ -8,13 +8,6 @@
 
 const char *s_variant_test_str = "This is a string, that should be long enough to avoid small string optimizations";
 
-// TODO ? Check for AWS_CRT_USE_WINDOWS_DLL_SEMANTICS
-#if defined(WIN32)
-#    define AWS_VARIANTTEST_API __declspec(dllexport)
-#else
-#    define AWS_VARIANTTEST_API
-#endif
-
 static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
@@ -48,33 +41,6 @@ static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *
             MyTestVariant2 var2aCpyAssigned;
             var2CpyAssigned = var2a;
             MyTestVariant2 var2aCpyConstructedVariant(var2aCpyAssigned);
-        }
-
-        {
-            // test with a move-only type
-
-            struct MoveOnlyTest
-            {
-                MoveOnlyTest() = default;
-
-                MoveOnlyTest(MoveOnlyTest &&) = default;
-                MoveOnlyTest &operator=(MoveOnlyTest &&) = default;
-
-                MoveOnlyTest(const MoveOnlyTest &) = delete;
-                MoveOnlyTest &operator=(const MoveOnlyTest &) = delete;
-            };
-
-            using MyMoveOnlyVariant = Aws::Crt::Variant<MoveOnlyTest>;
-
-            /* Regression test.
-             * AWS_CRT_CPP_API expands into __declspec(dllexport) on Windows platform when dll semantics is enabled.
-             * __declspec(dllexport) causes compiler to generate all special members of the marked class.
-             * These generated special members should be valid. */
-            class AWS_VARIANTTEST_API FailVariantTestResult
-            {
-              public:
-                MyMoveOnlyVariant m_result;
-            };
         }
     }
 
@@ -204,7 +170,7 @@ static int s_VariantConstructor(struct aws_allocator *allocator, void *ctx)
 
 AWS_TEST_CASE(VariantConstructor, s_VariantConstructor)
 
-static int s_VariantOperatorEquals(struct aws_allocator *allocator, void *ctx)
+static int s_VariantAssignmentOperator(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
     {
@@ -248,7 +214,49 @@ static int s_VariantOperatorEquals(struct aws_allocator *allocator, void *ctx)
     return AWS_OP_SUCCESS;
 }
 
-AWS_TEST_CASE(VariantOperatorEquals, s_VariantOperatorEquals)
+AWS_TEST_CASE(VariantAssignmentOperator, s_VariantAssignmentOperator)
+
+static int s_VariantWithMoveOnlyUnderlyingType(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
+    // test with a move-only type
+
+    struct MoveOnlyTestType
+    {
+        MoveOnlyTestType() = default;
+
+        MoveOnlyTestType(MoveOnlyTestType &&) = default;
+        MoveOnlyTestType &operator=(MoveOnlyTestType &&) = default;
+
+        MoveOnlyTestType(const MoveOnlyTestType &) = delete;
+        MoveOnlyTestType &operator=(const MoveOnlyTestType &) = delete;
+    };
+
+    using MoveOnlyVariant = Aws::Crt::Variant<MoveOnlyTestType>;
+
+    /* Regression test.
+     * The __declspec(dllexport) directive exports class member function on Windows platform. We enable it when
+     * building shared libraries. In the past, this directive caused msvc to generate special copy members for classes
+     * containing Crt::Variant with move-only underlying types, which led to compile-time errors. */
+
+#if defined(_WIN32)
+#    define AWS_VARIANTTEST_WINDOWS_API __declspec(dllexport)
+#else
+#    define AWS_VARIANTTEST_WINDOWS_API
+#endif
+
+    struct AWS_VARIANTTEST_WINDOWS_API FailVariantTestResult
+    {
+        MoveOnlyVariant m_result;
+    };
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(VariantWithMoveOnlyUnderlyingType, s_VariantWithMoveOnlyUnderlyingType)
 
 struct TestStringOnlyVisitor
 {
