@@ -22,7 +22,7 @@ static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *
         Aws::Crt::ApiHandle apiHandle(allocator);
 
         {
-            using MyTestVariant1 = Aws::Crt::Variant<int, char, Aws::Crt::String>;
+            using MyTestVariant1 = Aws::Crt::VariantWrapper<int, char, Aws::Crt::String>;
             MyTestVariant1 var1;
             MyTestVariant1 var1CpyAssigned;
             var1CpyAssigned = var1;
@@ -37,7 +37,7 @@ static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *
 
         {
             // just a different order or types
-            using MyTestVariant2 = Aws::Crt::Variant<Aws::Crt::String, int, char>;
+            using MyTestVariant2 = Aws::Crt::VariantWrapper<Aws::Crt::String, int, char>;
             MyTestVariant2 var2;
             MyTestVariant2 var2CpyAssigned;
             var2CpyAssigned = var2;
@@ -90,7 +90,7 @@ static int s_VariantConstructor(struct aws_allocator *allocator, void *ctx)
         Aws::Crt::ApiHandle apiHandle(allocator);
 
         {
-            using VariantIntCharString = Aws::Crt::Variant<int, char, Aws::Crt::String>;
+            using VariantIntCharString = Aws::Crt::VariantWrapper<int, char, Aws::Crt::String>;
             VariantIntCharString var1 = Aws::Crt::String(s_variant_test_str);
             ASSERT_STR_EQUALS(s_variant_test_str, var1.get<2>().c_str());
             ASSERT_STR_EQUALS(s_variant_test_str, var1.get<Aws::Crt::String>().c_str());
@@ -104,7 +104,7 @@ static int s_VariantConstructor(struct aws_allocator *allocator, void *ctx)
             ASSERT_STR_EQUALS(s_variant_test_str, var1move.get<Aws::Crt::String>().c_str());
         }
         {
-            using VariantStringCharInt = Aws::Crt::Variant<Aws::Crt::String, int, char>;
+            using VariantStringCharInt = Aws::Crt::VariantWrapper<Aws::Crt::String, int, char>;
             VariantStringCharInt var1{Aws::Crt::InPlaceTypeT<Aws::Crt::String>(), s_variant_test_str};
             ASSERT_STR_EQUALS(s_variant_test_str, var1.get<0>().c_str());
             ASSERT_STR_EQUALS(s_variant_test_str, var1.get<Aws::Crt::String>().c_str());
@@ -146,7 +146,8 @@ static int s_VariantConstructor(struct aws_allocator *allocator, void *ctx)
                 virtual ~MyTestVirtualClassChild() { *m_pStateChild -= 20; }
             };
 
-            using MyTestVariant = Aws::Crt::Variant<MyTestVirtualClass, MyTestVirtualClassChild, Aws::Crt::String>;
+            using MyTestVariant =
+                Aws::Crt::VariantWrapper<MyTestVirtualClass, MyTestVirtualClassChild, Aws::Crt::String>;
             // Test for constructing from one of alternative types with a virtual destructor
             {
                 int parentState = 0;
@@ -211,7 +212,7 @@ static int s_VariantOperatorEquals(struct aws_allocator *allocator, void *ctx)
         Aws::Crt::ApiHandle apiHandle(allocator);
 
         {
-            using VariantIntCharString = Aws::Crt::Variant<int, char, Aws::Crt::String>;
+            using VariantIntCharString = Aws::Crt::VariantWrapper<int, char, Aws::Crt::String>;
 
             VariantIntCharString var1(int(5));
             ASSERT_INT_EQUALS(5, var1.get<int>());
@@ -283,7 +284,7 @@ static int s_VariantEmplace(struct aws_allocator *allocator, void *ctx)
         Aws::Crt::ApiHandle apiHandle(allocator);
 
         {
-            using VariantIntCharString = Aws::Crt::Variant<int, char, Aws::Crt::String>;
+            using VariantIntCharString = Aws::Crt::VariantWrapper<int, char, Aws::Crt::String>;
 
             VariantIntCharString var1(char('a'));
             ASSERT_INT_EQUALS('a', var1.get<char>());
@@ -370,7 +371,7 @@ static int s_VariantVisitor(struct aws_allocator *allocator, void *ctx)
         Aws::Crt::ApiHandle apiHandle(allocator);
 
         {
-            using VariantStringIntChar = Aws::Crt::Variant<int, char, Aws::Crt::String>;
+            using VariantStringIntChar = Aws::Crt::VariantWrapper<int, char, Aws::Crt::String>;
             TestVisitor visitor;
             TestVisitorCustomizedPerType specializedVisitor;
 

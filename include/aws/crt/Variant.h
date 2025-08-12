@@ -694,13 +694,13 @@ namespace Aws
             template <typename T, typename... Args, EnableIfOtherIsThisVariantAlternative<T> = 1>
             T &emplace(Args &&...args)
             {
-                return m_variant.emplace(std::forward<Args>(args)...);
+                return m_variant.template emplace<T>(std::forward<Args>(args)...);
             }
 
             template <std::size_t Index, typename... Args>
             auto emplace(Args &&...args) -> typename ThisVariantAlternative<Index>::type &
             {
-                return m_variant.emplace(std::forward<Args>(args)...);
+                return m_variant.template emplace<Index>(std::forward<Args>(args)...);
             }
 
             template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1> bool holds_alternative() const
