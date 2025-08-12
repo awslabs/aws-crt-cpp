@@ -297,8 +297,7 @@ jobs:
         CL: "/DAWS_CRT_DISABLE_DEPRECATION_WARNINGS /EHsc"
       run: |
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
-        python builder.pyz build -p ${{ env.PACKAGE_NAME }} \
-        --cmake-extra=-DBUILD_SHARED_LIBS=ON
+        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBUILD_SHARED_LIBS=ON
 
   # Ensure users can link with /DELAYLOAD:aws-crt-cpp.dll
   # We test by building everything using those linker flags.
@@ -318,8 +317,7 @@ jobs:
         CL: "/DAWS_CRT_DISABLE_DEPRECATION_WARNINGS /EHsc"
       run: |
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
-        python builder.pyz build -p ${{ env.PACKAGE_NAME }} \
-        --cmake-extra=-DBUILD_SHARED_LIBS=ON
+        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DBUILD_SHARED_LIBS=ON
 
   windows-no-cpu-extensions:
     runs-on: windows-2025 # latest
@@ -333,8 +331,7 @@ jobs:
         CL: "/DAWS_CRT_DISABLE_DEPRECATION_WARNINGS /EHsc"
       run: |
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
-        python builder.pyz build -p ${{ env.PACKAGE_NAME }} \
-        --cmake-extra=-DUSE_CPU_EXTENSIONS=OFF
+        python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DUSE_CPU_EXTENSIONS=OFF
 
   macos:
     runs-on: macos-14 # latest
