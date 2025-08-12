@@ -132,7 +132,7 @@ namespace Aws
             } // namespace VariantDebug
 #endif /* defined(AWS_CRT_ENABLE_VARIANT_DEBUG) */
 
-            /* Depending on the VariantImpl types, this struct either deletes special move members or defaults them. */
+            /* Depending on the Variant types, this struct either deletes special move members or defaults them. */
             template <bool = true> class MovableVariant;
 
             template <> class MovableVariant<true>
@@ -154,7 +154,7 @@ namespace Aws
                 MovableVariant &operator=(MovableVariant &&) = delete;
             };
 
-            /* Depending on the VariantImpl types, this struct either deletes special copy members or defaults them. */
+            /* Depending on the Variant types, this struct either deletes special copy members or defaults them. */
             template <bool = true> class CopyableVariant;
 
             template <> class CopyableVariant<true>
@@ -230,7 +230,7 @@ namespace Aws
                         "This variant does not have such alternative T.");
                     static_assert(
                         sizeof(T) <= STORAGE_SIZE,
-                        "Attempting to instantiate a VariantImpl with a type bigger than all alternatives.");
+                        "Attempting to instantiate a Variant with a type bigger than all alternatives.");
 
                     using PlainT = typename std::decay<T>::type;
                     new (m_storage) PlainT(val);
@@ -245,7 +245,7 @@ namespace Aws
                         "This variant does not have such alternative T.");
                     static_assert(
                         sizeof(T) <= STORAGE_SIZE,
-                        "Attempting to instantiate a VariantImpl with a type bigger than all alternatives.");
+                        "Attempting to instantiate a Variant with a type bigger than all alternatives.");
 
                     using PlainT = typename std::decay<T>::type;
                     new (m_storage) PlainT(std::forward<T>(val));
@@ -261,7 +261,7 @@ namespace Aws
                         "This variant does not have such alternative T.");
                     static_assert(
                         sizeof(T) <= STORAGE_SIZE,
-                        "Attempting to instantiate a VariantImpl with a type bigger than all alternatives.");
+                        "Attempting to instantiate a Variant with a type bigger than all alternatives.");
 
                     using PlainT = typename std::decay<T>::type;
                     new (m_storage) PlainT(std::forward<Args>(args)...);
@@ -316,7 +316,7 @@ namespace Aws
                         "This variant does not have such alternative T.");
                     static_assert(
                         sizeof(T) <= STORAGE_SIZE,
-                        "Attempting to instantiate a VariantImpl with a type bigger than all alternatives.");
+                        "Attempting to instantiate a Variant with a type bigger than all alternatives.");
 
                     Destroy();
 
@@ -669,8 +669,8 @@ namespace Aws
         } // namespace VariantDetail
 
         /**
-         * Custom implementation of a Variant type. std::variant requires C++17
-         * @tparam Ts types of the variant value
+         * Custom implementation of a Variant type. std::variant requires C++17.
+         * @tparam Ts Types of the variant value.
          *
          * @details Copyability and Movability depend only on constructors (copy and move correspondingly) of the
          * underlying types. This means that a class with move constructor but with no move assignment operator might
