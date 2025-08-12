@@ -668,12 +668,16 @@ namespace Aws
             using EnableIfOtherIsThisVariantAlternative = typename std::
                 enable_if<VariantDetail::Checker::HasType<typename std::decay<OtherT>::type, Ts...>::value, int>::type;
 
+            using FirstAlternative = typename ThisVariantAlternative<0>::type;
+
+            static constexpr bool isFirstAlternativeNothrowDefaultConstructible =
+                std::is_nothrow_default_constructible<FirstAlternative>::value;
+
           public:
             using IndexT = VariantDetail::Index::VariantIndex;
             static constexpr std::size_t AlternativeCount = sizeof...(Ts);
 
-            // TODO Check NoDefaultConstructible.
-            Variant() = default;
+            Variant() noexcept(isFirstAlternativeNothrowDefaultConstructible) = default;
 
             template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1> Variant(const T &val) : m_variant(val)
             {
