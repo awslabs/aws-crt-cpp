@@ -104,7 +104,7 @@ namespace Aws
          * @deprecated We strongly recommend using the Aws::Crt::Mqtt5::Mqtt5Client. There are no current plans to fully
          * deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5 client to access
          * a more robust feature set, clearer error handling, and lifetime management. More details can be found here:
-         * <URL>
+         * BLOG LINK DEBUG WIP
          *
          * Represents configuration parameters for building a MqttClientConnectionConfig object. You can use a single
          * instance of this class PER MqttClientConnectionConfig you want to generate. If you want to generate a config
@@ -473,7 +473,7 @@ namespace Aws
          * @deprecated We strongly recommend using the Aws::Crt::Mqtt5::Mqtt5Client. There are no current plans to fully
          * deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5 client to access
          * a more robust feature set, clearer error handling, and lifetime management. More details can be found here:
-         * <URL>
+         * BLOG LINK DEBUG WIP
          *
          * AWS IOT specific Mqtt Client. Sets defaults for using the AWS IOT service. You'll need an instance of
          * MqttClientConnectionConfig to use. Once NewConnection returns, you use it's return value identically
@@ -483,7 +483,7 @@ namespace Aws
             "We strongly recommend using the Aws::Crt::Mqtt5::Mqtt5Client. There are no current plans to fully "
             "deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5 client to "
             "access a more robust feature set, clearer error handling, and lifetime management. More details can be "
-            "found here: <URL>") MqttClient final
+            "found here: BLOG LINK DEBUG WIP") MqttClient final
         {
           public:
             MqttClient(Crt::Io::ClientBootstrap &bootstrap, Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
@@ -492,7 +492,7 @@ namespace Aws
              * @deprecated We strongly recommend using the Aws::Crt::Mqtt5::Mqtt5Client. There are no current plans to
              * fully deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5 client
              * to access a more robust feature set, clearer error handling, and lifetime management. More details can be
-             * found here: <URL>
+             * found here: BLOG LINK DEBUG WIP
              *
              * Constructs a new Mqtt Client object using the static default ClientBootstrap.
              *
@@ -505,7 +505,7 @@ namespace Aws
              * @deprecated We strongly recommend using the Aws::Crt::Mqtt5::Mqtt5Client. There are no current plans to
              * fully deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5 client
              * to access a more robust feature set, clearer error handling, and lifetime management. More details can be
-             * found here: <URL>
+             * found here: BLOG LINK DEBUG WIP
              *
              * Creates a new mqtt connection from a connection configuration object
              * @param config mqtt connection configuration
