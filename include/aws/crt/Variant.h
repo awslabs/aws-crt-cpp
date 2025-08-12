@@ -119,8 +119,23 @@ namespace Aws
             } // namespace VariantDebug
 #endif /* defined(AWS_CRT_ENABLE_VARIANT_DEBUG) */
 
+            template <bool> class DefaultConstructibleVariant;
+
+            template <> class DefaultConstructibleVariant<true>
+            {
+              public:
+                explicit DefaultConstructibleVariant(int) {}
+                DefaultConstructibleVariant() = default;
+            };
+            template <> class DefaultConstructibleVariant<false>
+            {
+              public:
+                explicit DefaultConstructibleVariant(int) {}
+                DefaultConstructibleVariant() = delete;
+            };
+
             /* Depending on the Variant types, this struct either deletes special move members or defaults them. */
-            template <bool = true> class MovableVariant;
+            template <bool> class MovableVariant;
 
             template <> class MovableVariant<true>
             {
@@ -142,7 +157,7 @@ namespace Aws
             };
 
             /* Depending on the Variant types, this struct either deletes special copy members or defaults them. */
-            template <bool = true> class CopyableVariant;
+            template <bool> class CopyableVariant;
 
             template <> class CopyableVariant<true>
             {
@@ -178,18 +193,17 @@ namespace Aws
                     VariantDetail::Checker::HasType<typename std::decay<OtherT>::type, Ts...>::value,
                     int>::type;
 
+              public:
                 using FirstAlternative = typename ThisVariantAlternative<0>::type;
 
                 static constexpr bool isFirstAlternativeNothrowDefaultConstructible =
                     std::is_nothrow_default_constructible<FirstAlternative>::value;
 
-              public:
                 using IndexT = VariantDetail::Index::VariantIndex;
                 static constexpr std::size_t AlternativeCount = sizeof...(Ts);
 
                 VariantImpl() noexcept(isFirstAlternativeNothrowDefaultConstructible)
                 {
-                    using FirstAlternative = typename ThisVariantAlternative<0>::type;
                     new (m_storage) FirstAlternative();
                     m_index = 0;
                 }
@@ -658,7 +672,9 @@ namespace Aws
          * @tparam Ts Types of the variant value.
          */
         template <typename... Ts>
-        class Variant : public VariantDetail::MovableVariant<Conjunction<std::is_move_constructible<Ts>...>::value>,
+        class Variant : public VariantDetail::DefaultConstructibleVariant<
+                            VariantDetail::VariantImpl<Ts...>::isFirstAlternativeNothrowDefaultConstructible>,
+                        public VariantDetail::MovableVariant<Conjunction<std::is_move_constructible<Ts>...>::value>,
                         public VariantDetail::CopyableVariant<Conjunction<std::is_copy_constructible<Ts>...>::value>
         {
             /* Copyability and Movability depend only on constructors (copy and move correspondingly) of the
@@ -674,24 +690,33 @@ namespace Aws
             using EnableIfOtherIsThisVariantAlternative = typename std::
                 enable_if<VariantDetail::Checker::HasType<typename std::decay<OtherT>::type, Ts...>::value, int>::type;
 
+            static constexpr bool isFirstAlternativeNothrowDefaultConstructible =
+                VariantDetail::VariantImpl<Ts...>::isFirstAlternativeNothrowDefaultConstructible;
+
           public:
             using IndexT = VariantDetail::Index::VariantIndex;
             static constexpr std::size_t AlternativeCount = sizeof...(Ts);
 
             Variant() = default;
 
-            template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1> Variant(const T &val) : m_variant(val)
+            template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1>
+            Variant(const T &val)
+                : VariantDetail::DefaultConstructibleVariant<isFirstAlternativeNothrowDefaultConstructible>(1),
+                  m_variant(val)
             {
             }
 
             template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1>
-            Variant(T &&val) : m_variant(std::forward<T>(val))
+            Variant(T &&val)
+                : VariantDetail::DefaultConstructibleVariant<isFirstAlternativeNothrowDefaultConstructible>(1),
+                  m_variant(std::forward<T>(val))
             {
             }
 
             template <typename T, typename... Args>
             explicit Variant(Aws::Crt::InPlaceTypeT<T> ipt, Args &&...args)
-                : m_variant(ipt, std::forward<Args>(args)...)
+                : VariantDetail::DefaultConstructibleVariant<isFirstAlternativeNothrowDefaultConstructible>(1),
+                  m_variant(ipt, std::forward<Args>(args)...)
             {
             }
 
