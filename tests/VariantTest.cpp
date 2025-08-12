@@ -300,6 +300,26 @@ static int s_VariantWithCopyOnlyUnderlyingType(struct aws_allocator *allocator, 
 
 AWS_TEST_CASE(VariantWithCopyOnlyUnderlyingType, s_VariantWithCopyOnlyUnderlyingType)
 
+static int s_VariantNoexceptConstructible(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
+    struct NothorwConstructibleTestType
+    {
+        NothorwConstructibleTestType() noexcept = default;
+    };
+
+    using NothrowConstructibleVariant = Aws::Crt::Variant<NothorwConstructibleTestType>;
+
+    ASSERT_INT_EQUALS(1, std::is_nothrow_constructible<NothrowConstructibleVariant>::value);
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(VariantNoexceptConstructible, s_VariantNoexceptConstructible)
+
 struct TestStringOnlyVisitor
 {
     /* can't specialize member function templates, so using such syntax of dummy structs */
