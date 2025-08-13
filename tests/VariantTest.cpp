@@ -333,7 +333,7 @@ static int s_VariantNothrowConstructible(struct aws_allocator *allocator, void *
         NothrowConstructibleTestType() noexcept = default;
     };
     using NothrowConstructibleVariant = Aws::Crt::Variant<NothrowConstructibleTestType>;
-    ASSERT_INT_EQUALS(1, std::is_nothrow_constructible<NothrowConstructibleVariant>::value);
+    ASSERT_TRUE(std::is_nothrow_constructible<NothrowConstructibleVariant>::value);
 
     return AWS_OP_SUCCESS;
 }
@@ -353,7 +353,7 @@ static int s_VariantThrowConstructible(struct aws_allocator *allocator, void *ct
     };
 
     using ThrowConstructibleVariant = Aws::Crt::Variant<ThrowConstructibleTestType>;
-    ASSERT_INT_EQUALS(0, std::is_nothrow_constructible<ThrowConstructibleVariant>::value);
+    ASSERT_FALSE(std::is_nothrow_constructible<ThrowConstructibleVariant>::value);
 
     return AWS_OP_SUCCESS;
 }

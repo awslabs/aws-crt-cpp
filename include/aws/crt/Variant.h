@@ -665,9 +665,9 @@ namespace Aws
         {
             /* Copyability and Movability depend only on constructors (copy and move correspondingly) of the
              * underlying types. This means that a class with move constructor but with no move assignment operator
-             * might cause compilation issues. If such a type ever needs to be supported, two additional base classes
-             * need to be introduced: CopyAssignable and MoveAssignable. For now, it'll be overengineering. The same
-             * applies to copy constructor and copy assignment operator. */
+             * might cause compilation issues. If such a type ever needs to be supported, additional base class needs
+             * to be introduced: MoveAssignable. For now, it'll be overengineering.
+             * The same applies to copy constructor and copy assignment operator. */
 
           private:
             template <std::size_t Index> using ThisVariantAlternative = VariantDetail::VariantAlternative<Index, Ts...>;
