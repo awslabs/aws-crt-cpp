@@ -119,21 +119,6 @@ namespace Aws
             } // namespace VariantDebug
 #endif /* defined(AWS_CRT_ENABLE_VARIANT_DEBUG) */
 
-            template <bool> class DefaultConstructibleVariant;
-
-            template <> class DefaultConstructibleVariant<true>
-            {
-              public:
-                explicit DefaultConstructibleVariant(int) {}
-                DefaultConstructibleVariant() = default;
-            };
-            template <> class DefaultConstructibleVariant<false>
-            {
-              public:
-                explicit DefaultConstructibleVariant(int) {}
-                DefaultConstructibleVariant() = delete;
-            };
-
             /* Depending on the Variant types, this struct either deletes special move members or defaults them. */
             template <bool> class MovableVariant;
 
@@ -198,6 +183,9 @@ namespace Aws
 
                 static constexpr bool isFirstAlternativeNothrowDefaultConstructible =
                     std::is_nothrow_default_constructible<FirstAlternative>::value;
+
+                static constexpr bool isFirstAlternativeDefaultConstructible =
+                    std::is_nothrow_constructible<FirstAlternative>::value;
 
                 using IndexT = VariantDetail::Index::VariantIndex;
                 static constexpr std::size_t AlternativeCount = sizeof...(Ts);
@@ -672,9 +660,7 @@ namespace Aws
          * @tparam Ts Types of the variant value.
          */
         template <typename... Ts>
-        class Variant : public VariantDetail::DefaultConstructibleVariant<
-                            VariantDetail::VariantImpl<Ts...>::isFirstAlternativeNothrowDefaultConstructible>,
-                        public VariantDetail::MovableVariant<Conjunction<std::is_move_constructible<Ts>...>::value>,
+        class Variant : public VariantDetail::MovableVariant<Conjunction<std::is_move_constructible<Ts>...>::value>,
                         public VariantDetail::CopyableVariant<Conjunction<std::is_copy_constructible<Ts>...>::value>
         {
             /* Copyability and Movability depend only on constructors (copy and move correspondingly) of the
@@ -697,26 +683,30 @@ namespace Aws
             using IndexT = VariantDetail::Index::VariantIndex;
             static constexpr std::size_t AlternativeCount = sizeof...(Ts);
 
-            Variant() = default;
+            template <
+                typename T = typename VariantDetail::VariantImpl<Ts...>::FirstAlternative,
+                typename std::enable_if<std::is_default_constructible<T>::value, bool>::type = true>
+            Variant() noexcept(isFirstAlternativeNothrowDefaultConstructible)
+            {
+            }
 
-            template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1>
-            Variant(const T &val)
-                : VariantDetail::DefaultConstructibleVariant<isFirstAlternativeNothrowDefaultConstructible>(1),
-                  m_variant(val)
+            template <
+                typename T = typename VariantDetail::VariantImpl<Ts...>::FirstAlternative,
+                typename std::enable_if<!std::is_default_constructible<T>::value, bool>::type = true>
+            Variant() = delete;
+
+            template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1> Variant(const T &val) : m_variant(val)
             {
             }
 
             template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1>
-            Variant(T &&val)
-                : VariantDetail::DefaultConstructibleVariant<isFirstAlternativeNothrowDefaultConstructible>(1),
-                  m_variant(std::forward<T>(val))
+            Variant(T &&val) : m_variant(std::forward<T>(val))
             {
             }
 
             template <typename T, typename... Args>
             explicit Variant(Aws::Crt::InPlaceTypeT<T> ipt, Args &&...args)
-                : VariantDetail::DefaultConstructibleVariant<isFirstAlternativeNothrowDefaultConstructible>(1),
-                  m_variant(ipt, std::forward<Args>(args)...)
+                : m_variant(ipt, std::forward<Args>(args)...)
             {
             }
 
