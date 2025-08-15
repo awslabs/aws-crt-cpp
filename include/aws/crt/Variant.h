@@ -210,7 +210,9 @@ namespace Aws
                     VisitorUtil<0, Ts...>::VisitBinary(this, std::move(other), CopyMoveConstructor());
                 }
 
-                template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1> VariantImpl(const T &val)
+                template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1>
+                VariantImpl(const T &val) noexcept(
+                    std::is_nothrow_constructible<typename std::decay<T>::type, decltype(val)>::value)
                 {
                     static_assert(
                         VariantDetail::Checker::HasType<typename std::decay<T>::type, Ts...>::value,
@@ -225,7 +227,9 @@ namespace Aws
                     AWS_ASSERT(m_index != -1);
                 }
 
-                template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1> VariantImpl(T &&val)
+                template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1>
+                VariantImpl(T &&val) noexcept(
+                    std::is_nothrow_constructible<typename std::decay<T>::type, decltype(val)>::value)
                 {
                     static_assert(
                         VariantDetail::Checker::HasType<typename std::decay<T>::type, Ts...>::value,
@@ -695,12 +699,16 @@ namespace Aws
                 typename std::enable_if<!std::is_default_constructible<T>::value, bool>::type = true>
             Variant() = delete;
 
-            template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1> Variant(const T &val) : m_variant(val)
+            template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1>
+            Variant(const T &val) noexcept(
+                std::is_nothrow_constructible<typename std::decay<T>::type, decltype(val)>::value)
+                : m_variant(val)
             {
             }
 
             template <typename T, EnableIfOtherIsThisVariantAlternative<T> = 1>
-            Variant(T &&val) : m_variant(std::forward<T>(val))
+            Variant(T &&val) noexcept(std::is_nothrow_constructible<typename std::decay<T>::type, decltype(val)>::value)
+                : m_variant(std::forward<T>(val))
             {
             }
 

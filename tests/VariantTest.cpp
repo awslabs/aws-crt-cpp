@@ -322,43 +322,90 @@ static int s_VariantWithNoDefaultConstructibleUnderlyingType(struct aws_allocato
 
 AWS_TEST_CASE(VariantWithNoDefaultConstructibleUnderlyingType, s_VariantWithNoDefaultConstructibleUnderlyingType)
 
-static int s_VariantNothrowConstructible(struct aws_allocator *allocator, void *ctx)
+static int s_VariantExceptionSafety_DefaultConstructor(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
 
     Aws::Crt::ApiHandle apiHandle(allocator);
 
-    struct NothrowConstructibleTestType
+    struct NothrowDefaultConstructibleTestType
     {
-        NothrowConstructibleTestType() noexcept = default;
+        NothrowDefaultConstructibleTestType() noexcept = default;
+        NothrowDefaultConstructibleTestType(const NothrowDefaultConstructibleTestType &) noexcept(false) = default;
+        NothrowDefaultConstructibleTestType(NothrowDefaultConstructibleTestType &&) noexcept(false) = default;
     };
-    using NothrowConstructibleVariant = Aws::Crt::Variant<NothrowConstructibleTestType>;
-    ASSERT_TRUE(std::is_nothrow_constructible<NothrowConstructibleVariant>::value);
+
+    using NothrowDefaultConstructibleVariant = Aws::Crt::Variant<NothrowDefaultConstructibleTestType>;
+
+    ASSERT_TRUE(std::is_nothrow_constructible<NothrowDefaultConstructibleVariant>::value);
+    ASSERT_FALSE((
+        std::is_nothrow_constructible<NothrowDefaultConstructibleVariant, const NothrowDefaultConstructibleTestType &>::
+            value));
+    ASSERT_FALSE(
+        (std::is_nothrow_constructible<NothrowDefaultConstructibleVariant, NothrowDefaultConstructibleTestType &&>::
+             value));
 
     return AWS_OP_SUCCESS;
 }
 
-AWS_TEST_CASE(VariantNothrowConstructible, s_VariantNothrowConstructible)
+AWS_TEST_CASE(VariantExceptionSafety_DefaultConstructor, s_VariantExceptionSafety_DefaultConstructor)
 
-static int s_VariantThrowConstructible(struct aws_allocator *allocator, void *ctx)
+static int s_VariantExceptionSafety_MoveConstructor(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
 
     Aws::Crt::ApiHandle apiHandle(allocator);
 
-    struct ThrowConstructibleTestType
+    struct NothrowMoveConstructibleTestType
     {
-        // Must be user-defined to be non-nothrow.
-        ThrowConstructibleTestType() {}
+        NothrowMoveConstructibleTestType(NothrowMoveConstructibleTestType &&) noexcept = default;
+
+        NothrowMoveConstructibleTestType() noexcept(false) = default;
+        NothrowMoveConstructibleTestType(const NothrowMoveConstructibleTestType &) noexcept(false) = default;
     };
 
-    using ThrowConstructibleVariant = Aws::Crt::Variant<ThrowConstructibleTestType>;
-    ASSERT_FALSE(std::is_nothrow_constructible<ThrowConstructibleVariant>::value);
+    using NothrowMoveConstructibleVariant = Aws::Crt::Variant<NothrowMoveConstructibleTestType>;
+
+    ASSERT_TRUE(
+        (std::is_nothrow_constructible<NothrowMoveConstructibleVariant, NothrowMoveConstructibleTestType &&>::value));
+    ASSERT_FALSE(std::is_nothrow_constructible<NothrowMoveConstructibleVariant>::value);
+    ASSERT_FALSE(
+        (std::is_nothrow_constructible<NothrowMoveConstructibleVariant, const NothrowMoveConstructibleTestType &>::
+             value));
 
     return AWS_OP_SUCCESS;
 }
 
-AWS_TEST_CASE(VariantThrowConstructible, s_VariantThrowConstructible)
+AWS_TEST_CASE(VariantExceptionSafety_MoveConstructor, s_VariantExceptionSafety_MoveConstructor)
+
+static int s_VariantExceptionSafety_CopyConstructor(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
+    struct NothrowCopyConstructibleTestType
+    {
+        NothrowCopyConstructibleTestType(const NothrowCopyConstructibleTestType &) noexcept = default;
+
+        NothrowCopyConstructibleTestType() noexcept(false) = default;
+        NothrowCopyConstructibleTestType(NothrowCopyConstructibleTestType &&) noexcept(false) = default;
+    };
+
+    using NothrowCopyConstructibleVariant = Aws::Crt::Variant<NothrowCopyConstructibleTestType>;
+
+    ASSERT_TRUE(
+        (std::is_nothrow_constructible<NothrowCopyConstructibleVariant, const NothrowCopyConstructibleTestType &>::
+             value));
+
+    ASSERT_FALSE(std::is_nothrow_constructible<NothrowCopyConstructibleVariant>::value);
+    ASSERT_FALSE(
+        (std::is_nothrow_constructible<NothrowCopyConstructibleVariant, NothrowCopyConstructibleTestType &&>::value));
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(VariantExceptionSafety_CopyConstructor, s_VariantExceptionSafety_CopyConstructor)
 
 struct TestStringOnlyVisitor
 {
