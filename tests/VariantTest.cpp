@@ -330,9 +330,9 @@ static int s_VariantExceptionSafety_DefaultConstructor(struct aws_allocator *all
 
     struct NothrowDefaultConstructibleTestType
     {
-        NothrowDefaultConstructibleTestType() noexcept = default;
-        NothrowDefaultConstructibleTestType(const NothrowDefaultConstructibleTestType &) noexcept(false) = default;
-        NothrowDefaultConstructibleTestType(NothrowDefaultConstructibleTestType &&) noexcept(false) = default;
+        NothrowDefaultConstructibleTestType() noexcept {}
+        NothrowDefaultConstructibleTestType(const NothrowDefaultConstructibleTestType &) noexcept(false) {}
+        NothrowDefaultConstructibleTestType(NothrowDefaultConstructibleTestType &&) noexcept(false) {}
     };
 
     using NothrowDefaultConstructibleVariant = Aws::Crt::Variant<NothrowDefaultConstructibleTestType>;
@@ -358,10 +358,10 @@ static int s_VariantExceptionSafety_MoveConstructor(struct aws_allocator *alloca
 
     struct NothrowMoveConstructibleTestType
     {
-        NothrowMoveConstructibleTestType(NothrowMoveConstructibleTestType &&) noexcept = default;
+        NothrowMoveConstructibleTestType(NothrowMoveConstructibleTestType &&) noexcept {}
 
-        NothrowMoveConstructibleTestType() noexcept(false) = default;
-        NothrowMoveConstructibleTestType(const NothrowMoveConstructibleTestType &) noexcept(false) = default;
+        NothrowMoveConstructibleTestType() noexcept(false) {}
+        NothrowMoveConstructibleTestType(const NothrowMoveConstructibleTestType &) noexcept(false) {}
     };
 
     using NothrowMoveConstructibleVariant = Aws::Crt::Variant<NothrowMoveConstructibleTestType>;
@@ -386,10 +386,10 @@ static int s_VariantExceptionSafety_CopyConstructor(struct aws_allocator *alloca
 
     struct NothrowCopyConstructibleTestType
     {
-        NothrowCopyConstructibleTestType(const NothrowCopyConstructibleTestType &) noexcept = default;
+        NothrowCopyConstructibleTestType(const NothrowCopyConstructibleTestType &) noexcept {}
 
-        NothrowCopyConstructibleTestType() noexcept(false) = default;
-        NothrowCopyConstructibleTestType(NothrowCopyConstructibleTestType &&) noexcept(false) = default;
+        NothrowCopyConstructibleTestType() noexcept(false) {}
+        NothrowCopyConstructibleTestType(NothrowCopyConstructibleTestType &&) noexcept(false) {}
     };
 
     using NothrowCopyConstructibleVariant = Aws::Crt::Variant<NothrowCopyConstructibleTestType>;
