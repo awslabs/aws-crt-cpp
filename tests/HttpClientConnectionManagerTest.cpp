@@ -447,4 +447,69 @@ AWS_TEST_CASE(
     HttpClientConnectionWithPendingAcquisitionsAndClosedConnections,
     s_TestHttpClientConnectionWithPendingAcquisitionsAndClosedConnections)
 
+static int s_TestHttpClientCreateManagerWithNetworkInterfacesList(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
+
+        // Ensure that if PQ TLS ciphers are supported on the current platform, that setting them works when connecting
+        // to S3. This TlsCipherPreference has post quantum ciphers at the top of it's preference list (that will be
+        // ignored if S3 doesn't support them) followed by regular TLS ciphers that can be chosen and negotiated by S3.
+        aws_tls_cipher_pref tls_cipher_pref = AWS_IO_TLS_CIPHER_PREF_PQ_DEFAULT;
+
+        if (aws_tls_is_cipher_pref_supported(tls_cipher_pref))
+        {
+            tlsCtxOptions.SetTlsCipherPreference(tls_cipher_pref);
+        }
+
+        Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+        ASSERT_TRUE(tlsContext);
+
+        Aws::Crt::Io::TlsConnectionOptions tlsConnectionOptions = tlsContext.NewConnectionOptions();
+
+        ByteCursor cursor = ByteCursorFromCString("https://s3.amazonaws.com");
+        Io::Uri uri(cursor, allocator);
+
+        auto hostName = uri.GetHostName();
+        tlsConnectionOptions.SetServerName(hostName);
+
+        Aws::Crt::Io::SocketOptions socketOptions;
+        socketOptions.SetConnectTimeoutMs(10000);
+
+        Aws::Crt::Io::EventLoopGroup eventLoopGroup(1, allocator);
+        ASSERT_TRUE(eventLoopGroup);
+
+        Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
+        ASSERT_TRUE(defaultHostResolver);
+
+        Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
+        ASSERT_TRUE(clientBootstrap);
+        clientBootstrap.EnableBlockingShutdown();
+        Http::HttpClientConnectionOptions connectionOptions;
+        connectionOptions.Bootstrap = &clientBootstrap;
+        connectionOptions.SocketOptions = socketOptions;
+        connectionOptions.TlsOptions = tlsConnectionOptions;
+        connectionOptions.HostName = String((const char *)hostName.ptr, hostName.len);
+        connectionOptions.Port = 443;
+
+        Http::HttpClientConnectionManagerOptions connectionManagerOptions;
+        connectionManagerOptions.ConnectionOptions = connectionOptions;
+        connectionManagerOptions.MaxConnections = 30;
+        connectionManagerOptions.EnableBlockingShutdown = true;
+
+        Vector<ByteCursor> networkInterfaces{ByteCursorFromCString("eth0"), ByteCursorFromCString("eth1")};
+        connectionManagerOptions.NetworkInterfaces = networkInterfaces;
+
+        auto connectionManager =
+            Http::HttpClientConnectionManager::NewClientConnectionManager(connectionManagerOptions, allocator);
+        ASSERT_TRUE(connectionManager);
+    }
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(HttpClientCreateManagerWithNetworkInterfacesList, s_TestHttpClientCreateManagerWithNetworkInterfacesList)
+
 #endif // !BYO_CRYPTO
