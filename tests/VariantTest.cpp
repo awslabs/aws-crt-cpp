@@ -6,6 +6,12 @@
 #include <aws/crt/Variant.h>
 #include <aws/testing/aws_test_harness.h>
 
+#if defined(_WIN32)
+#    define AWS_VARIANTTEST_WINDOWS_API __declspec(dllexport)
+#else
+#    define AWS_VARIANTTEST_WINDOWS_API
+#endif
+
 const char *s_variant_test_str = "This is a string, that should be long enough to avoid small string optimizations";
 
 static int s_VariantBasicOperandsCompile(struct aws_allocator *allocator, void *ctx)
@@ -170,7 +176,7 @@ static int s_VariantConstructor(struct aws_allocator *allocator, void *ctx)
 
 AWS_TEST_CASE(VariantConstructor, s_VariantConstructor)
 
-static int s_VariantOperatorEquals(struct aws_allocator *allocator, void *ctx)
+static int s_VariantAssignmentOperator(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
     {
@@ -214,7 +220,192 @@ static int s_VariantOperatorEquals(struct aws_allocator *allocator, void *ctx)
     return AWS_OP_SUCCESS;
 }
 
-AWS_TEST_CASE(VariantOperatorEquals, s_VariantOperatorEquals)
+AWS_TEST_CASE(VariantAssignmentOperator, s_VariantAssignmentOperator)
+
+// Test Variant with move-only underlying type.
+// If it compiles, it's considered success.
+static int s_VariantWithMoveOnlyUnderlyingType(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
+    struct MoveOnlyTestType
+    {
+        MoveOnlyTestType() = default;
+
+        MoveOnlyTestType(MoveOnlyTestType &&) = default;
+        MoveOnlyTestType &operator=(MoveOnlyTestType &&) = default;
+
+        MoveOnlyTestType(const MoveOnlyTestType &) = delete;
+        MoveOnlyTestType &operator=(const MoveOnlyTestType &) = delete;
+    };
+
+    using MoveOnlyVariant = Aws::Crt::Variant<MoveOnlyTestType>;
+
+    /* Regression test.
+     * The __declspec(dllexport) directive exports class member function on Windows platform. We enable it when
+     * building shared libraries. In the past, this directive caused msvc to generate special copy members for classes
+     * containing Crt::Variant with move-only underlying types, which led to compile-time errors. */
+    struct AWS_VARIANTTEST_WINDOWS_API MoveOnlyVariantTestResult
+    {
+        MoveOnlyVariant m_result;
+    };
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(VariantWithMoveOnlyUnderlyingType, s_VariantWithMoveOnlyUnderlyingType)
+
+// Test Variant with copy-only underlying type.
+// If it compiles, it's considered success.
+static int s_VariantWithCopyOnlyUnderlyingType(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
+    struct CopyOnlyTestType
+    {
+        CopyOnlyTestType() = default;
+
+        CopyOnlyTestType(CopyOnlyTestType &&) = default;
+        CopyOnlyTestType &operator=(CopyOnlyTestType &&) = default;
+
+        CopyOnlyTestType(const CopyOnlyTestType &) = delete;
+        CopyOnlyTestType &operator=(const CopyOnlyTestType &) = delete;
+    };
+
+    using CopyOnlyVariant = Aws::Crt::Variant<CopyOnlyTestType>;
+
+    /* Regression test.
+     * The __declspec(dllexport) directive exports class member function on Windows platform. We enable it when
+     * building shared libraries. In the past, this directive caused msvc to generate special copy members for classes
+     * containing Crt::Variant with copy-only underlying types, which led to compile-time errors. */
+    struct AWS_VARIANTTEST_WINDOWS_API CopyOnlyVariantTestResult
+    {
+        CopyOnlyVariant m_result;
+    };
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(VariantWithCopyOnlyUnderlyingType, s_VariantWithCopyOnlyUnderlyingType)
+
+// Test Variant with underlying type without default constructor.
+// If it compiles, it's considered success.
+static int s_VariantWithNoDefaultConstructibleUnderlyingType(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
+    struct NoDefaultConstructibleTestType
+    {
+        explicit NoDefaultConstructibleTestType(int) {}
+        NoDefaultConstructibleTestType() = delete;
+    };
+
+    using NoDefaultConstructibleVariant = Aws::Crt::Variant<NoDefaultConstructibleTestType>;
+
+    struct AWS_VARIANTTEST_WINDOWS_API NoDefaultConstructibleVariantTestResult
+    {
+        NoDefaultConstructibleVariant m_result;
+    };
+
+    NoDefaultConstructibleTestType testType(1);
+    NoDefaultConstructibleVariant variant(testType);
+    NoDefaultConstructibleVariantTestResult testResult{variant};
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(VariantWithNoDefaultConstructibleUnderlyingType, s_VariantWithNoDefaultConstructibleUnderlyingType)
+
+static int s_VariantExceptionSafety_DefaultConstructor(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
+    struct NothrowDefaultConstructibleTestType
+    {
+        NothrowDefaultConstructibleTestType() noexcept {}
+        NothrowDefaultConstructibleTestType(const NothrowDefaultConstructibleTestType &) noexcept(false) {}
+        NothrowDefaultConstructibleTestType(NothrowDefaultConstructibleTestType &&) noexcept(false) {}
+    };
+
+    using NothrowDefaultConstructibleVariant = Aws::Crt::Variant<NothrowDefaultConstructibleTestType>;
+
+    ASSERT_TRUE(std::is_nothrow_constructible<NothrowDefaultConstructibleVariant>::value);
+    ASSERT_FALSE((
+        std::is_nothrow_constructible<NothrowDefaultConstructibleVariant, const NothrowDefaultConstructibleTestType &>::
+            value));
+    ASSERT_FALSE(
+        (std::is_nothrow_constructible<NothrowDefaultConstructibleVariant, NothrowDefaultConstructibleTestType &&>::
+             value));
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(VariantExceptionSafety_DefaultConstructor, s_VariantExceptionSafety_DefaultConstructor)
+
+static int s_VariantExceptionSafety_MoveConstructor(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
+    struct NothrowMoveConstructibleTestType
+    {
+        NothrowMoveConstructibleTestType(NothrowMoveConstructibleTestType &&) noexcept {}
+
+        NothrowMoveConstructibleTestType() noexcept(false) {}
+        NothrowMoveConstructibleTestType(const NothrowMoveConstructibleTestType &) noexcept(false) {}
+    };
+
+    using NothrowMoveConstructibleVariant = Aws::Crt::Variant<NothrowMoveConstructibleTestType>;
+
+    ASSERT_TRUE(
+        (std::is_nothrow_constructible<NothrowMoveConstructibleVariant, NothrowMoveConstructibleTestType &&>::value));
+    ASSERT_FALSE(std::is_nothrow_constructible<NothrowMoveConstructibleVariant>::value);
+    ASSERT_FALSE(
+        (std::is_nothrow_constructible<NothrowMoveConstructibleVariant, const NothrowMoveConstructibleTestType &>::
+             value));
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(VariantExceptionSafety_MoveConstructor, s_VariantExceptionSafety_MoveConstructor)
+
+static int s_VariantExceptionSafety_CopyConstructor(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
+    struct NothrowCopyConstructibleTestType
+    {
+        NothrowCopyConstructibleTestType(const NothrowCopyConstructibleTestType &) noexcept {}
+
+        NothrowCopyConstructibleTestType() noexcept(false) {}
+        NothrowCopyConstructibleTestType(NothrowCopyConstructibleTestType &&) noexcept(false) {}
+    };
+
+    using NothrowCopyConstructibleVariant = Aws::Crt::Variant<NothrowCopyConstructibleTestType>;
+
+    ASSERT_TRUE(
+        (std::is_nothrow_constructible<NothrowCopyConstructibleVariant, const NothrowCopyConstructibleTestType &>::
+             value));
+
+    ASSERT_FALSE(std::is_nothrow_constructible<NothrowCopyConstructibleVariant>::value);
+    ASSERT_FALSE(
+        (std::is_nothrow_constructible<NothrowCopyConstructibleVariant, NothrowCopyConstructibleTestType &&>::value));
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(VariantExceptionSafety_CopyConstructor, s_VariantExceptionSafety_CopyConstructor)
 
 struct TestStringOnlyVisitor
 {
