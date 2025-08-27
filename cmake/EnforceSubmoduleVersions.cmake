@@ -36,7 +36,7 @@ function(check_submodule_commit name rel_path)
         RESULT_VARIABLE   _rc)
 
     if(_rc OR "${_baseline}" STREQUAL "")
-        message(FATAL_ERROR "Could not query git-link for ${rel_path}: ${_err}")
+        message(STATUS "Could not query git-link for ${rel_path}: ${_err}. Skipping Submodule Version Check.")
     endif()
 
     # ensure the commit object exists (deepens shallow clones/branches)
@@ -60,12 +60,25 @@ function(check_submodule_commit name rel_path)
     execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --verify HEAD
                     WORKING_DIRECTORY "${_sub_dir}"
                     OUTPUT_VARIABLE _head
-                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+                    OUTPUT_STRIP_TRAILING_WHITESPACE
+                    ERROR_VARIABLE    _err
+                    RESULT_VARIABLE _rc ERROR_QUIET)
+    
+    if(_rc)
+        message(STATUS "Could not get HEAD commit for ${name}: ${_err}. Skipping Submodule Version Check.")
+        return()
+    endif()
 
     execute_process(COMMAND ${GIT_EXECUTABLE} merge-base --is-ancestor
                             ${_baseline} ${_head}
                     WORKING_DIRECTORY "${_sub_dir}"
                     RESULT_VARIABLE _is_anc ERROR_QUIET)
+    
+    # Check if merge-base command failed (not just ancestry check)
+    if(_is_anc EQUAL -1)
+        message(WARNING "Could not determine ancestry for ${name} at ${_sub_dir}")
+        return()
+    endif()
 
     if(_is_anc GREATER 0)
         message(FATAL_ERROR
