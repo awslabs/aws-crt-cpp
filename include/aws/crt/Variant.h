@@ -18,7 +18,6 @@ namespace Aws
     {
         namespace VariantDetail
         {
-            // TODO Pass values instead of refs.
             template <typename T> constexpr const T &ConstExprMax(const T &a, const T &b)
             {
                 return (a < b) ? b : a;
@@ -293,7 +292,7 @@ namespace Aws
                         else
                         {
                             VisitorUtil<0, Ts...>::VisitBinary(this, std::move(other), CopyMoveAssigner());
-                        };
+                        }
                     }
                     return *this;
                 }
