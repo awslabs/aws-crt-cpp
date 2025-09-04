@@ -26,5 +26,19 @@ namespace Aws
         struct IsSpecializationOf<Primary<Args...>, Primary> : std::true_type
         {
         };
+
+        /**
+         * Forms the logical conjunction of the type traits Args..., effectively performing a logical AND on the
+         * sequence of traits.
+         */
+        template <typename... Args> struct Conjunction : std::true_type
+        {
+        };
+
+        template <typename Arg, typename... Args>
+        struct Conjunction<Arg, Args...> : std::conditional<Arg::value, Conjunction<Args...>, std::false_type>::type
+        {
+        };
+
     } // namespace Crt
 } // namespace Aws
