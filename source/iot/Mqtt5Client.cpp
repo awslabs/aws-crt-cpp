@@ -346,6 +346,15 @@ namespace Aws
             return *this;
         }
 
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithMinimumTlsVersion(aws_tls_versions minimumTlsVersion) noexcept
+        {
+            if (m_tlsConnectionOptions)
+            {
+                m_tlsConnectionOptions->SetMinimumTlsVersion(minimumTlsVersion);
+            }
+            return *this;
+        }
+
         Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithTlsCipherPreference(aws_tls_cipher_pref cipherPref) noexcept
         {
             if (m_tlsConnectionOptions)
