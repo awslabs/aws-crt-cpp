@@ -101,6 +101,11 @@ namespace Aws
         };
 
         /**
+         * @deprecated We strongly recommend using the Aws::Crt::Mqtt5::Mqtt5Client. There are no current plans to fully
+         * deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5 client to access
+         * a more robust feature set, clearer error handling, and lifetime management. More details can be found in the
+         * GitHub Repo FAQ
+         *
          * Represents configuration parameters for building a MqttClientConnectionConfig object. You can use a single
          * instance of this class PER MqttClientConnectionConfig you want to generate. If you want to generate a config
          * for a different endpoint or port etc... you need a new instance of this class.
@@ -465,16 +470,30 @@ namespace Aws
         };
 
         /**
+         * @deprecated We strongly recommend using the Aws::Crt::Mqtt5::Mqtt5Client. There are no current plans to fully
+         * deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5 client to access
+         * a more robust feature set, clearer error handling, and lifetime management. More details can be found in the
+         * GitHub Repo FAQ
+         *
          * AWS IOT specific Mqtt Client. Sets defaults for using the AWS IOT service. You'll need an instance of
          * MqttClientConnectionConfig to use. Once NewConnection returns, you use it's return value identically
          * to how you would use Aws::Crt::Mqtt::MqttConnection
          */
-        class AWS_CRT_CPP_API MqttClient final
+        class AWS_CRT_CPP_API AWS_CRT_SOFT_DEPRECATED(
+            "We strongly recommend using the Aws::Crt::Mqtt5::Mqtt5Client. There are no current plans to fully "
+            "deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5 client to "
+            "access a more robust feature set, clearer error handling, and lifetime management. More details can be "
+            "found in the GitHub Repo FAQ") MqttClient final
         {
           public:
             MqttClient(Crt::Io::ClientBootstrap &bootstrap, Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
+             * @deprecated We strongly recommend using the Aws::Crt::Mqtt5::Mqtt5Client. There are no current plans to
+             * fully deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5 client
+             * to access a more robust feature set, clearer error handling, and lifetime management. More details can be
+             * found in the GitHub Repo FAQ
+             *
              * Constructs a new Mqtt Client object using the static default ClientBootstrap.
              *
              * For more information on the default ClientBootstrap see
@@ -483,6 +502,11 @@ namespace Aws
             MqttClient(Crt::Allocator *allocator = Crt::ApiAllocator()) noexcept;
 
             /**
+             * @deprecated We strongly recommend using the Aws::Crt::Mqtt5::Mqtt5Client. There are no current plans to
+             * fully deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5 client
+             * to access a more robust feature set, clearer error handling, and lifetime management. More details can be
+             * found in the GitHub Repo FAQ
+             *
              * Creates a new mqtt connection from a connection configuration object
              * @param config mqtt connection configuration
              * @return a new mqtt connection
