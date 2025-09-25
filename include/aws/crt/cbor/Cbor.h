@@ -359,7 +359,7 @@ namespace Aws
               private:
                 struct aws_cbor_decoder *m_decoder;
                 /* Error */
-                int m_lastError;
+                int m_lastError = AWS_ERROR_UNKNOWN;
             };
         } // namespace Cbor
 
