@@ -240,3 +240,20 @@ static int s_CborTimeStampTest(struct aws_allocator *allocator, void *ctx)
 }
 
 AWS_TEST_CASE(CborTimeStampTest, s_CborTimeStampTest)
+
+static int s_CborLastErrorTest(struct aws_allocator *allocator, void *ctx)
+{
+    /**
+     * Test the last error is initialzed correctly.
+     */
+    (void)ctx;
+    {
+        ApiHandle apiHandle(allocator);
+        Cbor::CborDecoder decoder({});
+        ASSERT_INT_EQUALS(decoder.LastError(), AWS_ERROR_UNKNOWN);
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(CborLastErrorTest, s_CborLastErrorTest)
