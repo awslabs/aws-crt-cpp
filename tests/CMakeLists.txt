@@ -316,6 +316,7 @@ endif()
 
 add_test_case(CborSanityTest)
 add_test_case(CborTimeStampTest)
+add_test_case(CborLastErrorTest)
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 
