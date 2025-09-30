@@ -272,6 +272,7 @@ jobs:
     env:
       CFLAGS: "-DWIN32_LEAN_AND_MEAN"
       CXXFLAGS: "-DWIN32_LEAN_AND_MEAN"
+      CL: "/DAWS_CRT_DISABLE_DEPRECATION_WARNINGS /EHsc"
     steps:
     - uses: aws-actions/configure-aws-credentials@v4
       with:
