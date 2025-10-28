@@ -160,6 +160,11 @@ namespace Aws
                 options.on_shutdown = HttpClientConnection::s_onClientConnectionShutdown;
                 options.manual_window_management = connectionOptions.ManualWindowManagement;
 
+                if (connectionOptions.Socks5ProxyOptions)
+                {
+                    options.socks5_proxy_options = connectionOptions.Socks5ProxyOptions->GetUnderlyingHandle();
+                }
+
                 aws_http_proxy_options proxyOptions;
                 AWS_ZERO_STRUCT(proxyOptions);
                 if (connectionOptions.ProxyOptions)
@@ -405,5 +410,5 @@ namespace Aws
             {
             }
         } // namespace Http
-    } // namespace Crt
+    }     // namespace Crt
 } // namespace Aws

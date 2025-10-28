@@ -164,6 +164,12 @@ namespace Aws
                 return m_connectionCore->SetHttpProxyOptions(proxyOptions);
             }
 
+            bool MqttConnection::SetSocks5ProxyOptions(const Io::Socks5ProxyOptions &options) noexcept
+            {
+                AWS_ASSERT(m_connectionCore != nullptr);
+                return m_connectionCore->SetSocks5ProxyOptions(options);
+            }
+
             bool MqttConnection::SetReconnectTimeout(uint64_t min_seconds, uint64_t max_seconds) noexcept
             {
                 AWS_ASSERT(m_connectionCore != nullptr);
@@ -296,5 +302,5 @@ namespace Aws
                 return m_connectionCore->GetOperationStatistics();
             }
         } // namespace Mqtt
-    } // namespace Crt
+    }     // namespace Crt
 } // namespace Aws

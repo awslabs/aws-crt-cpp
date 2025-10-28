@@ -43,9 +43,11 @@ namespace Aws
             const Crt::Io::SocketOptions &socketOptions,
             Crt::Io::TlsContext &&tlsContext,
             Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
-            const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions)
+            const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
+            const Crt::Optional<Crt::Io::Socks5ProxyOptions> &socks5ProxyOptions)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
-              m_webSocketInterceptor(std::move(interceptor)), m_proxyOptions(proxyOptions), m_lastError(0)
+              m_webSocketInterceptor(std::move(interceptor)), m_proxyOptions(proxyOptions),
+              m_socks5ProxyOptions(socks5ProxyOptions), m_lastError(0)
         {
         }
 
@@ -54,9 +56,10 @@ namespace Aws
             uint32_t port,
             const Crt::Io::SocketOptions &socketOptions,
             Crt::Io::TlsContext &&tlsContext,
-            const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions)
+            const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
+            const Crt::Optional<Crt::Io::Socks5ProxyOptions> &socks5ProxyOptions)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
-              m_proxyOptions(proxyOptions), m_lastError(0)
+              m_proxyOptions(proxyOptions), m_socks5ProxyOptions(socks5ProxyOptions), m_lastError(0)
         {
         }
 
@@ -532,7 +535,7 @@ namespace Aws
             if (!m_websocketConfig)
             {
                 auto config = MqttClientConnectionConfig(
-                    m_endpoint, port, m_socketOptions, std::move(tlsContext), m_proxyOptions);
+                    m_endpoint, port, m_socketOptions, std::move(tlsContext), m_proxyOptions, m_socks5ProxyOptions);
                 config.m_username = username;
                 config.m_password = password;
                 return config;
@@ -562,7 +565,8 @@ namespace Aws
                 m_socketOptions,
                 std::move(tlsContext),
                 signerTransform,
-                useWebsocketProxyOptions ? m_websocketConfig->ProxyOptions : m_proxyOptions);
+                useWebsocketProxyOptions ? m_websocketConfig->ProxyOptions : m_proxyOptions,
+                m_socks5ProxyOptions);
             config.m_username = username;
             config.m_password = password;
             return config;
@@ -624,6 +628,11 @@ namespace Aws
             if (config.m_proxyOptions)
             {
                 newConnection->SetHttpProxyOptions(config.m_proxyOptions.value());
+            }
+
+            if (config.m_socks5ProxyOptions)
+            {
+                newConnection->SetSocks5ProxyOptions(config.m_socks5ProxyOptions.value());
             }
 
             return newConnection;
