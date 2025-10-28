@@ -96,19 +96,47 @@ static int s_TestSocks5ProxyOptionsCreateFromUriInvalid(struct aws_allocator *al
 }
 AWS_TEST_CASE(Socks5ProxyOptionsCreateFromUriInvalid, s_TestSocks5ProxyOptionsCreateFromUriInvalid)
 
+static int s_TestSocks5ProxyOptionsCtorDefaults(struct aws_allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+
+    Socks5ProxyOptions options("proxy.example.com");
+
+    ASSERT_TRUE(options);
+    ASSERT_INT_EQUALS(AWS_ERROR_SUCCESS, options.LastError());
+    ASSERT_INT_EQUALS(
+        static_cast<int>(Socks5ProxyOptions::DefaultProxyPort), static_cast<int>(options.GetPort()));
+    ASSERT_INT_EQUALS(static_cast<int>(AwsSocks5AuthMethod::None), static_cast<int>(options.GetAuthMethod()));
+    ASSERT_FALSE(options.GetUsername().has_value());
+    ASSERT_FALSE(options.GetPassword().has_value());
+    ASSERT_UINT_EQUALS(0, options.GetConnectionTimeoutMs());
+    ASSERT_INT_EQUALS(
+        static_cast<int>(AwsSocks5HostResolutionMode::Proxy), static_cast<int>(options.GetResolutionMode()));
+
+    const aws_socks5_proxy_options *raw = options.GetUnderlyingHandle();
+    ASSERT_NOT_NULL(raw);
+    ASSERT_NOT_NULL(raw->host);
+    ASSERT_STR_EQUALS("proxy.example.com", aws_string_c_str(raw->host));
+    ASSERT_INT_EQUALS(Socks5ProxyOptions::DefaultProxyPort, raw->port);
+    ASSERT_TRUE(raw->username == NULL);
+    ASSERT_TRUE(raw->password == NULL);
+
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Socks5ProxyOptionsCtorDefaults, s_TestSocks5ProxyOptionsCtorDefaults)
+
 static int s_TestSocks5ProxyOptionsIgnoreCredentialsWhenAuthNone(struct aws_allocator *allocator, void *)
 {
     ApiHandle apiHandle(allocator);
 
+    Socks5ProxyAuthConfig authConfig = Socks5ProxyAuthConfig::CreateNone();
     Socks5ProxyOptions options(
         "proxy.example.com",
         1080,
-        AwsSocks5AuthMethod::None,
-        "user",
-        "pass",
+        authConfig,
         1000,
-        allocator,
-        AwsSocks5HostResolutionMode::Proxy);
+        AwsSocks5HostResolutionMode::Proxy,
+        allocator);
 
     ASSERT_TRUE(options);
     ASSERT_INT_EQUALS(AWS_ERROR_SUCCESS, options.LastError());
@@ -129,15 +157,14 @@ static int s_TestSocks5ProxyOptionsCopyAndMove(struct aws_allocator *allocator, 
 {
     ApiHandle apiHandle(allocator);
 
+    Socks5ProxyAuthConfig authConfig = Socks5ProxyAuthConfig::CreateUsernamePassword("user", "pass");
     Socks5ProxyOptions original(
         "proxy.example.com",
         1080,
-        AwsSocks5AuthMethod::UsernamePassword,
-        "user",
-        "pass",
+        authConfig,
         2500,
-        allocator,
-        AwsSocks5HostResolutionMode::Proxy);
+        AwsSocks5HostResolutionMode::Proxy,
+        allocator);
 
     ASSERT_TRUE(original);
     ASSERT_INT_EQUALS(AWS_ERROR_SUCCESS, original.LastError());
@@ -286,3 +313,41 @@ static int s_TestSocks5ProxyOptionsSetters(struct aws_allocator *allocator, void
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Socks5ProxyOptionsSetters, s_TestSocks5ProxyOptionsSetters)
+
+static int s_TestSocks5ProxyOptionsAuthConfig(struct aws_allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+
+    Socks5ProxyOptions options;
+    ASSERT_TRUE(options.SetProxyEndpoint("auth.proxy.local", 1085));
+    ASSERT_TRUE(options);
+
+    auto usernamePasswordConfig = Socks5ProxyAuthConfig::CreateUsernamePassword("userA", "passA");
+    ASSERT_TRUE(options.SetAuth(usernamePasswordConfig));
+    ASSERT_INT_EQUALS(
+        static_cast<int>(AwsSocks5AuthMethod::UsernamePassword), static_cast<int>(options.GetAuthMethod()));
+    auto usernameOpt = options.GetUsername();
+    auto passwordOpt = options.GetPassword();
+    ASSERT_TRUE(usernameOpt.has_value());
+    ASSERT_TRUE(passwordOpt.has_value());
+    ASSERT_STR_EQUALS("userA", usernameOpt->c_str());
+    ASSERT_STR_EQUALS("passA", passwordOpt->c_str());
+
+    Socks5ProxyAuthConfig invalidNoneConfig;
+    invalidNoneConfig.Method = AwsSocks5AuthMethod::None;
+    invalidNoneConfig.Username = String("should-fail");
+    ASSERT_FALSE(options.SetAuth(invalidNoneConfig));
+    ASSERT_INT_EQUALS(AWS_ERROR_INVALID_ARGUMENT, options.LastError());
+    ASSERT_INT_EQUALS(
+        static_cast<int>(AwsSocks5AuthMethod::UsernamePassword), static_cast<int>(options.GetAuthMethod()));
+
+    Socks5ProxyAuthConfig clearedConfig = Socks5ProxyAuthConfig::CreateNone();
+    ASSERT_TRUE(options.SetAuth(clearedConfig));
+    ASSERT_INT_EQUALS(static_cast<int>(AwsSocks5AuthMethod::None), static_cast<int>(options.GetAuthMethod()));
+    ASSERT_FALSE(options.GetUsername().has_value());
+    ASSERT_FALSE(options.GetPassword().has_value());
+    ASSERT_INT_EQUALS(AWS_ERROR_SUCCESS, options.LastError());
+
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Socks5ProxyOptionsAuthConfig, s_TestSocks5ProxyOptionsAuthConfig)

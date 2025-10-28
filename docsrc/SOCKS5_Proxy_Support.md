@@ -60,7 +60,8 @@ Helper functions:
 
 ### C++ Wrapper (`Aws::Crt::Io::Socks5ProxyOptions`)
 
-The C++ wrapper in `include/aws/crt/io/Socks5ProxyOptions.h` owns an `aws_socks5_proxy_options` instance and exposes the same configuration through constructors and RAII semantics. It defaults to the process allocator and ensures copies are deep copies while moves transfer ownership. New helpers (`SetHostResolutionMode()` / `GetHostResolutionMode()`) surface the host-resolution toggle via the strongly typed `AwsSocks5HostResolutionMode` enum.
+The C++ wrapper in `include/aws/crt/io/Socks5ProxyOptions.h` owns an `aws_socks5_proxy_options` instance and exposes the same configuration through setters and RAII semantics. It defaults to the process allocator and ensures copies are deep copies while moves transfer ownership. Helpers (`SetHostResolutionMode()` / `GetHostResolutionMode()`) surface the host-resolution toggle via the strongly typed `AwsSocks5HostResolutionMode` enum.
+
 
 CLI samples accept `socks5h://` URIs to keep the legacy “proxy-resolved DNS” behaviour, and now also recognise `socks5://` URIs when DNS resolution should stay on the client. The calculated scheme is translated directly into the C struct’s `host_resolution_mode`.
 
@@ -106,13 +107,11 @@ void ConnectThroughProxy() {
     ApiHandle apiHandle;
 
     Io::Socks5ProxyOptions proxyOptions(
-        "proxy.internal.local",          /* proxy host */
-        1080,                            /* proxy port */
-        Io::AwsSocks5AuthMethod::UsernamePassword,
-        "alice",                         /* username */
-        "s3cr3t!",                       /* password */
-        10000,                           /* timeout in ms */
-        ApiAllocator());
+        "proxy.internal.local",
+        1080,
+        Io::Socks5ProxyAuthConfig::CreateUsernamePassword("alice", "s3cr3t!"),
+        10000 /* timeout in ms */,
+        AwsSocks5HostResolutionMode::Proxy);
 
     Mqtt5::Mqtt5ClientOptions mqttOptions;
     mqttOptions.WithHostName("broker.example.com")
@@ -143,6 +142,7 @@ Key points:
 
 - Enable TRACE logging for `AWS_LS_IO_SOCKS5` when debugging handshake issues—the handler logs state transitions and proxy replies.
 - Username/password credentials are limited to 255 bytes each (RFC 1929). Longer values will fail validation in `aws_socks5_proxy_options_set_auth()`.
+- Use `Socks5ProxyAuthConfig` with `SetAuth()` so the proxy configuration can adopt new authentication mechanisms without breaking your code.
 - When both HTTP and SOCKS5 proxies are configured for MQTT the HTTP proxy wins, since the HTTP path needs to manage CONNECT tunnels explicitly.
 - `aws_socks5_infer_address_type()` (used internally during context setup) determines whether the destination is IPv4, IPv6, or a hostname. Override the value manually only if you need non-standard routing.
 - Remember to clean up `aws_socks5_proxy_options` with `aws_socks5_proxy_options_clean_up()` when using the C API directly. The C++ wrapper performs this automatically.

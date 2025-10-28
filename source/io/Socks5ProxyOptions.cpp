@@ -25,6 +25,7 @@ namespace Aws
                 }
             }
 
+            //TODO: remove deprecated constructor
             Socks5ProxyOptions::Socks5ProxyOptions(
                 const String &hostName,
                 uint32_t port,
@@ -57,6 +58,33 @@ namespace Aws
                 m_lastError = AWS_ERROR_SUCCESS;
             }
 
+            Socks5ProxyOptions::Socks5ProxyOptions(
+                const String &hostName,
+                uint32_t port,
+                const Socks5ProxyAuthConfig &authConfig,
+                uint32_t connectionTimeoutMs,
+                AwsSocks5HostResolutionMode resolutionMode,
+                struct aws_allocator *allocator)
+                : Socks5ProxyOptions()
+            {
+                m_allocator = allocator ? allocator : aws_default_allocator();
+
+                if (!SetProxyEndpoint(hostName, port))
+                {
+                    return;
+                }
+
+                SetConnectionTimeoutMs(connectionTimeoutMs);
+                SetHostResolutionMode(resolutionMode);
+
+                if (!SetAuth(authConfig))
+                {
+                    return;
+                }
+
+                m_lastError = AWS_ERROR_SUCCESS;
+            }
+
             Socks5ProxyOptions::~Socks5ProxyOptions()
             {
                 aws_socks5_proxy_options_clean_up(&m_options);
@@ -83,20 +111,6 @@ namespace Aws
                 struct aws_allocator *allocator = m_allocator ? m_allocator : aws_default_allocator();
                 m_allocator = allocator;
 
-                uint32_t previousTimeout = m_options.connection_timeout_ms;
-                AwsSocks5HostResolutionMode previousMode = GetHostResolutionMode();
-                // Determine if we need to carry over auth credentials
-                const bool shouldCarryAuth = m_authMethod == AwsSocks5AuthMethod::UsernamePassword &&
-                                             m_options.username && m_options.username->len > 0 && m_options.password &&
-                                             m_options.password->len > 0;
-                aws_byte_cursor previousUsernameCursor;
-                aws_byte_cursor previousPasswordCursor;
-                if (shouldCarryAuth)
-                {
-                    previousUsernameCursor = aws_byte_cursor_from_string(m_options.username);
-                    previousPasswordCursor = aws_byte_cursor_from_string(m_options.password);
-                }
-
                 aws_socks5_proxy_options newOptions;
                 AWS_ZERO_STRUCT(newOptions);
 
@@ -110,19 +124,16 @@ namespace Aws
                     return false;
                 }
 
+                uint32_t previousTimeout = m_options.connection_timeout_ms;
+                AwsSocks5HostResolutionMode previousMode = GetHostResolutionMode();
                 newOptions.connection_timeout_ms = previousTimeout;
                 aws_socks5_proxy_options_set_host_resolution_mode(
                     &newOptions, static_cast<aws_socks5_host_resolution_mode>(previousMode));
 
-                if (shouldCarryAuth)
+                if (!ApplyAuthConfig(newOptions, m_authConfig))
                 {
-                    if (aws_socks5_proxy_options_set_auth(
-                            &newOptions, allocator, previousUsernameCursor, previousPasswordCursor))
-                    {
-                        m_lastError = aws_last_error();
-                        aws_socks5_proxy_options_clean_up(&newOptions);
-                        return false;
-                    }
+                    aws_socks5_proxy_options_clean_up(&newOptions);
+                    return false;
                 }
 
                 aws_socks5_proxy_options_clean_up(&m_options);
@@ -133,49 +144,50 @@ namespace Aws
                 return true;
             }
 
-            bool Socks5ProxyOptions::SetAuthCredentials(const String &username, const String &password)
+            bool Socks5ProxyOptions::SetAuth(const Socks5ProxyAuthConfig &authConfig)
             {
-                if (username.empty() || password.empty())
+                if (authConfig.Method == AwsSocks5AuthMethod::None)
+                {
+                    if (authConfig.Username.has_value() || authConfig.Password.has_value())
+                    {
+                        m_lastError = AWS_ERROR_INVALID_ARGUMENT;
+                        return false;
+                    }
+                }
+                else if (authConfig.Method == AwsSocks5AuthMethod::UsernamePassword)
+                {
+                    if (!authConfig.Username.has_value() || authConfig.Username->empty() ||
+                        !authConfig.Password.has_value() || authConfig.Password->empty())
+                    {
+                        m_lastError = AWS_ERROR_INVALID_ARGUMENT;
+                        return false;
+                    }
+                }
+                else
                 {
                     m_lastError = AWS_ERROR_INVALID_ARGUMENT;
                     return false;
                 }
 
-                struct aws_allocator *allocator = m_allocator ? m_allocator : aws_default_allocator();
-                m_allocator = allocator;
-
-                aws_byte_cursor usernameCursor =
-                    aws_byte_cursor_from_array(reinterpret_cast<const uint8_t *>(username.data()), username.length());
-                aws_byte_cursor passwordCursor =
-                    aws_byte_cursor_from_array(reinterpret_cast<const uint8_t *>(password.data()), password.length());
-
-                if (aws_socks5_proxy_options_set_auth(&m_options, allocator, usernameCursor, passwordCursor))
+                if (!ApplyAuthConfig(m_options, authConfig))
                 {
-                    m_lastError = aws_last_error();
                     return false;
                 }
 
-                m_authMethod = AwsSocks5AuthMethod::UsernamePassword;
+                m_authConfig = authConfig;
                 m_lastError = AWS_ERROR_SUCCESS;
                 return true;
             }
 
+            bool Socks5ProxyOptions::SetAuthCredentials(const String &username, const String &password)
+            {
+                return SetAuth(Socks5ProxyAuthConfig::CreateUsernamePassword(username, password));
+            }
+
             void Socks5ProxyOptions::ClearAuthCredentials()
             {
-                struct aws_allocator *allocator = m_allocator ? m_allocator : aws_default_allocator();
-                m_allocator = allocator;
-
-                aws_byte_cursor emptyCursor;
-                AWS_ZERO_STRUCT(emptyCursor);
-
-                if (aws_socks5_proxy_options_set_auth(&m_options, allocator, emptyCursor, emptyCursor))
-                {
-                    m_lastError = aws_last_error();
-                    return;
-                }
-
-                m_authMethod = AwsSocks5AuthMethod::None;
-                m_lastError = AWS_ERROR_SUCCESS;
+                Socks5ProxyAuthConfig noneConfig = Socks5ProxyAuthConfig::CreateNone();
+                (void)SetAuth(noneConfig);
             }
 
             void Socks5ProxyOptions::SetConnectionTimeoutMs(uint32_t timeoutMs)
@@ -192,22 +204,22 @@ namespace Aws
                 {
                     m_lastError = aws_last_error();
                     aws_socks5_proxy_options_init_default(&m_options);
-                    m_authMethod = AwsSocks5AuthMethod::None;
+                    m_authConfig = Socks5ProxyAuthConfig::CreateNone();
                 }
                 else
                 {
-                    m_authMethod = other.m_authMethod;
+                    m_authConfig = other.m_authConfig;
                 }
             }
 
             Socks5ProxyOptions::Socks5ProxyOptions(Socks5ProxyOptions &&other) noexcept
                 : m_options(other.m_options), m_allocator(other.m_allocator), m_lastError(other.m_lastError),
-                  m_authMethod(other.m_authMethod)
+                  m_authConfig(std::move(other.m_authConfig))
             {
                 AWS_ZERO_STRUCT(other.m_options);
                 other.m_allocator = aws_default_allocator();
                 other.m_lastError = AWS_ERROR_SUCCESS;
-                other.m_authMethod = AwsSocks5AuthMethod::None;
+                other.m_authConfig = Socks5ProxyAuthConfig::CreateNone();
             }
 
             Socks5ProxyOptions &Socks5ProxyOptions::operator=(const Socks5ProxyOptions &other)
@@ -220,12 +232,12 @@ namespace Aws
                     {
                         m_lastError = aws_last_error();
                         aws_socks5_proxy_options_init_default(&m_options);
-                        m_authMethod = AwsSocks5AuthMethod::None;
+                        m_authConfig = Socks5ProxyAuthConfig::CreateNone();
                     }
                     else
                     {
                         m_lastError = AWS_ERROR_SUCCESS;
-                        m_authMethod = other.m_authMethod;
+                        m_authConfig = other.m_authConfig;
                     }
                 }
                 return *this;
@@ -239,11 +251,11 @@ namespace Aws
                     m_options = other.m_options;
                     m_allocator = other.m_allocator;
                     m_lastError = other.m_lastError;
-                    m_authMethod = other.m_authMethod;
+                    m_authConfig = std::move(other.m_authConfig);
                     AWS_ZERO_STRUCT(other.m_options);
                     other.m_allocator = aws_default_allocator();
                     other.m_lastError = AWS_ERROR_SUCCESS;
-                    other.m_authMethod = AwsSocks5AuthMethod::None;
+                    other.m_authConfig = Socks5ProxyAuthConfig::CreateNone();
                 }
                 return *this;
             }
@@ -287,7 +299,7 @@ namespace Aws
 
             AwsSocks5AuthMethod Socks5ProxyOptions::GetAuthMethod() const
             {
-                return m_authMethod;
+                return m_authConfig.Method;
             }
 
             AwsSocks5HostResolutionMode Socks5ProxyOptions::GetResolutionMode() const
@@ -335,7 +347,7 @@ namespace Aws
                 uint32_t port = uri.GetPort();
                 if (port == 0)
                 {
-                    port = 1080;
+                    port = Socks5ProxyOptions::DefaultProxyPort;
                 }
                 if (port > UINT16_MAX)
                 {
@@ -367,21 +379,19 @@ namespace Aws
                     }
                 }
 
-                AwsSocks5AuthMethod authMethod = AwsSocks5AuthMethod::None;
+                Socks5ProxyAuthConfig authConfig = Socks5ProxyAuthConfig::CreateNone();
                 if (!username.empty() && !password.empty())
                 {
-                    authMethod = AwsSocks5AuthMethod::UsernamePassword;
+                    authConfig = Socks5ProxyAuthConfig::CreateUsernamePassword(username, password);
                 }
 
                 Socks5ProxyOptions options(
                     host,
                     static_cast<uint32_t>(port),
-                    authMethod,
-                    username,
-                    password,
+                    authConfig,
                     connectionTimeoutMs,
-                    allocator,
-                    resolutionMode);
+                    resolutionMode,
+                    allocator);
 
                 if (!options)
                 {
@@ -407,6 +417,53 @@ namespace Aws
             {
                 return static_cast<AwsSocks5HostResolutionMode>(
                     aws_socks5_proxy_options_get_host_resolution_mode(&m_options));
+            }
+
+            bool Socks5ProxyOptions::ApplyAuthConfig(
+                aws_socks5_proxy_options &options,
+                const Socks5ProxyAuthConfig &authConfig)
+            {
+                struct aws_allocator *allocator = m_allocator ? m_allocator : aws_default_allocator();
+                m_allocator = allocator;
+
+                switch (authConfig.Method)
+                {
+                    case AwsSocks5AuthMethod::None:
+                    {
+                        aws_byte_cursor emptyCursor;
+                        AWS_ZERO_STRUCT(emptyCursor);
+                        if (aws_socks5_proxy_options_set_auth(&options, allocator, emptyCursor, emptyCursor))
+                        {
+                            m_lastError = aws_last_error();
+                            return false;
+                        }
+                        return true;
+                    }
+                    case AwsSocks5AuthMethod::UsernamePassword:
+                    {
+                        if (!authConfig.Username.has_value() || authConfig.Username->empty() ||
+                            !authConfig.Password.has_value() || authConfig.Password->empty())
+                        {
+                            m_lastError = AWS_ERROR_INVALID_ARGUMENT;
+                            return false;
+                        }
+
+                        aws_byte_cursor usernameCursor = aws_byte_cursor_from_array(
+                            reinterpret_cast<const uint8_t *>(authConfig.Username->data()), authConfig.Username->length());
+                        aws_byte_cursor passwordCursor = aws_byte_cursor_from_array(
+                            reinterpret_cast<const uint8_t *>(authConfig.Password->data()), authConfig.Password->length());
+
+                        if (aws_socks5_proxy_options_set_auth(&options, allocator, usernameCursor, passwordCursor))
+                        {
+                            m_lastError = aws_last_error();
+                            return false;
+                        }
+                        return true;
+                    }
+                    default:
+                        m_lastError = AWS_ERROR_INVALID_ARGUMENT;
+                        return false;
+                }
             }
 
         } // namespace Io

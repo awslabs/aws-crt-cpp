@@ -46,13 +46,39 @@ namespace Aws
                 Client = AWS_SOCKS5_HOST_RESOLUTION_CLIENT,
             };
 
+            struct AWS_CRT_CPP_API Socks5ProxyAuthConfig
+            {
+                AwsSocks5AuthMethod Method{AwsSocks5AuthMethod::None};
+                Optional<String> Username;
+                Optional<String> Password;
+
+                static Socks5ProxyAuthConfig CreateNone() noexcept
+                {
+                    return Socks5ProxyAuthConfig{};
+                }
+
+                static Socks5ProxyAuthConfig CreateUsernamePassword(const String &username, const String &password)
+                {
+                    Socks5ProxyAuthConfig config;
+                    config.Method = AwsSocks5AuthMethod::UsernamePassword;
+                    config.Username = username;
+                    config.Password = password;
+                    return config;
+                }
+            };
+
             /**
              * Configuration structure that holds all SOCKS5 proxy-related connection options
              */
             class AWS_CRT_CPP_API Socks5ProxyOptions
             {
               public:
+                /* Default SOCKS5 proxy port */
+                static constexpr uint16_t DefaultProxyPort = 1080;
+
                 Socks5ProxyOptions() noexcept;
+
+                //TODO: remove deprecated constructor
                 Socks5ProxyOptions(
                     const String &hostName,
                     uint32_t port,
@@ -63,7 +89,17 @@ namespace Aws
                     struct aws_allocator *allocator,
                     AwsSocks5HostResolutionMode resolutionMode = AwsSocks5HostResolutionMode::Proxy);
 
+                Socks5ProxyOptions(
+                    const String &hostName,
+                    uint32_t port = DefaultProxyPort,
+                    const Socks5ProxyAuthConfig &authConfig = Socks5ProxyAuthConfig::CreateNone(),
+                    uint32_t connectionTimeoutMs = 0,
+                    AwsSocks5HostResolutionMode resolutionMode = AwsSocks5HostResolutionMode::Proxy,
+                    struct aws_allocator *allocator = aws_default_allocator());
+
+
                 Socks5ProxyOptions(const Socks5ProxyOptions &rhs);
+
                 Socks5ProxyOptions(Socks5ProxyOptions &&rhs) noexcept;
 
                 Socks5ProxyOptions &operator=(const Socks5ProxyOptions &rhs);
@@ -100,6 +136,15 @@ namespace Aws
                  * @return true when the endpoint was accepted, false otherwise with LastError() set.
                  */
                 bool SetProxyEndpoint(const String &hostName, uint32_t port);
+
+                /**
+                 * Applies a SOCKS5 authentication configuration.
+                 *
+                 * @param authConfig Authentication configuration to apply.
+                 *
+                 * @return true on success, false on failure with LastError() set.
+                 */
+                bool SetAuth(const Socks5ProxyAuthConfig &authConfig);
 
                 /**
                  * Sets username/password authentication for the SOCKS5 proxy.
@@ -187,10 +232,14 @@ namespace Aws
                     struct aws_allocator *allocator = nullptr);
 
               private:
+                // Helper function to apply authentication configuration to aws_socks5_proxy_options struct
+                bool ApplyAuthConfig(aws_socks5_proxy_options &options, const Socks5ProxyAuthConfig &authConfig);
+
                 aws_socks5_proxy_options m_options{};
                 struct aws_allocator *m_allocator{nullptr};
                 int m_lastError{0};
-                AwsSocks5AuthMethod m_authMethod{AwsSocks5AuthMethod::None};
+                Socks5ProxyAuthConfig m_authConfig{};
+
             };
 
         } // namespace Io
