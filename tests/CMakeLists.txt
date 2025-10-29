@@ -318,7 +318,9 @@ add_test_case(CborSanityTest)
 add_test_case(CborTimeStampTest)
 add_test_case(CborLastErrorTest)
 
-add_test_case(HKDFPiping)
+if (NOT BYO_CRYPTO) {
+    add_test_case(HKDFPiping)
+}
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 
