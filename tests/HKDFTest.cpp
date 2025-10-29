@@ -23,7 +23,7 @@ static int s_TestHKDFPiping(struct aws_allocator *allocator, void *)
     Aws::Crt::ByteBuf ret;
     aws_byte_buf_init(&ret, allocator, 64);
 
-    ASSERT_SUCCESS(Aws::Crypto::DeriveSHA512HMACHKDF(allocator, ikm_cur, salt_cur, info_cur, &ret, 42));
+    ASSERT_TRUE(Aws::Crt::Crypto::DeriveSHA512HMACHKDF(allocator, ikm_cur, salt_cur, info_cur, ret, 42));
 
     uint8_t expected[] = {0x83, 0x23, 0x90, 0x08, 0x6c, 0xda, 0x71, 0xfb, 0x47, 0x62, 0x5b, 0xb5, 0xce, 0xb1,
                           0x68, 0xe4, 0xc8, 0xe2, 0x6a, 0x1a, 0x16, 0xed, 0x34, 0xd9, 0xfc, 0x7f, 0xe9, 0x2c,
