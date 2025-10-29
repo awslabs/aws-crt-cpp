@@ -16,7 +16,7 @@ namespace Aws
              * Derives an SHA256 HMAC HKDF using the default allocator and writes it to out.
              * If this function fails, Aws::Crt::LastError() will contain the error that occurred.
              */
-            bool AWS_CRT_CPP_AP DeriveSHA512HMACHKDF(
+            bool AWS_CRT_CPP_API DeriveSHA512HMACHKDF(
                 Allocator *allocator,
                 ByteCursor ikm,
                 ByteCursor salt,
