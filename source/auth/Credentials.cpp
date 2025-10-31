@@ -337,6 +337,13 @@ namespace Aws
                     raw_config.proxy_options = &proxy_options;
                 }
 
+                const struct aws_socks5_proxy_options *socks5_proxy_options = nullptr;
+                if (config.Socks5ProxyOptions.has_value())
+                {
+                    socks5_proxy_options = config.Socks5ProxyOptions->GetUnderlyingHandle();
+                    raw_config.socks5_proxy_options = socks5_proxy_options;
+                }
+
                 return s_CreateWrappedProvider(aws_credentials_provider_new_x509(allocator, &raw_config), allocator);
             }
 
