@@ -4,6 +4,7 @@
  */
 
 #include <aws/crt/Api.h>
+#include <aws/crt/auth/Credentials.h>
 #include <aws/crt/crypto/Hash.h>
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/http/HttpRequestResponse.h>
@@ -11,6 +12,7 @@
 #include <aws/crt/io/Uri.h>
 
 #include <aws/crt/mqtt/Mqtt5Packets.h>
+#include <aws/iot/MqttCommon.h>
 
 #include <algorithm>
 #include <aws/common/allocator.h>
@@ -25,6 +27,13 @@
 
 using namespace Aws::Crt;
 using namespace Aws::Crt::Mqtt5;
+
+enum class CredentialsProviderSource {
+    DefaultChain,
+    Environment,
+    Profile,
+    Static
+};
 
 struct app_ctx
 {
@@ -48,6 +57,15 @@ struct app_ctx
 
     bool enable_tls = false;
     bool use_websocket = false;
+    Aws::Crt::String region;
+    CredentialsProviderSource credentials_source = CredentialsProviderSource::DefaultChain;
+    Aws::Crt::String profile_name;
+    Aws::Crt::String config_file;
+    Aws::Crt::String credentials_file;
+    Aws::Crt::String access_key_id;
+    Aws::Crt::String secret_access_key;
+    Aws::Crt::String session_token;
+    bool port_overridden = false;
 };
 
 static bool s_parse_proxy_uri(app_ctx &ctx, const char *proxy_arg)
@@ -100,7 +118,16 @@ static void s_usage(int exit_code)
     fprintf(stderr, " --cert FILE: Client certificate file path (PEM format)\n");
     fprintf(stderr, " --key FILE: Private key file path (PEM format)\n");
     fprintf(stderr, " --ca-file FILE: CA certificate file path (PEM format)\n");
-    fprintf(stderr, " --websocket: Use MQTT over WebSocket\n");
+    fprintf(stderr, " --websocket: Use MQTT over WebSocket with SigV4 authentication\n");
+    fprintf(stderr, " --region REGION: AWS Region for SigV4 signing when using WebSocket\n");
+    fprintf(stderr,
+            " --credential-source SOURCE: Credentials provider source (default-chain, environment, profile, static)\n");
+    fprintf(stderr, " --profile NAME: AWS profile to use when credential source is profile\n");
+    fprintf(stderr, " --config-file PATH: AWS config file override for profile credential source\n");
+    fprintf(stderr, " --credentials-file PATH: AWS credentials file override for profile credential source\n");
+    fprintf(stderr, " --access-key KEY: AWS access key for static credential source\n");
+    fprintf(stderr, " --secret-key KEY: AWS secret access key for static credential source\n");
+    fprintf(stderr, " --session-token TOKEN: AWS session token for static credential source (optional)\n");
     fprintf(stderr, " --verbose: Print detailed logging\n");
     fprintf(stderr, " --help: Display this message and exit\n");
     exit(exit_code);
@@ -114,6 +141,14 @@ static struct aws_cli_option s_long_options[] = {
     {"key", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'K'},
     {"ca-file", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'A'},
     {"websocket", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'W'},
+    {"region", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'R'},
+    {"credential-source", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'S'},
+    {"profile", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'P'},
+    {"config-file", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'F'},
+    {"credentials-file", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'G'},
+    {"access-key", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'I'},
+    {"secret-key", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'J'},
+    {"session-token", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'T'},
     {"verbose", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'v'},
     {"help", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'h'},
     {NULL, AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 0}, // Ensure proper termination
@@ -129,7 +164,7 @@ static void s_parse_options(int argc, char **argv, struct app_ctx &ctx)
     while (true)
     {
         int option_index = 0;
-        int c = aws_cli_getopt_long(argc, argv, "b:p:x:C:K:A:Wvh", s_long_options, &option_index);
+        int c = aws_cli_getopt_long(argc, argv, "b:p:x:C:K:A:WR:S:P:F:G:I:J:T:vh", s_long_options, &option_index);
         if (c == -1)
         {
             break;
@@ -142,6 +177,7 @@ static void s_parse_options(int argc, char **argv, struct app_ctx &ctx)
                 break;
             case 'p':
                 ctx.port = static_cast<uint16_t>(atoi(aws_cli_optarg));
+                ctx.port_overridden = true;
                 break;
             case 'x':
                 if (!s_parse_proxy_uri(ctx, aws_cli_optarg))
@@ -161,6 +197,47 @@ static void s_parse_options(int argc, char **argv, struct app_ctx &ctx)
             case 'W':
                 ctx.use_websocket = true;
                 break;
+            case 'R':
+                ctx.region = aws_cli_optarg;
+                break;
+            case 'S': {
+                Aws::Crt::String source = aws_cli_optarg;
+                std::transform(source.begin(), source.end(), source.begin(), [](unsigned char ch) {
+                    return static_cast<char>(std::tolower(ch));
+                });
+                if (source == "default-chain") {
+                    ctx.credentials_source = CredentialsProviderSource::DefaultChain;
+                } else if (source == "environment") {
+                    ctx.credentials_source = CredentialsProviderSource::Environment;
+                } else if (source == "profile") {
+                    ctx.credentials_source = CredentialsProviderSource::Profile;
+                } else if (source == "static") {
+                    ctx.credentials_source = CredentialsProviderSource::Static;
+                } else {
+                    std::cerr << "Unknown credential source '" << aws_cli_optarg
+                              << "'. Expected one of: default-chain, environment, profile, static." << std::endl;
+                    s_usage(1);
+                }
+                break;
+            }
+            case 'P':
+                ctx.profile_name = aws_cli_optarg;
+                break;
+            case 'F':
+                ctx.config_file = aws_cli_optarg;
+                break;
+            case 'G':
+                ctx.credentials_file = aws_cli_optarg;
+                break;
+            case 'I':
+                ctx.access_key_id = aws_cli_optarg;
+                break;
+            case 'J':
+                ctx.secret_access_key = aws_cli_optarg;
+                break;
+            case 'T':
+                ctx.session_token = aws_cli_optarg;
+                break;
             case 'v':
                 ctx.LogLevel = Aws::Crt::LogLevel::Trace;
                 break;
@@ -173,8 +250,15 @@ static void s_parse_options(int argc, char **argv, struct app_ctx &ctx)
         }
     }
 
-    if (!ctx.enable_tls)
+    if (ctx.use_websocket)
     {
+        ctx.enable_tls = true;
+        if (!ctx.port_overridden && ctx.port == 1883 && !ctx.uri.GetPort())
+        {
+            ctx.port = 443;
+        }
+    }
+    if (!ctx.enable_tls) {
         ctx.enable_tls = ctx.cacert || ctx.cert || ctx.key;
     }
 }
@@ -204,19 +288,55 @@ static void s_parse_options(int argc, char **argv, struct app_ctx &ctx)
 void PrintAppOptions(const app_ctx &ctx)
 {
     std::cout << "================= MQTT5 SOCKS5 APP OPTIONS =================" << std::endl;
-    Aws::Crt::String hostNameStr = Aws::Crt::String((const char *)ctx.uri.GetHostName().ptr, ctx.uri.GetHostName().len);
+    Aws::Crt::String hostNameStr =
+        Aws::Crt::String((const char *)ctx.uri.GetHostName().ptr, ctx.uri.GetHostName().len);
     std::cout << "Broker Host: " << hostNameStr << std::endl;
     std::cout << "Broker Port: " << ctx.port << std::endl;
     std::cout << "TLS Enabled: " << (ctx.enable_tls ? "yes" : "no") << std::endl;
-    if (ctx.cacert)
-        std::cout << "CA Cert: " << ctx.cacert << std::endl;
-    if (ctx.cert)
-        std::cout << "Client Cert: " << ctx.cert << std::endl;
-    if (ctx.key)
-        std::cout << "Client Key: " << ctx.key << std::endl;
+    if (ctx.cacert) std::cout << "CA Cert: " << ctx.cacert << std::endl;
+    if (ctx.cert && !ctx.use_websocket) std::cout << "Client Cert: " << ctx.cert << std::endl;
+    if (ctx.key && !ctx.use_websocket) std::cout << "Client Key: " << ctx.key << std::endl;
     std::cout << "Connect Timeout (ms): " << ctx.connect_timeout << std::endl;
-    if (ctx.use_proxy && ctx.socks5_proxy_options && !ctx.proxy_host_storage.empty())
-    {
+    if (ctx.use_websocket) {
+        std::cout << "Using WebSocket: yes" << std::endl;
+        if (!ctx.region.empty()) {
+            std::cout << "AWS Region: " << ctx.region << std::endl;
+        }
+        std::cout << "Credentials Source: ";
+        switch (ctx.credentials_source) {
+            case CredentialsProviderSource::DefaultChain:
+                std::cout << "default-chain";
+                break;
+            case CredentialsProviderSource::Environment:
+                std::cout << "environment";
+                break;
+            case CredentialsProviderSource::Profile:
+                std::cout << "profile";
+                if (!ctx.profile_name.empty()) {
+                    std::cout << " (profile=" << ctx.profile_name << ")";
+                }
+                if (!ctx.config_file.empty()) {
+                    std::cout << " (config-file=" << ctx.config_file << ")";
+                }
+                if (!ctx.credentials_file.empty()) {
+                    std::cout << " (credentials-file=" << ctx.credentials_file << ")";
+                }
+                break;
+            case CredentialsProviderSource::Static:
+                std::cout << "static";
+                if (!ctx.access_key_id.empty()) {
+                    std::cout << " (access-key provided)";
+                }
+                if (!ctx.session_token.empty()) {
+                    std::cout << " (session token provided)";
+                }
+                break;
+        }
+        std::cout << std::endl;
+    } else {
+        std::cout << "Using WebSocket: no" << std::endl;
+    }
+    if (ctx.use_proxy && ctx.socks5_proxy_options && !ctx.proxy_host_storage.empty()) {
         std::cout << "SOCKS5 Proxy Host: " << ctx.proxy_host_storage << std::endl;
         std::cout << "SOCKS5 Proxy Port: " << ctx.proxy_port << std::endl;
         bool resolveViaProxy =
@@ -256,6 +376,30 @@ int main(int argc, char **argv)
         app_ctx.port = app_ctx.uri.GetPort();
     }
 
+    if (app_ctx.use_websocket)
+    {
+        if (app_ctx.region.empty())
+        {
+            std::cerr << "[ERROR] --region must be specified when using --websocket for SigV4 authentication."
+                      << std::endl;
+            return 1;
+        }
+
+        if (app_ctx.credentials_source == CredentialsProviderSource::Static &&
+            (app_ctx.access_key_id.empty() || app_ctx.secret_access_key.empty()))
+        {
+            std::cerr << "[ERROR] Static credentials require both --access-key and --secret-key when using WebSocket."
+                      << std::endl;
+            return 1;
+        }
+
+        if (app_ctx.cert || app_ctx.key)
+        {
+            std::cout << "[INFO] Client certificate and key are ignored when using WebSocket SigV4 authentication."
+                      << std::endl;
+        }
+    }
+
     /**********************************************************
      * LOGGING
      **********************************************************/
@@ -270,7 +414,7 @@ int main(int argc, char **argv)
         apiHandle.InitializeLogging(app_ctx.LogLevel, stderr);
     }
 
-    bool useTls = app_ctx.enable_tls;
+    bool useTls = app_ctx.use_websocket || app_ctx.enable_tls;
 
     auto hostName = app_ctx.uri.GetHostName();
 
@@ -283,7 +427,18 @@ int main(int argc, char **argv)
     Io::TlsConnectionOptions tlsConnectionOptions;
     if (useTls)
     {
-        if (app_ctx.cert && app_ctx.key)
+        if (app_ctx.use_websocket)
+        {
+            std::cout << "MQTT5: Configuring TLS for WebSocket connection with SigV4 authentication." << std::endl;
+            tlsCtxOptions = Io::TlsContextOptions::InitDefaultClient();
+            if (!tlsCtxOptions)
+            {
+                std::cout << "Failed to create TLS options for WebSocket with error "
+                          << aws_error_debug_str(tlsCtxOptions.LastError()) << std::endl;
+                exit(1);
+            }
+        }
+        else if (app_ctx.cert && app_ctx.key)
         {
             std::cout << "MQTT5: Configuring TLS with cert " << app_ctx.cert << " and key " << app_ctx.key << std::endl;
             tlsCtxOptions = Io::TlsContextOptions::InitClientWithMtls(app_ctx.cert, app_ctx.key);
@@ -389,16 +544,72 @@ int main(int argc, char **argv)
     }
 
     // Configure WebSocket if requested
-    if (app_ctx.use_websocket)
-    {
+    std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> websocketCredentialsProvider;
+    if (app_ctx.use_websocket) {
         std::cout << "**********************************************************" << std::endl;
-        std::cout << "MQTT5: Configuring WebSocket...." << std::endl;
+        std::cout << "MQTT5: Configuring WebSocket with SigV4 authentication...." << std::endl;
         std::cout << "**********************************************************" << std::endl;
-        // Use the default handshake transform (no-op)
+
+        Aws::Iot::WebsocketConfig websocketConfig(app_ctx.region, &clientBootstrap, app_ctx.allocator);
+
+        switch (app_ctx.credentials_source) {
+            case CredentialsProviderSource::DefaultChain:
+                // Already handled by the default constructor using the client bootstrap.
+                break;
+            case CredentialsProviderSource::Environment:
+                websocketCredentialsProvider =
+                    Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderEnvironment(app_ctx.allocator);
+                break;
+            case CredentialsProviderSource::Profile: {
+                Aws::Crt::Auth::CredentialsProviderProfileConfig profileConfig;
+                profileConfig.Bootstrap = &clientBootstrap;
+                if (!app_ctx.profile_name.empty()) {
+                    profileConfig.ProfileNameOverride = aws_byte_cursor_from_c_str(app_ctx.profile_name.c_str());
+                }
+                if (!app_ctx.config_file.empty()) {
+                    profileConfig.ConfigFileNameOverride =
+                        aws_byte_cursor_from_c_str(app_ctx.config_file.c_str());
+                }
+                if (!app_ctx.credentials_file.empty()) {
+                    profileConfig.CredentialsFileNameOverride =
+                        aws_byte_cursor_from_c_str(app_ctx.credentials_file.c_str());
+                }
+                websocketCredentialsProvider =
+                    Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderProfile(profileConfig, app_ctx.allocator);
+                break;
+            }
+            case CredentialsProviderSource::Static: {
+                Aws::Crt::Auth::CredentialsProviderStaticConfig staticConfig;
+                staticConfig.AccessKeyId = aws_byte_cursor_from_c_str(app_ctx.access_key_id.c_str());
+                staticConfig.SecretAccessKey = aws_byte_cursor_from_c_str(app_ctx.secret_access_key.c_str());
+                if (!app_ctx.session_token.empty()) {
+                    staticConfig.SessionToken = aws_byte_cursor_from_c_str(app_ctx.session_token.c_str());
+                }
+                websocketCredentialsProvider =
+                    Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderStatic(staticConfig, app_ctx.allocator);
+                break;
+            }
+        }
+
+        if (app_ctx.credentials_source != CredentialsProviderSource::DefaultChain) {
+            if (!websocketCredentialsProvider) {
+                std::cerr << "[ERROR] Failed to create credentials provider for WebSocket connection." << std::endl;
+                return 1;
+            }
+            websocketConfig = Aws::Iot::WebsocketConfig(app_ctx.region, websocketCredentialsProvider, app_ctx.allocator);
+        }
+
+        auto websocketConfigShared = std::make_shared<Aws::Iot::WebsocketConfig>(websocketConfig);
+
         mqtt5OptionsBuilder.WithWebsocketHandshakeTransformCallback(
-            [](std::shared_ptr<Aws::Crt::Http::HttpRequest> req,
-               const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete)
-            { onComplete(req, AWS_ERROR_SUCCESS); });
+            [websocketConfigShared](std::shared_ptr<Aws::Crt::Http::HttpRequest> req,
+                                    const Aws::Crt::Mqtt5::OnWebSocketHandshakeInterceptComplete &onComplete) {
+                auto signingComplete = [onComplete](
+                                           const std::shared_ptr<Aws::Crt::Http::HttpRequest> &signedRequest,
+                                           int errorCode) { onComplete(signedRequest, errorCode); };
+                auto signerConfig = websocketConfigShared->CreateSigningConfigCb();
+                websocketConfigShared->Signer->SignRequest(req, *signerConfig, signingComplete);
+            });
     }
 
     if (app_ctx.use_proxy && app_ctx.socks5_proxy_options && !app_ctx.proxy_host_storage.empty())
