@@ -66,6 +66,7 @@ struct app_ctx
     Aws::Crt::String secret_access_key;
     Aws::Crt::String session_token;
     bool port_overridden = false;
+    bool use_ipv6 = false;
 };
 
 static bool s_parse_proxy_uri(app_ctx &ctx, const char *proxy_arg)
@@ -128,6 +129,7 @@ static void s_usage(int exit_code)
     fprintf(stderr, " --access-key KEY: AWS access key for static credential source\n");
     fprintf(stderr, " --secret-key KEY: AWS secret access key for static credential source\n");
     fprintf(stderr, " --session-token TOKEN: AWS session token for static credential source (optional)\n");
+    fprintf(stderr, " --ipv6: Force IPv6 socket domain\n");
     fprintf(stderr, " --verbose: Print detailed logging\n");
     fprintf(stderr, " --help: Display this message and exit\n");
     exit(exit_code);
@@ -141,6 +143,7 @@ static struct aws_cli_option s_long_options[] = {
     {"key", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'K'},
     {"ca-file", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'A'},
     {"websocket", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'W'},
+    {"ipv6", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, '6'},
     {"region", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'R'},
     {"credential-source", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'S'},
     {"profile", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'P'},
@@ -164,7 +167,7 @@ static void s_parse_options(int argc, char **argv, struct app_ctx &ctx)
     while (true)
     {
         int option_index = 0;
-        int c = aws_cli_getopt_long(argc, argv, "b:p:x:C:K:A:WR:S:P:F:G:I:J:T:vh", s_long_options, &option_index);
+        int c = aws_cli_getopt_long(argc, argv, "b:p:x:C:K:A:W6R:S:P:F:G:I:J:T:vh", s_long_options, &option_index);
         if (c == -1)
         {
             break;
@@ -196,6 +199,9 @@ static void s_parse_options(int argc, char **argv, struct app_ctx &ctx)
                 break;
             case 'W':
                 ctx.use_websocket = true;
+                break;
+            case '6':
+                ctx.use_ipv6 = true;
                 break;
             case 'R':
                 ctx.region = aws_cli_optarg;
@@ -336,6 +342,7 @@ void PrintAppOptions(const app_ctx &ctx)
     } else {
         std::cout << "Using WebSocket: no" << std::endl;
     }
+    std::cout << "Socket Domain: " << (ctx.use_ipv6 ? "IPv6" : "IPv4") << std::endl;
     if (ctx.use_proxy && ctx.socks5_proxy_options && !ctx.proxy_host_storage.empty()) {
         std::cout << "SOCKS5 Proxy Host: " << ctx.proxy_host_storage << std::endl;
         std::cout << "SOCKS5 Proxy Port: " << ctx.proxy_port << std::endl;
@@ -486,6 +493,7 @@ int main(int argc, char **argv)
     socketOptions.SetKeepAliveIntervalSec(0);
     socketOptions.SetKeepAlive(false);
     socketOptions.SetKeepAliveTimeoutSec(0);
+    socketOptions.SetSocketDomain(app_ctx.use_ipv6 ? Io::SocketDomain::IPv6 : Io::SocketDomain::IPv4);
 
     Io::EventLoopGroup eventLoopGroup(0, allocator);
     if (!eventLoopGroup)
