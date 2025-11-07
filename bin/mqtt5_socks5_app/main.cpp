@@ -723,19 +723,28 @@ int main(int argc, char **argv)
     subscriptionList.push_back(sub);
     std::shared_ptr<Mqtt5::SubscribePacket> subscribe = std::make_shared<Mqtt5::SubscribePacket>(app_ctx.allocator);
     subscribe->WithSubscriptions(subscriptionList);
+
+    std::promise<bool> subscribeAckPromise;
     bool subscribeSuccess = mqtt5Client->Subscribe(
         subscribe,
-        [](int, std::shared_ptr<Mqtt5::SubAckPacket> packet)
+        [&subscribeAckPromise](int errorCode, std::shared_ptr<Mqtt5::SubAckPacket> packet)
         {
-            if (packet == nullptr)
+            if (errorCode != AWS_ERROR_SUCCESS || packet == nullptr) {
+                subscribeAckPromise.set_value(false);
                 return;
+            }
             std::cout << "**********************************************************" << std::endl;
             std::cout << "MQTT5: check suback packet : " << std::endl;
+            bool allGranted = true;
             for (auto code : packet->getReasonCodes())
             {
                 std::cout << "Get suback with codes: " << code << std::endl;
+                if (code > 2) { // Non-granted reason codes are >= 0x80
+                    allGranted = false;
+                }
             }
             std::cout << "**********************************************************" << std::endl;
+            subscribeAckPromise.set_value(allGranted);
         });
 
     if (!subscribeSuccess)
@@ -746,6 +755,23 @@ int main(int argc, char **argv)
             stoppedPromise.get_future().get();
         }
         return 2; // Subscription failure
+    }
+
+    // Wait for SUBACK before publishing so we don't race the proxy latency.
+    std::cout << "**********************************************************" << std::endl;
+    std::cout << "MQTT5: Waiting for SUBACK confirmation..." << std::endl;
+    std::cout << "**********************************************************" << std::endl;
+    bool subAckGranted = false;
+    try {
+        subAckGranted = subscribeAckPromise.get_future().get();
+    } catch (...) {
+        subAckGranted = false;
+    }
+    if (!subAckGranted) {
+        std::cout << "[ERROR]Subscription was not granted by broker." << std::endl;
+        mqtt5Client->Stop();
+        stoppedPromise.get_future().get();
+        return 2;
     }
 
     // Publish to the same topic
