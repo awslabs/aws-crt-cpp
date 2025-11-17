@@ -9,6 +9,7 @@
 #include <aws/crt/Types.h>
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/io/SocketOptions.h>
+#include <aws/crt/io/Socks5ProxyOptions.h>
 #include <aws/crt/io/TlsOptions.h>
 #include <aws/crt/mqtt/MqttTypes.h>
 
@@ -219,6 +220,12 @@ namespace Aws
                  * @return success/failure
                  */
                 bool SetHttpProxyOptions(const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
+
+                /**
+                 * Sets the SOCKS5 proxy options for this connection.
+                 * This must be called before Connect().
+                 */
+                bool SetSocks5ProxyOptions(const Aws::Crt::Io::Socks5ProxyOptions &options) noexcept;
 
                 /**
                  * Customize time to wait between reconnect attempts.
@@ -458,5 +465,5 @@ namespace Aws
                 std::shared_ptr<MqttConnectionCore> m_connectionCore;
             };
         } // namespace Mqtt
-    } // namespace Crt
+    }     // namespace Crt
 } // namespace Aws

@@ -368,6 +368,13 @@ namespace Aws
             return *this;
         }
 
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithSocks5ProxyOptions(
+            const Crt::Io::Socks5ProxyOptions &proxyOptions) noexcept
+        {
+            m_socks5ProxyOptions = proxyOptions;
+            return *this;
+        }
+
         Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithCustomAuthorizer(const Iot::Mqtt5CustomAuthConfig &config) noexcept
         {
             m_customAuthConfig = config;
@@ -621,6 +628,11 @@ namespace Aws
                     m_options->WithHttpProxyOptions(m_proxyOptions.value());
                     proxyOptionsSet = true;
                 }
+            }
+
+            if (m_socks5ProxyOptions.has_value())
+            {
+                m_options->WithSocks5ProxyOptions(m_socks5ProxyOptions.value());
             }
 
             if (m_proxyOptions.has_value() && !proxyOptionsSet)
