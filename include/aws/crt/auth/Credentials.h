@@ -495,6 +495,44 @@ namespace Aws
             };
 
             /**
+             * Configuration options for the STS Web Identity credentials provider
+             */
+            struct AWS_CRT_CPP_API CredentialsProviderLoginConfig
+            {
+                CredentialsProviderLoginConfig();
+
+                /**
+                 * The arn associated with the AWS login session.
+                 */
+                String LoginSession;
+
+                /**
+                 * Overrides the login cache directory. by default the cache directory
+                 * is located at `~/.aws/login/cache`.
+                 */
+                String LoginCacheOverride;
+
+                /**
+                 * The region associated with the AWS Login call
+                 */
+                String LoginRegion;
+
+                /**
+                 * Connection bootstrap to use to create the http connection required to
+                 * query credentials from the STS provider
+                 *
+                 * Note: If null, then the default ClientBootstrap is used
+                 * (see Aws::Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap)
+                 */
+                Io::ClientBootstrap *Bootstrap;
+
+                /**
+                 * TLS configuration for secure socket connections.
+                 */
+                Io::TlsConnectionOptions TlsConnectionOptions;
+            };
+
+            /**
              * Simple credentials provider implementation that wraps one of the internal C-based implementations.
              *
              * Contains a set of static factory methods for building each supported provider, as well as one for the
@@ -623,6 +661,13 @@ namespace Aws
 
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderSTSWebIdentity(
                     const CredentialsProviderSTSWebIdentityConfig &config,
+                    Allocator *allocator = ApiAllocator());
+
+                /**
+                 * Creates a AWS Login based credentials provider
+                 */
+                static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderLogin(
+                    const CredentialsProviderLoginConfig &config,
                     Allocator *allocator = ApiAllocator());
 
               private:
