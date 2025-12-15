@@ -330,6 +330,15 @@ namespace Aws
                 const Crt::Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
 
             /**
+             * Sets SOCKS5 proxy options.
+             *
+             * @param proxyOptions SOCKS5 proxy configuration for connection establishment
+             *
+             * @return this option object
+             */
+            Mqtt5ClientBuilder &WithSocks5ProxyOptions(const Crt::Io::Socks5ProxyOptions &proxyOptions) noexcept;
+
+            /**
              * Sets the custom authorizer settings. This function will modify the username, port, and TLS options.
              *
              * @return this builder object
@@ -648,6 +657,11 @@ namespace Aws
              * Configures (tunneling) HTTP proxy usage when establishing MQTT connections
              */
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
+
+            /**
+             * Configures (tunneling) SOCKS5 proxy usage when establishing MQTT connections
+             */
+            Crt::Optional<Crt::Io::Socks5ProxyOptions> m_socks5ProxyOptions;
 
             /**
              * Websocket related options. The clinet with use websocket for connection when set.

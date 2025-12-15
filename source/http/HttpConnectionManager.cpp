@@ -112,9 +112,15 @@ namespace Aws
                     m_shutdownPromise.set_value();
                 }
 
+                if (connectionOptions.Socks5ProxyOptions)
+                {
+                    managerOptions.socks5_proxy_options = connectionOptions.Socks5ProxyOptions->GetUnderlyingHandle();
+                }
+
                 aws_http_proxy_options proxyOptions;
                 AWS_ZERO_STRUCT(proxyOptions);
-                if (connectionOptions.ProxyOptions)
+                // Socks5ProxyOptions take precedence over ProxyOptions
+                if (!connectionOptions.Socks5ProxyOptions && connectionOptions.ProxyOptions)
                 {
                     /* This is verified by HttpClientConnectionManager::NewClientConnectionManager */
                     AWS_FATAL_ASSERT(
@@ -232,5 +238,5 @@ namespace Aws
             }
 
         } // namespace Http
-    } // namespace Crt
+    }     // namespace Crt
 } // namespace Aws

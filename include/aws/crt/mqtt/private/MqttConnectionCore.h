@@ -13,6 +13,7 @@
 #include <aws/crt/Types.h>
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/io/SocketOptions.h>
+#include <aws/crt/io/Socks5ProxyOptions.h>
 #include <aws/crt/io/TlsOptions.h>
 #include <aws/crt/mqtt/MqttTypes.h>
 
@@ -102,6 +103,15 @@ namespace Aws
                  * @return success/failure
                  */
                 bool SetHttpProxyOptions(const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
+
+                /**
+                 * @internal
+                 * Sets socks5 proxy options.
+                 * @param proxyOptions proxy configuration for making the mqtt connection
+                 *
+                 * @return success/failure
+                 */
+                bool SetSocks5ProxyOptions(const Io::Socks5ProxyOptions &proxyOptions) noexcept;
 
                 /**
                  * @internal
@@ -368,6 +378,7 @@ namespace Aws
                 Io::TlsConnectionOptions m_tlsOptions;
                 Io::SocketOptions m_socketOptions;
                 Crt::Optional<Http::HttpClientConnectionProxyOptions> m_proxyOptions;
+                Crt::Optional<Io::Socks5ProxyOptions> m_socks5ProxyOptions;
                 void *m_onAnyCbData;
                 bool m_useTls;
                 bool m_useWebsocket;
@@ -390,6 +401,6 @@ namespace Aws
                 std::shared_ptr<MqttConnectionCore> m_self;
             };
         } // namespace Mqtt
-    } // namespace Crt
+    }     // namespace Crt
 } // namespace Aws
 /*! \endcond */

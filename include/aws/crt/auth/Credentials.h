@@ -8,6 +8,7 @@
 #include <aws/crt/Types.h>
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/io/TlsOptions.h>
+#include <aws/crt/io/Socks5ProxyOptions.h>
 
 #include <chrono>
 #include <functional>
@@ -295,9 +296,14 @@ namespace Aws
             struct AWS_CRT_CPP_API CredentialsProviderX509Config
             {
                 CredentialsProviderX509Config()
-                    : Bootstrap(nullptr), TlsOptions(), ThingName(), RoleAlias(), Endpoint(), ProxyOptions()
-                {
-                }
+                    : Bootstrap(nullptr),
+                      TlsOptions(),
+                      ThingName(),
+                      RoleAlias(),
+                      Endpoint(),
+                      ProxyOptions(),
+                      Socks5ProxyOptions()
+                {}
 
                 /**
                  * Connection bootstrap to use to create the http connection required to
@@ -329,6 +335,11 @@ namespace Aws
                  * (Optional) Http proxy configuration for the http request that fetches credentials
                  */
                 Optional<Http::HttpClientConnectionProxyOptions> ProxyOptions;
+
+                /**
+                 * (Optional) SOCKS5 proxy configuration for the http request that fetches credentials
+                 */
+                Optional<Io::Socks5ProxyOptions> Socks5ProxyOptions;
             };
 
             /**

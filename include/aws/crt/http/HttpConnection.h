@@ -10,6 +10,7 @@
 #include <aws/crt/Types.h>
 #include <aws/crt/io/Bootstrap.h>
 #include <aws/crt/io/SocketOptions.h>
+#include <aws/crt/io/Socks5ProxyOptions.h>
 #include <aws/crt/io/TlsOptions.h>
 
 #include <functional>
@@ -412,6 +413,12 @@ namespace Aws
                 Optional<HttpClientConnectionProxyOptions> ProxyOptions;
 
                 /**
+                 * The SOCKS5 proxy options for the http connection.
+                 * Optional.
+                 */
+                Optional<Io::Socks5ProxyOptions> Socks5ProxyOptions;
+
+                /**
                  * If set to true, then the TCP read back pressure mechanism will be enabled. You should
                  * only use this if you're allowing http response body data to escape the callbacks. E.g. you're
                  * putting the data into a queue for another thread to process and need to make sure the memory
@@ -510,5 +517,5 @@ namespace Aws
             };
 
         } // namespace Http
-    } // namespace Crt
+    }     // namespace Crt
 } // namespace Aws
