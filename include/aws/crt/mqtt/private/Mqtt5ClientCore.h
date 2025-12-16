@@ -30,7 +30,7 @@ namespace Aws
             {
                 friend class Mqtt5Client;
                 friend class Mqtt::MqttConnection;
-                friend class Mqtt::IoTDeviceSDKMetrics;
+                friend struct Mqtt::IoTDeviceSDKMetrics;
 
               public:
                 /**
