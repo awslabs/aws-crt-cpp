@@ -7,6 +7,8 @@
 #include <aws/crt/mqtt/Mqtt5Client.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
 
+#include "private/MqttConnectionCore.h"
+
 namespace Aws
 {
     namespace Crt
@@ -1161,6 +1163,8 @@ namespace Aws
                  */
                 Crt::Vector<UserProperty> m_userProperties;
 
+                Mqtt::IoTDeviceSDKMetrics m_sdkMetrics;
+
                 ///////////////////////////////////////////////////////////////////////////
                 // Underlying data storage for internal use
                 ///////////////////////////////////////////////////////////////////////////
@@ -1168,6 +1172,7 @@ namespace Aws
                 struct aws_byte_buf m_passowrdStorage;
                 struct aws_mqtt5_packet_publish_view m_willStorage;
                 struct aws_mqtt5_user_property *m_userPropertiesStorage;
+                struct aws_mqtt_iot_sdk_metrics m_metricsStorage;
                 uint8_t m_requestResponseInformationStorage;
                 uint8_t m_requestProblemInformationStorage;
             };

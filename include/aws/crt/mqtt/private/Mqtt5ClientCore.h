@@ -7,6 +7,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include "MqttConnectionCore.h"
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/mqtt/Mqtt5Client.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
@@ -29,6 +30,7 @@ namespace Aws
             {
                 friend class Mqtt5Client;
                 friend class Mqtt::MqttConnection;
+                friend class Mqtt::IoTDeviceSDKMetrics;
 
               public:
                 /**

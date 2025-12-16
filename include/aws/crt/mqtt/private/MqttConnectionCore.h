@@ -32,6 +32,22 @@ namespace Aws
 
             /**
              * @internal
+             * IoT Device SDK Metrics Structure
+             */
+            struct IoTDeviceSDKMetrics
+            {
+                Crt::String LibraryName;
+
+                IoTDeviceSDKMetrics() { LibraryName = "IoTDeviceSDK/CPP"; }
+
+                void initializeRawOptions(aws_mqtt_iot_sdk_metrics &raw_options) noexcept
+                {
+                    raw_options.library_name = ByteCursorFromString(LibraryName);
+                }
+            };
+
+            /**
+             * @internal
              * The MqttConnectionCore is an internal class for MqttConnection. The class is used to handle communication
              * between MqttConnection and underlying C MQTT client. This class should only be used internally by
              * MqttConnection.
@@ -372,6 +388,7 @@ namespace Aws
                 bool m_useTls;
                 bool m_useWebsocket;
                 MqttConnectionOperationStatistics m_operationStatistics;
+                IoTDeviceSDKMetrics m_sdkMetrics;
                 Allocator *m_allocator;
 
                 /**

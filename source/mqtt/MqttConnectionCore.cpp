@@ -471,6 +471,10 @@ namespace Aws
 
                     aws_mqtt_client_connection_set_connection_termination_handler(
                         m_underlyingConnection, MqttConnectionCore::s_onConnectionTermination, this);
+
+                    struct aws_mqtt_iot_sdk_metrics metrics;
+                    m_sdkMetrics.initializeRawOptions(metrics);
+                    aws_mqtt_client_connection_set_metrics(m_underlyingConnection, &metrics);
                 }
                 else
                 {
