@@ -94,7 +94,8 @@ namespace Aws
                     uint32_t port,
                     const Io::SocketOptions &socketOptions,
                     const Crt::Io::TlsContext &tlsContext,
-                    bool useWebsocket = false) noexcept;
+                    bool useWebsocket = false,
+                    bool enableMetrics) noexcept;
 
                 /**
                  * Create a new connection object over plain text from the client. The client must outlive
@@ -111,7 +112,8 @@ namespace Aws
                     const char *hostName,
                     uint32_t port,
                     const Io::SocketOptions &socketOptions,
-                    bool useWebsocket = false) noexcept;
+                    bool useWebsocket = false,
+                    bool enableMetrics) noexcept;) noexcept;
 
               private:
                 aws_mqtt_client *m_client;

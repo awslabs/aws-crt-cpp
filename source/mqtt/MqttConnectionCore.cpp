@@ -41,7 +41,7 @@ namespace Aws
                   m_tlsContext(std::move(options.tlsContext)), m_tlsOptions(std::move(options.tlsConnectionOptions)),
                   m_socketOptions(std::move(options.socketOptions)), m_onAnyCbData(nullptr), m_useTls(options.useTls),
                   m_useWebsocket(options.useWebsocket), m_allocator(options.allocator),
-                  m_connection(std::move(connection))
+                  m_connection(std::move(connection)), m_enableMetrics(options.enableMetrics)
             {
                 if (client != nullptr)
                 {
@@ -472,9 +472,16 @@ namespace Aws
                     aws_mqtt_client_connection_set_connection_termination_handler(
                         m_underlyingConnection, MqttConnectionCore::s_onConnectionTermination, this);
 
-                    struct aws_mqtt_iot_sdk_metrics metrics;
-                    m_sdkMetrics.initializeRawOptions(metrics);
-                    aws_mqtt_client_connection_set_metrics(m_underlyingConnection, &metrics);
+                    if (m_enableMetrics)
+                    {
+                        struct aws_mqtt_iot_sdk_metrics metrics;
+                        m_sdkMetrics.initializeRawOptions(metrics);
+                        aws_mqtt_client_connection_set_metrics(m_underlyingConnection, &metrics);
+                    }
+                    else
+                    {
+                        aws_mqtt_client_connection_set_metrics(m_underlyingConnection, nullptr);
+                    }
                 }
                 else
                 {

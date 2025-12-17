@@ -535,6 +535,7 @@ static int s_TestMqtt5DirectConnectionWithBasicAuth(Aws::Crt::Allocator *allocat
         Aws::Crt::MakeShared<Aws::Crt::Mqtt5::ConnectPacket>(allocator);
     packetConnect->WithUserName(mqtt5TestVars.m_username_string);
     packetConnect->WithPassword(mqtt5TestVars.m_password_cursor);
+    packetConnect->WithMetricsCollection(false);
     mqtt5Options.WithConnectOptions(packetConnect);
 
     std::promise<bool> connectionPromise;
@@ -857,6 +858,7 @@ static int s_TestMqtt5WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, 
         Aws::Crt::MakeShared<Aws::Crt::Mqtt5::ConnectPacket>(allocator);
     packetConnect->WithUserName(mqtt5TestVars.m_username_string);
     packetConnect->WithPassword(mqtt5TestVars.m_password_cursor);
+    packetConnect->WithMetricsCollection(false);
     mqtt5Options.WithConnectOptions(packetConnect);
 
     std::promise<bool> connectionPromise;

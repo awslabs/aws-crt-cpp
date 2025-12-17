@@ -388,6 +388,7 @@ namespace Aws
                 bool m_useTls;
                 bool m_useWebsocket;
                 MqttConnectionOperationStatistics m_operationStatistics;
+                bool m_enableMetrics;
                 IoTDeviceSDKMetrics m_sdkMetrics;
                 Allocator *m_allocator;
 

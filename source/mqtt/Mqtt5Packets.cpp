@@ -290,6 +290,12 @@ namespace Aws
                 return *this;
             }
 
+            ConnectPacket &ConnectPacket::WithMetricsCollection(bool enabled) noexcept
+            {
+                m_enableMetrics = enabled;
+                return *this;
+            }
+
             bool ConnectPacket::initializeRawOptions(
                 aws_mqtt5_packet_connect_view &raw_options,
                 Allocator * /*allocator*/) noexcept
