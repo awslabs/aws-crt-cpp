@@ -355,8 +355,15 @@ namespace Aws
                 s_AllocateUnderlyingUserProperties(m_userPropertiesStorage, m_userProperties, m_allocator);
                 raw_options.user_properties = m_userPropertiesStorage;
                 raw_options.user_property_count = m_userProperties.size();
-                m_sdkMetrics.initializeRawOptions(m_metricsStorage);
-                raw_options.metrics = &m_metricsStorage;
+                if (m_enableMetrics)
+                {
+                    m_sdkMetrics.initializeRawOptions(m_metricsStorage);
+                    raw_options.metrics = &m_metricsStorage;
+                }
+                else
+                {
+                    raw_options.metrics = nullptr;
+                }
 
                 return true;
             }

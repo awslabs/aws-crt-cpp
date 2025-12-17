@@ -85,6 +85,7 @@ namespace Aws
                  * @param socketOptions socket options to use when establishing the connection
                  * @param tlsContext tls context to use with the connection
                  * @param useWebsocket should the connection use websockets or should it use direct mqtt?
+                 * @param enableMetrics enable AWS IoT metrics collection
                  *
                  * @return a new connection object.  Connect() will still need to be called after all further
                  * configuration is finished.
@@ -104,6 +105,7 @@ namespace Aws
                  * @param port port to connect to
                  * @param socketOptions socket options to use when establishing the connection
                  * @param useWebsocket should the connection use websockets or should it use direct mqtt?
+                 * @param enableMetrics enable AWS IoT metrics collection
                  *
                  * @return a new connection object.  Connect() will still need to be called after all further
                  * configuration is finished.

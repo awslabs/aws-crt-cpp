@@ -1171,7 +1171,7 @@ namespace Aws
                  */
                 Crt::Vector<UserProperty> m_userProperties;
 
-                bool m_enableMetrics;
+                bool m_enableMetrics = true;
                 Mqtt::IoTDeviceSDKMetrics m_sdkMetrics;
 
                 ///////////////////////////////////////////////////////////////////////////
