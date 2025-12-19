@@ -15,6 +15,7 @@
 #include <aws/crt/io/SocketOptions.h>
 #include <aws/crt/io/TlsOptions.h>
 #include <aws/crt/mqtt/MqttTypes.h>
+#include <aws/crt/mqtt/private/MqttShared.h>
 
 #include <aws/mqtt/client.h>
 #include <aws/mqtt/v5/mqtt5_client.h>
@@ -29,22 +30,6 @@ namespace Aws
         namespace Mqtt
         {
             class MqttConnection;
-
-            /**
-             * @internal
-             * IoT Device SDK Metrics Structure
-             */
-            struct IoTDeviceSDKMetrics
-            {
-                Crt::String LibraryName;
-
-                IoTDeviceSDKMetrics() { LibraryName = "IoTDeviceSDK/CPP"; }
-
-                void initializeRawOptions(aws_mqtt_iot_sdk_metrics &raw_options) noexcept
-                {
-                    raw_options.library_name = ByteCursorFromString(LibraryName);
-                }
-            };
 
             /**
              * @internal
