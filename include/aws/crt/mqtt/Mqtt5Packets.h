@@ -866,14 +866,6 @@ namespace Aws
                  */
                 ConnectPacket &WithUserProperty(UserProperty &&property) noexcept;
 
-                /**
-                 * Enable AWS IoT metrics, if not set, default to enabled.
-                 *
-                 * @param enabled enable AWS IoT metrics to collect SDK usage data
-                 * @return The ConnectPacket Object after setting the user property
-                 */
-                ConnectPacket &WithMetricsCollection(bool enabled) noexcept;
-
                 /********************************************
                  * Access Functions
                  ********************************************/

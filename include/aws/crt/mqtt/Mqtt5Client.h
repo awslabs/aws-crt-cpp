@@ -3,6 +3,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include "private/MqttConnectionCore.h"
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
 #include <aws/crt/mqtt/MqttClient.h>
@@ -688,6 +689,14 @@ namespace Aws
                 Mqtt5ClientOptions &WithPublishReceivedCallback(OnPublishReceivedHandler callback) noexcept;
 
                 /**
+                 * Enable AWS IoT metrics, if not set, default to enabled.
+                 *
+                 * @param enabled enable AWS IoT metrics to collect SDK usage data
+                 * @return The ConnectPacket Object after setting the user property
+                 */
+                Mqtt5ClientOptions &WithMetricsCollection(bool enabled) noexcept;
+
+                /**
                  * Initializes the C aws_mqtt5_client_options from Mqtt5ClientOptions. For internal use
                  *
                  * @param raw_options - output parameter containing low level client options to be passed to the C
@@ -833,10 +842,14 @@ namespace Aws
                  */
                 uint32_t m_ackTimeoutSec;
 
+                bool m_enableMetrics = true;
+                Mqtt::IoTDeviceSDKMetrics m_sdkMetrics;
+
                 /* Underlying Parameters */
                 Crt::Allocator *m_allocator;
                 aws_http_proxy_options m_httpProxyOptionsStorage;
                 aws_mqtt5_packet_connect_view m_packetConnectViewStorage;
+                struct aws_mqtt_iot_sdk_metrics m_metricsStorage;
             };
 
         } // namespace Mqtt5
