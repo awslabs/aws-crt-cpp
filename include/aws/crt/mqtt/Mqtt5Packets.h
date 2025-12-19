@@ -6,6 +6,7 @@
 
 #include <aws/crt/mqtt/Mqtt5Client.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
+#include <aws/crt/mqtt/private/MqttShared.h>
 
 namespace Aws
 {

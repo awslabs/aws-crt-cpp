@@ -193,8 +193,10 @@ namespace Aws
                   m_extendedValidationAndFlowControlOptions(AWS_MQTT5_EVAFCO_AWS_IOT_CORE_DEFAULTS),
                   m_offlineQueueBehavior(AWS_MQTT5_COQBT_DEFAULT),
                   m_reconnectionOptions({AWS_EXPONENTIAL_BACKOFF_JITTER_DEFAULT, 0, 0, 0}), m_pingTimeoutMs(0),
-                  m_connackTimeoutMs(0), m_ackTimeoutSec(0), m_allocator(allocator)
+                  m_connackTimeoutMs(0), m_ackTimeoutSec(0), m_enableMetrics(true), m_allocator(allocator)
             {
+                m_sdkMetrics = Mqtt::IoTDeviceSDKMetrics();
+                m_sdkMetrics.initializeRawOptions(m_metricsStorage);
                 m_socketOptions.SetSocketType(Io::SocketType::Stream);
                 AWS_ZERO_STRUCT(m_packetConnectViewStorage);
                 AWS_ZERO_STRUCT(m_httpProxyOptionsStorage);
@@ -241,6 +243,7 @@ namespace Aws
                 raw_options.connack_timeout_ms = m_connackTimeoutMs;
                 raw_options.ack_timeout_seconds = m_ackTimeoutSec;
                 raw_options.topic_aliasing_options = &m_topicAliasingOptions;
+                raw_options.metrics = m_enableMetrics ? &m_metricsStorage : NULL;
 
                 return true;
             }
@@ -414,6 +417,12 @@ namespace Aws
                 OnPublishReceivedHandler callback) noexcept
             {
                 onPublishReceived = std::move(callback);
+                return *this;
+            }
+
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithMetricsCollection(bool enabled) noexcept
+            {
+                m_enableMetrics = enabled;
                 return *this;
             }
 

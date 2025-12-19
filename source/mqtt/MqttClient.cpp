@@ -70,7 +70,8 @@ namespace Aws
                 uint32_t port,
                 const Io::SocketOptions &socketOptions,
                 const Crt::Io::TlsContext &tlsContext,
-                bool useWebsocket) noexcept
+                bool useWebsocket,
+                bool enableMetrics) noexcept
             {
                 if (!tlsContext)
                 {
@@ -89,6 +90,7 @@ namespace Aws
                 connectionOptions.tlsContext = tlsContext;
                 connectionOptions.tlsConnectionOptions = tlsContext.NewConnectionOptions();
                 connectionOptions.useWebsocket = useWebsocket;
+                connectionOptions.enableMetrics = enableMetrics;
                 connectionOptions.useTls = true;
                 connectionOptions.allocator = m_client->allocator;
 
@@ -99,7 +101,8 @@ namespace Aws
                 const char *hostName,
                 uint32_t port,
                 const Io::SocketOptions &socketOptions,
-                bool useWebsocket) noexcept
+                bool useWebsocket,
+                bool enableMetrics) noexcept
 
             {
                 MqttConnectionOptions connectionOptions;
@@ -108,6 +111,7 @@ namespace Aws
                 connectionOptions.socketOptions = socketOptions;
                 connectionOptions.useWebsocket = useWebsocket;
                 connectionOptions.useTls = false;
+                connectionOptions.enableMetrics = enableMetrics;
                 connectionOptions.allocator = m_client->allocator;
 
                 return MqttConnection::s_CreateMqttConnection(m_client, std::move(connectionOptions));
