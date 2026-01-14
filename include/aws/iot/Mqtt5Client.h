@@ -670,9 +670,8 @@ namespace Aws
             /* Error */
             int m_lastError;
 
+            /** Enable AWS IoT Metrics Collection. This is always set to true for now. */
             bool m_enableMetricsCollection;
-
-            Crt::String m_sdkName = "CPPv2";
             Crt::String m_sdkVersion = AWS_CRT_CPP_VERSION;
         };
 

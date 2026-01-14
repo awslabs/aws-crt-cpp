@@ -39,7 +39,8 @@ namespace Aws
                 const Crt::String &endpoint,
                 uint32_t port,
                 const Crt::Io::SocketOptions &socketOptions,
-                Crt::Io::TlsContext &&tlsContext);
+                Crt::Io::TlsContext &&tlsContext,
+                bool enableMetrics);
 
             /**
              * Creates a client configuration for use with making new AWS Iot specific MQTT Connections with web
@@ -64,7 +65,8 @@ namespace Aws
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext,
                 Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
-                const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions);
+                const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
+                bool enableMetrics);
 
             /**
              * @return true if the instance is in a valid state, false otherwise.
@@ -84,7 +86,8 @@ namespace Aws
                 uint32_t port,
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext,
-                const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions);
+                const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
+                bool enableMetrics);
 
             Crt::String m_endpoint;
             uint32_t m_port;
@@ -94,6 +97,7 @@ namespace Aws
             Crt::String m_username;
             Crt::String m_password;
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
+            bool m_enableMetricsCollection;
             int m_lastError;
 
             friend class MqttClient;
