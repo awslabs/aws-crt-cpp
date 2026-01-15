@@ -47,8 +47,8 @@ namespace Aws
             const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
             bool enableMetrics = true)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
-              m_webSocketInterceptor(std::move(interceptor)), m_proxyOptions(proxyOptions), m_lastError(0),
-              m_enableMetricsCollection(enableMetrics)
+              m_webSocketInterceptor(std::move(interceptor)), m_proxyOptions(proxyOptions),
+              m_enableMetricsCollection(enableMetrics), m_lastError(0)
         {
         }
 
