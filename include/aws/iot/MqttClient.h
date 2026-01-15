@@ -34,6 +34,7 @@ namespace Aws
              * @param port port to connect to
              * @param socketOptions socket options to use when establishing the connection
              * @param tlsContext tls context that should be used for all connections sourced from this config
+             * @param enableMetrics Whether to set AWS IoT Metrics in the MQTT CONNECT packet. Default is True.
              */
             MqttClientConnectionConfig(
                 const Crt::String &endpoint,
@@ -58,6 +59,7 @@ namespace Aws
              * @param tlsContext tls context that should be used for all connections sourced from this config
              * @param interceptor websocket upgrade handshake transformation function
              * @param proxyOptions proxy configuration options
+             * @param enableMetrics Whether to set AWS IoT Metrics in the MQTT CONNECT packet. Default is True.
              */
             MqttClientConnectionConfig(
                 const Crt::String &endpoint,
