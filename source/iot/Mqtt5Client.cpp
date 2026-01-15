@@ -537,7 +537,7 @@ namespace Aws
             }
 
             // add metrics string to username (if metrics enabled)
-            if (m_customAuthConfig.has_value())
+            if (m_enableMetricsCollection || m_customAuthConfig.has_value())
             {
                 Crt::String username = "";
                 if (m_connectOptions != nullptr)
@@ -566,6 +566,11 @@ namespace Aws
                     }
                 }
 
+                if (m_enableMetricsCollection)
+                {
+                    username = AddToUsernameParameter(username, "SDK", m_sdkName);
+                    username = AddToUsernameParameter(username, "Version", m_sdkName);
+                }
                 m_connectOptions->WithUserName(username);
             }
 

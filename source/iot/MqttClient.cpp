@@ -510,6 +510,23 @@ namespace Aws
                 }
             }
 
+            // add metrics string to username (if metrics enabled)
+            if (m_enableMetricsCollection)
+            {
+                if (username.find('?') != Crt::String::npos)
+                {
+                    username += "&";
+                }
+                else
+                {
+                    username += "?";
+                }
+                username += "SDK=";
+                username += m_sdkName;
+                username += "&Version=";
+                username += m_sdkVersion;
+            }
+
             auto tlsContext = Crt::Io::TlsContext(m_contextOptions, Crt::Io::TlsMode::CLIENT, m_allocator);
             if (!tlsContext)
             {
