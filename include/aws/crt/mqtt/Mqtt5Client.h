@@ -517,6 +517,15 @@ namespace Aws
                     const Crt::Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
 
                 /**
+                 * Sets the SOCKS5 proxy options for the MQTT client.
+                 *
+                 * @param proxyOptions The SOCKS5 proxy options to use.
+                 *
+                 * @return this option object
+                 */
+                Mqtt5ClientOptions &WithSocks5ProxyOptions(const Crt::Io::Socks5ProxyOptions &proxyOptions) noexcept;
+
+                /**
                  * Sets mqtt5 connection options
                  *
                  * @param connectPacket package connection options
@@ -781,6 +790,11 @@ namespace Aws
                 Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
 
                 /**
+                 * Optional SOCKS5 proxy options for the MQTT client.
+                 */
+                Crt::Optional<Crt::Io::Socks5ProxyOptions> m_socks5ProxyOptions;
+
+                /**
                  * All configurable options with respect to the CONNECT packet sent by the client, including the will.
                  * These connect properties will be used for every connection attempt made by the client.
                  */
@@ -837,8 +851,9 @@ namespace Aws
                 Crt::Allocator *m_allocator;
                 aws_http_proxy_options m_httpProxyOptionsStorage;
                 aws_mqtt5_packet_connect_view m_packetConnectViewStorage;
+                aws_socks5_proxy_options m_socks5ProxyOptionsStorage{};
             };
 
         } // namespace Mqtt5
-    } // namespace Crt
+    }     // namespace Crt
 } // namespace Aws

@@ -64,7 +64,9 @@ namespace Aws
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext,
                 Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
-                const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions);
+                const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
+                const Crt::Optional<Crt::Io::Socks5ProxyOptions> &socks5ProxyOptions =
+                    Crt::Optional<Crt::Io::Socks5ProxyOptions>());
 
             /**
              * @return true if the instance is in a valid state, false otherwise.
@@ -84,7 +86,9 @@ namespace Aws
                 uint32_t port,
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext,
-                const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions);
+                const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
+                const Crt::Optional<Crt::Io::Socks5ProxyOptions> &socks5ProxyOptions =
+                    Crt::Optional<Crt::Io::Socks5ProxyOptions>());
 
             Crt::String m_endpoint;
             uint32_t m_port;
@@ -94,6 +98,7 @@ namespace Aws
             Crt::String m_username;
             Crt::String m_password;
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
+            Crt::Optional<Crt::Io::Socks5ProxyOptions> m_socks5ProxyOptions;
             int m_lastError;
 
             friend class MqttClient;
@@ -320,6 +325,15 @@ namespace Aws
                 const Crt::Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
 
             /**
+             * Configures the connection to use a SOCKS5 proxy. This is mutually exclusive with HTTP proxy options.
+             */
+            MqttClientConnectionConfigBuilder &WithSocks5ProxyOptions(const Crt::Io::Socks5ProxyOptions &proxyOptions)
+            {
+                m_socks5ProxyOptions = proxyOptions;
+                return *this;
+            }
+
+            /**
              * Whether to send the SDK name and version number in the MQTT CONNECT packet.
              * Default is True.
              *
@@ -454,6 +468,7 @@ namespace Aws
             Crt::Io::TlsContextOptions m_contextOptions;
             Crt::Optional<WebsocketConfig> m_websocketConfig;
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
+            Crt::Optional<Crt::Io::Socks5ProxyOptions> m_socks5ProxyOptions;
             bool m_enableMetricsCollection = true;
             Crt::String m_sdkName = "CPPv2";
             Crt::String m_sdkVersion;

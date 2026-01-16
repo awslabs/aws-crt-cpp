@@ -7,6 +7,7 @@
 #include <aws/crt/crypto/Hash.h>
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/http/HttpRequestResponse.h>
+#include <aws/crt/io/Socks5ProxyOptions.h>
 #include <aws/crt/io/Uri.h>
 
 #include <aws/crt/mqtt/Mqtt5Packets.h>
@@ -40,7 +41,53 @@ struct app_ctx
 
     const char *TraceFile;
     Aws::Crt::LogLevel LogLevel;
+
+    Aws::Crt::String proxy_host;
+    uint16_t proxy_port;
+    bool use_proxy = false;
+    Aws::Crt::Optional<Io::Socks5ProxyOptions> socks5_proxy_options;
 };
+
+static bool s_parse_proxy_uri(struct app_ctx &ctx, const char *proxy_arg)
+{
+    if (!proxy_arg || proxy_arg[0] == '\0')
+    {
+        std::cerr << "Proxy URI must not be empty" << std::endl;
+        return false;
+    }
+
+    ByteCursor uri_cursor = aws_byte_cursor_from_c_str(proxy_arg);
+    Io::Uri parsed_uri(uri_cursor, ctx.allocator);
+    if (!parsed_uri)
+    {
+        std::cerr << "Failed to parse proxy URI \"" << proxy_arg
+                  << "\": " << aws_error_debug_str(parsed_uri.LastError()) << std::endl;
+        return false;
+    }
+
+    auto proxyOptions = Io::Socks5ProxyOptions::CreateFromUri(parsed_uri, ctx.connect_timeout, ctx.allocator);
+    if (!proxyOptions)
+    {
+        std::cerr << "Failed to create SOCKS5 proxy options from \"" << proxy_arg
+                  << "\": " << aws_error_debug_str(Aws::Crt::LastError()) << std::endl;
+        return false;
+    }
+
+    ctx.socks5_proxy_options = *proxyOptions;
+
+    ByteCursor host_cursor = parsed_uri.GetHostName();
+    ctx.proxy_host.assign(reinterpret_cast<const char *>(host_cursor.ptr), host_cursor.len);
+
+    uint32_t port = parsed_uri.GetPort();
+    if (port == 0)
+    {
+        port = 1080;
+    }
+    ctx.proxy_port = static_cast<uint16_t>(port);
+
+    ctx.use_proxy = true;
+    return true;
+}
 
 static void s_usage(int exit_code)
 {
@@ -53,6 +100,7 @@ static void s_usage(int exit_code)
     fprintf(stderr, "      --key FILE: Path to a PEM encoded private key that matches cert.\n");
     fprintf(stderr, "  -l, --log FILE: dumps logs to FILE instead of stderr.\n");
     fprintf(stderr, "  -v, --verbose: ERROR|INFO|DEBUG|TRACE: log level to configure. Default is none.\n");
+    fprintf(stderr, "      --proxy URL: SOCKS5 proxy URI (socks5h://[user[:pass]@]host[:port]).\n");
 
     fprintf(stderr, "  -h, --help\n");
     fprintf(stderr, "            Display this message and quit.\n");
@@ -66,6 +114,7 @@ static struct aws_cli_option s_long_options[] = {
     {"connect-timeout", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'f'},
     {"log", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'l'},
     {"verbose", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'v'},
+    {"proxy", AWS_CLI_OPTIONS_REQUIRED_ARGUMENT, NULL, 'X'},
     {"help", AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 'h'},
     /* Per getopt(3) the last element of the array has to be filled with all zeros */
     {NULL, AWS_CLI_OPTIONS_NO_ARGUMENT, NULL, 0},
@@ -76,7 +125,7 @@ static void s_parse_options(int argc, char **argv, struct app_ctx &ctx)
     while (true)
     {
         int option_index = 0;
-        int c = aws_cli_getopt_long(argc, argv, "a:b:c:e:f:H:d:g:M:GPHiko:t:v:VwWh", s_long_options, &option_index);
+        int c = aws_cli_getopt_long(argc, argv, "a:b:c:e:f:H:d:g:M:GPHiko:t:v:VwWhX:", s_long_options, &option_index);
         if (c == -1)
         {
             /* finished parsing */
@@ -130,6 +179,12 @@ static void s_parse_options(int argc, char **argv, struct app_ctx &ctx)
                 }
                 break;
             }
+            case 'X':
+                if (!s_parse_proxy_uri(ctx, aws_cli_optarg))
+                {
+                    s_usage(1);
+                }
+                break;
             default:
                 std::cerr << "Unknown option\n";
                 s_usage(1);
@@ -314,6 +369,26 @@ int main(int argc, char **argv)
         mqtt5OptionsBuilder.WithTlsConnectionOptions(tlsConnectionOptions);
     }
 
+    if (app_ctx.use_proxy && app_ctx.socks5_proxy_options && !app_ctx.proxy_host.empty())
+    {
+        std::cout << "**********************************************************" << std::endl;
+        std::cout << "MQTT5: Using SOCKS5 proxy " << app_ctx.proxy_host << ":" << app_ctx.proxy_port << std::endl;
+        const auto &proxy_opts = *app_ctx.socks5_proxy_options;
+        Aws::Crt::String username, password;
+        if (proxy_opts.GetUsername().has_value())
+        {
+            username = proxy_opts.GetUsername().value();
+            std::cout << "MQTT5: Proxy username: " << username << std::endl;
+        }
+        if (proxy_opts.GetPassword().has_value())
+        {
+            password = proxy_opts.GetPassword().value();
+            std::cout << "MQTT5: Proxy password: " << password << std::endl;
+        }
+        mqtt5OptionsBuilder.WithSocks5ProxyOptions(proxy_opts);
+        std::cout << "**********************************************************" << std::endl;
+    }
+
     std::promise<bool> connectionPromise;
     std::promise<void> disconnectionPromise;
     std::promise<void> stoppedPromise;
@@ -364,13 +439,14 @@ int main(int argc, char **argv)
             else
             {
                 std::cout << "**********************************************************" << std::endl;
-                std::cout << "MQTT5:DisConnection failed with error " << aws_error_debug_str(eventData.errorCode) << std::endl;
+                std::cout << "MQTT5:DisConnection failed with error " << aws_error_debug_str(eventData.errorCode)
+                          << std::endl;
                 if (eventData.disconnectPacket != NULL)
                 {
                     if (eventData.disconnectPacket->getReasonString().has_value())
                     {
-                        std::cout << "disconnect packet: " << eventData.disconnectPacket->getReasonString().value().c_str()
-                                  << std::endl;
+                        std::cout << "disconnect packet: "
+                                  << eventData.disconnectPacket->getReasonString().value().c_str() << std::endl;
                     }
                 }
                 std::cout << "**********************************************************" << std::endl;
@@ -451,7 +527,8 @@ int main(int argc, char **argv)
             subscribe,
             [](int, std::shared_ptr<Mqtt5::SubAckPacket> packet)
             {
-                if(packet == nullptr) return;
+                if (packet == nullptr)
+                    return;
                 std::cout << "**********************************************************" << std::endl;
                 std::cout << "MQTT5: check suback packet : " << std::endl;
                 for (auto code : packet->getReasonCodes())
