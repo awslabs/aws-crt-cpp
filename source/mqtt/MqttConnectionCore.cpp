@@ -476,11 +476,14 @@ namespace Aws
                     {
                         struct aws_mqtt_iot_sdk_metrics metrics;
                         m_sdkMetrics.initializeRawOptions(metrics);
-                        aws_mqtt_client_connection_set_metrics(m_underlyingConnection, &metrics);
+                        if (aws_mqtt_client_connection_set_metrics(m_underlyingConnection, &metrics))
+                        {
+                            AWS_LOGF_DEBUG(AWS_LS_MQTT_CLIENT, "Failed to set Mqtt Metrics");
+                        }
                     }
-                    else
+                    else if (aws_mqtt_client_connection_set_metrics(m_underlyingConnection, nullptr))
                     {
-                        aws_mqtt_client_connection_set_metrics(m_underlyingConnection, nullptr);
+                        AWS_LOGF_DEBUG(AWS_LS_MQTT_CLIENT, "Failed to set Mqtt Metrics");
                     }
                 }
                 else
