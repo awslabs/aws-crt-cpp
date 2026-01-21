@@ -299,6 +299,15 @@ namespace Aws
             Mqtt5ClientBuilder &WithCertificateAuthority(const Crt::ByteCursor &cert) noexcept;
 
             /**
+             * Sets the minimum tls version that is acceptable for connection establishment
+             *
+             * @param minimumTlsVersion minimum tls version allowed in client connections
+             *
+             * @return this builder object
+             */
+            Mqtt5ClientBuilder &WithMinimumTlsVersion(aws_tls_versions minimumTlsVersion) noexcept;
+
+            /**
              * Sets the tls cipher preference for the tls context options.
              *
              * @param cipherPref the tls cipher preference to use for the tls context options.
