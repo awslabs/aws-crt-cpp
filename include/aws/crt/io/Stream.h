@@ -9,6 +9,8 @@
 #include <aws/crt/Types.h>
 #include <aws/io/stream.h>
 
+#include <future>
+
 namespace Aws
 {
     namespace Crt
@@ -192,6 +194,33 @@ namespace Aws
               private:
                 std::shared_ptr<Aws::Crt::Io::IStream> m_stream;
             };
+
+            /**
+             * Interface for asynchronous input streams.
+             * Used for async HTTP request bodies.
+             */
+            class AWS_CRT_CPP_API AsyncInputStream
+            {
+              public:
+                virtual ~AsyncInputStream() = default;
+
+                AsyncInputStream(const AsyncInputStream &) = delete;
+                AsyncInputStream &operator=(const AsyncInputStream &) = delete;
+                AsyncInputStream(AsyncInputStream &&) = delete;
+                AsyncInputStream &operator=(AsyncInputStream &&) = delete;
+
+                virtual bool IsValid() const noexcept = 0;
+
+              protected:
+                AsyncInputStream() = default;
+
+                /**
+                 * Asynchronously read into buffer.
+                 * @return future<bool> - true on success (including EOF/no data available), false on error
+                 */
+                virtual std::future<bool> ReadImpl(ByteBuf &buffer) noexcept = 0;
+            };
+
         } // namespace Io
     } // namespace Crt
 } // namespace Aws
