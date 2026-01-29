@@ -1902,12 +1902,15 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(connectionPromise.get_future().get());
 
     /* Subscribe to test topic */
+    std::promise<void> suback;
+    auto onSubAck = [&](int, std::shared_ptr<Mqtt5::SubAckPacket>) { suback.set_value(); };
     Mqtt5::Subscription subscription(TEST_TOPIC, Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
     subscription.WithNoLocal(false);
     std::shared_ptr<Mqtt5::SubscribePacket> subscribe =
         Aws::Crt::MakeShared<Mqtt5::SubscribePacket>(allocator, allocator);
     subscribe->WithSubscription(std::move(subscription));
-    ASSERT_TRUE(mqtt5Client->Subscribe(subscribe));
+    ASSERT_TRUE(mqtt5Client->Subscribe(subscribe, onSubAck));
+    suback.get_future().wait();
 
     /* Publish message 1 to test topic */
     ByteBuf payload = Aws::Crt::ByteBufFromCString("Hello World");
@@ -1981,7 +1984,7 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(tlsConnection.SetAlpnList("x-amzn-mqtt-ca"));
     mqtt5Options.WithTlsConnectionOptions(tlsConnection);
 
-    s_setupConnectionLifeCycle(mqtt5Options, subscriberConnectionPromise, subscriberStoppedPromise, "Suberscriber");
+    s_setupConnectionLifeCycle(mqtt5Options, subscriberConnectionPromise, subscriberStoppedPromise, "Subscriber");
 
     mqtt5Options.WithPublishReceivedCallback(
         [&receivedWill, TEST_TOPIC](const PublishReceivedEventData &eventData)
