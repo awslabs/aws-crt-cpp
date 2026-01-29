@@ -1509,6 +1509,16 @@ static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void
             return 0;
         });
 
+    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
+        mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str(), allocator);
+
+    Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+    ASSERT_TRUE(tlsContext);
+    Aws::Crt::Io::TlsConnectionOptions tlsConnection = tlsContext.NewConnectionOptions();
+    ASSERT_TRUE(tlsConnection);
+    ASSERT_TRUE(tlsConnection.SetAlpnList("x-amzn-mqtt-ca"));
+    mqtt5Options.WithTlsConnectionOptions(tlsConnection);
+
     std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client1 = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
     ASSERT_TRUE(mqtt5Client1);
 
