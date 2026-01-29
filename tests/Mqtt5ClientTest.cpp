@@ -184,6 +184,7 @@ enum Mqtt5TestType
     MQTT5CONNECT_DIRECT,
     MQTT5CONNECT_DIRECT_BASIC_AUTH,
     MQTT5CONNECT_DIRECT_TLS,
+    MQTT5CONNECT_IOT_CORE,
     MQTT5CONNECT_WS,
     MQTT5CONNECT_WS_BASIC_AUTH,
     MQTT5CONNECT_WS_TLS,
@@ -255,6 +256,28 @@ struct Mqtt5TestEnvVars
                 }
                 m_hostname_string = aws_string_c_str(m_hostname);
                 m_port_value = static_cast<uint32_t>(atoi(aws_string_c_str(m_port)));
+                m_certificate_path_string = aws_string_c_str(m_certificate_path);
+                m_private_key_path_string = aws_string_c_str(m_private_key_path);
+                break;
+            }
+            case MQTT5CONNECT_IOT_CORE:
+            {
+                m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &m_hostname);
+                m_error |=
+                    aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_certificate, &m_certificate_path);
+                m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_key, &m_private_key_path);
+
+                if (m_error != AWS_OP_SUCCESS)
+                {
+                    return;
+                }
+                if (m_hostname == NULL || m_port == NULL || m_certificate_path == NULL || m_private_key_path == NULL)
+                {
+                    m_error = AWS_OP_ERR;
+                    return;
+                }
+                m_hostname_string = aws_string_c_str(m_hostname);
+                m_port_value = 8883;
                 m_certificate_path_string = aws_string_c_str(m_certificate_path);
                 m_private_key_path_string = aws_string_c_str(m_private_key_path);
                 break;
@@ -1218,7 +1241,7 @@ AWS_TEST_CASE(Mqtt5WSConnectionFull, s_TestMqtt5WSConnectionFull)
  */
 static int s_TestMqtt5DirectInvalidHostname(Aws::Crt::Allocator *allocator, void *)
 {
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
@@ -1338,7 +1361,7 @@ AWS_TEST_CASE(Mqtt5WSInvalidPort, s_TestMqtt5WSInvalidPort)
  */
 static int s_TestMqtt5SocketTimeout(Aws::Crt::Allocator *allocator, void *)
 {
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
@@ -1471,7 +1494,7 @@ AWS_TEST_CASE(Mqtt5IncorrectWSConnect, s_TestMqtt5IncorrectWSConnect)
  */
 static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void *)
 {
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
@@ -1550,7 +1573,7 @@ AWS_TEST_CASE(Mqtt5DoubleClientIDFailure, s_TestMqtt5DoubleClientIDFailure)
  */
 static int s_TestMqtt5NegotiatedSettingsHappy(Aws::Crt::Allocator *allocator, void *)
 {
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
@@ -1606,7 +1629,7 @@ static int s_TestMqtt5NegotiatedSettingsFull(Aws::Crt::Allocator *allocator, voi
     const uint16_t RECEIVE_MAX = 12;
     const uint16_t KEEP_ALIVE_INTERVAL = 1000;
 
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
@@ -1667,7 +1690,7 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
     const uint16_t KEEP_ALIVE_INTERVAL = UINT16_MAX;
     const uint32_t PACKET_MAX = UINT32_MAX;
 
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
@@ -1726,7 +1749,7 @@ static int s_TestMqtt5NegotiatedSettingsRejoinAlways(Aws::Crt::Allocator *alloca
 {
     static const uint32_t SESSION_EXPIRY_INTERVAL_SEC = 3600;
 
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
@@ -1804,7 +1827,7 @@ AWS_TEST_CASE(Mqtt5NegotiatedSettingsRejoinAlways, s_TestMqtt5NegotiatedSettings
  */
 static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
 {
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
@@ -1885,7 +1908,7 @@ AWS_TEST_CASE(Mqtt5SubUnsub, s_TestMqtt5SubUnsub)
  */
 static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *)
 {
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
@@ -2158,7 +2181,7 @@ AWS_TEST_CASE(Mqtt5SharedSubscriptionTest, s_TestMqtt5SharedSubscriptionTest)
  */
 static int s_TestMqtt5NullPublish(Aws::Crt::Allocator *allocator, void *)
 {
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
@@ -2202,7 +2225,7 @@ AWS_TEST_CASE(Mqtt5NullPublish, s_TestMqtt5NullPublish)
  */
 static int s_TestMqtt5NullSubscribe(Aws::Crt::Allocator *allocator, void *)
 {
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
@@ -2246,7 +2269,7 @@ AWS_TEST_CASE(Mqtt5NullSubscribe, s_TestMqtt5NullSubscribe)
  */
 static int s_TestMqtt5NullUnsubscribe(Aws::Crt::Allocator *allocator, void *)
 {
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
@@ -2325,7 +2348,7 @@ AWS_TEST_CASE(Mqtt5ReuseUnsubscribePacket, s_TestMqtt5ReuseUnsubscribePacket)
 static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *)
 {
 
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
@@ -2434,7 +2457,7 @@ AWS_TEST_CASE(Mqtt5QoS1SubPub, s_TestMqtt5QoS1SubPub)
  */
 static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *)
 {
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
@@ -2699,7 +2722,7 @@ AWS_TEST_CASE(Mqtt5InterruptPublishQoS1, s_TestMqtt5InterruptPublishQoS1)
  */
 static int s_TestMqtt5OperationStatisticsSimple(Aws::Crt::Allocator *allocator, void *)
 {
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
