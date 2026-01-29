@@ -1920,7 +1920,7 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
 
     /* Unsubscribe to test topic */
     std::promise<void> unsuback;
-    auto onUnsubAck = [&](int, std::shared_ptr<Mqtt5::UnsubAckPacket>) { unsuback.set_value(); };
+    auto onUnsubAck = [&](int, std::shared_ptr<Mqtt5::UnSubAckPacket>) { unsuback.set_value(); };
 
     Vector<String> topics;
     topics.push_back(TEST_TOPIC);
