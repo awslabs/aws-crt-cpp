@@ -1919,12 +1919,16 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
     aws_thread_current_sleep(2000 * 1000 * 1000);
 
     /* Unsubscribe to test topic */
+    std::promise<void> unsuback;
+    auto onUnsubAck = [&](int, std::shared_ptr<Mqtt5::UnsubAckPacket>) { unsuback.set_value(); };
+
     Vector<String> topics;
     topics.push_back(TEST_TOPIC);
     std::shared_ptr<Mqtt5::UnsubscribePacket> unsub =
         Aws::Crt::MakeShared<Mqtt5::UnsubscribePacket>(allocator, allocator);
     unsub->WithTopicFilters(topics);
-    ASSERT_TRUE(mqtt5Client->Unsubscribe(unsub));
+    ASSERT_TRUE(mqtt5Client->Unsubscribe(unsub, onUnsubAck));
+    unsuback.get_future().wait();
 
     /* Publish message2 to test topic */
     ASSERT_TRUE(mqtt5Client->Publish(publish));
