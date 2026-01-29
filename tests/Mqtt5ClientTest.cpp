@@ -184,7 +184,6 @@ enum Mqtt5TestType
     MQTT5CONNECT_DIRECT,
     MQTT5CONNECT_DIRECT_BASIC_AUTH,
     MQTT5CONNECT_DIRECT_TLS,
-    MQTT5CONNECT_IOT_CORE,
     MQTT5CONNECT_WS,
     MQTT5CONNECT_WS_BASIC_AUTH,
     MQTT5CONNECT_WS_TLS,
@@ -256,28 +255,6 @@ struct Mqtt5TestEnvVars
                 }
                 m_hostname_string = aws_string_c_str(m_hostname);
                 m_port_value = static_cast<uint32_t>(atoi(aws_string_c_str(m_port)));
-                m_certificate_path_string = aws_string_c_str(m_certificate_path);
-                m_private_key_path_string = aws_string_c_str(m_private_key_path);
-                break;
-            }
-            case MQTT5CONNECT_IOT_CORE:
-            {
-                m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &m_hostname);
-                m_error |=
-                    aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_certificate, &m_certificate_path);
-                m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_key, &m_private_key_path);
-
-                if (m_error != AWS_OP_SUCCESS)
-                {
-                    return;
-                }
-                if (m_hostname == NULL || m_port == NULL || m_certificate_path == NULL || m_private_key_path == NULL)
-                {
-                    m_error = AWS_OP_ERR;
-                    return;
-                }
-                m_hostname_string = aws_string_c_str(m_hostname);
-                m_port_value = 8883;
                 m_certificate_path_string = aws_string_c_str(m_certificate_path);
                 m_private_key_path_string = aws_string_c_str(m_private_key_path);
                 break;
