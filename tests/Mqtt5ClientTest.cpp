@@ -350,6 +350,7 @@ struct Mqtt5TestEnvVars
                     m_hostname_string = aws_string_c_str(m_hostname);
                     m_certificate_path_string = aws_string_c_str(m_certificate_path);
                     m_private_key_path_string = aws_string_c_str(m_private_key_path);
+                    m_port_value = 8883;
                 }
                 break;
             }

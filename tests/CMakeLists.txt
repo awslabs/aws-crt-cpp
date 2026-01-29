@@ -209,7 +209,6 @@ if (NOT BYO_CRYPTO)
     add_net_test_case(Mqtt311WSConnectionWithHttpProxy)
 endif()
 
-# Check which tests are being skipped
 #MQTT5 related tests
 add_test_case(Mqtt5NewClientMinimal)
 add_test_case(Mqtt5NewClientFull)
