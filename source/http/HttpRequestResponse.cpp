@@ -68,7 +68,7 @@ namespace Aws
             {
                 m_asyncBodyStream = body;
                 m_bodyStream = nullptr;
-                aws_http_message_set_body_stream(m_message, nullptr);
+                aws_http_message_set_async_body_stream(m_message, nullptr);
 
                 std::promise<bool> promise;
                 promise.set_value(body == nullptr || body->IsValid());
