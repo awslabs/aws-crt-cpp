@@ -253,11 +253,14 @@ namespace Aws
                 std::future<bool> cppFuture = impl->ReadImpl(*dest);
 
                 aws_future_bool_acquire(future);
-                std::thread([future, cppFuture = std::move(cppFuture)]() mutable {
-                    bool result = cppFuture.get();
-                    aws_future_bool_set_result(future, result);
-                    aws_future_bool_release(future);
-                }).detach();
+                std::thread(
+                    [future, cppFuture = std::move(cppFuture)]() mutable
+                    {
+                        bool result = cppFuture.get();
+                        aws_future_bool_set_result(future, result);
+                        aws_future_bool_release(future);
+                    })
+                    .detach();
 
                 return future;
             }
