@@ -2,8 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
-#include <aws/crt/Api.h>
 #include <aws/checksums/xxhash.h>
+#include <aws/crt/Api.h>
 #include <aws/crt/checksum/XXHash.h>
 
 namespace Aws
