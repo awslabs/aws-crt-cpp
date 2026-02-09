@@ -2,6 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include <aws/checksums/xxhash.h>
 #include <aws/crt/checksum/XXHash.h>
 
 namespace Aws
@@ -10,17 +11,17 @@ namespace Aws
     {
         namespace Checksum
         {
-            bool ComputeXXhash64(const ByteCursor &input, ByteBuf &output, uint64_t seed = 0) noexcept
+            bool ComputeXXHash64(const ByteCursor &input, ByteBuf &output, uint64_t seed) noexcept
             {
                 return aws_xxhash64_compute(seed, input, &output) == AWS_OP_SUCCESS;
             }
 
-            bool ComputeXXhash3_64(const ByteCursor &input, ByteBuf &output, uint64_t seed = 0) noexcept
+            bool ComputeXXHash3_64(const ByteCursor &input, ByteBuf &output, uint64_t seed) noexcept
             {
                 return aws_xxhash3_64_compute(seed, input, &output) == AWS_OP_SUCCESS;
             }
 
-            bool ComputeXXhash3_128(const ByteCursor &input, ByteBuf &output, uint64_t seed = 0) noexcept
+            bool ComputeXXHash3_128(const ByteCursor &input, ByteBuf &output, uint64_t seed) noexcept
             {
                 return aws_xxhash3_128_compute(seed, input, &output) == AWS_OP_SUCCESS;
             }

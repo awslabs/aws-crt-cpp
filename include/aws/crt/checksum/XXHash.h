@@ -6,9 +6,7 @@
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
 
-#include <aws/checksums/xxhash.h>
-
-struct aws_hash;
+struct aws_xxhash;
 namespace Aws
 {
     namespace Crt

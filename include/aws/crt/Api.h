@@ -99,7 +99,6 @@ namespace Aws
              */
             void SetBYOCryptoNewSHA512Callback(Crypto::CreateHashCallback &&callback);
 
-
             /**
              * BYO_CRYPTO: set callback for creating SHA1 hashes.
              * If using BYO_CRYPTO, you must call this.
