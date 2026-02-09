@@ -74,7 +74,7 @@ static int s_TestXXHash3_128Piping(struct aws_allocator *allocator, void *)
         0x73, 0x51, 0xf8, 0x98, 0x12, 0xf9, 0x73, 0x82, 0xb9, 0x1d, 0x05, 0xb3, 0x1e, 0x04, 0xdd, 0x7f};
 
     Aws::Crt::ByteBuf result;
-    aws_byte_buf_init(&result, allocator, 8);
+    aws_byte_buf_init(&result, allocator, 16);
 
     ASSERT_TRUE(Aws::Crt::Checksum::ComputeXXHash3_128(dataCur, result));
 
