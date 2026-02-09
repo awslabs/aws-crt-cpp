@@ -57,17 +57,17 @@ namespace Aws
                 return *this;
             }
 
-            XXHash XXHash::CreateXXHash64(uint64_t seed = 0, Allocator *allocator) noexcept
+            XXHash XXHash::CreateXXHash64(uint64_t seed, Allocator *allocator) noexcept
             {
                 return XXHash(aws_xxhash64_new(allocator, seed));
             }
 
-            XXHash XXHash::CreateXXHash3_64(uint64_t seed = 0, Allocator *allocator) noexcept
+            XXHash XXHash::CreateXXHash3_64(uint64_t seed, Allocator *allocator) noexcept
             {
                 return XXHash(aws_xxhash3_64_new(allocator, seed));
             }
 
-            XXHash XXHash::CreateXXHash3_128(uint64_t seed = 0, Allocator *allocator) noexcept
+            XXHash XXHash::CreateXXHash3_128(uint64_t seed, Allocator *allocator) noexcept
             {
                 return XXHash(aws_xxhash3_128_new(allocator, seed));
             }
