@@ -44,11 +44,10 @@ namespace Aws
             class AWS_CRT_CPP_API XXHash final
             {
               public:
-                ~XXHash();
                 XXHash(const XXHash &) = delete;
                 XXHash &operator=(const XXHash &) = delete;
-                XXHash(XXHash &&toMove);
-                XXHash &operator=(XXHash &&toMove);
+                XXHash(XXHash &&toMove) noexcept = default;
+                XXHash &operator=(XXHash &&toMove) noexcept = default;
 
                 /**
                  * Returns the value of the last aws error encountered by operations on this instance.
@@ -87,7 +86,7 @@ namespace Aws
                 XXHash(aws_xxhash *hash) noexcept;
                 XXHash() = delete;
 
-                aws_xxhash *m_hash;
+                ScopedResource<struct aws_xxhash> m_hash;
                 int m_lastError;
             };
         } // namespace Checksum

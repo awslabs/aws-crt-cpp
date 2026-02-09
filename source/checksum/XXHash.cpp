@@ -26,36 +26,12 @@ namespace Aws
                 return aws_xxhash3_128_compute(seed, input, &output) == AWS_OP_SUCCESS;
             }
 
-            XXHash::XXHash(aws_xxhash *hash) noexcept : m_hash(hash), m_lastError(0)
+            XXHash::XXHash(aws_xxhash *hash) noexcept : m_hash(hash, aws_xxhash_destroy), m_lastError(0)
             {
-                if (!hash)
+                if (hash == nullptr)
                 {
-                    m_lastError = aws_last_error();
+                    m_lastError = Crt::LastError();
                 }
-            }
-
-            XXHash::~XXHash()
-            {
-                if (m_hash)
-                {
-                    aws_xxhash_destroy(m_hash);
-                    m_hash = nullptr;
-                }
-            }
-
-            XXHash::XXHash(XXHash &&toMove) : m_hash(toMove.m_hash), m_lastError(toMove.m_lastError)
-            {
-                toMove.m_hash = nullptr;
-            }
-
-            XXHash &XXHash::operator=(XXHash &&toMove)
-            {
-                if (&toMove != this)
-                {
-                    *this = XXHash(std::move(toMove));
-                }
-
-                return *this;
             }
 
             XXHash XXHash::CreateXXHash64(uint64_t seed, Allocator *allocator) noexcept

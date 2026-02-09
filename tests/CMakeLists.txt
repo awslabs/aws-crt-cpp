@@ -63,6 +63,7 @@ add_test_case(JsonExplicitNull)
 add_test_case(JsonBoolTest)
 add_test_case(JsonMoveTest)
 add_test_case(SHA256ResourceSafety)
+add_test_case(SHA512ResourceSafety)
 add_test_case(MD5ResourceSafety)
 add_test_case(SHA1ResourceSafety)
 add_test_case(SHA256HMACResourceSafety)
@@ -321,6 +322,14 @@ add_test_case(CborLastErrorTest)
 if (NOT BYO_CRYPTO) 
     add_test_case(HKDFPiping)
 endif()
+
+add_test_case(CRC32Piping);
+add_test_case(CRC32CPiping);
+add_test_case(CRC64NVMEPiping);
+
+add_test_case(XXHash64Piping);
+add_test_case(XXHash3_64Piping);
+add_test_case(XXHash3_128Piping);
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 
