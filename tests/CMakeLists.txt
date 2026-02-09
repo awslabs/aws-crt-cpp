@@ -327,9 +327,9 @@ add_test_case(CRC32Piping)
 add_test_case(CRC32CPiping)
 add_test_case(CRC64NVMEPiping)
 
-add_test_case(XXHash64Piping);
-add_test_case(XXHash3_64Piping);
-add_test_case(XXHash3_128Piping);
+add_test_case(XXHash64Piping)
+add_test_case(XXHash3_64Piping)
+add_test_case(XXHash3_128Piping)
 
 generate_cpp_test_driver(${TEST_BINARY_NAME})
 
