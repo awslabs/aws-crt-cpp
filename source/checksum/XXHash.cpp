@@ -52,7 +52,7 @@ namespace Aws
 
             bool XXHash::Update(const ByteCursor &toHash) noexcept
             {
-                if (AWS_OP_SUCCESS != aws_xxhash_update(m_hash, toHash))
+                if (AWS_OP_SUCCESS != aws_xxhash_update(m_hash.get(), toHash))
                 {
                     m_lastError = aws_last_error();
                     return false;
@@ -62,7 +62,7 @@ namespace Aws
 
             bool XXHash::Digest(ByteBuf &output) noexcept
             {
-                if (aws_xxhash_finalize(m_hash, &output) != AWS_OP_SUCCESS)
+                if (aws_xxhash_finalize(m_hash.get(), &output) != AWS_OP_SUCCESS)
                 {
                     m_lastError = aws_last_error();
                     return false;
