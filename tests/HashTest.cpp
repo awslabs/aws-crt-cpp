@@ -70,7 +70,7 @@ static int s_TestSHA512ResourceSafety(struct aws_allocator *allocator, void *)
     return AWS_OP_SUCCESS;
 }
 
-AWS_TEST_CASE(SHA256ResourceSafety, s_TestSHA256ResourceSafety)
+AWS_TEST_CASE(SHA512ResourceSafety, s_TestSHA512ResourceSafety)
 
 static int s_TestMD5ResourceSafety(struct aws_allocator *allocator, void *)
 {
