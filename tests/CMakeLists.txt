@@ -323,9 +323,9 @@ if (NOT BYO_CRYPTO)
     add_test_case(HKDFPiping)
 endif()
 
-add_test_case(CRC32Piping);
-add_test_case(CRC32CPiping);
-add_test_case(CRC64NVMEPiping);
+add_test_case(CRC32Piping)
+add_test_case(CRC32CPiping)
+add_test_case(CRC64NVMEPiping)
 
 add_test_case(XXHash64Piping);
 add_test_case(XXHash3_64Piping);
