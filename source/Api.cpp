@@ -84,6 +84,7 @@ namespace Aws
 
             s_BYOCryptoNewMD5Callback = nullptr;
             s_BYOCryptoNewSHA256Callback = nullptr;
+            s_BYOCryptoNewSHA512Callback = nullptr;
             s_BYOCryptoNewSHA256HMACCallback = nullptr;
             s_BYOCryptoNewClientTlsHandlerCallback = nullptr;
             s_BYOCryptoNewTlsContextImplCallback = nullptr;
@@ -187,6 +188,12 @@ namespace Aws
         {
             s_BYOCryptoNewSHA256Callback = std::move(callback);
             aws_set_sha256_new_fn(s_Sha256New);
+        }
+
+        void ApiHandle::SetBYOCryptoNewSHA512Callback(Crypto::CreateHashCallback &&callback)
+        {
+            s_BYOCryptoNewSHA512Callback = std::move(callback);
+            aws_set_sha512_new_fn(s_Sha256New);
         }
 
         static struct aws_hash *s_Sha1New(struct aws_allocator *allocator)
@@ -314,6 +321,12 @@ namespace Aws
         }
 
         void ApiHandle::SetBYOCryptoNewSHA256HMACCallback(Crypto::CreateHMACCallback &&)
+        {
+            AWS_LOGF_WARN(
+                AWS_LS_IO_TLS, "SetBYOCryptoNewSHA256HMACCallback() has no effect unless compiled with BYO_CRYPTO");
+        }
+
+        void ApiHandle::SetBYOCryptoNewSHA512HMACCallback(Crypto::CreateHMACCallback &&)
         {
             AWS_LOGF_WARN(
                 AWS_LS_IO_TLS, "SetBYOCryptoNewSHA256HMACCallback() has no effect unless compiled with BYO_CRYPTO");

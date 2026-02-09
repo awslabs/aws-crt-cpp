@@ -106,6 +106,12 @@ namespace Aws
             void SetBYOCryptoNewSHA256HMACCallback(Crypto::CreateHMACCallback &&callback);
 
             /**
+             * BYO_CRYPTO: set callback for creating Streaming SHA512 HMAC objects.
+             * If using BYO_CRYPTO, you must call this.
+             */
+            void SetBYOCryptoNewSHA512HMACCallback(Crypto::CreateHMACCallback &&callback);
+
+            /**
              * BYO_CRYPTO: set callback for creating a ClientTlsChannelHandler.
              * If using BYO_CRYPTO, you must call this prior to creating any client channels in the
              * application.
