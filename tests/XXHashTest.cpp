@@ -29,6 +29,8 @@ static int s_TestXXHash64Piping(struct aws_allocator *allocator, void *)
 
     ASSERT_BIN_ARRAYS_EQUALS(result.buffer, result.len, expected, sizeof(expected));
 
+    aws_byte_buf_clean_up(&result);
+
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(XXHash64Piping, s_TestXXHash64Piping)
@@ -55,6 +57,8 @@ static int s_TestXXHash3_64Piping(struct aws_allocator *allocator, void *)
     ASSERT_TRUE(hash.Digest(result));
 
     ASSERT_BIN_ARRAYS_EQUALS(result.buffer, result.len, expected, sizeof(expected));
+
+    aws_byte_buf_clean_up(&result);
 
     return AWS_OP_SUCCESS;
 }
@@ -83,6 +87,8 @@ static int s_TestXXHash3_128Piping(struct aws_allocator *allocator, void *)
     ASSERT_TRUE(hash.Digest(result));
 
     ASSERT_BIN_ARRAYS_EQUALS(result.buffer, result.len, expected, sizeof(expected));
+
+    aws_byte_buf_clean_up(&result);
 
     return AWS_OP_SUCCESS;
 }
