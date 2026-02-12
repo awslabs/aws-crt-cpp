@@ -41,7 +41,7 @@ namespace Aws
                 uint32_t port,
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext,
-                bool enableMetrics);
+                bool enableMetrics = true);
 
             /**
              * Creates a client configuration for use with making new AWS Iot specific MQTT Connections with web
@@ -68,7 +68,7 @@ namespace Aws
                 Crt::Io::TlsContext &&tlsContext,
                 Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
                 const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
-                bool enableMetrics);
+                bool enableMetrics = true);
 
             /**
              * @return true if the instance is in a valid state, false otherwise.
@@ -89,7 +89,7 @@ namespace Aws
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext,
                 const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
-                bool enableMetrics);
+                bool enableMetrics = true);
 
             Crt::String m_endpoint;
             uint32_t m_port;

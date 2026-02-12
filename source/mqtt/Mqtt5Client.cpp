@@ -195,7 +195,6 @@ namespace Aws
                   m_reconnectionOptions({AWS_EXPONENTIAL_BACKOFF_JITTER_DEFAULT, 0, 0, 0}), m_pingTimeoutMs(0),
                   m_connackTimeoutMs(0), m_ackTimeoutSec(0), m_enableMetrics(true), m_allocator(allocator)
             {
-                m_sdkMetrics = Mqtt::IoTDeviceSDKMetrics();
                 m_sdkMetrics.initializeRawOptions(m_metricsStorage);
                 m_socketOptions.SetSocketType(Io::SocketType::Stream);
                 AWS_ZERO_STRUCT(m_packetConnectViewStorage);

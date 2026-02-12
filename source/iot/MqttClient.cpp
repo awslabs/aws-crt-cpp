@@ -32,7 +32,7 @@ namespace Aws
             uint32_t port,
             const Crt::Io::SocketOptions &socketOptions,
             Crt::Io::TlsContext &&tlsContext,
-            bool enableMetrics = true)
+            bool enableMetrics)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
               m_enableMetricsCollection(enableMetrics), m_lastError(0)
         {
@@ -45,7 +45,7 @@ namespace Aws
             Crt::Io::TlsContext &&tlsContext,
             Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
             const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
-            bool enableMetrics = true)
+            bool enableMetrics)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
               m_webSocketInterceptor(std::move(interceptor)), m_proxyOptions(proxyOptions),
               m_enableMetricsCollection(enableMetrics), m_lastError(0)
@@ -58,7 +58,7 @@ namespace Aws
             const Crt::Io::SocketOptions &socketOptions,
             Crt::Io::TlsContext &&tlsContext,
             const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
-            bool enableMetrics = true)
+            bool enableMetrics)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
               m_proxyOptions(proxyOptions), m_enableMetricsCollection(enableMetrics), m_lastError(0)
         {

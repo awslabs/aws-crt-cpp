@@ -475,6 +475,7 @@ namespace Aws
                     if (m_enableMetrics)
                     {
                         struct aws_mqtt_iot_sdk_metrics metrics;
+                        AWS_ZERO_STRUCT(metrics);
                         m_sdkMetrics.initializeRawOptions(metrics);
                         if (aws_mqtt_client_connection_set_metrics(m_underlyingConnection, &metrics))
                         {

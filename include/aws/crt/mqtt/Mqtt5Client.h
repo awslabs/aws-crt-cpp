@@ -692,7 +692,7 @@ namespace Aws
                  * Enable AWS IoT metrics, if not set, default to enabled.
                  *
                  * @param enabled enable AWS IoT metrics to collect SDK usage data
-                 * @return The ConnectPacket Object after setting the user property
+                 * @return this option object
                  */
                 Mqtt5ClientOptions &WithMetricsCollection(bool enabled) noexcept;
 
