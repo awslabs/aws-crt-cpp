@@ -1425,11 +1425,19 @@ static int s_TestMqtt5NegotiatedSettingsRejoinAlways(Aws::Crt::Allocator *alloca
 {
     ApiHandle apiHandle(allocator);
 
+    static const uint32_t SESSION_EXPIRY_INTERVAL_SEC = 3600;
+
+    std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect =
+        Aws::Crt::MakeShared<Aws::Crt::Mqtt5::ConnectPacket>(allocator);
+    packetConnect->WithSessionExpiryIntervalSec(SESSION_EXPIRY_INTERVAL_SEC);
+    packetConnect->WithClientId(Aws::Crt::UUID().ToString());
+
     Mqtt5TestContext testContext1 = createTestContext(
         allocator,
         MQTT5CONNECT_DIRECT_IOT_CORE,
-        [](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &context)
+        [packetConnect](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &context)
         {
+            options.WithConnectOptions(packetConnect);
             options.WithClientConnectionSuccessCallback(
                 [&](const OnConnectionSuccessEventData &eventData)
                 {
@@ -1452,14 +1460,16 @@ static int s_TestMqtt5NegotiatedSettingsRejoinAlways(Aws::Crt::Allocator *alloca
 
     ASSERT_TRUE(mqtt5Client1->Start());
     ASSERT_TRUE(testContext1.connectionPromise.get_future().get());
+
     ASSERT_TRUE(mqtt5Client1->Stop());
     testContext1.stoppedPromise.get_future().get();
 
     Mqtt5TestContext testContext2 = createTestContext(
         allocator,
         MQTT5CONNECT_DIRECT_IOT_CORE,
-        [](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &context)
+        [packetConnect](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &context)
         {
+            options.WithConnectOptions(packetConnect);
             options.WithClientConnectionSuccessCallback(
                 [&](const OnConnectionSuccessEventData &eventData)
                 {
@@ -1473,10 +1483,6 @@ static int s_TestMqtt5NegotiatedSettingsRejoinAlways(Aws::Crt::Allocator *alloca
 
             return AWS_OP_SUCCESS;
         });
-    if (testContext2.testDirective == AWS_OP_SKIP)
-    {
-        return AWS_OP_SKIP;
-    }
 
     std::shared_ptr<Mqtt5Client> mqtt5Client2 = testContext2.client;
     ASSERT_TRUE(mqtt5Client2);
