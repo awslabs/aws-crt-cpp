@@ -1499,6 +1499,8 @@ AWS_TEST_CASE(Mqtt5NegotiatedSettingsRejoinAlways, s_TestMqtt5NegotiatedSettings
  */
 static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
 {
+    ApiHandle apiHandle(allocator);
+
     int receivedCount = 0;
     std::mutex receivedLock;
     std::condition_variable receivedSignal;
@@ -1554,8 +1556,10 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
         allocator, TEST_TOPIC, ByteCursorFromByteBuf(payload), Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
     ASSERT_TRUE(mqtt5Client->Publish(publish));
 
-    std::unique_lock<std::mutex> lock(receivedLock);
-    receivedSignal.wait(lock, [&receivedCount]() -> bool { return receivedCount >= 1; });
+    {
+        std::unique_lock<std::mutex> lock(receivedLock);
+        receivedSignal.wait(lock, [&receivedCount]() -> bool { return receivedCount >= 1; });
+    }
 
     std::promise<std::shared_ptr<UnSubAckPacket>> unsubscribed;
     Vector<String> topics;
@@ -1592,6 +1596,8 @@ AWS_TEST_CASE(Mqtt5SubUnsub, s_TestMqtt5SubUnsub)
  */
 static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *)
 {
+    ApiHandle apiHandle(allocator);
+
     bool receivedWill = false;
     std::mutex receivedLock;
     std::condition_variable receivedSignal;
@@ -1676,8 +1682,10 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(publisherClient->Stop(disconnect));
     publisherContext.stoppedPromise.get_future().get();
 
-    std::unique_lock<std::mutex> lock(receivedLock);
-    receivedSignal.wait(lock, [&receivedWill]() -> bool { return receivedWill; });
+    {
+        std::unique_lock<std::mutex> lock(receivedLock);
+        receivedSignal.wait(lock, [&receivedWill]() -> bool { return receivedWill; });
+    }
 
     ASSERT_TRUE(subscriberClient->Stop());
     subscriberContext.stoppedPromise.get_future().get();
@@ -1695,6 +1703,8 @@ AWS_TEST_CASE(Mqtt5WillTest, s_TestMqtt5WillTest)
  */
 static int s_TestMqtt5NullPublish(Aws::Crt::Allocator *allocator, void *)
 {
+    ApiHandle apiHandle(allocator);
+
     Mqtt5TestContext testContext = createTestContext(allocator, MQTT5CONNECT_DIRECT_IOT_CORE);
     if (testContext.testDirective == AWS_OP_SKIP)
     {
@@ -1726,6 +1736,8 @@ AWS_TEST_CASE(Mqtt5NullPublish, s_TestMqtt5NullPublish)
  */
 static int s_TestMqtt5NullSubscribe(Aws::Crt::Allocator *allocator, void *)
 {
+    ApiHandle apiHandle(allocator);
+
     Mqtt5TestContext testContext = createTestContext(allocator, MQTT5CONNECT_DIRECT_IOT_CORE);
     if (testContext.testDirective == AWS_OP_SKIP)
     {
@@ -1757,6 +1769,8 @@ AWS_TEST_CASE(Mqtt5NullSubscribe, s_TestMqtt5NullSubscribe)
  */
 static int s_TestMqtt5NullUnsubscribe(Aws::Crt::Allocator *allocator, void *)
 {
+    ApiHandle apiHandle(allocator);
+
     Mqtt5TestContext testContext = createTestContext(allocator, MQTT5CONNECT_DIRECT_IOT_CORE);
     if (testContext.testDirective == AWS_OP_SKIP)
     {
@@ -1821,6 +1835,8 @@ AWS_TEST_CASE(Mqtt5ReuseUnsubscribePacket, s_TestMqtt5ReuseUnsubscribePacket)
  */
 static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *)
 {
+    ApiHandle apiHandle(allocator);
+
     const int MESSAGE_NUMBER = 10;
     const String TEST_TOPIC = "test/s_TestMqtt5QoS1SubPub" + Aws::Crt::UUID().ToString();
     std::vector<std::promise<void>> receivedMessages;
@@ -1923,6 +1939,7 @@ AWS_TEST_CASE(Mqtt5QoS1SubPub, s_TestMqtt5QoS1SubPub)
 static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *)
 {
     ApiHandle apiHandle(allocator);
+
     const Aws::Crt::String TEST_TOPIC = "test/s_TestMqtt5RetainSetAndClear" + Aws::Crt::UUID().ToString();
     const Aws::Crt::String RETAIN_MESSAGE = "This is a retained message";
     std::promise<void> receivedRetainedMessage;
@@ -2527,6 +2544,8 @@ AWS_TEST_CASE(
  */
 static int s_TestMqtt5to3AdapterDirectConnectionMinimalThroughMqtt5(Aws::Crt::Allocator *allocator, void *)
 {
+    ApiHandle apiHandle(allocator);
+
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT);
     if (!mqtt5TestVars)
     {
@@ -2534,7 +2553,6 @@ static int s_TestMqtt5to3AdapterDirectConnectionMinimalThroughMqtt5(Aws::Crt::Al
         return AWS_OP_SKIP;
     }
 
-    ApiHandle apiHandle(allocator);
     Aws::Crt::Io::SocketOptions socketOptions;
     socketOptions.SetConnectTimeoutMs(3000);
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
@@ -2636,14 +2654,14 @@ AWS_TEST_CASE(Mqtt5to3AdapterWithIoTConnectionThroughMqtt5, s_TestMqtt5to3Adapte
  */
 static int s_TestMqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt5(Aws::Crt::Allocator *allocator, void *)
 {
+    ApiHandle apiHandle(allocator);
+
     Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
         return AWS_OP_SKIP;
     }
-
-    ApiHandle apiHandle(allocator);
 
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
     mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string);
@@ -2742,7 +2760,11 @@ static int s_TestMqtt5to3AdapterOperations(Aws::Crt::Allocator *allocator, void 
     testContext.stoppedPromise.get_future().get();
 
     // no second publish
-    ASSERT_TRUE(received == 1);
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        ASSERT_TRUE(received == 1);
+    }
+
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5to3AdapterOperations, s_TestMqtt5to3AdapterOperations)
@@ -2867,14 +2889,19 @@ static int s_TestMqtt5to3AdapterMultipleAdapters(Aws::Crt::Allocator *allocator,
     published.get_future().get();
 
     // wait for message received
-    std::unique_lock<std::mutex> lock(mutex);
-    cv.wait(lock, [&received1, &received2]() { return received1 > 0 && received2 > 0; });
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        cv.wait(lock, [&received1, &received2]() { return received1 > 0 && received2 > 0; });
+    }
 
     ASSERT_TRUE(mqtt5Client->Stop());
     testContext.stoppedPromise.get_future().get();
 
-    ASSERT_TRUE(received1 == 1);
-    ASSERT_TRUE(received2 == 1);
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        ASSERT_TRUE(received1 == 1);
+        ASSERT_TRUE(received2 == 1);
+    }
 
     return AWS_OP_SUCCESS;
 }
