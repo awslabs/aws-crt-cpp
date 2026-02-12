@@ -463,33 +463,6 @@ struct Mqtt5TestEnvVars
 //////////////////////////////////////////////////////////
 // Test Helper
 //////////////////////////////////////////////////////////
-static void s_setupConnectionLifeCycle(
-    std::shared_ptr<Aws::Iot::Mqtt5ClientBuilder> &mqtt5Builder,
-    std::promise<bool> &connectionPromise,
-    std::promise<void> &stoppedPromise,
-    const char *clientName = "Client")
-{
-    mqtt5Builder->WithClientConnectionSuccessCallback(
-        [&connectionPromise, clientName](const OnConnectionSuccessEventData &)
-        {
-            printf("[MQTT5]%s Connection Success.", clientName);
-            connectionPromise.set_value(true);
-        });
-
-    mqtt5Builder->WithClientConnectionFailureCallback(
-        [&connectionPromise, clientName](const OnConnectionFailureEventData &eventData)
-        {
-            printf("[MQTT5]%s Connection failed with error : %s", clientName, aws_error_debug_str(eventData.errorCode));
-            connectionPromise.set_value(false);
-        });
-
-    mqtt5Builder->WithClientStoppedCallback(
-        [&stoppedPromise, clientName](const OnStoppedEventData &)
-        {
-            printf("[MQTT5]%s Stopped", clientName);
-            stoppedPromise.set_value();
-        });
-}
 
 struct Mqtt5TestContext
 {
