@@ -83,16 +83,6 @@ static int s_TestMqtt5NewClientFull(Aws::Crt::Allocator *allocator, void *)
     Aws::Crt::Io::SocketOptions socketOptions;
     socketOptions.SetConnectTimeoutMs(3000);
 
-    Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
-    ASSERT_TRUE(eventLoopGroup);
-
-    Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
-    ASSERT_TRUE(defaultHostResolver);
-
-    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
-    ASSERT_TRUE(allocator);
-    clientBootstrap.EnableBlockingShutdown();
-
     // Setup will
     const Aws::Crt::String TEST_TOPIC = "test/MQTT5_Binding_CPP/s_TestMqtt5NewClientFull";
     ByteBuf will_payload = Aws::Crt::ByteBufFromCString("Will Test");
@@ -118,7 +108,7 @@ static int s_TestMqtt5NewClientFull(Aws::Crt::Allocator *allocator, void *)
         Mqtt5::JitterMode::AWS_EXPONENTIAL_BACKOFF_JITTER_FULL, 1000, 1000, 1000};
 
     mqtt5Options.WithConnectOptions(packetConnect);
-    mqtt5Options.WithBootstrap(&clientBootstrap);
+    mqtt5Options.WithBootstrap(ApiHandle::GetOrCreateStaticDefaultClientBootstrap());
     mqtt5Options.WithSocketOptions(socketOptions);
     mqtt5Options.WithSessionBehavior(Mqtt5::ClientSessionBehaviorType::AWS_MQTT5_CSBT_REJOIN_POST_SUCCESS);
     mqtt5Options.WithClientExtendedValidationAndFlowControl(
@@ -797,16 +787,6 @@ static int s_setAllClientOptions(Aws::Crt::Allocator *allocator, Mqtt5ClientOpti
     Aws::Crt::Io::SocketOptions socketOptions;
     socketOptions.SetConnectTimeoutMs(3000);
 
-    Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
-    ASSERT_TRUE(eventLoopGroup);
-
-    Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
-    ASSERT_TRUE(defaultHostResolver);
-
-    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
-    ASSERT_TRUE(allocator);
-    clientBootstrap.EnableBlockingShutdown();
-
     // Setup will
     const Aws::Crt::String TEST_TOPIC =
         "test/MQTT5_Binding_CPP/s_TestMqtt5DirectConnectionFull" + Aws::Crt::UUID().ToString();
@@ -833,7 +813,7 @@ static int s_setAllClientOptions(Aws::Crt::Allocator *allocator, Mqtt5ClientOpti
         Mqtt5::JitterMode::AWS_EXPONENTIAL_BACKOFF_JITTER_FULL, 1000, 1000, 1000};
 
     mqtt5Options.WithConnectOptions(packetConnect);
-    mqtt5Options.WithBootstrap(&clientBootstrap);
+    mqtt5Options.WithBootstrap(ApiHandle::GetOrCreateStaticDefaultClientBootstrap());
     mqtt5Options.WithSocketOptions(socketOptions);
     mqtt5Options.WithSessionBehavior(Mqtt5::ClientSessionBehaviorType::AWS_MQTT5_CSBT_REJOIN_POST_SUCCESS);
     mqtt5Options.WithClientExtendedValidationAndFlowControl(
@@ -2339,16 +2319,6 @@ static int s_TestMqtt5to3AdapterNewClientFull(Aws::Crt::Allocator *allocator, vo
     Aws::Crt::Io::SocketOptions socketOptions;
     socketOptions.SetConnectTimeoutMs(3000);
 
-    Aws::Crt::Io::EventLoopGroup eventLoopGroup(0, allocator);
-    ASSERT_TRUE(eventLoopGroup);
-
-    Aws::Crt::Io::DefaultHostResolver defaultHostResolver(eventLoopGroup, 8, 30, allocator);
-    ASSERT_TRUE(defaultHostResolver);
-
-    Aws::Crt::Io::ClientBootstrap clientBootstrap(eventLoopGroup, defaultHostResolver, allocator);
-    ASSERT_TRUE(allocator);
-    clientBootstrap.EnableBlockingShutdown();
-
     // Setup will
     const Aws::Crt::String TEST_TOPIC = "test/MQTT5_Binding_CPP/s_TestMqtt5NewClientFull";
     ByteBuf will_payload = Aws::Crt::ByteBufFromCString("Will Test");
@@ -2374,7 +2344,7 @@ static int s_TestMqtt5to3AdapterNewClientFull(Aws::Crt::Allocator *allocator, vo
         Mqtt5::JitterMode::AWS_EXPONENTIAL_BACKOFF_JITTER_FULL, 1000, 1000, 1000};
 
     mqtt5Options.WithConnectOptions(packetConnect);
-    mqtt5Options.WithBootstrap(&clientBootstrap);
+    mqtt5Options.WithBootstrap(ApiHandle::GetOrCreateStaticDefaultClientBootstrap());
     mqtt5Options.WithSocketOptions(socketOptions);
     mqtt5Options.WithSessionBehavior(Mqtt5::ClientSessionBehaviorType::AWS_MQTT5_CSBT_REJOIN_POST_SUCCESS);
     mqtt5Options.WithClientExtendedValidationAndFlowControl(
