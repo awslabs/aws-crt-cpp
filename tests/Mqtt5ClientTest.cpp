@@ -754,7 +754,7 @@ static int s_applyTunnelingProxyToClientOptions(
     const Mqtt5TestEnvVars &mqtt5TestVars,
     Mqtt5TestContext &)
 {
-    if (mqtt5TestVars.m_httpproxy_hostname->len == 0)
+    if (!mqtt5TestVars.m_httpproxy_hostname || mqtt5TestVars.m_httpproxy_hostname->len == 0)
     {
         return AWS_OP_SKIP;
     }
