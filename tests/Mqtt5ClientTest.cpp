@@ -1185,7 +1185,7 @@ static int s_TestMqtt5IncorrectWSConnect(Aws::Crt::Allocator *allocator, void *)
     Mqtt5TestContext testContext = createTestContext(
         allocator,
         MQTT5CONNECT_DIRECT_BASIC_AUTH,
-        [allocator](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &)
+        [](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &)
         {
             options.WithWebsocketHandshakeTransformCallback(
                 [](std::shared_ptr<Aws::Crt::Http::HttpRequest> req,
@@ -1993,11 +1993,10 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *)
     Mqtt5TestContext testContext3 = createTestContext(
         allocator,
         MQTT5CONNECT_DIRECT_IOT_CORE,
-        [&receivedRetainedMessage,
-         &TEST_TOPIC](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &context)
+        [&TEST_TOPIC](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &context)
         {
             options.WithPublishReceivedCallback(
-                [&receivedRetainedMessage, &TEST_TOPIC](const PublishReceivedEventData &eventData)
+                [&TEST_TOPIC](const PublishReceivedEventData &eventData)
                 {
                     String topic = eventData.publishPacket->getTopic();
                     if (topic == TEST_TOPIC)
