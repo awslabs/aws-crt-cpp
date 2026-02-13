@@ -1211,6 +1211,10 @@ static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void
     ASSERT_TRUE(mqtt5Client1->Start());
     // Client 1 is connected.
     ASSERT_TRUE(testContext1.connectionPromise.get_future().get());
+
+    // delay to reduce chance of eventual consistency issues causing the second connection to be rejected
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+
     ASSERT_TRUE(mqtt5Client2->Start());
 
     // Make sure the client2 is connected.
@@ -1250,7 +1254,7 @@ static int s_TestMqtt5NegotiatedSettingsHappy(Aws::Crt::Allocator *allocator, vo
     Mqtt5TestContext testContext = createTestContext(
         allocator,
         MQTT5CONNECT_DIRECT_IOT_CORE,
-        [allocator](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &context)
+        [&](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &context)
         {
             std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect =
                 Aws::Crt::MakeShared<Aws::Crt::Mqtt5::ConnectPacket>(allocator);
@@ -1299,7 +1303,7 @@ static int s_TestMqtt5NegotiatedSettingsFull(Aws::Crt::Allocator *allocator, voi
     Mqtt5TestContext testContext = createTestContext(
         allocator,
         MQTT5CONNECT_DIRECT_IOT_CORE,
-        [allocator, &CLIENT_ID](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &context)
+        [&](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &context)
         {
             std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect =
                 Aws::Crt::MakeShared<Aws::Crt::Mqtt5::ConnectPacket>(allocator);
@@ -1355,7 +1359,7 @@ static int s_TestMqtt5NegotiatedSettingsLimit(Aws::Crt::Allocator *allocator, vo
     Mqtt5TestContext testContext = createTestContext(
         allocator,
         MQTT5CONNECT_DIRECT_IOT_CORE,
-        [allocator](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &context)
+        [&](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &context)
         {
             std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect =
                 Aws::Crt::MakeShared<Aws::Crt::Mqtt5::ConnectPacket>(allocator);
