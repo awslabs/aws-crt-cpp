@@ -1444,6 +1444,9 @@ static int s_TestMqtt5NegotiatedSettingsRejoinAlways(Aws::Crt::Allocator *alloca
     ASSERT_TRUE(mqtt5Client1->Stop());
     testContext1.stoppedPromise.get_future().get();
 
+    // avoid eventual consistency issues with the follow-up connection (sometimes gets rejected)
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+
     Mqtt5TestContext testContext2 = createTestContext(
         allocator,
         MQTT5CONNECT_DIRECT_IOT_CORE,
