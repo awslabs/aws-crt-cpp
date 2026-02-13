@@ -1222,6 +1222,8 @@ static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void
     // Client 1 is connected.
     ASSERT_TRUE(testContext1.connectionPromise.get_future().get());
 
+    testContext1.connectionPromise = std::promise<bool>{};
+
     // delay to reduce chance of eventual consistency issues causing the second connection to be rejected
     std::this_thread::sleep_for(std::chrono::seconds(3));
 
