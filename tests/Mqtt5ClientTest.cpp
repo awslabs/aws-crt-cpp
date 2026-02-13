@@ -2455,11 +2455,15 @@ static int s_TestMqtt5to3AdapterWSConnectionMinimalThroughMqtt3(Aws::Crt::Alloca
         Mqtt::MqttConnection::NewConnectionFromMqtt5Client(mqtt5Client);
     ASSERT_TRUE(mqttConnection);
 
-    mqttConnection->WebsocketInterceptor = [&config, &mqtt311Signing](
-                                               std::shared_ptr<Aws::Crt::Http::HttpRequest> req,
+    mqttConnection->WebsocketInterceptor = [&](std::shared_ptr<Aws::Crt::Http::HttpRequest> req,
                                                const Aws::Crt::Mqtt::OnWebSocketHandshakeInterceptComplete &onComplete)
     {
-        onComplete(req, AWS_ERROR_SUCCESS);
+        auto signingComplete = [onComplete](const std::shared_ptr<Aws::Crt::Http::HttpRequest> &req1, int errorCode)
+        { onComplete(req1, errorCode); };
+
+        auto signerConfig = config.CreateSigningConfigCb();
+
+        config.Signer->SignRequest(req, *signerConfig, signingComplete);
         mqtt311Signing.set_value();
     };
 
