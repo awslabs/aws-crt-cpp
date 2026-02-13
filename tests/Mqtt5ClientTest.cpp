@@ -1172,16 +1172,25 @@ static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void
     std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect =
         Aws::Crt::MakeShared<Aws::Crt::Mqtt5::ConnectPacket>(allocator);
     packetConnect->WithClientId("TestMqtt5DoubleClientIDFailure" + Aws::Crt::UUID().ToString());
-    std::promise<void> disconnectPromise;
+
+    // using a promise here is problematic due to multi-completion being a crash in C++
+    bool disconnected = false;
+    std::mutex disconnectedLock;
+    std::condition_variable disconnectedSignal;
 
     Mqtt5TestContext testContext1 = createTestContext(
         allocator,
         MQTT5CONNECT_DIRECT_IOT_CORE,
-        [packetConnect, &disconnectPromise](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &)
+        [&](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &)
         {
             options.WithConnectOptions(packetConnect);
-            options.WithClientDisconnectionCallback([&disconnectPromise](const OnDisconnectionEventData &)
-                                                    { disconnectPromise.set_value(); });
+            options.WithClientDisconnectionCallback(
+                [&](const OnDisconnectionEventData &)
+                {
+                    std::lock_guard<std::mutex> lock(disconnectedLock);
+                    disconnected = true;
+                    disconnectedSignal.notify_one();
+                });
 
             return AWS_OP_SUCCESS;
         });
@@ -1222,9 +1231,10 @@ static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void
     ASSERT_TRUE(testContext2.connectionPromise.get_future().get());
 
     // Client 1 should get diconnected.
-    disconnectPromise.get_future().get();
-    // reset the promise so it would not get confused when we stop the client;
-    disconnectPromise = std::promise<void>();
+    {
+        std::unique_lock<std::mutex> lock(disconnectedLock);
+        disconnectedSignal.wait(lock, [&]() { return disconnected; });
+    }
 
     ASSERT_TRUE(mqtt5Client2->Stop());
     testContext2.stoppedPromise.get_future().get();
