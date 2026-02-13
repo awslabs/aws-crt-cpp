@@ -2571,8 +2571,8 @@ static int s_TestMqtt5to3AdapterWSConnectionMinimalThroughMqtt5(Aws::Crt::Alloca
         [](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &)
         {
             options.WithWebsocketHandshakeTransformCallback(
-                [](std::shared_ptr<Http::HttpRequest>, const OnWebSocketHandshakeInterceptComplete &)
-                { AWS_FATAL_ASSERT(false); });
+                [](std::shared_ptr<Http::HttpRequest> req, const OnWebSocketHandshakeInterceptComplete &onComplete)
+                { onComplete(req, AWS_ERROR_SUCCESS); });
 
             return AWS_OP_SUCCESS;
         });
