@@ -13,8 +13,8 @@
 #include <aws/testing/aws_test_harness.h>
 
 #include <atomic>
-#include <utility>
 #include <thread>
+#include <utility>
 
 using namespace Aws::Crt;
 using namespace Aws::Crt::Mqtt5;
