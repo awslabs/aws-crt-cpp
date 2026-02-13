@@ -1516,7 +1516,7 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
         allocator,
         MQTT5CONNECT_DIRECT_IOT_CORE,
         [&receivedLock, &receivedCount, &receivedSignal, &TEST_TOPIC](
-            Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &context)
+            Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &)
         {
             options.WithPublishReceivedCallback(
                 [&receivedLock, &receivedCount, &receivedSignal, &TEST_TOPIC](const PublishReceivedEventData &eventData)
@@ -1551,8 +1551,7 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
         Aws::Crt::MakeShared<Mqtt5::SubscribePacket>(allocator, allocator);
     subscribe->WithSubscription(std::move(subscription));
     ASSERT_TRUE(mqtt5Client->Subscribe(
-        subscribe,
-        [&subscribed](int errorCode, std::shared_ptr<SubAckPacket> suback) { subscribed.set_value(suback); }));
+        subscribe, [&subscribed](int, std::shared_ptr<SubAckPacket> suback) { subscribed.set_value(suback); }));
     const auto &suback = subscribed.get_future().get();
     ASSERT_NOT_NULL(suback.get());
 
@@ -1574,9 +1573,7 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
         Aws::Crt::MakeShared<Mqtt5::UnsubscribePacket>(allocator, allocator);
     unsub->WithTopicFilters(topics);
     ASSERT_TRUE(mqtt5Client->Unsubscribe(
-        unsub,
-        [&unsubscribed](int errorCode, std::shared_ptr<UnSubAckPacket> unsuback)
-        { unsubscribed.set_value(unsuback); }));
+        unsub, [&unsubscribed](int, std::shared_ptr<UnSubAckPacket> unsuback) { unsubscribed.set_value(unsuback); }));
     unsubscribed.get_future().get();
 
     /* Publish message2 to test topic */
@@ -1613,7 +1610,7 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *)
         allocator,
         MQTT5CONNECT_DIRECT_IOT_CORE,
         [&receivedLock, &receivedWill, &receivedSignal, &TEST_TOPIC](
-            Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &context)
+            Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &)
         {
             options.WithPublishReceivedCallback(
                 [&receivedLock, &receivedWill, &receivedSignal, &TEST_TOPIC](const PublishReceivedEventData &eventData)
@@ -1854,8 +1851,7 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *)
     Mqtt5TestContext subscriberContext = createTestContext(
         allocator,
         MQTT5CONNECT_DIRECT_IOT_CORE,
-        [&receivedMessages,
-         &TEST_TOPIC](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &context)
+        [&receivedMessages, &TEST_TOPIC](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &)
         {
             options.WithPublishReceivedCallback(
                 [&receivedMessages, &TEST_TOPIC](const PublishReceivedEventData &eventData)
@@ -1964,7 +1960,7 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *)
         allocator,
         MQTT5CONNECT_DIRECT_IOT_CORE,
         [&receivedRetainedMessage,
-         &TEST_TOPIC](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &context)
+         &TEST_TOPIC](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &)
         {
             options.WithPublishReceivedCallback(
                 [&receivedRetainedMessage, &TEST_TOPIC](const PublishReceivedEventData &eventData)
@@ -1989,7 +1985,7 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *)
     Mqtt5TestContext testContext3 = createTestContext(
         allocator,
         MQTT5CONNECT_DIRECT_IOT_CORE,
-        [&TEST_TOPIC](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &context)
+        [&TEST_TOPIC](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &)
         {
             options.WithPublishReceivedCallback(
                 [&TEST_TOPIC](const PublishReceivedEventData &eventData)
@@ -2041,7 +2037,7 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *)
     clearRetainPacket->WithTopic(TEST_TOPIC).WithRetain(true);
     ASSERT_TRUE(mqtt5Client1->Publish(
         clearRetainPacket,
-        [&retainCleared](int errorCode, std::shared_ptr<PublishResult> result)
+        [&retainCleared](int errorCode, std::shared_ptr<PublishResult>)
         {
             if (errorCode == AWS_ERROR_SUCCESS)
             {
@@ -2428,7 +2424,7 @@ static int s_TestMqtt5to3AdapterWSConnectionMinimalThroughMqtt3(Aws::Crt::Alloca
     Mqtt5TestContext testContext = createTestContext(
         allocator,
         MQTT5CONNECT_WS_IOT_CORE,
-        [](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &context)
+        [](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &)
         {
             options.WithWebsocketHandshakeTransformCallback(
                 [](std::shared_ptr<Http::HttpRequest>, const OnWebSocketHandshakeInterceptComplete &)
@@ -2572,7 +2568,7 @@ static int s_TestMqtt5to3AdapterWSConnectionMinimalThroughMqtt5(Aws::Crt::Alloca
     Mqtt5TestContext testContext = createTestContext(
         allocator,
         MQTT5CONNECT_WS,
-        [](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &context)
+        [](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &)
         {
             options.WithWebsocketHandshakeTransformCallback(
                 [](std::shared_ptr<Http::HttpRequest>, const OnWebSocketHandshakeInterceptComplete &)
@@ -2715,16 +2711,16 @@ static int s_TestMqtt5to3AdapterOperations(Aws::Crt::Allocator *allocator, void 
     ASSERT_TRUE(mqtt5Client->Start());
     ASSERT_TRUE(testContext.connectionPromise.get_future().get());
 
-    auto onMessage = [&](Mqtt::MqttConnection &, const String &topic, const ByteBuf &payload, bool, Mqtt::QOS, bool)
+    auto onMessage = [&](Mqtt::MqttConnection &, const String &, const ByteBuf &, bool, Mqtt::QOS, bool)
     {
         std::lock_guard<std::mutex> lock(mutex);
         ++received;
         cv.notify_one();
     };
-    auto onSubAck = [&](Mqtt::MqttConnection &, uint16_t packetId, const Aws::Crt::String &topic, Mqtt::QOS qos, int)
+    auto onSubAck = [&](Mqtt::MqttConnection &, uint16_t, const Aws::Crt::String &, Mqtt::QOS, int)
     { subscribed.set_value(); };
-    auto onPubAck = [&](Mqtt::MqttConnection &, uint16_t packetId, int) { published.set_value(); };
-    auto onUnsubAck = [&](Mqtt::MqttConnection &, uint16_t packetId, int) { unsubscribed.set_value(); };
+    auto onPubAck = [&](Mqtt::MqttConnection &, uint16_t, int) { published.set_value(); };
+    auto onUnsubAck = [&](Mqtt::MqttConnection &, uint16_t, int) { unsubscribed.set_value(); };
 
     mqttConnection->Subscribe(
         testTopic.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, std::move(onMessage), std::move(onSubAck));
@@ -2838,7 +2834,7 @@ static int s_TestMqtt5to3AdapterMultipleAdapters(Aws::Crt::Allocator *allocator,
     std::promise<void> published;
     ByteBuf testPayload = Aws::Crt::ByteBufFromCString("PUBLISH ME!");
 
-    auto onMessage1 = [&](Mqtt::MqttConnection &, const String &topic, const ByteBuf &payload, bool, Mqtt::QOS, bool)
+    auto onMessage1 = [&](Mqtt::MqttConnection &, const String &, const ByteBuf &, bool, Mqtt::QOS, bool)
     {
         {
             std::lock_guard<std::mutex> lock(mutex);
@@ -2847,10 +2843,10 @@ static int s_TestMqtt5to3AdapterMultipleAdapters(Aws::Crt::Allocator *allocator,
         }
     };
 
-    auto onSubAck1 = [&](Mqtt::MqttConnection &, uint16_t packetId, const Aws::Crt::String &topic, Mqtt::QOS qos, int)
+    auto onSubAck1 = [&](Mqtt::MqttConnection &, uint16_t, const Aws::Crt::String &, Mqtt::QOS, int)
     { subscribed1.set_value(); };
 
-    auto onMessage2 = [&](Mqtt::MqttConnection &, const String &topic, const ByteBuf &payload, bool, Mqtt::QOS, bool)
+    auto onMessage2 = [&](Mqtt::MqttConnection &, const String &, const ByteBuf &, bool, Mqtt::QOS, bool)
     {
         {
             std::lock_guard<std::mutex> lock(mutex);
@@ -2859,7 +2855,7 @@ static int s_TestMqtt5to3AdapterMultipleAdapters(Aws::Crt::Allocator *allocator,
         }
     };
 
-    auto onSubAck2 = [&](Mqtt::MqttConnection &, uint16_t packetId, const Aws::Crt::String &topic, Mqtt::QOS qos, int)
+    auto onSubAck2 = [&](Mqtt::MqttConnection &, uint16_t, const Aws::Crt::String &, Mqtt::QOS, int)
     { subscribed2.set_value(); };
 
     ASSERT_TRUE(mqtt5Client->Start());
@@ -2871,7 +2867,7 @@ static int s_TestMqtt5to3AdapterMultipleAdapters(Aws::Crt::Allocator *allocator,
     mqttConnection2->Subscribe(testTopic2.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, onMessage2, onSubAck2);
     subscribed2.get_future().get();
 
-    auto onPubAck = [&](Mqtt::MqttConnection &, uint16_t packetId, int) { published.set_value(); };
+    auto onPubAck = [&](Mqtt::MqttConnection &, uint16_t, int) { published.set_value(); };
 
     // Publish to testTopic1
     mqttConnection1->Publish(testTopic1.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, testPayload, onPubAck);
