@@ -14,6 +14,7 @@
 
 #include <atomic>
 #include <utility>
+#include <thread>
 
 using namespace Aws::Crt;
 using namespace Aws::Crt::Mqtt5;
