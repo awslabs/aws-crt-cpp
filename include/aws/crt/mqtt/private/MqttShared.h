@@ -26,7 +26,7 @@ namespace Aws
 
                 IoTDeviceSDKMetrics() { LibraryName = "IoTDeviceSDK/CPP"; }
 
-                void initializeRawOptions(aws_mqtt_iot_sdk_metrics &raw_options) noexcept
+                void initializeRawOptions(aws_mqtt_iot_metrics &raw_options) noexcept
                 {
                     raw_options.library_name = ByteCursorFromString(LibraryName);
                 }

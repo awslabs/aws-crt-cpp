@@ -849,7 +849,7 @@ namespace Aws
                 Crt::Allocator *m_allocator;
                 aws_http_proxy_options m_httpProxyOptionsStorage;
                 aws_mqtt5_packet_connect_view m_packetConnectViewStorage;
-                struct aws_mqtt_iot_sdk_metrics m_metricsStorage;
+                struct aws_mqtt_iot_metrics m_metricsStorage;
             };
 
         } // namespace Mqtt5
