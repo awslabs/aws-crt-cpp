@@ -250,11 +250,11 @@ namespace Aws
                 auto impl = static_cast<AsyncInputStream *>(stream->impl);
                 auto future = aws_future_bool_new(impl->m_allocator);
 
-                std::future<bool> cppFuture = impl->ReadImpl(*dest);
+                std::shared_future<bool> cppFuture = impl->ReadImpl(*dest).share();
 
                 aws_future_bool_acquire(future);
                 std::thread(
-                    [future, cppFuture = std::move(cppFuture)]() mutable
+                    [future, cppFuture]()
                     {
                         bool result = cppFuture.get();
                         aws_future_bool_set_result(future, result);
