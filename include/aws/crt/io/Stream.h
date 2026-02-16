@@ -10,6 +10,7 @@
 #include <aws/io/async_stream.h>
 #include <aws/io/stream.h>
 
+#include <future>
 #include <functional>
 
 namespace Aws
