@@ -10,7 +10,7 @@
 #include <aws/io/async_stream.h>
 #include <aws/io/stream.h>
 
-#include <future>
+#include <functional>
 
 namespace Aws
 {
@@ -226,9 +226,9 @@ namespace Aws
 
                 /**
                  * Asynchronously read into buffer.
-                 * @return future<bool> - true on success (including EOF/no data available), false on error
+                 * Call onComplete(true) on success (including EOF), or onComplete(false) on error.
                  */
-                virtual std::future<bool> ReadImpl(ByteBuf &buffer) noexcept = 0;
+                virtual void ReadImpl(ByteBuf &buffer, std::function<void(bool)> onComplete) noexcept = 0;
 
               private:
                 static void s_Destroy(aws_async_input_stream *stream);

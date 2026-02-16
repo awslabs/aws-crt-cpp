@@ -6,7 +6,6 @@
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/io/Stream.h>
 #include <iostream>
-#include <thread>
 
 #include <aws/io/future.h>
 #include <aws/io/stream.h>
@@ -250,17 +249,11 @@ namespace Aws
                 auto impl = static_cast<AsyncInputStream *>(stream->impl);
                 auto future = aws_future_bool_new(impl->m_allocator);
 
-                std::shared_future<bool> cppFuture = impl->ReadImpl(*dest).share();
-
                 aws_future_bool_acquire(future);
-                std::thread(
-                    [future, cppFuture]()
-                    {
-                        bool result = cppFuture.get();
-                        aws_future_bool_set_result(future, result);
-                        aws_future_bool_release(future);
-                    })
-                    .detach();
+                impl->ReadImpl(*dest, [future](bool result) {
+                    aws_future_bool_set_result(future, result);
+                    aws_future_bool_release(future);
+                });
 
                 return future;
             }
