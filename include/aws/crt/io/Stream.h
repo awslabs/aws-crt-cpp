@@ -7,7 +7,11 @@
 #include <aws/crt/Exports.h>
 #include <aws/crt/RefCounted.h>
 #include <aws/crt/Types.h>
+#include <aws/io/async_stream.h>
 #include <aws/io/stream.h>
+
+#include <future>
+#include <functional>
 
 namespace Aws
 {
@@ -192,6 +196,48 @@ namespace Aws
               private:
                 std::shared_ptr<Aws::Crt::Io::IStream> m_stream;
             };
+
+            /**
+             * Interface for asynchronous input streams.
+             * Used for async HTTP request bodies.
+             */
+            class AWS_CRT_CPP_API AsyncInputStream : public std::enable_shared_from_this<AsyncInputStream>,
+                                                     public RefCounted<AsyncInputStream>
+            {
+              public:
+                virtual ~AsyncInputStream();
+
+                AsyncInputStream(const AsyncInputStream &) = delete;
+                AsyncInputStream &operator=(const AsyncInputStream &) = delete;
+                AsyncInputStream(AsyncInputStream &&) = delete;
+                AsyncInputStream &operator=(AsyncInputStream &&) = delete;
+
+                explicit operator bool() const noexcept { return IsValid(); }
+
+                virtual bool IsValid() const noexcept = 0;
+
+                /// @private
+                aws_async_input_stream *GetUnderlyingStream() noexcept { return &m_underlying_stream; }
+
+              protected:
+                Allocator *m_allocator;
+                aws_async_input_stream m_underlying_stream;
+
+                AsyncInputStream(Aws::Crt::Allocator *allocator = ApiAllocator());
+
+                /**
+                 * Asynchronously read into buffer.
+                 * Call onComplete(true) on success (including EOF), or onComplete(false) on error.
+                 */
+                virtual void ReadImpl(ByteBuf &buffer, std::function<void(bool)> onComplete) noexcept = 0;
+
+              private:
+                static void s_Destroy(aws_async_input_stream *stream);
+                static aws_future_bool *s_Read(aws_async_input_stream *stream, aws_byte_buf *dest);
+
+                static aws_async_input_stream_vtable s_vtable;
+            };
+
         } // namespace Io
     } // namespace Crt
 } // namespace Aws

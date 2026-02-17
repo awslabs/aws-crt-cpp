@@ -61,6 +61,13 @@ namespace Aws
                 bool SetBody(const std::shared_ptr<Aws::Crt::Io::InputStream> &body) noexcept;
 
                 /**
+                 * Sets an async input stream as the message body
+                 * @param body the async input stream representing the message body
+                 * @return future<bool> indicating success/failure
+                 */
+                std::future<bool> SetBody(const std::shared_ptr<Aws::Crt::Io::AsyncInputStream> &body) noexcept;
+
+                /**
                  * Gets the number of headers contained in this request
                  * @return the number of headers contained in this request
                  */
@@ -101,6 +108,7 @@ namespace Aws
                 Allocator *m_allocator;
                 struct aws_http_message *m_message;
                 std::shared_ptr<Aws::Crt::Io::InputStream> m_bodyStream;
+                std::shared_ptr<Aws::Crt::Io::AsyncInputStream> m_asyncBodyStream;
             };
 
             /**
