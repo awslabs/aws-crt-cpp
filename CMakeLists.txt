@@ -297,6 +297,9 @@ endif()
 
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD ${CMAKE_CXX_STANDARD})
+set_target_properties(${PROJECT_NAME} PROPERTIES VERSION 0.0.0)
+set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0)
+
 
 # Hide symbols by default
 # Except where it causes problems, and the situation is weird enough that it's not worth investigating further.
