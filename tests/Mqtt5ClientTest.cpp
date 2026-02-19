@@ -530,6 +530,7 @@ static int s_TestMqtt5DirectConnectionWithBasicAuth(Aws::Crt::Allocator *allocat
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
     mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string);
     mqtt5Options.WithPort(mqtt5TestVars.m_port_value);
+    mqtt5Options.WithMetricsCollection(false);
 
     std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect =
         Aws::Crt::MakeShared<Aws::Crt::Mqtt5::ConnectPacket>(allocator);
@@ -852,6 +853,7 @@ static int s_TestMqtt5WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, 
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
     mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string);
     mqtt5Options.WithPort(mqtt5TestVars.m_port_value);
+    mqtt5Options.WithMetricsCollection(false);
 
     std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect =
         Aws::Crt::MakeShared<Aws::Crt::Mqtt5::ConnectPacket>(allocator);
