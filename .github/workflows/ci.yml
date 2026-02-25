@@ -117,7 +117,7 @@ jobs:
       with:
         submodules: recursive
     - name: Install latest clang from LLVM
-      run: .github/scripts/install-latest-llvm.sh
+      run: bash .github/scripts/install-latest-llvm.sh
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         echo "Building with $CC and $CXX"
