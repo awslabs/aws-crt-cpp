@@ -438,12 +438,28 @@ jobs:
         submodules: recursive
     - name: Install latest clang from LLVM
       run: |
-        wget https://apt.llvm.org/llvm.sh
+        # Get the latest LLVM version available from apt.llvm.org
+        # Parse the llvm.sh script to find CURRENT_LLVM_STABLE, then check for higher versions
+        wget -q https://apt.llvm.org/llvm.sh
         chmod +x llvm.sh
-        sudo ./llvm.sh all
-        # Find the latest installed clang version
-        LATEST_CLANG=$(ls /usr/bin/clang-* 2>/dev/null | grep -oP 'clang-\K[0-9]+' | sort -n | tail -1)
-        echo "Latest clang version: $LATEST_CLANG"
+        
+        # Get the codename for the current Ubuntu version
+        CODENAME=$(lsb_release -cs)
+        
+        # Find the latest available clang version by checking the LLVM apt repository
+        # The repository lists packages like clang-18, clang-19, clang-20, etc.
+        LATEST_CLANG=$(curl -s https://apt.llvm.org/${CODENAME}/ | grep -oP 'clang-\K[0-9]+' | sort -n | uniq | tail -1)
+        
+        # If we couldn't find it from the index, fall back to checking the script's default
+        if [ -z "$LATEST_CLANG" ]; then
+          LATEST_CLANG=$(grep -oP 'CURRENT_LLVM_STABLE=\K[0-9]+' llvm.sh | head -1)
+        fi
+        
+        echo "Latest clang version available: $LATEST_CLANG"
+        
+        # Install the latest version
+        sudo ./llvm.sh $LATEST_CLANG all
+        
         echo "CC=clang-$LATEST_CLANG" >> $GITHUB_ENV
         echo "CXX=clang++-$LATEST_CLANG" >> $GITHUB_ENV
     - name: Build ${{ env.PACKAGE_NAME }}
