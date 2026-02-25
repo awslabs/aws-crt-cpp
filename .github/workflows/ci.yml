@@ -439,25 +439,42 @@ jobs:
     - name: Install latest clang from LLVM
       run: |
         # Get the latest LLVM version available from apt.llvm.org
+        # LLVM provides three branches: stable, qualification (RC), and development
+        # We prefer qualification branch, falling back to stable if not available
         wget -q https://apt.llvm.org/llvm.sh
         chmod +x llvm.sh
         
-        # Find the latest available clang version by checking the LLVM apt repository main page
-        # The page lists llvm-toolchain packages for each version (e.g., llvm-toolchain-noble-20, llvm-toolchain-noble-21)
-        LATEST_CLANG=$(curl -s --compressed https://apt.llvm.org/ | grep -o 'llvm-toolchain-[a-z]*-[0-9]*' | sed 's/llvm-toolchain-[a-z]*-//' | sort -n | uniq | tail -1)
+        # Get the Ubuntu codename
+        CODENAME=$(lsb_release -cs)
         
-        # If we couldn't find it from the main page, fall back to checking the script's default
-        if [ -z "$LATEST_CLANG" ]; then
-          LATEST_CLANG=$(grep 'CURRENT_LLVM_STABLE=' llvm.sh | head -1 | sed 's/.*CURRENT_LLVM_STABLE=//')
+        # Parse the LLVM apt page to find available versions
+        # The page states which versions are available (e.g., "currently 20, 21 and 22")
+        # and lists llvm-toolchain-<codename>-<version> packages
+        AVAILABLE_VERSIONS=$(curl -s --compressed https://apt.llvm.org/ | grep -o "llvm-toolchain-${CODENAME}-[0-9]*" | sed "s/llvm-toolchain-${CODENAME}-//" | sort -n | uniq)
+        
+        echo "Available LLVM versions for ${CODENAME}: ${AVAILABLE_VERSIONS}"
+        
+        # Get the stable version from the llvm.sh script
+        STABLE_VERSION=$(grep 'CURRENT_LLVM_STABLE=' llvm.sh | head -1 | sed 's/.*CURRENT_LLVM_STABLE=//')
+        echo "Stable version: ${STABLE_VERSION}"
+        
+        # Find the qualification version (one above stable) if available
+        QUALIFICATION_VERSION=$((STABLE_VERSION + 1))
+        
+        # Check if qualification version is available, otherwise use stable
+        if echo "$AVAILABLE_VERSIONS" | grep -q "^${QUALIFICATION_VERSION}$"; then
+          CLANG_VERSION=$QUALIFICATION_VERSION
+          echo "Using qualification/RC branch: clang-${CLANG_VERSION}"
+        else
+          CLANG_VERSION=$STABLE_VERSION
+          echo "Qualification branch not available, using stable branch: clang-${CLANG_VERSION}"
         fi
         
-        echo "Latest clang version available: $LATEST_CLANG"
+        # Install the selected version with all tools
+        sudo ./llvm.sh $CLANG_VERSION all
         
-        # Install the latest version with all tools
-        sudo ./llvm.sh $LATEST_CLANG all
-        
-        echo "CC=clang-$LATEST_CLANG" >> $GITHUB_ENV
-        echo "CXX=clang++-$LATEST_CLANG" >> $GITHUB_ENV
+        echo "CC=clang-$CLANG_VERSION" >> $GITHUB_ENV
+        echo "CXX=clang++-$CLANG_VERSION" >> $GITHUB_ENV
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         echo "Building with $CC and $CXX"
