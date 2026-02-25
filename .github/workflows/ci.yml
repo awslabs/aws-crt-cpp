@@ -439,25 +439,21 @@ jobs:
     - name: Install latest clang from LLVM
       run: |
         # Get the latest LLVM version available from apt.llvm.org
-        # Parse the llvm.sh script to find CURRENT_LLVM_STABLE, then check for higher versions
         wget -q https://apt.llvm.org/llvm.sh
         chmod +x llvm.sh
         
-        # Get the codename for the current Ubuntu version
-        CODENAME=$(lsb_release -cs)
+        # Find the latest available clang version by checking the LLVM apt repository main page
+        # The page lists llvm-toolchain packages for each version (e.g., llvm-toolchain-noble-20, llvm-toolchain-noble-21)
+        LATEST_CLANG=$(curl -s --compressed https://apt.llvm.org/ | grep -o 'llvm-toolchain-[a-z]*-[0-9]*' | sed 's/llvm-toolchain-[a-z]*-//' | sort -n | uniq | tail -1)
         
-        # Find the latest available clang version by checking the LLVM apt repository
-        # The repository lists packages like clang-18, clang-19, clang-20, etc.
-        LATEST_CLANG=$(curl -s https://apt.llvm.org/${CODENAME}/ | grep -oP 'clang-\K[0-9]+' | sort -n | uniq | tail -1)
-        
-        # If we couldn't find it from the index, fall back to checking the script's default
+        # If we couldn't find it from the main page, fall back to checking the script's default
         if [ -z "$LATEST_CLANG" ]; then
-          LATEST_CLANG=$(grep -oP 'CURRENT_LLVM_STABLE=\K[0-9]+' llvm.sh | head -1)
+          LATEST_CLANG=$(grep 'CURRENT_LLVM_STABLE=' llvm.sh | head -1 | sed 's/.*CURRENT_LLVM_STABLE=//')
         fi
         
         echo "Latest clang version available: $LATEST_CLANG"
         
-        # Install the latest version
+        # Install the latest version with all tools
         sudo ./llvm.sh $LATEST_CLANG all
         
         echo "CC=clang-$LATEST_CLANG" >> $GITHUB_ENV
