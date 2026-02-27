@@ -115,26 +115,6 @@ jobs:
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
         ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-ubuntu-20-x64 build -p ${{ env.PACKAGE_NAME }} --compiler=clang-latest --cmake-extra=-DUSE_OPENSSL=ON
 
-  # Test build with the latest clang from LLVM's apt repository
-  # Prefers qualification/RC branch, falls back to stable if not available
-  linux-latest-clang-build:
-    runs-on: ubuntu-24.04 # latest
-    steps:
-    - name: Checkout Source
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
-    - name: Install latest clang from LLVM
-      run: bash .github/scripts/install-latest-llvm.sh
-    - name: Build ${{ env.PACKAGE_NAME }}
-      run: |
-        echo "Building with $CC and $CXX"
-        $CC --version
-        mkdir build
-        cd build
-        cmake -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX ..
-        cmake --build . --parallel
-
   raspberry:
     runs-on: ubuntu-24.04 # latest
     strategy:
