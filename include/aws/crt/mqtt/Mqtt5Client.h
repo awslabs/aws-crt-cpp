@@ -689,7 +689,7 @@ namespace Aws
                 Mqtt5ClientOptions &WithPublishReceivedCallback(OnPublishReceivedHandler callback) noexcept;
 
                 /**
-                 * Enable AWS IoT metrics, if not set, default to enabled.
+                 * Enable AWS IoT metrics. Default to enabled.
                  *
                  * @param enabled enable AWS IoT metrics to collect SDK usage data
                  * @return this option object

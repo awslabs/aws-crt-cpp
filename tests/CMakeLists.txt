@@ -217,6 +217,7 @@ if(NOT BYO_CRYPTO)
     # MQTT5 TESTS
     add_net_test_case(Mqtt5DirectConnectionMinimal)
     add_net_test_case(Mqtt5DirectConnectionWithBasicAuth)
+    add_net_test_case(Mqtt5DirectConnectionWithMetricsCollection)
     add_net_test_case(Mqtt5DirectConnectionWithTLS)
     add_net_test_case(Mqtt5DirectConnectionWithMutualTLS)
     add_net_test_case(Mqtt5DirectConnectionWithHttpProxy)
