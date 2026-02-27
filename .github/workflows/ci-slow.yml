@@ -1,0 +1,49 @@
+name: CI Slow
+
+on:
+  push:
+    branches-ignore:
+      - 'main'
+      - 'docs'
+
+env:
+  BUILDER_VERSION: v0.9.76
+  BUILDER_SOURCE: releases
+  BUILDER_HOST: https://d19elf31gohf1l.cloudfront.net
+  PACKAGE_NAME: aws-crt-cpp
+  LINUX_BASE_IMAGE: ubuntu-18-x64
+  RUN: ${{ github.run_id }}-${{ github.run_number }}
+  CRT_CI_ROLE: ${{ secrets.CRT_CI_ROLE_ARN }}
+  AWS_DEFAULT_REGION: us-east-1
+
+permissions:
+  id-token: write # This is required for requesting the JWT
+
+# cancel in-progress builds after a new commit
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Slow Alpine ARM builds that require QEMU emulation
+  linux-compat-alpine-arm:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - alpine-3.16-armv6
+          - alpine-3.16-armv7
+          - alpine-3.16-arm64
+    steps:
+    - uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ env.CRT_CI_ROLE }}
+        aws-region: ${{ env.AWS_DEFAULT_REGION }}
+        role-duration-seconds: 7200 # 2 hours
+    - name: Install qemu/docker
+      run: docker run --privileged --rm tonistiigi/binfmt --install all
+    - name: Build ${{ env.PACKAGE_NAME }}
+      run: |
+        aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ matrix.image }} build -p ${{ env.PACKAGE_NAME }}
