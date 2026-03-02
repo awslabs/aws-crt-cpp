@@ -257,6 +257,75 @@ static int s_TestMqtt311DirectConnectionWithBasicAuth(Aws::Crt::Allocator *alloc
 AWS_TEST_CASE(Mqtt311DirectConnectionWithBasicAuth, s_TestMqtt311DirectConnectionWithBasicAuth)
 
 /*
+ * [ConnDC-UC2-B] Direct connection with basic authentication and metrics collection
+ * This test verifies that WithMetricsCollection works properly by testing both enabled and disabled states.
+ */
+static int s_TestMqtt311DirectConnectionWithMetricsCollection(Aws::Crt::Allocator *allocator, void *)
+{
+    struct aws_string *endpoint = NULL;
+    struct aws_string *port = NULL;
+    struct aws_string *username = NULL;
+    struct aws_string *password = NULL;
+
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_direct_basicauth_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_direct_basicauth_port, &port);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_basicauth_username, &username);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_basicauth_password, &password);
+    if (error != AWS_OP_SUCCESS)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        aws_string_destroy(endpoint);
+        aws_string_destroy(port);
+        aws_string_destroy(username);
+        aws_string_destroy(password);
+        return AWS_OP_SKIP;
+    }
+
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
+    // Part 1: Connection with metrics collection ENABLED (explicit)
+    {
+        Aws::Crt::Mqtt::MqttClient client;
+        Aws::Crt::Io::SocketOptions socketOptions;
+        socketOptions.SetConnectTimeoutMs(3000);
+        std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
+            aws_string_c_str(endpoint),
+            (uint32_t)std::stoi(aws_string_c_str(port)),
+            socketOptions,
+            false,
+            true); // enableMetrics = true
+        connection->SetLogin(aws_string_c_str(username), aws_string_c_str(password));
+        int connectResult = s_ConnectAndDisconnect(connection);
+        ASSERT_FAILS(connectResult);
+        printf("[MQTT311] Test with metrics collection ENABLED passed.\n");
+    }
+
+    // Part 2: Connection with metrics collection DISABLED (explicit)
+    {
+        Aws::Crt::Mqtt::MqttClient client;
+        Aws::Crt::Io::SocketOptions socketOptions;
+        socketOptions.SetConnectTimeoutMs(3000);
+        std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
+            aws_string_c_str(endpoint),
+            (uint32_t)std::stoi(aws_string_c_str(port)),
+            socketOptions,
+            false,
+            false); // enableMetrics = false
+        connection->SetLogin(aws_string_c_str(username), aws_string_c_str(password));
+        int connectResult = s_ConnectAndDisconnect(connection);
+        ASSERT_SUCCESS(connectResult);
+        printf("[MQTT311] Test with metrics collection DISABLED passed.\n");
+    }
+
+    aws_string_destroy(endpoint);
+    aws_string_destroy(port);
+    aws_string_destroy(username);
+    aws_string_destroy(password);
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt311DirectConnectionWithMetricsCollection, s_TestMqtt311DirectConnectionWithMetricsCollection)
+
+/*
  * [ConnDC-UC3] Direct connection with TLS
  */
 static int s_TestMqtt311DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, void *)

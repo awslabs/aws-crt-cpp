@@ -555,7 +555,7 @@ static int s_TestMqtt5DirectConnectionWithBasicAuth(Aws::Crt::Allocator *allocat
 AWS_TEST_CASE(Mqtt5DirectConnectionWithBasicAuth, s_TestMqtt5DirectConnectionWithBasicAuth)
 
 /*
- * [ConnDC-UC2a] Direct connection with basic authentication and metrics collection enabled
+ * [ConnDC-UC2-B] Direct connection with basic authentication and metrics collection enabled
  * This test verifies that WithMetricsCollection works properly by testing both enabled and disabled states.
  */
 static int s_TestMqtt5DirectConnectionWithMetricsCollection(Aws::Crt::Allocator *allocator, void *)
