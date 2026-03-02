@@ -629,7 +629,6 @@ static int s_TestMqtt5DirectConnectionWithMetricsCollection(Aws::Crt::Allocator 
 }
 AWS_TEST_CASE(Mqtt5DirectConnectionWithMetricsCollection, s_TestMqtt5DirectConnectionWithMetricsCollection)
 
-
 /*
  * [ConnDC-UC3] Direct connection with TLS
  */
