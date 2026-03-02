@@ -57,10 +57,22 @@ namespace Aws
             bool HttpMessage::SetBody(const std::shared_ptr<Aws::Crt::Io::InputStream> &body) noexcept
             {
                 m_bodyStream = body;
+                m_asyncBodyStream = nullptr;
                 aws_http_message_set_body_stream(
                     m_message, m_bodyStream && *m_bodyStream ? m_bodyStream->GetUnderlyingStream() : nullptr);
 
                 return true;
+            }
+
+            std::future<bool> HttpMessage::SetBody(const std::shared_ptr<Aws::Crt::Io::AsyncInputStream> &body) noexcept
+            {
+                m_asyncBodyStream = body;
+                m_bodyStream = nullptr;
+                aws_http_message_set_async_body_stream(m_message, nullptr);
+
+                std::promise<bool> promise;
+                promise.set_value(body == nullptr || body->IsValid());
+                return promise.get_future();
             }
 
             size_t HttpMessage::GetHeaderCount() const noexcept

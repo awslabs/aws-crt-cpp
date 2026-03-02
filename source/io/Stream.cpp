@@ -7,6 +7,7 @@
 #include <aws/crt/io/Stream.h>
 #include <iostream>
 
+#include <aws/io/future.h>
 #include <aws/io/stream.h>
 
 namespace Aws
@@ -232,6 +233,41 @@ namespace Aws
             {
                 return m_stream->peek();
             }
+
+            /*** AsyncInputStream implementation ***/
+
+            AsyncInputStream::~AsyncInputStream() {}
+
+            void AsyncInputStream::s_Destroy(aws_async_input_stream *stream)
+            {
+                auto impl = static_cast<AsyncInputStream *>(stream->impl);
+                impl->ReleaseRef();
+            }
+
+            aws_future_bool *AsyncInputStream::s_Read(aws_async_input_stream *stream, aws_byte_buf *dest)
+            {
+                auto impl = static_cast<AsyncInputStream *>(stream->impl);
+                auto future = aws_future_bool_new(impl->m_allocator);
+
+                aws_future_bool_acquire(future);
+                impl->ReadImpl(*dest, [future](bool result) {
+                    aws_future_bool_set_result(future, result);
+                    aws_future_bool_release(future);
+                });
+
+                return future;
+            }
+
+            aws_async_input_stream_vtable AsyncInputStream::s_vtable = {
+                AsyncInputStream::s_Destroy,
+                AsyncInputStream::s_Read,
+            };
+
+            AsyncInputStream::AsyncInputStream(Aws::Crt::Allocator *allocator) : m_allocator(allocator)
+            {
+                aws_async_input_stream_init_base(&m_underlying_stream, allocator, &s_vtable, this);
+            }
+
         } // namespace Io
     } // namespace Crt
 } // namespace Aws
