@@ -530,6 +530,7 @@ static int s_TestMqtt5DirectConnectionWithBasicAuth(Aws::Crt::Allocator *allocat
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
     mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string);
     mqtt5Options.WithPort(mqtt5TestVars.m_port_value);
+    mqtt5Options.WithMetricsCollection(false);
 
     std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect =
         Aws::Crt::MakeShared<Aws::Crt::Mqtt5::ConnectPacket>(allocator);
@@ -552,6 +553,81 @@ static int s_TestMqtt5DirectConnectionWithBasicAuth(Aws::Crt::Allocator *allocat
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5DirectConnectionWithBasicAuth, s_TestMqtt5DirectConnectionWithBasicAuth)
+
+/*
+ * [ConnDC-UC2-B] Direct connection with basic authentication and metrics collection enabled
+ * This test verifies that WithMetricsCollection works properly by testing both enabled and disabled states.
+ */
+static int s_TestMqtt5DirectConnectionWithMetricsCollection(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_BASIC_AUTH);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    // Part 1: Connection with metrics collection ENABLED should fail as username was appended by metrics
+    {
+        Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+        mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string);
+        mqtt5Options.WithPort(mqtt5TestVars.m_port_value);
+        mqtt5Options.WithMetricsCollection(true); // Explicitly enable metrics collection
+
+        std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect =
+            Aws::Crt::MakeShared<Aws::Crt::Mqtt5::ConnectPacket>(allocator);
+        packetConnect->WithUserName(mqtt5TestVars.m_username_string);
+        packetConnect->WithPassword(mqtt5TestVars.m_password_cursor);
+        mqtt5Options.WithConnectOptions(packetConnect);
+
+        std::promise<bool> connectionPromise;
+        std::promise<void> stoppedPromise;
+
+        s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise, "MetricsEnabled");
+
+        std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+        ASSERT_TRUE(mqtt5Client);
+
+        ASSERT_TRUE(mqtt5Client->Start());
+        ASSERT_FALSE(connectionPromise.get_future().get());
+        ASSERT_TRUE(mqtt5Client->Stop());
+        stoppedPromise.get_future().get();
+        printf("[MQTT5] Test with metrics collection ENABLED passed.\n");
+    }
+
+    // Part 2: Connection with metrics collection DISABLED should success
+    {
+        Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+        mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string);
+        mqtt5Options.WithPort(mqtt5TestVars.m_port_value);
+        mqtt5Options.WithMetricsCollection(false); // Explicitly disable metrics collection
+
+        std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect =
+            Aws::Crt::MakeShared<Aws::Crt::Mqtt5::ConnectPacket>(allocator);
+        packetConnect->WithUserName(mqtt5TestVars.m_username_string);
+        packetConnect->WithPassword(mqtt5TestVars.m_password_cursor);
+        mqtt5Options.WithConnectOptions(packetConnect);
+
+        std::promise<bool> connectionPromise;
+        std::promise<void> stoppedPromise;
+
+        s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise, "MetricsDisabled");
+
+        std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+        ASSERT_TRUE(mqtt5Client);
+
+        ASSERT_TRUE(mqtt5Client->Start());
+        ASSERT_TRUE(connectionPromise.get_future().get());
+        ASSERT_TRUE(mqtt5Client->Stop());
+        stoppedPromise.get_future().get();
+        printf("[MQTT5] Test with metrics collection DISABLED passed.\n");
+    }
+
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5DirectConnectionWithMetricsCollection, s_TestMqtt5DirectConnectionWithMetricsCollection)
 
 /*
  * [ConnDC-UC3] Direct connection with TLS
@@ -852,6 +928,7 @@ static int s_TestMqtt5WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, 
     Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
     mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string);
     mqtt5Options.WithPort(mqtt5TestVars.m_port_value);
+    mqtt5Options.WithMetricsCollection(false);
 
     std::shared_ptr<Aws::Crt::Mqtt5::ConnectPacket> packetConnect =
         Aws::Crt::MakeShared<Aws::Crt::Mqtt5::ConnectPacket>(allocator);
