@@ -133,7 +133,7 @@ namespace Aws
                 AWS_ZERO_STRUCT(options);
                 options.self_size = sizeof(aws_http_client_connection_options);
 
-                if (options.bootstrap != nullptr)
+                if (connectionOptions.Bootstrap != nullptr)
                 {
                     options.bootstrap = connectionOptions.Bootstrap->GetUnderlyingHandle();
                 }
