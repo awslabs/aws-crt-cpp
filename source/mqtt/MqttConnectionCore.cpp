@@ -40,8 +40,8 @@ namespace Aws
                 : m_underlyingConnection(nullptr), m_hostName(options.hostName), m_port(options.port),
                   m_tlsContext(std::move(options.tlsContext)), m_tlsOptions(std::move(options.tlsConnectionOptions)),
                   m_socketOptions(std::move(options.socketOptions)), m_onAnyCbData(nullptr), m_useTls(options.useTls),
-                  m_useWebsocket(options.useWebsocket), m_allocator(options.allocator),
-                  m_connection(std::move(connection))
+                  m_useWebsocket(options.useWebsocket), m_enableMetrics(options.enableMetrics),
+                  m_allocator(options.allocator), m_connection(std::move(connection))
             {
                 if (client != nullptr)
                 {
@@ -471,6 +471,21 @@ namespace Aws
 
                     aws_mqtt_client_connection_set_connection_termination_handler(
                         m_underlyingConnection, MqttConnectionCore::s_onConnectionTermination, this);
+
+                    if (m_enableMetrics)
+                    {
+                        struct aws_mqtt_iot_metrics metrics;
+                        AWS_ZERO_STRUCT(metrics);
+                        m_sdkMetrics.initializeRawOptions(metrics);
+                        if (aws_mqtt_client_connection_set_metrics(m_underlyingConnection, &metrics))
+                        {
+                            AWS_LOGF_DEBUG(AWS_LS_MQTT_CLIENT, "Failed to set Mqtt Metrics");
+                        }
+                    }
+                    else if (aws_mqtt_client_connection_set_metrics(m_underlyingConnection, nullptr))
+                    {
+                        AWS_LOGF_DEBUG(AWS_LS_MQTT_CLIENT, "Failed to set Mqtt Metrics");
+                    }
                 }
                 else
                 {
