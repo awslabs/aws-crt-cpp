@@ -97,6 +97,15 @@ namespace Aws
                     OnUnsubscribeCompletionHandler onUnsubscribeCompletionCallback = NULL) noexcept;
 
                 /**
+                 * Sends a PUBACK packet for a QoS 1 PUBLISH that was previously acquired for manual control.
+                 *
+                 * @param pubackControlHandle handle obtained from acquirePubackControl()
+                 *
+                 * @return true if the operation succeeded, otherwise false
+                 */
+                bool InvokePuback(const PubackControlHandle &pubackControlHandle) noexcept;
+
+                /**
                  * Tells the Mqtt5ClientCore to release the native client and clean up unhandled the resources
                  * and operations before destroying it. You MUST only call this function when you
                  * want to destroy the Mqtt5ClientCore.

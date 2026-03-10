@@ -251,12 +251,49 @@ namespace Aws
             };
 
             /**
+             * An opaque handle representing manual control over a QoS 1 PUBACK for a received PUBLISH packet.
+             *
+             * Obtained by calling acquirePubackControl() within the OnPublishReceivedHandler callback.
+             * Pass this handle to Mqtt5Client::InvokePuback() at any later time to send the PUBACK.
+             *
+             * @note acquirePubackControl() must be called within the OnPublishReceivedHandler callback.
+             *       Calling it after the callback returns will return nullptr.
+             */
+            class AWS_CRT_CPP_API PubackControlHandle
+            {
+                friend class Mqtt5Client;
+                friend class Mqtt5ClientCore;
+
+              public:
+                PubackControlHandle() noexcept : m_controlId(0) {}
+
+              private:
+                explicit PubackControlHandle(uint64_t controlId) noexcept : m_controlId(controlId) {}
+
+                uint64_t m_controlId;
+            };
+
+            /**
              * The data returned when a publish is made to a topic the MQTT5 client is subscribed to.
              */
             struct AWS_CRT_CPP_API PublishReceivedEventData
             {
                 PublishReceivedEventData() : publishPacket(nullptr) {}
+
                 std::shared_ptr<PublishPacket> publishPacket;
+
+                /**
+                 * Call this function within the OnPublishReceivedHandler callback to take manual control of the
+                 * PUBACK for this QoS 1 message, preventing the client from automatically sending a PUBACK.
+                 *
+                 * Returns a shared_ptr to a PubackControlHandle that can be passed to Mqtt5Client::InvokePuback()
+                 * to send the PUBACK to the broker.
+                 *
+                 * @note This function must be called within the OnPublishReceivedHandler callback.
+                 *       Calling it after the callback returns will return nullptr.
+                 * @note Only relevant for QoS 1 messages. Returns nullptr for QoS 0 messages.
+                 */
+                std::function<std::shared_ptr<PubackControlHandle>()> acquirePubackControl;
             };
 
             /**
@@ -432,6 +469,19 @@ namespace Aws
                  * @return Mqtt5ClientOperationStatistics
                  */
                 const Mqtt5ClientOperationStatistics &GetOperationStatistics() noexcept;
+
+                /**
+                 * Sends a PUBACK packet for a QoS 1 PUBLISH that was previously acquired for manual control.
+                 *
+                 * To use manual PUBACK control, call eventData.acquirePubackControl() within the
+                 * OnPublishReceivedHandler callback to obtain a PubackControlHandle. Then call this method
+                 * to send the PUBACK.
+                 *
+                 * @param pubackControlHandle handle obtained from acquirePubackControl()
+                 *
+                 * @return true if the operation succeeded, otherwise false
+                 */
+                bool InvokePuback(const PubackControlHandle &pubackControlHandle) noexcept;
 
                 ~Mqtt5Client();
 
