@@ -406,6 +406,37 @@ namespace Aws
             };
 
             /**
+             * Configuration options for the SSO credentials provider
+             */
+            struct AWS_CRT_CPP_API CredentialsProviderSSOConfig
+            {
+                CredentialsProviderSSOConfig();
+
+                /*
+                 * Override of what profile to use to source credentials from ('default' by default)
+                 */
+                String ProfileNameOverride;
+
+                /*
+                 * Override path to the profile config file (~/.aws/config by default)
+                 */
+                String ConfigFileNameOverride;
+
+                /**
+                 * Connection bootstrap to use for any network connections made while sourcing credentials
+                 *
+                 * Note: If null, then the default ClientBootstrap is used
+                 * (see Aws::Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap)
+                 */
+                Io::ClientBootstrap *Bootstrap;
+
+                /**
+                 * Client TLS context to use when querying SSO provider.
+                 */
+                Io::TlsContext TlsCtx;
+            };
+
+            /**
              * Configuration options for the STS credentials provider
              */
             struct AWS_CRT_CPP_API CredentialsProviderSTSConfig
@@ -650,6 +681,13 @@ namespace Aws
                  */
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderCognito(
                     const CredentialsProviderCognitoConfig &config,
+                    Allocator *allocator = ApiAllocator());
+
+                /**
+                 * Creates a provider that sources credentials from IAM Identity Center
+                 */
+                static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderSSO(
+                    const CredentialsProviderSSOConfig &config,
                     Allocator *allocator = ApiAllocator());
 
                 /**
