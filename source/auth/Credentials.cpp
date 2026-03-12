@@ -446,6 +446,27 @@ namespace Aws
                     aws_credentials_provider_new_cognito_caching(allocator, &raw_config), allocator);
             }
 
+            CredentialsProviderSSOConfig::CredentialsProviderSSOConfig() : Bootstrap(nullptr) {}
+
+            std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderSSO(
+                const CredentialsProviderSSOConfig &config,
+                Allocator *allocator)
+            {
+                struct aws_credentials_provider_sso_options raw_config;
+                AWS_ZERO_STRUCT(raw_config);
+
+                raw_config.profile_name_override = aws_byte_cursor_from_c_str(config.ProfileNameOverride.c_str());
+                raw_config.config_file_name_override = aws_byte_cursor_from_c_str(config.ConfigFileNameOverride.c_str());
+
+                raw_config.bootstrap =
+                    config.Bootstrap ? config.Bootstrap->GetUnderlyingHandle()
+                                     : ApiHandle::GetOrCreateStaticDefaultClientBootstrap()->GetUnderlyingHandle();
+
+                raw_config.tls_ctx = config.TlsCtx.GetUnderlyingHandle();
+
+                return s_CreateWrappedProvider(aws_credentials_provider_new_sso(allocator, &raw_config), allocator);
+            }
+
             CredentialsProviderSTSConfig::CredentialsProviderSTSConfig() : Bootstrap(nullptr) {}
 
             std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderSTS(
