@@ -189,6 +189,29 @@ namespace Aws
                             client_core->m_allocator, *publish, client_core->m_allocator);
                         PublishReceivedEventData eventData;
                         eventData.publishPacket = packet;
+
+                        /*
+                         * Set up the acquirePubackControl function for QoS 1 messages.
+                         * This lambda captures the raw client pointer and the publish view pointer,
+                         * both of which are valid only during this callback invocation.
+                         * Calling acquirePubackControl after the callback returns will return nullptr
+                         * because the publish pointer will no longer be valid. This is handled.
+                         */
+                        if (publish->qos == AWS_MQTT5_QOS_AT_LEAST_ONCE)
+                        {
+                            aws_mqtt5_client *rawClient = client_core->m_client;
+                            eventData.acquirePubackControl = [rawClient,
+                                                              publish]() -> std::shared_ptr<PubackControlHandle>
+                            {
+                                if (rawClient == nullptr)
+                                {
+                                    return nullptr;
+                                }
+                                uint64_t controlId = aws_mqtt5_client_acquire_puback(rawClient, publish);
+                                return std::make_shared<PubackControlHandle>(PubackControlHandle(controlId));
+                            };
+                        }
+
                         client_core->onPublishReceived(eventData);
                     }
                     else
@@ -610,6 +633,17 @@ namespace Aws
                     return false;
                 }
                 return result == AWS_OP_SUCCESS;
+            }
+
+            bool Mqtt5ClientCore::InvokePuback(const PubackControlHandle &pubackControlHandle) noexcept
+            {
+                if (m_client == nullptr)
+                {
+                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to invoke puback: Mqtt5ClientCore is invalid.");
+                    return false;
+                }
+                return aws_mqtt5_client_invoke_puback(m_client, pubackControlHandle.m_controlId, nullptr) ==
+                       AWS_OP_SUCCESS;
             }
 
             void Mqtt5ClientCore::Close() noexcept
