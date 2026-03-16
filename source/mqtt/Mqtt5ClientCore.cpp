@@ -190,18 +190,26 @@ namespace Aws
                         PublishReceivedEventData eventData;
                         eventData.publishPacket = packet;
 
+                        /*
+                         * Set up the acquirePubackControl function for QoS 1 messages.
+                         * The packet_id is copied by value here while the publish view is still valid.
+                         * The lambda reconstructs a minimal view on the stack when called, avoiding
+                         * any dangling pointer to the native publish_view. This is for the improper
+                         * use-case where a user may store the lambda and use it outside the scope of the
+                         * onPublishReceived callback.
+                         *
+                         * The lambda self-invalidates in two ways:
+                         *   1. After the first use it sets *available = false, so a
+                         *      second call within the same callback returns nullptr.
+                         *   2. After onPublishReceived returns, *available is unconditionally set
+                         *      to false, so any saved copy of the lambda returns nullptr immediately
+                         *      without touching the C layer.
+                         */
+                        auto available = std::make_shared<bool>(true);
                         if (publish->qos == AWS_MQTT5_QOS_AT_LEAST_ONCE)
                         {
-                            /*
-                             * Set up the acquirePubackControl function for QoS 1 messages.
-                             * The packet_id is copied by value here while the publish view is still valid.
-                             *
-                             * The lambda is self-invalidating: after the first successful call it sets
-                             * the shared 'available' flag to false, so subsequent calls return nullptr.
-                             */
                             aws_mqtt5_client *rawClient = client_core->m_client;
                             aws_mqtt5_packet_id_t packetId = publish->packet_id;
-                            auto available = std::make_shared<bool>(true);
                             eventData.acquirePubackControl =
                                 [rawClient, packetId, available]() -> std::shared_ptr<PubackControlHandle>
                             {
@@ -224,6 +232,11 @@ namespace Aws
                         }
 
                         client_core->onPublishReceived(eventData);
+
+                        /* Explicitly invalidate the lambda now that the callback scope has ended.
+                         * Any copy of the lambda saved by the user will now return nullptr
+                         * immediately. */
+                        *available = false;
                     }
                     else
                     {
