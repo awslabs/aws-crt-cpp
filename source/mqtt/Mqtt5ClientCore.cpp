@@ -190,24 +190,35 @@ namespace Aws
                         PublishReceivedEventData eventData;
                         eventData.publishPacket = packet;
 
-                        /*
-                         * Set up the acquirePubackControl function for QoS 1 messages.
-                         * This lambda captures the raw client pointer and the publish view pointer,
-                         * both of which are valid only during this callback invocation.
-                         * Calling acquirePubackControl after the callback returns will return nullptr
-                         * because the publish pointer will no longer be valid. This is handled.
-                         */
                         if (publish->qos == AWS_MQTT5_QOS_AT_LEAST_ONCE)
                         {
+                            /*
+                             * Set up the acquirePubackControl function for QoS 1 messages.
+                             * The packet_id is copied by value here while the publish view is still valid.
+                             *
+                             * The lambda is self-invalidating: after the first successful call it sets
+                             * the shared 'available' flag to false, so subsequent calls return nullptr.
+                             */
                             aws_mqtt5_client *rawClient = client_core->m_client;
-                            eventData.acquirePubackControl = [rawClient,
-                                                              publish]() -> std::shared_ptr<PubackControlHandle>
+                            aws_mqtt5_packet_id_t packetId = publish->packet_id;
+                            auto available = std::make_shared<bool>(true);
+                            eventData.acquirePubackControl =
+                                [rawClient, packetId, available]() -> std::shared_ptr<PubackControlHandle>
                             {
-                                if (rawClient == nullptr)
+                                if (rawClient == nullptr || !*available)
                                 {
                                     return nullptr;
                                 }
-                                uint64_t controlId = aws_mqtt5_client_acquire_puback(rawClient, publish);
+                                aws_mqtt5_packet_publish_view view;
+                                AWS_ZERO_STRUCT(view);
+                                view.qos = AWS_MQTT5_QOS_AT_LEAST_ONCE;
+                                view.packet_id = packetId;
+                                uint64_t controlId = aws_mqtt5_client_acquire_puback(rawClient, &view);
+                                if (controlId == 0)
+                                {
+                                    return nullptr;
+                                }
+                                *available = false;
                                 return std::make_shared<PubackControlHandle>(PubackControlHandle(controlId));
                             };
                         }
