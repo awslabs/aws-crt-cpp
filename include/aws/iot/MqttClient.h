@@ -329,7 +329,7 @@ namespace Aws
              * Whether to send the SDK name and version number in the MQTT CONNECT packet.
              * Default is True.
              *
-             * @param enabled true to send SDK version/name in the connect for metrics gathering purposes
+             * @param enabled true to send SDK version/name/platform in the connect for metrics gathering purposes.
              *
              * @return this builder object
              */
@@ -461,7 +461,7 @@ namespace Aws
             Crt::Optional<WebsocketConfig> m_websocketConfig;
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
             bool m_enableMetricsCollection = true;
-            Crt::String m_sdkName = "CPPv2";
+            Crt::String m_sdkName = "IoTDeviceSDK/CPP";
             Crt::String m_sdkVersion;
             Crt::String m_username = "";
             Crt::String m_password = "";

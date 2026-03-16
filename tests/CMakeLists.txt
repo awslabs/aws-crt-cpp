@@ -208,6 +208,7 @@ if (NOT BYO_CRYPTO)
     add_net_test_case(Mqtt311WSConnectionWithBasicAuth)
     add_net_test_case(Mqtt311WSConnectionWithTLS)
     add_net_test_case(Mqtt311WSConnectionWithHttpProxy)
+    add_net_test_case(Mqtt311DirectConnectionWithMetricsCollection)
 endif()
 
 #MQTT5 related tests
