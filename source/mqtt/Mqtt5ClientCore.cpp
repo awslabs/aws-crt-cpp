@@ -205,7 +205,7 @@ namespace Aws
                          *      to false, so any saved copy of the lambda returns nullptr immediately
                          *      without touching the C layer.
                          */
-                        auto available = std::make_shared<bool>(true);
+                        auto available = std::make_shared<std::atomic<bool>>(true);
                         if (publish->qos == AWS_MQTT5_QOS_AT_LEAST_ONCE)
                         {
                             aws_mqtt5_client *rawClient = client_core->m_client;
