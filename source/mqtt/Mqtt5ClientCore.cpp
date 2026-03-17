@@ -191,52 +191,60 @@ namespace Aws
                         eventData.publishPacket = packet;
 
                         /*
-                         * Set up the acquirePubackControl function for QoS 1 messages.
-                         * The packet_id is copied by value here while the publish view is still valid.
-                         * The lambda reconstructs a minimal view on the stack when called, avoiding
-                         * any dangling pointer to the native publish_view. This is for the improper
-                         * use-case where a user may store the lambda and use it outside the scope of the
-                         * onPublishReceived callback.
+                         * For QoS 1 messages, eagerly acquire manual control of the PUBACK immediately
+                         * (before invoking the user callback), acquire_puback is called as soon as the
+                         * native client sends up a publish. An opaque wrapper (PubackControlHandle) is
+                         * provided to the user via acquirePubackControl().
                          *
-                         * The lambda self-invalidates in two ways:
-                         *   1. After the first use it sets *available = false, so a
-                         *      second call within the same callback returns nullptr.
-                         *   2. After onPublishReceived returns, *available is unconditionally set
-                         *      to false, so any saved copy of the lambda returns nullptr immediately
-                         *      without touching the C layer.
+                         * acquirePubackControl() self-invalidates in two ways:
+                         *   1. After the first call it sets *available = false, so a second call within
+                         *      the same callback returns nullptr.
+                         *   2. After onPublishReceived returns, *available is unconditionally set to false,
+                         *      so any saved copy of the lambda returns nullptr immediately without touching
+                         *      the C layer.
+                         *
+                         * The onPublishReceived() callback returns true if the user took manual control (called
+                         * acquirePubackControl()), in which case the user is responsible for calling
+                         * InvokePuback() later. If the callback returns false, the PUBACK is automatically
+                         * sent here. On error, the PUBACK is also auto-sent to avoid losing it.
                          */
+                        uint64_t pubackControlId = 0;
                         auto available = std::make_shared<std::atomic<bool>>(true);
                         if (publish->qos == AWS_MQTT5_QOS_AT_LEAST_ONCE)
                         {
-                            aws_mqtt5_client *rawClient = client_core->m_client;
-                            aws_mqtt5_packet_id_t packetId = publish->packet_id;
-                            eventData.acquirePubackControl =
-                                [rawClient, packetId, available]() -> std::shared_ptr<PubackControlHandle>
+                            /* Eagerly acquire the puback control before invoking the user callback */
+                            pubackControlId = aws_mqtt5_client_acquire_puback(client_core->m_client, publish);
+
+                            if (pubackControlId != 0)
                             {
-                                if (rawClient == nullptr || !*available)
+                                auto handle =
+                                    std::make_shared<PubackControlHandle>(PubackControlHandle(pubackControlId));
+                                eventData.acquirePubackControl = [handle,
+                                                                  available]() -> std::shared_ptr<PubackControlHandle>
                                 {
-                                    return nullptr;
-                                }
-                                aws_mqtt5_packet_publish_view view;
-                                AWS_ZERO_STRUCT(view);
-                                view.qos = AWS_MQTT5_QOS_AT_LEAST_ONCE;
-                                view.packet_id = packetId;
-                                uint64_t controlId = aws_mqtt5_client_acquire_puback(rawClient, &view);
-                                if (controlId == 0)
-                                {
-                                    return nullptr;
-                                }
-                                *available = false;
-                                return std::make_shared<PubackControlHandle>(PubackControlHandle(controlId));
-                            };
+                                    if (!*available)
+                                    {
+                                        return nullptr;
+                                    }
+                                    *available = false;
+                                    return handle;
+                                };
+                            }
                         }
 
-                        client_core->onPublishReceived(eventData);
+                        bool pubackTaken = client_core->onPublishReceived(eventData);
 
                         /* Explicitly invalidate the lambda now that the callback scope has ended.
                          * Any copy of the lambda saved by the user will now return nullptr
                          * immediately. */
                         *available = false;
+
+                        /* If the user did not take manual control of the PUBACK (returned false),
+                         * auto-invoke it now. Also auto-invoke on error to avoid losing the PUBACK. */
+                        if (pubackControlId != 0 && !pubackTaken)
+                        {
+                            aws_mqtt5_client_invoke_puback(client_core->m_client, pubackControlId, nullptr);
+                        }
                     }
                     else
                     {
