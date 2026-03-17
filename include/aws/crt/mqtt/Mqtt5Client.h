@@ -343,13 +343,15 @@ namespace Aws
             /**
              * Type signature of the callback invoked when a PacketPublish message received (OnMessageHandler).
              *
-             * Return true if you called acquirePubackControl() and will invoke the PUBACK manually later via
-             * Mqtt5Client::InvokePuback(). Return false (or do not return a value) to have the client
-             * automatically send the PUBACK on your behalf after this callback returns.
+             * To take manual control of the PUBACK for a QoS 1 message, call
+             * eventData.acquirePubackControl() within this callback. If you do so, the client will NOT
+             * automatically send the PUBACK; you are responsible for calling Mqtt5Client::InvokePuback()
+             * later with the returned handle.
              *
-             * For QoS 0 messages, the return value is ignored.
+             * If you do not call acquirePubackControl() (or it returns nullptr), the client will
+             * automatically send the PUBACK after this callback returns.
              */
-            using OnPublishReceivedHandler = std::function<bool(const PublishReceivedEventData &)>;
+            using OnPublishReceivedHandler = std::function<void(const PublishReceivedEventData &)>;
 
             /**
              * Callback for users to invoke upon completion of, presumably asynchronous, OnWebSocketHandshakeIntercept

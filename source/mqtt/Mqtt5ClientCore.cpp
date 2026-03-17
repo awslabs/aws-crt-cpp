@@ -212,7 +212,9 @@ namespace Aws
                         auto available = std::make_shared<std::atomic<bool>>(true);
                         if (publish->qos == AWS_MQTT5_QOS_AT_LEAST_ONCE)
                         {
-                            /* Eagerly acquire the puback control before invoking the user callback */
+                            /* Eagerly acquire the puback control before invoking the user callback.
+                             * An opaque wrapper (PubackControlHandle) is provided to the user callback via
+                             * acquirePubackControl(). */
                             pubackControlId = aws_mqtt5_client_acquire_puback(client_core->m_client, publish);
 
                             if (pubackControlId != 0)
@@ -226,22 +228,30 @@ namespace Aws
                                     {
                                         return nullptr;
                                     }
+                                    /* Mark as consumed so a second call returns nullptr */
                                     *available = false;
                                     return handle;
                                 };
                             }
                         }
 
-                        bool pubackTaken = client_core->onPublishReceived(eventData);
+                        client_core->onPublishReceived(eventData);
 
-                        /* Explicitly invalidate the lambda now that the callback scope has ended.
-                         * Any copy of the lambda saved by the user will now return nullptr
-                         * immediately. */
-                        *available = false;
+                        /* Detect whether the user called acquirePubackControl() during the callback:
+                         * - If they called it and got a handle, *available was set to false inside
+                         *   the lambda, so it is already false here.
+                         * - If they did NOT call it, *available is still true here.
+                         *
+                         * We use exchange(false) to atomically read the current value and set it to
+                         * false in one step. If it returns true, the user did NOT take control and
+                         * we must auto-invoke the PUBACK. If it returns false, the user already
+                         * consumed the handle and is responsible for calling InvokePuback() later.
+                         *
+                         * This also serves as the post-callback invalidation: after this point any
+                         * saved copy of the lambda will return nullptr immediately. */
+                        bool userDidNotTakeControl = available->exchange(false);
 
-                        /* If the user did not take manual control of the PUBACK (returned false),
-                         * auto-invoke it now. Also auto-invoke on error to avoid losing the PUBACK. */
-                        if (pubackControlId != 0 && !pubackTaken)
+                        if (pubackControlId != 0 && userDidNotTakeControl)
                         {
                             aws_mqtt5_client_invoke_puback(client_core->m_client, pubackControlId, nullptr);
                         }
