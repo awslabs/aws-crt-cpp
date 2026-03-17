@@ -628,6 +628,8 @@ namespace Aws
                 m_options->WithHttpProxyOptions(m_proxyOptions.value());
             }
 
+            m_options->WithMetricsCollection(m_enableMetricsCollection);
+
             return Crt::Mqtt5::Mqtt5Client::NewMqtt5Client(*m_options, m_allocator);
         }
 

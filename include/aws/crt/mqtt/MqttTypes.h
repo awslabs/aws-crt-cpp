@@ -33,6 +33,7 @@ namespace Aws
                 Crt::Io::TlsConnectionOptions tlsConnectionOptions;
                 bool useWebsocket = false;
                 bool useTls = false;
+                bool enableMetrics = true;
                 Allocator *allocator = nullptr;
             };
 
