@@ -11,6 +11,7 @@
 #include <aws/crt/mqtt/Mqtt5Client.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
 
+#include <atomic>
 #include <mutex>
 
 namespace Aws
@@ -45,7 +46,9 @@ namespace Aws
                 explicit PubackControlHandle(uint64_t controlId) noexcept : m_controlId(controlId), m_available(true) {}
 
                 uint64_t m_controlId;
-                bool m_available;
+                /* We use an atomic bool here despite it not being strictly "needed" because it satisfies thread
+                 * sanitizer requirements */
+                std::atomic<bool> m_available;
             };
 
             /**
