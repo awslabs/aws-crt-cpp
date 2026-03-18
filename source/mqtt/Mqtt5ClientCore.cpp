@@ -241,10 +241,9 @@ namespace Aws
                             {
                                 pubackHandle = Aws::Crt::MakeShared<PubackControlHandle>(
                                     client_core->m_allocator, pubackControlId);
-                                auto functor = Aws::Crt::MakeShared<PubackAcquireFunctor>(client_core->m_allocator);
-                                functor->handle = pubackHandle;
-                                eventData.acquirePubackControl = [functor]() -> std::shared_ptr<PubackControlHandle>
-                                { return (*functor)(); };
+                                PubackAcquireFunctor functor;
+                                functor.handle = pubackHandle;
+                                eventData.acquirePubackControl = std::move(functor);
                             }
                         }
 
