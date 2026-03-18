@@ -268,8 +268,10 @@ namespace Aws
                         {
                             publishAcknowledgementHandle->m_available = false;
                         }
-
-                        if (publishAcknowledgementId != 0 && userDidNotTakeControl)
+                        /* We add an additional client_core->m_client null check here because it's possible (through
+                         * insanity) that the user has killed the client in the onPublishRecieved callback. This will
+                         * handle that case here with the recursive mutex */
+                        if (publishAcknowledgementId != 0 && userDidNotTakeControl && client_core->m_client != nullptr)
                         {
                             aws_mqtt5_client_invoke_publish_acknowledgement(
                                 client_core->m_client, publishAcknowledgementId, nullptr);
