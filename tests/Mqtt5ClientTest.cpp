@@ -2544,7 +2544,7 @@ static int s_TestMqtt5ManualPubackHold(Aws::Crt::Allocator *allocator, void *)
     s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     /* Storage for the handle acquired within the callback */
-    std::shared_ptr<Mqtt5::PubackControlHandle> capturedHandle = nullptr;
+    std::shared_ptr<Mqtt5::PublishAcknowledgementHandle> capturedHandle = nullptr;
     std::promise<void> firstDeliveryPromise;
     std::promise<void> redeliveryPromise;
     bool firstDeliveryDone = false;
@@ -2565,9 +2565,9 @@ static int s_TestMqtt5ManualPubackHold(Aws::Crt::Allocator *allocator, void *)
             if (!firstDeliveryDone)
             {
                 /* First delivery: acquire manual PUBACK control to hold the PUBACK */
-                if (eventData.acquirePubackControl)
+                if (eventData.acquirePublishAcknowledgement)
                 {
-                    capturedHandle = eventData.acquirePubackControl();
+                    capturedHandle = eventData.acquirePublishAcknowledgement();
                 }
                 firstDeliveryDone = true;
                 firstDeliveryPromise.set_value();
@@ -2610,7 +2610,7 @@ static int s_TestMqtt5ManualPubackHold(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(redeliveryFuture.wait_for(std::chrono::seconds(60)) == std::future_status::ready);
 
     /* Release the held PUBACK now that we've confirmed re-delivery */
-    ASSERT_TRUE(mqtt5Client->InvokePuback(capturedHandle));
+    ASSERT_TRUE(mqtt5Client->InvokePublishAcknowledgement(capturedHandle));
 
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
@@ -2652,7 +2652,7 @@ static int s_TestMqtt5ManualPubackInvoke(Aws::Crt::Allocator *allocator, void *)
     std::promise<void> stoppedPromise;
     s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
-    std::shared_ptr<Mqtt5::PubackControlHandle> capturedHandle = nullptr;
+    std::shared_ptr<Mqtt5::PublishAcknowledgementHandle> capturedHandle = nullptr;
     std::promise<void> firstDeliveryPromise;
     std::promise<void> unexpectedRedeliveryPromise;
     bool firstDeliveryDone = false;
@@ -2673,9 +2673,9 @@ static int s_TestMqtt5ManualPubackInvoke(Aws::Crt::Allocator *allocator, void *)
             if (!firstDeliveryDone)
             {
                 /* First delivery: acquire manual PUBACK control */
-                if (eventData.acquirePubackControl)
+                if (eventData.acquirePublishAcknowledgement)
                 {
-                    capturedHandle = eventData.acquirePubackControl();
+                    capturedHandle = eventData.acquirePublishAcknowledgement();
                 }
                 firstDeliveryDone = true;
                 firstDeliveryPromise.set_value();
@@ -2718,7 +2718,7 @@ static int s_TestMqtt5ManualPubackInvoke(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(capturedHandle != nullptr);
 
     /* Immediately invoke the PUBACK using the acquired handle */
-    ASSERT_TRUE(mqtt5Client->InvokePuback(capturedHandle));
+    ASSERT_TRUE(mqtt5Client->InvokePublishAcknowledgement(capturedHandle));
 
     /* Wait 60 seconds and confirm the broker does NOT re-deliver the message */
     auto redeliveryFuture = unexpectedRedeliveryPromise.get_future();
@@ -2733,7 +2733,7 @@ static int s_TestMqtt5ManualPubackInvoke(Aws::Crt::Allocator *allocator, void *)
 AWS_TEST_CASE(Mqtt5ManualPubackInvoke, s_TestMqtt5ManualPubackInvoke)
 
 /*
- * [MP-UC3] Manual PUBACK double-call test: calling acquirePubackControl() twice returns null on the second call.
+ * [MP-UC3] Manual PUBACK double-call test: calling acquirePublishAcknowledgement() twice returns null on the second call.
  */
 static int s_TestMqtt5ManualPubackAcquireDoubleCallReturnsNull(Aws::Crt::Allocator *allocator, void *)
 {
@@ -2771,20 +2771,20 @@ static int s_TestMqtt5ManualPubackAcquireDoubleCallReturnsNull(Aws::Crt::Allocat
     mqtt5Options.WithPublishReceivedCallback(
         [&resultPromise](const PublishReceivedEventData &eventData)
         {
-            if (!eventData.acquirePubackControl)
+            if (!eventData.acquirePublishAcknowledgement)
             {
                 resultPromise.set_value("no_acquire_fn");
                 return;
             }
             /* First call should succeed */
-            auto handle1 = eventData.acquirePubackControl();
+            auto handle1 = eventData.acquirePublishAcknowledgement();
             if (!handle1)
             {
                 resultPromise.set_value("first_call_returned_null");
                 return;
             }
             /* Second call should return null (function is cleared after first call) */
-            auto handle2 = eventData.acquirePubackControl();
+            auto handle2 = eventData.acquirePublishAcknowledgement();
             if (handle2 != nullptr)
             {
                 resultPromise.set_value("second_call_returned_non_null");
@@ -2859,15 +2859,15 @@ static int s_TestMqtt5ManualPubackAcquirePostCallbackReturnsNull(Aws::Crt::Alloc
     std::promise<void> stoppedPromise;
     s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
-    /* Save the acquirePubackControl function but do NOT call it within the callback */
-    std::function<std::shared_ptr<Mqtt5::PubackControlHandle>()> savedAcquireFn;
+    /* Save the acquirePublishAcknowledgement function but do NOT call it within the callback */
+    std::function<std::shared_ptr<Mqtt5::PublishAcknowledgementHandle>()> savedAcquireFn;
     std::promise<void> callbackDonePromise;
 
     mqtt5Options.WithPublishReceivedCallback(
         [&savedAcquireFn, &callbackDonePromise](const PublishReceivedEventData &eventData)
         {
             /* Save the function but do NOT call it */
-            savedAcquireFn = eventData.acquirePubackControl;
+            savedAcquireFn = eventData.acquirePublishAcknowledgement;
             callbackDonePromise.set_value();
         });
 
@@ -2896,7 +2896,7 @@ static int s_TestMqtt5ManualPubackAcquirePostCallbackReturnsNull(Aws::Crt::Alloc
     /* Wait for the callback to complete */
     callbackDonePromise.get_future().get();
 
-    /* Now call acquirePubackControl() after the callback has returned — should return null */
+    /* Now call acquirePublishAcknowledgement() after the callback has returned — should return null */
     ASSERT_TRUE(savedAcquireFn != nullptr);
     auto handle = savedAcquireFn();
     ASSERT_TRUE(handle == nullptr);
@@ -2909,7 +2909,7 @@ static int s_TestMqtt5ManualPubackAcquirePostCallbackReturnsNull(Aws::Crt::Alloc
 AWS_TEST_CASE(Mqtt5ManualPubackAcquirePostCallbackReturnsNull, s_TestMqtt5ManualPubackAcquirePostCallbackReturnsNull)
 
 /*
- * [MP-UC5] Manual PUBACK QoS 0 test: acquirePubackControl() is null for QoS 0 messages
+ * [MP-UC5] Manual PUBACK QoS 0 test: acquirePublishAcknowledgement() is null for QoS 0 messages
  */
 static int s_TestMqtt5ManualPubackQoS0AcquireIsNull(Aws::Crt::Allocator *allocator, void *)
 {
@@ -2940,14 +2940,14 @@ static int s_TestMqtt5ManualPubackQoS0AcquireIsNull(Aws::Crt::Allocator *allocat
     std::promise<void> stoppedPromise;
     s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
-    bool acquirePubackControlWasNull = false;
+    bool acquirePublishAcknowledgementWasNull = false;
     std::promise<void> publishReceivedPromise;
 
     mqtt5Options.WithPublishReceivedCallback(
-        [&acquirePubackControlWasNull, &publishReceivedPromise](const PublishReceivedEventData &eventData)
+        [&acquirePublishAcknowledgementWasNull, &publishReceivedPromise](const PublishReceivedEventData &eventData)
         {
-            /* For QoS 0, acquirePubackControl should be null/empty */
-            acquirePubackControlWasNull = !eventData.acquirePubackControl;
+            /* For QoS 0, acquirePublishAcknowledgement should be null/empty */
+            acquirePublishAcknowledgementWasNull = !eventData.acquirePublishAcknowledgement;
             publishReceivedPromise.set_value();
         });
 
@@ -2976,7 +2976,7 @@ static int s_TestMqtt5ManualPubackQoS0AcquireIsNull(Aws::Crt::Allocator *allocat
     /* Wait for the publish to be received */
     publishReceivedPromise.get_future().get();
 
-    ASSERT_TRUE(acquirePubackControlWasNull);
+    ASSERT_TRUE(acquirePublishAcknowledgementWasNull);
 
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();

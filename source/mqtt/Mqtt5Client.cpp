@@ -158,19 +158,19 @@ namespace Aws
                 return m_client_core->Unsubscribe(unsubscribeOptions, onUnsubscribeCompletionCallback);
             }
 
-            bool Mqtt5Client::InvokePuback(const std::shared_ptr<PubackControlHandle> &pubackControlHandle) noexcept
+            bool Mqtt5Client::InvokePublishAcknowledgement(const std::shared_ptr<PublishAcknowledgementHandle> &publishAcknowledgementHandle) noexcept
             {
                 if (m_client_core == nullptr)
                 {
-                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to invoke puback: Mqtt5 Client is invalid.");
+                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to invoke publish acknowledgement: Mqtt5 Client is invalid.");
                     return false;
                 }
-                if (pubackControlHandle == nullptr)
+                if (publishAcknowledgementHandle == nullptr)
                 {
-                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to invoke puback: pubackControlHandle is null.");
+                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to invoke publish acknowledgement: publishAcknowledgementHandle is null.");
                     return false;
                 }
-                return m_client_core->InvokePuback(pubackControlHandle);
+                return m_client_core->InvokePublishAcknowledgement(publishAcknowledgementHandle);
             }
 
             const Mqtt5ClientOperationStatistics &Mqtt5Client::GetOperationStatistics() noexcept

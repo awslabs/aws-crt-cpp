@@ -47,18 +47,18 @@ namespace Aws
             };
 
             /**
-             * Callable object stored in PublishReceivedEventData::acquirePubackControl.
+             * Callable object stored in PublishReceivedEventData::acquirePublishAcknowledgement.
              *
-             * Holds the single PubackControlHandle shared_ptr and uses its m_available flag to
+             * Holds the single PublishAcknowledgementHandle shared_ptr and uses its m_available flag to
              * enforce single-call semantics: the first call returns the handle and clears
              * m_available; any subsequent call (including calls after the OnPublishReceivedHandler
              * callback returns) returns nullptr.
              */
-            struct PubackAcquireFunctor
+            struct PublishAcknowledgementFunctor
             {
-                std::shared_ptr<PubackControlHandle> handle;
+                std::shared_ptr<PublishAcknowledgementHandle> handle;
 
-                std::shared_ptr<PubackControlHandle> operator()()
+                std::shared_ptr<PublishAcknowledgementHandle> operator()()
                 {
                     if (!handle || !handle->m_available.exchange(false))
                     {
@@ -213,10 +213,10 @@ namespace Aws
                         eventData.publishPacket = packet;
 
                         /*
-                         * For QoS 1 messages, eagerly acquire manual control of the PUBACK immediately
-                         * (before invoking the user callback). A PubackAcquireFunctor is set on
-                         * eventData.acquirePubackControl so the user can call it within the callback
-                         * to take ownership of the PUBACK.
+                         * For QoS 1 messages, eagerly acquire manual control of the publish acknowledgement immediately
+                         * (before invoking the user callback). A PublishAcknowledgementFunctor is set on
+                         * eventData.acquirePublishAcknowledgement so the user can call it within the callback
+                         * to take ownership of the publish acknowledgement.
                          *
                          * The functor self-invalidates in two ways:
                          *   1. After the first call it sets handle->m_available = false, so a second
@@ -225,48 +225,48 @@ namespace Aws
                          *      set to false, so any saved copy of the functor returns nullptr
                          *      immediately without touching the C layer.
                          *
-                         * If the user did NOT call acquirePubackControl() (or it returned nullptr),
-                         * the PUBACK is automatically sent here. Otherwise the user is responsible
-                         * for calling InvokePuback() later.
+                         * If the user did NOT call acquirePublishAcknowledgement() (or it returned nullptr),
+                         * the publish acknowledgement is automatically sent here. Otherwise the user is responsible
+                         * for calling InvokePublishAcknowledgement() later.
                          */
-                        uint64_t pubackControlId = 0;
-                        std::shared_ptr<PubackControlHandle> pubackHandle;
+                        uint64_t publishAcknowledgementId = 0;
+                        std::shared_ptr<PublishAcknowledgementHandle> publishAcknowledgementHandle;
                         if (publish->qos == AWS_MQTT5_QOS_AT_LEAST_ONCE)
                         {
-                            /* Eagerly acquire the puback control before invoking the user callback. */
-                            pubackControlId =
+                            /* Eagerly acquire the publish acknowledgement control before invoking the user callback. */
+                            publishAcknowledgementId =
                                 aws_mqtt5_client_acquire_publish_acknowledgement(client_core->m_client, publish);
 
-                            if (pubackControlId != 0)
+                            if (publishAcknowledgementId != 0)
                             {
-                                pubackHandle = Aws::Crt::MakeShared<PubackControlHandle>(
-                                    client_core->m_allocator, pubackControlId);
-                                PubackAcquireFunctor functor;
-                                functor.handle = pubackHandle;
-                                eventData.acquirePubackControl = std::move(functor);
+                                publishAcknowledgementHandle = Aws::Crt::MakeShared<PublishAcknowledgementHandle>(
+                                    client_core->m_allocator, publishAcknowledgementId);
+                                PublishAcknowledgementFunctor functor;
+                                functor.handle = publishAcknowledgementHandle;
+                                eventData.acquirePublishAcknowledgement = std::move(functor);
                             }
                         }
 
                         client_core->onPublishReceived(eventData);
 
-                        /* Detect whether the user called acquirePubackControl() during the callback:
+                        /* Detect whether the user called acquirePublishAcknowledgement() during the callback:
                          * - If they called it and got a handle, handle->m_available was set to false
                          *   inside the functor (via exchange), so it is already false here.
                          * - If they did NOT call it, handle->m_available is still true here.
                          *
                          * exchange(false) atomically reads the current value and sets it to false.
                          * If it returns true, the user did NOT take control and we must auto-invoke
-                         * the PUBACK. If it returns false, the user already consumed the handle and
-                         * is responsible for calling InvokePuback() later.
+                         * the publish acknowledgement. If it returns false, the user already consumed the handle and
+                         * is responsible for calling InvokePublishAcknowledgement() later.
                          *
                          * This also serves as the post-callback invalidation: after this point any
                          * saved copy of the functor will return nullptr immediately. */
-                        bool userDidNotTakeControl = pubackHandle && pubackHandle->m_available.exchange(false);
+                        bool userDidNotTakeControl = publishAcknowledgementHandle && publishAcknowledgementHandle->m_available.exchange(false);
 
-                        if (pubackControlId != 0 && userDidNotTakeControl)
+                        if (publishAcknowledgementId != 0 && userDidNotTakeControl)
                         {
                             aws_mqtt5_client_invoke_publish_acknowledgement(
-                                client_core->m_client, pubackControlId, nullptr);
+                                client_core->m_client, publishAcknowledgementId, nullptr);
                         }
                     }
                     else
@@ -690,20 +690,20 @@ namespace Aws
                 return result == AWS_OP_SUCCESS;
             }
 
-            bool Mqtt5ClientCore::InvokePuback(const std::shared_ptr<PubackControlHandle> &pubackControlHandle) noexcept
+            bool Mqtt5ClientCore::InvokePublishAcknowledgement(const std::shared_ptr<PublishAcknowledgementHandle> &publishAcknowledgementHandle) noexcept
             {
                 if (m_client == nullptr)
                 {
-                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to invoke puback: Mqtt5ClientCore is invalid.");
+                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to invoke publish acknowledgement: Mqtt5ClientCore is invalid.");
                     return false;
                 }
-                if (pubackControlHandle == nullptr)
+                if (publishAcknowledgementHandle == nullptr)
                 {
-                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to invoke puback: pubackControlHandle is null.");
+                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to invoke publish acknowledgement: publishAcknowledgementHandle is null.");
                     return false;
                 }
                 return aws_mqtt5_client_invoke_publish_acknowledgement(
-                           m_client, pubackControlHandle->m_controlId, nullptr) == AWS_OP_SUCCESS;
+                           m_client, publishAcknowledgementHandle->m_controlId, nullptr) == AWS_OP_SUCCESS;
             }
 
             void Mqtt5ClientCore::Close() noexcept

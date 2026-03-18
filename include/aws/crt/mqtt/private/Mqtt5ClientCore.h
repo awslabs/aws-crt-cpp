@@ -21,29 +21,30 @@ namespace Aws
         namespace Mqtt5
         {
             /**
-             * An opaque handle representing manual control over a QoS 1 PUBACK for a received PUBLISH packet.
+             * An opaque handle representing manual control over a publish acknowledgement for a received PUBLISH
+             * packet.
              *
-             * Obtained by calling acquirePubackControl() within the OnPublishReceivedHandler callback.
-             * Pass this handle to Mqtt5Client::InvokePuback() at any later time to send the PUBACK.
+             * Obtained by calling acquirePublishAcknowledgement() within the OnPublishReceivedHandler callback.
+             * Pass this handle to Mqtt5Client::InvokePublishAcknowledgement() at any later time to send the publish acknowledgement.
              *
-             * @note acquirePubackControl() must be called within the OnPublishReceivedHandler callback.
+             * @note acquirePublishAcknowledgement() must be called within the OnPublishReceivedHandler callback.
              *       Calling it after the callback returns will return nullptr.
              */
-            struct PubackAcquireFunctor;
+            struct PublishAcknowledgementFunctor;
 
-            class AWS_CRT_CPP_API PubackControlHandle
+            class AWS_CRT_CPP_API PublishAcknowledgementHandle
             {
                 friend class Mqtt5Client;
                 friend class Mqtt5ClientCore;
-                friend struct PubackAcquireFunctor;
+                friend struct PublishAcknowledgementFunctor;
                 template <typename T, typename... Args>
                 friend std::shared_ptr<T> Aws::Crt::MakeShared(Aws::Crt::Allocator *, Args &&...);
 
               public:
-                PubackControlHandle() noexcept : m_controlId(0), m_available(false) {}
+                PublishAcknowledgementHandle() noexcept : m_controlId(0), m_available(false) {}
 
               private:
-                explicit PubackControlHandle(uint64_t controlId) noexcept : m_controlId(controlId), m_available(true) {}
+                explicit PublishAcknowledgementHandle(uint64_t controlId) noexcept : m_controlId(controlId), m_available(true) {}
 
                 uint64_t m_controlId;
                 /* We use an atomic bool here despite it not being strictly "needed" because it satisfies thread
@@ -131,11 +132,11 @@ namespace Aws
                 /**
                  * Sends a PUBACK packet for a QoS 1 PUBLISH that was previously acquired for manual control.
                  *
-                 * @param pubackControlHandle handle obtained from acquirePubackControl()
+                 * @param publishAcknowledgementHandle handle obtained from acquirePublishAcknowledgement()
                  *
                  * @return true if the operation succeeded, otherwise false
                  */
-                bool InvokePuback(const std::shared_ptr<PubackControlHandle> &pubackControlHandle) noexcept;
+                bool InvokePublishAcknowledgement(const std::shared_ptr<PublishAcknowledgementHandle> &publishAcknowledgementHandle) noexcept;
 
                 /**
                  * Tells the Mqtt5ClientCore to release the native client and clean up unhandled the resources

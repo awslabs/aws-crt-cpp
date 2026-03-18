@@ -31,7 +31,7 @@ namespace Aws
 
             class Mqtt5to3AdapterOptions;
 
-            class PubackControlHandle;
+            class PublishAcknowledgementHandle;
 
             /**
              * An enumeration that controls how the client applies topic aliasing to outbound publish packets.
@@ -264,16 +264,16 @@ namespace Aws
 
                 /**
                  * Call this function within the OnPublishReceivedHandler callback to take manual control of the
-                 * PUBACK for this QoS 1 message, preventing the client from automatically sending a PUBACK.
+                 * publish acknowledgement for this QoS 1 message, preventing the client from automatically sending a publish acknowledgement.
                  *
-                 * Returns a shared_ptr to a PubackControlHandle that can be passed to Mqtt5Client::InvokePuback()
-                 * to send the PUBACK to the broker.
+                 * Returns a shared_ptr to a PublishAcknowledgementHandle that can be passed to Mqtt5Client::InvokePublishAcknowledgement()
+                 * to send the publish acknowledgement to the broker.
                  *
                  * @note This function must be called within the OnPublishReceivedHandler callback.
                  *       Calling it after the callback returns will return nullptr.
                  * @note Only relevant for QoS 1 messages. Returns nullptr for QoS 0 messages.
                  */
-                std::function<std::shared_ptr<PubackControlHandle>()> acquirePubackControl;
+                std::function<std::shared_ptr<PublishAcknowledgementHandle>()> acquirePublishAcknowledgement;
             };
 
             /**
@@ -322,13 +322,13 @@ namespace Aws
             /**
              * Type signature of the callback invoked when a PacketPublish message received (OnMessageHandler).
              *
-             * To take manual control of the PUBACK for a QoS 1 message, call
-             * eventData.acquirePubackControl() within this callback. If you do so, the client will NOT
-             * automatically send the PUBACK; you are responsible for calling Mqtt5Client::InvokePuback()
+             * To take manual control of the publish acknowledgement for a QoS 1 message, call
+             * eventData.acquirePublishAcknowledgement() within this callback. If you do so, the client will NOT
+             * automatically send the publish acknowledgement; you are responsible for calling Mqtt5Client::InvokePublishAcknowledgement()
              * later with the returned handle.
              *
-             * If you do not call acquirePubackControl() (or it returns nullptr), the client will
-             * automatically send the PUBACK after this callback returns.
+             * If you do not call acquirePublishAcknowledgement() (or it returns nullptr), the client will
+             * automatically send the publish acknowledgement after this callback returns.
              */
             using OnPublishReceivedHandler = std::function<void(const PublishReceivedEventData &)>;
 
@@ -461,15 +461,15 @@ namespace Aws
                 /**
                  * Sends a PUBACK packet for a QoS 1 PUBLISH that was previously acquired for manual control.
                  *
-                 * To use manual PUBACK control, call eventData.acquirePubackControl() within the
-                 * OnPublishReceivedHandler callback to obtain a PubackControlHandle. Then call this method
-                 * to send the PUBACK.
+                 * To use manual publish acknowledgement control, call eventData.acquirePublishAcknowledgement() within the
+                 * OnPublishReceivedHandler callback to obtain a PublishAcknowledgementHandle. Then call this method
+                 * to send the publish acknowledgement.
                  *
-                 * @param pubackControlHandle handle obtained from acquirePubackControl()
+                 * @param publishAcknowledgementHandle handle obtained from acquirePublishAcknowledgement()
                  *
                  * @return true if the operation succeeded, otherwise false
                  */
-                bool InvokePuback(const std::shared_ptr<PubackControlHandle> &pubackControlHandle) noexcept;
+                bool InvokePublishAcknowledgement(const std::shared_ptr<PublishAcknowledgementHandle> &publishAcknowledgementHandle) noexcept;
 
                 ~Mqtt5Client();
 
