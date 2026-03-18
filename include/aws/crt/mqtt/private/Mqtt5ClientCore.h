@@ -35,6 +35,8 @@ namespace Aws
                 friend class Mqtt5Client;
                 friend class Mqtt5ClientCore;
                 friend struct PubackAcquireFunctor;
+                template <typename T, typename... Args>
+                friend std::shared_ptr<T> Aws::Crt::MakeShared(Aws::Crt::Allocator *, Args &&...);
 
               public:
                 PubackControlHandle() noexcept : m_controlId(0), m_available(false) {}
