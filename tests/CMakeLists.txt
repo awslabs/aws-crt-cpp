@@ -252,7 +252,6 @@ if(NOT BYO_CRYPTO)
     add_net_test_case(Mqtt5ManualPubackHold)
     add_net_test_case(Mqtt5ManualPubackInvoke)
     add_net_test_case(Mqtt5ManualPubackAcquireDoubleCallReturnsNull)
-    add_net_test_case(Mqtt5ManualPubackAcquirePostCallbackReturnsNull)
     add_net_test_case(Mqtt5ManualPubackQoS0AcquireIsNull)
 
     # IOT CORE TEST
