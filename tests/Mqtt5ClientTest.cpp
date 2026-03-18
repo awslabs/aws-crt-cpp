@@ -2733,7 +2733,8 @@ static int s_TestMqtt5ManualPubackInvoke(Aws::Crt::Allocator *allocator, void *)
 AWS_TEST_CASE(Mqtt5ManualPubackInvoke, s_TestMqtt5ManualPubackInvoke)
 
 /*
- * [MP-UC3] Manual PUBACK double-call test: calling acquirePublishAcknowledgement() twice returns null on the second call.
+ * [MP-UC3] Manual PUBACK double-call test: calling acquirePublishAcknowledgement() twice returns null on the second
+ * call.
  */
 static int s_TestMqtt5ManualPubackAcquireDoubleCallReturnsNull(Aws::Crt::Allocator *allocator, void *)
 {

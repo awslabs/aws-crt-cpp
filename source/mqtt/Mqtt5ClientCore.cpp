@@ -261,7 +261,8 @@ namespace Aws
                          *
                          * This also serves as the post-callback invalidation: after this point any
                          * saved copy of the functor will return nullptr immediately. */
-                        bool userDidNotTakeControl = publishAcknowledgementHandle && publishAcknowledgementHandle->m_available.exchange(false);
+                        bool userDidNotTakeControl =
+                            publishAcknowledgementHandle && publishAcknowledgementHandle->m_available.exchange(false);
 
                         if (publishAcknowledgementId != 0 && userDidNotTakeControl)
                         {
@@ -690,16 +691,20 @@ namespace Aws
                 return result == AWS_OP_SUCCESS;
             }
 
-            bool Mqtt5ClientCore::InvokePublishAcknowledgement(const std::shared_ptr<PublishAcknowledgementHandle> &publishAcknowledgementHandle) noexcept
+            bool Mqtt5ClientCore::InvokePublishAcknowledgement(
+                const std::shared_ptr<PublishAcknowledgementHandle> &publishAcknowledgementHandle) noexcept
             {
                 if (m_client == nullptr)
                 {
-                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to invoke publish acknowledgement: Mqtt5ClientCore is invalid.");
+                    AWS_LOGF_DEBUG(
+                        AWS_LS_MQTT5_CLIENT, "Failed to invoke publish acknowledgement: Mqtt5ClientCore is invalid.");
                     return false;
                 }
                 if (publishAcknowledgementHandle == nullptr)
                 {
-                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to invoke publish acknowledgement: publishAcknowledgementHandle is null.");
+                    AWS_LOGF_DEBUG(
+                        AWS_LS_MQTT5_CLIENT,
+                        "Failed to invoke publish acknowledgement: publishAcknowledgementHandle is null.");
                     return false;
                 }
                 return aws_mqtt5_client_invoke_publish_acknowledgement(

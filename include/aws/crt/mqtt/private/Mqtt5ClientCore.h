@@ -25,7 +25,8 @@ namespace Aws
              * packet.
              *
              * Obtained by calling acquirePublishAcknowledgement() within the OnPublishReceivedHandler callback.
-             * Pass this handle to Mqtt5Client::InvokePublishAcknowledgement() at any later time to send the publish acknowledgement.
+             * Pass this handle to Mqtt5Client::InvokePublishAcknowledgement() at any later time to send the publish
+             * acknowledgement.
              *
              * @note acquirePublishAcknowledgement() must be called within the OnPublishReceivedHandler callback.
              *       Calling it after the callback returns will return nullptr.
@@ -44,7 +45,10 @@ namespace Aws
                 PublishAcknowledgementHandle() noexcept : m_controlId(0), m_available(false) {}
 
               private:
-                explicit PublishAcknowledgementHandle(uint64_t controlId) noexcept : m_controlId(controlId), m_available(true) {}
+                explicit PublishAcknowledgementHandle(uint64_t controlId) noexcept
+                    : m_controlId(controlId), m_available(true)
+                {
+                }
 
                 uint64_t m_controlId;
                 /* We use an atomic bool here despite it not being strictly "needed" because it satisfies thread
@@ -136,7 +140,8 @@ namespace Aws
                  *
                  * @return true if the operation succeeded, otherwise false
                  */
-                bool InvokePublishAcknowledgement(const std::shared_ptr<PublishAcknowledgementHandle> &publishAcknowledgementHandle) noexcept;
+                bool InvokePublishAcknowledgement(
+                    const std::shared_ptr<PublishAcknowledgementHandle> &publishAcknowledgementHandle) noexcept;
 
                 /**
                  * Tells the Mqtt5ClientCore to release the native client and clean up unhandled the resources
