@@ -11,7 +11,6 @@
 #include <aws/crt/mqtt/Mqtt5Client.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
 
-#include <atomic>
 #include <mutex>
 
 namespace Aws
@@ -51,9 +50,7 @@ namespace Aws
                 }
 
                 uint64_t m_controlId;
-                /* We use an atomic bool here despite it not being strictly "needed" because it satisfies thread
-                 * sanitizer requirements */
-                std::atomic<bool> m_available;
+                bool m_available;
             };
 
             /**

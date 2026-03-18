@@ -60,10 +60,11 @@ namespace Aws
 
                 std::shared_ptr<PublishAcknowledgementHandle> operator()()
                 {
-                    if (!handle || !handle->m_available.exchange(false))
+                    if (!handle || !handle->m_available)
                     {
                         return nullptr;
                     }
+                    handle->m_available = false;
                     return handle;
                 }
             };
@@ -251,18 +252,22 @@ namespace Aws
 
                         /* Detect whether the user called acquirePublishAcknowledgement() during the callback:
                          * - If they called it and got a handle, handle->m_available was set to false
-                         *   inside the functor (via exchange), so it is already false here.
+                         *   inside the functor, so it is already false here.
                          * - If they did NOT call it, handle->m_available is still true here.
                          *
-                         * exchange(false) atomically reads the current value and sets it to false.
-                         * If it returns true, the user did NOT take control and we must auto-invoke
-                         * the publish acknowledgement. If it returns false, the user already consumed the handle and
-                         * is responsible for calling InvokePublishAcknowledgement() later.
+                         * Read the current value, then unconditionally set it to false. If it was
+                         * true, the user did NOT take control and we must auto-invoke the PUBACK.
+                         * If it was false, the user already consumed the handle and is responsible
+                         * for calling InvokePublishAcknowledgement() later.
                          *
                          * This also serves as the post-callback invalidation: after this point any
                          * saved copy of the functor will return nullptr immediately. */
                         bool userDidNotTakeControl =
-                            publishAcknowledgementHandle && publishAcknowledgementHandle->m_available.exchange(false);
+                            publishAcknowledgementHandle && publishAcknowledgementHandle->m_available;
+                        if (publishAcknowledgementHandle)
+                        {
+                            publishAcknowledgementHandle->m_available = false;
+                        }
 
                         if (publishAcknowledgementId != 0 && userDidNotTakeControl)
                         {
