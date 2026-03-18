@@ -28,18 +28,22 @@ namespace Aws
              * @note acquirePubackControl() must be called within the OnPublishReceivedHandler callback.
              *       Calling it after the callback returns will return nullptr.
              */
+            struct PubackAcquireFunctor;
+
             class AWS_CRT_CPP_API PubackControlHandle
             {
                 friend class Mqtt5Client;
                 friend class Mqtt5ClientCore;
+                friend struct PubackAcquireFunctor;
 
               public:
-                PubackControlHandle() noexcept : m_controlId(0) {}
+                PubackControlHandle() noexcept : m_controlId(0), m_available(false) {}
 
               private:
-                explicit PubackControlHandle(uint64_t controlId) noexcept : m_controlId(controlId) {}
+                explicit PubackControlHandle(uint64_t controlId) noexcept : m_controlId(controlId), m_available(true) {}
 
                 uint64_t m_controlId;
+                bool m_available;
             };
 
             /**

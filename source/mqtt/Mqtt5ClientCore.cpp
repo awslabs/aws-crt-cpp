@@ -46,6 +46,29 @@ namespace Aws
                 Allocator *allocator;
             };
 
+            /**
+             * Callable object stored in PublishReceivedEventData::acquirePubackControl.
+             *
+             * Holds the single PubackControlHandle shared_ptr and uses its m_available flag to
+             * enforce single-call semantics: the first call returns the handle and clears
+             * m_available; any subsequent call (including calls after the OnPublishReceivedHandler
+             * callback returns) returns nullptr.
+             */
+            struct PubackAcquireFunctor
+            {
+                std::shared_ptr<PubackControlHandle> handle;
+
+                std::shared_ptr<PubackControlHandle> operator()()
+                {
+                    if (!handle || !handle->m_available)
+                    {
+                        return nullptr;
+                    }
+                    handle->m_available = false;
+                    return handle;
+                }
+            };
+
             void Mqtt5ClientCore::s_lifeCycleEventCallback(const struct aws_mqtt5_client_lifecycle_event *event)
             {
                 Mqtt5ClientCore *client_core = reinterpret_cast<Mqtt5ClientCore *>(event->user_data);
@@ -192,55 +215,45 @@ namespace Aws
 
                         /*
                          * For QoS 1 messages, eagerly acquire manual control of the PUBACK immediately
-                         * (before invoking the user callback), acquire_puback is called as soon as the
-                         * native client sends up a publish. An opaque wrapper (PubackControlHandle) is
-                         * provided to the user via acquirePubackControl().
+                         * (before invoking the user callback). A PubackAcquireFunctor is set on
+                         * eventData.acquirePubackControl so the user can call it within the callback
+                         * to take ownership of the PUBACK.
                          *
-                         * acquirePubackControl() self-invalidates in two ways:
-                         *   1. After the first call it sets *available = false, so a second call within
-                         *      the same callback returns nullptr.
-                         *   2. After onPublishReceived returns, *available is unconditionally set to false,
-                         *      so any saved copy of the lambda returns nullptr immediately without touching
-                         *      the C layer.
+                         * The functor self-invalidates in two ways:
+                         *   1. After the first call it sets handle->m_available = false, so a second
+                         *      call within the same callback returns nullptr.
+                         *   2. After onPublishReceived returns, handle->m_available is unconditionally
+                         *      set to false, so any saved copy of the functor returns nullptr
+                         *      immediately without touching the C layer.
                          *
-                         * The onPublishReceived() callback returns true if the user took manual control (called
-                         * acquirePubackControl()), in which case the user is responsible for calling
-                         * InvokePuback() later. If the callback returns false, the PUBACK is automatically
-                         * sent here. On error, the PUBACK is also auto-sent to avoid losing it.
+                         * If the user did NOT call acquirePubackControl() (or it returned nullptr),
+                         * the PUBACK is automatically sent here. Otherwise the user is responsible
+                         * for calling InvokePuback() later.
                          */
                         uint64_t pubackControlId = 0;
-                        auto available = std::make_shared<bool>(true);
+                        std::shared_ptr<PubackControlHandle> pubackHandle;
                         if (publish->qos == AWS_MQTT5_QOS_AT_LEAST_ONCE)
                         {
-                            /* Eagerly acquire the puback control before invoking the user callback.
-                             * An opaque wrapper (PubackControlHandle) is provided to the user callback via
-                             * acquirePubackControl(). */
+                            /* Eagerly acquire the puback control before invoking the user callback. */
                             pubackControlId = aws_mqtt5_client_acquire_puback(client_core->m_client, publish);
 
                             if (pubackControlId != 0)
                             {
-                                auto handle =
-                                    std::make_shared<PubackControlHandle>(PubackControlHandle(pubackControlId));
-                                eventData.acquirePubackControl = [handle,
-                                                                  available]() -> std::shared_ptr<PubackControlHandle>
-                                {
-                                    if (!*available)
-                                    {
-                                        return nullptr;
-                                    }
-                                    /* Mark as consumed so a second call returns nullptr */
-                                    *available = false;
-                                    return handle;
-                                };
+                                pubackHandle = Aws::Crt::MakeShared<PubackControlHandle>(
+                                    client_core->m_allocator, pubackControlId);
+                                auto functor = Aws::Crt::MakeShared<PubackAcquireFunctor>(client_core->m_allocator);
+                                functor->handle = pubackHandle;
+                                eventData.acquirePubackControl = [functor]() -> std::shared_ptr<PubackControlHandle>
+                                { return (*functor)(); };
                             }
                         }
 
                         client_core->onPublishReceived(eventData);
 
                         /* Detect whether the user called acquirePubackControl() during the callback:
-                         * - If they called it and got a handle, *available was set to false inside
-                         *   the lambda, so it is already false here.
-                         * - If they did NOT call it, *available is still true here.
+                         * - If they called it and got a handle, handle->m_available was set to false
+                         *   inside the functor, so it is already false here.
+                         * - If they did NOT call it, handle->m_available is still true here.
                          *
                          * Read the current value, then unconditionally set it to false. If it was
                          * true, the user did NOT take control and we must auto-invoke the PUBACK.
@@ -248,9 +261,12 @@ namespace Aws
                          * for calling InvokePuback() later.
                          *
                          * This also serves as the post-callback invalidation: after this point any
-                         * saved copy of the lambda will return nullptr immediately. */
-                        bool userDidNotTakeControl = *available;
-                        *available = false;
+                         * saved copy of the functor will return nullptr immediately. */
+                        bool userDidNotTakeControl = pubackHandle && pubackHandle->m_available;
+                        if (pubackHandle)
+                        {
+                            pubackHandle->m_available = false;
+                        }
 
                         if (pubackControlId != 0 && userDidNotTakeControl)
                         {
