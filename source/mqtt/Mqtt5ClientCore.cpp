@@ -209,7 +209,7 @@ namespace Aws
                          * sent here. On error, the PUBACK is also auto-sent to avoid losing it.
                          */
                         uint64_t pubackControlId = 0;
-                        auto available = std::make_shared<std::atomic<bool>>(true);
+                        auto available = std::make_shared<bool>(true);
                         if (publish->qos == AWS_MQTT5_QOS_AT_LEAST_ONCE)
                         {
                             /* Eagerly acquire the puback control before invoking the user callback.
@@ -242,14 +242,15 @@ namespace Aws
                          *   the lambda, so it is already false here.
                          * - If they did NOT call it, *available is still true here.
                          *
-                         * We use exchange(false) to atomically read the current value and set it to
-                         * false in one step. If it returns true, the user did NOT take control and
-                         * we must auto-invoke the PUBACK. If it returns false, the user already
-                         * consumed the handle and is responsible for calling InvokePuback() later.
+                         * Read the current value, then unconditionally set it to false. If it was
+                         * true, the user did NOT take control and we must auto-invoke the PUBACK.
+                         * If it was false, the user already consumed the handle and is responsible
+                         * for calling InvokePuback() later.
                          *
                          * This also serves as the post-callback invalidation: after this point any
                          * saved copy of the lambda will return nullptr immediately. */
-                        bool userDidNotTakeControl = available->exchange(false);
+                        bool userDidNotTakeControl = *available;
+                        *available = false;
 
                         if (pubackControlId != 0 && userDidNotTakeControl)
                         {
@@ -677,14 +678,19 @@ namespace Aws
                 return result == AWS_OP_SUCCESS;
             }
 
-            bool Mqtt5ClientCore::InvokePuback(const PubackControlHandle &pubackControlHandle) noexcept
+            bool Mqtt5ClientCore::InvokePuback(const std::shared_ptr<PubackControlHandle> &pubackControlHandle) noexcept
             {
                 if (m_client == nullptr)
                 {
                     AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to invoke puback: Mqtt5ClientCore is invalid.");
                     return false;
                 }
-                return aws_mqtt5_client_invoke_puback(m_client, pubackControlHandle.m_controlId, nullptr) ==
+                if (pubackControlHandle == nullptr)
+                {
+                    AWS_LOGF_DEBUG(AWS_LS_MQTT5_CLIENT, "Failed to invoke puback: pubackControlHandle is null.");
+                    return false;
+                }
+                return aws_mqtt5_client_invoke_puback(m_client, pubackControlHandle->m_controlId, nullptr) ==
                        AWS_OP_SUCCESS;
             }
 

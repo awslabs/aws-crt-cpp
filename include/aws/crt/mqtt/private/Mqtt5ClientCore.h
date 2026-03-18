@@ -20,6 +20,29 @@ namespace Aws
         namespace Mqtt5
         {
             /**
+             * An opaque handle representing manual control over a QoS 1 PUBACK for a received PUBLISH packet.
+             *
+             * Obtained by calling acquirePubackControl() within the OnPublishReceivedHandler callback.
+             * Pass this handle to Mqtt5Client::InvokePuback() at any later time to send the PUBACK.
+             *
+             * @note acquirePubackControl() must be called within the OnPublishReceivedHandler callback.
+             *       Calling it after the callback returns will return nullptr.
+             */
+            class AWS_CRT_CPP_API PubackControlHandle
+            {
+                friend class Mqtt5Client;
+                friend class Mqtt5ClientCore;
+
+              public:
+                PubackControlHandle() noexcept : m_controlId(0) {}
+
+              private:
+                explicit PubackControlHandle(uint64_t controlId) noexcept : m_controlId(controlId) {}
+
+                uint64_t m_controlId;
+            };
+
+            /**
              * The Mqtt5ClientCore is an internal class for Mqtt5Client. The class is used to handle communication
              * between Mqtt5Client and underlying c mqtt5 client. This class should only be used internally by
              * Mqtt5Client. This is a move-only type. Unless otherwise specified, all function arguments need only to
@@ -103,7 +126,7 @@ namespace Aws
                  *
                  * @return true if the operation succeeded, otherwise false
                  */
-                bool InvokePuback(const PubackControlHandle &pubackControlHandle) noexcept;
+                bool InvokePuback(const std::shared_ptr<PubackControlHandle> &pubackControlHandle) noexcept;
 
                 /**
                  * Tells the Mqtt5ClientCore to release the native client and clean up unhandled the resources

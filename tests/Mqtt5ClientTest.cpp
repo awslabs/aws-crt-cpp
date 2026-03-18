@@ -2610,7 +2610,7 @@ static int s_TestMqtt5ManualPubackHold(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(redeliveryFuture.wait_for(std::chrono::seconds(60)) == std::future_status::ready);
 
     /* Release the held PUBACK now that we've confirmed re-delivery */
-    ASSERT_TRUE(mqtt5Client->InvokePuback(*capturedHandle));
+    ASSERT_TRUE(mqtt5Client->InvokePuback(capturedHandle));
 
     ASSERT_TRUE(mqtt5Client->Stop());
     stoppedPromise.get_future().get();
@@ -2718,7 +2718,7 @@ static int s_TestMqtt5ManualPubackInvoke(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(capturedHandle != nullptr);
 
     /* Immediately invoke the PUBACK using the acquired handle */
-    ASSERT_TRUE(mqtt5Client->InvokePuback(*capturedHandle));
+    ASSERT_TRUE(mqtt5Client->InvokePuback(capturedHandle));
 
     /* Wait 60 seconds and confirm the broker does NOT re-deliver the message */
     auto redeliveryFuture = unexpectedRedeliveryPromise.get_future();
