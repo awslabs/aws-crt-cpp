@@ -74,11 +74,10 @@ namespace Aws
 
                 std::shared_ptr<PublishAcknowledgementHandle> operator()()
                 {
-                    if (!handle || !handle->m_available)
+                    if (!handle || !handle->m_available.exchange(false))
                     {
                         return nullptr;
                     }
-                    handle->m_available = false;
                     return handle;
                 }
             };
@@ -266,22 +265,20 @@ namespace Aws
 
                         /* Detect whether the user called acquirePublishAcknowledgement() during the callback:
                          * - If they called it and got a handle, handle->m_available was set to false
-                         *   inside the functor, so it is already false here.
-                         * - If they did NOT call it, handle->m_available is still true here.
+                         *   inside the functor (via exchange), so exchange(false) returns false here.
+                         * - If they did NOT call it, handle->m_available is still true, so
+                         *   exchange(false) returns true here.
                          *
-                         * Read the current value, then unconditionally set it to false. If it was
-                         * true, the user did NOT take control and we must auto-invoke the PUBACK.
-                         * If it was false, the user already consumed the handle and is responsible
-                         * for calling InvokePublishAcknowledgement() later.
+                         * exchange(false) atomically reads the current value and sets it to false in
+                         * one step. If it returns true, the user did NOT take control and we must
+                         * auto-invoke the publish acknowledgement. If it returns false, the user
+                         * already consumed the handle and is responsible for calling
+                         * InvokePublishAcknowledgement() later.
                          *
                          * This also serves as the post-callback invalidation: after this point any
                          * saved copy of the functor will return nullptr immediately. */
                         bool userDidNotTakeControl =
-                            publishAcknowledgementHandle && publishAcknowledgementHandle->m_available;
-                        if (publishAcknowledgementHandle)
-                        {
-                            publishAcknowledgementHandle->m_available = false;
-                        }
+                            publishAcknowledgementHandle && publishAcknowledgementHandle->m_available.exchange(false);
                         /* We add an additional client_core->m_client null check here because it's possible (through
                          * insanity) that the user has killed the client in the onPublishRecieved callback. This will
                          * handle that case here with the recursive mutex */

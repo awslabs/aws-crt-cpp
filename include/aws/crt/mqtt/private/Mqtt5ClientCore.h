@@ -11,6 +11,7 @@
 #include <aws/crt/mqtt/Mqtt5Client.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
 
+#include <atomic>
 #include <mutex>
 
 namespace Aws
@@ -52,7 +53,7 @@ namespace Aws
                     uint64_t controlId) noexcept;
 
                 uint64_t m_controlId;
-                bool m_available;
+                std::atomic<bool> m_available;
             };
 
             /**
