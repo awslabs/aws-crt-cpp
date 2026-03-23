@@ -24,12 +24,14 @@ namespace Aws
                 Allocator *allocator,
                 uint64_t controlId) noexcept
             {
-                PublishAcknowledgementHandle *handle =
-                    Aws::Crt::New<PublishAcknowledgementHandle>(allocator, controlId);
-                if (!handle)
+                /* Manually call aws_mem_acquire here because PublishAcknowledgeHandle only has a private constructor
+                 * and cannot be used with Aws::Crt::New. Aws::Crt::Delete still clears memory appropriately. */
+                void *mem = aws_mem_acquire(allocator, sizeof(PublishAcknowledgementHandle));
+                if (!mem)
                 {
                     return nullptr;
                 }
+                PublishAcknowledgementHandle *handle = new (mem) PublishAcknowledgementHandle(controlId);
                 return std::shared_ptr<PublishAcknowledgementHandle>(
                     handle, [allocator](PublishAcknowledgementHandle *p) { Aws::Crt::Delete(p, allocator); });
             }
