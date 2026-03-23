@@ -20,6 +20,20 @@ namespace Aws
     {
         namespace Mqtt5
         {
+            std::shared_ptr<PublishAcknowledgementHandle> PublishAcknowledgementHandle::s_create(
+                Allocator *allocator,
+                uint64_t controlId) noexcept
+            {
+                PublishAcknowledgementHandle *handle =
+                    Aws::Crt::New<PublishAcknowledgementHandle>(allocator, controlId);
+                if (!handle)
+                {
+                    return nullptr;
+                }
+                return std::shared_ptr<PublishAcknowledgementHandle>(
+                    handle, [allocator](PublishAcknowledgementHandle *p) { Aws::Crt::Delete(p, allocator); });
+            }
+
             struct PubAckCallbackData : public std::enable_shared_from_this<PubAckCallbackData>
             {
                 PubAckCallbackData(Allocator *alloc = ApiAllocator()) : clientCore(nullptr), allocator(alloc) {}
@@ -240,7 +254,7 @@ namespace Aws
 
                             if (publishAcknowledgementId != 0)
                             {
-                                publishAcknowledgementHandle = Aws::Crt::MakeShared<PublishAcknowledgementHandle>(
+                                publishAcknowledgementHandle = PublishAcknowledgementHandle::s_create(
                                     client_core->m_allocator, publishAcknowledgementId);
                                 PublishAcknowledgementFunctor functor;
                                 functor.handle = publishAcknowledgementHandle;

@@ -37,17 +37,19 @@ namespace Aws
                 friend class Mqtt5Client;
                 friend class Mqtt5ClientCore;
                 friend struct PublishAcknowledgementFunctor;
-                template <typename T, typename... Args>
-                friend std::shared_ptr<T> Aws::Crt::MakeShared(Aws::Crt::Allocator *, Args &&...);
-
-              public:
-                PublishAcknowledgementHandle() noexcept : m_controlId(0), m_available(false) {}
 
               private:
                 explicit PublishAcknowledgementHandle(uint64_t controlId) noexcept
                     : m_controlId(controlId), m_available(true)
                 {
                 }
+
+                /**
+                 * Creates a PublishAcknowledgementHandle.
+                 */
+                static std::shared_ptr<PublishAcknowledgementHandle> s_create(
+                    Allocator *allocator,
+                    uint64_t controlId) noexcept;
 
                 uint64_t m_controlId;
                 bool m_available;
