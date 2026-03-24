@@ -248,7 +248,13 @@ namespace Aws
                             {
                                 functor.handle = PublishAcknowledgementHandle::s_create(
                                     client_core->m_allocator, publishAcknowledgementId);
-                                eventData.acquirePublishAcknowledgement = std::move(functor);
+                                /* std::function requires a copyable callable so we wrap the move only functor
+                                 * into a shared_ptr so the lambda can be copyable. */
+                                auto sharedFunctor = Aws::Crt::MakeShared<PublishAcknowledgementFunctor>(
+                                    client_core->m_allocator, std::move(functor));
+                                eventData.acquirePublishAcknowledgement =
+                                    [sharedFunctor]() -> ScopedResource<PublishAcknowledgementHandle>
+                                { return (*sharedFunctor)(); };
                             }
                         }
 
