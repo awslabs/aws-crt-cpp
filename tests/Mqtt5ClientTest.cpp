@@ -2544,7 +2544,7 @@ static int s_TestMqtt5ManualPubackHold(Aws::Crt::Allocator *allocator, void *)
     s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
     /* Storage for the handle acquired within the callback */
-    std::shared_ptr<Mqtt5::PublishAcknowledgementHandle> capturedHandle = nullptr;
+    Aws::Crt::ScopedResource<Mqtt5::PublishAcknowledgementHandle> capturedHandle = nullptr;
     std::promise<void> firstDeliveryPromise;
     std::promise<void> redeliveryPromise;
     bool firstDeliveryDone = false;
@@ -2652,7 +2652,7 @@ static int s_TestMqtt5ManualPubackInvoke(Aws::Crt::Allocator *allocator, void *)
     std::promise<void> stoppedPromise;
     s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
 
-    std::shared_ptr<Mqtt5::PublishAcknowledgementHandle> capturedHandle = nullptr;
+    Aws::Crt::ScopedResource<Mqtt5::PublishAcknowledgementHandle> capturedHandle = nullptr;
     std::promise<void> firstDeliveryPromise;
     std::promise<void> unexpectedRedeliveryPromise;
     bool firstDeliveryDone = false;

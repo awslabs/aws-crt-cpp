@@ -11,7 +11,6 @@
 #include <aws/crt/mqtt/Mqtt5Client.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
 
-#include <atomic>
 #include <mutex>
 
 namespace Aws
@@ -33,27 +32,21 @@ namespace Aws
              */
             struct PublishAcknowledgementFunctor;
 
-            class AWS_CRT_CPP_API PublishAcknowledgementHandle
+            struct AWS_CRT_CPP_API PublishAcknowledgementHandle
             {
-                friend class Mqtt5Client;
                 friend class Mqtt5ClientCore;
-                friend struct PublishAcknowledgementFunctor;
 
               private:
-                explicit PublishAcknowledgementHandle(uint64_t controlId) noexcept
-                    : m_controlId(controlId), m_available(true)
-                {
-                }
+                explicit PublishAcknowledgementHandle(uint64_t controlId) noexcept : m_controlId(controlId) {}
 
                 /**
                  * Creates a PublishAcknowledgementHandle.
                  */
-                static std::shared_ptr<PublishAcknowledgementHandle> s_create(
+                static ScopedResource<PublishAcknowledgementHandle> s_create(
                     Allocator *allocator,
                     uint64_t controlId) noexcept;
 
                 uint64_t m_controlId;
-                std::atomic<bool> m_available;
             };
 
             /**
@@ -141,7 +134,7 @@ namespace Aws
                  * @return true if the operation succeeded, otherwise false
                  */
                 bool InvokePublishAcknowledgement(
-                    const std::shared_ptr<PublishAcknowledgementHandle> &publishAcknowledgementHandle) noexcept;
+                    const ScopedResource<PublishAcknowledgementHandle> &publishAcknowledgementHandle) noexcept;
 
                 /**
                  * Tells the Mqtt5ClientCore to release the native client and clean up unhandled the resources

@@ -159,7 +159,7 @@ namespace Aws
             }
 
             bool Mqtt5Client::InvokePublishAcknowledgement(
-                const std::shared_ptr<PublishAcknowledgementHandle> &publishAcknowledgementHandle) noexcept
+                const ScopedResource<PublishAcknowledgementHandle> &publishAcknowledgementHandle) noexcept
             {
                 if (m_client_core == nullptr)
                 {

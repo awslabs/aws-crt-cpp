@@ -31,7 +31,7 @@ namespace Aws
 
             class Mqtt5to3AdapterOptions;
 
-            class PublishAcknowledgementHandle;
+            struct PublishAcknowledgementHandle;
 
             /**
              * An enumeration that controls how the client applies topic aliasing to outbound publish packets.
@@ -267,14 +267,14 @@ namespace Aws
                  * publish acknowledgement for this QoS 1 message, preventing the client from automatically sending a
                  * publish acknowledgement.
                  *
-                 * Returns a shared_ptr to a PublishAcknowledgementHandle that can be passed to
+                 * Returns a ScopedResource to a PublishAcknowledgementHandle that can be passed to
                  * Mqtt5Client::InvokePublishAcknowledgement() to send the publish acknowledgement to the broker.
                  *
                  * @note This function must be called within the OnPublishReceivedHandler callback.
                  *       Calling it after the callback returns will return nullptr.
                  * @note Only relevant for QoS 1 messages. Returns nullptr for QoS 0 messages.
                  */
-                std::function<std::shared_ptr<PublishAcknowledgementHandle>()> acquirePublishAcknowledgement;
+                std::function<ScopedResource<PublishAcknowledgementHandle>()> acquirePublishAcknowledgement;
             };
 
             /**
@@ -471,7 +471,7 @@ namespace Aws
                  * @return true if the operation succeeded, otherwise false
                  */
                 bool InvokePublishAcknowledgement(
-                    const std::shared_ptr<PublishAcknowledgementHandle> &publishAcknowledgementHandle) noexcept;
+                    const ScopedResource<PublishAcknowledgementHandle> &publishAcknowledgementHandle) noexcept;
 
                 ~Mqtt5Client();
 

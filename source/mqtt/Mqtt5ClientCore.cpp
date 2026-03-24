@@ -20,7 +20,7 @@ namespace Aws
     {
         namespace Mqtt5
         {
-            std::shared_ptr<PublishAcknowledgementHandle> PublishAcknowledgementHandle::s_create(
+            ScopedResource<PublishAcknowledgementHandle> PublishAcknowledgementHandle::s_create(
                 Allocator *allocator,
                 uint64_t controlId) noexcept
             {
@@ -29,10 +29,10 @@ namespace Aws
                 void *mem = aws_mem_acquire(allocator, sizeof(PublishAcknowledgementHandle));
                 if (!mem)
                 {
-                    return nullptr;
+                    return ScopedResource<PublishAcknowledgementHandle>(nullptr, [](PublishAcknowledgementHandle *) {});
                 }
                 PublishAcknowledgementHandle *handle = new (mem) PublishAcknowledgementHandle(controlId);
-                return std::shared_ptr<PublishAcknowledgementHandle>(
+                return ScopedResource<PublishAcknowledgementHandle>(
                     handle, [allocator](PublishAcknowledgementHandle *p) { Aws::Crt::Delete(p, allocator); });
             }
 
@@ -65,23 +65,16 @@ namespace Aws
             /**
              * Callable object stored in PublishReceivedEventData::acquirePublishAcknowledgement.
              *
-             * Holds the single PublishAcknowledgementHandle shared_ptr and uses its m_available flag to
-             * enforce single-call semantics: the first call returns the handle and clears
-             * m_available; any subsequent call (including calls after the OnPublishReceivedHandler
-             * callback returns) returns nullptr.
+             * Holds exclusive ownership of the PublishAcknowledgementHandle via ScopedResource.
+             * The first call moves the handle out and returns it; any subsequent call (including
+             * calls after the OnPublishReceivedHandler callback returns) returns nullptr because
+             * the ScopedResource is null after the move.
              */
             struct PublishAcknowledgementFunctor
             {
-                std::shared_ptr<PublishAcknowledgementHandle> handle;
+                ScopedResource<PublishAcknowledgementHandle> handle;
 
-                std::shared_ptr<PublishAcknowledgementHandle> operator()()
-                {
-                    if (!handle || !handle->m_available.exchange(false))
-                    {
-                        return nullptr;
-                    }
-                    return handle;
-                }
+                ScopedResource<PublishAcknowledgementHandle> operator()() { return std::move(handle); }
             };
 
             void Mqtt5ClientCore::s_lifeCycleEventCallback(const struct aws_mqtt5_client_lifecycle_event *event)
@@ -229,24 +222,22 @@ namespace Aws
                         eventData.publishPacket = packet;
 
                         /*
-                         * For QoS 1 messages, eagerly acquire manual control of the publish acknowledgement immediately
-                         * (before invoking the user callback). A PublishAcknowledgementFunctor is set on
-                         * eventData.acquirePublishAcknowledgement so the user can call it within the callback
-                         * to take ownership of the publish acknowledgement.
+                         * For QoS 1 messages, eagerly acquire manual control of the publish acknowledgement
+                         * immediately (before invoking the user callback). A PublishAcknowledgementFunctor is
+                         * set on eventData.acquirePublishAcknowledgement so the user can call it within the
+                         * callback to take ownership of the publish acknowledgement.
                          *
-                         * The functor self-invalidates in two ways:
-                         *   1. After the first call it sets handle->m_available = false, so a second
-                         *      call within the same callback returns nullptr.
-                         *   2. After onPublishReceived returns, handle->m_available is unconditionally
-                         *      set to false, so any saved copy of the functor returns nullptr
-                         *      immediately without touching the C layer.
+                         * The functor holds a ScopedResource<PublishAcknowledgementHandle>. The first call
+                         * moves the ScopedResource out and returns it to the user; any subsequent call returns
+                         * nullptr because the ScopedResource is null after the move.
                          *
-                         * If the user did NOT call acquirePublishAcknowledgement() (or it returned nullptr),
-                         * the publish acknowledgement is automatically sent here. Otherwise the user is responsible
-                         * for calling InvokePublishAcknowledgement() later.
+                         * After onPublishReceived returns, we check whether the functor's handle is still
+                         * non-null (user did not take control) and auto-invoke the publish acknowledgement
+                         * if so. If the user took control, they are responsible for calling
+                         * InvokePublishAcknowledgement() later.
                          */
                         uint64_t publishAcknowledgementId = 0;
-                        std::shared_ptr<PublishAcknowledgementHandle> publishAcknowledgementHandle;
+                        PublishAcknowledgementFunctor functor;
                         if (publish->qos == AWS_MQTT5_QOS_AT_LEAST_ONCE)
                         {
                             /* Eagerly acquire the publish acknowledgement control before invoking the user callback. */
@@ -255,10 +246,8 @@ namespace Aws
 
                             if (publishAcknowledgementId != 0)
                             {
-                                publishAcknowledgementHandle = PublishAcknowledgementHandle::s_create(
+                                functor.handle = PublishAcknowledgementHandle::s_create(
                                     client_core->m_allocator, publishAcknowledgementId);
-                                PublishAcknowledgementFunctor functor;
-                                functor.handle = publishAcknowledgementHandle;
                                 eventData.acquirePublishAcknowledgement = std::move(functor);
                             }
                         }
@@ -266,25 +255,18 @@ namespace Aws
                         client_core->onPublishReceived(eventData);
 
                         /* Detect whether the user called acquirePublishAcknowledgement() during the callback:
-                         * - If they called it and got a handle, handle->m_available was set to false
-                         *   inside the functor (via exchange), so exchange(false) returns false here.
-                         * - If they did NOT call it, handle->m_available is still true, so
-                         *   exchange(false) returns true here.
+                         * - If they called it, the functor moved its ScopedResource out, so functor.handle is null.
+                         * - If they did NOT call it, functor.handle is still non-null here.
                          *
-                         * exchange(false) atomically reads the current value and sets it to false in
-                         * one step. If it returns true, the user did NOT take control and we must
-                         * auto-invoke the publish acknowledgement. If it returns false, the user
-                         * already consumed the handle and is responsible for calling
-                         * InvokePublishAcknowledgement() later.
+                         * If the handle is still in the functor (user did not take control), auto-invoke the
+                         * publish acknowledgement. The functor's handle going out of scope will free the
+                         * PublishAcknowledgementHandle regardless.
                          *
-                         * This also serves as the post-callback invalidation: after this point any
-                         * saved copy of the functor will return nullptr immediately. */
-                        bool userDidNotTakeControl =
-                            publishAcknowledgementHandle && publishAcknowledgementHandle->m_available.exchange(false);
-                        /* We add an additional client_core->m_client null check here because it's possible (through
-                         * insanity) that the user has killed the client in the onPublishRecieved callback. This will
-                         * handle that case here with the recursive mutex */
-                        if (publishAcknowledgementId != 0 && userDidNotTakeControl && client_core->m_client != nullptr)
+                         * We also check client_core->m_client because it's possible (through insanity) that the
+                         * user has killed the client in the onPublishReceived callback. The recursive mutex
+                         * protects this check. */
+                        bool userDidNotTakeControl = publishAcknowledgementId != 0 && functor.handle != nullptr;
+                        if (userDidNotTakeControl && client_core->m_client != nullptr)
                         {
                             aws_mqtt5_client_invoke_publish_acknowledgement(
                                 client_core->m_client, publishAcknowledgementId, nullptr);
@@ -712,7 +694,7 @@ namespace Aws
             }
 
             bool Mqtt5ClientCore::InvokePublishAcknowledgement(
-                const std::shared_ptr<PublishAcknowledgementHandle> &publishAcknowledgementHandle) noexcept
+                const ScopedResource<PublishAcknowledgementHandle> &publishAcknowledgementHandle) noexcept
             {
                 if (m_client == nullptr)
                 {
