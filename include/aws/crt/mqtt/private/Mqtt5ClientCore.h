@@ -30,8 +30,6 @@ namespace Aws
              * @note acquirePublishAcknowledgement() must be called within the OnPublishReceivedHandler callback.
              *       Calling it after the callback returns will return nullptr.
              */
-            struct PublishAcknowledgementFunctor;
-
             struct AWS_CRT_CPP_API PublishAcknowledgementHandle
             {
                 friend class Mqtt5ClientCore;
