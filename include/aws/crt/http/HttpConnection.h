@@ -10,6 +10,7 @@
 #include <aws/crt/Types.h>
 #include <aws/crt/io/Bootstrap.h>
 #include <aws/crt/io/SocketOptions.h>
+#include <aws/crt/io/Stream.h>
 #include <aws/crt/io/TlsOptions.h>
 
 #include <functional>
@@ -118,6 +119,11 @@ namespace Aws
                  * See `OnStreamComplete` for more info. This value can be empty.
                  */
                 OnStreamComplete onStreamComplete;
+
+                /**
+                 * See `UseManualDataWrites` for more info. If true the write data API must be used to provide data.
+                 */
+                bool UseManualDataWrites = false;
             };
 
             /**
@@ -191,6 +197,8 @@ namespace Aws
                 std::shared_ptr<HttpStream> stream;
             };
 
+            using OnWriteDataComplete = std::function<void(std::shared_ptr<HttpStream> &stream, int errorCode)>;
+
             /**
              * Subclass that represents an http client's view of an HttpStream.
              */
@@ -215,6 +223,11 @@ namespace Aws
                  * Returns true on success, false otherwise.
                  */
                 bool Activate() noexcept;
+
+                int WriteData(
+                    std::shared_ptr<Aws::Crt::Io::InputStream> stream,
+                    const OnWriteDataComplete &onComplete,
+                    bool endStream = false) noexcept;
 
               private:
                 HttpClientStream(const std::shared_ptr<HttpClientConnection> &connection) noexcept;
