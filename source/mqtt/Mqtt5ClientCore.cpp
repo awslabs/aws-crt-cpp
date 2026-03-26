@@ -20,12 +20,22 @@ namespace Aws
     {
         namespace Mqtt5
         {
-            ScopedResource<PublishAcknowledgementHandle> PublishAcknowledgementHandle::s_create(
+            /**
+             * We keep the definition of PublishAcknowledgementHandle here so it
+             * remains an incomplete type in all headers. This makes the type opaque to users.
+             * They can hold a ScopedResource<PublishAcknowledgementHandle> but cannot inspect, modify, or
+             * construct one directly.
+             */
+            struct PublishAcknowledgementHandle
+            {
+                explicit PublishAcknowledgementHandle(uint64_t controlId) noexcept : controlId(controlId) {}
+                uint64_t controlId;
+            };
+
+            static ScopedResource<PublishAcknowledgementHandle> s_createPublishAcknowledgementHandle(
                 Allocator *allocator,
                 uint64_t controlId) noexcept
             {
-                /* Manually call aws_mem_acquire here because PublishAcknowledgeHandle only has a private constructor
-                 * and cannot be used with Aws::Crt::New. Aws::Crt::Delete still clears memory appropriately. */
                 void *mem = aws_mem_acquire(allocator, sizeof(PublishAcknowledgementHandle));
                 if (!mem)
                 {
@@ -246,7 +256,7 @@ namespace Aws
 
                             if (publishAcknowledgementId != 0)
                             {
-                                functor.handle = PublishAcknowledgementHandle::s_create(
+                                functor.handle = s_createPublishAcknowledgementHandle(
                                     client_core->m_allocator, publishAcknowledgementId);
                                 /* std::function requires a copyable callable so we wrap the move only functor
                                  * into a shared_ptr so the lambda can be copyable. */
@@ -716,7 +726,7 @@ namespace Aws
                     return false;
                 }
                 return aws_mqtt5_client_invoke_publish_acknowledgement(
-                           m_client, publishAcknowledgementHandle->m_controlId, nullptr) == AWS_OP_SUCCESS;
+                           m_client, publishAcknowledgementHandle->controlId, nullptr) == AWS_OP_SUCCESS;
             }
 
             void Mqtt5ClientCore::Close() noexcept

@@ -20,34 +20,6 @@ namespace Aws
         namespace Mqtt5
         {
             /**
-             * An opaque handle representing manual control over a publish acknowledgement for a received PUBLISH
-             * packet.
-             *
-             * Obtained by calling acquirePublishAcknowledgement() within the OnPublishReceivedHandler callback.
-             * Pass this handle to Mqtt5Client::InvokePublishAcknowledgement() at any later time to send the publish
-             * acknowledgement.
-             *
-             * @note acquirePublishAcknowledgement() must be called within the OnPublishReceivedHandler callback.
-             *       Calling it after the callback returns will return nullptr.
-             */
-            struct AWS_CRT_CPP_API PublishAcknowledgementHandle
-            {
-                friend class Mqtt5ClientCore;
-
-              private:
-                explicit PublishAcknowledgementHandle(uint64_t controlId) noexcept : m_controlId(controlId) {}
-
-                /**
-                 * Creates a PublishAcknowledgementHandle.
-                 */
-                static ScopedResource<PublishAcknowledgementHandle> s_create(
-                    Allocator *allocator,
-                    uint64_t controlId) noexcept;
-
-                uint64_t m_controlId;
-            };
-
-            /**
              * The Mqtt5ClientCore is an internal class for Mqtt5Client. The class is used to handle communication
              * between Mqtt5Client and underlying c mqtt5 client. This class should only be used internally by
              * Mqtt5Client. This is a move-only type. Unless otherwise specified, all function arguments need only to
