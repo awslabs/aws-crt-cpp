@@ -21,10 +21,9 @@ namespace Aws
         namespace Mqtt5
         {
             /**
-             * We keep the definition of PublishAcknowledgementHandle here so it
-             * remains an incomplete type in all headers. This makes the type opaque to users.
-             * They can hold a ScopedResource<PublishAcknowledgementHandle> but cannot inspect, modify, or
-             * construct one directly.
+             * We keep the definition of PublishAcknowledgementHandle here so it remains an incomplete type in all
+             * headers. This makes the type opaque to users. They can hold a
+             * ScopedResource<PublishAcknowledgementHandle> but cannot inspect, modify, or construct one directly.
              */
             struct PublishAcknowledgementHandle
             {
@@ -36,6 +35,8 @@ namespace Aws
                 Allocator *allocator,
                 uint64_t controlId) noexcept
             {
+                /* Manually call aws_mem_acquire here because PublishAcknowledgeHandle only has a private constructor
+                 * and cannot be used with Aws::Crt::New. Aws::Crt::Delete still clears memory appropriately. */
                 void *mem = aws_mem_acquire(allocator, sizeof(PublishAcknowledgementHandle));
                 if (!mem)
                 {
