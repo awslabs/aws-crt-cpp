@@ -5,6 +5,7 @@
 #include <aws/crt/mqtt/Mqtt5Client.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
 #include <aws/crt/mqtt/private/Mqtt5ClientCore.h>
+#include <aws/crt/mqtt/private/MqttShared.h>
 
 #include <aws/crt/Api.h>
 #include <aws/crt/StlAllocator.h>
@@ -195,7 +196,8 @@ namespace Aws
                   m_reconnectionOptions({AWS_EXPONENTIAL_BACKOFF_JITTER_DEFAULT, 0, 0, 0}), m_pingTimeoutMs(0),
                   m_connackTimeoutMs(0), m_ackTimeoutSec(0), m_enableMetrics(true), m_allocator(allocator)
             {
-                m_sdkMetrics.initializeRawOptions(m_metricsStorage);
+                Mqtt::IoTDeviceSDKMetrics metrics;
+                metrics.initializeRawOptions(m_metricsStorage);
                 m_socketOptions.SetSocketType(Io::SocketType::Stream);
                 AWS_ZERO_STRUCT(m_packetConnectViewStorage);
                 AWS_ZERO_STRUCT(m_httpProxyOptionsStorage);

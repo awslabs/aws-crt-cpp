@@ -15,7 +15,6 @@
 #include <aws/crt/io/SocketOptions.h>
 #include <aws/crt/io/TlsOptions.h>
 #include <aws/crt/mqtt/MqttTypes.h>
-#include <aws/crt/mqtt/private/MqttShared.h>
 
 #include <aws/mqtt/client.h>
 #include <aws/mqtt/v5/mqtt5_client.h>
@@ -374,7 +373,6 @@ namespace Aws
                 bool m_useWebsocket;
                 MqttConnectionOperationStatistics m_operationStatistics;
                 bool m_enableMetrics = true;
-                IoTDeviceSDKMetrics m_sdkMetrics;
                 Allocator *m_allocator;
 
                 /**

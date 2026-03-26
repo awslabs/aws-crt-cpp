@@ -6,7 +6,7 @@
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
 #include <aws/crt/mqtt/MqttClient.h>
-#include <aws/crt/mqtt/private/MqttShared.h>
+#include <aws/mqtt/mqtt.h>
 
 namespace Aws
 {
@@ -843,7 +843,6 @@ namespace Aws
                 uint32_t m_ackTimeoutSec;
 
                 bool m_enableMetrics = true;
-                Mqtt::IoTDeviceSDKMetrics m_sdkMetrics;
 
                 /* Underlying Parameters */
                 Crt::Allocator *m_allocator;
