@@ -8,7 +8,6 @@
  */
 
 #include <aws/crt/mqtt/private/MqttConnectionCore.h>
-#include <aws/crt/mqtt/private/MqttShared.h>
 
 #include <aws/crt/Api.h>
 #include <aws/crt/http/HttpRequestResponse.h>
@@ -477,8 +476,7 @@ namespace Aws
                     {
                         struct aws_mqtt_iot_metrics metrics;
                         AWS_ZERO_STRUCT(metrics);
-                        Mqtt::IoTDeviceSDKMetrics crtMetrics;
-                        crtMetrics.initializeRawOptions(metrics);
+                        m_sdkMetrics.initializeRawOptions(metrics);
                         if (aws_mqtt_client_connection_set_metrics(m_underlyingConnection, &metrics))
                         {
                             AWS_LOGF_DEBUG(AWS_LS_MQTT_CLIENT, "Failed to set Mqtt Metrics");
