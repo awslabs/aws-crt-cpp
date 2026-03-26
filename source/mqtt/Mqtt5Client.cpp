@@ -195,7 +195,7 @@ namespace Aws
                   m_offlineQueueBehavior(AWS_MQTT5_COQBT_DEFAULT),
                   m_reconnectionOptions({AWS_EXPONENTIAL_BACKOFF_JITTER_DEFAULT, 0, 0, 0}), m_pingTimeoutMs(0),
                   m_connackTimeoutMs(0), m_ackTimeoutSec(0), m_enableMetrics(true),
-                  m_sdkMetrics(new Mqtt::IoTDeviceSDKMetrics()), m_allocator(allocator)
+                  m_sdkMetrics(Crt::ScopedResource<Mqtt::IoTDeviceSDKMetrics>()), m_allocator(allocator)
             {
                 m_sdkMetrics->initializeRawOptions(m_metricsStorage);
                 m_socketOptions.SetSocketType(Io::SocketType::Stream);

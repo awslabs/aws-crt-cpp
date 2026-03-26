@@ -846,7 +846,7 @@ namespace Aws
                 uint32_t m_ackTimeoutSec;
 
                 bool m_enableMetrics = true;
-                std::unique_ptr<Mqtt::IoTDeviceSDKMetrics> m_sdkMetrics;
+                Crt::ScopedResource<Mqtt::IoTDeviceSDKMetrics> m_sdkMetrics;
 
                 /* Underlying Parameters */
                 Crt::Allocator *m_allocator;
