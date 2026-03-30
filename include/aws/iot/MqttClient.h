@@ -34,12 +34,14 @@ namespace Aws
              * @param port port to connect to
              * @param socketOptions socket options to use when establishing the connection
              * @param tlsContext tls context that should be used for all connections sourced from this config
+             * @param enableMetrics Whether to set AWS IoT Metrics in the MQTT CONNECT packet. Default is True.
              */
             MqttClientConnectionConfig(
                 const Crt::String &endpoint,
                 uint32_t port,
                 const Crt::Io::SocketOptions &socketOptions,
-                Crt::Io::TlsContext &&tlsContext);
+                Crt::Io::TlsContext &&tlsContext,
+                bool enableMetrics = true);
 
             /**
              * Creates a client configuration for use with making new AWS Iot specific MQTT Connections with web
@@ -57,6 +59,7 @@ namespace Aws
              * @param tlsContext tls context that should be used for all connections sourced from this config
              * @param interceptor websocket upgrade handshake transformation function
              * @param proxyOptions proxy configuration options
+             * @param enableMetrics Whether to set AWS IoT Metrics in the MQTT CONNECT packet. Default is True.
              */
             MqttClientConnectionConfig(
                 const Crt::String &endpoint,
@@ -64,7 +67,8 @@ namespace Aws
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext,
                 Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
-                const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions);
+                const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
+                bool enableMetrics = true);
 
             /**
              * @return true if the instance is in a valid state, false otherwise.
@@ -84,7 +88,8 @@ namespace Aws
                 uint32_t port,
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext,
-                const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions);
+                const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
+                bool enableMetrics = true);
 
             Crt::String m_endpoint;
             uint32_t m_port;
@@ -94,6 +99,7 @@ namespace Aws
             Crt::String m_username;
             Crt::String m_password;
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
+            bool m_enableMetricsCollection;
             int m_lastError;
 
             friend class MqttClient;
@@ -323,7 +329,7 @@ namespace Aws
              * Whether to send the SDK name and version number in the MQTT CONNECT packet.
              * Default is True.
              *
-             * @param enabled true to send SDK version/name in the connect for metrics gathering purposes
+             * @param enabled true to send SDK version/name/platform in the connect for metrics gathering purposes.
              *
              * @return this builder object
              */
@@ -455,7 +461,7 @@ namespace Aws
             Crt::Optional<WebsocketConfig> m_websocketConfig;
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
             bool m_enableMetricsCollection = true;
-            Crt::String m_sdkName = "CPPv2";
+            Crt::String m_sdkName = "IoTDeviceSDK/CPP";
             Crt::String m_sdkVersion;
             Crt::String m_username = "";
             Crt::String m_password = "";

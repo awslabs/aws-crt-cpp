@@ -398,6 +398,24 @@ namespace Aws
                 }
             }
 
+            ProxyEnvVarOptions::ProxyEnvVarOptions()
+                : proxyEnvVarType(ProxyEnvVarType::Disabled), connectionType(AwsHttpProxyConnectionType::Legacy),
+                  TlsOptions()
+            {
+            }
+
+            void ProxyEnvVarOptions::InitializeRawProxyOptions(struct proxy_env_var_settings &rawOptions) const
+            {
+                AWS_ZERO_STRUCT(rawOptions);
+                rawOptions.env_var_type = (enum aws_http_proxy_env_var_type)proxyEnvVarType;
+                rawOptions.connection_type = (enum aws_http_proxy_connection_type)connectionType;
+
+                if (TlsOptions.has_value())
+                {
+                    rawOptions.tls_options = TlsOptions->GetUnderlyingHandle();
+                }
+            }
+
             HttpClientConnectionOptions::HttpClientConnectionOptions()
                 : Bootstrap(nullptr), InitialWindowSize(SIZE_MAX), OnConnectionSetupCallback(),
                   OnConnectionShutdownCallback(), HostName(), Port(0), SocketOptions(), TlsOptions(), ProxyOptions(),
