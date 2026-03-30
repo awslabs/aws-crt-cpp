@@ -209,6 +209,11 @@ namespace Aws
                  * If using BYO_CRYPTO, you must provide the TLS context since it cannot be created automatically.
                  */
                 Io::TlsContext *TlsContext;
+
+                /**
+                 * (Optional) Http proxy configuration for the http request that fetches credentials.
+                 */
+                Optional<Http::ProxyEnvVarOptions> ProxyEnvVarOptions;
             };
 
             /**
@@ -492,6 +497,11 @@ namespace Aws
                  * TLS configuration for secure socket connections.
                  */
                 Io::TlsConnectionOptions TlsConnectionOptions;
+
+                /**
+                 * (Optional) Http proxy configuration for the http request that fetches credentials.
+                 */
+                Optional<Http::ProxyEnvVarOptions> ProxyEnvVarOptions;
             };
 
             /**

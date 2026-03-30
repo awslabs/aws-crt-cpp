@@ -341,6 +341,72 @@ namespace Aws
             };
 
             /**
+             * Configuration to enable or disable environment variable based proxy lookup.
+             */
+            enum class ProxyEnvVarType
+            {
+                /**
+                 * Default.
+                 * Disable reading from environment variable for proxy.
+                 */
+                Disabled = AWS_HPEV_DISABLE,
+                /**
+                 * Enable get proxy URL from environment variable, when the manual proxy options of connection manager
+                 * is not set. env HTTPS_PROXY/https_proxy will be checked when the main connection use tls. env
+                 * HTTP_PROXY/http_proxy will be checked when the main connection NOT use tls. env NO_PROXY/no_proxy
+                 * will be checked to bypass proxy if the host match the pattern. Check `aws_http_host_matches_no_proxy`
+                 * for detail. This function can also be used with a direct no_proxy parameter. The lower case version
+                 * has precedence.
+                 */
+                Enabled = AWS_HPEV_ENABLE,
+            };
+
+            /**
+             * Configuration structure that holds all proxy-related http connection options
+             */
+            class AWS_CRT_CPP_API ProxyEnvVarOptions
+            {
+              public:
+                ProxyEnvVarOptions();
+                ProxyEnvVarOptions(const ProxyEnvVarOptions &rhs) = default;
+                ProxyEnvVarOptions(ProxyEnvVarOptions &&rhs) = default;
+
+                ProxyEnvVarOptions &operator=(const ProxyEnvVarOptions &rhs) = default;
+                ProxyEnvVarOptions &operator=(ProxyEnvVarOptions &&rhs) = default;
+
+                ~ProxyEnvVarOptions() = default;
+
+                /**
+                 * Intended for internal use only.  Initializes the C proxy configuration structure,
+                 * aws_http_proxy_options, from an HttpClientConnectionProxyOptions instance.
+                 *
+                 * @param raw_options - output parameter containing low level proxy options to be passed to the C
+                 * interface
+                 *
+                 */
+                void InitializeRawProxyOptions(struct proxy_env_var_settings &raw_options) const;
+
+                /**
+                 * Enables or disables env var lookup for proxy variables.
+                 */
+                ProxyEnvVarType proxyEnvVarType;
+
+                /**
+                 * Optional.
+                 * If not set:
+                 * If tls options are provided (for the main connection) use tunnel proxy type
+                 * If tls options are not provided (for the main connection) use forward proxy type
+                 */
+                AwsHttpProxyConnectionType connectionType;
+
+                /**
+                 * Sets the TLS options for the connection to the proxy.
+                 * Optional.
+                 */
+                Optional<Io::TlsConnectionOptions> TlsOptions;
+            };
+
+            /**
              * Configuration structure holding all options relating to http connection establishment
              */
             class AWS_CRT_CPP_API HttpClientConnectionOptions

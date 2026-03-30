@@ -6,12 +6,15 @@
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
 #include <aws/crt/mqtt/MqttClient.h>
-#include <aws/crt/mqtt/private/MqttShared.h>
 
 namespace Aws
 {
     namespace Crt
     {
+        namespace Mqtt
+        {
+            struct IoTDeviceSDKMetrics;
+        }
         namespace Mqtt5
         {
             class ConnectPacket;
@@ -882,7 +885,7 @@ namespace Aws
                 uint32_t m_ackTimeoutSec;
 
                 bool m_enableMetrics = true;
-                Mqtt::IoTDeviceSDKMetrics m_sdkMetrics;
+                Crt::ScopedResource<Mqtt::IoTDeviceSDKMetrics> m_sdkMetrics;
 
                 /* Underlying Parameters */
                 Crt::Allocator *m_allocator;
