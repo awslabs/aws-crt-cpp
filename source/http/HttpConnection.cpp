@@ -398,6 +398,12 @@ namespace Aws
                 }
             }
 
+            ProxyEnvVarOptions::ProxyEnvVarOptions()
+                : proxyEnvVarType(ProxyEnvVarType::Disabled), connectionType(AwsHttpProxyConnectionType::Legacy),
+                  TlsOptions()
+            {
+            }
+
             void ProxyEnvVarOptions::InitializeRawProxyOptions(struct proxy_env_var_settings &rawOptions) const
             {
                 AWS_ZERO_STRUCT(rawOptions);
