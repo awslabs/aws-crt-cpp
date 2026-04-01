@@ -550,19 +550,6 @@ static int s_AwsMqtt5CanaryOperationPublish(
     Allocator *allocator)
 {
     /* Create a property value with random size */
-    uint16_t up_size = (rand() % UINT16_MAX) / 2 + 1;
-    char up_data[AWS_MQTT5_CANARY_PAYLOAD_SIZE_MAX];
-    AWS_ZERO_STRUCT(up_data);
-    size_t i = 0;
-    for (i = 0; i < up_size; i++)
-    {
-        up_data[i] = 'A';
-    }
-    up_data[i] = 0;
-
-    Mqtt5::UserProperty up1("property1", up_data);
-    Mqtt5::UserProperty up2("property2", up_data);
-    Mqtt5::UserProperty up3("property3", up_data);
 
     uint16_t payload_size = 1;
     uint8_t payload_data[AWS_MQTT5_CANARY_PAYLOAD_SIZE_MAX];
@@ -577,10 +564,7 @@ static int s_AwsMqtt5CanaryOperationPublish(
     packetPublish->WithTopic(topicFilter)
         .WithQOS(qos)
         .WithRetain(false)
-        .WithPayload(payload)
-        .WithUserProperty(std::move(up1))
-        .WithUserProperty(std::move(up2))
-        .WithUserProperty(std::move(up3));
+        .WithPayload(payload);
 
     ++g_statistic.totalOperations;
     ++g_statistic.publish_attempt;
@@ -1043,8 +1027,6 @@ int main(int argc, char **argv)
                 }
                 fprintf(stderr, "   Total incomplete operations: %" PRIu64 "\n", totalIncomplete);
                 fprintf(stderr, "   Total unacked operations: %" PRIu64 "\n", totalUnacked);
-                fprintf(stderr, "   Total incomplete operation size: estimated ~%" PRIu64 " MB\n", 
-                    (totalIncomplete * 96) / 1024); // ~96KB per operation
                 
                 memoryCheckPoint = now + timeInterval;
             }
