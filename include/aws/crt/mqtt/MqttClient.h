@@ -32,27 +32,41 @@ namespace Aws
             class HttpRequest;
         }
 
-        namespace Mqtt5
-        {
-            class Mqtt5ClientCore;
-        }
-
         namespace Mqtt
         {
             /**
+             * @deprecated We strongly recommend using the Aws::Crt::Mqtt5::Mqtt5Client. There are no current plans to
+             * fully deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5 client
+             * to access a more robust feature set, clearer error handling, and lifetime management. More details can be
+             * found in the GitHub Repo FAQ
+             *
              * An MQTT client. This is a move-only type. Unless otherwise specified,
              * all function arguments need only to live through the duration of the
              * function call.
              */
-            class AWS_CRT_CPP_API MqttClient final
+            class AWS_CRT_CPP_API AWS_CRT_SOFT_DEPRECATED(
+                "We strongly recommend using the Aws::Crt::Mqtt5::Mqtt5Client. There are no current plans to fully "
+                "deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5 client to "
+                "access a more robust feature set, clearer error handling, and lifetime management. More details can "
+                "be found in the GitHub Repo FAQ") MqttClient final
             {
               public:
                 /**
+                 * @deprecated We strongly recommend using the Aws::Crt::Mqtt5::Mqtt5Client. There are no current plans
+                 * to fully deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5
+                 * client to access a more robust feature set, clearer error handling, and lifetime management. More
+                 * details can be found in the GitHub Repo FAQ
+                 *
                  * Initialize an MqttClient using bootstrap and allocator
                  */
                 MqttClient(Io::ClientBootstrap &bootstrap, Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
+                 * @deprecated We strongly recommend using the Aws::Crt::Mqtt5::Mqtt5Client. There are no current plans
+                 * to fully deprecate the MQTT 3.1.1 client but it is highly recommended customers migrate to the MQTT5
+                 * client to access a more robust feature set, clearer error handling, and lifetime management. More
+                 * details can be found in the GitHub Repo FAQ
+                 *
                  * Initialize an MqttClient using a allocator and the default ClientBootstrap
                  *
                  * For more information on the default ClientBootstrap see
