@@ -549,8 +549,8 @@ static int s_AwsMqtt5CanaryOperationPublish(
     Mqtt5::QOS qos,
     Allocator *allocator)
 {
-    /* Create a property value with random size */
 
+    size_t i = 0;
     uint16_t payload_size = 1;
     uint8_t payload_data[AWS_MQTT5_CANARY_PAYLOAD_SIZE_MAX];
     for (i = 0; i < payload_size; i++)
