@@ -328,7 +328,6 @@ static void s_AwsMqtt5CanaryAddOperationToArray(
 /* Add operations and their weighted probability to the list of possible operations */
 static void s_AwsMqtt5CanaryInitWeightedOperations(AwsMqtt5CanaryTesterOptions *testerOptions)
 {
-    s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_STOP, 1);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_SUBSCRIBE, 200);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_UNSUBSCRIBE, 200);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_QOS0, 200);
@@ -1025,6 +1024,28 @@ int main(int argc, char **argv)
                 fprintf(stderr, "Summary:\n");
                 fprintf(stderr, "   Outstanding bytes: %zu\n", outstanding_bytes);
                 fprintf(stderr, "   Operations executed: %zu\n", operationsExecuted);
+                
+                // Diagnostic: Print publish statistics
+                fprintf(stderr, "   Publish stats - attempt: %" PRId64 ", succeed: %" PRId64 ", failed: %" PRId64 "\n",
+                    g_statistic.publish_attempt, g_statistic.publish_succeed, g_statistic.publish_failed);
+                
+                // Diagnostic: Print operation statistics for each client
+                uint64_t totalIncomplete = 0;
+                uint64_t totalUnacked = 0;
+                for (size_t i = 0; i < clients.size(); ++i)
+                {
+                    if (clients[i].client != nullptr && clients[i].isConnected)
+                    {
+                        const auto &stats = clients[i].client->GetOperationStatistics();
+                        totalIncomplete += stats.incompleteOperationCount;
+                        totalUnacked += stats.unackedOperationCount;
+                    }
+                }
+                fprintf(stderr, "   Total incomplete operations: %" PRIu64 "\n", totalIncomplete);
+                fprintf(stderr, "   Total unacked operations: %" PRIu64 "\n", totalUnacked);
+                fprintf(stderr, "   Total incomplete operation size: estimated ~%" PRIu64 " MB\n", 
+                    (totalIncomplete * 96) / 1024); // ~96KB per operation
+                
                 memoryCheckPoint = now + timeInterval;
             }
 
