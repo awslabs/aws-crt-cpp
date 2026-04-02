@@ -328,6 +328,7 @@ static void s_AwsMqtt5CanaryAddOperationToArray(
 /* Add operations and their weighted probability to the list of possible operations */
 static void s_AwsMqtt5CanaryInitWeightedOperations(AwsMqtt5CanaryTesterOptions *testerOptions)
 {
+    s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_STOP, 1);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_SUBSCRIBE, 200);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_UNSUBSCRIBE, 200);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_QOS0, 200);
