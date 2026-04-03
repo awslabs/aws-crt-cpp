@@ -10,6 +10,7 @@
 #include <aws/crt/Types.h>
 #include <aws/crt/io/Bootstrap.h>
 #include <aws/crt/io/SocketOptions.h>
+#include <aws/crt/io/Stream.h>
 #include <aws/crt/io/TlsOptions.h>
 
 #include <functional>
@@ -118,6 +119,27 @@ namespace Aws
                  * See `OnStreamComplete` for more info. This value can be empty.
                  */
                 OnStreamComplete onStreamComplete;
+
+                /**
+                 * When true, request body data will be provided over time via `HttpClientStream::WriteData()`
+                 * The stream will only be polled for writing when data has been supplied.
+                 * When false (default), the entire request body is read from the input stream immediately.
+                 *
+                 * HTTP/1.1 requirements:
+                 * - SHOULD have either `Content-Length` OR `Transfer-Encoding: chunked` header (but not both).
+                 *   Fails with AWS_ERROR_HTTP_INVALID_HEADER_FIELD if both are set.
+                 *   Transfer-Encoding: chunked header will be automatically added if neither header is set.
+                 * - MUST NOT have a body stream set. Fails with AWS_ERROR_HTTP_INVALID_HEADER_FIELD otherwise.
+                 * - With `Content-Length`: total bytes written must exactly match the declared length.
+                 *   Fails with AWS_ERROR_HTTP_OUTGOING_STREAM_LENGTH_INCORRECT if data exceeds Content-Length,
+                 *   or if `end_stream` is set before enough data is written.
+                 * - With `Transfer-Encoding: chunked`: no length validation, data sent as chunks.
+                 *
+                 * HTTP/2: No `Content-Length` or `Transfer-Encoding` header required. Data sent via DATA frames.
+                 * Note: When this variable is set, we expect request to be ended with a data write with
+                 * end_stream=true.
+                 */
+                bool UseManualDataWrites = false;
             };
 
             /**
@@ -191,6 +213,8 @@ namespace Aws
                 std::shared_ptr<HttpStream> stream;
             };
 
+            using OnWriteDataComplete = std::function<void(std::shared_ptr<HttpStream> &stream, int errorCode)>;
+
             /**
              * Subclass that represents an http client's view of an HttpStream.
              */
@@ -215,6 +239,11 @@ namespace Aws
                  * Returns true on success, false otherwise.
                  */
                 bool Activate() noexcept;
+
+                int WriteData(
+                    std::shared_ptr<Aws::Crt::Io::InputStream> stream,
+                    const OnWriteDataComplete &onComplete,
+                    bool endStream = false) noexcept;
 
               private:
                 HttpClientStream(const std::shared_ptr<HttpClientConnection> &connection) noexcept;
