@@ -127,10 +127,12 @@ static int s_byte_buff_init_delete(struct aws_allocator *allocator, void *ctx)
         Aws::Crt::ApiHandle apiHandle(allocator);
         const auto targetLength = 8;
         auto byteBuff = ByteBufInit(allocator, targetLength);
-        ASSERT_UINT_EQUALS(targetLength, byteBuff.len);
+        ASSERT_UINT_EQUALS(targetLength, byteBuff.capacity);
+        ASSERT_UINT_EQUALS(0, byteBuff.len);
         ASSERT_TRUE(byteBuff.buffer != nullptr);
         ByteBufDelete(byteBuff);
-        ASSERT_UINT_EQUALS(targetLength, 0);
+        ASSERT_UINT_EQUALS(0, byteBuff.capacity);
+        ASSERT_UINT_EQUALS(0, byteBuff.len);
         ASSERT_TRUE(byteBuff.buffer == nullptr);
         return 0;
     }
