@@ -104,7 +104,7 @@ namespace Aws
                  * @return true if the operation succeeded, otherwise false
                  */
                 bool InvokePublishAcknowledgement(
-                    const ScopedResource<PublishAcknowledgementHandle> &publishAcknowledgementHandle) noexcept;
+                    const PublishAcknowledgementHandle &publishAcknowledgementHandle) noexcept;
 
                 /**
                  * Tells the Mqtt5ClientCore to release the native client and clean up unhandled the resources

@@ -709,7 +709,7 @@ namespace Aws
             }
 
             bool Mqtt5ClientCore::InvokePublishAcknowledgement(
-                const ScopedResource<PublishAcknowledgementHandle> &publishAcknowledgementHandle) noexcept
+                const PublishAcknowledgementHandle &publishAcknowledgementHandle) noexcept
             {
                 if (m_client == nullptr)
                 {
@@ -717,15 +717,8 @@ namespace Aws
                         AWS_LS_MQTT5_CLIENT, "Failed to invoke publish acknowledgement: Mqtt5ClientCore is invalid.");
                     return false;
                 }
-                if (publishAcknowledgementHandle == nullptr)
-                {
-                    AWS_LOGF_DEBUG(
-                        AWS_LS_MQTT5_CLIENT,
-                        "Failed to invoke publish acknowledgement: publishAcknowledgementHandle is null.");
-                    return false;
-                }
                 return aws_mqtt5_client_invoke_publish_acknowledgement(
-                           m_client, publishAcknowledgementHandle->controlId, nullptr) == AWS_OP_SUCCESS;
+                           m_client, publishAcknowledgementHandle.controlId, nullptr) == AWS_OP_SUCCESS;
             }
 
             void Mqtt5ClientCore::Close() noexcept

@@ -474,7 +474,7 @@ namespace Aws
                  * @return true if the operation succeeded, otherwise false
                  */
                 bool InvokePublishAcknowledgement(
-                    const ScopedResource<PublishAcknowledgementHandle> &publishAcknowledgementHandle) noexcept;
+                    const PublishAcknowledgementHandle &publishAcknowledgementHandle) noexcept;
 
                 ~Mqtt5Client();
 
