@@ -78,12 +78,21 @@ namespace Aws
              * The first call moves the handle out and returns it; any subsequent call (including
              * calls after the OnPublishReceivedHandler callback returns) returns nullptr because
              * the ScopedResource is null after the move.
+             *
+             * A mutex handles race condition if two or more threads attempt to acquire control
+             * of the same publish acknowledgement. One gets the non-null handle and the
+             * other/s get nullptr.
              */
             struct PublishAcknowledgementFunctor
             {
+                std::mutex mutex;
                 ScopedResource<PublishAcknowledgementHandle> handle;
 
-                ScopedResource<PublishAcknowledgementHandle> operator()() { return std::move(handle); }
+                ScopedResource<PublishAcknowledgementHandle> operator()()
+                {
+                    std::lock_guard<std::mutex> lock(mutex);
+                    return std::move(handle);
+                }
             };
 
             void Mqtt5ClientCore::s_lifeCycleEventCallback(const struct aws_mqtt5_client_lifecycle_event *event)
@@ -259,8 +268,9 @@ namespace Aws
                                     client_core->m_allocator, publishAcknowledgementId);
                                 /* std::function requires a copyable callable so we wrap the move only functor
                                  * into a shared_ptr so the lambda can be copyable. */
-                                auto sharedFunctor = Aws::Crt::MakeShared<PublishAcknowledgementFunctor>(
-                                    client_core->m_allocator, std::move(functor));
+                                auto sharedFunctor =
+                                    Aws::Crt::MakeShared<PublishAcknowledgementFunctor>(client_core->m_allocator);
+                                sharedFunctor->handle = std::move(functor.handle);
                                 eventData.acquirePublishAcknowledgement =
                                     [sharedFunctor]() -> ScopedResource<PublishAcknowledgementHandle>
                                 { return (*sharedFunctor)(); };
