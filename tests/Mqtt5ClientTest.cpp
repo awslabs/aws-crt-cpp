@@ -651,13 +651,21 @@ static int s_TestMqtt5DirectConnectionMinimal(Aws::Crt::Allocator *allocator, vo
 }
 AWS_TEST_CASE(Mqtt5DirectConnectionMinimal, s_TestMqtt5DirectConnectionMinimal)
 
+static int s_disableMetricsCollection(Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &)
+{
+    options.WithMetricsCollection(false);
+
+    return AWS_OP_SUCCESS;
+}
+
 /*
  * [ConnDC-UC2] Direct connection with basic authentication
  */
 static int s_TestMqtt5DirectConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, void *)
 {
     ApiHandle apiHandle(allocator);
-    Mqtt5TestContext testContext = createTestContext(allocator, MQTT5CONNECT_DIRECT_BASIC_AUTH);
+    Mqtt5TestContext testContext =
+        createTestContext(allocator, MQTT5CONNECT_DIRECT_BASIC_AUTH, s_disableMetricsCollection);
     if (testContext.testDirective == AWS_OP_SKIP)
     {
         return AWS_OP_SKIP;
@@ -673,6 +681,45 @@ static int s_TestMqtt5DirectConnectionWithBasicAuth(Aws::Crt::Allocator *allocat
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5DirectConnectionWithBasicAuth, s_TestMqtt5DirectConnectionWithBasicAuth)
+
+/*
+ * [ConnDC-UC2-B] Direct connection with basic authentication and metrics collection enabled
+ * This test verifies that WithMetricsCollection works properly by testing both enabled and disabled states.
+ */
+static int s_TestMqtt5DirectConnectionWithMetricsCollection(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+
+    // Part 1: Connection with metrics collection ENABLED should fail as username was appended by metrics
+    Mqtt5TestContext testContext1 = createTestContext(allocator, MQTT5CONNECT_DIRECT_BASIC_AUTH);
+    if (testContext1.testDirective == AWS_OP_SKIP)
+    {
+        return AWS_OP_SKIP;
+    }
+
+    std::shared_ptr<Mqtt5Client> mqtt5Client1 = testContext1.client;
+    ASSERT_TRUE(mqtt5Client1->Start());
+    ASSERT_FALSE(testContext1.connectionPromise.get_future().get());
+    ASSERT_TRUE(mqtt5Client1->Stop());
+    testContext1.stoppedPromise.get_future().get();
+
+    // Part 2: Connection with metrics collection DISABLED should success
+    Mqtt5TestContext testContext2 =
+        createTestContext(allocator, MQTT5CONNECT_DIRECT_BASIC_AUTH, s_disableMetricsCollection);
+    if (testContext2.testDirective == AWS_OP_SKIP)
+    {
+        return AWS_OP_SKIP;
+    }
+
+    std::shared_ptr<Mqtt5Client> mqtt5Client2 = testContext2.client;
+    ASSERT_TRUE(mqtt5Client2->Start());
+    ASSERT_TRUE(testContext2.connectionPromise.get_future().get());
+    ASSERT_TRUE(mqtt5Client2->Stop());
+    testContext2.stoppedPromise.get_future().get();
+
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5DirectConnectionWithMetricsCollection, s_TestMqtt5DirectConnectionWithMetricsCollection)
 
 /*
  * [ConnDC-UC3] Direct connection with TLS
@@ -890,7 +937,7 @@ AWS_TEST_CASE(Mqtt5WSConnectionMinimal, s_TestMqtt5WSConnectionMinimal)
 static int s_TestMqtt5WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator, void *)
 {
     ApiHandle apiHandle(allocator);
-    Mqtt5TestContext testContext = createTestContext(allocator, MQTT5CONNECT_WS_BASIC_AUTH);
+    Mqtt5TestContext testContext = createTestContext(allocator, MQTT5CONNECT_WS_BASIC_AUTH, s_disableMetricsCollection);
     if (testContext.testDirective == AWS_OP_SKIP)
     {
         return AWS_OP_SKIP;

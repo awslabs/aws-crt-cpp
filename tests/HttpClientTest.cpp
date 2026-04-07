@@ -8,6 +8,7 @@
 #include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Uri.h>
 
+#include <aws/io/event_loop.h>
 #include <aws/testing/aws_test_harness.h>
 
 #include <condition_variable>
@@ -390,5 +391,124 @@ static int s_TestHttpCreateConnectionInvalidTlsConnectionOptions(struct aws_allo
 }
 
 AWS_TEST_CASE(HttpCreateConnectionInvalidTlsConnectionOptions, s_TestHttpCreateConnectionInvalidTlsConnectionOptions)
+
+/*
+ * Verify that CreateConnection uses the user-provided bootstrap, not the static default.
+ *
+ * We create a custom bootstrap backed by its own EventLoopGroup, connect, and check
+ * that the setup callback runs on a thread belonging to our custom ELG.
+ *
+ * NOTE: This requires network access because CreateConnection opens a real socket.
+ * If more tests like this accumulate, consider adding a localhost mock HTTP server
+ * for the C++ test layer so they can run without network.
+ */
+static int s_TestHttpCreateConnectionCustomBootstrapRespected(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        Aws::Crt::ApiHandle apiHandle(allocator);
+
+        Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitDefaultClient();
+        Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+        ASSERT_TRUE(tlsContext);
+
+        ByteCursor hostName = ByteCursorFromCString("aws-crt-test-stuff.s3.amazonaws.com");
+        Aws::Crt::Io::TlsConnectionOptions tlsConnectionOptions = tlsContext.NewConnectionOptions();
+        tlsConnectionOptions.SetServerName(hostName);
+
+        Aws::Crt::Io::SocketOptions socketOptions;
+        socketOptions.SetConnectTimeoutMs(5000);
+
+        Aws::Crt::Io::EventLoopGroup customElg(1, allocator);
+        ASSERT_TRUE(customElg);
+
+        Aws::Crt::Io::DefaultHostResolver customResolver(customElg, 8, 30, allocator);
+        ASSERT_TRUE(customResolver);
+
+        Aws::Crt::Io::ClientBootstrap customBootstrap(customElg, customResolver, allocator);
+        ASSERT_TRUE(customBootstrap);
+        customBootstrap.EnableBlockingShutdown();
+
+        ASSERT_TRUE(
+            customBootstrap.GetUnderlyingHandle() !=
+            ApiHandle::GetOrCreateStaticDefaultClientBootstrap()->GetUnderlyingHandle());
+
+        std::shared_ptr<Http::HttpClientConnection> connection(nullptr);
+        bool errorOccured = true;
+        bool connectionShutdown = false;
+        bool usedCorrectEventLoop = false;
+
+        std::condition_variable semaphore;
+        std::mutex semaphoreLock;
+
+        auto onConnectionSetup = [&](const std::shared_ptr<Http::HttpClientConnection> &newConnection, int errorCode)
+        {
+            std::lock_guard<std::mutex> lockGuard(semaphoreLock);
+
+            if (!errorCode)
+            {
+                connection = newConnection;
+                errorOccured = false;
+
+                /* Setup callback runs on the connection's event loop thread.
+                 * Verify it belongs to our custom ELG, not the static default. */
+                struct aws_event_loop_group *rawElg = customElg.GetUnderlyingHandle();
+                size_t loopCount = aws_event_loop_group_get_loop_count(rawElg);
+                for (size_t i = 0; i < loopCount; i++)
+                {
+                    if (aws_event_loop_thread_is_callers_thread(aws_event_loop_group_get_loop_at(rawElg, i)))
+                    {
+                        usedCorrectEventLoop = true;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                connectionShutdown = true;
+            }
+
+            semaphore.notify_one();
+        };
+
+        auto onConnectionShutdown = [&](Http::HttpClientConnection &, int errorCode)
+        {
+            std::lock_guard<std::mutex> lockGuard(semaphoreLock);
+
+            connectionShutdown = true;
+            if (errorCode)
+            {
+                errorOccured = true;
+            }
+
+            semaphore.notify_one();
+        };
+
+        Http::HttpClientConnectionOptions httpClientConnectionOptions;
+        httpClientConnectionOptions.Bootstrap = &customBootstrap;
+        httpClientConnectionOptions.OnConnectionSetupCallback = onConnectionSetup;
+        httpClientConnectionOptions.OnConnectionShutdownCallback = onConnectionShutdown;
+        httpClientConnectionOptions.SocketOptions = socketOptions;
+        httpClientConnectionOptions.TlsOptions = tlsConnectionOptions;
+        httpClientConnectionOptions.HostName = String((const char *)hostName.ptr, hostName.len);
+        httpClientConnectionOptions.Port = 443;
+
+        std::unique_lock<std::mutex> semaphoreULock(semaphoreLock);
+        ASSERT_TRUE(Http::HttpClientConnection::CreateConnection(httpClientConnectionOptions, allocator));
+        semaphore.wait(semaphoreULock, [&]() { return connection || connectionShutdown; });
+
+        ASSERT_FALSE(errorOccured);
+        ASSERT_FALSE(connectionShutdown);
+        ASSERT_TRUE(connection);
+        ASSERT_TRUE(usedCorrectEventLoop);
+
+        connection->Close();
+        semaphore.wait(semaphoreULock, [&]() { return connectionShutdown; });
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(HttpCreateConnectionCustomBootstrapRespected, s_TestHttpCreateConnectionCustomBootstrapRespected)
 
 #endif // !BYO_CRYPTO

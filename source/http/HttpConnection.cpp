@@ -133,7 +133,7 @@ namespace Aws
                 AWS_ZERO_STRUCT(options);
                 options.self_size = sizeof(aws_http_client_connection_options);
 
-                if (options.bootstrap != nullptr)
+                if (connectionOptions.Bootstrap != nullptr)
                 {
                     options.bootstrap = connectionOptions.Bootstrap->GetUnderlyingHandle();
                 }
@@ -202,6 +202,7 @@ namespace Aws
                 options.on_response_headers = HttpStream::s_onIncomingHeaders;
                 options.on_response_header_block_done = HttpStream::s_onIncomingHeaderBlockDone;
                 options.on_complete = HttpStream::s_onStreamComplete;
+                options.use_manual_data_writes = requestOptions.UseManualDataWrites;
 
                 /* Do the same ref counting trick we did with HttpClientConnection. We need to maintain a reference
                  * internally (regardless of what the user does), until the Stream shuts down. */
@@ -361,6 +362,35 @@ namespace Aws
                 return true;
             }
 
+            struct OnWriteUserData
+            {
+                Aws::Crt::Http::OnWriteDataComplete callback;
+                Aws::Crt::Http::ClientStreamCallbackData callbackData;
+            };
+
+            int HttpClientStream::WriteData(
+                std::shared_ptr<Aws::Crt::Io::InputStream> stream,
+                const OnWriteDataComplete &onComplete,
+                bool endStream) noexcept
+            {
+                aws_http_stream_write_data_options options{};
+                options.data = stream->GetUnderlyingStream();
+                options.end_stream = endStream;
+                options.on_complete = +[](struct aws_http_stream *, int error_code, void *user_data)
+                {
+                    auto *userData = static_cast<OnWriteUserData *>(user_data);
+                    userData->callback(userData->callbackData.stream, error_code);
+                    Aws::Crt::Delete(userData, userData->callbackData.allocator);
+                };
+
+                auto *data = Aws::Crt::New<OnWriteUserData>(m_callbackData.allocator);
+                data->callback = onComplete;
+                data->callbackData = m_callbackData;
+                options.user_data = data;
+
+                return aws_http_stream_write_data(m_stream, &options);
+            }
+
             void HttpStream::UpdateWindow(std::size_t incrementSize) noexcept
             {
                 aws_http_stream_update_window(m_stream, incrementSize);
@@ -395,6 +425,24 @@ namespace Aws
                     rawOptions.auth_type = AWS_HPAT_BASIC;
                     rawOptions.auth_username = ByteCursorFromCString(BasicAuthUsername.c_str());
                     rawOptions.auth_password = ByteCursorFromCString(BasicAuthPassword.c_str());
+                }
+            }
+
+            ProxyEnvVarOptions::ProxyEnvVarOptions()
+                : proxyEnvVarType(ProxyEnvVarType::Disabled), connectionType(AwsHttpProxyConnectionType::Legacy),
+                  TlsOptions()
+            {
+            }
+
+            void ProxyEnvVarOptions::InitializeRawProxyOptions(struct proxy_env_var_settings &rawOptions) const
+            {
+                AWS_ZERO_STRUCT(rawOptions);
+                rawOptions.env_var_type = (enum aws_http_proxy_env_var_type)proxyEnvVarType;
+                rawOptions.connection_type = (enum aws_http_proxy_connection_type)connectionType;
+
+                if (TlsOptions.has_value())
+                {
+                    rawOptions.tls_options = TlsOptions->GetUnderlyingHandle();
                 }
             }
 

@@ -31,9 +31,10 @@ namespace Aws
             const Crt::String &endpoint,
             uint32_t port,
             const Crt::Io::SocketOptions &socketOptions,
-            Crt::Io::TlsContext &&tlsContext)
+            Crt::Io::TlsContext &&tlsContext,
+            bool enableMetrics)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
-              m_lastError(0)
+              m_enableMetricsCollection(enableMetrics), m_lastError(0)
         {
         }
 
@@ -43,9 +44,11 @@ namespace Aws
             const Crt::Io::SocketOptions &socketOptions,
             Crt::Io::TlsContext &&tlsContext,
             Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
-            const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions)
+            const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
+            bool enableMetrics)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
-              m_webSocketInterceptor(std::move(interceptor)), m_proxyOptions(proxyOptions), m_lastError(0)
+              m_webSocketInterceptor(std::move(interceptor)), m_proxyOptions(proxyOptions),
+              m_enableMetricsCollection(enableMetrics), m_lastError(0)
         {
         }
 
@@ -54,9 +57,10 @@ namespace Aws
             uint32_t port,
             const Crt::Io::SocketOptions &socketOptions,
             Crt::Io::TlsContext &&tlsContext,
-            const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions)
+            const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
+            bool enableMetrics)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
-              m_proxyOptions(proxyOptions), m_lastError(0)
+              m_proxyOptions(proxyOptions), m_enableMetricsCollection(enableMetrics), m_lastError(0)
         {
         }
 
@@ -532,7 +536,12 @@ namespace Aws
             if (!m_websocketConfig)
             {
                 auto config = MqttClientConnectionConfig(
-                    m_endpoint, port, m_socketOptions, std::move(tlsContext), m_proxyOptions);
+                    m_endpoint,
+                    port,
+                    m_socketOptions,
+                    std::move(tlsContext),
+                    m_proxyOptions,
+                    m_enableMetricsCollection);
                 config.m_username = username;
                 config.m_password = password;
                 return config;
@@ -562,7 +571,8 @@ namespace Aws
                 m_socketOptions,
                 std::move(tlsContext),
                 signerTransform,
-                useWebsocketProxyOptions ? m_websocketConfig->ProxyOptions : m_proxyOptions);
+                useWebsocketProxyOptions ? m_websocketConfig->ProxyOptions : m_proxyOptions,
+                m_enableMetricsCollection);
             config.m_username = username;
             config.m_password = password;
             return config;
@@ -593,7 +603,12 @@ namespace Aws
 
             bool useWebsocket = config.m_webSocketInterceptor.operator bool();
             auto newConnection = m_client.NewConnection(
-                config.m_endpoint.c_str(), config.m_port, config.m_socketOptions, config.m_context, useWebsocket);
+                config.m_endpoint.c_str(),
+                config.m_port,
+                config.m_socketOptions,
+                config.m_context,
+                useWebsocket,
+                config.m_enableMetricsCollection);
 
             if (!newConnection)
             {
