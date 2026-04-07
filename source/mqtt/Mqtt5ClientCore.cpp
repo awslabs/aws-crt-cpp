@@ -265,6 +265,14 @@ namespace Aws
                                     [sharedFunctor]() -> ScopedResource<PublishAcknowledgementHandle>
                                 { return (*sharedFunctor)(); };
                             }
+                            else
+                            {
+                                /* Acquire failed for a QoS 1 message sets a no-op so that calling
+                                 * acquirePublishAcknowledgement() returns nullptr rather than throwing
+                                 */
+                                eventData.acquirePublishAcknowledgement =
+                                    []() -> ScopedResource<PublishAcknowledgementHandle> { return nullptr; };
+                            }
                         }
 
                         client_core->onPublishReceived(eventData);
