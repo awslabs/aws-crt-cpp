@@ -183,10 +183,6 @@ static void s_ParseOptions(int argc, char **argv, struct AppCtx &ctx, struct Aws
                 {
                     ctx.LogLevel = Aws::Crt::LogLevel::Error;
                 }
-                else if (!strcmp(aws_cli_optarg, "NONE"))
-                {
-                    ctx.LogLevel = Aws::Crt::LogLevel::None;
-                }
                 else
                 {
                     fprintf(stderr, "unsupported log level %s\n", aws_cli_optarg);
@@ -328,11 +324,18 @@ static void s_AwsMqtt5CanaryAddOperationToArray(
 /* Add operations and their weighted probability to the list of possible operations */
 static void s_AwsMqtt5CanaryInitWeightedOperations(AwsMqtt5CanaryTesterOptions *testerOptions)
 {
+
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_STOP, 1);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_SUBSCRIBE, 200);
     s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_UNSUBSCRIBE, 200);
-    s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_QOS0, 200);
-    s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_QOS1, 200);
+    s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_UNSUBSCRIBE_BAD, 100);
+    s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_QOS0, 300);
+    s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_QOS1, 150);
+    s_AwsMqtt5CanaryAddOperationToArray(
+        testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_TO_SUBSCRIBED_TOPIC_QOS0, 100);
+    s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_TO_SUBSCRIBED_TOPIC_QOS1, 50);
+    s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_TO_SHARED_TOPIC_QOS0, 50);
+    s_AwsMqtt5CanaryAddOperationToArray(testerOptions, AWS_MQTT5_CANARY_OPERATION_PUBLISH_TO_SHARED_TOPIC_QOS1, 50);
 }
 
 static AwsMqtt5CanaryOperations s_AwsMqtt5CanaryGetRandomOperation(AwsMqtt5CanaryTesterOptions *testerOptions)
