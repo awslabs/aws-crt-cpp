@@ -251,6 +251,10 @@ if(NOT BYO_CRYPTO)
     add_net_test_case(Mqtt5ReuseUnsubscribePacket)
     add_net_test_case(Mqtt5QoS1SubPub)
     add_net_test_case(Mqtt5RetainSetAndClear)
+    add_net_test_case(Mqtt5ManualPubackHold)
+    add_net_test_case(Mqtt5ManualPubackInvoke)
+    add_net_test_case(Mqtt5ManualPubackAcquireDoubleCallReturnsNull)
+    add_net_test_case(Mqtt5ManualPubackQoS0AcquireIsNull)
 
     # IOT CORE TEST
     add_net_test_case(Mqtt5InterruptSub)

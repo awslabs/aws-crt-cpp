@@ -34,6 +34,8 @@ namespace Aws
 
             class Mqtt5to3AdapterOptions;
 
+            struct PublishAcknowledgementHandle;
+
             /**
              * An enumeration that controls how the client applies topic aliasing to outbound publish packets.
              *
@@ -260,7 +262,22 @@ namespace Aws
             struct AWS_CRT_CPP_API PublishReceivedEventData
             {
                 PublishReceivedEventData() : publishPacket(nullptr) {}
+
                 std::shared_ptr<PublishPacket> publishPacket;
+
+                /**
+                 * Call this function within the OnPublishReceivedHandler callback to take manual control of the
+                 * publish acknowledgement for this QoS 1 message, preventing the client from automatically sending a
+                 * publish acknowledgement.
+                 *
+                 * Returns a ScopedResource to a PublishAcknowledgementHandle that can be passed to
+                 * Mqtt5Client::InvokePublishAcknowledgement() to send the publish acknowledgement to the broker.
+                 *
+                 * @note This function must be called within the OnPublishReceivedHandler callback.
+                 *       Calling it after the callback returns will return nullptr.
+                 * @note Only relevant for QoS 1 messages. Returns nullptr for QoS 0 messages.
+                 */
+                std::function<ScopedResource<PublishAcknowledgementHandle>()> acquirePublishAcknowledgement;
             };
 
             /**
@@ -307,7 +324,15 @@ namespace Aws
             using OnUnsubscribeCompletionHandler = std::function<void(int, std::shared_ptr<UnSubAckPacket>)>;
 
             /**
-             * Type signature of the callback invoked when a PacketPublish message received (OnMessageHandler)
+             * Type signature of the callback invoked when a PacketPublish message received (OnMessageHandler).
+             *
+             * To take manual control of the publish acknowledgement for a QoS 1 message, call
+             * eventData.acquirePublishAcknowledgement() within this callback. If you do so, the client will NOT
+             * automatically send the publish acknowledgement; you are responsible for calling
+             * Mqtt5Client::InvokePublishAcknowledgement() later with the returned handle.
+             *
+             * If you do not call acquirePublishAcknowledgement() (or it returns nullptr), the client will
+             * automatically send the publish acknowledgement after this callback returns.
              */
             using OnPublishReceivedHandler = std::function<void(const PublishReceivedEventData &)>;
 
@@ -436,6 +461,20 @@ namespace Aws
                  * @return Mqtt5ClientOperationStatistics
                  */
                 const Mqtt5ClientOperationStatistics &GetOperationStatistics() noexcept;
+
+                /**
+                 * Sends a PUBACK packet for a QoS 1 PUBLISH that was previously acquired for manual control.
+                 *
+                 * To use manual publish acknowledgement control, call eventData.acquirePublishAcknowledgement() within
+                 * the OnPublishReceivedHandler callback to obtain a PublishAcknowledgementHandle. Then call this method
+                 * to send the publish acknowledgement.
+                 *
+                 * @param publishAcknowledgementHandle handle obtained from acquirePublishAcknowledgement()
+                 *
+                 * @return true if the operation succeeded, otherwise false
+                 */
+                bool InvokePublishAcknowledgement(
+                    const PublishAcknowledgementHandle &publishAcknowledgementHandle) noexcept;
 
                 ~Mqtt5Client();
 

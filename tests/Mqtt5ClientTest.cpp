@@ -1983,6 +1983,405 @@ AWS_TEST_CASE(Mqtt5QoS1SubPub, s_TestMqtt5QoS1SubPub)
 // * [QoS1-UC4] Similar to QoS1-UC2 setup, but the Subscriber stays disconnected longer than the retain message timeout.
 // */
 
+//////////////////////////////////////////////////////////
+// Manual PUBACK Tests [MP-UC]
+//////////////////////////////////////////////////////////
+
+/*
+ * [MP-UC1] Manual PUBACK hold test: hold PUBACK and verify broker re-delivers the message
+ */
+static int s_TestMqtt5ManualPubackHold(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    const String TEST_TOPIC = "test/MQTT5_ManualPuback_CPP_" + Aws::Crt::UUID().ToString();
+    const String PAYLOAD = Aws::Crt::UUID().ToString();
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string).WithPort(8883);
+
+    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
+        mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str(), allocator);
+    Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+    ASSERT_TRUE(tlsContext);
+    Aws::Crt::Io::TlsConnectionOptions tlsConnection = tlsContext.NewConnectionOptions();
+    ASSERT_TRUE(tlsConnection);
+    ASSERT_TRUE(tlsConnection.SetAlpnList("x-amzn-mqtt-ca"));
+    mqtt5Options.WithTlsConnectionOptions(tlsConnection);
+
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
+
+    /* Storage for the handle acquired within the callback */
+    Aws::Crt::ScopedResource<Mqtt5::PublishAcknowledgementHandle> capturedHandle = nullptr;
+    std::promise<void> firstDeliveryPromise;
+    std::promise<void> redeliveryPromise;
+    bool firstDeliveryDone = false;
+    std::mutex deliveryMutex;
+
+    mqtt5Options.WithPublishReceivedCallback(
+        [&](const PublishReceivedEventData &eventData)
+        {
+            ByteCursor receivedPayload = eventData.publishPacket->getPayload();
+            String receivedStr((const char *)receivedPayload.ptr, receivedPayload.len);
+
+            if (receivedStr != PAYLOAD)
+            {
+                return;
+            }
+
+            std::lock_guard<std::mutex> lock(deliveryMutex);
+            if (!firstDeliveryDone)
+            {
+                /* First delivery: acquire manual PUBACK control to hold the PUBACK */
+                if (eventData.acquirePublishAcknowledgement)
+                {
+                    capturedHandle = eventData.acquirePublishAcknowledgement();
+                }
+                firstDeliveryDone = true;
+                firstDeliveryPromise.set_value();
+            }
+            else
+            {
+                /* Second delivery: broker re-sent because no PUBACK was received */
+                redeliveryPromise.set_value();
+            }
+        });
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(mqtt5Client);
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(connectionPromise.get_future().get());
+
+    /* Subscribe to test topic with QoS 1 */
+    Mqtt5::Subscription subscription(TEST_TOPIC, Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+    subscription.WithNoLocal(false);
+    std::shared_ptr<Mqtt5::SubscribePacket> subscribe =
+        Aws::Crt::MakeShared<Mqtt5::SubscribePacket>(allocator, allocator);
+    subscribe->WithSubscription(std::move(subscription));
+    std::promise<void> subscribed;
+    ASSERT_TRUE(mqtt5Client->Subscribe(
+        subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
+    subscribed.get_future().get();
+
+    /* Publish a QoS 1 message with a unique UUID payload */
+    ByteBuf payloadBuf = Aws::Crt::ByteBufFromCString(PAYLOAD.c_str());
+    std::shared_ptr<Mqtt5::PublishPacket> publish = Aws::Crt::MakeShared<Mqtt5::PublishPacket>(
+        allocator, TEST_TOPIC, ByteCursorFromByteBuf(payloadBuf), Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+    ASSERT_TRUE(mqtt5Client->Publish(publish));
+
+    /* Wait for the first delivery and confirm PUBACK was held */
+    firstDeliveryPromise.get_future().get();
+    ASSERT_TRUE(capturedHandle != nullptr);
+
+    /* Wait up to 60 seconds for the broker to re-deliver the message (no PUBACK was sent) */
+    auto redeliveryFuture = redeliveryPromise.get_future();
+    ASSERT_TRUE(redeliveryFuture.wait_for(std::chrono::seconds(60)) == std::future_status::ready);
+
+    /* Release the held PUBACK now that we've confirmed re-delivery */
+    ASSERT_TRUE(mqtt5Client->InvokePublishAcknowledgement(*capturedHandle));
+
+    ASSERT_TRUE(mqtt5Client->Stop());
+    stoppedPromise.get_future().get();
+
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5ManualPubackHold, s_TestMqtt5ManualPubackHold)
+
+/*
+ * [MP-UC2] Manual PUBACK invoke test: acquire and immediately invoke PUBACK, verify no re-delivery
+ */
+static int s_TestMqtt5ManualPubackInvoke(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    const String TEST_TOPIC = "test/MQTT5_ManualPuback_CPP_" + Aws::Crt::UUID().ToString();
+    const String PAYLOAD = Aws::Crt::UUID().ToString();
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string).WithPort(8883);
+
+    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
+        mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str(), allocator);
+    Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+    ASSERT_TRUE(tlsContext);
+    Aws::Crt::Io::TlsConnectionOptions tlsConnection = tlsContext.NewConnectionOptions();
+    ASSERT_TRUE(tlsConnection);
+    ASSERT_TRUE(tlsConnection.SetAlpnList("x-amzn-mqtt-ca"));
+    mqtt5Options.WithTlsConnectionOptions(tlsConnection);
+
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
+
+    Aws::Crt::ScopedResource<Mqtt5::PublishAcknowledgementHandle> capturedHandle = nullptr;
+    std::promise<void> firstDeliveryPromise;
+    std::promise<void> unexpectedRedeliveryPromise;
+    bool firstDeliveryDone = false;
+    std::mutex deliveryMutex;
+
+    mqtt5Options.WithPublishReceivedCallback(
+        [&](const PublishReceivedEventData &eventData)
+        {
+            ByteCursor receivedPayload = eventData.publishPacket->getPayload();
+            String receivedStr((const char *)receivedPayload.ptr, receivedPayload.len);
+
+            if (receivedStr != PAYLOAD)
+            {
+                return;
+            }
+
+            std::lock_guard<std::mutex> lock(deliveryMutex);
+            if (!firstDeliveryDone)
+            {
+                /* First delivery: acquire manual PUBACK control */
+                if (eventData.acquirePublishAcknowledgement)
+                {
+                    capturedHandle = eventData.acquirePublishAcknowledgement();
+                }
+                firstDeliveryDone = true;
+                firstDeliveryPromise.set_value();
+            }
+            else
+            {
+                /* A second delivery of the same payload — this should NOT happen */
+                if (!unexpectedRedeliveryPromise.get_future().valid())
+                {
+                    return;
+                }
+                unexpectedRedeliveryPromise.set_value();
+            }
+        });
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(mqtt5Client);
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(connectionPromise.get_future().get());
+
+    /* Subscribe to test topic with QoS 1 */
+    Mqtt5::Subscription subscription(TEST_TOPIC, Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+    subscription.WithNoLocal(false);
+    std::shared_ptr<Mqtt5::SubscribePacket> subscribe =
+        Aws::Crt::MakeShared<Mqtt5::SubscribePacket>(allocator, allocator);
+    subscribe->WithSubscription(std::move(subscription));
+    std::promise<void> subscribed;
+    ASSERT_TRUE(mqtt5Client->Subscribe(
+        subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
+    subscribed.get_future().get();
+
+    /* Publish a QoS 1 message with a unique UUID payload */
+    ByteBuf payloadBuf = Aws::Crt::ByteBufFromCString(PAYLOAD.c_str());
+    std::shared_ptr<Mqtt5::PublishPacket> publish = Aws::Crt::MakeShared<Mqtt5::PublishPacket>(
+        allocator, TEST_TOPIC, ByteCursorFromByteBuf(payloadBuf), Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+    ASSERT_TRUE(mqtt5Client->Publish(publish));
+
+    /* Wait for the first delivery and confirm PUBACK handle was acquired */
+    firstDeliveryPromise.get_future().get();
+    ASSERT_TRUE(capturedHandle != nullptr);
+
+    /* Immediately invoke the PUBACK using the acquired handle */
+    ASSERT_TRUE(mqtt5Client->InvokePublishAcknowledgement(*capturedHandle));
+
+    /* Wait 60 seconds and confirm the broker does NOT re-deliver the message */
+    auto redeliveryFuture = unexpectedRedeliveryPromise.get_future();
+    bool redelivered = redeliveryFuture.wait_for(std::chrono::seconds(60)) == std::future_status::ready;
+    ASSERT_FALSE(redelivered);
+
+    ASSERT_TRUE(mqtt5Client->Stop());
+    stoppedPromise.get_future().get();
+
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5ManualPubackInvoke, s_TestMqtt5ManualPubackInvoke)
+
+/*
+ * [MP-UC3] Manual PUBACK double-call test: calling acquirePublishAcknowledgement() twice returns null on the second
+ * call.
+ */
+static int s_TestMqtt5ManualPubackAcquireDoubleCallReturnsNull(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    const String TEST_TOPIC = "test/MQTT5_ManualPuback_CPP_" + Aws::Crt::UUID().ToString();
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string).WithPort(8883);
+
+    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
+        mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str(), allocator);
+    Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+    ASSERT_TRUE(tlsContext);
+    Aws::Crt::Io::TlsConnectionOptions tlsConnection = tlsContext.NewConnectionOptions();
+    ASSERT_TRUE(tlsConnection);
+    ASSERT_TRUE(tlsConnection.SetAlpnList("x-amzn-mqtt-ca"));
+    mqtt5Options.WithTlsConnectionOptions(tlsConnection);
+
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
+
+    /* Result: "first_null" if first call returned null, "second_not_null" if second call returned non-null,
+     * "double_call_ok" if first returned non-null and second returned null (expected) */
+    std::promise<String> resultPromise;
+
+    mqtt5Options.WithPublishReceivedCallback(
+        [&resultPromise](const PublishReceivedEventData &eventData)
+        {
+            if (!eventData.acquirePublishAcknowledgement)
+            {
+                resultPromise.set_value("no_acquire_fn");
+                return;
+            }
+            /* First call should succeed */
+            auto handle1 = eventData.acquirePublishAcknowledgement();
+            if (!handle1)
+            {
+                resultPromise.set_value("first_call_returned_null");
+                return;
+            }
+            /* Second call should return null (function is cleared after first call) */
+            auto handle2 = eventData.acquirePublishAcknowledgement();
+            if (handle2 != nullptr)
+            {
+                resultPromise.set_value("second_call_returned_non_null");
+            }
+            else
+            {
+                resultPromise.set_value("double_call_ok");
+            }
+        });
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(mqtt5Client);
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(connectionPromise.get_future().get());
+
+    /* Subscribe to test topic with QoS 1 */
+    Mqtt5::Subscription subscription(TEST_TOPIC, Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+    subscription.WithNoLocal(false);
+    std::shared_ptr<Mqtt5::SubscribePacket> subscribe =
+        Aws::Crt::MakeShared<Mqtt5::SubscribePacket>(allocator, allocator);
+    subscribe->WithSubscription(std::move(subscription));
+    std::promise<void> subscribed;
+    ASSERT_TRUE(mqtt5Client->Subscribe(
+        subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
+    subscribed.get_future().get();
+
+    /* Publish a QoS 1 message */
+    ByteBuf payloadBuf = Aws::Crt::ByteBufFromCString("test");
+    std::shared_ptr<Mqtt5::PublishPacket> publish = Aws::Crt::MakeShared<Mqtt5::PublishPacket>(
+        allocator, TEST_TOPIC, ByteCursorFromByteBuf(payloadBuf), Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+    ASSERT_TRUE(mqtt5Client->Publish(publish));
+
+    String result = resultPromise.get_future().get();
+    ASSERT_TRUE(result == "double_call_ok");
+
+    ASSERT_TRUE(mqtt5Client->Stop());
+    stoppedPromise.get_future().get();
+
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5ManualPubackAcquireDoubleCallReturnsNull, s_TestMqtt5ManualPubackAcquireDoubleCallReturnsNull)
+
+/*
+ * [MP-UC4] Manual PUBACK QoS 0 test: acquirePublishAcknowledgement() is null for QoS 0 messages
+ */
+static int s_TestMqtt5ManualPubackQoS0AcquireIsNull(Aws::Crt::Allocator *allocator, void *)
+{
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_IOT_CORE);
+    if (!mqtt5TestVars)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    const String TEST_TOPIC = "test/MQTT5_ManualPuback_CPP_" + Aws::Crt::UUID().ToString();
+
+    Mqtt5::Mqtt5ClientOptions mqtt5Options(allocator);
+    mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string).WithPort(8883);
+
+    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
+        mqtt5TestVars.m_certificate_path_string.c_str(), mqtt5TestVars.m_private_key_path_string.c_str(), allocator);
+    Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+    ASSERT_TRUE(tlsContext);
+    Aws::Crt::Io::TlsConnectionOptions tlsConnection = tlsContext.NewConnectionOptions();
+    ASSERT_TRUE(tlsConnection);
+    ASSERT_TRUE(tlsConnection.SetAlpnList("x-amzn-mqtt-ca"));
+    mqtt5Options.WithTlsConnectionOptions(tlsConnection);
+
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+    s_setupConnectionLifeCycle(mqtt5Options, connectionPromise, stoppedPromise);
+
+    bool acquirePublishAcknowledgementWasNull = false;
+    std::promise<void> publishReceivedPromise;
+
+    mqtt5Options.WithPublishReceivedCallback(
+        [&acquirePublishAcknowledgementWasNull, &publishReceivedPromise](const PublishReceivedEventData &eventData)
+        {
+            /* For QoS 0, acquirePublishAcknowledgement should be null/empty */
+            acquirePublishAcknowledgementWasNull = !eventData.acquirePublishAcknowledgement;
+            publishReceivedPromise.set_value();
+        });
+
+    std::shared_ptr<Mqtt5::Mqtt5Client> mqtt5Client = Mqtt5::Mqtt5Client::NewMqtt5Client(mqtt5Options, allocator);
+    ASSERT_TRUE(mqtt5Client);
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(connectionPromise.get_future().get());
+
+    /* Subscribe with QoS 1 so we receive the message, but publish with QoS 0 */
+    Mqtt5::Subscription subscription(TEST_TOPIC, Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+    subscription.WithNoLocal(false);
+    std::shared_ptr<Mqtt5::SubscribePacket> subscribe =
+        Aws::Crt::MakeShared<Mqtt5::SubscribePacket>(allocator, allocator);
+    subscribe->WithSubscription(std::move(subscription));
+    std::promise<void> subscribed;
+    ASSERT_TRUE(mqtt5Client->Subscribe(
+        subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
+    subscribed.get_future().get();
+
+    /* Publish a QoS 0 message — no PUBACK involved */
+    ByteBuf payloadBuf = Aws::Crt::ByteBufFromCString("Hello QoS0");
+    std::shared_ptr<Mqtt5::PublishPacket> publish = Aws::Crt::MakeShared<Mqtt5::PublishPacket>(
+        allocator, TEST_TOPIC, ByteCursorFromByteBuf(payloadBuf), Mqtt5::QOS::AWS_MQTT5_QOS_AT_MOST_ONCE, allocator);
+    ASSERT_TRUE(mqtt5Client->Publish(publish));
+
+    /* Wait for the publish to be received */
+    publishReceivedPromise.get_future().get();
+
+    ASSERT_TRUE(acquirePublishAcknowledgementWasNull);
+
+    ASSERT_TRUE(mqtt5Client->Stop());
+    stoppedPromise.get_future().get();
+
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5ManualPubackQoS0AcquireIsNull, s_TestMqtt5ManualPubackQoS0AcquireIsNull)
+
 /*
  * [Retain-UC1] Set-And-Clear Test
  */
@@ -2960,4 +3359,4 @@ static int s_TestMqtt5to3AdapterMultipleAdapters(Aws::Crt::Allocator *allocator,
 
 AWS_TEST_CASE(Mqtt5to3AdapterMultipleAdapters, s_TestMqtt5to3AdapterMultipleAdapters)
 
-#endif // !BYO_CRYPTO∏
+#endif // !BYO_CRYPTO
