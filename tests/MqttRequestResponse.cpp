@@ -416,8 +416,8 @@ void s_publishToProtocolClient(
 static int s_MqttRequestResponse_CreateDestroy5(Aws::Crt::Allocator *allocator, void *)
 {
     {
+        TestState state(allocator);
         Aws::Crt::ApiHandle handle;
-        struct TestState state(allocator);
 
         auto context = s_CreateClient(allocator, ProtocolType::Mqtt5, &state);
         if (!context.client)
@@ -433,8 +433,8 @@ AWS_TEST_CASE(MqttRequestResponse_CreateDestroy5, s_MqttRequestResponse_CreateDe
 static int s_MqttRequestResponse_CreateDestroy311(Aws::Crt::Allocator *allocator, void *)
 {
     {
+        TestState state(allocator);
         Aws::Crt::ApiHandle handle;
-        struct TestState state(allocator);
 
         auto context = s_CreateClient(allocator, ProtocolType::Mqtt311, &state);
         if (!context.client)
@@ -541,8 +541,8 @@ static int s_doGetNamedShadowSuccessRejectedTest(
     bool useCorrelationToken)
 {
 
+    TestState state(allocator);
     Aws::Crt::ApiHandle handle;
-    struct TestState state(allocator);
 
     auto context = s_CreateClient(allocator, protocol, &state);
     if (!context.client)
@@ -689,8 +689,8 @@ static int s_doUpdateNamedShadowSuccessAcceptedTest(
     bool useCorrelationToken)
 {
 
+    TestState state(allocator);
     Aws::Crt::ApiHandle handle;
-    struct TestState state(allocator);
 
     auto context = s_CreateClient(allocator, protocol, &state);
     if (!context.client)
@@ -832,8 +832,8 @@ static int s_doGetNamedShadowTimeoutTest(
     clientOptions.WithMaxStreamingSubscriptions(2);
     clientOptions.WithOperationTimeoutInSeconds(3);
 
+    TestState state(allocator);
     Aws::Crt::ApiHandle handle;
-    struct TestState state(allocator);
 
     auto context = s_CreateClient(allocator, protocol, &state, &clientOptions);
     if (!context.client)
@@ -941,8 +941,8 @@ static int s_doGetNamedShadowFailureOnClosedTest(
     ProtocolType protocol,
     bool useCorrelationToken)
 {
+    TestState state(allocator);
     Aws::Crt::ApiHandle handle;
-    struct TestState state(allocator);
 
     auto context = s_CreateClient(allocator, protocol, &state);
     if (!context.client)
@@ -1007,8 +1007,8 @@ static std::shared_ptr<Aws::Iot::RequestResponse::IStreamingOperation> s_CreateV
 
 static int s_doShadowUpdatedStreamOpenCloseSuccessTest(Aws::Crt::Allocator *allocator, ProtocolType protocol)
 {
+    TestState state(allocator);
     Aws::Crt::ApiHandle handle;
-    struct TestState state(allocator);
 
     auto context = s_CreateClient(allocator, protocol, &state);
     if (!context.client)
@@ -1051,10 +1051,10 @@ AWS_TEST_CASE(
 
 static int s_doShadowUpdatedStreamOpenCloseClientTest(Aws::Crt::Allocator *allocator, ProtocolType protocol)
 {
+    TestState state(allocator);
+
     Aws::Crt::ApiHandle handle;
     std::shared_ptr<Aws::Iot::RequestResponse::IStreamingOperation> stream = nullptr;
-
-    struct TestState state(allocator);
 
     auto context = s_CreateClient(allocator, protocol, &state);
     if (!context.client)
@@ -1109,10 +1109,10 @@ static const char *s_publishPayload = "IncomingPublish";
 
 static int s_doShadowUpdatedStreamIncomingPublishTest(Aws::Crt::Allocator *allocator, ProtocolType protocol)
 {
+    TestState state(allocator);
+
     Aws::Crt::ApiHandle handle;
     std::shared_ptr<Aws::Iot::RequestResponse::IStreamingOperation> stream = nullptr;
-
-    struct TestState state(allocator);
 
     auto context = s_CreateClient(allocator, protocol, &state);
     if (!context.client)
