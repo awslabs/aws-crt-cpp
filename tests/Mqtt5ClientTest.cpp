@@ -1992,7 +1992,7 @@ AWS_TEST_CASE(Mqtt5QoS1SubPub, s_TestMqtt5QoS1SubPub)
  */
 static int s_TestMqtt5ManualPubackHold(Aws::Crt::Allocator *allocator, void *)
 {
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
@@ -2101,7 +2101,7 @@ AWS_TEST_CASE(Mqtt5ManualPubackHold, s_TestMqtt5ManualPubackHold)
  */
 static int s_TestMqtt5ManualPubackInvoke(Aws::Crt::Allocator *allocator, void *)
 {
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
@@ -2215,7 +2215,7 @@ AWS_TEST_CASE(Mqtt5ManualPubackInvoke, s_TestMqtt5ManualPubackInvoke)
  */
 static int s_TestMqtt5ManualPubackAcquireDoubleCallReturnsNull(Aws::Crt::Allocator *allocator, void *)
 {
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
@@ -2310,7 +2310,7 @@ AWS_TEST_CASE(Mqtt5ManualPubackAcquireDoubleCallReturnsNull, s_TestMqtt5ManualPu
  */
 static int s_TestMqtt5ManualPubackQoS0AcquireIsNull(Aws::Crt::Allocator *allocator, void *)
 {
-    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_IOT_CORE);
+    Mqtt5TestEnvVars mqtt5TestVars(allocator, MQTT5CONNECT_DIRECT_IOT_CORE);
     if (!mqtt5TestVars)
     {
         printf("Environment Variables are not set for the test, skip the test");
