@@ -14,6 +14,8 @@
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/http/HttpRequestResponse.h>
 
+#include <thread>
+
 namespace Aws
 {
     namespace Crt
@@ -75,22 +77,27 @@ namespace Aws
              * Callable object stored in PublishReceivedEventData::acquirePublishAcknowledgement.
              *
              * Holds exclusive ownership of the PublishAcknowledgementHandle via ScopedResource.
-             * The first call moves the handle out and returns it; any subsequent call (including
-             * calls after the OnPublishReceivedHandler callback returns) returns nullptr because
-             * the ScopedResource is null after the move.
+             * The first call moves the handle out and returns it; any subsequent call returns
+             * nullptr because the ScopedResource is null after the move.
              *
-             * A mutex handles race condition if two or more threads attempt to acquire control
-             * of the same publish acknowledgement. One gets the non-null handle and the
-             * other/s get nullptr.
+             * acquirePublishAcknowledgement() MUST be called from within the OnPublishReceivedHandler
+             * callback. Calling it from any other thread is a programming error.
              */
             struct PublishAcknowledgementFunctor
             {
-                std::mutex mutex;
+                std::thread::id callbackThreadId;
                 ScopedResource<PublishAcknowledgementHandle> handle;
 
                 ScopedResource<PublishAcknowledgementHandle> operator()()
                 {
-                    std::lock_guard<std::mutex> lock(mutex);
+                    if (std::this_thread::get_id() != callbackThreadId)
+                    {
+                        AWS_LOGF_ERROR(
+                            AWS_LS_MQTT5_CLIENT,
+                            "acquirePublishAcknowledgement() must be called from within the "
+                            "OnPublishReceivedHandler callback, not from a different thread.");
+                        return nullptr;
+                    }
                     return std::move(handle);
                 }
             };
@@ -270,6 +277,7 @@ namespace Aws
                                  * into a shared_ptr so the lambda can be copyable. */
                                 auto sharedFunctor =
                                     Aws::Crt::MakeShared<PublishAcknowledgementFunctor>(client_core->m_allocator);
+                                sharedFunctor->callbackThreadId = std::this_thread::get_id();
                                 sharedFunctor->handle = std::move(functor.handle);
                                 eventData.acquirePublishAcknowledgement =
                                     [sharedFunctor]() -> ScopedResource<PublishAcknowledgementHandle>
