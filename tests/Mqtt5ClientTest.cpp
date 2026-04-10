@@ -356,6 +356,11 @@ struct Mqtt5TestEnvVars
                 {
                     return;
                 }
+                if (m_hostname == NULL)
+                {
+                    m_error = AWS_OP_ERR;
+                    return;
+                }
                 m_hostname_string = aws_string_c_str(m_hostname);
                 break;
             }
