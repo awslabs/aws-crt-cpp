@@ -60,7 +60,7 @@ if(BUILD_DEPS)
     endif()
     add_subdirectory(crt/aws-c-common)
 
-    if(UNIX AND NOT APPLE AND NOT BYO_CRYPTO)
+    if(UNIX AND NOT BYO_CRYPTO AND (NOT APPLE OR CMAKE_SYSTEM_NAME STREQUAL "Darwin"))
         if(NOT USE_OPENSSL)
             include(AwsPrebuildDependency)
 
