@@ -566,6 +566,7 @@ static int s_TestDirectConnectionTunnelingProxyHttp(struct aws_allocator *alloca
         s_InitializeProxiedRawConnection(testState, aws_byte_cursor_from_string(s_https_endpoint));
 
         ASSERT_TRUE(testState.m_connection != nullptr);
+        ASSERT_INT_EQUALS(testState.m_proxyOptions.ProxyStrategy.use_count(), 3);
     }
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/
@@ -698,9 +699,6 @@ static int s_TestDirectConnectionTunnelingProxyBasicAuth(struct aws_allocator *a
 
         s_InitializeProxiedRawConnection(testState, aws_byte_cursor_from_string(s_https_endpoint));
         ASSERT_TRUE(testState.m_connection != nullptr);
-
-        testState.m_proxyOptions.ProxyStrategy.reset();
-        testState.m_connectionOptions.ProxyOptions->ProxyStrategy.reset();
     }
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/
