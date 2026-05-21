@@ -24,7 +24,7 @@ namespace Aws
                 }
             }
 
-            TlsContextOptions::TlsContextOptions() noexcept : m_isInit(false)
+            TlsContextOptions::TlsContextOptions() noexcept
             {
                 AWS_ZERO_STRUCT(m_options);
             }
