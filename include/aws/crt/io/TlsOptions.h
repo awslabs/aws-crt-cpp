@@ -292,7 +292,7 @@ namespace Aws
             class AWS_CRT_CPP_API TlsConnectionOptions final
             {
               public:
-                TlsConnectionOptions() noexcept;
+                TlsConnectionOptions() noexcept = default;
                 ~TlsConnectionOptions();
                 TlsConnectionOptions(const TlsConnectionOptions &) noexcept;
                 TlsConnectionOptions &operator=(const TlsConnectionOptions &) noexcept;
@@ -327,17 +327,18 @@ namespace Aws
                 /// @private
                 const aws_tls_connection_options *GetUnderlyingHandle() const noexcept
                 {
-                    return &m_tls_connection_options;
+                    return m_isInit ? &m_tls_connection_options : nullptr;
                 }
 
               private:
                 bool isValid() const noexcept { return m_isInit; }
 
                 TlsConnectionOptions(aws_tls_ctx *ctx, Allocator *allocator) noexcept;
-                aws_tls_connection_options m_tls_connection_options;
-                aws_allocator *m_allocator;
-                int m_lastError;
-                bool m_isInit;
+
+                aws_tls_connection_options m_tls_connection_options{};
+                aws_allocator *m_allocator = nullptr;
+                int m_lastError = AWS_ERROR_SUCCESS;
+                bool m_isInit = false;
 
                 friend class TlsContext;
             };

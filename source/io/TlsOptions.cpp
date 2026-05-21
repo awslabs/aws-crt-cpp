@@ -268,10 +268,8 @@ namespace Aws
                 return options;
             }
 
-            TlsConnectionOptions::TlsConnectionOptions() noexcept : m_lastError(AWS_ERROR_SUCCESS), m_isInit(false) {}
-
             TlsConnectionOptions::TlsConnectionOptions(aws_tls_ctx *ctx, Allocator *allocator) noexcept
-                : m_allocator(allocator), m_lastError(AWS_ERROR_SUCCESS), m_isInit(true)
+                : m_allocator(allocator), m_isInit(true)
             {
                 aws_tls_connection_options_init_from_ctx(&m_tls_connection_options, ctx);
             }
@@ -287,7 +285,6 @@ namespace Aws
 
             TlsConnectionOptions::TlsConnectionOptions(const TlsConnectionOptions &options) noexcept
             {
-                m_isInit = false;
                 AWS_ZERO_STRUCT(m_tls_connection_options);
 
                 if (options.m_isInit)
