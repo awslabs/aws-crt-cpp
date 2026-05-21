@@ -94,6 +94,9 @@ AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_profile_config, "AWS_T
 // Needed to return "success" instead of skip in Codebuild so it doesn't count as a failure
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_codebuild, "CODEBUILD_BUILD_ID");
 
+// Switches to s2n-tls on macOS
+AWS_STATIC_STRING_FROM_LITERAL(s_test_envName_non_fips_tls13, "AWS_CRT_USE_NON_FIPS_TLS_13");
+
 static int s_GetEnvVariable(Aws::Crt::Allocator *allocator, const aws_string *variableName, aws_string **output)
 {
     int error = aws_get_environment_value(allocator, variableName, output);
@@ -672,6 +675,15 @@ AWS_TEST_CASE(IoTMqtt311ConnectWithPKCS11, s_TestIoTMqtt311ConnectWithPKCS11)
  */
 static int s_TestIoTMqtt311ConnectWithPKCS12(Aws::Crt::Allocator *allocator, void *)
 {
+    struct aws_string *non_fips_tls13 = NULL;
+    s_GetEnvVariable(allocator, s_test_envName_non_fips_tls13, &non_fips_tls13);
+    if (non_fips_tls13)
+    {
+        printf("Skipping PKCS12 test: AWS_CRT_USE_NON_FIPS_TLS_13 is set");
+        aws_string_destroy(non_fips_tls13);
+        return AWS_OP_SKIP;
+    }
+
     struct aws_string *endpoint = NULL;
     struct aws_string *pkcs12_key = NULL;
     struct aws_string *pkcs12_password = NULL;
