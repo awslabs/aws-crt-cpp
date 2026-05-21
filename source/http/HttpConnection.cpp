@@ -177,7 +177,7 @@ namespace Aws
                        c++ class, looking at you AdaptiveHttpProxyStrategy. And we need lifetime of ProxyStrategy to be
                        inline with underlying c structs. So keeping a ref to shared ptr, to make sure it survives after
                        options are gone. */
-                    callbackData->proxyStrategy = proxyOpts.ProxyStrategy;
+                    //callbackData->proxyStrategy = proxyOpts.ProxyStrategy;
                 }
 
                 if (aws_http_client_connect(&options))
