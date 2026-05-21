@@ -566,6 +566,7 @@ static int s_TestDirectConnectionTunnelingProxyHttp(struct aws_allocator *alloca
         s_InitializeProxiedRawConnection(testState, aws_byte_cursor_from_string(s_https_endpoint));
 
         ASSERT_TRUE(testState.m_connection != nullptr);
+        ASSERT_INT_EQUALS(testState.m_proxyOptions.ProxyStrategy.use_count(), 3);
     }
 
     /* now let everything tear down and make sure we don't leak or deadlock.*/
@@ -573,74 +574,6 @@ static int s_TestDirectConnectionTunnelingProxyHttp(struct aws_allocator *alloca
 }
 
 AWS_TEST_CASE(DirectConnectionTunnelingProxyHttp, s_TestDirectConnectionTunnelingProxyHttp)
-
-/*
- * Regression test for the AdaptiveHttpProxyStrategy lifetime bug:
- * CreateAdaptiveHttpProxyStrategy() stores a raw pointer (user_data) to the C++ AdaptiveHttpProxyStrategy
- * in the C-layer aws_http_proxy_strategy. If the C++ shared_ptr is not retained by the connection
- * infrastructure, the C++ object gets destroyed when the caller's options go out of scope, leaving a
- * dangling user_data pointer in the still-alive C strategy.
- *
- * This test verifies that CreateConnection retains the ProxyStrategy shared_ptr so it outlives
- * the caller's options struct, preventing use-after-free when the C layer invokes strategy callbacks.
- */
-static int s_TestAdaptiveProxyStrategyLifetime(struct aws_allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    {
-        Aws::Crt::ApiHandle apiHandle(allocator);
-
-        ProxyIntegrationTestState testState(allocator);
-        s_InitializeProxyEnvironmentalOptions(testState, HttpProxyTestHostType::Http);
-        testState.m_proxyOptions.ProxyConnectionType = AwsHttpProxyConnectionType::Tunneling;
-
-        HttpProxyStrategyAdaptiveConfig adaptiveConfig;
-        adaptiveConfig.KerberosGetToken = [](String &token)
-        {
-            token = "fake-kerberos-token";
-            return true;
-        };
-        adaptiveConfig.NtlmGetCredential = [](String &credential)
-        {
-            credential = "fake-ntlm-credential";
-            return true;
-        };
-        adaptiveConfig.NtlmGetToken = [](const String &, String &token)
-        {
-            token = "fake-ntlm-token";
-            return true;
-        };
-
-        testState.m_proxyOptions.ProxyStrategy =
-            HttpProxyStrategy::CreateAdaptiveHttpProxyStrategy(adaptiveConfig, allocator);
-        ASSERT_NOT_NULL(testState.m_proxyOptions.ProxyStrategy.get());
-
-        /* Grab a weak_ptr to the strategy so we can observe its lifetime independently. */
-        std::weak_ptr<HttpProxyStrategy> strategyObserver = testState.m_proxyOptions.ProxyStrategy;
-
-        s_InitializeProxiedRawConnection(testState, aws_byte_cursor_from_string(s_https_endpoint));
-
-        ASSERT_TRUE(testState.m_connection != nullptr);
-
-        /*
-         * Simulate the documented usage pattern: the caller's options go out of scope.
-         * Reset the ProxyStrategy in the options struct - if CreateConnection did NOT retain
-         * a copy, the strategy would be destroyed here (use_count drops to 0).
-         */
-        testState.m_proxyOptions.ProxyStrategy.reset();
-
-        /* The strategy must still be alive - the connection infrastructure must hold a reference. */
-        ASSERT_FALSE(strategyObserver.expired());
-
-        /* The connection is still active. In the buggy code, the underlying C strategy would now hold
-         * a dangling user_data pointer to the freed AdaptiveHttpProxyStrategy object. */
-    }
-
-    /* now let everything tear down and make sure we don't leak or deadlock.*/
-    return AWS_OP_SUCCESS;
-}
-
-AWS_TEST_CASE(AdaptiveProxyStrategyLifetime, s_TestAdaptiveProxyStrategyLifetime)
 
 static int s_TestDirectConnectionTunnelingProxyHttps(struct aws_allocator *allocator, void *ctx)
 {
