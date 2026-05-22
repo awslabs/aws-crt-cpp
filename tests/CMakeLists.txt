@@ -180,6 +180,9 @@ if(ENABLE_PROXY_INTEGRATION_TESTS AND NOT BYO_CRYPTO)
     add_test_case(DirectConnectionTunnelingProxyBasicAuthDeprecated)
     add_test_case(DirectConnectionTunnelingProxyBasicAuth)
 
+    # proxy strategy lifetime regression test
+    add_test_case(AdaptiveProxyStrategyLifetime)
+
     # x509 provider proxy tests
     add_test_case(X509ProxyHttpGetCredentials)
     add_test_case(X509ProxyHttpsGetCredentials)
