@@ -237,7 +237,15 @@ namespace Aws
                 raw_config.credentials_file_name_override = config.CredentialsFileNameOverride;
                 raw_config.profile_name_override = config.ProfileNameOverride;
                 raw_config.bootstrap = config.Bootstrap ? config.Bootstrap->GetUnderlyingHandle() : nullptr;
-                raw_config.tls_ctx = config.TlsContext ? config.TlsContext->GetUnderlyingHandle() : nullptr;
+                if (config.TlsContext != nullptr)
+                {
+                    raw_config.tls_ctx = config.TlsContext->GetUnderlyingHandle();
+                }
+                else if (config.TlsConnectionOptions)
+                {
+                    const auto *const connectionOptions = config.TlsConnectionOptions.GetUnderlyingHandle();
+                    raw_config.tls_ctx = connectionOptions->ctx;
+                }
                 struct proxy_env_var_settings proxy_options;
                 AWS_ZERO_STRUCT(proxy_options);
                 if (config.ProxyEnvVarOptions.has_value())
