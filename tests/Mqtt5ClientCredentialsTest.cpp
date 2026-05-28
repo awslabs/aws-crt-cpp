@@ -103,7 +103,7 @@ AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_x509_ca, "AWS_TEST_MQTT5
 // Needed to return "success" instead of skip in Codebuild so it doesn't count as a failure
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_codebuild, "CODEBUILD_BUILD_ID");
 
-// Switches to s2n-tls on macOS
+// When set, TLS backend on macOS switches from Secure Transport to s2n-tls, which doesn't support PKCS#12.
 AWS_STATIC_STRING_FROM_LITERAL(s_test_envName_non_fips_tls13, "AWS_CRT_USE_NON_FIPS_TLS_13");
 
 static int s_GetEnvVariable(Aws::Crt::Allocator *allocator, const aws_string *variableName, aws_string **output)
