@@ -218,7 +218,7 @@ if (NOT BYO_CRYPTO)
 endif()
 
 #MQTT5 related tests
-add_net_test_case(Mqtt5NewClientMinimal)
+add_test_case(Mqtt5NewClientMinimal)
 add_test_case(Mqtt5NewClientFull)
 if(NOT BYO_CRYPTO)
     # MQTT5 TESTS
@@ -266,7 +266,7 @@ if(NOT BYO_CRYPTO)
     add_net_test_case(Mqtt5OperationStatisticsSimple)
 
     # Mqtt5-to-3 Adapter
-    add_net_test_case(Mqtt5to3AdapterNewConnectionMin)
+    add_test_case(Mqtt5to3AdapterNewConnectionMin)
     add_test_case(Mqtt5to3AdapterNewClientFull)
     add_net_test_case(Mqtt5to3AdapterDirectConnectionMinimalThroughMqtt3)
     add_net_test_case(Mqtt5to3AdapterWSConnectionMinimalThroughMqtt3)
