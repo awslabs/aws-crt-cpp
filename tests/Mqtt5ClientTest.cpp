@@ -798,6 +798,7 @@ static int s_TestMqtt5DirectConnectionWithTLS13(Aws::Crt::Allocator *allocator, 
 
     bool connectionSucceeded = testContext.connectionPromise.get_future().get();
 
+    (void)s_mqtt5_test_envName_non_fips_tls13;
 #    if defined(__APPLE__)
     struct aws_string *non_fips_tls13 = NULL;
     aws_get_environment_value(allocator, s_mqtt5_test_envName_non_fips_tls13, &non_fips_tls13);
