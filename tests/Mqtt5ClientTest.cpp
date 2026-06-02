@@ -804,13 +804,13 @@ static int s_TestMqtt5DirectConnectionWithTLS13(Aws::Crt::Allocator *allocator, 
     aws_get_environment_value(allocator, s_mqtt5_test_envName_non_fips_tls13, &non_fips_tls13);
     if (non_fips_tls13)
     {
-        // s2n is active on macOS — TLS 1.3 should work
+        // s2n is active on macOS, TLS 1.3 should work.
         aws_string_destroy(non_fips_tls13);
         ASSERT_TRUE(connectionSucceeded);
     }
     else
     {
-        // Secure Transport doesn't support TLS 1.3, expect connection failure
+        // Secure Transport doesn't support TLS 1.3, expect connection failure.
         ASSERT_FALSE(connectionSucceeded);
     }
 #    else

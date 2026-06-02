@@ -679,7 +679,7 @@ static int s_TestIoTMqtt311ConnectWithPKCS12(Aws::Crt::Allocator *allocator, voi
     s_GetEnvVariable(allocator, s_test_envName_non_fips_tls13, &non_fips_tls13);
     if (non_fips_tls13)
     {
-        printf("Skipping PKCS12 test: AWS_CRT_USE_NON_FIPS_TLS_13 is set");
+        printf("Skipping PKCS12 test: AWS_CRT_USE_NON_FIPS_TLS_13 is set\n");
         aws_string_destroy(non_fips_tls13);
         return AWS_OP_SKIP;
     }

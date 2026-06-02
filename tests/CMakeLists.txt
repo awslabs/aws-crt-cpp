@@ -227,7 +227,7 @@ if(NOT BYO_CRYPTO)
     add_net_test_case(Mqtt5DirectConnectionWithMetricsCollection)
     add_net_test_case(Mqtt5DirectConnectionWithTLS)
     if(NOT USE_OPENSSL)
-        # System OpenSSL might provide no TLS 1.3 support. So, enable TLS 1.3 test with the bundled aws-lc only.
+        # System OpenSSL (USE_OPENSSL=ON) may lack the TLS 1.3 support.
         add_net_test_case(Mqtt5DirectConnectionWithTLS13)
     endif()
     add_net_test_case(Mqtt5DirectConnectionWithMutualTLS)
