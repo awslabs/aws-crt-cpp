@@ -49,9 +49,12 @@ and will not enable optimizations that would benefit an independent `arm64` or `
 If your application uses OpenSSL, configure with `-DUSE_OPENSSL=ON`.
 
 aws-crt-cpp does not use OpenSSL for TLS.
-On Apple and Windows devices, the OS's default TLS library is used.
-On Unix devices, [s2n-tls](https://github.com/aws/s2n-tls) is used.
-But s2n-tls uses libcrypto, the cryptography math library bundled with OpenSSL.
+On Windows, the OS's default TLS library (Schannel) is used.
+On Linux, [s2n-tls](https://github.com/aws/s2n-tls) is used.
+On macOS, Apple Secure Transport is used by default, but s2n-tls can be enabled at runtime
+(see [macOS TLS Configuration](#macos-tls-configuration) below).
+
+s2n-tls uses libcrypto, the cryptography math library bundled with OpenSSL.
 To simplify the build process, the source code for s2n-tls and libcrypto are
 included as git submodules and built along with aws-crt-cpp.
 But if your application is also loading the system installation of OpenSSL
@@ -61,7 +64,7 @@ there may be crashes as the application tries to use two different versions of l
 Setting `-DUSE_OPENSSL=ON` will cause aws-crt-cpp to link against your system's existing `libcrypto`,
 instead of building its own copy.
 
-You can ignore all this on Windows and Apple platforms, where aws-crt-cpp uses the OS's default libraries for TLS and cryptography math.
+You can ignore all this on Windows, where aws-crt-cpp uses the OS's default libraries for TLS and cryptography math.
 
 ## Dependencies?
 
@@ -131,7 +134,31 @@ Lastly, you will need a client or server bootstrap to use a client or server pro
 non-blocking and event driven, this handles most of the "callback hell" inherent in the design. Assuming you aren't partitioning
 threads for particular use-cases, you can have a single instance of this that you pass to multiple clients.
 
-## Mac-Only TLS Behavior
+## macOS TLS Configuration
+
+By default on macOS, aws-crt-cpp uses Apple Secure Transport for TLS. This provides FIPS-compliant cryptography
+and integration with the macOS Keychain (e.g. PKCS#12 credentials), but is limited to TLS 1.2.
+
+To enable TLS 1.3 on macOS, set the environment variable:
+
+```
+export AWS_CRT_USE_NON_FIPS_TLS_13=1
+```
+
+This switches the TLS backend from Apple Secure Transport to [s2n-tls](https://github.com/aws/s2n-tls) with
+[aws-lc](https://github.com/aws/aws-lc) as the underlying libcrypto. The tradeoffs are:
+
+| | Secure Transport (default) | s2n-tls (`AWS_CRT_USE_NON_FIPS_TLS_13=1`) |
+|---|---|---|
+| TLS versions | Up to TLS 1.2 | Up to TLS 1.3 |
+| FIPS compliance | Yes | No |
+| macOS Keychain integration | Yes (PKCS#12, system certs) | No |
+
+This variable is checked at runtime and only affects macOS. It has no effect on Linux (which always uses s2n-tls)
+or Windows (which always uses Schannel). Both TLS backends are compiled into the binary when building on macOS;
+the environment variable selects which one is used.
+
+### Keychain Behavior
 
 Please note that on Mac, once a private key is used with a certificate, that certificate-key pair is imported into the Mac Keychain.  All subsequent uses of that certificate will use the stored private key and ignore anything passed in programmatically.  Beginning in v0.8.10, when a stored private key from the Keychain is used, the following will be logged at the "info" log level:
 
