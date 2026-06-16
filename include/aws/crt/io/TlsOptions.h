@@ -182,6 +182,7 @@ namespace Aws
                  * On Linux (s2n), this disables validation of OCSP stapled responses provided by the server.
                  *
                  * On Apple platforms, this is a no-op as revocation checking is not enabled by default.
+                 *
                  * @param noCertificateRevocation: Set true to disable revocation checking.
                  */
                 void SetNoCertificateRevocation(bool noCertificateRevocation) noexcept;
