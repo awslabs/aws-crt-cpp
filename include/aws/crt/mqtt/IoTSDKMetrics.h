@@ -64,9 +64,7 @@ namespace Aws
                  * corresponding aws_mqtt_iot_metrics struct is still in use.
                  */
                 Crt::Vector<aws_mqtt_metadata_entry> m_rawMetadataEntries;
-                
             };
-
         } // namespace Mqtt
     } // namespace Crt
 } // namespace Aws

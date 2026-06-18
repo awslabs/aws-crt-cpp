@@ -81,17 +81,17 @@ namespace Aws
             // Assigned sequentially by aws_tls_cipher_pref enum value (1-11), skipping SYSTEM_DEFAULT (0).
             namespace MetricsTlsCipherPreferenceValue
             {
-                constexpr char KmsPqTlsv10_2019_06 = 'A';       // enum 1, deprecated
-                constexpr char KmsPqSikeTlsv10_2019_11 = 'B';   // enum 2, deprecated
-                constexpr char KmsPqTlsv10_2020_02 = 'C';       // enum 3, deprecated
-                constexpr char KmsPqSikeTlsv10_2020_02 = 'D';   // enum 4, deprecated
-                constexpr char KmsPqTlsv10_2020_07 = 'E';       // enum 5, deprecated
-                constexpr char PqTlsv10_2021_05 = 'F';           // enum 6, deprecated
-                constexpr char PqTlsv12_2024_10 = 'G';           // enum 7
-                constexpr char PqDefault = 'H';                   // enum 8
-                constexpr char Tlsv12_2025_07 = 'I';             // enum 9
-                constexpr char Tlsv10_2023_06 = 'J';             // enum 10
-                constexpr char NonPqDefault = 'K';               // enum 11
+                constexpr char KmsPqTlsv10_2019_06 = 'A';     // enum 1, deprecated
+                constexpr char KmsPqSikeTlsv10_2019_11 = 'B'; // enum 2, deprecated
+                constexpr char KmsPqTlsv10_2020_02 = 'C';     // enum 3, deprecated
+                constexpr char KmsPqSikeTlsv10_2020_02 = 'D'; // enum 4, deprecated
+                constexpr char KmsPqTlsv10_2020_07 = 'E';     // enum 5, deprecated
+                constexpr char PqTlsv10_2021_05 = 'F';        // enum 6, deprecated
+                constexpr char PqTlsv12_2024_10 = 'G';        // enum 7
+                constexpr char PqDefault = 'H';               // enum 8
+                constexpr char Tlsv12_2025_07 = 'I';          // enum 9
+                constexpr char Tlsv10_2023_06 = 'J';          // enum 10
+                constexpr char NonPqDefault = 'K';            // enum 11
             } // namespace MetricsTlsCipherPreferenceValue
 
             // Feature Value Constants for minimum TLS version
@@ -178,9 +178,7 @@ namespace Aws
                  * @param userFeatures The user-provided feature list string.
                  * @return The merged feature list string, sorted by feature ID.
                  */
-                static Crt::String mergeFeatureLists(
-                    const Crt::String &crtFeatures,
-                    const Crt::String &userFeatures);
+                static Crt::String mergeFeatureLists(const Crt::String &crtFeatures, const Crt::String &userFeatures);
 
                 // Extension mappings from existing enums to metrics values.
                 // Returns '\0' for default/unset values (omit from the encoded feature list).
@@ -195,12 +193,10 @@ namespace Aws
                 static char metricsValueForOfflineQueueBehavior(Mqtt5::ClientOperationQueueBehaviorType behavior);
 
                 /// Maps outbound topic alias behavior to its metrics value char.
-                static char metricsValueForOutboundTopicAliasBehavior(
-                    Mqtt5::OutboundTopicAliasBehaviorType behavior);
+                static char metricsValueForOutboundTopicAliasBehavior(Mqtt5::OutboundTopicAliasBehaviorType behavior);
 
                 /// Maps inbound topic alias behavior to its metrics value char.
-                static char metricsValueForInboundTopicAliasBehavior(
-                    Mqtt5::InboundTopicAliasBehaviorType behavior);
+                static char metricsValueForInboundTopicAliasBehavior(Mqtt5::InboundTopicAliasBehaviorType behavior);
 
                 /// Maps Io::CertificateSource to its metrics value char.
                 /// Returns '\0' for CertificateSource::None (omit from encoded list).

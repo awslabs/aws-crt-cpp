@@ -81,9 +81,9 @@ namespace Aws
                 // H: http_proxy_type — set if a proxy is configured
                 if (proxyOptions.has_value())
                 {
-                    bool proxyUsesTls = proxyOptions->TlsOptions.has_value() &&
-                                        proxyOptions->ProxyConnectionType ==
-                                            Crt::Http::AwsHttpProxyConnectionType::Tunneling;
+                    bool proxyUsesTls =
+                        proxyOptions->TlsOptions.has_value() &&
+                        proxyOptions->ProxyConnectionType == Crt::Http::AwsHttpProxyConnectionType::Tunneling;
                     appendFeature(
                         features,
                         MetricsFeatureId::HttpProxyType,
@@ -161,9 +161,9 @@ namespace Aws
                 // H: http_proxy_type — set if a proxy is configured
                 if (options.m_proxyOptions.has_value())
                 {
-                    bool proxyUsesTls = options.m_proxyOptions->TlsOptions.has_value() &&
-                                        options.m_proxyOptions->ProxyConnectionType ==
-                                            Crt::Http::AwsHttpProxyConnectionType::Tunneling;
+                    bool proxyUsesTls =
+                        options.m_proxyOptions->TlsOptions.has_value() &&
+                        options.m_proxyOptions->ProxyConnectionType == Crt::Http::AwsHttpProxyConnectionType::Tunneling;
                     appendFeature(
                         features,
                         MetricsFeatureId::HttpProxyType,
@@ -184,15 +184,13 @@ namespace Aws
                     appendFeature(
                         features,
                         MetricsFeatureId::TlsCipherPreference,
-                        metricsValueForTlsCipherPreference(
-                            options.m_tlsConnectionOptions->m_metricsCipherPref));
+                        metricsValueForTlsCipherPreference(options.m_tlsConnectionOptions->m_metricsCipherPref));
 
                     // K: minimum_tls_version
                     appendFeature(
                         features,
                         MetricsFeatureId::MinimumTlsVersion,
-                        metricsValueForMinimumTlsVersion(
-                            options.m_tlsConnectionOptions->m_metricsTlsVersion));
+                        metricsValueForMinimumTlsVersion(options.m_tlsConnectionOptions->m_metricsTlsVersion));
                 }
 
                 return features;
@@ -282,8 +280,8 @@ namespace Aws
                     while (pos < features.size())
                     {
                         size_t commaPos = features.find(',', pos);
-                        Crt::String token = features.substr(
-                            pos, commaPos == Crt::String::npos ? Crt::String::npos : commaPos - pos);
+                        Crt::String token =
+                            features.substr(pos, commaPos == Crt::String::npos ? Crt::String::npos : commaPos - pos);
                         size_t slashPos = token.find('/');
                         if (slashPos != Crt::String::npos && slashPos > 0 && slashPos + 1 < token.size())
                         {
@@ -394,27 +392,27 @@ namespace Aws
             {
                 switch (pref)
                 {
-                    case AWS_IO_TLS_CIPHER_PREF_KMS_PQ_TLSv1_0_2019_06:       // enum 1
+                    case AWS_IO_TLS_CIPHER_PREF_KMS_PQ_TLSv1_0_2019_06: // enum 1
                         return MetricsTlsCipherPreferenceValue::KmsPqTlsv10_2019_06;
-                    case AWS_IO_TLS_CIPHER_PREF_KMS_PQ_SIKE_TLSv1_0_2019_11:  // enum 2
+                    case AWS_IO_TLS_CIPHER_PREF_KMS_PQ_SIKE_TLSv1_0_2019_11: // enum 2
                         return MetricsTlsCipherPreferenceValue::KmsPqSikeTlsv10_2019_11;
-                    case AWS_IO_TLS_CIPHER_PREF_KMS_PQ_TLSv1_0_2020_02:       // enum 3
+                    case AWS_IO_TLS_CIPHER_PREF_KMS_PQ_TLSv1_0_2020_02: // enum 3
                         return MetricsTlsCipherPreferenceValue::KmsPqTlsv10_2020_02;
-                    case AWS_IO_TLS_CIPHER_PREF_KMS_PQ_SIKE_TLSv1_0_2020_02:  // enum 4
+                    case AWS_IO_TLS_CIPHER_PREF_KMS_PQ_SIKE_TLSv1_0_2020_02: // enum 4
                         return MetricsTlsCipherPreferenceValue::KmsPqSikeTlsv10_2020_02;
-                    case AWS_IO_TLS_CIPHER_PREF_KMS_PQ_TLSv1_0_2020_07:       // enum 5
+                    case AWS_IO_TLS_CIPHER_PREF_KMS_PQ_TLSv1_0_2020_07: // enum 5
                         return MetricsTlsCipherPreferenceValue::KmsPqTlsv10_2020_07;
-                    case AWS_IO_TLS_CIPHER_PREF_PQ_TLSv1_0_2021_05:           // enum 6
+                    case AWS_IO_TLS_CIPHER_PREF_PQ_TLSv1_0_2021_05: // enum 6
                         return MetricsTlsCipherPreferenceValue::PqTlsv10_2021_05;
-                    case AWS_IO_TLS_CIPHER_PREF_PQ_TLSV1_2_2024_10:           // enum 7
+                    case AWS_IO_TLS_CIPHER_PREF_PQ_TLSV1_2_2024_10: // enum 7
                         return MetricsTlsCipherPreferenceValue::PqTlsv12_2024_10;
-                    case AWS_IO_TLS_CIPHER_PREF_PQ_DEFAULT:                    // enum 8
+                    case AWS_IO_TLS_CIPHER_PREF_PQ_DEFAULT: // enum 8
                         return MetricsTlsCipherPreferenceValue::PqDefault;
-                    case AWS_IO_TLS_CIPHER_PREF_TLSV1_2_2025_07:              // enum 9
+                    case AWS_IO_TLS_CIPHER_PREF_TLSV1_2_2025_07: // enum 9
                         return MetricsTlsCipherPreferenceValue::Tlsv12_2025_07;
-                    case AWS_IO_TLS_CIPHER_PREF_TLSV1_0_2023_06:              // enum 10
+                    case AWS_IO_TLS_CIPHER_PREF_TLSV1_0_2023_06: // enum 10
                         return MetricsTlsCipherPreferenceValue::Tlsv10_2023_06;
-                    case AWS_IO_TLS_CIPHER_PREF_NON_PQ_DEFAULT:               // enum 11
+                    case AWS_IO_TLS_CIPHER_PREF_NON_PQ_DEFAULT: // enum 11
                         return MetricsTlsCipherPreferenceValue::NonPqDefault;
                     default:
                         return '\0';

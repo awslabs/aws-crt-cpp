@@ -214,7 +214,7 @@ namespace Aws
                 aws_tls_cipher_pref m_cipherPref;
                 // Internal metrics tracking fields, track the certificate source
                 int m_metricsCertificateSource;
-                
+
                 bool m_isInit;
             };
 

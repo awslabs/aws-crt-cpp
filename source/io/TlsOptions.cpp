@@ -27,8 +27,7 @@ namespace Aws
 
             TlsContextOptions::TlsContextOptions() noexcept
                 : m_metricsCertificateSource(static_cast<int>(CertificateSource::None)),
-                  m_tlsVersion(AWS_IO_TLS_VER_SYS_DEFAULTS),
-                  m_cipherPref(AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT),
+                  m_tlsVersion(AWS_IO_TLS_VER_SYS_DEFAULTS), m_cipherPref(AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT),
                   m_isInit(false)
             {
                 AWS_ZERO_STRUCT(m_options);
@@ -307,8 +306,7 @@ namespace Aws
                 aws_tls_cipher_pref metricsCipherPref,
                 Allocator *allocator) noexcept
                 : m_allocator(allocator), m_lastError(AWS_ERROR_SUCCESS), m_isInit(true),
-                  m_metricsCertificateSource(metricsCertificateSource),
-                  m_metricsTlsVersion(metricsTlsVersion),
+                  m_metricsCertificateSource(metricsCertificateSource), m_metricsTlsVersion(metricsTlsVersion),
                   m_metricsCipherPref(metricsCipherPref)
             {
                 aws_tls_connection_options_init_from_ctx(&m_tls_connection_options, ctx);
@@ -386,10 +384,8 @@ namespace Aws
             }
 
             TlsConnectionOptions::TlsConnectionOptions(TlsConnectionOptions &&options) noexcept
-                : m_isInit(options.m_isInit),
-                  m_metricsCertificateSource(options.m_metricsCertificateSource),
-                  m_metricsTlsVersion(options.m_metricsTlsVersion),
-                  m_metricsCipherPref(options.m_metricsCipherPref)
+                : m_isInit(options.m_isInit), m_metricsCertificateSource(options.m_metricsCertificateSource),
+                  m_metricsTlsVersion(options.m_metricsTlsVersion), m_metricsCipherPref(options.m_metricsCipherPref)
             {
                 if (options.m_isInit)
                 {
@@ -481,8 +477,7 @@ namespace Aws
             TlsContext::TlsContext(TlsContextOptions &options, TlsMode mode, Allocator *allocator) noexcept
                 : m_ctx(nullptr), m_initializationError(AWS_ERROR_SUCCESS),
                   m_metricsCertificateSource(options.m_metricsCertificateSource),
-                  m_metricsTlsVersion(options.m_tlsVersion),
-                  m_metricsCipherPref(options.m_cipherPref)
+                  m_metricsTlsVersion(options.m_tlsVersion), m_metricsCipherPref(options.m_cipherPref)
             {
 #if BYO_CRYPTO
                 if (!ApiHandle::GetBYOCryptoNewTlsContextImplCallback() ||
