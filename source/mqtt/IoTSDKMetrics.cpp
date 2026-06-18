@@ -53,10 +53,9 @@ namespace Aws
 
             // ─── IoTSDKMetricsEncoder ─────────────────────────────────────────────
 
-            IoTDeviceSDKMetrics IoTSDKMetricsEncoder::createMetrics(const Mqtt5::Mqtt5ClientOptions &options)
+            IoTDeviceSDKMetrics IoTSDKMetricsEncoder::createMetricsForMqtt5(const Mqtt5::Mqtt5ClientOptions &options)
             {
-                // Get CRT feature list directly from options (like Swift's getEncodedFeatureList(from:))
-                Crt::String crtFeatureList = getEncodedFeatureList(options);
+                Crt::String crtFeatureList = getEncodedFeatureListForMqtt5(options);
 
                 // Get user-provided metrics from the options
                 const IoTDeviceSDKMetrics *userMetrics = options.m_sdkMetrics ? options.m_sdkMetrics.get() : nullptr;
@@ -69,7 +68,14 @@ namespace Aws
                 const Io::TlsConnectionOptions *tlsOptions,
                 const IoTDeviceSDKMetrics *userMetrics)
             {
-                // Build feature list for MQTT 3.1.1 connections
+                Crt::String crtFeatureList = getEncodedFeatureListForMqtt311(proxyOptions, tlsOptions);
+                return createMetricsFromFeatureList(crtFeatureList, userMetrics);
+            }
+
+            Crt::String IoTSDKMetricsEncoder::getEncodedFeatureListForMqtt311(
+                const Crt::Optional<Http::HttpClientConnectionProxyOptions> &proxyOptions,
+                const Io::TlsConnectionOptions *tlsOptions)
+            {
                 Crt::String features;
 
                 // F: protocol_version — MQTT 3.1.1 is always used
@@ -111,10 +117,10 @@ namespace Aws
                         metricsValueForMinimumTlsVersion(tlsOptions->m_metricsTlsVersion));
                 }
 
-                return createMetricsFromFeatureList(features, userMetrics);
+                return features;
             }
 
-            Crt::String IoTSDKMetricsEncoder::getEncodedFeatureList(const Mqtt5::Mqtt5ClientOptions &options)
+            Crt::String IoTSDKMetricsEncoder::getEncodedFeatureListForMqtt5(const Mqtt5::Mqtt5ClientOptions &options)
             {
                 Crt::String features;
 

@@ -478,11 +478,9 @@ namespace Aws
                     {
                         // Create final metrics directly from connection options
                         // (follows Swift IoTSDKMetricsEncoder.createMetrics(from:) pattern)
-                        const Io::TlsConnectionOptions *tlsOptionsPtr =
-                            m_useTls ? &m_tlsOptions : nullptr;
+                        const Io::TlsConnectionOptions *tlsOptionsPtr = m_useTls ? &m_tlsOptions : nullptr;
                         IoTDeviceSDKMetrics finalMetrics =
-                            IoTSDKMetricsEncoder::createMetricsForMqtt311(
-                                m_proxyOptions, tlsOptionsPtr, &m_sdkMetrics);
+                            IoTSDKMetricsEncoder::createMetricsForMqtt311(m_proxyOptions, tlsOptionsPtr, &m_sdkMetrics);
 
                         struct aws_mqtt_iot_metrics metrics;
                         AWS_ZERO_STRUCT(metrics);

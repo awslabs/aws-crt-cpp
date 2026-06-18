@@ -117,22 +117,12 @@ namespace Aws
               public:
                 /**
                  * Creates the final IoTDeviceSDKMetrics directly from Mqtt5ClientOptions.
-                 * Reads features directly from the options (like Swift's createMetrics(from:)).
-                 *
-                 * This function sets the metrics according to the following rules:
-                 * - libraryName: set to default SDK Name. If the libraryName field is set from
-                 *   user-provided metrics in options, overwrite the default value.
-                 * - Metadata - CRTVersion: not modifiable by user, automatically set to CRT version.
-                 * - Metadata - IoTSDKMetricsVersion: If set by user metrics, validates whether the
-                 *   metrics version matches the library's metrics version and processes IoTSDKFeature.
-                 * - Metadata - IoTSDKFeature: merge the CRT feature and the input feature if the
-                 *   metrics version matches.
-                 * - Other user metadata: preserved in the output (excluding reserved keys).
+                 * Reads features directly from the options.
                  *
                  * @param options The Mqtt5ClientOptions to extract features from.
                  * @return The final IoTDeviceSDKMetrics with all metadata set.
                  */
-                static IoTDeviceSDKMetrics createMetrics(const Mqtt5::Mqtt5ClientOptions &options);
+                static IoTDeviceSDKMetrics createMetricsForMqtt5(const Mqtt5::Mqtt5ClientOptions &options);
 
                 /**
                  * Creates the final IoTDeviceSDKMetrics for an MQTT 3.1.1 connection.
@@ -149,11 +139,23 @@ namespace Aws
                     const IoTDeviceSDKMetrics *userMetrics = nullptr);
 
               private:
-                /// Appends a "featureId/value" token to the feature list string.
-                /// Skips the token if value is '\0' (default — omit from list).
+                // Appends a "featureId/value" token to the feature list string.
+                // Skips the token if value is '\0' (default — omit from list).
                 static void appendFeature(Crt::String &featureList, char featureId, char value);
 
-                /// Shared implementation for creating metrics from a feature list and user metrics.
+                /*
+                 * This function create and update the final metrics from the userMetrics and crtFeatureList
+                 *
+                 * According to the following rules:
+                 * - libraryName: set to default SDK Name. If the libraryName field is set from
+                 *   user metrics, overwrite the default value.
+                 * - Metadata - CRTVersion: not modifiable by user, automatically set to CRT version.
+                 * - Metadata - IoTSDKMetricsVersion: If set by user metrics, validates whether the
+                 *   metrics version matches the library's metrics version and processes IoTSDKFeature.
+                 * - Metadata - IoTSDKFeature: merge the CRT feature and the input feature if the
+                 *   metrics version matches.
+                 * - Other user metadata: preserved in the output (excluding reserved keys).
+                 */
                 static IoTDeviceSDKMetrics createMetricsFromFeatureList(
                     const Crt::String &crtFeatureList,
                     const IoTDeviceSDKMetrics *userMetrics);
@@ -167,7 +169,19 @@ namespace Aws
                  * @param options The Mqtt5ClientOptions to extract features from.
                  * @return The encoded feature list string.
                  */
-                static Crt::String getEncodedFeatureList(const Mqtt5::Mqtt5ClientOptions &options);
+                static Crt::String getEncodedFeatureListForMqtt5(const Mqtt5::Mqtt5ClientOptions &options);
+
+                /**
+                 * Generates the encoded feature list string for an MQTT 3.1.1 connection.
+                 * MQTT 3.1.1 connections have fewer configurable features than MQTT5.
+                 *
+                 * @param proxyOptions Optional HTTP proxy options (for feature H).
+                 * @param tlsOptions Optional TLS connection options (for features I, J, K).
+                 * @return The encoded feature list string.
+                 */
+                static Crt::String getEncodedFeatureListForMqtt311(
+                    const Crt::Optional<Http::HttpClientConnectionProxyOptions> &proxyOptions,
+                    const Io::TlsConnectionOptions *tlsOptions);
 
                 /**
                  * Merges CRT features with user-provided features.
@@ -183,35 +197,35 @@ namespace Aws
                 // Extension mappings from existing enums to metrics values.
                 // Returns '\0' for default/unset values (omit from the encoded feature list).
 
-                /// Maps ExponentialBackoffJitterMode to its metrics value char.
+                // Maps ExponentialBackoffJitterMode to its metrics value char.
                 static char metricsValueForRetryJitterMode(Mqtt5::ExponentialBackoffJitterMode mode);
 
-                /// Maps ClientSessionBehaviorType to its metrics value char.
+                // Maps ClientSessionBehaviorType to its metrics value char.
                 static char metricsValueForSessionBehavior(Mqtt5::ClientSessionBehaviorType behavior);
 
-                /// Maps ClientOperationQueueBehaviorType to its metrics value char.
+                // Maps ClientOperationQueueBehaviorType to its metrics value char.
                 static char metricsValueForOfflineQueueBehavior(Mqtt5::ClientOperationQueueBehaviorType behavior);
 
-                /// Maps outbound topic alias behavior to its metrics value char.
+                // Maps outbound topic alias behavior to its metrics value char.
                 static char metricsValueForOutboundTopicAliasBehavior(Mqtt5::OutboundTopicAliasBehaviorType behavior);
 
-                /// Maps inbound topic alias behavior to its metrics value char.
+                // Maps inbound topic alias behavior to its metrics value char.
                 static char metricsValueForInboundTopicAliasBehavior(Mqtt5::InboundTopicAliasBehaviorType behavior);
 
-                /// Maps Io::CertificateSource to its metrics value char.
-                /// Returns '\0' for CertificateSource::None (omit from encoded list).
+                // Maps Io::CertificateSource to its metrics value char.
+                // Returns '\0' for CertificateSource::None (omit from encoded list).
                 static char metricsValueForCertificateSource(Io::CertificateSource source);
 
-                /// Maps aws_tls_cipher_pref to its metrics value char.
-                /// Returns '\0' for AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT (omit from encoded list).
+                // Maps aws_tls_cipher_pref to its metrics value char.
+                // Returns '\0' for AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT (omit from encoded list).
                 static char metricsValueForTlsCipherPreference(aws_tls_cipher_pref pref);
 
-                /// Maps aws_tls_versions to its metrics value char.
-                /// Returns '\0' for AWS_IO_TLS_VER_SYS_DEFAULTS (omit from encoded list).
+                // Maps aws_tls_versions to its metrics value char.
+                // Returns '\0' for AWS_IO_TLS_VER_SYS_DEFAULTS (omit from encoded list).
                 static char metricsValueForMinimumTlsVersion(aws_tls_versions version);
 
-                /// Returns the metrics value char for the socket implementation on the current platform.
-                /// Detected at compile time: Winsock on Windows, Apple Network Framework on Apple, POSIX elsewhere.
+                // Returns the metrics value char for the socket implementation on the current platform.
+                // Detected at compile time: Winsock on Windows, Apple Network Framework on Apple, POSIX elsewhere.
                 static char detectSocketImplementation();
             };
 

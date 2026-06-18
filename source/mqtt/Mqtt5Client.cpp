@@ -263,8 +263,7 @@ namespace Aws
                 if (m_enableMetrics)
                 {
                     // Create final metrics directly from options
-                    // (follows Swift IoTSDKMetricsEncoder.createMetrics(from:) pattern)
-                    Mqtt::IoTDeviceSDKMetrics sdkMetrics = Mqtt::IoTSDKMetricsEncoder::createMetrics(*this);
+                    Mqtt::IoTDeviceSDKMetrics sdkMetrics = Mqtt::IoTSDKMetricsEncoder::createMetricsForMqtt5(*this);
                     sdkMetrics.initializeRawOptions(m_metricsStorage);
                     raw_options.metrics = &m_metricsStorage;
                 }
