@@ -9,6 +9,8 @@
 
 #include <aws/crt/mqtt/private/MqttConnectionCore.h>
 
+#include <aws/crt/mqtt/private/IoTSDKMetricsPrivate.h>
+
 #include <aws/crt/Api.h>
 #include <aws/crt/http/HttpRequestResponse.h>
 
@@ -474,9 +476,17 @@ namespace Aws
 
                     if (m_enableMetrics)
                     {
+                        // Create final metrics directly from connection options
+                        // (follows Swift IoTSDKMetricsEncoder.createMetrics(from:) pattern)
+                        const Io::TlsConnectionOptions *tlsOptionsPtr =
+                            m_useTls ? &m_tlsOptions : nullptr;
+                        IoTDeviceSDKMetrics finalMetrics =
+                            IoTSDKMetricsEncoder::createMetricsForMqtt311(
+                                m_proxyOptions, tlsOptionsPtr, &m_sdkMetrics);
+
                         struct aws_mqtt_iot_metrics metrics;
                         AWS_ZERO_STRUCT(metrics);
-                        m_sdkMetrics.initializeRawOptions(metrics);
+                        finalMetrics.initializeRawOptions(metrics);
                         if (aws_mqtt_client_connection_set_metrics(m_underlyingConnection, &metrics))
                         {
                             AWS_LOGF_DEBUG(AWS_LS_MQTT_CLIENT, "Failed to set Mqtt Metrics");

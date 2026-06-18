@@ -17,6 +17,11 @@ namespace Aws
 {
     namespace Crt
     {
+        namespace Mqtt
+        {
+            class IoTSDKMetricsEncoder;
+        } // namespace Mqtt
+
         namespace Io
         {
             class Pkcs11Lib;
@@ -205,6 +210,11 @@ namespace Aws
 
               private:
                 aws_tls_ctx_options m_options;
+                aws_tls_versions m_tlsVersion;
+                aws_tls_cipher_pref m_cipherPref;
+                // Internal metrics tracking fields, track the certificate source
+                int m_metricsCertificateSource;
+                
                 bool m_isInit;
             };
 
@@ -291,6 +301,8 @@ namespace Aws
              */
             class AWS_CRT_CPP_API TlsConnectionOptions final
             {
+                friend class Mqtt::IoTSDKMetricsEncoder;
+
               public:
                 TlsConnectionOptions() noexcept;
                 ~TlsConnectionOptions();
@@ -333,11 +345,20 @@ namespace Aws
               private:
                 bool isValid() const noexcept { return m_isInit; }
 
-                TlsConnectionOptions(aws_tls_ctx *ctx, Allocator *allocator) noexcept;
+                TlsConnectionOptions(
+                    aws_tls_ctx *ctx,
+                    int metricsCertificateSource,
+                    aws_tls_versions tlsVersion,
+                    aws_tls_cipher_pref cipherPref,
+                    Allocator *allocator) noexcept;
                 aws_tls_connection_options m_tls_connection_options;
                 aws_allocator *m_allocator;
                 int m_lastError;
                 bool m_isInit;
+                // Internal metrics tracking fields, track the certificate source
+                int m_metricsCertificateSource;
+                aws_tls_versions m_metricsTlsVersion;
+                aws_tls_cipher_pref m_metricsCipherPref;
 
                 friend class TlsContext;
             };
@@ -381,6 +402,10 @@ namespace Aws
 
                 std::shared_ptr<aws_tls_ctx> m_ctx;
                 int m_initializationError;
+                // Internal metrics tracking fields, track the certificate source
+                int m_metricsCertificateSource;
+                aws_tls_versions m_metricsTlsVersion;
+                aws_tls_cipher_pref m_metricsCipherPref;
             };
 
             using NewTlsContextImplCallback = std::function<void *(TlsContextOptions &, TlsMode, Allocator *)>;

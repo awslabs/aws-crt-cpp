@@ -2,12 +2,14 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include <aws/crt/mqtt/IoTSDKMetrics.h>
 #include <aws/crt/mqtt/Mqtt5Client.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
+#include <aws/crt/mqtt/private/IoTSDKMetricsPrivate.h>
 #include <aws/crt/mqtt/private/Mqtt5ClientCore.h>
-#include <aws/crt/mqtt/private/MqttShared.h>
 
 #include <aws/crt/Api.h>
+#include <aws/crt/Config.h>
 #include <aws/crt/StlAllocator.h>
 #include <aws/crt/http/HttpProxyStrategy.h>
 #include <aws/crt/http/HttpRequestResponse.h>
@@ -212,11 +214,9 @@ namespace Aws
                     Crt::New<Mqtt::IoTDeviceSDKMetrics>(allocator),
                     [allocator](Mqtt::IoTDeviceSDKMetrics *metrics) { Crt::Delete(metrics, allocator); });
                 AWS_ZERO_STRUCT(m_metricsStorage);
-                m_sdkMetrics->initializeRawOptions(m_metricsStorage);
                 m_socketOptions.SetSocketType(Io::SocketType::Stream);
                 AWS_ZERO_STRUCT(m_packetConnectViewStorage);
                 AWS_ZERO_STRUCT(m_httpProxyOptionsStorage);
-
                 AWS_ZERO_STRUCT(m_topicAliasingOptions);
             }
 
@@ -259,7 +259,19 @@ namespace Aws
                 raw_options.connack_timeout_ms = m_connackTimeoutMs;
                 raw_options.ack_timeout_seconds = m_ackTimeoutSec;
                 raw_options.topic_aliasing_options = &m_topicAliasingOptions;
-                raw_options.metrics = m_enableMetrics ? &m_metricsStorage : NULL;
+
+                if (m_enableMetrics)
+                {
+                    // Create final metrics directly from options
+                    // (follows Swift IoTSDKMetricsEncoder.createMetrics(from:) pattern)
+                    Mqtt::IoTDeviceSDKMetrics sdkMetrics = Mqtt::IoTSDKMetricsEncoder::createMetrics(*this);
+                    sdkMetrics.initializeRawOptions(m_metricsStorage);
+                    raw_options.metrics = &m_metricsStorage;
+                }
+                else
+                {
+                    raw_options.metrics = nullptr;
+                }
 
                 return true;
             }
@@ -439,6 +451,12 @@ namespace Aws
             Mqtt5ClientOptions &Mqtt5ClientOptions::WithMetricsCollection(bool enabled) noexcept
             {
                 m_enableMetrics = enabled;
+                return *this;
+            }
+
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithSdkMetrics(Mqtt::IoTDeviceSDKMetrics sdkMetrics) noexcept
+            {
+                *m_sdkMetrics = std::move(sdkMetrics);
                 return *this;
             }
 
