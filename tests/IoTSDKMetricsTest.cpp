@@ -43,10 +43,7 @@ namespace Aws
                 {
                     return IoTSDKMetricsEncoder::createMetricsFromFeatureList(crtFeatureList, userMetrics);
                 }
-                static char DetectSocketImplementation()
-                {
-                    return IoTSDKMetricsEncoder::detectSocketImplementation();
-                }
+                static char DetectSocketImplementation() { return IoTSDKMetricsEncoder::detectSocketImplementation(); }
             };
         } // namespace Mqtt
     } // namespace Crt
@@ -339,7 +336,6 @@ static int s_TestIoTSDKMetricsVersionMismatch(Aws::Crt::Allocator *allocator, vo
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTSDKMetricsVersionMismatch, s_TestIoTSDKMetricsVersionMismatch)
-
 
 static int s_TestIoTSDKMetricsVersionNonNumeric(Aws::Crt::Allocator *allocator, void *)
 {
