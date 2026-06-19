@@ -13,7 +13,7 @@ namespace Aws
              * @private
              * The source of the TLS certificate used for authentication.
              * Automatically determined from the TlsContextOptions factory method used.
-             * Used internally for IoT SDK metrics tracking. 
+             * Used internally for IoT SDK metrics tracking.
              */
             enum class CertificateSource
             {

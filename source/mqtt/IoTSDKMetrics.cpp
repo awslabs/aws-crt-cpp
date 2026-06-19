@@ -300,7 +300,7 @@ namespace Aws
                 parseFeatureList(crtFeatures);
                 parseFeatureList(userFeatures);
 
-                // Build merged string, sorted by feature ID for deterministic output
+                // Build merged string
                 Crt::String result;
                 for (const auto &entry : featureMap)
                 {

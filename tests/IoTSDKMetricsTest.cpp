@@ -1,0 +1,404 @@
+/**
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0.
+ */
+#include <aws/crt/Api.h>
+#include <aws/crt/mqtt/IoTSDKMetrics.h>
+#include <aws/crt/mqtt/Mqtt5Client.h>
+#include <aws/crt/mqtt/private/IoTSDKMetricsPrivate.h>
+#include <aws/testing/aws_test_harness.h>
+
+using namespace Aws::Crt;
+using namespace Aws::Crt::Mqtt;
+using namespace Aws::Crt::Mqtt5;
+
+namespace Aws
+{
+    namespace Crt
+    {
+        namespace Mqtt
+        {
+            class IoTSDKMetricsTestHelper
+            {
+              public:
+                static Aws::Crt::String GetEncodedFeatureListForMqtt5(const Mqtt5ClientOptions &options)
+                {
+                    return IoTSDKMetricsEncoder::getEncodedFeatureListForMqtt5(options);
+                }
+                static Aws::Crt::String GetEncodedFeatureListForMqtt311(
+                    const Aws::Crt::Optional<Http::HttpClientConnectionProxyOptions> &proxyOptions,
+                    const Io::TlsConnectionOptions *tlsOptions)
+                {
+                    return IoTSDKMetricsEncoder::getEncodedFeatureListForMqtt311(proxyOptions, tlsOptions);
+                }
+                static Aws::Crt::String MergeFeatureLists(
+                    const Aws::Crt::String &crtFeatures,
+                    const Aws::Crt::String &userFeatures)
+                {
+                    return IoTSDKMetricsEncoder::mergeFeatureLists(crtFeatures, userFeatures);
+                }
+                static IoTDeviceSDKMetrics CreateMetricsFromFeatureList(
+                    const Aws::Crt::String &crtFeatureList,
+                    const IoTDeviceSDKMetrics *userMetrics)
+                {
+                    return IoTSDKMetricsEncoder::createMetricsFromFeatureList(crtFeatureList, userMetrics);
+                }
+                static char DetectSocketImplementation()
+                {
+                    return IoTSDKMetricsEncoder::detectSocketImplementation();
+                }
+            };
+        } // namespace Mqtt
+    } // namespace Crt
+} // namespace Aws
+
+static bool s_contains(const Aws::Crt::String &list, const Aws::Crt::String &token)
+{
+    size_t pos = 0;
+    while (pos < list.size())
+    {
+        size_t c = list.find(',', pos);
+        Aws::Crt::String cur = list.substr(pos, c == Aws::Crt::String::npos ? Aws::Crt::String::npos : c - pos);
+        if (cur == token)
+            return true;
+        if (c == Aws::Crt::String::npos)
+            break;
+        pos = c + 1;
+    }
+    return false;
+}
+
+static bool s_containsPrefix(const Aws::Crt::String &list, const Aws::Crt::String &prefix)
+{
+    size_t pos = 0;
+    while (pos < list.size())
+    {
+        size_t c = list.find(',', pos);
+        Aws::Crt::String cur = list.substr(pos, c == Aws::Crt::String::npos ? Aws::Crt::String::npos : c - pos);
+        if (cur.find(prefix) == 0)
+            return true;
+        if (c == Aws::Crt::String::npos)
+            break;
+        pos = c + 1;
+    }
+    return false;
+}
+
+static size_t s_partCount(const Aws::Crt::String &list)
+{
+    if (list.empty())
+        return 0;
+    size_t count = 1;
+    for (char ch : list)
+        if (ch == ',')
+            ++count;
+    return count;
+}
+
+static Aws::Crt::String s_getMeta(const IoTDeviceSDKMetrics &m, const Aws::Crt::String &key)
+{
+    for (const auto &e : m.Metadata)
+        if (e.first == key)
+            return e.second;
+    return "";
+}
+
+static char s_socketVal()
+{
+    return IoTSDKMetricsTestHelper::DetectSocketImplementation();
+}
+
+//////////////////////////////////////////////////////////
+// Minimal Options Encoding
+//////////////////////////////////////////////////////////
+
+static int s_TestIoTSDKMetricsMqtt5Minimal(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    Mqtt5ClientOptions options(allocator);
+    options.WithHostName("localhost").WithPort(8883);
+
+    Aws::Crt::String result = IoTSDKMetricsTestHelper::GetEncodedFeatureListForMqtt5(options);
+    ASSERT_TRUE(s_contains(result, "F/5"));
+    ASSERT_TRUE(s_contains(result, Aws::Crt::String("G/") + s_socketVal()));
+    ASSERT_INT_EQUALS(2, (int)s_partCount(result));
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsMqtt5Minimal, s_TestIoTSDKMetricsMqtt5Minimal)
+
+static int s_TestIoTSDKMetricsMqtt3Minimal(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    Optional<Http::HttpClientConnectionProxyOptions> noProxy;
+    Aws::Crt::String result = IoTSDKMetricsTestHelper::GetEncodedFeatureListForMqtt311(noProxy, nullptr);
+    ASSERT_TRUE(s_contains(result, "F/3"));
+    ASSERT_TRUE(s_contains(result, Aws::Crt::String("G/") + s_socketVal()));
+    ASSERT_INT_EQUALS(2, (int)s_partCount(result));
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsMqtt3Minimal, s_TestIoTSDKMetricsMqtt3Minimal)
+
+static int s_TestIoTSDKMetricsDefaultValuesOmitted(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    Mqtt5ClientOptions options(allocator);
+    options.WithHostName("localhost").WithPort(8883);
+    ReconnectOptions ro = {AWS_EXPONENTIAL_BACKOFF_JITTER_DEFAULT, 1000, 1000, 1000};
+    options.WithReconnectOptions(ro);
+    options.WithSessionBehavior(AWS_MQTT5_CSBT_DEFAULT);
+    options.WithOfflineQueueBehavior(AWS_MQTT5_COQBT_DEFAULT);
+
+    Aws::Crt::String result = IoTSDKMetricsTestHelper::GetEncodedFeatureListForMqtt5(options);
+    ASSERT_FALSE(s_containsPrefix(result, "A/"));
+    ASSERT_FALSE(s_containsPrefix(result, "B/"));
+    ASSERT_FALSE(s_containsPrefix(result, "C/"));
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsDefaultValuesOmitted, s_TestIoTSDKMetricsDefaultValuesOmitted)
+
+//////////////////////////////////////////////////////////
+// Multiple Non-Default Features
+//////////////////////////////////////////////////////////
+
+static int s_TestIoTSDKMetricsAllFeaturesSet(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    Mqtt5ClientOptions options(allocator);
+    options.WithHostName("localhost").WithPort(8883);
+    ReconnectOptions ro = {AWS_EXPONENTIAL_BACKOFF_JITTER_FULL, 1000, 1000, 1000};
+    options.WithReconnectOptions(ro);
+    options.WithSessionBehavior(AWS_MQTT5_CSBT_CLEAN);
+    options.WithOfflineQueueBehavior(AWS_MQTT5_COQBT_FAIL_ALL_ON_DISCONNECT);
+    TopicAliasingOptions ta;
+    ta.m_outboundBehavior = OutboundTopicAliasBehaviorType::LRU;
+    ta.m_inboundBehavior = InboundTopicAliasBehaviorType::Enabled;
+    options.WithTopicAliasingOptions(ta);
+    Http::HttpClientConnectionProxyOptions proxy;
+    proxy.HostName = "proxy.example.com";
+    proxy.Port = 8080;
+    proxy.ProxyConnectionType = Http::AwsHttpProxyConnectionType::Tunneling;
+    options.WithHttpProxyOptions(proxy);
+    Io::TlsContextOptions tlsOpts = Io::TlsContextOptions::InitDefaultClient(allocator);
+    tlsOpts.SetMinimumTlsVersion(AWS_IO_TLSv1_2);
+    Io::TlsContext tlsCtx(tlsOpts, Io::TlsMode::CLIENT, allocator);
+    options.WithTlsConnectionOptions(tlsCtx.NewConnectionOptions());
+
+    Aws::Crt::String result = IoTSDKMetricsTestHelper::GetEncodedFeatureListForMqtt5(options);
+    ASSERT_TRUE(s_contains(result, "A/B"));
+    ASSERT_TRUE(s_contains(result, "B/A"));
+    ASSERT_TRUE(s_contains(result, "C/C"));
+    ASSERT_TRUE(s_contains(result, "D/B"));
+    ASSERT_TRUE(s_contains(result, "E/A"));
+    ASSERT_TRUE(s_contains(result, "F/5"));
+    ASSERT_TRUE(s_contains(result, "H/A"));
+    ASSERT_TRUE(s_contains(result, "K/D"));
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsAllFeaturesSet, s_TestIoTSDKMetricsAllFeaturesSet)
+
+static int s_TestIoTSDKMetricsMqtt3ProxyTls(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    Io::TlsContextOptions tlsOpts = Io::TlsContextOptions::InitDefaultClient(allocator);
+    tlsOpts.SetMinimumTlsVersion(AWS_IO_TLSv1_2);
+    Io::TlsContext tlsCtx(tlsOpts, Io::TlsMode::CLIENT, allocator);
+    Io::TlsConnectionOptions tlsConn = tlsCtx.NewConnectionOptions();
+    Io::TlsContextOptions pOpts = Io::TlsContextOptions::InitDefaultClient(allocator);
+    Io::TlsContext pCtx(pOpts, Io::TlsMode::CLIENT, allocator);
+    Optional<Http::HttpClientConnectionProxyOptions> proxyOpt;
+    Http::HttpClientConnectionProxyOptions p;
+    p.HostName = "proxy.example.com";
+    p.Port = 443;
+    p.ProxyConnectionType = Http::AwsHttpProxyConnectionType::Tunneling;
+    p.TlsOptions = pCtx.NewConnectionOptions();
+    proxyOpt = p;
+
+    Aws::Crt::String result = IoTSDKMetricsTestHelper::GetEncodedFeatureListForMqtt311(proxyOpt, &tlsConn);
+    ASSERT_TRUE(s_contains(result, "F/3"));
+    ASSERT_TRUE(s_contains(result, "H/B"));
+    ASSERT_TRUE(s_contains(result, "K/D"));
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsMqtt3ProxyTls, s_TestIoTSDKMetricsMqtt3ProxyTls)
+
+//////////////////////////////////////////////////////////
+// Merge Feature Lists
+//////////////////////////////////////////////////////////
+
+static int s_TestIoTSDKMetricsMergeMultipleOverrides(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    ASSERT_TRUE(IoTSDKMetricsTestHelper::MergeFeatureLists("A/B,F/5,G/A,K/D", "A/C,F/3,K/E") == "A/C,F/3,G/A,K/E");
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsMergeMultipleOverrides, s_TestIoTSDKMetricsMergeMultipleOverrides)
+
+static int s_TestIoTSDKMetricsMergeEmptyUser(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    ASSERT_TRUE(IoTSDKMetricsTestHelper::MergeFeatureLists("F/5,G/A", "") == "F/5,G/A");
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsMergeEmptyUser, s_TestIoTSDKMetricsMergeEmptyUser)
+
+static int s_TestIoTSDKMetricsMergeEmptyCrt(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    ASSERT_TRUE(IoTSDKMetricsTestHelper::MergeFeatureLists("", "A/B") == "A/B");
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsMergeEmptyCrt, s_TestIoTSDKMetricsMergeEmptyCrt)
+
+static int s_TestIoTSDKMetricsMergeBothEmpty(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    ASSERT_TRUE(IoTSDKMetricsTestHelper::MergeFeatureLists("", "") == "");
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsMergeBothEmpty, s_TestIoTSDKMetricsMergeBothEmpty)
+
+//////////////////////////////////////////////////////////
+// Create Metrics
+//////////////////////////////////////////////////////////
+
+static int s_TestIoTSDKMetricsCreateNullUser(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", nullptr);
+    ASSERT_TRUE(result.LibraryName == "IoTDeviceSDK/CPP");
+    ASSERT_FALSE(s_getMeta(result, "CRTVersion").empty());
+    ASSERT_TRUE(s_getMeta(result, "IoTSDKFeature") == "F/5,G/A");
+    ASSERT_TRUE(s_getMeta(result, "IoTSDKMetricsVersion") == "1");
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsCreateNullUser, s_TestIoTSDKMetricsCreateNullUser)
+
+static int s_TestIoTSDKMetricsCreateEmptyUser(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    IoTDeviceSDKMetrics user;
+    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
+    ASSERT_TRUE(result.LibraryName == "IoTDeviceSDK/CPP");
+    ASSERT_TRUE(s_getMeta(result, "IoTSDKFeature") == "F/5,G/A");
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsCreateEmptyUser, s_TestIoTSDKMetricsCreateEmptyUser)
+
+static int s_TestIoTSDKMetricsCreateUserFeatureAdded(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    IoTDeviceSDKMetrics user;
+    user.AddMetadata("IoTSDKMetricsVersion", "1");
+    user.AddMetadata("IoTSDKFeature", "I/A");
+    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
+    Aws::Crt::String features = s_getMeta(result, "IoTSDKFeature");
+    ASSERT_TRUE(s_contains(features, "I/A"));
+    ASSERT_TRUE(s_contains(features, "F/5"));
+    ASSERT_TRUE(s_contains(features, "G/A"));
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsCreateUserFeatureAdded, s_TestIoTSDKMetricsCreateUserFeatureAdded)
+
+static int s_TestIoTSDKMetricsCreateUserOverridesCrt(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    IoTDeviceSDKMetrics user;
+    user.AddMetadata("IoTSDKMetricsVersion", "1");
+    user.AddMetadata("IoTSDKFeature", "F/3,I/B");
+    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
+    Aws::Crt::String features = s_getMeta(result, "IoTSDKFeature");
+    ASSERT_TRUE(s_contains(features, "F/3"));
+    ASSERT_FALSE(s_contains(features, "F/5"));
+    ASSERT_TRUE(s_contains(features, "I/B"));
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsCreateUserOverridesCrt, s_TestIoTSDKMetricsCreateUserOverridesCrt)
+
+static int s_TestIoTSDKMetricsCreateEmptyUserFeature(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    IoTDeviceSDKMetrics user;
+    user.AddMetadata("IoTSDKMetricsVersion", "1");
+    user.AddMetadata("IoTSDKFeature", "");
+    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
+    ASSERT_TRUE(s_getMeta(result, "IoTSDKFeature") == "F/5,G/A");
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsCreateEmptyUserFeature, s_TestIoTSDKMetricsCreateEmptyUserFeature)
+
+static int s_TestIoTSDKMetricsVersionMismatch(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    IoTDeviceSDKMetrics user;
+    user.AddMetadata("IoTSDKMetricsVersion", "99");
+    user.AddMetadata("IoTSDKFeature", "I/A");
+    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
+    Aws::Crt::String features = s_getMeta(result, "IoTSDKFeature");
+    ASSERT_FALSE(s_contains(features, "I/A"));
+    ASSERT_TRUE(s_contains(features, "F/5"));
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsVersionMismatch, s_TestIoTSDKMetricsVersionMismatch)
+
+
+static int s_TestIoTSDKMetricsVersionNonNumeric(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    IoTDeviceSDKMetrics user;
+    user.AddMetadata("IoTSDKMetricsVersion", "abc");
+    user.AddMetadata("IoTSDKFeature", "I/A");
+    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
+    Aws::Crt::String features = s_getMeta(result, "IoTSDKFeature");
+    ASSERT_FALSE(s_contains(features, "I/A"));
+    ASSERT_TRUE(s_contains(features, "F/5"));
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsVersionNonNumeric, s_TestIoTSDKMetricsVersionNonNumeric)
+
+static int s_TestIoTSDKMetricsNoVersionSet(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    IoTDeviceSDKMetrics user;
+    user.AddMetadata("IoTSDKFeature", "I/A");
+    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
+    ASSERT_FALSE(s_contains(s_getMeta(result, "IoTSDKFeature"), "I/A"));
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsNoVersionSet, s_TestIoTSDKMetricsNoVersionSet)
+
+static int s_TestIoTSDKMetricsCRTVersionNotModifiable(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    IoTDeviceSDKMetrics user;
+    user.AddMetadata("CRTVersion", "fake_version");
+    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
+    Aws::Crt::String crtVersion = s_getMeta(result, "CRTVersion");
+    ASSERT_FALSE(crtVersion.empty());
+    ASSERT_FALSE(crtVersion == "fake_version");
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsCRTVersionNotModifiable, s_TestIoTSDKMetricsCRTVersionNotModifiable)
+
+static int s_TestIoTSDKMetricsPreservesUserMetadata(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    IoTDeviceSDKMetrics user;
+    user.AddMetadata("IoTSDKVersion", "2.0.0");
+    user.AddMetadata("CustomKey", "custom_value");
+    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
+    ASSERT_TRUE(s_getMeta(result, "IoTSDKVersion") == "2.0.0");
+    ASSERT_TRUE(s_getMeta(result, "CustomKey") == "custom_value");
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsPreservesUserMetadata, s_TestIoTSDKMetricsPreservesUserMetadata)
+
+static int s_TestIoTSDKMetricsCustomLibraryName(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    IoTDeviceSDKMetrics user;
+    user.LibraryName = "MyCustomSDK/1.0";
+    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
+    ASSERT_TRUE(result.LibraryName == "MyCustomSDK/1.0");
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsCustomLibraryName, s_TestIoTSDKMetricsCustomLibraryName)

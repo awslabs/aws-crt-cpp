@@ -293,8 +293,7 @@ namespace Aws
             TlsConnectionOptions::TlsConnectionOptions() noexcept
                 : m_lastError(AWS_ERROR_SUCCESS), m_isInit(false),
                   m_metricsCertificateSource(static_cast<int>(CertificateSource::None)),
-                  m_tlsVersion(AWS_IO_TLS_VER_SYS_DEFAULTS),
-                  m_cipherPref(AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT)
+                  m_tlsVersion(AWS_IO_TLS_VER_SYS_DEFAULTS), m_cipherPref(AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT)
             {
             }
 
