@@ -9,6 +9,11 @@ namespace Aws
 {
     namespace Crt
     {
+        namespace Mqtt5
+        {
+            class Mqtt5ClientOptions;
+        } // namespace Mqtt5
+
         namespace Mqtt
         {
             /**
@@ -45,6 +50,10 @@ namespace Aws
                  */
                 void AddMetadata(const Crt::String &key, const Crt::String &value) noexcept;
 
+                friend class Mqtt5::Mqtt5ClientOptions;
+                friend class MqttConnectionCore;
+
+              private:
                 /**
                  * Populates a raw aws_mqtt_iot_metrics struct from this object.
                  *
@@ -56,7 +65,6 @@ namespace Aws
                  */
                 void initializeRawOptions(struct aws_mqtt_iot_metrics &raw_options) noexcept;
 
-              private:
                 /**
                  * Storage for the raw C metadata entry array.
                  * Byte cursors in these entries point into the strings in Metadata.

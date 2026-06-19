@@ -357,8 +357,8 @@ namespace Aws
                 bool m_isInit;
                 // Internal metrics tracking fields, track the certificate source
                 int m_metricsCertificateSource;
-                aws_tls_versions m_metricsTlsVersion;
-                aws_tls_cipher_pref m_metricsCipherPref;
+                aws_tls_versions m_tlsVersion;
+                aws_tls_cipher_pref m_cipherPref;
 
                 friend class TlsContext;
             };

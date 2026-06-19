@@ -3,12 +3,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
-
-// Private header — not part of the public API.
-// Defines internal types used for IoT SDK metrics tracking in TLS classes.
-
-#include <aws/io/tls_channel_handler.h>
-
 namespace Aws
 {
     namespace Crt
@@ -19,7 +13,7 @@ namespace Aws
              * @private
              * The source of the TLS certificate used for authentication.
              * Automatically determined from the TlsContextOptions factory method used.
-             * Used internally for IoT SDK metrics tracking (feature ID "I").
+             * Used internally for IoT SDK metrics tracking. 
              */
             enum class CertificateSource
             {

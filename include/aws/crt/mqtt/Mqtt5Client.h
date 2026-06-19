@@ -902,7 +902,11 @@ namespace Aws
                 /**
                  * Mutable so that initializeRawOptions() (which is const) can rebuild the
                  * metrics struct from the latest client options just before client creation.
+                 * m_computedMetrics stores the computed IoTDeviceSDKMetrics object so that
+                 * the byte cursors in m_metricsStorage remain valid (they point into the
+                 * strings owned by m_computedMetrics).
                  */
+                mutable Mqtt::IoTDeviceSDKMetrics m_finalMetrics;
                 mutable struct aws_mqtt_iot_metrics m_metricsStorage;
             };
 

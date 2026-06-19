@@ -108,13 +108,13 @@ namespace Aws
                     appendFeature(
                         features,
                         MetricsFeatureId::TlsCipherPreference,
-                        metricsValueForTlsCipherPreference(tlsOptions->m_metricsCipherPref));
+                        metricsValueForTlsCipherPreference(tlsOptions->m_cipherPref));
 
                     // K: minimum_tls_version
                     appendFeature(
                         features,
                         MetricsFeatureId::MinimumTlsVersion,
-                        metricsValueForMinimumTlsVersion(tlsOptions->m_metricsTlsVersion));
+                        metricsValueForMinimumTlsVersion(tlsOptions->m_tlsVersion));
                 }
 
                 return features;
@@ -146,17 +146,15 @@ namespace Aws
                 appendFeature(
                     features,
                     MetricsFeatureId::OutboundTopicAliasBehavior,
-                    metricsValueForOutboundTopicAliasBehavior(
-                        static_cast<Mqtt5::OutboundTopicAliasBehaviorType>(
-                            options.m_topicAliasingOptions.outbound_topic_alias_behavior)));
+                    metricsValueForOutboundTopicAliasBehavior(static_cast<Mqtt5::OutboundTopicAliasBehaviorType>(
+                        options.m_topicAliasingOptions.outbound_topic_alias_behavior)));
 
                 // E: inbound_topic_alias_behavior
                 appendFeature(
                     features,
                     MetricsFeatureId::InboundTopicAliasBehavior,
-                    metricsValueForInboundTopicAliasBehavior(
-                        static_cast<Mqtt5::InboundTopicAliasBehaviorType>(
-                            options.m_topicAliasingOptions.inbound_topic_alias_behavior)));
+                    metricsValueForInboundTopicAliasBehavior(static_cast<Mqtt5::InboundTopicAliasBehaviorType>(
+                        options.m_topicAliasingOptions.inbound_topic_alias_behavior)));
 
                 // F: protocol_version — MQTT5 is always used for Mqtt5Client
                 appendFeature(features, MetricsFeatureId::ProtocolVersion, MetricsProtocolVersionValue::Mqtt5);
@@ -182,21 +180,20 @@ namespace Aws
                     appendFeature(
                         features,
                         MetricsFeatureId::CertificateSource,
-                        metricsValueForCertificateSource(
-                            static_cast<Io::CertificateSource>(
-                                options.m_tlsConnectionOptions->m_metricsCertificateSource)));
+                        metricsValueForCertificateSource(static_cast<Io::CertificateSource>(
+                            options.m_tlsConnectionOptions->m_metricsCertificateSource)));
 
                     // J: tls_cipher_preference
                     appendFeature(
                         features,
                         MetricsFeatureId::TlsCipherPreference,
-                        metricsValueForTlsCipherPreference(options.m_tlsConnectionOptions->m_metricsCipherPref));
+                        metricsValueForTlsCipherPreference(options.m_tlsConnectionOptions->m_cipherPref));
 
                     // K: minimum_tls_version
                     appendFeature(
                         features,
                         MetricsFeatureId::MinimumTlsVersion,
-                        metricsValueForMinimumTlsVersion(options.m_tlsConnectionOptions->m_metricsTlsVersion));
+                        metricsValueForMinimumTlsVersion(options.m_tlsConnectionOptions->m_tlsVersion));
                 }
 
                 return features;
