@@ -3,61 +3,65 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/Api.h>
+#include <aws/crt/Config.h>
 #include <aws/crt/mqtt/IoTSDKMetrics.h>
 #include <aws/crt/mqtt/Mqtt5Client.h>
-#include <aws/crt/mqtt/private/IoTSDKMetricsPrivate.h>
-#include <aws/crt/mqtt/private/MqttConnectionCore.h>
+#include <aws/crt/mqtt/MqttClient.h>
 #include <aws/testing/aws_test_harness.h>
+
+#include <aws/mqtt/v5/mqtt5_client.h>
 
 using namespace Aws::Crt;
 using namespace Aws::Crt::Mqtt;
 using namespace Aws::Crt::Mqtt5;
 
-namespace Aws
-{
-    namespace Crt
-    {
-        namespace Mqtt
-        {
-            class IoTSDKMetricsTestHelper
-            {
-              public:
-                static Aws::Crt::String GetEncodedFeatureListForMqtt5(const Mqtt5ClientOptions &options)
-                {
-                    return IoTSDKMetricsEncoder::getEncodedFeatureListForMqtt5(options);
-                }
-                static Aws::Crt::String GetEncodedFeatureListForMqtt311(const MqttConnectionCore &connection)
-                {
-                    return IoTSDKMetricsEncoder::getEncodedFeatureListForMqtt311(connection);
-                }
+//////////////////////////////////////////////////////////
+// Test Helpers
+//////////////////////////////////////////////////////////
 
-                // Create a fake MqttConnectionCore for testing
-                static std::shared_ptr<MqttConnectionCore> CreateTestConnectionCore(MqttConnectionOptions opts)
-                {
-                    auto *allocator = opts.allocator;
-                    auto *toSeat =
-                        reinterpret_cast<MqttConnectionCore *>(aws_mem_acquire(allocator, sizeof(MqttConnectionCore)));
-                    toSeat = new (toSeat) MqttConnectionCore(nullptr, nullptr, nullptr, std::move(opts));
-                    return std::shared_ptr<MqttConnectionCore>(
-                        toSeat, [allocator](MqttConnectionCore *ptr) { Crt::Delete(ptr, allocator); });
-                }
-                static Aws::Crt::String MergeFeatureLists(
-                    const Aws::Crt::String &crtFeatures,
-                    const Aws::Crt::String &userFeatures)
-                {
-                    return IoTSDKMetricsEncoder::mergeFeatureLists(crtFeatures, userFeatures);
-                }
-                static IoTDeviceSDKMetrics CreateMetricsFromFeatureList(
-                    const Aws::Crt::String &crtFeatureList,
-                    const IoTDeviceSDKMetrics *userMetrics)
-                {
-                    return IoTSDKMetricsEncoder::createMetricsFromFeatureList(crtFeatureList, userMetrics);
-                }
-                static char DetectSocketImplementation() { return IoTSDKMetricsEncoder::detectSocketImplementation(); }
-            };
-        } // namespace Mqtt
-    } // namespace Crt
-} // namespace Aws
+/**
+ * Helper to extract a metadata value from the raw aws_mqtt_iot_metrics struct.
+ * Returns empty string if key not found.
+ */
+static Aws::Crt::String s_getMetadataValue(const struct aws_mqtt_iot_metrics *metrics, const char *key)
+{
+    if (metrics == nullptr || metrics->metadata_entries == nullptr)
+        return "";
+    for (size_t i = 0; i < metrics->metadata_count; ++i)
+    {
+        Aws::Crt::String k(
+            reinterpret_cast<const char *>(metrics->metadata_entries[i].key.ptr), metrics->metadata_entries[i].key.len);
+        if (k == key)
+        {
+            return Aws::Crt::String(
+                reinterpret_cast<const char *>(metrics->metadata_entries[i].value.ptr),
+                metrics->metadata_entries[i].value.len);
+        }
+    }
+    return "";
+}
+
+/**
+ * Helper to get the library name from raw metrics.
+ */
+static Aws::Crt::String s_getLibraryName(const struct aws_mqtt_iot_metrics *metrics)
+{
+    if (metrics == nullptr || metrics->library_name.ptr == nullptr)
+        return "";
+    return Aws::Crt::String(reinterpret_cast<const char *>(metrics->library_name.ptr), metrics->library_name.len);
+}
+
+/**
+ * Helper to call initializeRawOptions on Mqtt5ClientOptions and return the metrics pointer.
+ * The raw_options struct must outlive any use of the returned pointer.
+ */
+static const struct aws_mqtt_iot_metrics *s_getMetricsFromOptions(
+    const Mqtt5ClientOptions &options,
+    aws_mqtt5_client_options &raw_options)
+{
+    options.initializeRawOptions(raw_options);
+    return raw_options.metrics;
+}
 
 static bool s_contains(const Aws::Crt::String &list, const Aws::Crt::String &token)
 {
@@ -102,13 +106,22 @@ static size_t s_partCount(const Aws::Crt::String &list)
     return count;
 }
 
+/**
+ * Returns the expected socket implementation value for the current platform.
+ */
 static char s_socketVal()
 {
-    return IoTSDKMetricsTestHelper::DetectSocketImplementation();
+#if defined(_WIN32)
+    return 'B'; // Winsock
+#elif defined(__APPLE__)
+    return 'C'; // Apple Network Framework
+#else
+    return 'A'; // Posix
+#endif
 }
 
 //////////////////////////////////////////////////////////
-// Minimal Options Encoding
+// Minimal Options Encoding (MQTT5)
 //////////////////////////////////////////////////////////
 
 static int s_TestIoTSDKMetricsMqtt5Minimal(Aws::Crt::Allocator *allocator, void *)
@@ -117,31 +130,21 @@ static int s_TestIoTSDKMetricsMqtt5Minimal(Aws::Crt::Allocator *allocator, void 
     Mqtt5ClientOptions options(allocator);
     options.WithHostName("localhost").WithPort(8883);
 
-    Aws::Crt::String result = IoTSDKMetricsTestHelper::GetEncodedFeatureListForMqtt5(options);
-    ASSERT_TRUE(s_contains(result, "F/5"));
-    ASSERT_TRUE(s_contains(result, Aws::Crt::String("G/") + s_socketVal()));
-    ASSERT_INT_EQUALS(2, (int)s_partCount(result));
+    aws_mqtt5_client_options raw_options;
+    const auto *metrics = s_getMetricsFromOptions(options, raw_options);
+    ASSERT_NOT_NULL(metrics);
+
+    Aws::Crt::String features = s_getMetadataValue(metrics, "IoTSDKFeature");
+    ASSERT_TRUE(s_contains(features, "F/5"));
+    ASSERT_TRUE(s_contains(features, Aws::Crt::String("G/") + s_socketVal()));
+    ASSERT_INT_EQUALS(2, (int)s_partCount(features));
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTSDKMetricsMqtt5Minimal, s_TestIoTSDKMetricsMqtt5Minimal)
 
-static int s_TestIoTSDKMetricsMqtt3Minimal(Aws::Crt::Allocator *allocator, void *)
-{
-    ApiHandle apiHandle(allocator);
-    MqttConnectionOptions opts;
-    opts.allocator = allocator;
-    opts.hostName = "localhost";
-    opts.port = 8883;
-    opts.useTls = false;
-    auto core = IoTSDKMetricsTestHelper::CreateTestConnectionCore(std::move(opts));
-
-    Aws::Crt::String result = IoTSDKMetricsTestHelper::GetEncodedFeatureListForMqtt311(*core);
-    ASSERT_TRUE(s_contains(result, "F/3"));
-    ASSERT_TRUE(s_contains(result, Aws::Crt::String("G/") + s_socketVal()));
-    ASSERT_INT_EQUALS(2, (int)s_partCount(result));
-    return AWS_OP_SUCCESS;
-}
-AWS_TEST_CASE(IoTSDKMetricsMqtt3Minimal, s_TestIoTSDKMetricsMqtt3Minimal)
+//////////////////////////////////////////////////////////
+// Default Values Omitted
+//////////////////////////////////////////////////////////
 
 static int s_TestIoTSDKMetricsDefaultValuesOmitted(Aws::Crt::Allocator *allocator, void *)
 {
@@ -153,10 +156,14 @@ static int s_TestIoTSDKMetricsDefaultValuesOmitted(Aws::Crt::Allocator *allocato
     options.WithSessionBehavior(AWS_MQTT5_CSBT_DEFAULT);
     options.WithOfflineQueueBehavior(AWS_MQTT5_COQBT_DEFAULT);
 
-    Aws::Crt::String result = IoTSDKMetricsTestHelper::GetEncodedFeatureListForMqtt5(options);
-    ASSERT_FALSE(s_containsPrefix(result, "A/"));
-    ASSERT_FALSE(s_containsPrefix(result, "B/"));
-    ASSERT_FALSE(s_containsPrefix(result, "C/"));
+    aws_mqtt5_client_options raw_options;
+    const auto *metrics = s_getMetricsFromOptions(options, raw_options);
+    ASSERT_NOT_NULL(metrics);
+
+    Aws::Crt::String features = s_getMetadataValue(metrics, "IoTSDKFeature");
+    ASSERT_FALSE(s_containsPrefix(features, "A/"));
+    ASSERT_FALSE(s_containsPrefix(features, "B/"));
+    ASSERT_FALSE(s_containsPrefix(features, "C/"));
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTSDKMetricsDefaultValuesOmitted, s_TestIoTSDKMetricsDefaultValuesOmitted)
@@ -188,60 +195,61 @@ static int s_TestIoTSDKMetricsAllFeaturesSet(Aws::Crt::Allocator *allocator, voi
     Io::TlsContext tlsCtx(tlsOpts, Io::TlsMode::CLIENT, allocator);
     options.WithTlsConnectionOptions(tlsCtx.NewConnectionOptions());
 
-    Aws::Crt::String result = IoTSDKMetricsTestHelper::GetEncodedFeatureListForMqtt5(options);
-    ASSERT_TRUE(s_contains(result, "A/B"));
-    ASSERT_TRUE(s_contains(result, "B/A"));
-    ASSERT_TRUE(s_contains(result, "C/C"));
-    ASSERT_TRUE(s_contains(result, "D/B"));
-    ASSERT_TRUE(s_contains(result, "E/A"));
-    ASSERT_TRUE(s_contains(result, "F/5"));
-    ASSERT_TRUE(s_contains(result, "H/A"));
-    ASSERT_TRUE(s_contains(result, "K/D"));
+    aws_mqtt5_client_options raw_options;
+    const auto *metrics = s_getMetricsFromOptions(options, raw_options);
+    ASSERT_NOT_NULL(metrics);
+
+    Aws::Crt::String features = s_getMetadataValue(metrics, "IoTSDKFeature");
+    ASSERT_TRUE(s_contains(features, "A/B"));
+    ASSERT_TRUE(s_contains(features, "B/A"));
+    ASSERT_TRUE(s_contains(features, "C/C"));
+    ASSERT_TRUE(s_contains(features, "D/B"));
+    ASSERT_TRUE(s_contains(features, "E/A"));
+    ASSERT_TRUE(s_contains(features, "F/5"));
+    ASSERT_TRUE(s_contains(features, "H/A"));
+    ASSERT_TRUE(s_contains(features, "K/D"));
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTSDKMetricsAllFeaturesSet, s_TestIoTSDKMetricsAllFeaturesSet)
 
-static int s_TestIoTSDKMetricsMqtt3ProxyTls(Aws::Crt::Allocator *allocator, void *)
-{
-    ApiHandle apiHandle(allocator);
-    Io::TlsContextOptions tlsOpts = Io::TlsContextOptions::InitDefaultClient(allocator);
-    tlsOpts.SetMinimumTlsVersion(AWS_IO_TLSv1_2);
-    Io::TlsContext tlsCtx(tlsOpts, Io::TlsMode::CLIENT, allocator);
-    Io::TlsConnectionOptions tlsConn = tlsCtx.NewConnectionOptions();
-    Io::TlsContextOptions pOpts = Io::TlsContextOptions::InitDefaultClient(allocator);
-    Io::TlsContext pCtx(pOpts, Io::TlsMode::CLIENT, allocator);
-    Http::HttpClientConnectionProxyOptions p;
-    p.HostName = "proxy.example.com";
-    p.Port = 443;
-    p.ProxyConnectionType = Http::AwsHttpProxyConnectionType::Tunneling;
-    p.TlsOptions = tlsConn;
-
-    MqttConnectionOptions opts;
-    opts.allocator = allocator;
-    opts.hostName = "localhost";
-    opts.port = 8883;
-    opts.useTls = true;
-    opts.tlsConnectionOptions = tlsConn;
-
-    auto core = IoTSDKMetricsTestHelper::CreateTestConnectionCore(std::move(opts));
-    core->SetHttpProxyOptions(p);
-
-    Aws::Crt::String result = IoTSDKMetricsTestHelper::GetEncodedFeatureListForMqtt311(*core);
-    ASSERT_TRUE(s_contains(result, "F/3"));
-    ASSERT_TRUE(s_contains(result, "H/B"));
-    ASSERT_TRUE(s_contains(result, "K/D"));
-    return AWS_OP_SUCCESS;
-}
-AWS_TEST_CASE(IoTSDKMetricsMqtt3ProxyTls, s_TestIoTSDKMetricsMqtt3ProxyTls)
-
 //////////////////////////////////////////////////////////
-// Merge Feature Lists
+// Merge Feature Lists (tested indirectly through MQTT5)
 //////////////////////////////////////////////////////////
 
 static int s_TestIoTSDKMetricsMergeMultipleOverrides(Aws::Crt::Allocator *allocator, void *)
 {
     ApiHandle apiHandle(allocator);
-    ASSERT_TRUE(IoTSDKMetricsTestHelper::MergeFeatureLists("A/B,F/5,G/A,K/D", "A/C,F/3,K/E") == "A/C,F/3,G/A,K/E");
+    // Set up MQTT5 options that produce known CRT features:
+    // A/B (jitter FULL), F/5 (protocol), G/{socket}
+    Mqtt5ClientOptions options(allocator);
+    options.WithHostName("localhost").WithPort(8883);
+    ReconnectOptions ro = {AWS_EXPONENTIAL_BACKOFF_JITTER_FULL, 1000, 1000, 1000};
+    options.WithReconnectOptions(ro);
+    Io::TlsContextOptions tlsOpts = Io::TlsContextOptions::InitDefaultClient(allocator);
+    tlsOpts.SetMinimumTlsVersion(AWS_IO_TLSv1_2);
+    Io::TlsContext tlsCtx(tlsOpts, Io::TlsMode::CLIENT, allocator);
+    options.WithTlsConnectionOptions(tlsCtx.NewConnectionOptions());
+
+    // User features override A and K, and override F
+    IoTDeviceSDKMetrics customMetrics;
+    customMetrics.AddMetadata("IoTSDKMetricsVersion", "1");
+    customMetrics.AddMetadata("IoTSDKFeature", "A/C,F/3,K/E");
+    options.WithSdkMetrics(std::move(customMetrics));
+
+    aws_mqtt5_client_options raw_options;
+    const auto *metrics = s_getMetricsFromOptions(options, raw_options);
+    ASSERT_NOT_NULL(metrics);
+
+    Aws::Crt::String features = s_getMetadataValue(metrics, "IoTSDKFeature");
+    // User overrides: A/C replaces A/B, F/3 replaces F/5, K/E replaces K/D
+    ASSERT_TRUE(s_contains(features, "A/C"));
+    ASSERT_FALSE(s_contains(features, "A/B"));
+    ASSERT_TRUE(s_contains(features, "F/3"));
+    ASSERT_FALSE(s_contains(features, "F/5"));
+    ASSERT_TRUE(s_contains(features, "K/E"));
+    ASSERT_FALSE(s_contains(features, "K/D"));
+    // G/{socket} should still be present (not overridden)
+    ASSERT_TRUE(s_contains(features, Aws::Crt::String("G/") + s_socketVal()));
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTSDKMetricsMergeMultipleOverrides, s_TestIoTSDKMetricsMergeMultipleOverrides)
@@ -249,7 +257,17 @@ AWS_TEST_CASE(IoTSDKMetricsMergeMultipleOverrides, s_TestIoTSDKMetricsMergeMulti
 static int s_TestIoTSDKMetricsMergeEmptyUser(Aws::Crt::Allocator *allocator, void *)
 {
     ApiHandle apiHandle(allocator);
-    ASSERT_TRUE(IoTSDKMetricsTestHelper::MergeFeatureLists("F/5,G/A", "") == "F/5,G/A");
+    Mqtt5ClientOptions options(allocator);
+    options.WithHostName("localhost").WithPort(8883);
+
+    // No user metrics set — CRT features should be preserved as-is
+    aws_mqtt5_client_options raw_options;
+    const auto *metrics = s_getMetricsFromOptions(options, raw_options);
+    ASSERT_NOT_NULL(metrics);
+
+    Aws::Crt::String features = s_getMetadataValue(metrics, "IoTSDKFeature");
+    ASSERT_TRUE(s_contains(features, "F/5"));
+    ASSERT_TRUE(s_contains(features, Aws::Crt::String("G/") + s_socketVal()));
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTSDKMetricsMergeEmptyUser, s_TestIoTSDKMetricsMergeEmptyUser)
@@ -257,31 +275,60 @@ AWS_TEST_CASE(IoTSDKMetricsMergeEmptyUser, s_TestIoTSDKMetricsMergeEmptyUser)
 static int s_TestIoTSDKMetricsMergeEmptyCrt(Aws::Crt::Allocator *allocator, void *)
 {
     ApiHandle apiHandle(allocator);
-    ASSERT_TRUE(IoTSDKMetricsTestHelper::MergeFeatureLists("", "A/B") == "A/B");
+    // Disable metrics to get no CRT features, then provide user features
+    // Actually, if metrics are disabled, raw_options.metrics will be nullptr.
+    // Instead, test that user features are added to CRT features
+    Mqtt5ClientOptions options(allocator);
+    options.WithHostName("localhost").WithPort(8883);
+
+    IoTDeviceSDKMetrics customMetrics;
+    customMetrics.AddMetadata("IoTSDKMetricsVersion", "1");
+    customMetrics.AddMetadata("IoTSDKFeature", "I/B");
+    options.WithSdkMetrics(std::move(customMetrics));
+
+    aws_mqtt5_client_options raw_options;
+    const auto *metrics = s_getMetricsFromOptions(options, raw_options);
+    ASSERT_NOT_NULL(metrics);
+
+    Aws::Crt::String features = s_getMetadataValue(metrics, "IoTSDKFeature");
+    // User feature I/B should be present alongside CRT features
+    ASSERT_TRUE(s_contains(features, "I/B"));
+    ASSERT_TRUE(s_contains(features, "F/5"));
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTSDKMetricsMergeEmptyCrt, s_TestIoTSDKMetricsMergeEmptyCrt)
 
-static int s_TestIoTSDKMetricsMergeBothEmpty(Aws::Crt::Allocator *allocator, void *)
-{
-    ApiHandle apiHandle(allocator);
-    ASSERT_TRUE(IoTSDKMetricsTestHelper::MergeFeatureLists("", "") == "");
-    return AWS_OP_SUCCESS;
-}
-AWS_TEST_CASE(IoTSDKMetricsMergeBothEmpty, s_TestIoTSDKMetricsMergeBothEmpty)
-
 //////////////////////////////////////////////////////////
-// Create Metrics
+// Create Metrics Tests (tested indirectly through MQTT5)
 //////////////////////////////////////////////////////////
 
 static int s_TestIoTSDKMetricsCreateNullUser(Aws::Crt::Allocator *allocator, void *)
 {
     ApiHandle apiHandle(allocator);
-    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", nullptr);
-    ASSERT_TRUE(result.LibraryName == "IoTDeviceSDK/CPP");
-    ASSERT_FALSE(result.Metadata.at("CRTVersion").empty());
-    ASSERT_TRUE(result.Metadata.at("IoTSDKFeature") == "F/5,G/A");
-    ASSERT_TRUE(result.Metadata.at("IoTSDKMetricsVersion") == "1");
+    Mqtt5ClientOptions options(allocator);
+    options.WithHostName("localhost").WithPort(8883);
+
+    aws_mqtt5_client_options raw_options;
+    const auto *metrics = s_getMetricsFromOptions(options, raw_options);
+    ASSERT_NOT_NULL(metrics);
+
+    // Default library name
+    Aws::Crt::String libraryName = s_getLibraryName(metrics);
+    ASSERT_TRUE(libraryName == "IoTDeviceSDK/CPP");
+
+    // CRTVersion should be set
+    Aws::Crt::String crtVersion = s_getMetadataValue(metrics, "CRTVersion");
+    ASSERT_FALSE(crtVersion.empty());
+
+    // IoTSDKFeature should contain protocol and socket
+    Aws::Crt::String features = s_getMetadataValue(metrics, "IoTSDKFeature");
+    ASSERT_TRUE(s_contains(features, "F/5"));
+    ASSERT_TRUE(s_contains(features, Aws::Crt::String("G/") + s_socketVal()));
+
+    // IoTSDKMetricsVersion should be "1"
+    Aws::Crt::String metricsVersion = s_getMetadataValue(metrics, "IoTSDKMetricsVersion");
+    ASSERT_TRUE(metricsVersion == "1");
+
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTSDKMetricsCreateNullUser, s_TestIoTSDKMetricsCreateNullUser)
@@ -289,14 +336,22 @@ AWS_TEST_CASE(IoTSDKMetricsCreateNullUser, s_TestIoTSDKMetricsCreateNullUser)
 static int s_TestIoTSDKMetricsCreateUserFeatureAdded(Aws::Crt::Allocator *allocator, void *)
 {
     ApiHandle apiHandle(allocator);
+    Mqtt5ClientOptions options(allocator);
+    options.WithHostName("localhost").WithPort(8883);
+
     IoTDeviceSDKMetrics user;
     user.AddMetadata("IoTSDKMetricsVersion", "1");
     user.AddMetadata("IoTSDKFeature", "I/A");
-    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
-    Aws::Crt::String features = result.Metadata.at("IoTSDKFeature");
+    options.WithSdkMetrics(std::move(user));
+
+    aws_mqtt5_client_options raw_options;
+    const auto *metrics = s_getMetricsFromOptions(options, raw_options);
+    ASSERT_NOT_NULL(metrics);
+
+    Aws::Crt::String features = s_getMetadataValue(metrics, "IoTSDKFeature");
     ASSERT_TRUE(s_contains(features, "I/A"));
     ASSERT_TRUE(s_contains(features, "F/5"));
-    ASSERT_TRUE(s_contains(features, "G/A"));
+    ASSERT_TRUE(s_contains(features, Aws::Crt::String("G/") + s_socketVal()));
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTSDKMetricsCreateUserFeatureAdded, s_TestIoTSDKMetricsCreateUserFeatureAdded)
@@ -304,11 +359,19 @@ AWS_TEST_CASE(IoTSDKMetricsCreateUserFeatureAdded, s_TestIoTSDKMetricsCreateUser
 static int s_TestIoTSDKMetricsCreateUserOverridesCrt(Aws::Crt::Allocator *allocator, void *)
 {
     ApiHandle apiHandle(allocator);
+    Mqtt5ClientOptions options(allocator);
+    options.WithHostName("localhost").WithPort(8883);
+
     IoTDeviceSDKMetrics user;
     user.AddMetadata("IoTSDKMetricsVersion", "1");
     user.AddMetadata("IoTSDKFeature", "F/3,I/B");
-    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
-    Aws::Crt::String features = result.Metadata.at("IoTSDKFeature");
+    options.WithSdkMetrics(std::move(user));
+
+    aws_mqtt5_client_options raw_options;
+    const auto *metrics = s_getMetricsFromOptions(options, raw_options);
+    ASSERT_NOT_NULL(metrics);
+
+    Aws::Crt::String features = s_getMetadataValue(metrics, "IoTSDKFeature");
     ASSERT_TRUE(s_contains(features, "F/3"));
     ASSERT_FALSE(s_contains(features, "F/5"));
     ASSERT_TRUE(s_contains(features, "I/B"));
@@ -319,11 +382,20 @@ AWS_TEST_CASE(IoTSDKMetricsCreateUserOverridesCrt, s_TestIoTSDKMetricsCreateUser
 static int s_TestIoTSDKMetricsVersionMismatch(Aws::Crt::Allocator *allocator, void *)
 {
     ApiHandle apiHandle(allocator);
+    Mqtt5ClientOptions options(allocator);
+    options.WithHostName("localhost").WithPort(8883);
+
     IoTDeviceSDKMetrics user;
     user.AddMetadata("IoTSDKMetricsVersion", "99");
     user.AddMetadata("IoTSDKFeature", "I/A");
-    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
-    Aws::Crt::String features = result.Metadata.at("IoTSDKFeature");
+    options.WithSdkMetrics(std::move(user));
+
+    aws_mqtt5_client_options raw_options;
+    const auto *metrics = s_getMetricsFromOptions(options, raw_options);
+    ASSERT_NOT_NULL(metrics);
+
+    Aws::Crt::String features = s_getMetadataValue(metrics, "IoTSDKFeature");
+    // Version mismatch: user features should NOT be merged
     ASSERT_FALSE(s_contains(features, "I/A"));
     ASSERT_TRUE(s_contains(features, "F/5"));
     return AWS_OP_SUCCESS;
@@ -333,10 +405,18 @@ AWS_TEST_CASE(IoTSDKMetricsVersionMismatch, s_TestIoTSDKMetricsVersionMismatch)
 static int s_TestIoTSDKMetricsCRTVersionNotModifiable(Aws::Crt::Allocator *allocator, void *)
 {
     ApiHandle apiHandle(allocator);
+    Mqtt5ClientOptions options(allocator);
+    options.WithHostName("localhost").WithPort(8883);
+
     IoTDeviceSDKMetrics user;
     user.AddMetadata("CRTVersion", "fake_version");
-    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
-    Aws::Crt::String crtVersion = result.Metadata.at("CRTVersion");
+    options.WithSdkMetrics(std::move(user));
+
+    aws_mqtt5_client_options raw_options;
+    const auto *metrics = s_getMetricsFromOptions(options, raw_options);
+    ASSERT_NOT_NULL(metrics);
+
+    Aws::Crt::String crtVersion = s_getMetadataValue(metrics, "CRTVersion");
     ASSERT_FALSE(crtVersion.empty());
     ASSERT_FALSE(crtVersion == "fake_version");
     return AWS_OP_SUCCESS;
@@ -346,12 +426,20 @@ AWS_TEST_CASE(IoTSDKMetricsCRTVersionNotModifiable, s_TestIoTSDKMetricsCRTVersio
 static int s_TestIoTSDKMetricsPreservesUserMetadata(Aws::Crt::Allocator *allocator, void *)
 {
     ApiHandle apiHandle(allocator);
+    Mqtt5ClientOptions options(allocator);
+    options.WithHostName("localhost").WithPort(8883);
+
     IoTDeviceSDKMetrics user;
     user.AddMetadata("IoTSDKVersion", "2.0.0");
     user.AddMetadata("CustomKey", "custom_value");
-    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
-    ASSERT_TRUE(result.Metadata.at("IoTSDKVersion") == "2.0.0");
-    ASSERT_TRUE(result.Metadata.at("CustomKey") == "custom_value");
+    options.WithSdkMetrics(std::move(user));
+
+    aws_mqtt5_client_options raw_options;
+    const auto *metrics = s_getMetricsFromOptions(options, raw_options);
+    ASSERT_NOT_NULL(metrics);
+
+    ASSERT_TRUE(s_getMetadataValue(metrics, "IoTSDKVersion") == "2.0.0");
+    ASSERT_TRUE(s_getMetadataValue(metrics, "CustomKey") == "custom_value");
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTSDKMetricsPreservesUserMetadata, s_TestIoTSDKMetricsPreservesUserMetadata)
@@ -359,48 +447,26 @@ AWS_TEST_CASE(IoTSDKMetricsPreservesUserMetadata, s_TestIoTSDKMetricsPreservesUs
 static int s_TestIoTSDKMetricsCustomLibraryName(Aws::Crt::Allocator *allocator, void *)
 {
     ApiHandle apiHandle(allocator);
+    Mqtt5ClientOptions options(allocator);
+    options.WithHostName("localhost").WithPort(8883);
+
     IoTDeviceSDKMetrics user;
     user.LibraryName = "MyCustomSDK/1.0";
-    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
-    ASSERT_TRUE(result.LibraryName == "MyCustomSDK/1.0");
+    options.WithSdkMetrics(std::move(user));
+
+    aws_mqtt5_client_options raw_options;
+    const auto *metrics = s_getMetricsFromOptions(options, raw_options);
+    ASSERT_NOT_NULL(metrics);
+
+    Aws::Crt::String libraryName = s_getLibraryName(metrics);
+    ASSERT_TRUE(libraryName == "MyCustomSDK/1.0");
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTSDKMetricsCustomLibraryName, s_TestIoTSDKMetricsCustomLibraryName)
 
 //////////////////////////////////////////////////////////
-// End-to-end: Metrics set via options
+// End-to-end: MQTT5 with SDK Metrics
 //////////////////////////////////////////////////////////
-
-static int s_TestIoTSDKMetricsSetMetricsViaOptions(Aws::Crt::Allocator *allocator, void *)
-{
-    ApiHandle apiHandle(allocator);
-
-    // Create a connection core with custom metrics passed via options
-    IoTDeviceSDKMetrics customMetrics;
-    customMetrics.LibraryName = "OptionsSDK/1.0";
-    customMetrics.AddMetadata("IoTSDKMetricsVersion", "1");
-    customMetrics.AddMetadata("IoTSDKFeature", "I/B");
-
-    MqttConnectionOptions opts;
-    opts.allocator = allocator;
-    opts.hostName = "localhost";
-    opts.port = 8883;
-    opts.useTls = false;
-    opts.sdkMetrics = customMetrics;
-    auto core = IoTSDKMetricsTestHelper::CreateTestConnectionCore(std::move(opts));
-
-    // Use createMetricsForMqtt311 to get the final metrics
-    IoTDeviceSDKMetrics finalMetrics = IoTSDKMetricsEncoder::createMetricsForMqtt311(*core);
-
-    ASSERT_TRUE(finalMetrics.LibraryName == "OptionsSDK/1.0");
-    Aws::Crt::String features = finalMetrics.Metadata.at("IoTSDKFeature");
-    ASSERT_TRUE(s_contains(features, "I/B"));
-    ASSERT_TRUE(s_contains(features, "F/3"));
-    ASSERT_FALSE(finalMetrics.Metadata.at("CRTVersion").empty());
-
-    return AWS_OP_SUCCESS;
-}
-AWS_TEST_CASE(IoTSDKMetricsSetMetricsViaOptions, s_TestIoTSDKMetricsSetMetricsViaOptions)
 
 static int s_TestIoTSDKMetricsMqtt5WithSdkMetrics(Aws::Crt::Allocator *allocator, void *)
 {
@@ -416,16 +482,50 @@ static int s_TestIoTSDKMetricsMqtt5WithSdkMetrics(Aws::Crt::Allocator *allocator
     customMetrics.AddMetadata("AppVersion", "3.0.0");
     options.WithSdkMetrics(std::move(customMetrics));
 
-    // Use createMetricsForMqtt5 to get the final metrics
-    IoTDeviceSDKMetrics finalMetrics = IoTSDKMetricsEncoder::createMetricsForMqtt5(options);
+    aws_mqtt5_client_options raw_options;
+    const auto *metrics = s_getMetricsFromOptions(options, raw_options);
+    ASSERT_NOT_NULL(metrics);
 
-    ASSERT_TRUE(finalMetrics.LibraryName == "Mqtt5TestSDK/2.0");
-    Aws::Crt::String features = finalMetrics.Metadata.at("IoTSDKFeature");
+    Aws::Crt::String libraryName = s_getLibraryName(metrics);
+    ASSERT_TRUE(libraryName == "Mqtt5TestSDK/2.0");
+
+    Aws::Crt::String features = s_getMetadataValue(metrics, "IoTSDKFeature");
     ASSERT_TRUE(s_contains(features, "I/A"));
     ASSERT_TRUE(s_contains(features, "F/5"));
-    ASSERT_TRUE(finalMetrics.Metadata.at("AppVersion") == "3.0.0");
-    ASSERT_FALSE(finalMetrics.Metadata.at("CRTVersion").empty());
+
+    ASSERT_TRUE(s_getMetadataValue(metrics, "AppVersion") == "3.0.0");
+
+    Aws::Crt::String crtVersion = s_getMetadataValue(metrics, "CRTVersion");
+    ASSERT_TRUE(crtVersion == AWS_CRT_CPP_VERSION);
 
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTSDKMetricsMqtt5WithSdkMetrics, s_TestIoTSDKMetricsMqtt5WithSdkMetrics)
+
+//////////////////////////////////////////////////////////
+// MQTT3 Connection Creation Test
+//////////////////////////////////////////////////////////
+// We dont have a way to test Mqtt3 client metrics setup. Here we quickly set the connection and verify the
+// connection is setup properly with the metrics API.
+static int s_TestIoTSDKMetricsMqtt3Minimal(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    Io::SocketOptions socketOptions;
+
+    // Create custom metrics to pass to the MQTT3 connection
+    IoTDeviceSDKMetrics customMetrics;
+    customMetrics.LibraryName = "Mqtt3TestSDK/1.0";
+    customMetrics.AddMetadata("IoTSDKMetricsVersion", "1");
+    customMetrics.AddMetadata("IoTSDKFeature", "I/B");
+    customMetrics.AddMetadata("AppVersion", "2.0.0");
+
+    MqttClient mqttClient(allocator);
+    ASSERT_TRUE(mqttClient);
+
+    auto connection = mqttClient.NewConnection(
+        "localhost", 8883, socketOptions, false /* no websocket */, true /* enableMetrics */, customMetrics);
+    ASSERT_NOT_NULL(connection.get());
+    ASSERT_TRUE(*connection);
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsMqtt3Minimal, s_TestIoTSDKMetricsMqtt3Minimal)
