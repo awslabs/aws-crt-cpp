@@ -194,14 +194,14 @@ namespace Aws
             {
                 AWS_ASSERT(m_isInit);
                 aws_tls_ctx_options_set_minimum_tls_version(&m_options, minimumTlsVersion);
-                m_tlsVersion = minimumTlsVersion;
+                m_tlsVersion = m_options.minimum_tls_version;
             }
 
             void TlsContextOptions::SetTlsCipherPreference(aws_tls_cipher_pref cipher_pref)
             {
                 AWS_ASSERT(m_isInit);
                 aws_tls_ctx_options_set_tls_cipher_preference(&m_options, cipher_pref);
-                m_cipherPref = cipher_pref;
+                m_cipherPref = m_options.cipher_pref;
             }
 
             bool TlsContextOptions::OverrideDefaultTrustStore(const char *caPath, const char *caFile) noexcept
@@ -473,15 +473,15 @@ namespace Aws
             TlsContext::TlsContext() noexcept
                 : m_ctx(nullptr), m_initializationError(AWS_ERROR_SUCCESS),
                   m_metricsCertificateSource(static_cast<int>(CertificateSource::None)),
-                  m_metricsTlsVersion(AWS_IO_TLS_VER_SYS_DEFAULTS),
-                  m_metricsCipherPref(AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT)
+                  m_tlsVersion(AWS_IO_TLS_VER_SYS_DEFAULTS),
+                  m_cipherPref(AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT)
             {
             }
 
             TlsContext::TlsContext(TlsContextOptions &options, TlsMode mode, Allocator *allocator) noexcept
                 : m_ctx(nullptr), m_initializationError(AWS_ERROR_SUCCESS),
                   m_metricsCertificateSource(options.m_metricsCertificateSource),
-                  m_metricsTlsVersion(options.m_tlsVersion), m_metricsCipherPref(options.m_cipherPref)
+                  m_tlsVersion(options.m_tlsVersion), m_cipherPref(options.m_cipherPref)
             {
 #if BYO_CRYPTO
                 if (!ApiHandle::GetBYOCryptoNewTlsContextImplCallback() ||
@@ -552,7 +552,7 @@ namespace Aws
                 }
 
                 return TlsConnectionOptions(
-                    m_ctx.get(), m_metricsCertificateSource, m_metricsTlsVersion, m_metricsCipherPref, m_ctx->alloc);
+                    m_ctx.get(), m_metricsCertificateSource, m_tlsVersion, m_cipherPref, m_ctx->alloc);
             }
 
             TlsChannelHandler::TlsChannelHandler(

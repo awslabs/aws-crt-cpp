@@ -200,6 +200,7 @@ static int s_TestIoTSDKMetricsAllFeaturesSet(Aws::Crt::Allocator *allocator, voi
     ASSERT_NOT_NULL(metrics);
 
     Aws::Crt::String features = s_getMetadataValue(metrics, "IoTSDKFeature");
+    AWS_LOGF_DEBUG(AWS_LS_MQTT5_GENERAL, "IoTSDKMetricsAllFeaturesSet features: %s", features.c_str());
     ASSERT_TRUE(s_contains(features, "A/B"));
     ASSERT_TRUE(s_contains(features, "B/A"));
     ASSERT_TRUE(s_contains(features, "C/C"));

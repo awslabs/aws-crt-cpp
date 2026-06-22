@@ -419,8 +419,8 @@ namespace Aws
                 int m_initializationError;
                 // Internal metrics tracking fields, track the certificate source
                 int m_metricsCertificateSource;
-                aws_tls_versions m_metricsTlsVersion;
-                aws_tls_cipher_pref m_metricsCipherPref;
+                aws_tls_versions m_tlsVersion;
+                aws_tls_cipher_pref m_cipherPref;
             };
 
             using NewTlsContextImplCallback = std::function<void *(TlsContextOptions &, TlsMode, Allocator *)>;
