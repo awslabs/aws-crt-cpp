@@ -222,6 +222,7 @@ static int s_TestIoTSDKMetricsMqtt3ProxyTls(Aws::Crt::Allocator *allocator, void
     p.HostName = "proxy.example.com";
     p.Port = 443;
     p.ProxyConnectionType = Http::AwsHttpProxyConnectionType::Tunneling;
+    p.TlsOptions = tlsConn;
 
     MqttConnectionOptions opts;
     opts.allocator = allocator;
