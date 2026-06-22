@@ -4,6 +4,7 @@
  */
 #include <aws/crt/mqtt/IoTSDKMetrics.h>
 #include <aws/crt/mqtt/private/IoTSDKMetricsPrivate.h>
+#include <aws/crt/mqtt/private/MqttConnectionCore.h>
 
 #include <aws/crt/Config.h>
 #include <aws/crt/io/private/CertificateSource.h>
@@ -16,7 +17,7 @@ namespace Aws
     {
         namespace Mqtt
         {
-            // ─── IoTDeviceSDKMetrics ───────────────────────────────────────────────
+            ////////// IoTDeviceSDKMetrics //////////
 
             void IoTDeviceSDKMetrics::AddMetadata(const Crt::String &key, const Crt::String &value) noexcept
             {
@@ -51,7 +52,7 @@ namespace Aws
                 raw_options.metadata_entries = m_rawMetadataEntries.empty() ? nullptr : m_rawMetadataEntries.data();
             }
 
-            // ─── IoTSDKMetricsEncoder ─────────────────────────────────────────────
+            ////////// IoTSDKMetricsEncoder //////////
 
             IoTDeviceSDKMetrics IoTSDKMetricsEncoder::createMetricsForMqtt5(const Mqtt5::Mqtt5ClientOptions &options)
             {
@@ -63,18 +64,13 @@ namespace Aws
                 return createMetricsFromFeatureList(crtFeatureList, userMetrics);
             }
 
-            IoTDeviceSDKMetrics IoTSDKMetricsEncoder::createMetricsForMqtt311(
-                const Crt::Optional<Http::HttpClientConnectionProxyOptions> &proxyOptions,
-                const Io::TlsConnectionOptions *tlsOptions,
-                const IoTDeviceSDKMetrics *userMetrics)
+            IoTDeviceSDKMetrics IoTSDKMetricsEncoder::createMetricsForMqtt311(const MqttConnectionCore &connectionCore)
             {
-                Crt::String crtFeatureList = getEncodedFeatureListForMqtt311(proxyOptions, tlsOptions);
-                return createMetricsFromFeatureList(crtFeatureList, userMetrics);
+                Crt::String crtFeatureList = getEncodedFeatureListForMqtt311(connectionCore);
+                return createMetricsFromFeatureList(crtFeatureList, &connectionCore.m_sdkMetrics);
             }
 
-            Crt::String IoTSDKMetricsEncoder::getEncodedFeatureListForMqtt311(
-                const Crt::Optional<Http::HttpClientConnectionProxyOptions> &proxyOptions,
-                const Io::TlsConnectionOptions *tlsOptions)
+            Crt::String IoTSDKMetricsEncoder::getEncodedFeatureListForMqtt311(const MqttConnectionCore &connectionCore)
             {
                 Crt::String features;
 
@@ -85,36 +81,38 @@ namespace Aws
                 appendFeature(features, MetricsFeatureId::SocketImplementation, detectSocketImplementation());
 
                 // H: http_proxy_type — set if a proxy is configured
-                if (proxyOptions.has_value())
+                if (connectionCore.m_proxyOptions.has_value())
                 {
-                    bool proxyUsesTls =
-                        proxyOptions->TlsOptions.has_value() &&
-                        proxyOptions->ProxyConnectionType == Crt::Http::AwsHttpProxyConnectionType::Tunneling;
+                    bool proxyUsesTls = connectionCore.m_proxyOptions->TlsOptions.has_value() &&
+                                        connectionCore.m_proxyOptions->ProxyConnectionType ==
+                                            Crt::Http::AwsHttpProxyConnectionType::Tunneling;
                     appendFeature(
                         features,
                         MetricsFeatureId::HttpProxyType,
                         proxyUsesTls ? MetricsHttpProxyTypeValue::Https : MetricsHttpProxyTypeValue::Http);
                 }
-                if (tlsOptions != nullptr)
+                if (connectionCore.m_useTls)
                 {
+                    const Io::TlsConnectionOptions &tlsOptions = connectionCore.m_tlsOptions;
+
                     // I: certificate_source — automatically derived from TlsConnectionOptions
                     appendFeature(
                         features,
                         MetricsFeatureId::CertificateSource,
                         metricsValueForCertificateSource(
-                            static_cast<Io::CertificateSource>(tlsOptions->m_metricsCertificateSource)));
+                            static_cast<Io::CertificateSource>(tlsOptions.m_metricsCertificateSource)));
 
                     // J: tls_cipher_preference
                     appendFeature(
                         features,
                         MetricsFeatureId::TlsCipherPreference,
-                        metricsValueForTlsCipherPreference(tlsOptions->m_cipherPref));
+                        metricsValueForTlsCipherPreference(tlsOptions.m_cipherPref));
 
                     // K: minimum_tls_version
                     appendFeature(
                         features,
                         MetricsFeatureId::MinimumTlsVersion,
-                        metricsValueForMinimumTlsVersion(tlsOptions->m_tlsVersion));
+                        metricsValueForMinimumTlsVersion(tlsOptions.m_tlsVersion));
                 }
 
                 return features;
@@ -313,7 +311,7 @@ namespace Aws
                 return result;
             }
 
-            // ─── Extension mappings from existing enums to metrics values ─────────
+            ////////// Extension mappings from existing enums to metrics values //////////
 
             char IoTSDKMetricsEncoder::metricsValueForRetryJitterMode(Mqtt5::ExponentialBackoffJitterMode mode)
             {

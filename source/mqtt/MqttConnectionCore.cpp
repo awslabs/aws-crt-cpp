@@ -473,27 +473,6 @@ namespace Aws
 
                     aws_mqtt_client_connection_set_connection_termination_handler(
                         m_underlyingConnection, MqttConnectionCore::s_onConnectionTermination, this);
-
-                    if (m_enableMetrics)
-                    {
-                        // Create final metrics directly from connection options
-                        // (follows Swift IoTSDKMetricsEncoder.createMetrics(from:) pattern)
-                        const Io::TlsConnectionOptions *tlsOptionsPtr = m_useTls ? &m_tlsOptions : nullptr;
-                        IoTDeviceSDKMetrics finalMetrics =
-                            IoTSDKMetricsEncoder::createMetricsForMqtt311(m_proxyOptions, tlsOptionsPtr, &m_sdkMetrics);
-
-                        struct aws_mqtt_iot_metrics metrics;
-                        AWS_ZERO_STRUCT(metrics);
-                        finalMetrics.initializeRawOptions(metrics);
-                        if (aws_mqtt_client_connection_set_metrics(m_underlyingConnection, &metrics))
-                        {
-                            AWS_LOGF_DEBUG(AWS_LS_MQTT_CLIENT, "Failed to set Mqtt Metrics");
-                        }
-                    }
-                    else if (aws_mqtt_client_connection_set_metrics(m_underlyingConnection, nullptr))
-                    {
-                        AWS_LOGF_DEBUG(AWS_LS_MQTT_CLIENT, "Failed to set Mqtt Metrics");
-                    }
                 }
                 else
                 {
@@ -632,6 +611,23 @@ namespace Aws
                 uint32_t protocolOperationTimeoutMs,
                 bool setWebSocketInterceptor) noexcept
             {
+                if (m_enableMetrics)
+                {
+                    IoTDeviceSDKMetrics finalMetrics = IoTSDKMetricsEncoder::createMetricsForMqtt311(*this);
+
+                    struct aws_mqtt_iot_metrics metrics;
+                    AWS_ZERO_STRUCT(metrics);
+                    finalMetrics.initializeRawOptions(metrics);
+                    if (aws_mqtt_client_connection_set_metrics(m_underlyingConnection, &metrics))
+                    {
+                        AWS_LOGF_DEBUG(AWS_LS_MQTT_CLIENT, "Failed to set Mqtt Metrics");
+                    }
+                }
+                else if (aws_mqtt_client_connection_set_metrics(m_underlyingConnection, nullptr))
+                {
+                    AWS_LOGF_DEBUG(AWS_LS_MQTT_CLIENT, "Failed to set Mqtt Metrics");
+                }
+
                 aws_mqtt_connection_options options;
                 AWS_ZERO_STRUCT(options);
                 options.client_id = aws_byte_cursor_from_c_str(clientId);

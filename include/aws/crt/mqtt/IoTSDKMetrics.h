@@ -21,10 +21,6 @@ namespace Aws
              *
              * Holds the library name and a list of metadata key-value pairs to be appended
              * to the MQTT CONNECT packet's username field.
-             *
-             * Memory ownership: byte cursors in the raw C struct point directly into the
-             * strings stored in this object. The IoTDeviceSDKMetrics instance must outlive
-             * any aws_mqtt_iot_metrics struct populated by initializeRawOptions().
              */
             struct AWS_CRT_CPP_API IoTDeviceSDKMetrics
             {

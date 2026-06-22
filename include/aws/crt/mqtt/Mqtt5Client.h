@@ -737,10 +737,10 @@ namespace Aws
                 Mqtt5ClientOptions &WithMetricsCollection(bool enabled) noexcept;
 
                 /**
-                 * Sets custom SDK metrics to pass down to the CRT layer.
-                 * The metrics will be merged with the CRT-collected feature flags.
+                 * Sets custom client metrics.
                  *
-                 * @param sdkMetrics Custom metrics to include (e.g., IoTSDKVersion, IoTSDKFeature from SDK layer)
+                 * @param sdkMetrics Custom metrics to include (e.g., SDK name and custom metadata fields)
+                 *
                  * @return this option object
                  */
                 Mqtt5ClientOptions &WithSdkMetrics(Mqtt::IoTDeviceSDKMetrics sdkMetrics) noexcept;
@@ -900,11 +900,11 @@ namespace Aws
                 aws_mqtt5_packet_connect_view m_packetConnectViewStorage;
 
                 /**
-                 * Mutable so that initializeRawOptions() (which is const) can rebuild the
-                 * metrics struct from the latest client options just before client creation.
-                 * m_computedMetrics stores the computed IoTDeviceSDKMetrics object so that
-                 * the byte cursors in m_metricsStorage remain valid (they point into the
-                 * strings owned by m_computedMetrics).
+                 * Stores the final IoTDeviceSDKMetrics object so that the byte cursors in m_metricsStorage remain
+                 * valid. The m_metricsStorage point into the strings owned by m_finalMetrics.
+                 *
+                 * Mutable so that initializeRawOptions() can rebuild the metrics struct from the latest client options
+                 * before client creation.
                  */
                 mutable Mqtt::IoTDeviceSDKMetrics m_finalMetrics;
                 mutable struct aws_mqtt_iot_metrics m_metricsStorage;

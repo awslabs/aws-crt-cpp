@@ -42,6 +42,8 @@ namespace Aws
             class MqttConnectionCore final : public std::enable_shared_from_this<MqttConnectionCore>
             {
                 friend MqttConnection;
+                friend class IoTSDKMetricsEncoder;
+                friend class IoTSDKMetricsTestHelper;
 
               public:
                 ~MqttConnectionCore();

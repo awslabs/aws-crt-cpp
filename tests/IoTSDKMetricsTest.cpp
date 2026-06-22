@@ -6,6 +6,7 @@
 #include <aws/crt/mqtt/IoTSDKMetrics.h>
 #include <aws/crt/mqtt/Mqtt5Client.h>
 #include <aws/crt/mqtt/private/IoTSDKMetricsPrivate.h>
+#include <aws/crt/mqtt/private/MqttConnectionCore.h>
 #include <aws/testing/aws_test_harness.h>
 
 using namespace Aws::Crt;
@@ -25,11 +26,20 @@ namespace Aws
                 {
                     return IoTSDKMetricsEncoder::getEncodedFeatureListForMqtt5(options);
                 }
-                static Aws::Crt::String GetEncodedFeatureListForMqtt311(
-                    const Aws::Crt::Optional<Http::HttpClientConnectionProxyOptions> &proxyOptions,
-                    const Io::TlsConnectionOptions *tlsOptions)
+                static Aws::Crt::String GetEncodedFeatureListForMqtt311(const MqttConnectionCore &connection)
                 {
-                    return IoTSDKMetricsEncoder::getEncodedFeatureListForMqtt311(proxyOptions, tlsOptions);
+                    return IoTSDKMetricsEncoder::getEncodedFeatureListForMqtt311(connection);
+                }
+
+                // Create a fake MqttConnectionCore for testing
+                static std::shared_ptr<MqttConnectionCore> CreateTestConnectionCore(MqttConnectionOptions opts)
+                {
+                    auto *allocator = opts.allocator;
+                    auto *toSeat =
+                        reinterpret_cast<MqttConnectionCore *>(aws_mem_acquire(allocator, sizeof(MqttConnectionCore)));
+                    toSeat = new (toSeat) MqttConnectionCore(nullptr, nullptr, nullptr, std::move(opts));
+                    return std::shared_ptr<MqttConnectionCore>(
+                        toSeat, [allocator](MqttConnectionCore *ptr) { Crt::Delete(ptr, allocator); });
                 }
                 static Aws::Crt::String MergeFeatureLists(
                     const Aws::Crt::String &crtFeatures,
@@ -126,8 +136,14 @@ AWS_TEST_CASE(IoTSDKMetricsMqtt5Minimal, s_TestIoTSDKMetricsMqtt5Minimal)
 static int s_TestIoTSDKMetricsMqtt3Minimal(Aws::Crt::Allocator *allocator, void *)
 {
     ApiHandle apiHandle(allocator);
-    Optional<Http::HttpClientConnectionProxyOptions> noProxy;
-    Aws::Crt::String result = IoTSDKMetricsTestHelper::GetEncodedFeatureListForMqtt311(noProxy, nullptr);
+    MqttConnectionOptions opts;
+    opts.allocator = allocator;
+    opts.hostName = "localhost";
+    opts.port = 8883;
+    opts.useTls = false;
+    auto core = IoTSDKMetricsTestHelper::CreateTestConnectionCore(std::move(opts));
+
+    Aws::Crt::String result = IoTSDKMetricsTestHelper::GetEncodedFeatureListForMqtt311(*core);
     ASSERT_TRUE(s_contains(result, "F/3"));
     ASSERT_TRUE(s_contains(result, Aws::Crt::String("G/") + s_socketVal()));
     ASSERT_INT_EQUALS(2, (int)s_partCount(result));
@@ -202,15 +218,22 @@ static int s_TestIoTSDKMetricsMqtt3ProxyTls(Aws::Crt::Allocator *allocator, void
     Io::TlsConnectionOptions tlsConn = tlsCtx.NewConnectionOptions();
     Io::TlsContextOptions pOpts = Io::TlsContextOptions::InitDefaultClient(allocator);
     Io::TlsContext pCtx(pOpts, Io::TlsMode::CLIENT, allocator);
-    Optional<Http::HttpClientConnectionProxyOptions> proxyOpt;
     Http::HttpClientConnectionProxyOptions p;
     p.HostName = "proxy.example.com";
     p.Port = 443;
     p.ProxyConnectionType = Http::AwsHttpProxyConnectionType::Tunneling;
-    p.TlsOptions = pCtx.NewConnectionOptions();
-    proxyOpt = p;
 
-    Aws::Crt::String result = IoTSDKMetricsTestHelper::GetEncodedFeatureListForMqtt311(proxyOpt, &tlsConn);
+    MqttConnectionOptions opts;
+    opts.allocator = allocator;
+    opts.hostName = "localhost";
+    opts.port = 8883;
+    opts.useTls = true;
+    opts.tlsConnectionOptions = tlsConn;
+
+    auto core = IoTSDKMetricsTestHelper::CreateTestConnectionCore(std::move(opts));
+    core->SetHttpProxyOptions(p);
+
+    Aws::Crt::String result = IoTSDKMetricsTestHelper::GetEncodedFeatureListForMqtt311(*core);
     ASSERT_TRUE(s_contains(result, "F/3"));
     ASSERT_TRUE(s_contains(result, "H/B"));
     ASSERT_TRUE(s_contains(result, "K/D"));

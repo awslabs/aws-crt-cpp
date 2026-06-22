@@ -20,6 +20,9 @@ namespace Aws
     {
         namespace Mqtt
         {
+            // Forward declaration
+            class MqttConnectionCore;
+
             // Feature ID Constants
             //
             // Single-char IDs used to encode feature usage in the metrics string.
@@ -105,12 +108,7 @@ namespace Aws
             } // namespace MetricsMinimumTlsVersionValue
 
             /**
-             * Encoder for IoT SDK metrics.
-             *
-             * This class encapsulates all metrics encoding logic. It provides static methods to:
-             * - Create the final IoTDeviceSDKMetrics directly from client options
-             * - Generate the encoded feature list
-             * - Merge CRT and user feature lists
+             * Encoder for IoT SDK metrics. Used to create the final IoTDeviceSDKMetrics directly from client options
              */
             class IoTSDKMetricsEncoder
             {
@@ -129,17 +127,12 @@ namespace Aws
 
                 /**
                  * Creates the final IoTDeviceSDKMetrics for an MQTT 3.1.1 connection.
-                 * MQTT3 connections have fewer configurable features than MQTT5.
                  *
-                 * @param proxyOptions Optional HTTP proxy options (for feature H).
-                 * @param tlsOptions Optional TLS connection options (for feature I - certificate source).
-                 * @param userMetrics Optional user-provided metrics to merge with CRT metrics.
+                 * @param connectionCore The MqttConnectionCore to extract connection parameters from.
+                 *
                  * @return The final IoTDeviceSDKMetrics with all metadata set.
                  */
-                static IoTDeviceSDKMetrics createMetricsForMqtt311(
-                    const Crt::Optional<Http::HttpClientConnectionProxyOptions> &proxyOptions,
-                    const Io::TlsConnectionOptions *tlsOptions = nullptr,
-                    const IoTDeviceSDKMetrics *userMetrics = nullptr);
+                static IoTDeviceSDKMetrics createMetricsForMqtt311(const MqttConnectionCore &connectionCore);
 
               private:
                 // Appends a "featureId/value" token to the feature list string.
@@ -176,20 +169,17 @@ namespace Aws
 
                 /**
                  * Generates the encoded feature list string for an MQTT 3.1.1 connection.
-                 * MQTT 3.1.1 connections have fewer configurable features than MQTT5.
+                 * Extracts proxy options and TLS options from the MqttConnectionCore.
                  *
-                 * @param proxyOptions Optional HTTP proxy options (for feature H).
-                 * @param tlsOptions Optional TLS connection options (for features I, J, K).
+                 * @param connectionCore The MqttConnectionCore to extract connection parameters from.
                  * @return The encoded feature list string.
                  */
-                static Crt::String getEncodedFeatureListForMqtt311(
-                    const Crt::Optional<Http::HttpClientConnectionProxyOptions> &proxyOptions,
-                    const Io::TlsConnectionOptions *tlsOptions);
+                static Crt::String getEncodedFeatureListForMqtt311(const MqttConnectionCore &connectionCore);
 
                 /**
                  * Merges CRT features with user-provided features.
                  * User features take precedence for the same feature ID.
-                 * Feature list format: "A/B,C/D" where A/C are feature IDs and B/D are values.
+                 * Feature list format: "A/B,C/D" where A,C are feature IDs and B,D are values.
                  *
                  * @param crtFeatures The CRT-generated feature list string.
                  * @param userFeatures The user-provided feature list string.
