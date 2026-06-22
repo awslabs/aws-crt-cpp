@@ -21,15 +21,7 @@ namespace Aws
 
             void IoTDeviceSDKMetrics::AddMetadata(const Crt::String &key, const Crt::String &value) noexcept
             {
-                for (auto &entry : this->Metadata)
-                {
-                    if (entry.first == key)
-                    {
-                        entry.second = value;
-                        return;
-                    }
-                }
-                this->Metadata.push_back({key, value});
+                Metadata[key] = value;
             }
 
             void IoTDeviceSDKMetrics::initializeRawOptions(struct aws_mqtt_iot_metrics &raw_options) noexcept
@@ -59,7 +51,8 @@ namespace Aws
                 Crt::String crtFeatureList = getEncodedFeatureListForMqtt5(options);
 
                 // Get user-provided metrics from the options
-                const IoTDeviceSDKMetrics *userMetrics = options.m_sdkMetrics ? options.m_sdkMetrics.get() : nullptr;
+                const IoTDeviceSDKMetrics *userMetrics =
+                    options.m_sdkMetrics.has_value() ? &options.m_sdkMetrics.value() : nullptr;
 
                 return createMetricsFromFeatureList(crtFeatureList, userMetrics);
             }
@@ -67,7 +60,9 @@ namespace Aws
             IoTDeviceSDKMetrics IoTSDKMetricsEncoder::createMetricsForMqtt311(const MqttConnectionCore &connectionCore)
             {
                 Crt::String crtFeatureList = getEncodedFeatureListForMqtt311(connectionCore);
-                return createMetricsFromFeatureList(crtFeatureList, &connectionCore.m_sdkMetrics);
+                const IoTDeviceSDKMetrics *userMetrics =
+                    connectionCore.m_sdkMetrics.has_value() ? &connectionCore.m_sdkMetrics.value() : nullptr;
+                return createMetricsFromFeatureList(crtFeatureList, userMetrics);
             }
 
             Crt::String IoTSDKMetricsEncoder::getEncodedFeatureListForMqtt311(const MqttConnectionCore &connectionCore)
@@ -219,16 +214,15 @@ namespace Aws
                     Crt::String userMetricsVersion;
                     Crt::String userFeature;
 
-                    for (const auto &entry : userMetrics->Metadata)
+                    auto versionIt = userMetrics->Metadata.find("IoTSDKMetricsVersion");
+                    if (versionIt != userMetrics->Metadata.end())
                     {
-                        if (entry.first == "IoTSDKMetricsVersion")
-                        {
-                            userMetricsVersion = entry.second;
-                        }
-                        else if (entry.first == "IoTSDKFeature")
-                        {
-                            userFeature = entry.second;
-                        }
+                        userMetricsVersion = versionIt->second;
+                    }
+                    auto featureIt = userMetrics->Metadata.find("IoTSDKFeature");
+                    if (featureIt != userMetrics->Metadata.end())
+                    {
+                        userFeature = featureIt->second;
                     }
 
                     // Only merge user features if the metrics version matches
@@ -244,7 +238,7 @@ namespace Aws
                         if (entry.first != "IoTSDKFeature" && entry.first != "IoTSDKMetricsVersion" &&
                             entry.first != "CRTVersion")
                         {
-                            resultMetrics.AddMetadata(entry.first, entry.second);
+                            resultMetrics.Metadata[entry.first] = entry.second;
                         }
                     }
                 }

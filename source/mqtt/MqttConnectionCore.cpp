@@ -43,7 +43,8 @@ namespace Aws
                   m_tlsContext(std::move(options.tlsContext)), m_tlsOptions(std::move(options.tlsConnectionOptions)),
                   m_socketOptions(std::move(options.socketOptions)), m_onAnyCbData(nullptr), m_useTls(options.useTls),
                   m_useWebsocket(options.useWebsocket), m_enableMetrics(options.enableMetrics),
-                  m_allocator(options.allocator), m_connection(std::move(connection))
+                  m_sdkMetrics(std::move(options.sdkMetrics)), m_allocator(options.allocator),
+                  m_connection(std::move(connection))
             {
                 if (client != nullptr)
                 {

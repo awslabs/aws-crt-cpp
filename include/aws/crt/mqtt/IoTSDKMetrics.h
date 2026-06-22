@@ -33,7 +33,7 @@ namespace Aws
                 /**
                  * Metadata key-value pairs to include in the Metadata field of the username.
                  */
-                Crt::Vector<std::pair<Crt::String, Crt::String>> Metadata;
+                Crt::Map<Crt::String, Crt::String> Metadata;
 
                 IoTDeviceSDKMetrics() { LibraryName = "IoTDeviceSDK/CPP"; }
 

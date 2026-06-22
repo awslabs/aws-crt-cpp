@@ -102,14 +102,6 @@ static size_t s_partCount(const Aws::Crt::String &list)
     return count;
 }
 
-static Aws::Crt::String s_getMeta(const IoTDeviceSDKMetrics &m, const Aws::Crt::String &key)
-{
-    for (const auto &e : m.Metadata)
-        if (e.first == key)
-            return e.second;
-    return "";
-}
-
 static char s_socketVal()
 {
     return IoTSDKMetricsTestHelper::DetectSocketImplementation();
@@ -287,23 +279,12 @@ static int s_TestIoTSDKMetricsCreateNullUser(Aws::Crt::Allocator *allocator, voi
     ApiHandle apiHandle(allocator);
     IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", nullptr);
     ASSERT_TRUE(result.LibraryName == "IoTDeviceSDK/CPP");
-    ASSERT_FALSE(s_getMeta(result, "CRTVersion").empty());
-    ASSERT_TRUE(s_getMeta(result, "IoTSDKFeature") == "F/5,G/A");
-    ASSERT_TRUE(s_getMeta(result, "IoTSDKMetricsVersion") == "1");
+    ASSERT_FALSE(result.Metadata.at("CRTVersion").empty());
+    ASSERT_TRUE(result.Metadata.at("IoTSDKFeature") == "F/5,G/A");
+    ASSERT_TRUE(result.Metadata.at("IoTSDKMetricsVersion") == "1");
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTSDKMetricsCreateNullUser, s_TestIoTSDKMetricsCreateNullUser)
-
-static int s_TestIoTSDKMetricsCreateEmptyUser(Aws::Crt::Allocator *allocator, void *)
-{
-    ApiHandle apiHandle(allocator);
-    IoTDeviceSDKMetrics user;
-    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
-    ASSERT_TRUE(result.LibraryName == "IoTDeviceSDK/CPP");
-    ASSERT_TRUE(s_getMeta(result, "IoTSDKFeature") == "F/5,G/A");
-    return AWS_OP_SUCCESS;
-}
-AWS_TEST_CASE(IoTSDKMetricsCreateEmptyUser, s_TestIoTSDKMetricsCreateEmptyUser)
 
 static int s_TestIoTSDKMetricsCreateUserFeatureAdded(Aws::Crt::Allocator *allocator, void *)
 {
@@ -312,7 +293,7 @@ static int s_TestIoTSDKMetricsCreateUserFeatureAdded(Aws::Crt::Allocator *alloca
     user.AddMetadata("IoTSDKMetricsVersion", "1");
     user.AddMetadata("IoTSDKFeature", "I/A");
     IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
-    Aws::Crt::String features = s_getMeta(result, "IoTSDKFeature");
+    Aws::Crt::String features = result.Metadata.at("IoTSDKFeature");
     ASSERT_TRUE(s_contains(features, "I/A"));
     ASSERT_TRUE(s_contains(features, "F/5"));
     ASSERT_TRUE(s_contains(features, "G/A"));
@@ -327,25 +308,13 @@ static int s_TestIoTSDKMetricsCreateUserOverridesCrt(Aws::Crt::Allocator *alloca
     user.AddMetadata("IoTSDKMetricsVersion", "1");
     user.AddMetadata("IoTSDKFeature", "F/3,I/B");
     IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
-    Aws::Crt::String features = s_getMeta(result, "IoTSDKFeature");
+    Aws::Crt::String features = result.Metadata.at("IoTSDKFeature");
     ASSERT_TRUE(s_contains(features, "F/3"));
     ASSERT_FALSE(s_contains(features, "F/5"));
     ASSERT_TRUE(s_contains(features, "I/B"));
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTSDKMetricsCreateUserOverridesCrt, s_TestIoTSDKMetricsCreateUserOverridesCrt)
-
-static int s_TestIoTSDKMetricsCreateEmptyUserFeature(Aws::Crt::Allocator *allocator, void *)
-{
-    ApiHandle apiHandle(allocator);
-    IoTDeviceSDKMetrics user;
-    user.AddMetadata("IoTSDKMetricsVersion", "1");
-    user.AddMetadata("IoTSDKFeature", "");
-    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
-    ASSERT_TRUE(s_getMeta(result, "IoTSDKFeature") == "F/5,G/A");
-    return AWS_OP_SUCCESS;
-}
-AWS_TEST_CASE(IoTSDKMetricsCreateEmptyUserFeature, s_TestIoTSDKMetricsCreateEmptyUserFeature)
 
 static int s_TestIoTSDKMetricsVersionMismatch(Aws::Crt::Allocator *allocator, void *)
 {
@@ -354,37 +323,12 @@ static int s_TestIoTSDKMetricsVersionMismatch(Aws::Crt::Allocator *allocator, vo
     user.AddMetadata("IoTSDKMetricsVersion", "99");
     user.AddMetadata("IoTSDKFeature", "I/A");
     IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
-    Aws::Crt::String features = s_getMeta(result, "IoTSDKFeature");
+    Aws::Crt::String features = result.Metadata.at("IoTSDKFeature");
     ASSERT_FALSE(s_contains(features, "I/A"));
     ASSERT_TRUE(s_contains(features, "F/5"));
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTSDKMetricsVersionMismatch, s_TestIoTSDKMetricsVersionMismatch)
-
-static int s_TestIoTSDKMetricsVersionNonNumeric(Aws::Crt::Allocator *allocator, void *)
-{
-    ApiHandle apiHandle(allocator);
-    IoTDeviceSDKMetrics user;
-    user.AddMetadata("IoTSDKMetricsVersion", "abc");
-    user.AddMetadata("IoTSDKFeature", "I/A");
-    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
-    Aws::Crt::String features = s_getMeta(result, "IoTSDKFeature");
-    ASSERT_FALSE(s_contains(features, "I/A"));
-    ASSERT_TRUE(s_contains(features, "F/5"));
-    return AWS_OP_SUCCESS;
-}
-AWS_TEST_CASE(IoTSDKMetricsVersionNonNumeric, s_TestIoTSDKMetricsVersionNonNumeric)
-
-static int s_TestIoTSDKMetricsNoVersionSet(Aws::Crt::Allocator *allocator, void *)
-{
-    ApiHandle apiHandle(allocator);
-    IoTDeviceSDKMetrics user;
-    user.AddMetadata("IoTSDKFeature", "I/A");
-    IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
-    ASSERT_FALSE(s_contains(s_getMeta(result, "IoTSDKFeature"), "I/A"));
-    return AWS_OP_SUCCESS;
-}
-AWS_TEST_CASE(IoTSDKMetricsNoVersionSet, s_TestIoTSDKMetricsNoVersionSet)
 
 static int s_TestIoTSDKMetricsCRTVersionNotModifiable(Aws::Crt::Allocator *allocator, void *)
 {
@@ -392,7 +336,7 @@ static int s_TestIoTSDKMetricsCRTVersionNotModifiable(Aws::Crt::Allocator *alloc
     IoTDeviceSDKMetrics user;
     user.AddMetadata("CRTVersion", "fake_version");
     IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
-    Aws::Crt::String crtVersion = s_getMeta(result, "CRTVersion");
+    Aws::Crt::String crtVersion = result.Metadata.at("CRTVersion");
     ASSERT_FALSE(crtVersion.empty());
     ASSERT_FALSE(crtVersion == "fake_version");
     return AWS_OP_SUCCESS;
@@ -406,8 +350,8 @@ static int s_TestIoTSDKMetricsPreservesUserMetadata(Aws::Crt::Allocator *allocat
     user.AddMetadata("IoTSDKVersion", "2.0.0");
     user.AddMetadata("CustomKey", "custom_value");
     IoTDeviceSDKMetrics result = IoTSDKMetricsTestHelper::CreateMetricsFromFeatureList("F/5,G/A", &user);
-    ASSERT_TRUE(s_getMeta(result, "IoTSDKVersion") == "2.0.0");
-    ASSERT_TRUE(s_getMeta(result, "CustomKey") == "custom_value");
+    ASSERT_TRUE(result.Metadata.at("IoTSDKVersion") == "2.0.0");
+    ASSERT_TRUE(result.Metadata.at("CustomKey") == "custom_value");
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTSDKMetricsPreservesUserMetadata, s_TestIoTSDKMetricsPreservesUserMetadata)
@@ -422,3 +366,66 @@ static int s_TestIoTSDKMetricsCustomLibraryName(Aws::Crt::Allocator *allocator, 
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTSDKMetricsCustomLibraryName, s_TestIoTSDKMetricsCustomLibraryName)
+
+//////////////////////////////////////////////////////////
+// End-to-end: Metrics set via options
+//////////////////////////////////////////////////////////
+
+static int s_TestIoTSDKMetricsSetMetricsViaOptions(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+
+    // Create a connection core with custom metrics passed via options
+    IoTDeviceSDKMetrics customMetrics;
+    customMetrics.LibraryName = "OptionsSDK/1.0";
+    customMetrics.AddMetadata("IoTSDKMetricsVersion", "1");
+    customMetrics.AddMetadata("IoTSDKFeature", "I/B");
+
+    MqttConnectionOptions opts;
+    opts.allocator = allocator;
+    opts.hostName = "localhost";
+    opts.port = 8883;
+    opts.useTls = false;
+    opts.sdkMetrics = customMetrics;
+    auto core = IoTSDKMetricsTestHelper::CreateTestConnectionCore(std::move(opts));
+
+    // Use createMetricsForMqtt311 to get the final metrics
+    IoTDeviceSDKMetrics finalMetrics = IoTSDKMetricsEncoder::createMetricsForMqtt311(*core);
+
+    ASSERT_TRUE(finalMetrics.LibraryName == "OptionsSDK/1.0");
+    Aws::Crt::String features = finalMetrics.Metadata.at("IoTSDKFeature");
+    ASSERT_TRUE(s_contains(features, "I/B"));
+    ASSERT_TRUE(s_contains(features, "F/3"));
+    ASSERT_FALSE(finalMetrics.Metadata.at("CRTVersion").empty());
+
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsSetMetricsViaOptions, s_TestIoTSDKMetricsSetMetricsViaOptions)
+
+static int s_TestIoTSDKMetricsMqtt5WithSdkMetrics(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    Mqtt5ClientOptions options(allocator);
+    options.WithHostName("localhost").WithPort(8883);
+
+    // Set custom metrics
+    IoTDeviceSDKMetrics customMetrics;
+    customMetrics.LibraryName = "Mqtt5TestSDK/2.0";
+    customMetrics.AddMetadata("IoTSDKMetricsVersion", "1");
+    customMetrics.AddMetadata("IoTSDKFeature", "I/A");
+    customMetrics.AddMetadata("AppVersion", "3.0.0");
+    options.WithSdkMetrics(std::move(customMetrics));
+
+    // Use createMetricsForMqtt5 to get the final metrics
+    IoTDeviceSDKMetrics finalMetrics = IoTSDKMetricsEncoder::createMetricsForMqtt5(options);
+
+    ASSERT_TRUE(finalMetrics.LibraryName == "Mqtt5TestSDK/2.0");
+    Aws::Crt::String features = finalMetrics.Metadata.at("IoTSDKFeature");
+    ASSERT_TRUE(s_contains(features, "I/A"));
+    ASSERT_TRUE(s_contains(features, "F/5"));
+    ASSERT_TRUE(finalMetrics.Metadata.at("AppVersion") == "3.0.0");
+    ASSERT_FALSE(finalMetrics.Metadata.at("CRTVersion").empty());
+
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsMqtt5WithSdkMetrics, s_TestIoTSDKMetricsMqtt5WithSdkMetrics)

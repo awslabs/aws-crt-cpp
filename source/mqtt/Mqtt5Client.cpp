@@ -210,9 +210,6 @@ namespace Aws
                   m_reconnectionOptions({AWS_EXPONENTIAL_BACKOFF_JITTER_DEFAULT, 0, 0, 0}), m_pingTimeoutMs(0),
                   m_connackTimeoutMs(0), m_ackTimeoutSec(0), m_enableMetrics(true), m_allocator(allocator)
             {
-                m_sdkMetrics = Crt::ScopedResource<Mqtt::IoTDeviceSDKMetrics>(
-                    Crt::New<Mqtt::IoTDeviceSDKMetrics>(allocator),
-                    [allocator](Mqtt::IoTDeviceSDKMetrics *metrics) { Crt::Delete(metrics, allocator); });
                 AWS_ZERO_STRUCT(m_metricsStorage);
                 m_socketOptions.SetSocketType(Io::SocketType::Stream);
                 AWS_ZERO_STRUCT(m_packetConnectViewStorage);
@@ -457,7 +454,7 @@ namespace Aws
 
             Mqtt5ClientOptions &Mqtt5ClientOptions::WithSdkMetrics(Mqtt::IoTDeviceSDKMetrics sdkMetrics) noexcept
             {
-                *m_sdkMetrics = std::move(sdkMetrics);
+                m_sdkMetrics = std::move(sdkMetrics);
                 return *this;
             }
 
