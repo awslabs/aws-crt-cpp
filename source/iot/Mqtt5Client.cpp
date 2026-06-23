@@ -569,7 +569,7 @@ namespace Aws
                 if (m_enableMetricsCollection)
                 {
                     username = AddToUsernameParameter(username, "SDK", m_sdkName);
-                    username = AddToUsernameParameter(username, "Version", m_sdkName);
+                    username = AddToUsernameParameter(username, "Version", m_sdkVersion);
                 }
                 m_connectOptions->WithUserName(username);
             }

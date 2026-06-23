@@ -190,10 +190,15 @@ static int s_TestIoTSDKMetricsAllFeaturesSet(Aws::Crt::Allocator *allocator, voi
     proxy.Port = 8080;
     proxy.ProxyConnectionType = Http::AwsHttpProxyConnectionType::Tunneling;
     options.WithHttpProxyOptions(proxy);
+
+    // TLS context creation requires a real crypto implementation. With BYO_CRYPTO, TlsContext cannot be created without
+    // registering custom callbacks, so we skip TLS-related setup and assertions in that configuration.
+#if !BYO_CRYPTO
     Io::TlsContextOptions tlsOpts = Io::TlsContextOptions::InitDefaultClient(allocator);
     tlsOpts.SetMinimumTlsVersion(AWS_IO_TLSv1_2);
     Io::TlsContext tlsCtx(tlsOpts, Io::TlsMode::CLIENT, allocator);
     options.WithTlsConnectionOptions(tlsCtx.NewConnectionOptions());
+#endif
 
     aws_mqtt5_client_options raw_options;
     const auto *metrics = s_getMetricsFromOptions(options, raw_options);
@@ -208,7 +213,10 @@ static int s_TestIoTSDKMetricsAllFeaturesSet(Aws::Crt::Allocator *allocator, voi
     ASSERT_TRUE(s_contains(features, "E/A"));
     ASSERT_TRUE(s_contains(features, "F/5"));
     ASSERT_TRUE(s_contains(features, "H/A"));
+#if !BYO_CRYPTO
+    // K/D (minimum TLS version = TLSv1.2) is only verifiable when a TLS context can be created
     ASSERT_TRUE(s_contains(features, "K/D"));
+#endif
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTSDKMetricsAllFeaturesSet, s_TestIoTSDKMetricsAllFeaturesSet)
@@ -226,10 +234,15 @@ static int s_TestIoTSDKMetricsMergeMultipleOverrides(Aws::Crt::Allocator *alloca
     options.WithHostName("localhost").WithPort(8883);
     ReconnectOptions ro = {AWS_EXPONENTIAL_BACKOFF_JITTER_FULL, 1000, 1000, 1000};
     options.WithReconnectOptions(ro);
+
+    // TLS context creation requires a real crypto implementation. With BYO_CRYPTO, TlsContext cannot be created without
+    // registering custom callbacks, so we skip TLS-related setup and assertions in that configuration.
+#if !BYO_CRYPTO
     Io::TlsContextOptions tlsOpts = Io::TlsContextOptions::InitDefaultClient(allocator);
     tlsOpts.SetMinimumTlsVersion(AWS_IO_TLSv1_2);
     Io::TlsContext tlsCtx(tlsOpts, Io::TlsMode::CLIENT, allocator);
     options.WithTlsConnectionOptions(tlsCtx.NewConnectionOptions());
+#endif
 
     // User features override A and K, and override F
     IoTDeviceSDKMetrics customMetrics;

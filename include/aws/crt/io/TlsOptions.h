@@ -360,20 +360,23 @@ namespace Aws
               private:
                 bool isValid() const noexcept { return m_isInit; }
 
+                // Create TlsConnectionOptions from aws_tls_ctx. The metricsCertificateSource, metricsTlsVersion, and
+                // metricsCipherPref are used for metrics tracking. It might not directly reflect the real options.
                 TlsConnectionOptions(
                     aws_tls_ctx *ctx,
                     int metricsCertificateSource,
-                    aws_tls_versions tlsVersion,
-                    aws_tls_cipher_pref cipherPref,
+                    aws_tls_versions metricsTlsVersion,
+                    aws_tls_cipher_pref metricsCipherPref,
                     Allocator *allocator) noexcept;
                 aws_tls_connection_options m_tls_connection_options;
                 aws_allocator *m_allocator;
                 int m_lastError;
                 bool m_isInit;
-                // Internal metrics tracking fields, track the certificate source
+
+                // Internal metrics tracking fields
                 int m_metricsCertificateSource;
-                aws_tls_versions m_tlsVersion;
-                aws_tls_cipher_pref m_cipherPref;
+                aws_tls_versions m_metricsTlsVersion;
+                aws_tls_cipher_pref m_metricsCipherPref;
 
                 friend class TlsContext;
             };

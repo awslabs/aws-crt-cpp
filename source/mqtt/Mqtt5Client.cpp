@@ -263,6 +263,7 @@ namespace Aws
                     // in m_metricsStorage (similar to how UserProperty objects are stored as members
                     // of packet classes to keep byte cursors valid).
                     m_finalMetrics = Mqtt::IoTSDKMetricsEncoder::createMetricsForMqtt5(*this);
+                    AWS_ZERO_STRUCT(m_metricsStorage);
                     m_finalMetrics.initializeRawOptions(m_metricsStorage);
                     raw_options.metrics = &m_metricsStorage;
                 }

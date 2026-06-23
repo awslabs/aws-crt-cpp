@@ -101,13 +101,13 @@ namespace Aws
                     appendFeature(
                         features,
                         MetricsFeatureId::TlsCipherPreference,
-                        metricsValueForTlsCipherPreference(tlsOptions.m_cipherPref));
+                        metricsValueForTlsCipherPreference(tlsOptions.m_metricsCipherPref));
 
                     // K: minimum_tls_version
                     appendFeature(
                         features,
                         MetricsFeatureId::MinimumTlsVersion,
-                        metricsValueForMinimumTlsVersion(tlsOptions.m_tlsVersion));
+                        metricsValueForMinimumTlsVersion(tlsOptions.m_metricsTlsVersion));
                 }
 
                 return features;
@@ -180,13 +180,13 @@ namespace Aws
                     appendFeature(
                         features,
                         MetricsFeatureId::TlsCipherPreference,
-                        metricsValueForTlsCipherPreference(options.m_tlsConnectionOptions->m_cipherPref));
+                        metricsValueForTlsCipherPreference(options.m_tlsConnectionOptions->m_metricsCipherPref));
 
                     // K: minimum_tls_version
                     appendFeature(
                         features,
                         MetricsFeatureId::MinimumTlsVersion,
-                        metricsValueForMinimumTlsVersion(options.m_tlsConnectionOptions->m_tlsVersion));
+                        metricsValueForMinimumTlsVersion(options.m_tlsConnectionOptions->m_metricsTlsVersion));
                 }
 
                 return features;
