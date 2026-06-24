@@ -164,6 +164,12 @@ namespace Aws
                 aws_tls_ctx_options_set_verify_peer(&m_options, verify_peer);
             }
 
+            void TlsContextOptions::SetNoCertificateRevocation(bool no_certificate_revocation) noexcept
+            {
+                AWS_ASSERT(m_isInit);
+                aws_tls_ctx_options_set_no_certificate_revocation(&m_options, no_certificate_revocation);
+            }
+
             void TlsContextOptions::SetMinimumTlsVersion(aws_tls_versions minimumTlsVersion)
             {
                 AWS_ASSERT(m_isInit);

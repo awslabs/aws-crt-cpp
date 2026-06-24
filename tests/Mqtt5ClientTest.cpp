@@ -167,8 +167,12 @@ AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_certificate, "AWS_TEST_MQTT5
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_private_key, "AWS_TEST_MQTT5_KEY_FILE");
 
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_hostname, "AWS_TEST_MQTT5_IOT_CORE_HOST");
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_tls13_hostname, "AWS_TEST_MQTT5_IOT_CORE_TLS13_HOST");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_certificate, "AWS_TEST_MQTT5_IOT_CORE_RSA_CERT");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_iot_key, "AWS_TEST_MQTT5_IOT_CORE_RSA_KEY");
+
+// When set, TLS backend on macOS switches from Secure Transport to s2n-tls.
+AWS_STATIC_STRING_FROM_LITERAL(s_mqtt5_test_envName_non_fips_tls13, "AWS_CRT_USE_NON_FIPS_TLS_13");
 
 enum Mqtt5TestType
 {
@@ -176,6 +180,7 @@ enum Mqtt5TestType
     MQTT5CONNECT_DIRECT_BASIC_AUTH,
     MQTT5CONNECT_DIRECT_TLS,
     MQTT5CONNECT_DIRECT_IOT_CORE,
+    MQTT5CONNECT_DIRECT_IOT_CORE_TLS13,
     MQTT5CONNECT_DIRECT_IOT_CORE_ALPN,
     MQTT5CONNECT_WS,
     MQTT5CONNECT_WS_BASIC_AUTH,
@@ -328,6 +333,30 @@ struct Mqtt5TestEnvVars
             case MQTT5CONNECT_DIRECT_IOT_CORE_ALPN:
             {
                 m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_hostname, &m_hostname);
+                m_error |=
+                    aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_certificate, &m_certificate_path);
+                m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_key, &m_private_key_path);
+
+                if (m_error != AWS_OP_SUCCESS)
+                {
+                    return;
+                }
+                if (m_hostname == NULL || m_certificate_path == NULL || m_private_key_path == NULL)
+                {
+                    m_error = AWS_OP_ERR;
+                    return;
+                }
+                {
+                    m_hostname_string = aws_string_c_str(m_hostname);
+                    m_certificate_path_string = aws_string_c_str(m_certificate_path);
+                    m_private_key_path_string = aws_string_c_str(m_private_key_path);
+                }
+                break;
+            }
+
+            case MQTT5CONNECT_DIRECT_IOT_CORE_TLS13:
+            {
+                m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_tls13_hostname, &m_hostname);
                 m_error |=
                     aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_certificate, &m_certificate_path);
                 m_error |= aws_get_environment_value(allocator, s_mqtt5_test_envName_iot_key, &m_private_key_path);
@@ -510,6 +539,7 @@ static Mqtt5TestContext createTestContext(
         }
 
         case MQTT5CONNECT_DIRECT_IOT_CORE:
+        case MQTT5CONNECT_DIRECT_IOT_CORE_TLS13:
         {
             mqtt5Options.WithPort(8883);
 
@@ -747,6 +777,51 @@ static int s_TestMqtt5DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, vo
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5DirectConnectionWithTLS, s_TestMqtt5DirectConnectionWithTLS)
+
+/*
+ * Direct connection to a TLS 1.3-only host.
+ * Verifies that the connection succeeds on platforms supporting TLS 1.3 (Linux, or macOS with s2n).
+ * On macOS with Secure Transport (TLS 1.2 max), the connection is expected to fail.
+ */
+static int s_TestMqtt5DirectConnectionWithTLS13(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    Mqtt5TestContext testContext = createTestContext(allocator, MQTT5CONNECT_DIRECT_IOT_CORE_TLS13);
+    if (testContext.testDirective == AWS_OP_SKIP)
+    {
+        return AWS_OP_SKIP;
+    }
+
+    std::shared_ptr<Mqtt5Client> mqtt5Client = testContext.client;
+    ASSERT_TRUE(mqtt5Client);
+    ASSERT_TRUE(mqtt5Client->Start());
+
+    bool connectionSucceeded = testContext.connectionPromise.get_future().get();
+
+    (void)s_mqtt5_test_envName_non_fips_tls13;
+#    if defined(__APPLE__)
+    struct aws_string *non_fips_tls13 = NULL;
+    aws_get_environment_value(allocator, s_mqtt5_test_envName_non_fips_tls13, &non_fips_tls13);
+    if (non_fips_tls13)
+    {
+        // s2n is active on macOS, TLS 1.3 should work.
+        aws_string_destroy(non_fips_tls13);
+        ASSERT_TRUE(connectionSucceeded);
+    }
+    else
+    {
+        // Secure Transport doesn't support TLS 1.3, expect connection failure.
+        ASSERT_FALSE(connectionSucceeded);
+    }
+#    else
+    ASSERT_TRUE(connectionSucceeded);
+#    endif
+
+    ASSERT_TRUE(mqtt5Client->Stop());
+    testContext.stoppedPromise.get_future().get();
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5DirectConnectionWithTLS13, s_TestMqtt5DirectConnectionWithTLS13)
 
 /*
  * [ConnDC-UC4] Direct connection with mutual TLS
