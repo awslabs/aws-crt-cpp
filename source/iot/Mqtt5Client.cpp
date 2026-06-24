@@ -566,11 +566,6 @@ namespace Aws
                     }
                 }
 
-                if (m_enableMetricsCollection)
-                {
-                    username = AddToUsernameParameter(username, "SDK", m_sdkName);
-                    username = AddToUsernameParameter(username, "Version", m_sdkName);
-                }
                 m_connectOptions->WithUserName(username);
             }
 
@@ -586,6 +581,15 @@ namespace Aws
             if (m_connectOptions != nullptr)
             {
                 m_options->WithConnectOptions(m_connectOptions);
+            }
+
+            m_options->WithMetricsCollection(m_enableMetricsCollection);
+            if (m_enableMetricsCollection)
+            {
+                Crt::Mqtt::IoTDeviceSDKMetrics metrics;
+                metrics.LibraryName = m_sdkName;
+                metrics.AddMetadata("IoTSDKVersion", m_sdkVersion);
+                m_options->WithSdkMetrics(metrics);
             }
 
             bool proxyOptionsSet = false;

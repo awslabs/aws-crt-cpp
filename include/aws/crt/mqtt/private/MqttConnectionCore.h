@@ -14,8 +14,8 @@
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/io/SocketOptions.h>
 #include <aws/crt/io/TlsOptions.h>
+#include <aws/crt/mqtt/IoTSDKMetrics.h>
 #include <aws/crt/mqtt/MqttTypes.h>
-#include <aws/crt/mqtt/private/MqttShared.h>
 
 #include <aws/mqtt/client.h>
 #include <aws/mqtt/v5/mqtt5_client.h>
@@ -42,6 +42,7 @@ namespace Aws
             class MqttConnectionCore final : public std::enable_shared_from_this<MqttConnectionCore>
             {
                 friend MqttConnection;
+                friend class IoTSDKMetricsEncoder;
 
               public:
                 ~MqttConnectionCore();
@@ -374,7 +375,7 @@ namespace Aws
                 bool m_useWebsocket;
                 MqttConnectionOperationStatistics m_operationStatistics;
                 bool m_enableMetrics = true;
-                IoTDeviceSDKMetrics m_sdkMetrics;
+                Crt::Optional<IoTDeviceSDKMetrics> m_sdkMetrics;
                 Allocator *m_allocator;
 
                 /**

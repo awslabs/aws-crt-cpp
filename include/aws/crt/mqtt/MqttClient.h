@@ -86,6 +86,8 @@ namespace Aws
                  * @param tlsContext tls context to use with the connection
                  * @param useWebsocket should the connection use websockets or should it use direct mqtt?
                  * @param enableMetrics enable AWS IoT metrics collection. Default to true.
+                 * @param sdkMetrics optional custom SDK metrics to include in the MQTT CONNECT packet.
+                 *   If not provided, default metrics will be used when enableMetrics is true.
                  *
                  * @return a new connection object.  Connect() will still need to be called after all further
                  * configuration is finished.
@@ -96,7 +98,9 @@ namespace Aws
                     const Io::SocketOptions &socketOptions,
                     const Crt::Io::TlsContext &tlsContext,
                     bool useWebsocket = false,
-                    bool enableMetrics = true) noexcept;
+                    bool enableMetrics = true,
+                    const Crt::Optional<Mqtt::IoTDeviceSDKMetrics> &sdkMetrics =
+                        Crt::Optional<Mqtt::IoTDeviceSDKMetrics>()) noexcept;
 
                 /**
                  * Create a new connection object over plain text from the client. The client must outlive
@@ -105,7 +109,9 @@ namespace Aws
                  * @param port port to connect to
                  * @param socketOptions socket options to use when establishing the connection
                  * @param useWebsocket should the connection use websockets or should it use direct mqtt?
-                 * @param enableMetrics enable AWS IoT metrics collection. Default to true
+                 * @param enableMetrics enable AWS IoT metrics collection. Default to true.
+                 * @param sdkMetrics optional custom SDK metrics to include in the MQTT CONNECT packet.
+                 *   If not provided, default metrics will be used when enableMetrics is true.
                  *
                  * @return a new connection object.  Connect() will still need to be called after all further
                  * configuration is finished.
@@ -115,7 +121,9 @@ namespace Aws
                     uint32_t port,
                     const Io::SocketOptions &socketOptions,
                     bool useWebsocket = false,
-                    bool enableMetrics = true) noexcept;
+                    bool enableMetrics = true,
+                    const Crt::Optional<Mqtt::IoTDeviceSDKMetrics> &sdkMetrics =
+                        Crt::Optional<Mqtt::IoTDeviceSDKMetrics>()) noexcept;
 
               private:
                 aws_mqtt_client *m_client;

@@ -10,6 +10,7 @@
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/io/SocketOptions.h>
 #include <aws/crt/io/TlsOptions.h>
+#include <aws/crt/mqtt/IoTSDKMetrics.h>
 #include <aws/crt/mqtt/MqttTypes.h>
 
 #include <aws/mqtt/client.h>

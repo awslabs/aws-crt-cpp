@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/http/HttpConnection.h>
+#include <aws/crt/mqtt/IoTSDKMetrics.h>
 #include <aws/crt/mqtt/Mqtt5Types.h>
 #include <aws/crt/mqtt/MqttClient.h>
 
@@ -11,10 +12,6 @@ namespace Aws
 {
     namespace Crt
     {
-        namespace Mqtt
-        {
-            struct IoTDeviceSDKMetrics;
-        }
         namespace Mqtt5
         {
             class ConnectPacket;
@@ -496,6 +493,7 @@ namespace Aws
             {
                 friend class Mqtt5ClientCore;
                 friend class Mqtt5to3AdapterOptions;
+                friend class Mqtt::IoTSDKMetricsEncoder;
 
               public:
                 /**
@@ -739,6 +737,15 @@ namespace Aws
                 Mqtt5ClientOptions &WithMetricsCollection(bool enabled) noexcept;
 
                 /**
+                 * Sets custom client metrics.
+                 *
+                 * @param sdkMetrics Custom metrics to include (e.g., SDK name and custom metadata fields)
+                 *
+                 * @return this option object
+                 */
+                Mqtt5ClientOptions &WithSdkMetrics(Mqtt::IoTDeviceSDKMetrics sdkMetrics) noexcept;
+
+                /**
                  * Initializes the C aws_mqtt5_client_options from Mqtt5ClientOptions. For internal use
                  *
                  * @param raw_options - output parameter containing low level client options to be passed to the C
@@ -885,13 +892,22 @@ namespace Aws
                 uint32_t m_ackTimeoutSec;
 
                 bool m_enableMetrics = true;
-                Crt::ScopedResource<Mqtt::IoTDeviceSDKMetrics> m_sdkMetrics;
+                Crt::Optional<Crt::Mqtt::IoTDeviceSDKMetrics> m_sdkMetrics;
 
                 /* Underlying Parameters */
                 Crt::Allocator *m_allocator;
                 aws_http_proxy_options m_httpProxyOptionsStorage;
                 aws_mqtt5_packet_connect_view m_packetConnectViewStorage;
-                struct aws_mqtt_iot_metrics m_metricsStorage;
+
+                /**
+                 * Stores the final IoTDeviceSDKMetrics object so that the byte cursors in m_metricsStorage remain
+                 * valid. The m_metricsStorage point into the strings owned by m_finalMetrics.
+                 *
+                 * Mutable so that initializeRawOptions() can rebuild the metrics struct from the latest client options
+                 * before client creation.
+                 */
+                mutable Mqtt::IoTDeviceSDKMetrics m_finalMetrics;
+                mutable struct aws_mqtt_iot_metrics m_metricsStorage;
             };
 
         } // namespace Mqtt5
