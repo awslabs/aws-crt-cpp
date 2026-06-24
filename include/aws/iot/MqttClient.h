@@ -6,6 +6,7 @@
 #include <aws/crt/Config.h>
 #include <aws/crt/Exports.h>
 #include <aws/crt/auth/Sigv4Signing.h>
+#include <aws/crt/mqtt/IoTSDKMetrics.h>
 #include <aws/crt/mqtt/MqttConnection.h>
 #include <aws/iot/MqttCommon.h>
 
@@ -35,13 +36,16 @@ namespace Aws
              * @param socketOptions socket options to use when establishing the connection
              * @param tlsContext tls context that should be used for all connections sourced from this config
              * @param enableMetrics Whether to set AWS IoT Metrics in the MQTT CONNECT packet. Default is True.
+             * @param sdkMetrics optional SDK metrics to include in the MQTT CONNECT packet
              */
             MqttClientConnectionConfig(
                 const Crt::String &endpoint,
                 uint32_t port,
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext,
-                bool enableMetrics = true);
+                bool enableMetrics = true,
+                const Crt::Optional<Crt::Mqtt::IoTDeviceSDKMetrics> &sdkMetrics =
+                    Crt::Optional<Crt::Mqtt::IoTDeviceSDKMetrics>());
 
             /**
              * Creates a client configuration for use with making new AWS Iot specific MQTT Connections with web
@@ -60,6 +64,7 @@ namespace Aws
              * @param interceptor websocket upgrade handshake transformation function
              * @param proxyOptions proxy configuration options
              * @param enableMetrics Whether to set AWS IoT Metrics in the MQTT CONNECT packet. Default is True.
+             * @param sdkMetrics optional SDK metrics to include in the MQTT CONNECT packet
              */
             MqttClientConnectionConfig(
                 const Crt::String &endpoint,
@@ -68,7 +73,9 @@ namespace Aws
                 Crt::Io::TlsContext &&tlsContext,
                 Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
                 const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
-                bool enableMetrics = true);
+                bool enableMetrics = true,
+                const Crt::Optional<Crt::Mqtt::IoTDeviceSDKMetrics> &sdkMetrics =
+                    Crt::Optional<Crt::Mqtt::IoTDeviceSDKMetrics>());
 
             /**
              * @return true if the instance is in a valid state, false otherwise.
@@ -89,7 +96,9 @@ namespace Aws
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext,
                 const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
-                bool enableMetrics = true);
+                bool enableMetrics = true,
+                const Crt::Optional<Crt::Mqtt::IoTDeviceSDKMetrics> &sdkMetrics =
+                    Crt::Optional<Crt::Mqtt::IoTDeviceSDKMetrics>());
 
             Crt::String m_endpoint;
             uint32_t m_port;
@@ -100,6 +109,7 @@ namespace Aws
             Crt::String m_password;
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
             bool m_enableMetricsCollection;
+            Crt::Optional<Crt::Mqtt::IoTDeviceSDKMetrics> m_sdkMetrics;
             int m_lastError;
 
             friend class MqttClient;

@@ -673,7 +673,11 @@ namespace Aws
             /** Enable AWS IoT Metrics Collection. This is always set to true for now. */
             bool m_enableMetricsCollection;
             Crt::String m_sdkName = "IoTDeviceSDK/CPP";
+#    ifdef AWS_IOT_SDK_VERSION
+            Crt::String m_sdkVersion = AWS_IOT_SDK_VERSION;
+#    else
             Crt::String m_sdkVersion = AWS_CRT_CPP_VERSION;
+#    endif
         };
 
     } // namespace Iot

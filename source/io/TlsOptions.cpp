@@ -306,10 +306,10 @@ namespace Aws
 
             TlsConnectionOptions::TlsConnectionOptions(
                 aws_tls_ctx *ctx,
+                Allocator *allocator,
                 int metricsCertificateSource,
                 aws_tls_versions metricsTlsVersion,
-                aws_tls_cipher_pref metricsCipherPref,
-                Allocator *allocator) noexcept
+                aws_tls_cipher_pref metricsCipherPref) noexcept
                 : m_allocator(allocator), m_lastError(AWS_ERROR_SUCCESS), m_isInit(true),
                   m_metricsCertificateSource(metricsCertificateSource), m_metricsTlsVersion(metricsTlsVersion),
                   m_metricsCipherPref(metricsCipherPref)
@@ -552,7 +552,7 @@ namespace Aws
                 }
 
                 return TlsConnectionOptions(
-                    m_ctx.get(), m_metricsCertificateSource, m_tlsVersion, m_cipherPref, m_ctx->alloc);
+                    m_ctx.get(), m_ctx->alloc, m_metricsCertificateSource, m_tlsVersion, m_cipherPref);
             }
 
             TlsChannelHandler::TlsChannelHandler(

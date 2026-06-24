@@ -364,10 +364,10 @@ namespace Aws
                 // metricsCipherPref are used for metrics tracking. It might not directly reflect the real options.
                 TlsConnectionOptions(
                     aws_tls_ctx *ctx,
-                    int metricsCertificateSource,
-                    aws_tls_versions metricsTlsVersion,
-                    aws_tls_cipher_pref metricsCipherPref,
-                    Allocator *allocator) noexcept;
+                    Allocator *allocator = ApiAllocator(),
+                    int metricsCertificateSource = 0,
+                    aws_tls_versions metricsTlsVersion = AWS_IO_TLS_VER_SYS_DEFAULTS,
+                    aws_tls_cipher_pref metricsCipherPref = AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT) noexcept;
                 aws_tls_connection_options m_tls_connection_options;
                 aws_allocator *m_allocator;
                 int m_lastError;
