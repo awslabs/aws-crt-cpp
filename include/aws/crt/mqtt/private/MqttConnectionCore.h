@@ -43,7 +43,6 @@ namespace Aws
             {
                 friend MqttConnection;
                 friend class IoTSDKMetricsEncoder;
-                friend class IoTSDKMetricsTestHelper;
 
               public:
                 ~MqttConnectionCore();

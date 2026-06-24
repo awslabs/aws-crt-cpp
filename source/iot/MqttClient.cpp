@@ -532,6 +532,10 @@ namespace Aws
             }
 
             auto tlsContext = Crt::Io::TlsContext(m_contextOptions, Crt::Io::TlsMode::CLIENT, m_allocator);
+            if (!tlsContext)
+            {
+                return MqttClientConnectionConfig::CreateInvalid(tlsContext.GetInitializationError());
+            }
 
             // Build SDK metrics for the config
             Crt::Optional<Crt::Mqtt::IoTDeviceSDKMetrics> sdkMetrics;

@@ -112,9 +112,6 @@ namespace Aws
              */
             class IoTSDKMetricsEncoder
             {
-                // Allow test helper class to access private methods for unit testing
-                friend class IoTSDKMetricsTestHelper;
-
               public:
                 /**
                  * Creates the final IoTDeviceSDKMetrics directly from Mqtt5ClientOptions.
