@@ -320,8 +320,11 @@ endif()
 add_test_case(RuleEngine)
 add_test_case(RuleEngineContextParams)
 
-add_test_case(BddEngineResolveEndpoint)
-add_test_case(BddEngineResolveError)
+add_test_case(BddEngineVirtual)
+add_test_case(BddEnginePath)
+add_test_case(BddEngineDataplaneZone)
+add_test_case(BddEngineAccessPoint)
+add_test_case(BddEngineOutpost)
 add_test_case(BddEngineInvalidBytecode)
 
 if(AWS_HAS_CI_ENVIRONMENT AND NOT BYO_CRYPTO)
