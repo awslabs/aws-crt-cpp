@@ -28,17 +28,33 @@ namespace Aws
             {
               public:
                 /**
-                 * Construct from compiled endpoint ruleset bytecode and partitions JSON.
-                 * The engine copies the bytecode buffer and owns it for its lifetime.
-                 *
-                 * @param bytecodeBuffer Cursor into compiled bytecode. Copied internally.
-                 * @param partitionsCursor Partitions JSON string.
-                 * @param allocator Memory allocator.
+                 * Construct from a file path to compiled bytecode.
+                 * The engine reads and owns the bytecode for its lifetime.
                  */
                 BddEngine(
-                    const ByteCursor &bytecodeBuffer,
-                    const ByteCursor &partitionsCursor,
-                    Allocator *allocator = ApiAllocator()) noexcept;
+                    Allocator *allocator,
+                    const char *bytecodePath,
+                    const ByteCursor &partitionsCursor) noexcept;
+
+                /**
+                 * Construct from a bytecode buffer.
+                 * The engine copies the buffer and owns it for its lifetime.
+                 */
+                BddEngine(
+                    Allocator *allocator,
+                    const ByteBuf &bytecodeBuffer,
+                    const ByteCursor &partitionsCursor) noexcept;
+
+                /**
+                 * Construct from a bytecode cursor.
+                 * The caller is responsible for keeping the underlying buffer alive
+                 * for the lifetime of this engine.
+                 */
+                BddEngine(
+                    Allocator *allocator,
+                    const ByteCursor &bytecodeCursor,
+                    const ByteCursor &partitionsCursor) noexcept;
+
                 ~BddEngine();
 
                 BddEngine(const BddEngine &) = delete;
@@ -58,7 +74,6 @@ namespace Aws
                 Optional<ResolutionOutcome> Resolve(const RequestContext &context) const;
 
               private:
-                Allocator *m_allocator;
                 ByteBuf m_bytecodeBuf;
                 aws_endpoints_bdd_engine *m_engine;
             };
