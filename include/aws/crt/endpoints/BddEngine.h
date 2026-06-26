@@ -29,9 +29,9 @@ namespace Aws
               public:
                 /**
                  * Construct from compiled endpoint ruleset bytecode and partitions JSON.
+                 * The engine copies the bytecode buffer and owns it for its lifetime.
                  *
-                 * @param bytecodeBuffer Cursor into compiled bytecode. Caller owns the
-                 *        buffer and must keep it valid for the lifetime of this engine.
+                 * @param bytecodeBuffer Cursor into compiled bytecode. Copied internally.
                  * @param partitionsCursor Partitions JSON string.
                  * @param allocator Memory allocator.
                  */
@@ -58,6 +58,8 @@ namespace Aws
                 Optional<ResolutionOutcome> Resolve(const RequestContext &context) const;
 
               private:
+                Allocator *m_allocator;
+                ByteBuf m_bytecodeBuf;
                 aws_endpoints_bdd_engine *m_engine;
             };
         } // namespace Endpoints

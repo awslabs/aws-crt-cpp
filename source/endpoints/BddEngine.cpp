@@ -16,12 +16,13 @@ namespace Aws
                 const ByteCursor &bytecodeBuffer,
                 const ByteCursor &partitionsCursor,
                 Allocator *allocator) noexcept
-                : m_engine(nullptr)
+                : m_allocator(allocator), m_bytecodeBuf(ByteBufNewCopy(allocator, bytecodeBuffer.ptr, bytecodeBuffer.len)), m_engine(nullptr)
             {
                 auto partitions = aws_partitions_config_new_from_string(allocator, partitionsCursor);
                 if (partitions != nullptr)
                 {
-                    m_engine = aws_endpoints_bdd_engine_new_from_bytecode(allocator, bytecodeBuffer, partitions);
+                    ByteCursor ownedCursor = ByteCursorFromByteBuf(m_bytecodeBuf);
+                    m_engine = aws_endpoints_bdd_engine_new_from_bytecode(allocator, ownedCursor, partitions);
                     aws_partitions_config_release(partitions);
                 }
             }
@@ -29,6 +30,7 @@ namespace Aws
             BddEngine::~BddEngine()
             {
                 m_engine = aws_endpoints_bdd_engine_release(m_engine);
+                ByteBufDelete(m_bytecodeBuf);
             }
 
             Optional<ResolutionOutcome> BddEngine::Resolve(const RequestContext &context) const
