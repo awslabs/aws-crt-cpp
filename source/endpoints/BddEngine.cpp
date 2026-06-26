@@ -16,7 +16,8 @@ namespace Aws
                 const ByteCursor &bytecodeBuffer,
                 const ByteCursor &partitionsCursor,
                 Allocator *allocator) noexcept
-                : m_allocator(allocator), m_bytecodeBuf(ByteBufNewCopy(allocator, bytecodeBuffer.ptr, bytecodeBuffer.len)), m_engine(nullptr)
+                : m_allocator(allocator),
+                  m_bytecodeBuf(ByteBufNewCopy(allocator, bytecodeBuffer.ptr, bytecodeBuffer.len)), m_engine(nullptr)
             {
                 auto partitions = aws_partitions_config_new_from_string(allocator, partitionsCursor);
                 if (partitions != nullptr)

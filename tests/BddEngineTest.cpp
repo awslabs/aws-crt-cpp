@@ -83,8 +83,8 @@ static int s_TestBddEngineDataplaneZone(Allocator *allocator, void *ctx)
     Aws::Crt::Optional<Aws::Crt::Endpoints::ResolutionOutcome> resolved;
     ASSERT_SUCCESS(s_RunResolve(allocator, context, resolved));
     ASSERT_TRUE(
-        resolved->GetUrl()->compare(
-            "https://mybucket--abcd-ab1--x-s3.s3express-abcd-ab1.us-east-1.amazonaws.com") == 0);
+        resolved->GetUrl()->compare("https://mybucket--abcd-ab1--x-s3.s3express-abcd-ab1.us-east-1.amazonaws.com") ==
+        0);
 
     return AWS_OP_SUCCESS;
 }
@@ -104,8 +104,7 @@ static int s_TestBddEngineAccessPoint(Allocator *allocator, void *ctx)
     Aws::Crt::Optional<Aws::Crt::Endpoints::ResolutionOutcome> resolved;
     ASSERT_SUCCESS(s_RunResolve(allocator, context, resolved));
     ASSERT_TRUE(
-        resolved->GetUrl()->compare(
-            "https://myendpoint-123456789012.s3-accesspoint.us-west-2.amazonaws.com") == 0);
+        resolved->GetUrl()->compare("https://myendpoint-123456789012.s3-accesspoint.us-west-2.amazonaws.com") == 0);
 
     return AWS_OP_SUCCESS;
 }
