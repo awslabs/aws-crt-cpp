@@ -14,17 +14,11 @@ static int s_RunResolve(
     Endpoints::RequestContext &context,
     Optional<Endpoints::ResolutionOutcome> &out_resolved)
 {
-    ByteBuf bytecode_buf;
-    ASSERT_TRUE(ByteBufInitFromFile(bytecode_buf, allocator, "bdd/endpoint-bdd-encoded.bin"));
-
     ByteBuf partitions_buf;
     ASSERT_TRUE(ByteBufInitFromFile(partitions_buf, allocator, "sample_partitions.json"));
-
-    ByteCursor bytecode = ByteCursorFromByteBuf(bytecode_buf);
     ByteCursor partitions = ByteCursorFromByteBuf(partitions_buf);
 
-    Aws::Crt::Endpoints::BddEngine engine(bytecode, partitions, allocator);
-    ByteBufDelete(bytecode_buf);
+    Endpoints::BddEngine engine(allocator, "bdd/endpoint-bdd-encoded.bin", partitions);
     ByteBufDelete(partitions_buf);
     ASSERT_TRUE(engine);
 
@@ -144,7 +138,7 @@ static int s_TestBddEngineInvalidBytecode(Allocator *allocator, void *ctx)
     ByteCursor bytecode = ByteCursorFromArray(bad_bytecode, sizeof(bad_bytecode));
     ByteCursor partitions = ByteCursorFromByteBuf(partitions_buf);
 
-    Aws::Crt::Endpoints::BddEngine engine(bytecode, partitions, allocator);
+    Aws::Crt::Endpoints::BddEngine engine(allocator, bytecode, partitions);
     ByteBufDelete(partitions_buf);
     ASSERT_FALSE(engine);
 
