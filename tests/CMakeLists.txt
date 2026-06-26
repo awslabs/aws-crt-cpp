@@ -320,6 +320,10 @@ endif()
 add_test_case(RuleEngine)
 add_test_case(RuleEngineContextParams)
 
+add_test_case(BddEngineResolveEndpoint)
+add_test_case(BddEngineResolveError)
+add_test_case(BddEngineInvalidBytecode)
+
 if(AWS_HAS_CI_ENVIRONMENT AND NOT BYO_CRYPTO)
     add_test_case(CognitoCredentialsProviderGetSuccess)
     add_test_case(STSCredentialsProviderGetSuccess)
