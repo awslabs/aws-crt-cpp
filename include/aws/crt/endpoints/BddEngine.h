@@ -31,10 +31,7 @@ namespace Aws
                  * Construct from a file path to compiled bytecode.
                  * The engine reads and owns the bytecode for its lifetime.
                  */
-                BddEngine(
-                    Allocator *allocator,
-                    const char *bytecodePath,
-                    const ByteCursor &partitionsCursor) noexcept;
+                BddEngine(Allocator *allocator, const char *bytecodePath, const ByteCursor &partitionsCursor) noexcept;
 
                 /**
                  * Construct from a bytecode buffer.

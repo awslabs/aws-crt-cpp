@@ -43,8 +43,7 @@ namespace Aws
                 Allocator *allocator,
                 const ByteBuf &bytecodeBuffer,
                 const ByteCursor &partitionsCursor) noexcept
-                : m_bytecodeBuf(ByteBufNewCopy(allocator, bytecodeBuffer.buffer, bytecodeBuffer.len)),
-                  m_engine(nullptr)
+                : m_bytecodeBuf(ByteBufNewCopy(allocator, bytecodeBuffer.buffer, bytecodeBuffer.len)), m_engine(nullptr)
             {
                 ByteCursor cursor = ByteCursorFromByteBuf(m_bytecodeBuf);
                 s_initEngine(allocator, &m_engine, cursor, partitionsCursor);
