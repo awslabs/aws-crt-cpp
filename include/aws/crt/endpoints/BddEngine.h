@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 
+#include <aws/crt/Types.h>
 #include <aws/crt/endpoints/RuleEngine.h>
 
 struct aws_endpoints_bdd_engine;
@@ -18,7 +19,7 @@ namespace Aws
              * Endpoints BDD Engine.
              *
              * Resolves endpoints from compiled bytecode rather than a JSON ruleset.
-             * The bytecode buffer passed to the constructor must remain valid for
+             * The caller is responsible for keeping the bytecode buffer alive for
              * the lifetime of this engine.
              *
              * RequestContext and ResolutionOutcome are shared with RuleEngine and
@@ -28,23 +29,8 @@ namespace Aws
             {
               public:
                 /**
-                 * Construct from a file path to compiled bytecode.
-                 * The engine reads and owns the bytecode for its lifetime.
-                 */
-                BddEngine(Allocator *allocator, const char *bytecodePath, const ByteCursor &partitionsCursor) noexcept;
-
-                /**
-                 * Construct from a bytecode buffer.
-                 * The engine copies the buffer and owns it for its lifetime.
-                 */
-                BddEngine(
-                    Allocator *allocator,
-                    const ByteBuf &bytecodeBuffer,
-                    const ByteCursor &partitionsCursor) noexcept;
-
-                /**
-                 * Construct from a bytecode cursor.
-                 * The caller is responsible for keeping the underlying buffer alive
+                 * Construct from a bytecode cursor and partitions JSON.
+                 * The caller is responsible for keeping the bytecode buffer alive
                  * for the lifetime of this engine.
                  */
                 BddEngine(
@@ -52,7 +38,7 @@ namespace Aws
                     const ByteCursor &bytecodeCursor,
                     const ByteCursor &partitionsCursor) noexcept;
 
-                ~BddEngine();
+                ~BddEngine() = default;
 
                 BddEngine(const BddEngine &) = delete;
                 BddEngine &operator=(const BddEngine &) = delete;
@@ -71,8 +57,7 @@ namespace Aws
                 Optional<ResolutionOutcome> Resolve(const RequestContext &context) const;
 
               private:
-                ByteBuf m_bytecodeBuf;
-                aws_endpoints_bdd_engine *m_engine;
+                ScopedResource<struct aws_endpoints_bdd_engine> m_engine;
             };
         } // namespace Endpoints
     } // namespace Crt

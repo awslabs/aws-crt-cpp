@@ -14,11 +14,14 @@ static int s_RunResolve(
     Endpoints::RequestContext &context,
     Optional<Endpoints::ResolutionOutcome> &out_resolved)
 {
+    ByteBuf bytecode_buf;
+    ASSERT_TRUE(ByteBufInitFromFile(bytecode_buf, allocator, "bdd/endpoint-bdd-encoded.bin"));
+
     ByteBuf partitions_buf;
     ASSERT_TRUE(ByteBufInitFromFile(partitions_buf, allocator, "sample_partitions.json"));
-    ByteCursor partitions = ByteCursorFromByteBuf(partitions_buf);
 
-    Endpoints::BddEngine engine(allocator, "bdd/endpoint-bdd-encoded.bin", partitions);
+    Endpoints::BddEngine engine(allocator, ByteCursorFromByteBuf(bytecode_buf), ByteCursorFromByteBuf(partitions_buf));
+    ByteBufDelete(bytecode_buf);
     ByteBufDelete(partitions_buf);
     ASSERT_TRUE(engine);
 
