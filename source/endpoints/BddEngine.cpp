@@ -13,9 +13,9 @@ namespace Aws
         namespace Endpoints
         {
             BddEngine::BddEngine(
-                Allocator *allocator,
                 const ByteCursor &bytecodeCursor,
-                const ByteCursor &partitionsCursor) noexcept
+                const ByteCursor &partitionsCursor,
+                Allocator *allocator) noexcept
                 : m_engine(nullptr, aws_endpoints_bdd_engine_release)
             {
                 auto partitions = aws_partitions_config_new_from_string(allocator, partitionsCursor);

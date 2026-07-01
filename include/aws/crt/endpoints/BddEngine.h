@@ -34,9 +34,9 @@ namespace Aws
                  * for the lifetime of this engine.
                  */
                 BddEngine(
-                    Allocator *allocator,
                     const ByteCursor &bytecodeCursor,
-                    const ByteCursor &partitionsCursor) noexcept;
+                    const ByteCursor &partitionsCursor,
+                    Allocator *allocator = ApiAllocator()) noexcept;
 
                 ~BddEngine() = default;
 

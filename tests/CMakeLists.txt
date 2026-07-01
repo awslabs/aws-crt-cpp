@@ -326,6 +326,7 @@ add_test_case(BddEngineDataplaneZone)
 add_test_case(BddEngineAccessPoint)
 add_test_case(BddEngineOutpost)
 add_test_case(BddEngineInvalidBytecode)
+add_test_case(BddEngineDefaultAllocator)
 
 if(AWS_HAS_CI_ENVIRONMENT AND NOT BYO_CRYPTO)
     add_test_case(CognitoCredentialsProviderGetSuccess)

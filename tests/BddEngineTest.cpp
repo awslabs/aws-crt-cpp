@@ -20,7 +20,7 @@ static int s_RunResolve(
     ByteBuf partitions_buf;
     ASSERT_TRUE(ByteBufInitFromFile(partitions_buf, allocator, "sample_partitions.json"));
 
-    Endpoints::BddEngine engine(allocator, ByteCursorFromByteBuf(bytecode_buf), ByteCursorFromByteBuf(partitions_buf));
+    Endpoints::BddEngine engine(ByteCursorFromByteBuf(bytecode_buf), ByteCursorFromByteBuf(partitions_buf), allocator);
     ASSERT_TRUE(engine);
 
     out_resolved = engine.Resolve(context);
@@ -141,9 +141,40 @@ static int s_TestBddEngineInvalidBytecode(Allocator *allocator, void *ctx)
     ByteCursor bytecode = ByteCursorFromArray(bad_bytecode, sizeof(bad_bytecode));
     ByteCursor partitions = ByteCursorFromByteBuf(partitions_buf);
 
-    Aws::Crt::Endpoints::BddEngine engine(allocator, bytecode, partitions);
+    Aws::Crt::Endpoints::BddEngine engine(bytecode, partitions, allocator);
     ByteBufDelete(partitions_buf);
     ASSERT_FALSE(engine);
 
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(BddEngineDefaultAllocator, s_TestBddEngineDefaultAllocator)
+static int s_TestBddEngineDefaultAllocator(Allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    (void)allocator;
+    Aws::Crt::ApiHandle apiHandle;
+
+    ByteBuf bytecode_buf;
+    ASSERT_TRUE(ByteBufInitFromFile(bytecode_buf, Aws::Crt::ApiAllocator(), "bdd/endpoint-bdd-encoded.bin"));
+
+    ByteBuf partitions_buf;
+    ASSERT_TRUE(ByteBufInitFromFile(partitions_buf, Aws::Crt::ApiAllocator(), "sample_partitions.json"));
+
+    /* No allocator passed — uses ApiAllocator() default */
+    Endpoints::BddEngine engine(ByteCursorFromByteBuf(bytecode_buf), ByteCursorFromByteBuf(partitions_buf));
+    ASSERT_TRUE(engine);
+
+    Endpoints::RequestContext context;
+    context.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
+    context.AddString(ByteCursorFromCString("Bucket"), ByteCursorFromCString("bucket-name"));
+
+    auto resolved = engine.Resolve(context);
+    ASSERT_TRUE(resolved.has_value());
+    ASSERT_TRUE(resolved->IsEndpoint());
+    ASSERT_TRUE(resolved->GetUrl()->compare("https://bucket-name.s3.us-west-2.amazonaws.com") == 0);
+
+    ByteBufDelete(bytecode_buf);
+    ByteBufDelete(partitions_buf);
     return AWS_OP_SUCCESS;
 }
