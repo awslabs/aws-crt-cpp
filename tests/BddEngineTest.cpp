@@ -21,14 +21,14 @@ static int s_RunResolve(
     ASSERT_TRUE(ByteBufInitFromFile(partitions_buf, allocator, "sample_partitions.json"));
 
     Endpoints::BddEngine engine(allocator, ByteCursorFromByteBuf(bytecode_buf), ByteCursorFromByteBuf(partitions_buf));
-    ByteBufDelete(bytecode_buf);
-    ByteBufDelete(partitions_buf);
     ASSERT_TRUE(engine);
 
     out_resolved = engine.Resolve(context);
     ASSERT_TRUE(out_resolved.has_value());
     ASSERT_TRUE(out_resolved->IsEndpoint());
 
+    ByteBufDelete(bytecode_buf);
+    ByteBufDelete(partitions_buf);
     return AWS_OP_SUCCESS;
 }
 
