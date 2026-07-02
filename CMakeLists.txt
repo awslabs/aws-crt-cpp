@@ -60,7 +60,9 @@ if(BUILD_DEPS)
     endif()
     add_subdirectory(crt/aws-c-common)
 
-    if(UNIX AND NOT APPLE AND NOT BYO_CRYPTO)
+    # Build s2n-tls and aws-lc on all Unix platforms except non-macOS Apple (iOS, tvOS).
+    # On macOS (Darwin), both Secure Transport and s2n are built; the TLS backend is selected at runtime.
+    if(UNIX AND NOT BYO_CRYPTO AND (NOT APPLE OR CMAKE_SYSTEM_NAME STREQUAL "Darwin"))
         if(NOT USE_OPENSSL)
             include(AwsPrebuildDependency)
 
@@ -102,7 +104,19 @@ if(BUILD_DEPS)
         if(ENFORCE_SUBMODULE_VERSIONS)
             check_submodule_commit("s2n" "crt/s2n")
         endif()
+
+        # On Intel Macs, Homebrew installs to /usr/local which is in the default header search path.
+        # Without this, s2n's libcrypto detection picks up Homebrew's OpenSSL instead of bundled aws-lc.
+        # ARM Macs use /opt/homebrew (not in default search paths) so they don't need this.
+        if(APPLE AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64")
+            set(_AWS_CRT_PREV_NO_SYSTEM_FROM_IMPORTED ${CMAKE_NO_SYSTEM_FROM_IMPORTED})
+            set(CMAKE_NO_SYSTEM_FROM_IMPORTED ON)
+        endif()
         add_subdirectory(crt/s2n)
+        if(APPLE AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64")
+            set(CMAKE_NO_SYSTEM_FROM_IMPORTED ${_AWS_CRT_PREV_NO_SYSTEM_FROM_IMPORTED})
+            unset(_AWS_CRT_PREV_NO_SYSTEM_FROM_IMPORTED)
+        endif()
     endif()
 
     if(ENFORCE_SUBMODULE_VERSIONS)

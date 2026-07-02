@@ -173,6 +173,21 @@ namespace Aws
                 void SetVerifyPeer(bool verifyPeer) noexcept;
 
                 /**
+                 * Set to true to disable certificate revocation checking during TLS negotiation.
+                 *
+                 * On Windows (SChannel), this prevents the TLS handshake from making outbound network calls
+                 * to CRL/OCSP revocation endpoints, which can block for minutes when the endpoints are unreachable
+                 * (e.g., in private subnets without internet access).
+                 *
+                 * On Linux (s2n), this disables validation of OCSP stapled responses provided by the server.
+                 *
+                 * On Apple platforms, this is a no-op as revocation checking is not enabled by default.
+                 *
+                 * @param noCertificateRevocation: Set true to disable revocation checking.
+                 */
+                void SetNoCertificateRevocation(bool noCertificateRevocation) noexcept;
+
+                /**
                  * Sets the minimum TLS version allowed.
                  * @param minimumTlsVersion: The minimum TLS version.
                  */
@@ -201,11 +216,14 @@ namespace Aws
                 bool OverrideDefaultTrustStore(const ByteCursor &ca) noexcept;
 
                 /// @private
-                const aws_tls_ctx_options *GetUnderlyingHandle() const noexcept { return &m_options; }
+                const aws_tls_ctx_options *GetUnderlyingHandle() const noexcept
+                {
+                    return m_isInit ? &m_options : nullptr;
+                }
 
               private:
                 aws_tls_ctx_options m_options;
-                bool m_isInit;
+                bool m_isInit = false;
             };
 
             /**
@@ -327,17 +345,18 @@ namespace Aws
                 /// @private
                 const aws_tls_connection_options *GetUnderlyingHandle() const noexcept
                 {
-                    return &m_tls_connection_options;
+                    return m_isInit ? &m_tls_connection_options : nullptr;
                 }
 
               private:
                 bool isValid() const noexcept { return m_isInit; }
 
                 TlsConnectionOptions(aws_tls_ctx *ctx, Allocator *allocator) noexcept;
+
                 aws_tls_connection_options m_tls_connection_options;
-                aws_allocator *m_allocator;
-                int m_lastError;
-                bool m_isInit;
+                aws_allocator *m_allocator = nullptr;
+                int m_lastError = AWS_ERROR_SUCCESS;
+                bool m_isInit = false;
 
                 friend class TlsContext;
             };

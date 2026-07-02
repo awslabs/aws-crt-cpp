@@ -34,6 +34,21 @@ namespace Aws
              * the non bit-reflected polynomial 0xad93d23594c93659) and inverts the CRC input and output bits.
              */
             uint64_t AWS_CRT_CPP_API ComputeCRC64NVME(ByteCursor input, uint64_t previousCRC64NVME = 0) noexcept;
+
+            /**
+             * Combines two CRC32 (Ethernet, gzip) checksums computed over separate data blocks.
+             */
+            uint32_t AWS_CRT_CPP_API CombineCRC32(uint32_t crc1, uint32_t crc2, uint64_t len2) noexcept;
+
+            /**
+             * Combines two CRC32C (Castagnoli, iSCSI) checksums computed over separate data blocks.
+             */
+            uint32_t AWS_CRT_CPP_API CombineCRC32C(uint32_t crc1, uint32_t crc2, uint64_t len2) noexcept;
+
+            /**
+             * Combines two CRC64-NVME checksums computed over separate data blocks.
+             */
+            uint64_t AWS_CRT_CPP_API CombineCRC64NVME(uint64_t crc1, uint64_t crc2, uint64_t len2) noexcept;
         } // namespace Checksum
     } // namespace Crt
 } // namespace Aws

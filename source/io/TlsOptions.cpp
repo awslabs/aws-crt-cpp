@@ -24,7 +24,7 @@ namespace Aws
                 }
             }
 
-            TlsContextOptions::TlsContextOptions() noexcept : m_isInit(false)
+            TlsContextOptions::TlsContextOptions() noexcept
             {
                 AWS_ZERO_STRUCT(m_options);
             }
@@ -164,6 +164,12 @@ namespace Aws
                 aws_tls_ctx_options_set_verify_peer(&m_options, verify_peer);
             }
 
+            void TlsContextOptions::SetNoCertificateRevocation(bool no_certificate_revocation) noexcept
+            {
+                AWS_ASSERT(m_isInit);
+                aws_tls_ctx_options_set_no_certificate_revocation(&m_options, no_certificate_revocation);
+            }
+
             void TlsContextOptions::SetMinimumTlsVersion(aws_tls_versions minimumTlsVersion)
             {
                 AWS_ASSERT(m_isInit);
@@ -268,10 +274,13 @@ namespace Aws
                 return options;
             }
 
-            TlsConnectionOptions::TlsConnectionOptions() noexcept : m_lastError(AWS_ERROR_SUCCESS), m_isInit(false) {}
+            TlsConnectionOptions::TlsConnectionOptions() noexcept
+            {
+                AWS_ZERO_STRUCT(m_tls_connection_options);
+            }
 
             TlsConnectionOptions::TlsConnectionOptions(aws_tls_ctx *ctx, Allocator *allocator) noexcept
-                : m_allocator(allocator), m_lastError(AWS_ERROR_SUCCESS), m_isInit(true)
+                : m_allocator(allocator), m_isInit(true)
             {
                 aws_tls_connection_options_init_from_ctx(&m_tls_connection_options, ctx);
             }
@@ -287,7 +296,6 @@ namespace Aws
 
             TlsConnectionOptions::TlsConnectionOptions(const TlsConnectionOptions &options) noexcept
             {
-                m_isInit = false;
                 AWS_ZERO_STRUCT(m_tls_connection_options);
 
                 if (options.m_isInit)
@@ -338,6 +346,8 @@ namespace Aws
             TlsConnectionOptions::TlsConnectionOptions(TlsConnectionOptions &&options) noexcept
                 : m_isInit(options.m_isInit)
             {
+                AWS_ZERO_STRUCT(m_tls_connection_options);
+
                 if (options.m_isInit)
                 {
                     m_tls_connection_options = options.m_tls_connection_options;

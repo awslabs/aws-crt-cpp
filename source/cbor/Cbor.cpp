@@ -120,6 +120,7 @@ namespace Aws
              *
              *****************************************************/
             CborDecoder::CborDecoder(ByteCursor src, Crt::Allocator *allocator) noexcept
+                : m_lastError(AWS_ERROR_SUCCESS)
             {
                 m_decoder = aws_cbor_decoder_new(allocator, src);
             }

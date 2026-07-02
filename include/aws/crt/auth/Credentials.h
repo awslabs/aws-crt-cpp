@@ -204,11 +204,18 @@ namespace Aws
                  * Client TLS context to use for any secure network connections made while sourcing credentials
                  * (for example, a profile that uses assume-role will need to query STS).
                  *
-                 * If a TLS context is needed, and you did not pass one in, it will be created automatically.
-                 * However, you are encouraged to pass in a shared one since these are expensive objects.
-                 * If using BYO_CRYPTO, you must provide the TLS context since it cannot be created automatically.
+                 * If a TLS context is needed, and you did not pass one in, the content of TlsConnectionOptions will be
+                 * used which may be default contructed. However, you are encouraged to pass in a shared one since these
+                 * are expensive objects. If using BYO_CRYPTO, you must provide the TLS context since it cannot be
+                 * created automatically.
                  */
                 Io::TlsContext *TlsContext;
+                Io::TlsConnectionOptions TlsConnectionOptions;
+
+                /**
+                 * (Optional) Http proxy configuration for the http request that fetches credentials.
+                 */
+                Optional<Http::ProxyEnvVarOptions> ProxyEnvVarOptions;
             };
 
             /**
@@ -492,6 +499,49 @@ namespace Aws
                  * TLS configuration for secure socket connections.
                  */
                 Io::TlsConnectionOptions TlsConnectionOptions;
+
+                /**
+                 * (Optional) Http proxy configuration for the http request that fetches credentials.
+                 */
+                Optional<Http::ProxyEnvVarOptions> ProxyEnvVarOptions;
+            };
+
+            /**
+             * Configuration options for the STS Web Identity credentials provider
+             */
+            struct AWS_CRT_CPP_API CredentialsProviderLoginConfig
+            {
+                CredentialsProviderLoginConfig();
+
+                /**
+                 * The arn associated with the AWS login session.
+                 */
+                String LoginSession;
+
+                /**
+                 * Overrides the login cache directory. by default the cache directory
+                 * is located at `~/.aws/login/cache`.
+                 */
+                String LoginCacheOverride;
+
+                /**
+                 * The region associated with the AWS Login call
+                 */
+                String LoginRegion;
+
+                /**
+                 * Connection bootstrap to use to create the http connection required to
+                 * query credentials from the STS provider
+                 *
+                 * Note: If null, then the default ClientBootstrap is used
+                 * (see Aws::Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap)
+                 */
+                Io::ClientBootstrap *Bootstrap;
+
+                /**
+                 * TLS configuration for secure socket connections.
+                 */
+                Io::TlsConnectionOptions TlsConnectionOptions;
             };
 
             /**
@@ -623,6 +673,13 @@ namespace Aws
 
                 static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderSTSWebIdentity(
                     const CredentialsProviderSTSWebIdentityConfig &config,
+                    Allocator *allocator = ApiAllocator());
+
+                /**
+                 * Creates a AWS Login based credentials provider
+                 */
+                static std::shared_ptr<ICredentialsProvider> CreateCredentialsProviderLogin(
+                    const CredentialsProviderLoginConfig &config,
                     Allocator *allocator = ApiAllocator());
 
               private:

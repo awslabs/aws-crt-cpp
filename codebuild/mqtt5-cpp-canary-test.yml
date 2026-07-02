@@ -2,7 +2,7 @@ version: 0.2
 env:
   shell: bash
   variables:
-    CANARY_DURATION: 25200
+    CANARY_DURATION: 300
     CANARY_THREADS: 3
     CANARY_TPS: 50
     CANARY_CLIENT_COUNT: 10
@@ -29,6 +29,30 @@ phases:
       - python3 -m pip install psutil
       - python3 -m pip install boto3
 
+  pre_build:
+    commands:
+      # Retrieve the private key from Secrets Manager
+      - DEPLOY_KEY=$(aws secretsmanager get-secret-value --secret-id Aws-crt-canaries-deploy-key --query SecretString --output text)
+
+      # Set up SSH configuration
+      - mkdir -p ~/.ssh
+      - echo "$DEPLOY_KEY" > ~/.ssh/id_rsa
+      - chmod 600 ~/.ssh/id_rsa
+
+      # Add GitHub to known hosts to avoid host verification prompt
+      - ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+
+      # Configure SSH to use the key for GitHub
+      - |
+        cat > ~/.ssh/config << EOF
+        Host github.com
+          HostName github.com
+          User git
+          IdentityFile ~/.ssh/id_rsa
+          StrictHostKeyChecking no
+        EOF
+      - chmod 600 ~/.ssh/config
+
   build:
     commands:
       - export CANNARY_TEST_EXE=$CODEBUILD_SRC_DIR/$CANARY_TEST_EXE_PATH
@@ -40,12 +64,17 @@ phases:
       - python3 builder.pyz build -p $PACKAGE_NAME
 
       # ==========
+      # pull and copy canary scripts
+      - git clone git@github.com:awslabs/aws-crt-canaries.git
+      - cp aws-crt-canaries/source/mqtt5/*.py codebuild
       # Canary related:
       - echo run canary test through wrapper
       # start canary
-      - python3 codebuild/CanaryWrapper.py --canary_executable $CANNARY_TEST_EXE --canary_arguments "-s ${CANARY_DURATION} -t ${CANARY_THREADS} -T ${CANARY_TPS} -C ${CANARY_CLIENT_COUNT} -v ${CANARY_LOG_LEVEL} ${ENDPOINT}" --git_hash ${GIT_HASH} --git_repo_name $PACKAGE_NAME --codebuild_log_path $CODEBUILD_LOG_PATH
+      - python3 codebuild/CanaryWrapper.py --canary_executable $CANNARY_TEST_EXE --canary_arguments "-s ${CANARY_DURATION} -t ${CANARY_THREADS} -T ${CANARY_TPS} -C ${CANARY_CLIENT_COUNT} -v ${CANARY_LOG_LEVEL} ${ENDPOINT}" --git_hash ${GIT_HASH} --git_repo_name $PACKAGE_NAME --ticket_item "IoT SDK for CPP" --cloudwatch_namespace mqtt5_canary
       # ==========
 
   post_build:
     commands:
       - echo Build completed on `date`
+      # Clean up SSH keys for security
+      - rm -rf ~/.ssh/id_rsa ~/.ssh/config

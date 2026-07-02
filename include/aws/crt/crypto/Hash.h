@@ -17,6 +17,7 @@ namespace Aws
         {
             static const size_t SHA1_DIGEST_SIZE = AWS_SHA1_LEN;
             static const size_t SHA256_DIGEST_SIZE = AWS_SHA256_LEN;
+            static const size_t SHA512_DIGEST_SIZE = AWS_SHA512_LEN;
             static const size_t MD5_DIGEST_SIZE = AWS_MD5_LEN;
 
             /**
@@ -64,7 +65,7 @@ namespace Aws
              * Computes a SHA1 Hash over input, and writes the digest to output. If truncateTo is non-zero, the digest
              * will be truncated to the value of truncateTo. Returns true on success. If this function fails,
              * Aws::Crt::LastError() will contain the error that occurred. Unless you're using 'truncateTo',
-             * output should have a minimum capacity of MD5_DIGEST_SIZE.
+             * output should have a minimum capacity of SHA1_DIGEST_SIZE.
              */
             bool AWS_CRT_CPP_API ComputeSHA1(
                 Allocator *allocator,
@@ -79,6 +80,27 @@ namespace Aws
              * 'truncateTo', output should have a minimum capacity of SHA1_DIGEST_SIZE.
              */
             bool AWS_CRT_CPP_API ComputeSHA1(const ByteCursor &input, ByteBuf &output, size_t truncateTo = 0) noexcept;
+
+            /**
+             * Computes a SHA512 Hash over input, and writes the digest to output. If truncateTo is non-zero, the digest
+             * will be truncated to the value of truncateTo. Returns true on success. If this function fails,
+             * Aws::Crt::LastError() will contain the error that occurred. Unless you're using 'truncateTo',
+             * output should have a minimum capacity of SHA512_DIGEST_SIZE.
+             */
+            bool AWS_CRT_CPP_API ComputeSHA512(
+                Allocator *allocator,
+                const ByteCursor &input,
+                ByteBuf &output,
+                size_t truncateTo = 0) noexcept;
+
+            /**
+             * Computes a SHA512 Hash using the default allocator over input, and writes the digest to output. If
+             * truncateTo is non-zero, the digest will be truncated to the value of truncateTo. Returns true on success.
+             * If this function fails, Aws::Crt::LastError() will contain the error that occurred. Unless you're using
+             * 'truncateTo', output should have a minimum capacity of SHA512_DIGEST_SIZE.
+             */
+            bool AWS_CRT_CPP_API
+                ComputeSHA512(const ByteCursor &input, ByteBuf &output, size_t truncateTo = 0) noexcept;
 
             /**
              * Streaming Hash object. The typical use case is for computing the hash of an object that is too large to
@@ -113,6 +135,11 @@ namespace Aws
                  * Creates an instance of a Stream SHA1 Hash.
                  */
                 static Hash CreateSHA1(Allocator *allocator = ApiAllocator()) noexcept;
+
+                /**
+                 * Creates an instance of a Stream SHA512 Hash.
+                 */
+                static Hash CreateSHA512(Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
                  * Creates an instance of a Streaming MD5 Hash.

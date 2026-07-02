@@ -27,6 +27,21 @@ namespace Aws
                 return ComputeSHA256(ApiAllocator(), input, output, truncateTo);
             }
 
+            bool ComputeSHA512(
+                Allocator *allocator,
+                const ByteCursor &input,
+                ByteBuf &output,
+                size_t truncateTo) noexcept
+            {
+                auto hash = Hash::CreateSHA512(allocator);
+                return hash.ComputeOneShot(input, output, truncateTo);
+            }
+
+            bool ComputeSHA512(const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
+            {
+                return ComputeSHA512(ApiAllocator(), input, output, truncateTo);
+            }
+
             bool ComputeSHA1(Allocator *allocator, const ByteCursor &input, ByteBuf &output, size_t truncateTo) noexcept
             {
                 auto hash = Hash::CreateSHA1(allocator);
@@ -100,6 +115,11 @@ namespace Aws
             Hash Hash::CreateSHA1(Allocator *allocator) noexcept
             {
                 return Hash(aws_sha1_new(allocator));
+            }
+
+            Hash Hash::CreateSHA512(Allocator *allocator) noexcept
+            {
+                return Hash(aws_sha512_new(allocator));
             }
 
             bool Hash::Update(const ByteCursor &toHash) noexcept

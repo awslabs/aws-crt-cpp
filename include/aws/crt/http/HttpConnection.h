@@ -10,6 +10,7 @@
 #include <aws/crt/Types.h>
 #include <aws/crt/io/Bootstrap.h>
 #include <aws/crt/io/SocketOptions.h>
+#include <aws/crt/io/Stream.h>
 #include <aws/crt/io/TlsOptions.h>
 
 #include <functional>
@@ -118,6 +119,27 @@ namespace Aws
                  * See `OnStreamComplete` for more info. This value can be empty.
                  */
                 OnStreamComplete onStreamComplete;
+
+                /**
+                 * When true, request body data will be provided over time via `HttpClientStream::WriteData()`
+                 * The stream will only be polled for writing when data has been supplied.
+                 * When false (default), the entire request body is read from the input stream immediately.
+                 *
+                 * HTTP/1.1 requirements:
+                 * - SHOULD have either `Content-Length` OR `Transfer-Encoding: chunked` header (but not both).
+                 *   Fails with AWS_ERROR_HTTP_INVALID_HEADER_FIELD if both are set.
+                 *   Transfer-Encoding: chunked header will be automatically added if neither header is set.
+                 * - MUST NOT have a body stream set. Fails with AWS_ERROR_HTTP_INVALID_HEADER_FIELD otherwise.
+                 * - With `Content-Length`: total bytes written must exactly match the declared length.
+                 *   Fails with AWS_ERROR_HTTP_OUTGOING_STREAM_LENGTH_INCORRECT if data exceeds Content-Length,
+                 *   or if `end_stream` is set before enough data is written.
+                 * - With `Transfer-Encoding: chunked`: no length validation, data sent as chunks.
+                 *
+                 * HTTP/2: No `Content-Length` or `Transfer-Encoding` header required. Data sent via DATA frames.
+                 * Note: When this variable is set, we expect request to be ended with a data write with
+                 * end_stream=true.
+                 */
+                bool UseManualDataWrites = false;
             };
 
             /**
@@ -191,6 +213,8 @@ namespace Aws
                 std::shared_ptr<HttpStream> stream;
             };
 
+            using OnWriteDataComplete = std::function<void(std::shared_ptr<HttpStream> &stream, int errorCode)>;
+
             /**
              * Subclass that represents an http client's view of an HttpStream.
              */
@@ -215,6 +239,11 @@ namespace Aws
                  * Returns true on success, false otherwise.
                  */
                 bool Activate() noexcept;
+
+                int WriteData(
+                    std::shared_ptr<Aws::Crt::Io::InputStream> stream,
+                    const OnWriteDataComplete &onComplete,
+                    bool endStream = false) noexcept;
 
               private:
                 HttpClientStream(const std::shared_ptr<HttpClientConnection> &connection) noexcept;
@@ -338,6 +367,72 @@ namespace Aws
                  * Replaced by using the result of CreateBasicHttpProxyStrategy()
                  */
                 String BasicAuthPassword;
+            };
+
+            /**
+             * Configuration to enable or disable environment variable based proxy lookup.
+             */
+            enum class ProxyEnvVarType
+            {
+                /**
+                 * Default.
+                 * Disable reading from environment variable for proxy.
+                 */
+                Disabled = AWS_HPEV_DISABLE,
+                /**
+                 * Enable get proxy URL from environment variable, when the manual proxy options of connection manager
+                 * is not set. env HTTPS_PROXY/https_proxy will be checked when the main connection use tls. env
+                 * HTTP_PROXY/http_proxy will be checked when the main connection NOT use tls. env NO_PROXY/no_proxy
+                 * will be checked to bypass proxy if the host match the pattern. Check `aws_http_host_matches_no_proxy`
+                 * for detail. This function can also be used with a direct no_proxy parameter. The lower case version
+                 * has precedence.
+                 */
+                Enabled = AWS_HPEV_ENABLE,
+            };
+
+            /**
+             * Configuration structure that holds all proxy-related http connection options
+             */
+            class AWS_CRT_CPP_API ProxyEnvVarOptions
+            {
+              public:
+                ProxyEnvVarOptions();
+                ProxyEnvVarOptions(const ProxyEnvVarOptions &rhs) = default;
+                ProxyEnvVarOptions(ProxyEnvVarOptions &&rhs) = default;
+
+                ProxyEnvVarOptions &operator=(const ProxyEnvVarOptions &rhs) = default;
+                ProxyEnvVarOptions &operator=(ProxyEnvVarOptions &&rhs) = default;
+
+                ~ProxyEnvVarOptions() = default;
+
+                /**
+                 * Intended for internal use only.  Initializes the C proxy configuration structure,
+                 * aws_http_proxy_options, from an HttpClientConnectionProxyOptions instance.
+                 *
+                 * @param raw_options - output parameter containing low level proxy options to be passed to the C
+                 * interface
+                 *
+                 */
+                void InitializeRawProxyOptions(struct proxy_env_var_settings &raw_options) const;
+
+                /**
+                 * Enables or disables env var lookup for proxy variables.
+                 */
+                ProxyEnvVarType proxyEnvVarType;
+
+                /**
+                 * Optional.
+                 * If not set:
+                 * If tls options are provided (for the main connection) use tunnel proxy type
+                 * If tls options are not provided (for the main connection) use forward proxy type
+                 */
+                AwsHttpProxyConnectionType connectionType;
+
+                /**
+                 * Sets the TLS options for the connection to the proxy.
+                 * Optional.
+                 */
+                Optional<Io::TlsConnectionOptions> TlsOptions;
             };
 
             /**

@@ -237,7 +237,24 @@ namespace Aws
                 raw_config.credentials_file_name_override = config.CredentialsFileNameOverride;
                 raw_config.profile_name_override = config.ProfileNameOverride;
                 raw_config.bootstrap = config.Bootstrap ? config.Bootstrap->GetUnderlyingHandle() : nullptr;
-                raw_config.tls_ctx = config.TlsContext ? config.TlsContext->GetUnderlyingHandle() : nullptr;
+                if (config.TlsContext != nullptr)
+                {
+                    raw_config.tls_ctx = config.TlsContext->GetUnderlyingHandle();
+                }
+                else if (config.TlsConnectionOptions)
+                {
+                    const auto *const connectionOptions = config.TlsConnectionOptions.GetUnderlyingHandle();
+                    raw_config.tls_ctx = connectionOptions->ctx;
+                }
+                struct proxy_env_var_settings proxy_options;
+                AWS_ZERO_STRUCT(proxy_options);
+                if (config.ProxyEnvVarOptions.has_value())
+                {
+                    const Http::ProxyEnvVarOptions &proxy_config = config.ProxyEnvVarOptions.value();
+                    proxy_config.InitializeRawProxyOptions(proxy_options);
+
+                    raw_config.proxy_ev_settings = &proxy_options;
+                }
 
                 return s_CreateWrappedProvider(aws_credentials_provider_new_profile(allocator, &raw_config), allocator);
             }
@@ -511,8 +528,47 @@ namespace Aws
                 {
                     raw_config.tls_ctx = connectionOptions->ctx;
                 }
+
+                struct proxy_env_var_settings proxy_options;
+                AWS_ZERO_STRUCT(proxy_options);
+                if (config.ProxyEnvVarOptions.has_value())
+                {
+                    const Http::ProxyEnvVarOptions &proxy_config = config.ProxyEnvVarOptions.value();
+                    proxy_config.InitializeRawProxyOptions(proxy_options);
+
+                    raw_config.proxy_ev_settings = &proxy_options;
+                }
+
                 return s_CreateWrappedProvider(
                     aws_credentials_provider_new_sts_web_identity(allocator, &raw_config), allocator);
+            }
+
+            CredentialsProviderLoginConfig::CredentialsProviderLoginConfig() : Bootstrap(nullptr) {}
+
+            std::shared_ptr<ICredentialsProvider> CredentialsProvider::CreateCredentialsProviderLogin(
+                const CredentialsProviderLoginConfig &config,
+                Allocator *allocator)
+            {
+                struct aws_credentials_provider_login_options raw_config;
+                AWS_ZERO_STRUCT(raw_config);
+
+                raw_config.login_session = aws_byte_cursor_from_c_str(config.LoginSession.c_str());
+                raw_config.login_cache_directory_override =
+                    aws_byte_cursor_from_c_str(config.LoginCacheOverride.c_str());
+                raw_config.login_region = aws_byte_cursor_from_c_str(config.LoginRegion.c_str());
+
+                raw_config.bootstrap =
+                    (config.Bootstrap != nullptr)
+                        ? config.Bootstrap->GetUnderlyingHandle()
+                        : ApiHandle::GetOrCreateStaticDefaultClientBootstrap()->GetUnderlyingHandle();
+
+                const auto connectionOptions = config.TlsConnectionOptions.GetUnderlyingHandle();
+                if (connectionOptions != nullptr)
+                {
+                    raw_config.tls_ctx = connectionOptions->ctx;
+                }
+
+                return s_CreateWrappedProvider(aws_credentials_provider_new_login(allocator, &raw_config), allocator);
             }
         } // namespace Auth
     } // namespace Crt
