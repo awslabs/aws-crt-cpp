@@ -216,11 +216,14 @@ namespace Aws
                 bool OverrideDefaultTrustStore(const ByteCursor &ca) noexcept;
 
                 /// @private
-                const aws_tls_ctx_options *GetUnderlyingHandle() const noexcept { return &m_options; }
+                const aws_tls_ctx_options *GetUnderlyingHandle() const noexcept
+                {
+                    return m_isInit ? &m_options : nullptr;
+                }
 
               private:
                 aws_tls_ctx_options m_options;
-                bool m_isInit;
+                bool m_isInit = false;
             };
 
             /**
@@ -342,17 +345,18 @@ namespace Aws
                 /// @private
                 const aws_tls_connection_options *GetUnderlyingHandle() const noexcept
                 {
-                    return &m_tls_connection_options;
+                    return m_isInit ? &m_tls_connection_options : nullptr;
                 }
 
               private:
                 bool isValid() const noexcept { return m_isInit; }
 
                 TlsConnectionOptions(aws_tls_ctx *ctx, Allocator *allocator) noexcept;
+
                 aws_tls_connection_options m_tls_connection_options;
-                aws_allocator *m_allocator;
-                int m_lastError;
-                bool m_isInit;
+                aws_allocator *m_allocator = nullptr;
+                int m_lastError = AWS_ERROR_SUCCESS;
+                bool m_isInit = false;
 
                 friend class TlsContext;
             };
