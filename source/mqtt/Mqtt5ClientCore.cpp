@@ -262,7 +262,7 @@ namespace Aws
                          * InvokePublishAcknowledgement() later.
                          */
                         uint64_t publishAcknowledgementId = 0;
-                        PublishAcknowledgementFunctor functor;
+                        std::shared_ptr<PublishAcknowledgementFunctor> sharedFunctor;
                         if (publish->qos == AWS_MQTT5_QOS_AT_LEAST_ONCE)
                         {
                             /* Eagerly acquire the publish acknowledgement control before invoking the user callback. */
@@ -271,14 +271,13 @@ namespace Aws
 
                             if (publishAcknowledgementId != 0)
                             {
-                                functor.handle = s_createPublishAcknowledgementHandle(
-                                    client_core->m_allocator, publishAcknowledgementId);
-                                /* std::function requires a copyable callable so we wrap the move only functor
+                                /* std::function requires a copyable callable so we wrap the move-only functor
                                  * into a shared_ptr so the lambda can be copyable. */
-                                auto sharedFunctor =
+                                sharedFunctor =
                                     Aws::Crt::MakeShared<PublishAcknowledgementFunctor>(client_core->m_allocator);
                                 sharedFunctor->callbackThreadId = std::this_thread::get_id();
-                                sharedFunctor->handle = std::move(functor.handle);
+                                sharedFunctor->handle = s_createPublishAcknowledgementHandle(
+                                    client_core->m_allocator, publishAcknowledgementId);
                                 eventData.acquirePublishAcknowledgement =
                                     [sharedFunctor]() -> ScopedResource<PublishAcknowledgementHandle>
                                 { return (*sharedFunctor)(); };
@@ -296,17 +295,17 @@ namespace Aws
                         client_core->onPublishReceived(eventData);
 
                         /* Detect whether the user called acquirePublishAcknowledgement() during the callback:
-                         * - If they called it, the functor moved its ScopedResource out, so functor.handle is null.
-                         * - If they did NOT call it, functor.handle is still non-null here.
+                         * - If they called it, the functor moved its handle out, so sharedFunctor->handle is null.
+                         * - If they did NOT call it, sharedFunctor->handle is still non-null here.
                          *
                          * If the handle is still in the functor (user did not take control), auto-invoke the
-                         * publish acknowledgement. The functor's handle going out of scope will free the
+                         * publish acknowledgement. The sharedFunctor's handle going out of scope will free the
                          * PublishAcknowledgementHandle regardless.
                          *
                          * We also check client_core->m_client because it's possible (through insanity) that the
                          * user has killed the client in the onPublishReceived callback. The recursive mutex
                          * protects this check. */
-                        bool userDidNotTakeControl = publishAcknowledgementId != 0 && functor.handle != nullptr;
+                        bool userDidNotTakeControl = sharedFunctor != nullptr && sharedFunctor->handle != nullptr;
                         if (userDidNotTakeControl && client_core->m_client != nullptr)
                         {
                             aws_mqtt5_client_invoke_publish_acknowledgement(
