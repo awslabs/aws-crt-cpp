@@ -305,3 +305,108 @@ static int s_TestBddEngine_Outpost(struct aws_allocator *allocator, void *ctx)
     return r;
 }
 AWS_TEST_CASE(BddEngine_Outpost, s_TestBddEngine_Outpost)
+
+/* ------------------------------------------------------------------ */
+/* Simple ruleset cases (example service, Region only)                 */
+/* ------------------------------------------------------------------ */
+
+static const EndpointTestCase s_simple_cases[] = {
+    {
+        "simple_regional",
+        [](RequestContext &ctx) {
+            ctx.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
+        },
+        [](const ResolutionOutcome &outcome) -> int {
+            ASSERT_TRUE(outcome.IsEndpoint());
+            ASSERT_TRUE(outcome.GetUrl().has_value());
+            ASSERT_TRUE(outcome.GetUrl()->compare("https://example.us-west-2.amazonaws.com") == 0);
+            ASSERT_TRUE(outcome.GetHeaders().has_value());
+            ASSERT_TRUE(outcome.GetHeaders()->at("x-amz-region")[0].compare("us-west-2") == 0);
+            return AWS_OP_SUCCESS;
+        },
+    },
+    {
+        "simple_global",
+        [](RequestContext &ctx) { (void)ctx; },
+        [](const ResolutionOutcome &outcome) -> int {
+            ASSERT_TRUE(outcome.IsEndpoint());
+            ASSERT_TRUE(outcome.GetUrl().has_value());
+            ASSERT_TRUE(outcome.GetUrl()->compare("https://example.amazonaws.com") == 0);
+            return AWS_OP_SUCCESS;
+        },
+    },
+};
+
+static int s_MakeSimpleRuleEngine(Allocator *allocator, ByteBuf &ruleset, ByteBuf &partitions, RuleEngine &out)
+{
+    ASSERT_TRUE(ByteBufInitFromFile(ruleset, allocator, "endpoint_engine/simple_legacy_ruleset.json"));
+    ASSERT_TRUE(ByteBufInitFromFile(partitions, allocator, "endpoint_engine/partitions.json"));
+    out = RuleEngine(ByteCursorFromByteBuf(ruleset), ByteCursorFromByteBuf(partitions), allocator);
+    ASSERT_TRUE(out);
+    return AWS_OP_SUCCESS;
+}
+
+static int s_MakeSimpleBddEngine(Allocator *allocator, ByteBuf &bytecode, ByteBuf &partitions, BddEngine &out)
+{
+    ASSERT_TRUE(ByteBufInitFromFile(bytecode, allocator, "endpoint_engine/simple_bdd_ruleset.bin"));
+    ASSERT_TRUE(ByteBufInitFromFile(partitions, allocator, "endpoint_engine/partitions.json"));
+    out = BddEngine(ByteCursorFromByteBuf(bytecode), ByteCursorFromByteBuf(partitions), allocator);
+    ASSERT_TRUE(out);
+    return AWS_OP_SUCCESS;
+}
+
+static int s_TestRuleEngine_SimpleRegional(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    ApiHandle apiHandle(allocator);
+    ByteBuf ruleset, partitions;
+    RuleEngine engine;
+    ASSERT_SUCCESS(s_MakeSimpleRuleEngine(allocator, ruleset, partitions, engine));
+    int r = s_RunCase(allocator, s_simple_cases[0], engine);
+    ByteBufDelete(ruleset);
+    ByteBufDelete(partitions);
+    return r;
+}
+AWS_TEST_CASE(RuleEngine_SimpleRegional, s_TestRuleEngine_SimpleRegional)
+
+static int s_TestRuleEngine_SimpleGlobal(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    ApiHandle apiHandle(allocator);
+    ByteBuf ruleset, partitions;
+    RuleEngine engine;
+    ASSERT_SUCCESS(s_MakeSimpleRuleEngine(allocator, ruleset, partitions, engine));
+    int r = s_RunCase(allocator, s_simple_cases[1], engine);
+    ByteBufDelete(ruleset);
+    ByteBufDelete(partitions);
+    return r;
+}
+AWS_TEST_CASE(RuleEngine_SimpleGlobal, s_TestRuleEngine_SimpleGlobal)
+
+static int s_TestBddEngine_SimpleRegional(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    ApiHandle apiHandle(allocator);
+    ByteBuf bytecode, partitions;
+    BddEngine engine;
+    ASSERT_SUCCESS(s_MakeSimpleBddEngine(allocator, bytecode, partitions, engine));
+    int r = s_RunCase(allocator, s_simple_cases[0], engine);
+    ByteBufDelete(bytecode);
+    ByteBufDelete(partitions);
+    return r;
+}
+AWS_TEST_CASE(BddEngine_SimpleRegional, s_TestBddEngine_SimpleRegional)
+
+static int s_TestBddEngine_SimpleGlobal(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    ApiHandle apiHandle(allocator);
+    ByteBuf bytecode, partitions;
+    BddEngine engine;
+    ASSERT_SUCCESS(s_MakeSimpleBddEngine(allocator, bytecode, partitions, engine));
+    int r = s_RunCase(allocator, s_simple_cases[1], engine);
+    ByteBufDelete(bytecode);
+    ByteBufDelete(partitions);
+    return r;
+}
+AWS_TEST_CASE(BddEngine_SimpleGlobal, s_TestBddEngine_SimpleGlobal)

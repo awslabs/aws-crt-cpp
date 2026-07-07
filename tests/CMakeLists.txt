@@ -317,7 +317,6 @@ if(NOT BYO_CRYPTO)
 
 endif()
 
-add_test_case(RuleEngine)
 add_test_case(RuleEngineContextParams)
 
 add_test_case(BddEngineInvalidBytecode)
@@ -328,12 +327,16 @@ add_test_case(RuleEngine_PathStyle)
 add_test_case(RuleEngine_DataplaneZone)
 add_test_case(RuleEngine_AccessPoint)
 add_test_case(RuleEngine_Outpost)
+add_test_case(RuleEngine_SimpleRegional)
+add_test_case(RuleEngine_SimpleGlobal)
 
 add_test_case(BddEngine_VirtualHosted)
 add_test_case(BddEngine_PathStyle)
 add_test_case(BddEngine_DataplaneZone)
 add_test_case(BddEngine_AccessPoint)
 add_test_case(BddEngine_Outpost)
+add_test_case(BddEngine_SimpleRegional)
+add_test_case(BddEngine_SimpleGlobal)
 
 if(AWS_HAS_CI_ENVIRONMENT AND NOT BYO_CRYPTO)
     add_test_case(CognitoCredentialsProviderGetSuccess)
