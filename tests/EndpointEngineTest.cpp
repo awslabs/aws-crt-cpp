@@ -38,11 +38,13 @@ struct EndpointTestCase
 static const EndpointTestCase s_cases[] = {
     {
         "virtual_hosted",
-        [](RequestContext &ctx) {
+        [](RequestContext &ctx)
+        {
             ctx.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
             ctx.AddString(ByteCursorFromCString("Bucket"), ByteCursorFromCString("bucket-name"));
         },
-        [](const ResolutionOutcome &outcome) -> int {
+        [](const ResolutionOutcome &outcome) -> int
+        {
             ASSERT_TRUE(outcome.IsEndpoint());
             ASSERT_TRUE(outcome.GetUrl().has_value());
             ASSERT_TRUE(outcome.GetUrl()->compare("https://bucket-name.s3.us-west-2.amazonaws.com") == 0);
@@ -51,12 +53,14 @@ static const EndpointTestCase s_cases[] = {
     },
     {
         "path_style",
-        [](RequestContext &ctx) {
+        [](RequestContext &ctx)
+        {
             ctx.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
             ctx.AddBoolean(ByteCursorFromCString("ForcePathStyle"), true);
             ctx.AddString(ByteCursorFromCString("Bucket"), ByteCursorFromCString("bucket-name"));
         },
-        [](const ResolutionOutcome &outcome) -> int {
+        [](const ResolutionOutcome &outcome) -> int
+        {
             ASSERT_TRUE(outcome.IsEndpoint());
             ASSERT_TRUE(outcome.GetUrl().has_value());
             ASSERT_TRUE(outcome.GetUrl()->compare("https://s3.us-west-2.amazonaws.com/bucket-name") == 0);
@@ -65,11 +69,13 @@ static const EndpointTestCase s_cases[] = {
     },
     {
         "dataplane_zone",
-        [](RequestContext &ctx) {
+        [](RequestContext &ctx)
+        {
             ctx.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-east-1"));
             ctx.AddString(ByteCursorFromCString("Bucket"), ByteCursorFromCString("mybucket--abcd-ab1--x-s3"));
         },
-        [](const ResolutionOutcome &outcome) -> int {
+        [](const ResolutionOutcome &outcome) -> int
+        {
             ASSERT_TRUE(outcome.IsEndpoint());
             ASSERT_TRUE(outcome.GetUrl().has_value());
             ASSERT_TRUE(
@@ -80,31 +86,35 @@ static const EndpointTestCase s_cases[] = {
     },
     {
         "access_point",
-        [](RequestContext &ctx) {
+        [](RequestContext &ctx)
+        {
             ctx.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
             ctx.AddString(
                 ByteCursorFromCString("Bucket"),
                 ByteCursorFromCString("arn:aws:s3:us-west-2:123456789012:accesspoint:myendpoint"));
         },
-        [](const ResolutionOutcome &outcome) -> int {
+        [](const ResolutionOutcome &outcome) -> int
+        {
             ASSERT_TRUE(outcome.IsEndpoint());
             ASSERT_TRUE(outcome.GetUrl().has_value());
             ASSERT_TRUE(
-                outcome.GetUrl()->compare(
-                    "https://myendpoint-123456789012.s3-accesspoint.us-west-2.amazonaws.com") == 0);
+                outcome.GetUrl()->compare("https://myendpoint-123456789012.s3-accesspoint.us-west-2.amazonaws.com") ==
+                0);
             return AWS_OP_SUCCESS;
         },
     },
     {
         "outpost",
-        [](RequestContext &ctx) {
+        [](RequestContext &ctx)
+        {
             ctx.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
             ctx.AddString(
                 ByteCursorFromCString("Bucket"),
                 ByteCursorFromCString(
                     "arn:aws:s3-outposts:us-west-2:123456789012:outpost/op-01234567890123456/accesspoint/reports"));
         },
-        [](const ResolutionOutcome &outcome) -> int {
+        [](const ResolutionOutcome &outcome) -> int
+        {
             ASSERT_TRUE(outcome.IsEndpoint());
             ASSERT_TRUE(outcome.GetUrl().has_value());
             ASSERT_TRUE(
@@ -121,8 +131,7 @@ static const size_t s_case_count = sizeof(s_cases) / sizeof(s_cases[0]);
 /* Shared runner                                                        */
 /* ------------------------------------------------------------------ */
 
-template <typename Engine>
-static int s_RunCase(Allocator *allocator, const EndpointTestCase &tc, const Engine &engine)
+template <typename Engine> static int s_RunCase(Allocator *allocator, const EndpointTestCase &tc, const Engine &engine)
 {
     RequestContext ctx(allocator);
     tc.buildContext(ctx);
