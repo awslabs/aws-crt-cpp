@@ -125,8 +125,6 @@ static const EndpointTestCase s_cases[] = {
     },
 };
 
-static const size_t s_case_count = sizeof(s_cases) / sizeof(s_cases[0]);
-
 /* ------------------------------------------------------------------ */
 /* Shared runner                                                        */
 /* ------------------------------------------------------------------ */
