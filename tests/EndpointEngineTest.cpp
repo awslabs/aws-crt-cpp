@@ -6,15 +6,21 @@
 /**
  * Unified endpoint resolution tests.
  *
- * Each case runs through both RuleEngine (legacy JSON ruleset) and BddEngine
- * (compiled bytecode). The s_cases table is the single source of truth —
- * adding a new case automatically covers both engines.
+ * s_cases and s_simple_cases are the single sources of truth.
+ * Adding a case requires only adding to the relevant array.
+ *
+ * Each engine runs two tests:
+ *   <Engine>_SimpleTest    - loops s_simple_cases (simple example-service ruleset)
+ *   <Engine>_StandardTest  - loops s_cases (S3 ruleset)
  *
  * Resources under tests/resources/endpoint_engine/:
- *   legacy_ruleset.json  - S3 ruleset in legacy tree format (for RuleEngine)
- *   bdd_ruleset.json     - S3 ruleset in BDD trait format (source of bdd_ruleset.bin)
- *   bdd_ruleset.bin      - compiled BDD bytecode (for BddEngine)
- *   partitions.json      - shared partitions config
+ *   legacy_ruleset.json         - S3 ruleset in legacy tree format (for RuleEngine)
+ *   bdd_ruleset.json            - S3 ruleset in BDD trait format (source of bdd_ruleset.bin)
+ *   bdd_ruleset.bin             - compiled BDD bytecode (for BddEngine)
+ *   simple_legacy_ruleset.json  - simple example service ruleset (for RuleEngine)
+ *   simple_bdd_ruleset.json     - simple BDD trait format (source of simple_bdd_ruleset.bin)
+ *   simple_bdd_ruleset.bin      - compiled simple BDD bytecode (for BddEngine)
+ *   partitions.json             - shared partitions config
  */
 
 #include <aws/crt/Api.h>
@@ -28,16 +34,48 @@
 using namespace Aws::Crt;
 using namespace Aws::Crt::Endpoints;
 
+/* ------------------------------------------------------------------ */
+/* Test case table                                                      */
+/* ------------------------------------------------------------------ */
+
 struct EndpointTestCase
 {
-    const char *name;
     std::function<void(RequestContext &)> buildContext;
     std::function<int(const ResolutionOutcome &)> assertOutcome;
 };
 
-static const EndpointTestCase s_cases[] = {
+/* Simple example-service ruleset cases */
+static const EndpointTestCase s_simple_cases[] = {
+    /* SimpleRegional */
     {
-        "virtual_hosted",
+        [](RequestContext &ctx) { ctx.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2")); },
+        [](const ResolutionOutcome &outcome) -> int
+        {
+            ASSERT_TRUE(outcome.IsEndpoint());
+            ASSERT_TRUE(outcome.GetUrl().has_value());
+            ASSERT_TRUE(outcome.GetUrl()->compare("https://example.us-west-2.amazonaws.com") == 0);
+            ASSERT_TRUE(outcome.GetHeaders().has_value());
+            ASSERT_TRUE(outcome.GetHeaders()->at("x-amz-region")[0].compare("us-west-2") == 0);
+            return AWS_OP_SUCCESS;
+        },
+    },
+    /* SimpleGlobal */
+    {
+        [](RequestContext &ctx) { (void)ctx; },
+        [](const ResolutionOutcome &outcome) -> int
+        {
+            ASSERT_TRUE(outcome.IsEndpoint());
+            ASSERT_TRUE(outcome.GetUrl().has_value());
+            ASSERT_TRUE(outcome.GetUrl()->compare("https://example.amazonaws.com") == 0);
+            return AWS_OP_SUCCESS;
+        },
+    },
+};
+
+/* S3 standard ruleset cases */
+static const EndpointTestCase s_cases[] = {
+    /* VirtualHosted */
+    {
         [](RequestContext &ctx)
         {
             ctx.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
@@ -51,8 +89,8 @@ static const EndpointTestCase s_cases[] = {
             return AWS_OP_SUCCESS;
         },
     },
+    /* PathStyle */
     {
-        "path_style",
         [](RequestContext &ctx)
         {
             ctx.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
@@ -67,8 +105,8 @@ static const EndpointTestCase s_cases[] = {
             return AWS_OP_SUCCESS;
         },
     },
+    /* DataplaneZone */
     {
-        "dataplane_zone",
         [](RequestContext &ctx)
         {
             ctx.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-east-1"));
@@ -84,8 +122,8 @@ static const EndpointTestCase s_cases[] = {
             return AWS_OP_SUCCESS;
         },
     },
+    /* AccessPoint */
     {
-        "access_point",
         [](RequestContext &ctx)
         {
             ctx.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
@@ -103,8 +141,8 @@ static const EndpointTestCase s_cases[] = {
             return AWS_OP_SUCCESS;
         },
     },
+    /* Outpost */
     {
-        "outpost",
         [](RequestContext &ctx)
         {
             ctx.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
@@ -126,6 +164,64 @@ static const EndpointTestCase s_cases[] = {
 };
 
 /* ------------------------------------------------------------------ */
+/* Engine fixtures — own bufs, construct engine, clean up on destruct  */
+/* ------------------------------------------------------------------ */
+
+template <typename Engine> struct EngineFixture;
+
+template <> struct EngineFixture<RuleEngine>
+{
+    ByteBuf ruleset;
+    ByteBuf partitions;
+    RuleEngine engine;
+
+    EngineFixture(Allocator *alloc, const char *ruleset_path)
+        : engine(s_load(alloc, ruleset_path, ruleset, partitions), ByteCursorFromByteBuf(partitions), alloc)
+    {
+    }
+
+    ~EngineFixture()
+    {
+        ByteBufDelete(ruleset);
+        ByteBufDelete(partitions);
+    }
+
+  private:
+    static ByteCursor s_load(Allocator *alloc, const char *path, ByteBuf &out_ruleset, ByteBuf &out_partitions)
+    {
+        ByteBufInitFromFile(out_ruleset, alloc, path);
+        ByteBufInitFromFile(out_partitions, alloc, "endpoint_engine/partitions.json");
+        return ByteCursorFromByteBuf(out_ruleset);
+    }
+};
+
+template <> struct EngineFixture<BddEngine>
+{
+    ByteBuf bytecode;
+    ByteBuf partitions;
+    BddEngine engine;
+
+    EngineFixture(Allocator *alloc, const char *bytecode_path)
+        : engine(s_load(alloc, bytecode_path, bytecode, partitions), ByteCursorFromByteBuf(partitions), alloc)
+    {
+    }
+
+    ~EngineFixture()
+    {
+        ByteBufDelete(bytecode);
+        ByteBufDelete(partitions);
+    }
+
+  private:
+    static ByteCursor s_load(Allocator *alloc, const char *path, ByteBuf &out_bytecode, ByteBuf &out_partitions)
+    {
+        ByteBufInitFromFile(out_bytecode, alloc, path);
+        ByteBufInitFromFile(out_partitions, alloc, "endpoint_engine/partitions.json");
+        return ByteCursorFromByteBuf(out_bytecode);
+    }
+};
+
+/* ------------------------------------------------------------------ */
 /* Shared runner                                                        */
 /* ------------------------------------------------------------------ */
 
@@ -139,233 +235,16 @@ template <typename Engine> static int s_RunCase(Allocator *allocator, const Endp
 }
 
 /* ------------------------------------------------------------------ */
-/* RuleEngine tests                                                     */
+/* RuleEngine tests — simple ruleset                                   */
 /* ------------------------------------------------------------------ */
-
-static int s_TestRuleEngine_VirtualHosted(struct aws_allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    ApiHandle apiHandle(allocator);
-    ByteBuf ruleset, partitions;
-    ASSERT_TRUE(ByteBufInitFromFile(ruleset, allocator, "endpoint_engine/legacy_ruleset.json"));
-    ASSERT_TRUE(ByteBufInitFromFile(partitions, allocator, "endpoint_engine/partitions.json"));
-    RuleEngine engine(ByteCursorFromByteBuf(ruleset), ByteCursorFromByteBuf(partitions), allocator);
-    ASSERT_TRUE(engine);
-    int r = s_RunCase(allocator, s_cases[0], engine);
-    ByteBufDelete(ruleset);
-    ByteBufDelete(partitions);
-    return r;
-}
-AWS_TEST_CASE(RuleEngine_VirtualHosted, s_TestRuleEngine_VirtualHosted)
-
-static int s_TestRuleEngine_PathStyle(struct aws_allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    ApiHandle apiHandle(allocator);
-    ByteBuf ruleset, partitions;
-    ASSERT_TRUE(ByteBufInitFromFile(ruleset, allocator, "endpoint_engine/legacy_ruleset.json"));
-    ASSERT_TRUE(ByteBufInitFromFile(partitions, allocator, "endpoint_engine/partitions.json"));
-    RuleEngine engine(ByteCursorFromByteBuf(ruleset), ByteCursorFromByteBuf(partitions), allocator);
-    ASSERT_TRUE(engine);
-    int r = s_RunCase(allocator, s_cases[1], engine);
-    ByteBufDelete(ruleset);
-    ByteBufDelete(partitions);
-    return r;
-}
-AWS_TEST_CASE(RuleEngine_PathStyle, s_TestRuleEngine_PathStyle)
-
-static int s_TestRuleEngine_DataplaneZone(struct aws_allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    ApiHandle apiHandle(allocator);
-    ByteBuf ruleset, partitions;
-    ASSERT_TRUE(ByteBufInitFromFile(ruleset, allocator, "endpoint_engine/legacy_ruleset.json"));
-    ASSERT_TRUE(ByteBufInitFromFile(partitions, allocator, "endpoint_engine/partitions.json"));
-    RuleEngine engine(ByteCursorFromByteBuf(ruleset), ByteCursorFromByteBuf(partitions), allocator);
-    ASSERT_TRUE(engine);
-    int r = s_RunCase(allocator, s_cases[2], engine);
-    ByteBufDelete(ruleset);
-    ByteBufDelete(partitions);
-    return r;
-}
-AWS_TEST_CASE(RuleEngine_DataplaneZone, s_TestRuleEngine_DataplaneZone)
-
-static int s_TestRuleEngine_AccessPoint(struct aws_allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    ApiHandle apiHandle(allocator);
-    ByteBuf ruleset, partitions;
-    ASSERT_TRUE(ByteBufInitFromFile(ruleset, allocator, "endpoint_engine/legacy_ruleset.json"));
-    ASSERT_TRUE(ByteBufInitFromFile(partitions, allocator, "endpoint_engine/partitions.json"));
-    RuleEngine engine(ByteCursorFromByteBuf(ruleset), ByteCursorFromByteBuf(partitions), allocator);
-    ASSERT_TRUE(engine);
-    int r = s_RunCase(allocator, s_cases[3], engine);
-    ByteBufDelete(ruleset);
-    ByteBufDelete(partitions);
-    return r;
-}
-AWS_TEST_CASE(RuleEngine_AccessPoint, s_TestRuleEngine_AccessPoint)
-
-static int s_TestRuleEngine_Outpost(struct aws_allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    ApiHandle apiHandle(allocator);
-    ByteBuf ruleset, partitions;
-    ASSERT_TRUE(ByteBufInitFromFile(ruleset, allocator, "endpoint_engine/legacy_ruleset.json"));
-    ASSERT_TRUE(ByteBufInitFromFile(partitions, allocator, "endpoint_engine/partitions.json"));
-    RuleEngine engine(ByteCursorFromByteBuf(ruleset), ByteCursorFromByteBuf(partitions), allocator);
-    ASSERT_TRUE(engine);
-    int r = s_RunCase(allocator, s_cases[4], engine);
-    ByteBufDelete(ruleset);
-    ByteBufDelete(partitions);
-    return r;
-}
-AWS_TEST_CASE(RuleEngine_Outpost, s_TestRuleEngine_Outpost)
-
-/* ------------------------------------------------------------------ */
-/* BddEngine tests                                                      */
-/* ------------------------------------------------------------------ */
-
-static int s_TestBddEngine_VirtualHosted(struct aws_allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    ApiHandle apiHandle(allocator);
-    ByteBuf bytecode, partitions;
-    ASSERT_TRUE(ByteBufInitFromFile(bytecode, allocator, "endpoint_engine/bdd_ruleset.bin"));
-    ASSERT_TRUE(ByteBufInitFromFile(partitions, allocator, "endpoint_engine/partitions.json"));
-    BddEngine engine(ByteCursorFromByteBuf(bytecode), ByteCursorFromByteBuf(partitions), allocator);
-    ASSERT_TRUE(engine);
-    int r = s_RunCase(allocator, s_cases[0], engine);
-    ByteBufDelete(bytecode);
-    ByteBufDelete(partitions);
-    return r;
-}
-AWS_TEST_CASE(BddEngine_VirtualHosted, s_TestBddEngine_VirtualHosted)
-
-static int s_TestBddEngine_PathStyle(struct aws_allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    ApiHandle apiHandle(allocator);
-    ByteBuf bytecode, partitions;
-    ASSERT_TRUE(ByteBufInitFromFile(bytecode, allocator, "endpoint_engine/bdd_ruleset.bin"));
-    ASSERT_TRUE(ByteBufInitFromFile(partitions, allocator, "endpoint_engine/partitions.json"));
-    BddEngine engine(ByteCursorFromByteBuf(bytecode), ByteCursorFromByteBuf(partitions), allocator);
-    ASSERT_TRUE(engine);
-    int r = s_RunCase(allocator, s_cases[1], engine);
-    ByteBufDelete(bytecode);
-    ByteBufDelete(partitions);
-    return r;
-}
-AWS_TEST_CASE(BddEngine_PathStyle, s_TestBddEngine_PathStyle)
-
-static int s_TestBddEngine_DataplaneZone(struct aws_allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    ApiHandle apiHandle(allocator);
-    ByteBuf bytecode, partitions;
-    ASSERT_TRUE(ByteBufInitFromFile(bytecode, allocator, "endpoint_engine/bdd_ruleset.bin"));
-    ASSERT_TRUE(ByteBufInitFromFile(partitions, allocator, "endpoint_engine/partitions.json"));
-    BddEngine engine(ByteCursorFromByteBuf(bytecode), ByteCursorFromByteBuf(partitions), allocator);
-    ASSERT_TRUE(engine);
-    int r = s_RunCase(allocator, s_cases[2], engine);
-    ByteBufDelete(bytecode);
-    ByteBufDelete(partitions);
-    return r;
-}
-AWS_TEST_CASE(BddEngine_DataplaneZone, s_TestBddEngine_DataplaneZone)
-
-static int s_TestBddEngine_AccessPoint(struct aws_allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    ApiHandle apiHandle(allocator);
-    ByteBuf bytecode, partitions;
-    ASSERT_TRUE(ByteBufInitFromFile(bytecode, allocator, "endpoint_engine/bdd_ruleset.bin"));
-    ASSERT_TRUE(ByteBufInitFromFile(partitions, allocator, "endpoint_engine/partitions.json"));
-    BddEngine engine(ByteCursorFromByteBuf(bytecode), ByteCursorFromByteBuf(partitions), allocator);
-    ASSERT_TRUE(engine);
-    int r = s_RunCase(allocator, s_cases[3], engine);
-    ByteBufDelete(bytecode);
-    ByteBufDelete(partitions);
-    return r;
-}
-AWS_TEST_CASE(BddEngine_AccessPoint, s_TestBddEngine_AccessPoint)
-
-static int s_TestBddEngine_Outpost(struct aws_allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    ApiHandle apiHandle(allocator);
-    ByteBuf bytecode, partitions;
-    ASSERT_TRUE(ByteBufInitFromFile(bytecode, allocator, "endpoint_engine/bdd_ruleset.bin"));
-    ASSERT_TRUE(ByteBufInitFromFile(partitions, allocator, "endpoint_engine/partitions.json"));
-    BddEngine engine(ByteCursorFromByteBuf(bytecode), ByteCursorFromByteBuf(partitions), allocator);
-    ASSERT_TRUE(engine);
-    int r = s_RunCase(allocator, s_cases[4], engine);
-    ByteBufDelete(bytecode);
-    ByteBufDelete(partitions);
-    return r;
-}
-AWS_TEST_CASE(BddEngine_Outpost, s_TestBddEngine_Outpost)
-
-/* ------------------------------------------------------------------ */
-/* Simple ruleset cases (example service, Region only)                 */
-/* ------------------------------------------------------------------ */
-
-static const EndpointTestCase s_simple_cases[] = {
-    {
-        "simple_regional",
-        [](RequestContext &ctx) {
-            ctx.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
-        },
-        [](const ResolutionOutcome &outcome) -> int {
-            ASSERT_TRUE(outcome.IsEndpoint());
-            ASSERT_TRUE(outcome.GetUrl().has_value());
-            ASSERT_TRUE(outcome.GetUrl()->compare("https://example.us-west-2.amazonaws.com") == 0);
-            ASSERT_TRUE(outcome.GetHeaders().has_value());
-            ASSERT_TRUE(outcome.GetHeaders()->at("x-amz-region")[0].compare("us-west-2") == 0);
-            return AWS_OP_SUCCESS;
-        },
-    },
-    {
-        "simple_global",
-        [](RequestContext &ctx) { (void)ctx; },
-        [](const ResolutionOutcome &outcome) -> int {
-            ASSERT_TRUE(outcome.IsEndpoint());
-            ASSERT_TRUE(outcome.GetUrl().has_value());
-            ASSERT_TRUE(outcome.GetUrl()->compare("https://example.amazonaws.com") == 0);
-            return AWS_OP_SUCCESS;
-        },
-    },
-};
-
-static int s_MakeSimpleRuleEngine(Allocator *allocator, ByteBuf &ruleset, ByteBuf &partitions, RuleEngine &out)
-{
-    ASSERT_TRUE(ByteBufInitFromFile(ruleset, allocator, "endpoint_engine/simple_legacy_ruleset.json"));
-    ASSERT_TRUE(ByteBufInitFromFile(partitions, allocator, "endpoint_engine/partitions.json"));
-    out = RuleEngine(ByteCursorFromByteBuf(ruleset), ByteCursorFromByteBuf(partitions), allocator);
-    ASSERT_TRUE(out);
-    return AWS_OP_SUCCESS;
-}
-
-static int s_MakeSimpleBddEngine(Allocator *allocator, ByteBuf &bytecode, ByteBuf &partitions, BddEngine &out)
-{
-    ASSERT_TRUE(ByteBufInitFromFile(bytecode, allocator, "endpoint_engine/simple_bdd_ruleset.bin"));
-    ASSERT_TRUE(ByteBufInitFromFile(partitions, allocator, "endpoint_engine/partitions.json"));
-    out = BddEngine(ByteCursorFromByteBuf(bytecode), ByteCursorFromByteBuf(partitions), allocator);
-    ASSERT_TRUE(out);
-    return AWS_OP_SUCCESS;
-}
 
 static int s_TestRuleEngine_SimpleRegional(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
     ApiHandle apiHandle(allocator);
-    ByteBuf ruleset, partitions;
-    RuleEngine engine;
-    ASSERT_SUCCESS(s_MakeSimpleRuleEngine(allocator, ruleset, partitions, engine));
-    int r = s_RunCase(allocator, s_simple_cases[0], engine);
-    ByteBufDelete(ruleset);
-    ByteBufDelete(partitions);
-    return r;
+    EngineFixture<RuleEngine> engineFixture(allocator, "endpoint_engine/simple_legacy_ruleset.json");
+    ASSERT_TRUE(engineFixture.engine);
+    return s_RunCase(allocator, s_simple_cases[0], engineFixture.engine);
 }
 AWS_TEST_CASE(RuleEngine_SimpleRegional, s_TestRuleEngine_SimpleRegional)
 
@@ -373,27 +252,77 @@ static int s_TestRuleEngine_SimpleGlobal(struct aws_allocator *allocator, void *
 {
     (void)ctx;
     ApiHandle apiHandle(allocator);
-    ByteBuf ruleset, partitions;
-    RuleEngine engine;
-    ASSERT_SUCCESS(s_MakeSimpleRuleEngine(allocator, ruleset, partitions, engine));
-    int r = s_RunCase(allocator, s_simple_cases[1], engine);
-    ByteBufDelete(ruleset);
-    ByteBufDelete(partitions);
-    return r;
+    EngineFixture<RuleEngine> engineFixture(allocator, "endpoint_engine/simple_legacy_ruleset.json");
+    ASSERT_TRUE(engineFixture.engine);
+    return s_RunCase(allocator, s_simple_cases[1], engineFixture.engine);
 }
 AWS_TEST_CASE(RuleEngine_SimpleGlobal, s_TestRuleEngine_SimpleGlobal)
+
+/* ------------------------------------------------------------------ */
+/* RuleEngine tests — S3 ruleset                                       */
+/* ------------------------------------------------------------------ */
+
+static int s_TestRuleEngine_VirtualHosted(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    ApiHandle apiHandle(allocator);
+    EngineFixture<RuleEngine> engineFixture(allocator, "endpoint_engine/legacy_ruleset.json");
+    ASSERT_TRUE(engineFixture.engine);
+    return s_RunCase(allocator, s_cases[0], engineFixture.engine);
+}
+AWS_TEST_CASE(RuleEngine_VirtualHosted, s_TestRuleEngine_VirtualHosted)
+
+static int s_TestRuleEngine_PathStyle(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    ApiHandle apiHandle(allocator);
+    EngineFixture<RuleEngine> engineFixture(allocator, "endpoint_engine/legacy_ruleset.json");
+    ASSERT_TRUE(engineFixture.engine);
+    return s_RunCase(allocator, s_cases[1], engineFixture.engine);
+}
+AWS_TEST_CASE(RuleEngine_PathStyle, s_TestRuleEngine_PathStyle)
+
+static int s_TestRuleEngine_DataplaneZone(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    ApiHandle apiHandle(allocator);
+    EngineFixture<RuleEngine> engineFixture(allocator, "endpoint_engine/legacy_ruleset.json");
+    ASSERT_TRUE(engineFixture.engine);
+    return s_RunCase(allocator, s_cases[2], engineFixture.engine);
+}
+AWS_TEST_CASE(RuleEngine_DataplaneZone, s_TestRuleEngine_DataplaneZone)
+
+static int s_TestRuleEngine_AccessPoint(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    ApiHandle apiHandle(allocator);
+    EngineFixture<RuleEngine> engineFixture(allocator, "endpoint_engine/legacy_ruleset.json");
+    ASSERT_TRUE(engineFixture.engine);
+    return s_RunCase(allocator, s_cases[3], engineFixture.engine);
+}
+AWS_TEST_CASE(RuleEngine_AccessPoint, s_TestRuleEngine_AccessPoint)
+
+static int s_TestRuleEngine_Outpost(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    ApiHandle apiHandle(allocator);
+    EngineFixture<RuleEngine> engineFixture(allocator, "endpoint_engine/legacy_ruleset.json");
+    ASSERT_TRUE(engineFixture.engine);
+    return s_RunCase(allocator, s_cases[4], engineFixture.engine);
+}
+AWS_TEST_CASE(RuleEngine_Outpost, s_TestRuleEngine_Outpost)
+
+/* ------------------------------------------------------------------ */
+/* BddEngine tests — simple ruleset                                    */
+/* ------------------------------------------------------------------ */
 
 static int s_TestBddEngine_SimpleRegional(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
     ApiHandle apiHandle(allocator);
-    ByteBuf bytecode, partitions;
-    BddEngine engine;
-    ASSERT_SUCCESS(s_MakeSimpleBddEngine(allocator, bytecode, partitions, engine));
-    int r = s_RunCase(allocator, s_simple_cases[0], engine);
-    ByteBufDelete(bytecode);
-    ByteBufDelete(partitions);
-    return r;
+    EngineFixture<BddEngine> engineFixture(allocator, "endpoint_engine/simple_bdd_ruleset.bin");
+    ASSERT_TRUE(engineFixture.engine);
+    return s_RunCase(allocator, s_simple_cases[0], engineFixture.engine);
 }
 AWS_TEST_CASE(BddEngine_SimpleRegional, s_TestBddEngine_SimpleRegional)
 
@@ -401,12 +330,62 @@ static int s_TestBddEngine_SimpleGlobal(struct aws_allocator *allocator, void *c
 {
     (void)ctx;
     ApiHandle apiHandle(allocator);
-    ByteBuf bytecode, partitions;
-    BddEngine engine;
-    ASSERT_SUCCESS(s_MakeSimpleBddEngine(allocator, bytecode, partitions, engine));
-    int r = s_RunCase(allocator, s_simple_cases[1], engine);
-    ByteBufDelete(bytecode);
-    ByteBufDelete(partitions);
-    return r;
+    EngineFixture<BddEngine> engineFixture(allocator, "endpoint_engine/simple_bdd_ruleset.bin");
+    ASSERT_TRUE(engineFixture.engine);
+    return s_RunCase(allocator, s_simple_cases[1], engineFixture.engine);
 }
 AWS_TEST_CASE(BddEngine_SimpleGlobal, s_TestBddEngine_SimpleGlobal)
+
+/* ------------------------------------------------------------------ */
+/* BddEngine tests — S3 ruleset                                        */
+/* ------------------------------------------------------------------ */
+
+static int s_TestBddEngine_VirtualHosted(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    ApiHandle apiHandle(allocator);
+    EngineFixture<BddEngine> engineFixture(allocator, "endpoint_engine/bdd_ruleset.bin");
+    ASSERT_TRUE(engineFixture.engine);
+    return s_RunCase(allocator, s_cases[0], engineFixture.engine);
+}
+AWS_TEST_CASE(BddEngine_VirtualHosted, s_TestBddEngine_VirtualHosted)
+
+static int s_TestBddEngine_PathStyle(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    ApiHandle apiHandle(allocator);
+    EngineFixture<BddEngine> engineFixture(allocator, "endpoint_engine/bdd_ruleset.bin");
+    ASSERT_TRUE(engineFixture.engine);
+    return s_RunCase(allocator, s_cases[1], engineFixture.engine);
+}
+AWS_TEST_CASE(BddEngine_PathStyle, s_TestBddEngine_PathStyle)
+
+static int s_TestBddEngine_DataplaneZone(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    ApiHandle apiHandle(allocator);
+    EngineFixture<BddEngine> engineFixture(allocator, "endpoint_engine/bdd_ruleset.bin");
+    ASSERT_TRUE(engineFixture.engine);
+    return s_RunCase(allocator, s_cases[2], engineFixture.engine);
+}
+AWS_TEST_CASE(BddEngine_DataplaneZone, s_TestBddEngine_DataplaneZone)
+
+static int s_TestBddEngine_AccessPoint(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    ApiHandle apiHandle(allocator);
+    EngineFixture<BddEngine> engineFixture(allocator, "endpoint_engine/bdd_ruleset.bin");
+    ASSERT_TRUE(engineFixture.engine);
+    return s_RunCase(allocator, s_cases[3], engineFixture.engine);
+}
+AWS_TEST_CASE(BddEngine_AccessPoint, s_TestBddEngine_AccessPoint)
+
+static int s_TestBddEngine_Outpost(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    ApiHandle apiHandle(allocator);
+    EngineFixture<BddEngine> engineFixture(allocator, "endpoint_engine/bdd_ruleset.bin");
+    ASSERT_TRUE(engineFixture.engine);
+    return s_RunCase(allocator, s_cases[4], engineFixture.engine);
+}
+AWS_TEST_CASE(BddEngine_Outpost, s_TestBddEngine_Outpost)
