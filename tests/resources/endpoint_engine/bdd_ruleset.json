@@ -1,0 +1,2246 @@
+{
+  "version": "1.1",
+  "parameters": {
+    "Bucket": {
+      "required": false,
+      "documentation": "The S3 bucket used to send the request. This is an optional parameter that will be set automatically for operations that are scoped to an S3 bucket.",
+      "type": "string"
+    },
+    "Region": {
+      "builtIn": "AWS::Region",
+      "required": false,
+      "documentation": "The AWS region used to dispatch the request.",
+      "type": "string"
+    },
+    "UseFIPS": {
+      "builtIn": "AWS::UseFIPS",
+      "required": true,
+      "default": false,
+      "documentation": "When true, send this request to the FIPS-compliant regional endpoint. If the configured endpoint does not have a FIPS compliant endpoint, dispatching the request will return an error.",
+      "type": "boolean"
+    },
+    "UseDualStack": {
+      "builtIn": "AWS::UseDualStack",
+      "required": true,
+      "default": false,
+      "documentation": "When true, use the dual-stack endpoint. If the configured endpoint does not support dual-stack, dispatching the request MAY return an error.",
+      "type": "boolean"
+    },
+    "Endpoint": {
+      "builtIn": "SDK::Endpoint",
+      "required": false,
+      "documentation": "Override the endpoint used to send this request",
+      "type": "string"
+    },
+    "ForcePathStyle": {
+      "builtIn": "AWS::S3::ForcePathStyle",
+      "required": true,
+      "default": false,
+      "documentation": "When true, force a path-style endpoint to be used where the bucket name is part of the path.",
+      "type": "boolean"
+    },
+    "Accelerate": {
+      "builtIn": "AWS::S3::Accelerate",
+      "required": true,
+      "default": false,
+      "documentation": "When true, use S3 Accelerate. NOTE: Not all regions support S3 accelerate.",
+      "type": "boolean"
+    },
+    "UseGlobalEndpoint": {
+      "builtIn": "AWS::S3::UseGlobalEndpoint",
+      "required": true,
+      "default": false,
+      "documentation": "Whether the global endpoint should be used, rather then the regional endpoint for us-east-1.",
+      "type": "boolean"
+    },
+    "UseObjectLambdaEndpoint": {
+      "required": false,
+      "documentation": "Internal parameter to use object lambda endpoint for an operation (eg: WriteGetObjectResponse)",
+      "type": "boolean"
+    },
+    "Key": {
+      "required": false,
+      "documentation": "The S3 Key used to send the request. This is an optional parameter that will be set automatically for operations that are scoped to an S3 Key.",
+      "type": "string"
+    },
+    "Prefix": {
+      "required": false,
+      "documentation": "The S3 Prefix used to send the request. This is an optional parameter that will be set automatically for operations that are scoped to an S3 Prefix.",
+      "type": "string"
+    },
+    "CopySource": {
+      "required": false,
+      "documentation": "The Copy Source used for Copy Object request. This is an optional parameter that will be set automatically for operations that are scoped to Copy Source.",
+      "type": "string"
+    },
+    "DisableAccessPoints": {
+      "required": false,
+      "documentation": "Internal parameter to disable Access Point Buckets",
+      "type": "boolean"
+    },
+    "DisableMultiRegionAccessPoints": {
+      "builtIn": "AWS::S3::DisableMultiRegionAccessPoints",
+      "required": true,
+      "default": false,
+      "documentation": "Whether multi-region access points (MRAP) should be disabled.",
+      "type": "boolean"
+    },
+    "UseArnRegion": {
+      "builtIn": "AWS::S3::UseArnRegion",
+      "required": false,
+      "documentation": "When an Access Point ARN is provided and this flag is enabled, the SDK MUST use the ARN's region when constructing the endpoint instead of the client's configured region.",
+      "type": "boolean"
+    },
+    "UseS3ExpressControlEndpoint": {
+      "required": false,
+      "documentation": "Internal parameter to indicate whether S3Express operation should use control plane, (ex. CreateBucket)",
+      "type": "boolean"
+    },
+    "DisableS3ExpressSessionAuth": {
+      "required": false,
+      "documentation": "Parameter to indicate whether S3Express session auth should be disabled",
+      "type": "boolean"
+    }
+  },
+  "conditions": [
+    {
+      "fn": "isSet",
+      "argv": [
+        {
+          "ref": "Region"
+        }
+      ]
+    },
+    {
+      "fn": "ite",
+      "argv": [
+        {
+          "fn": "stringEquals",
+          "argv": [
+            {
+              "ref": "Region"
+            },
+            "aws-global"
+          ]
+        },
+        "us-east-1",
+        {
+          "ref": "Region"
+        }
+      ],
+      "assign": "_effective_std_region"
+    },
+    {
+      "fn": "booleanEquals",
+      "argv": [
+        {
+          "ref": "Accelerate"
+        },
+        true
+      ]
+    },
+    {
+      "fn": "booleanEquals",
+      "argv": [
+        {
+          "ref": "UseFIPS"
+        },
+        true
+      ]
+    },
+    {
+      "fn": "isSet",
+      "argv": [
+        {
+          "ref": "Endpoint"
+        }
+      ]
+    },
+    {
+      "fn": "booleanEquals",
+      "argv": [
+        {
+          "ref": "UseDualStack"
+        },
+        true
+      ]
+    },
+    {
+      "fn": "isSet",
+      "argv": [
+        {
+          "ref": "Bucket"
+        }
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "fn": "coalesce",
+          "argv": [
+            {
+              "fn": "substring",
+              "argv": [
+                {
+                  "ref": "Bucket"
+                },
+                0,
+                6,
+                true
+              ]
+            },
+            ""
+          ]
+        },
+        "--x-s3"
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "fn": "coalesce",
+          "argv": [
+            {
+              "fn": "substring",
+              "argv": [
+                {
+                  "ref": "Bucket"
+                },
+                0,
+                7,
+                true
+              ]
+            },
+            ""
+          ]
+        },
+        "--xa-s3"
+      ]
+    },
+    {
+      "fn": "aws.partition",
+      "argv": [
+        {
+          "ref": "Region"
+        }
+      ],
+      "assign": "partitionResult"
+    },
+    {
+      "fn": "parseURL",
+      "argv": [
+        {
+          "ref": "Endpoint"
+        }
+      ],
+      "assign": "url"
+    },
+    {
+      "fn": "substring",
+      "argv": [
+        {
+          "ref": "Bucket"
+        },
+        0,
+        7,
+        true
+      ],
+      "assign": "accessPointSuffix"
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "ref": "accessPointSuffix"
+        },
+        "--op-s3"
+      ]
+    },
+    {
+      "fn": "substring",
+      "argv": [
+        {
+          "ref": "Bucket"
+        },
+        8,
+        12,
+        true
+      ],
+      "assign": "regionPrefix"
+    },
+    {
+      "fn": "substring",
+      "argv": [
+        {
+          "ref": "Bucket"
+        },
+        49,
+        50,
+        true
+      ],
+      "assign": "hardwareType"
+    },
+    {
+      "fn": "substring",
+      "argv": [
+        {
+          "ref": "Bucket"
+        },
+        32,
+        49,
+        true
+      ],
+      "assign": "outpostId_ssa_2"
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "fn": "getAttr",
+          "argv": [
+            {
+              "ref": "partitionResult"
+            },
+            "name"
+          ]
+        },
+        "aws-cn"
+      ]
+    },
+    {
+      "fn": "ite",
+      "argv": [
+        {
+          "ref": "UseDualStack"
+        },
+        ".dualstack",
+        ""
+      ],
+      "assign": "_s3e_ds"
+    },
+    {
+      "fn": "ite",
+      "argv": [
+        {
+          "ref": "UseFIPS"
+        },
+        "-fips",
+        ""
+      ],
+      "assign": "_s3e_fips"
+    },
+    {
+      "fn": "booleanEquals",
+      "argv": [
+        {
+          "ref": "ForcePathStyle"
+        },
+        true
+      ]
+    },
+    {
+      "fn": "ite",
+      "argv": [
+        {
+          "fn": "coalesce",
+          "argv": [
+            {
+              "ref": "DisableS3ExpressSessionAuth"
+            },
+            false
+          ]
+        },
+        "sigv4",
+        "sigv4-s3express"
+      ],
+      "assign": "_s3e_auth"
+    },
+    {
+      "fn": "aws.isVirtualHostableS3Bucket",
+      "argv": [
+        {
+          "ref": "Bucket"
+        },
+        false
+      ]
+    },
+    {
+      "fn": "getAttr",
+      "argv": [
+        {
+          "fn": "split",
+          "argv": [
+            {
+              "ref": "Bucket"
+            },
+            "--",
+            0
+          ]
+        },
+        "[1]"
+      ],
+      "assign": "s3expressAvailabilityZoneId"
+    },
+    {
+      "fn": "isValidHostLabel",
+      "argv": [
+        {
+          "ref": "outpostId_ssa_2"
+        },
+        false
+      ]
+    },
+    {
+      "fn": "booleanEquals",
+      "argv": [
+        {
+          "fn": "coalesce",
+          "argv": [
+            {
+              "ref": "UseS3ExpressControlEndpoint"
+            },
+            false
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "ref": "regionPrefix"
+        },
+        "beta"
+      ]
+    },
+    {
+      "fn": "aws.isVirtualHostableS3Bucket",
+      "argv": [
+        {
+          "ref": "Bucket"
+        },
+        true
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "fn": "coalesce",
+          "argv": [
+            {
+              "fn": "substring",
+              "argv": [
+                {
+                  "ref": "Bucket"
+                },
+                16,
+                18,
+                true
+              ]
+            },
+            ""
+          ]
+        },
+        "--"
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "fn": "coalesce",
+          "argv": [
+            {
+              "fn": "substring",
+              "argv": [
+                {
+                  "ref": "Bucket"
+                },
+                21,
+                23,
+                true
+              ]
+            },
+            ""
+          ]
+        },
+        "--"
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "fn": "getAttr",
+          "argv": [
+            {
+              "ref": "url"
+            },
+            "scheme"
+          ]
+        },
+        "http"
+      ]
+    },
+    {
+      "fn": "isValidHostLabel",
+      "argv": [
+        {
+          "ref": "Region"
+        },
+        false
+      ]
+    },
+    {
+      "fn": "aws.parseArn",
+      "argv": [
+        {
+          "ref": "Bucket"
+        }
+      ],
+      "assign": "bucketArn"
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "fn": "coalesce",
+          "argv": [
+            {
+              "fn": "substring",
+              "argv": [
+                {
+                  "ref": "Bucket"
+                },
+                27,
+                29,
+                true
+              ]
+            },
+            ""
+          ]
+        },
+        "--"
+      ]
+    },
+    {
+      "fn": "ite",
+      "argv": [
+        {
+          "fn": "coalesce",
+          "argv": [
+            {
+              "ref": "UseArnRegion"
+            },
+            true
+          ]
+        },
+        {
+          "fn": "getAttr",
+          "argv": [
+            {
+              "ref": "bucketArn"
+            },
+            "region"
+          ]
+        },
+        {
+          "ref": "Region"
+        }
+      ],
+      "assign": "_effective_arn_region"
+    },
+    {
+      "fn": "booleanEquals",
+      "argv": [
+        {
+          "fn": "getAttr",
+          "argv": [
+            {
+              "ref": "url"
+            },
+            "isIp"
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "fn": "coalesce",
+          "argv": [
+            {
+              "fn": "substring",
+              "argv": [
+                {
+                  "ref": "Bucket"
+                },
+                0,
+                4,
+                false
+              ]
+            },
+            ""
+          ]
+        },
+        "arn:"
+      ]
+    },
+    {
+      "fn": "uriEncode",
+      "argv": [
+        {
+          "ref": "Bucket"
+        }
+      ],
+      "assign": "uri_encoded_bucket"
+    },
+    {
+      "fn": "booleanEquals",
+      "argv": [
+        {
+          "fn": "coalesce",
+          "argv": [
+            {
+              "ref": "UseObjectLambdaEndpoint"
+            },
+            false
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "fn": "getAttr",
+      "argv": [
+        {
+          "ref": "bucketArn"
+        },
+        "resourceId[0]"
+      ],
+      "assign": "arnType"
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "ref": "arnType"
+        },
+        ""
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "ref": "arnType"
+        },
+        "accesspoint"
+      ]
+    },
+    {
+      "fn": "getAttr",
+      "argv": [
+        {
+          "ref": "bucketArn"
+        },
+        "resourceId[1]"
+      ],
+      "assign": "accessPointName_ssa_1"
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "ref": "accessPointName_ssa_1"
+        },
+        ""
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "fn": "getAttr",
+          "argv": [
+            {
+              "ref": "bucketArn"
+            },
+            "service"
+          ]
+        },
+        "s3-object-lambda"
+      ]
+    },
+    {
+      "fn": "isValidHostLabel",
+      "argv": [
+        {
+          "ref": "Region"
+        },
+        true
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "fn": "getAttr",
+          "argv": [
+            {
+              "ref": "bucketArn"
+            },
+            "region"
+          ]
+        },
+        ""
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "ref": "hardwareType"
+        },
+        "e"
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "fn": "coalesce",
+          "argv": [
+            {
+              "fn": "substring",
+              "argv": [
+                {
+                  "ref": "Bucket"
+                },
+                26,
+                28,
+                true
+              ]
+            },
+            ""
+          ]
+        },
+        "--"
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "fn": "coalesce",
+          "argv": [
+            {
+              "fn": "substring",
+              "argv": [
+                {
+                  "ref": "Bucket"
+                },
+                19,
+                21,
+                true
+              ]
+            },
+            ""
+          ]
+        },
+        "--"
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "fn": "coalesce",
+          "argv": [
+            {
+              "fn": "substring",
+              "argv": [
+                {
+                  "ref": "Bucket"
+                },
+                14,
+                16,
+                true
+              ]
+            },
+            ""
+          ]
+        },
+        "--"
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "fn": "coalesce",
+          "argv": [
+            {
+              "fn": "substring",
+              "argv": [
+                {
+                  "ref": "Bucket"
+                },
+                20,
+                22,
+                true
+              ]
+            },
+            ""
+          ]
+        },
+        "--"
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "fn": "coalesce",
+          "argv": [
+            {
+              "fn": "substring",
+              "argv": [
+                {
+                  "ref": "Bucket"
+                },
+                15,
+                17,
+                true
+              ]
+            },
+            ""
+          ]
+        },
+        "--"
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "fn": "getAttr",
+          "argv": [
+            {
+              "ref": "bucketArn"
+            },
+            "service"
+          ]
+        },
+        "s3-outposts"
+      ]
+    },
+    {
+      "fn": "booleanEquals",
+      "argv": [
+        {
+          "fn": "coalesce",
+          "argv": [
+            {
+              "ref": "DisableAccessPoints"
+            },
+            false
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "fn": "aws.partition",
+      "argv": [
+        {
+          "ref": "_effective_arn_region"
+        }
+      ],
+      "assign": "bucketPartition"
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "ref": "hardwareType"
+        },
+        "o"
+      ]
+    },
+    {
+      "fn": "getAttr",
+      "argv": [
+        {
+          "ref": "bucketArn"
+        },
+        "resourceId[4]"
+      ]
+    },
+    {
+      "fn": "getAttr",
+      "argv": [
+        {
+          "ref": "bucketArn"
+        },
+        "resourceId[1]"
+      ],
+      "assign": "outpostId_ssa_1"
+    },
+    {
+      "fn": "booleanEquals",
+      "argv": [
+        {
+          "fn": "coalesce",
+          "argv": [
+            {
+              "ref": "UseArnRegion"
+            },
+            true
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "ref": "_effective_arn_region"
+        },
+        {
+          "fn": "getAttr",
+          "argv": [
+            {
+              "ref": "bucketArn"
+            },
+            "region"
+          ]
+        }
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "ref": "Region"
+        },
+        "aws-global"
+      ]
+    },
+    {
+      "fn": "booleanEquals",
+      "argv": [
+        {
+          "ref": "UseGlobalEndpoint"
+        },
+        true
+      ]
+    },
+    {
+      "fn": "booleanEquals",
+      "argv": [
+        {
+          "ref": "DisableMultiRegionAccessPoints"
+        },
+        true
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "ref": "Region"
+        },
+        "us-east-1"
+      ]
+    },
+    {
+      "fn": "isValidHostLabel",
+      "argv": [
+        {
+          "ref": "outpostId_ssa_1"
+        },
+        false
+      ]
+    },
+    {
+      "fn": "getAttr",
+      "argv": [
+        {
+          "ref": "bucketArn"
+        },
+        "resourceId[2]"
+      ],
+      "assign": "outpostType"
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "fn": "getAttr",
+          "argv": [
+            {
+              "ref": "bucketPartition"
+            },
+            "name"
+          ]
+        },
+        {
+          "fn": "getAttr",
+          "argv": [
+            {
+              "ref": "partitionResult"
+            },
+            "name"
+          ]
+        }
+      ]
+    },
+    {
+      "fn": "isValidHostLabel",
+      "argv": [
+        {
+          "ref": "_effective_arn_region"
+        },
+        true
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "fn": "getAttr",
+          "argv": [
+            {
+              "ref": "bucketArn"
+            },
+            "service"
+          ]
+        },
+        "s3"
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "fn": "getAttr",
+          "argv": [
+            {
+              "ref": "bucketArn"
+            },
+            "accountId"
+          ]
+        },
+        ""
+      ]
+    },
+    {
+      "fn": "isValidHostLabel",
+      "argv": [
+        {
+          "fn": "getAttr",
+          "argv": [
+            {
+              "ref": "bucketArn"
+            },
+            "accountId"
+          ]
+        },
+        false
+      ]
+    },
+    {
+      "fn": "isValidHostLabel",
+      "argv": [
+        {
+          "ref": "accessPointName_ssa_1"
+        },
+        false
+      ]
+    },
+    {
+      "fn": "getAttr",
+      "argv": [
+        {
+          "ref": "bucketArn"
+        },
+        "resourceId[3]"
+      ],
+      "assign": "accessPointName_ssa_2"
+    },
+    {
+      "fn": "isValidHostLabel",
+      "argv": [
+        {
+          "ref": "accessPointName_ssa_1"
+        },
+        true
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "fn": "getAttr",
+          "argv": [
+            {
+              "ref": "bucketArn"
+            },
+            "partition"
+          ]
+        },
+        {
+          "fn": "getAttr",
+          "argv": [
+            {
+              "ref": "partitionResult"
+            },
+            "name"
+          ]
+        }
+      ]
+    },
+    {
+      "fn": "stringEquals",
+      "argv": [
+        {
+          "ref": "outpostType"
+        },
+        "accesspoint"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "conditions": [],
+      "error": "Accelerate cannot be used with FIPS",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Cannot set dual-stack in combination with a custom endpoint.",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "A custom endpoint cannot be combined with FIPS",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "A custom endpoint cannot be combined with S3 Accelerate",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Partition does not support FIPS",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "S3Express does not support S3 Accelerate.",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "{url#scheme}://{url#authority}/{uri_encoded_bucket}{url#path}",
+        "properties": {
+          "backend": "S3Express",
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "{_s3e_auth}",
+              "signingName": "s3express",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "{url#scheme}://{Bucket}.{url#authority}{url#path}",
+        "properties": {
+          "backend": "S3Express",
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "{_s3e_auth}",
+              "signingName": "s3express",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "error": "S3Express bucket name is not a valid virtual hostable name.",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://s3express-control{_s3e_fips}{_s3e_ds}.{_effective_std_region}.{partitionResult#dnsSuffix}/{uri_encoded_bucket}",
+        "properties": {
+          "backend": "S3Express",
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3express",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{Bucket}.s3express{_s3e_fips}-{s3expressAvailabilityZoneId}{_s3e_ds}.{_effective_std_region}.{partitionResult#dnsSuffix}",
+        "properties": {
+          "backend": "S3Express",
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "{_s3e_auth}",
+              "signingName": "s3express",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "error": "Unrecognized S3Express bucket name format.",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "{url#scheme}://{url#authority}{url#path}",
+        "properties": {
+          "backend": "S3Express",
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "{_s3e_auth}",
+              "signingName": "s3express",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://s3express-control{_s3e_fips}{_s3e_ds}.{_effective_std_region}.{partitionResult#dnsSuffix}",
+        "properties": {
+          "backend": "S3Express",
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3express",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "error": "Expected a endpoint to be specified but no endpoint was found",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{Bucket}.ec2.{url#authority}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4a",
+              "signingName": "s3-outposts",
+              "signingRegionSet": ["*"]
+            },
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3-outposts",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{Bucket}.ec2.s3-outposts.{_effective_std_region}.{partitionResult#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4a",
+              "signingName": "s3-outposts",
+              "signingRegionSet": ["*"]
+            },
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3-outposts",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{Bucket}.op-{outpostId_ssa_2}.{url#authority}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4a",
+              "signingName": "s3-outposts",
+              "signingRegionSet": ["*"]
+            },
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3-outposts",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{Bucket}.op-{outpostId_ssa_2}.s3-outposts.{_effective_std_region}.{partitionResult#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4a",
+              "signingName": "s3-outposts",
+              "signingRegionSet": ["*"]
+            },
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3-outposts",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "error": "Unrecognized hardware type: \"Expected hardware type o or e but got {hardwareType}\"",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid ARN: The outpost Id must only contain a-z, A-Z, 0-9 and `-`.",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Custom endpoint `{Endpoint}` was not a valid URI",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "S3 Accelerate cannot be used in this region",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{Bucket}.s3-fips.dualstack.{_effective_std_region}.{partitionResult#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{Bucket}.s3-fips.{_effective_std_region}.{partitionResult#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{Bucket}.s3-accelerate.dualstack.{_effective_std_region}.{partitionResult#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{Bucket}.s3-accelerate.dualstack.{partitionResult#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{Bucket}.s3.dualstack.{_effective_std_region}.{partitionResult#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "{url#scheme}://{url#authority}{url#normalizedPath}{Bucket}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "{url#scheme}://{Bucket}.{url#authority}{url#path}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{Bucket}.s3-accelerate.{partitionResult#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{Bucket}.s3.{partitionResult#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{Bucket}.s3.{_effective_std_region}.{partitionResult#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid region: region was not a valid DNS name.",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "S3 Object Lambda does not support Dual-stack",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "S3 Object Lambda does not support S3 Accelerate",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Access points are not supported for this operation",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid configuration: region from ARN `{bucketArn#region}` does not match client region `{Region}` and UseArnRegion is `false`",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid ARN: Missing account id",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "{url#scheme}://{accessPointName_ssa_1}-{bucketArn#accountId}.{url#authority}{url#path}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3-object-lambda",
+              "signingRegion": "{_effective_arn_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{accessPointName_ssa_1}-{bucketArn#accountId}.s3-object-lambda-fips.{_effective_arn_region}.{bucketPartition#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3-object-lambda",
+              "signingRegion": "{_effective_arn_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{accessPointName_ssa_1}-{bucketArn#accountId}.s3-object-lambda.{_effective_arn_region}.{bucketPartition#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3-object-lambda",
+              "signingRegion": "{_effective_arn_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid ARN: The access point name may only contain a-z, A-Z, 0-9 and `-`. Found: `{accessPointName_ssa_1}`",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid ARN: The account id may only contain a-z, A-Z, 0-9 and `-`. Found: `{bucketArn#accountId}`",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid region in ARN: `{bucketArn#region}` (invalid DNS name)",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Client was configured for partition `{partitionResult#name}` but ARN (`{Bucket}`) has `{bucketPartition#name}`",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid ARN: The ARN may only contain a single resource component after `accesspoint`.",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid ARN: bucket ARN is missing a region",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid ARN: Expected a resource of the format `accesspoint:<accesspoint name>` but no name was provided",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid ARN: Object Lambda ARNs only support `accesspoint` arn types, but found: `{arnType}`",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Access Points do not support S3 Accelerate",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{accessPointName_ssa_1}-{bucketArn#accountId}.s3-accesspoint-fips.dualstack.{_effective_arn_region}.{bucketPartition#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_arn_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{accessPointName_ssa_1}-{bucketArn#accountId}.s3-accesspoint-fips.{_effective_arn_region}.{bucketPartition#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_arn_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{accessPointName_ssa_1}-{bucketArn#accountId}.s3-accesspoint.dualstack.{_effective_arn_region}.{bucketPartition#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_arn_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "{url#scheme}://{accessPointName_ssa_1}-{bucketArn#accountId}.{url#authority}{url#path}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_arn_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{accessPointName_ssa_1}-{bucketArn#accountId}.s3-accesspoint.{_effective_arn_region}.{bucketPartition#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_arn_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid ARN: The ARN was not for the S3 service, found: {bucketArn#service}",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "S3 MRAP does not support dual-stack",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "S3 MRAP does not support FIPS",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "S3 MRAP does not support S3 Accelerate",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid configuration: Multi-Region Access Point ARNs are disabled.",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{accessPointName_ssa_1}.accesspoint.s3-global.{partitionResult#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4a",
+              "signingName": "s3",
+              "signingRegionSet": ["*"]
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "error": "Client was configured for partition `{partitionResult#name}` but bucket referred to partition `{bucketArn#partition}`",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid Access Point Name",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "S3 Outposts does not support Dual-stack",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "S3 Outposts does not support FIPS",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "S3 Outposts does not support S3 Accelerate",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid Arn: Outpost Access Point ARN contains sub resources",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{accessPointName_ssa_2}-{bucketArn#accountId}.{outpostId_ssa_1}.{url#authority}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4a",
+              "signingName": "s3-outposts",
+              "signingRegionSet": ["*"]
+            },
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3-outposts",
+              "signingRegion": "{_effective_arn_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://{accessPointName_ssa_2}-{bucketArn#accountId}.{outpostId_ssa_1}.s3-outposts.{_effective_arn_region}.{bucketPartition#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4a",
+              "signingName": "s3-outposts",
+              "signingRegionSet": ["*"]
+            },
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3-outposts",
+              "signingRegion": "{_effective_arn_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "error": "Expected an outpost type `accesspoint`, found {outpostType}",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid ARN: expected an access point name",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid ARN: Expected a 4-component resource",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid ARN: The outpost Id may only contain a-z, A-Z, 0-9 and `-`. Found: `{outpostId_ssa_1}`",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid ARN: The Outpost Id was not set",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid ARN: Unrecognized format: {Bucket} (type: {arnType})",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid ARN: No ARN type specified",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Invalid ARN: `{Bucket}` was not a valid ARN",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "error": "Path-style addressing cannot be used with ARN buckets",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://s3-fips.dualstack.{_effective_std_region}.{partitionResult#dnsSuffix}/{uri_encoded_bucket}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://s3-fips.{_effective_std_region}.{partitionResult#dnsSuffix}/{uri_encoded_bucket}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://s3.dualstack.{_effective_std_region}.{partitionResult#dnsSuffix}/{uri_encoded_bucket}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "{url#scheme}://{url#authority}{url#normalizedPath}{uri_encoded_bucket}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://s3.{partitionResult#dnsSuffix}/{uri_encoded_bucket}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://s3.{_effective_std_region}.{partitionResult#dnsSuffix}/{uri_encoded_bucket}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "error": "Path-style addressing cannot be used with S3 Accelerate",
+      "type": "error"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "{url#scheme}://{url#authority}{url#path}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3-object-lambda",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://s3-object-lambda-fips.{_effective_std_region}.{partitionResult#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3-object-lambda",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://s3-object-lambda.{_effective_std_region}.{partitionResult#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3-object-lambda",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://s3-fips.dualstack.{_effective_std_region}.{partitionResult#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://s3-fips.{_effective_std_region}.{partitionResult#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://s3.dualstack.{_effective_std_region}.{partitionResult#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "{url#scheme}://{url#authority}{url#path}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://s3.{partitionResult#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "endpoint": {
+        "url": "https://s3.{_effective_std_region}.{partitionResult#dnsSuffix}",
+        "properties": {
+          "authSchemes": [
+            {
+              "disableDoubleEncoding": true,
+              "name": "sigv4",
+              "signingName": "s3",
+              "signingRegion": "{_effective_std_region}"
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "type": "endpoint"
+    },
+    {
+      "conditions": [],
+      "error": "A region must be set when sending requests to S3.",
+      "type": "error"
+    }
+  ],
+  "root": 521,
+  "nodeCount": 521,
+  "nodes": "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"
+}
