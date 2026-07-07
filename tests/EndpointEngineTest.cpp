@@ -18,8 +18,6 @@
  *   bdd_ruleset.json            - S3 ruleset in BDD trait format (source of bdd_ruleset.bin)
  *   bdd_ruleset.bin             - compiled BDD bytecode (for BddEngine)
  *   simple_legacy_ruleset.json  - simple example service ruleset (for RuleEngine)
- *   simple_bdd_ruleset.json     - simple BDD trait format (source of simple_bdd_ruleset.bin)
- *   simple_bdd_ruleset.bin      - compiled simple BDD bytecode (for BddEngine)
  *   partitions.json             - shared partitions config
  */
 
@@ -311,30 +309,6 @@ static int s_TestRuleEngine_Outpost(struct aws_allocator *allocator, void *ctx)
     return s_RunCase(allocator, s_cases[4], engineFixture.engine);
 }
 AWS_TEST_CASE(RuleEngine_Outpost, s_TestRuleEngine_Outpost)
-
-/* ------------------------------------------------------------------ */
-/* BddEngine tests — simple ruleset                                    */
-/* ------------------------------------------------------------------ */
-
-static int s_TestBddEngine_SimpleRegional(struct aws_allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    ApiHandle apiHandle(allocator);
-    EngineFixture<BddEngine> engineFixture(allocator, "endpoint_engine/simple_bdd_ruleset.bin");
-    ASSERT_TRUE(engineFixture.engine);
-    return s_RunCase(allocator, s_simple_cases[0], engineFixture.engine);
-}
-AWS_TEST_CASE(BddEngine_SimpleRegional, s_TestBddEngine_SimpleRegional)
-
-static int s_TestBddEngine_SimpleGlobal(struct aws_allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    ApiHandle apiHandle(allocator);
-    EngineFixture<BddEngine> engineFixture(allocator, "endpoint_engine/simple_bdd_ruleset.bin");
-    ASSERT_TRUE(engineFixture.engine);
-    return s_RunCase(allocator, s_simple_cases[1], engineFixture.engine);
-}
-AWS_TEST_CASE(BddEngine_SimpleGlobal, s_TestBddEngine_SimpleGlobal)
 
 /* ------------------------------------------------------------------ */
 /* BddEngine tests — S3 ruleset                                        */

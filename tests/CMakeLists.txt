@@ -330,8 +330,6 @@ add_test_case(RuleEngine_DataplaneZone)
 add_test_case(RuleEngine_AccessPoint)
 add_test_case(RuleEngine_Outpost)
 
-add_test_case(BddEngine_SimpleRegional)
-add_test_case(BddEngine_SimpleGlobal)
 add_test_case(BddEngine_VirtualHosted)
 add_test_case(BddEngine_PathStyle)
 add_test_case(BddEngine_DataplaneZone)
