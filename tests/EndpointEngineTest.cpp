@@ -179,8 +179,7 @@ template <> struct EngineFixture<RuleEngine>
     RuleEngine engine;
 
     /* Construct from a cursor — no heap allocation for ruleset or partitions */
-    EngineFixture(Allocator *alloc, ByteCursor rulesetCursor)
-        : engine(rulesetCursor, s_s3_legacy_partitions, alloc)
+    EngineFixture(Allocator *alloc, ByteCursor rulesetCursor) : engine(rulesetCursor, s_s3_legacy_partitions, alloc)
     {
         AWS_ZERO_STRUCT(ruleset);
         AWS_ZERO_STRUCT(partitions);
