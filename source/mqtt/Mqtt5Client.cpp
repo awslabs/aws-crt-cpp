@@ -211,7 +211,7 @@ namespace Aws
                 m_sdkMetrics = Crt::ScopedResource<Mqtt::IoTDeviceSDKMetrics>(
                     Crt::New<Mqtt::IoTDeviceSDKMetrics>(allocator),
                     [allocator](Mqtt::IoTDeviceSDKMetrics *metrics) { Crt::Delete(metrics, allocator); });
-                // AWS_ZERO_STRUCT(m_metricsStorage);
+                AWS_ZERO_STRUCT(m_metricsStorage);
                 m_sdkMetrics->initializeRawOptions(m_metricsStorage);
                 m_socketOptions.SetSocketType(Io::SocketType::Stream);
                 AWS_ZERO_STRUCT(m_packetConnectViewStorage);
