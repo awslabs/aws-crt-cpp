@@ -14,7 +14,7 @@
  *   <Engine>_StandardTest  - loops s_cases (S3 ruleset)
  *
  * Resources under tests/resources/endpoint_engine/:
- *   legacy_ruleset.json         - S3 ruleset in legacy tree format (for RuleEngine)
+ *   s3_legacy_ruleset.c         - S3 ruleset char array compiled from aws-c-s3 (for RuleEngine, no heap alloc)
  *   bdd_ruleset.json            - S3 ruleset in BDD trait format (source of bdd_ruleset.bin)
  *   bdd_ruleset.bin             - compiled BDD bytecode (for BddEngine)
  *   simple_legacy_ruleset.json  - simple example service ruleset (for RuleEngine)
@@ -23,11 +23,15 @@
 
 #include <aws/crt/Api.h>
 #include <aws/crt/Types.h>
+#include <aws/common/byte_buf.h>
 #include <aws/crt/endpoints/BddEngine.h>
 #include <aws/crt/endpoints/RuleEngine.h>
 #include <aws/testing/aws_test_harness.h>
 
 #include <functional>
+
+/* S3 legacy ruleset — compiled from aws-c-s3 source, no heap allocation */
+extern const struct aws_byte_cursor s_s3_legacy_ruleset;
 
 using namespace Aws::Crt;
 using namespace Aws::Crt::Endpoints;
@@ -173,8 +177,16 @@ template <> struct EngineFixture<RuleEngine>
     ByteBuf partitions;
     RuleEngine engine;
 
+    /* Construct from a cursor — no heap allocation for ruleset data */
+    EngineFixture(Allocator *alloc, ByteCursor rulesetCursor)
+        : engine(s_loadPartitions(alloc, rulesetCursor, partitions), ByteCursorFromByteBuf(partitions), alloc)
+    {
+        AWS_ZERO_STRUCT(ruleset);
+    }
+
+    /* Construct from a file path — loads ruleset from disk */
     EngineFixture(Allocator *alloc, const char *ruleset_path)
-        : engine(s_load(alloc, ruleset_path, ruleset, partitions), ByteCursorFromByteBuf(partitions), alloc)
+        : engine(s_loadFile(alloc, ruleset_path, ruleset, partitions), ByteCursorFromByteBuf(partitions), alloc)
     {
     }
 
@@ -185,7 +197,13 @@ template <> struct EngineFixture<RuleEngine>
     }
 
   private:
-    static ByteCursor s_load(Allocator *alloc, const char *path, ByteBuf &out_ruleset, ByteBuf &out_partitions)
+    static ByteCursor s_loadPartitions(Allocator *alloc, ByteCursor ruleset, ByteBuf &out_partitions)
+    {
+        ByteBufInitFromFile(out_partitions, alloc, "endpoint_engine/partitions.json");
+        return ruleset;
+    }
+
+    static ByteCursor s_loadFile(Allocator *alloc, const char *path, ByteBuf &out_ruleset, ByteBuf &out_partitions)
     {
         ByteBufInitFromFile(out_ruleset, alloc, path);
         ByteBufInitFromFile(out_partitions, alloc, "endpoint_engine/partitions.json");
@@ -264,7 +282,7 @@ static int s_TestRuleEngine_VirtualHosted(struct aws_allocator *allocator, void 
 {
     (void)ctx;
     ApiHandle apiHandle(allocator);
-    EngineFixture<RuleEngine> engineFixture(allocator, "endpoint_engine/legacy_ruleset.json");
+    EngineFixture<RuleEngine> engineFixture(allocator, s_s3_legacy_ruleset);
     ASSERT_TRUE(engineFixture.engine);
     return s_RunCase(allocator, s_cases[0], engineFixture.engine);
 }
@@ -274,7 +292,7 @@ static int s_TestRuleEngine_PathStyle(struct aws_allocator *allocator, void *ctx
 {
     (void)ctx;
     ApiHandle apiHandle(allocator);
-    EngineFixture<RuleEngine> engineFixture(allocator, "endpoint_engine/legacy_ruleset.json");
+    EngineFixture<RuleEngine> engineFixture(allocator, s_s3_legacy_ruleset);
     ASSERT_TRUE(engineFixture.engine);
     return s_RunCase(allocator, s_cases[1], engineFixture.engine);
 }
@@ -284,7 +302,7 @@ static int s_TestRuleEngine_DataplaneZone(struct aws_allocator *allocator, void 
 {
     (void)ctx;
     ApiHandle apiHandle(allocator);
-    EngineFixture<RuleEngine> engineFixture(allocator, "endpoint_engine/legacy_ruleset.json");
+    EngineFixture<RuleEngine> engineFixture(allocator, s_s3_legacy_ruleset);
     ASSERT_TRUE(engineFixture.engine);
     return s_RunCase(allocator, s_cases[2], engineFixture.engine);
 }
@@ -294,7 +312,7 @@ static int s_TestRuleEngine_AccessPoint(struct aws_allocator *allocator, void *c
 {
     (void)ctx;
     ApiHandle apiHandle(allocator);
-    EngineFixture<RuleEngine> engineFixture(allocator, "endpoint_engine/legacy_ruleset.json");
+    EngineFixture<RuleEngine> engineFixture(allocator, s_s3_legacy_ruleset);
     ASSERT_TRUE(engineFixture.engine);
     return s_RunCase(allocator, s_cases[3], engineFixture.engine);
 }
@@ -304,7 +322,7 @@ static int s_TestRuleEngine_Outpost(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
     ApiHandle apiHandle(allocator);
-    EngineFixture<RuleEngine> engineFixture(allocator, "endpoint_engine/legacy_ruleset.json");
+    EngineFixture<RuleEngine> engineFixture(allocator, s_s3_legacy_ruleset);
     ASSERT_TRUE(engineFixture.engine);
     return s_RunCase(allocator, s_cases[4], engineFixture.engine);
 }
