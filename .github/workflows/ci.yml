@@ -418,7 +418,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sanitizers: ["thread", "address,undefined"]
+        sanitizers: ["thread", "address,undefined", "memory"]
     steps:
     - uses: aws-actions/configure-aws-credentials@v4
       with:
