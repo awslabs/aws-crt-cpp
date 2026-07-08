@@ -30,8 +30,9 @@
 
 #include <functional>
 
-/* S3 legacy ruleset — compiled from aws-c-s3 source, no heap allocation */
+/* S3 legacy ruleset and partitions — compiled from aws-c-s3 source, no heap allocation */
 extern const struct aws_byte_cursor s_s3_legacy_ruleset;
+extern const struct aws_byte_cursor s_s3_legacy_partitions;
 
 using namespace Aws::Crt;
 using namespace Aws::Crt::Endpoints;
@@ -177,11 +178,12 @@ template <> struct EngineFixture<RuleEngine>
     ByteBuf partitions;
     RuleEngine engine;
 
-    /* Construct from a cursor — no heap allocation for ruleset data */
+    /* Construct from a cursor — no heap allocation for ruleset or partitions */
     EngineFixture(Allocator *alloc, ByteCursor rulesetCursor)
-        : engine(s_loadPartitions(alloc, rulesetCursor, partitions), ByteCursorFromByteBuf(partitions), alloc)
+        : engine(rulesetCursor, s_s3_legacy_partitions, alloc)
     {
         AWS_ZERO_STRUCT(ruleset);
+        AWS_ZERO_STRUCT(partitions);
     }
 
     /* Construct from a file path — loads ruleset from disk */
@@ -197,12 +199,6 @@ template <> struct EngineFixture<RuleEngine>
     }
 
   private:
-    static ByteCursor s_loadPartitions(Allocator *alloc, ByteCursor ruleset, ByteBuf &out_partitions)
-    {
-        ByteBufInitFromFile(out_partitions, alloc, "endpoint_engine/partitions.json");
-        return ruleset;
-    }
-
     static ByteCursor s_loadFile(Allocator *alloc, const char *path, ByteBuf &out_ruleset, ByteBuf &out_partitions)
     {
         ByteBufInitFromFile(out_ruleset, alloc, path);
