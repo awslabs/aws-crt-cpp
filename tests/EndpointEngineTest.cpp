@@ -15,10 +15,10 @@
  *
  * Resources under tests/resources/endpoint_engine/:
  *   s3_legacy_ruleset.c         - S3 ruleset char array compiled from aws-c-s3 (for RuleEngine, no heap alloc)
+ *   s3_legacy_partitions.c      - S3 partitions char array compiled from aws-c-s3 (shared, no heap alloc)
  *   bdd_ruleset.json            - S3 ruleset in BDD trait format (source of bdd_ruleset.bin)
  *   bdd_ruleset.bin             - compiled BDD bytecode (for BddEngine)
  *   simple_legacy_ruleset.json  - simple example service ruleset (for RuleEngine)
- *   partitions.json             - shared partitions config
  */
 
 #include <aws/common/byte_buf.h>
@@ -185,10 +185,11 @@ template <> struct EngineFixture<RuleEngine>
         AWS_ZERO_STRUCT(partitions);
     }
 
-    /* Construct from a file path — loads ruleset from disk */
+    /* Construct from a file path — loads ruleset from disk, uses static partitions */
     EngineFixture(Allocator *alloc, const char *ruleset_path)
-        : engine(s_loadFile(alloc, ruleset_path, ruleset, partitions), ByteCursorFromByteBuf(partitions), alloc)
+        : engine(s_loadRuleset(alloc, ruleset_path, ruleset), s_s3_legacy_partitions, alloc)
     {
+        AWS_ZERO_STRUCT(partitions);
     }
 
     ~EngineFixture()
@@ -198,10 +199,9 @@ template <> struct EngineFixture<RuleEngine>
     }
 
   private:
-    static ByteCursor s_loadFile(Allocator *alloc, const char *path, ByteBuf &out_ruleset, ByteBuf &out_partitions)
+    static ByteCursor s_loadRuleset(Allocator *alloc, const char *path, ByteBuf &out_ruleset)
     {
         ByteBufInitFromFile(out_ruleset, alloc, path);
-        ByteBufInitFromFile(out_partitions, alloc, "endpoint_engine/partitions.json");
         return ByteCursorFromByteBuf(out_ruleset);
     }
 };
@@ -209,25 +209,19 @@ template <> struct EngineFixture<RuleEngine>
 template <> struct EngineFixture<BddEngine>
 {
     ByteBuf bytecode;
-    ByteBuf partitions;
     BddEngine engine;
 
     EngineFixture(Allocator *alloc, const char *bytecode_path)
-        : engine(s_load(alloc, bytecode_path, bytecode, partitions), ByteCursorFromByteBuf(partitions), alloc)
+        : engine(s_load(alloc, bytecode_path, bytecode), s_s3_legacy_partitions, alloc)
     {
     }
 
-    ~EngineFixture()
-    {
-        ByteBufDelete(bytecode);
-        ByteBufDelete(partitions);
-    }
+    ~EngineFixture() { ByteBufDelete(bytecode); }
 
   private:
-    static ByteCursor s_load(Allocator *alloc, const char *path, ByteBuf &out_bytecode, ByteBuf &out_partitions)
+    static ByteCursor s_load(Allocator *alloc, const char *path, ByteBuf &out_bytecode)
     {
         ByteBufInitFromFile(out_bytecode, alloc, path);
-        ByteBufInitFromFile(out_partitions, alloc, "endpoint_engine/partitions.json");
         return ByteCursorFromByteBuf(out_bytecode);
     }
 };
