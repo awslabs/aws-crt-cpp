@@ -87,6 +87,11 @@ if(BUILD_DEPS)
                 endif()
             endif()
 
+            set(AWSLC_SANITIZER_ARGUMENTS "")
+            if(ENABLE_SANITIZERS AND SANITIZERS MATCHES "memory")
+                list(APPEND AWSLC_SANITIZER_ARGUMENTS -DMSAN=1 -DOPENSSL_NO_ASM=1)
+            endif()
+
             # s2n-tls uses libcrypto during its configuration, so we need to prebuild aws-lc.
             aws_prebuild_dependency(
                 DEPENDENCY_NAME AWSLC
@@ -97,6 +102,7 @@ if(BUILD_DEPS)
                     -DBUILD_LIBSSL=OFF
                     -DBUILD_TESTING=OFF
                     -DCMAKE_C_FLAGS=${AWSLC_CMAKE_C_FLAGS}
+                    ${AWSLC_SANITIZER_ARGUMENTS}
             )
         endif()
 
