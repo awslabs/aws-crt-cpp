@@ -414,19 +414,19 @@ jobs:
       uses: awslabs/aws-crt-builder/.github/actions/check-submodules@main
 
   clang-sanitizers:
-    runs-on: ubuntu-24.04 # latest
+    runs-on: ubuntu-26.04 # latest
     strategy:
       fail-fast: false
       matrix:
         include:
           - sanitizers: "thread"
-            compiler: clang-21
+            compiler: clang-latest
             extra-cmake: ""
           - sanitizers: "address,undefined"
-            compiler: clang-21
+            compiler: clang-latest
             extra-cmake: ""
           - sanitizers: "memory"
-            compiler: clang-21
+            compiler: clang-latest
             extra-cmake: >-
               --cmake-extra=-DCMAKE_CXX_FLAGS=-stdlib=libc++
               --cmake-extra=-DCMAKE_EXE_LINKER_FLAGS=-stdlib=libc++
