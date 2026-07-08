@@ -21,9 +21,9 @@
  *   partitions.json             - shared partitions config
  */
 
+#include <aws/common/byte_buf.h>
 #include <aws/crt/Api.h>
 #include <aws/crt/Types.h>
-#include <aws/common/byte_buf.h>
 #include <aws/crt/endpoints/BddEngine.h>
 #include <aws/crt/endpoints/RuleEngine.h>
 #include <aws/testing/aws_test_harness.h>
