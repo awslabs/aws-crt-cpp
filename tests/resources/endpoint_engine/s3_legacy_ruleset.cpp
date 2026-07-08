@@ -3,7 +3,7 @@
  * All Rights Reserved. SPDX-License-Identifier: Apache-2.0.
  */
 
-#include <aws/common/byte_buf.h>
+#include <aws/crt/Types.h>
 
 /**
  * This file is generated using scripts/update_s3_endpoint_resolver_artifacts.py.
@@ -5977,7 +5977,7 @@ static const char s_s3_legacy_ruleset_chars[] = {
 	's', ' ', 't', 'o', ' ', 'S', '3', '.', '"', ',', '"', 't', 'y', 'p', 'e', '"', ':', '"', 'e', 'r',
 	'r', 'o', 'r', '"', '}', ']', '}'};
 
-const struct aws_byte_cursor s_s3_legacy_ruleset = {
+extern const Aws::Crt::ByteCursor s_s3_legacy_ruleset = {
 	.len = 119287,
 	.ptr = (uint8_t *)s_s3_legacy_ruleset_chars
 };

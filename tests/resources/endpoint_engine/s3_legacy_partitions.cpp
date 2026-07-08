@@ -3,9 +3,7 @@
  * All Rights Reserved. SPDX-License-Identifier: Apache-2.0.
  */
 
-#include <aws/common/byte_buf.h>
-
-
+#include <aws/crt/Types.h>
 
 /**
  * This file is generated using scripts/update_s3_endpoint_resolver_artifacts.py.
@@ -260,7 +258,7 @@ static const char s_s3_partitions_chars[] = {
 	't', ')', '"', '}', '}', '}', ']', ',', '"', 'v', 'e', 'r', 's', 'i', 'o', 'n', '"', ':', '"', '1',
 	'.', '1', '"', '}'};
 
-const struct aws_byte_cursor s_s3_legacy_partitions = {
+extern const Aws::Crt::ByteCursor s_s3_legacy_partitions = {
 	.len = 4904,
 	.ptr = (uint8_t *)s_s3_partitions_chars
 };

@@ -5,8 +5,8 @@ include(CTest)
 file(GLOB TEST_SRC "*.cpp")
 file(GLOB TEST_HDRS "*.h")
 file(GLOB TESTS ${TEST_HDRS} ${TEST_SRC})
-list(APPEND TESTS ${CMAKE_CURRENT_SOURCE_DIR}/resources/endpoint_engine/s3_legacy_ruleset.c)
-list(APPEND TESTS ${CMAKE_CURRENT_SOURCE_DIR}/resources/endpoint_engine/s3_legacy_partitions.c)
+list(APPEND TESTS ${CMAKE_CURRENT_SOURCE_DIR}/resources/endpoint_engine/s3_legacy_ruleset.cpp)
+list(APPEND TESTS ${CMAKE_CURRENT_SOURCE_DIR}/resources/endpoint_engine/s3_legacy_partitions.cpp)
 
 set(TEST_BINARY_NAME ${PROJECT_NAME}-tests)
 

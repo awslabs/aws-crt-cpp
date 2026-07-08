@@ -21,7 +21,6 @@
  *   simple_legacy_ruleset.json  - simple example service ruleset (for RuleEngine)
  */
 
-#include <aws/common/byte_buf.h>
 #include <aws/crt/Api.h>
 #include <aws/crt/Types.h>
 #include <aws/crt/endpoints/BddEngine.h>
@@ -30,12 +29,12 @@
 
 #include <functional>
 
-/* S3 legacy ruleset and partitions — compiled from aws-c-s3 source, no heap allocation */
-extern const struct aws_byte_cursor s_s3_legacy_ruleset;
-extern const struct aws_byte_cursor s_s3_legacy_partitions;
-
 using namespace Aws::Crt;
 using namespace Aws::Crt::Endpoints;
+
+/* S3 legacy ruleset and partitions — compiled from aws-c-s3 source, no heap allocation */
+extern const ByteCursor s_s3_legacy_ruleset;
+extern const ByteCursor s_s3_legacy_partitions;
 
 /* ------------------------------------------------------------------ */
 /* Test case table                                                      */
