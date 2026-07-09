@@ -218,7 +218,10 @@ namespace Aws
                 bool OverrideDefaultTrustStore(const ByteCursor &ca) noexcept;
 
                 /// @private
-                const aws_tls_ctx_options *GetUnderlyingHandle() const noexcept { return &m_options; }
+                const aws_tls_ctx_options *GetUnderlyingHandle() const noexcept
+                {
+                    return m_isInit ? &m_options : nullptr;
+                }
 
               private:
                 aws_tls_ctx_options m_options;
@@ -227,7 +230,7 @@ namespace Aws
                 // Internal metrics tracking fields, track the certificate source
                 CertificateSource m_metricsCertificateSource;
 
-                bool m_isInit;
+                bool m_isInit = false;
             };
 
             /**
@@ -349,7 +352,7 @@ namespace Aws
                 /// @private
                 const aws_tls_connection_options *GetUnderlyingHandle() const noexcept
                 {
-                    return &m_tls_connection_options;
+                    return m_isInit ? &m_tls_connection_options : nullptr;
                 }
 
                 /// @private
@@ -367,9 +370,9 @@ namespace Aws
                     aws_tls_versions metricsTlsVersion = AWS_IO_TLS_VER_SYS_DEFAULTS,
                     aws_tls_cipher_pref metricsCipherPref = AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT) noexcept;
                 aws_tls_connection_options m_tls_connection_options;
-                aws_allocator *m_allocator;
-                int m_lastError;
-                bool m_isInit;
+                aws_allocator *m_allocator = nullptr;
+                int m_lastError = AWS_ERROR_SUCCESS;
+                bool m_isInit = false;
 
                 // Internal metrics tracking fields
                 CertificateSource m_metricsCertificateSource;

@@ -19,6 +19,9 @@
 using namespace Aws::Crt;
 using namespace Aws::Crt::Mqtt5;
 
+/* How long to wait for the broker to re-deliver an unacknowledged QoS 1 publish. */
+static const int BROKER_PUBACK_RETRY_WAIT_SECONDS = 60;
+
 //////////////////////////////////////////////////////////
 // Creation Test Cases [New-UC] (runs regardless of byo-crypto)
 //////////////////////////////////////////////////////////
@@ -2056,6 +2059,103 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *)
 }
 AWS_TEST_CASE(Mqtt5QoS1SubPub, s_TestMqtt5QoS1SubPub)
 
+/*
+ * [QoS1-UC1b] Verify auto-PUBACK: subscribe QoS 1, do NOT call acquirePublishAcknowledgement() in the callback,
+ * wait a few seconds and assert no duplicate delivery. If the auto-PUBACK path is broken, the broker will resend.
+ */
+static int s_TestMqtt5QoS1AutoPubackNoDuplicate(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+
+    const String TEST_TOPIC = "test/s_TestMqtt5QoS1AutoPubackNoDuplicate" + Aws::Crt::UUID().ToString();
+    std::atomic<int> receiveCount(0);
+    std::promise<void> firstReceived;
+    std::promise<void> duplicateReceived;
+
+    Mqtt5TestContext subscriberContext = createTestContext(
+        allocator,
+        MQTT5CONNECT_DIRECT_IOT_CORE,
+        [&receiveCount, &firstReceived, &duplicateReceived, &TEST_TOPIC](
+            Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &)
+        {
+            options.WithPublishReceivedCallback(
+                [&receiveCount, &firstReceived, &duplicateReceived, &TEST_TOPIC](
+                    const PublishReceivedEventData &eventData)
+                {
+                    String topic = eventData.publishPacket->getTopic();
+                    if (topic == TEST_TOPIC)
+                    {
+                        int count = ++receiveCount;
+                        if (count == 1)
+                        {
+                            firstReceived.set_value();
+                        }
+                        else if (count == 2)
+                        {
+                            duplicateReceived.set_value();
+                        }
+                    }
+                });
+
+            return AWS_OP_SUCCESS;
+        });
+    if (subscriberContext.testDirective == AWS_OP_SKIP)
+    {
+        return AWS_OP_SKIP;
+    }
+
+    std::shared_ptr<Mqtt5Client> subscriberClient = subscriberContext.client;
+    ASSERT_TRUE(subscriberClient);
+
+    Mqtt5TestContext publisherContext = createTestContext(allocator, MQTT5CONNECT_DIRECT_IOT_CORE);
+    if (publisherContext.testDirective == AWS_OP_SKIP)
+    {
+        return AWS_OP_SKIP;
+    }
+
+    std::shared_ptr<Mqtt5Client> publisherClient = publisherContext.client;
+    ASSERT_TRUE(publisherClient);
+
+    ASSERT_TRUE(publisherClient->Start());
+    ASSERT_TRUE(publisherContext.connectionPromise.get_future().get());
+
+    ASSERT_TRUE(subscriberClient->Start());
+    ASSERT_TRUE(subscriberContext.connectionPromise.get_future().get());
+
+    Mqtt5::Subscription subscription(TEST_TOPIC, Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+    std::shared_ptr<Mqtt5::SubscribePacket> subscribe = Aws::Crt::MakeShared<Mqtt5::SubscribePacket>(allocator);
+    subscribe->WithSubscription(std::move(subscription));
+
+    std::promise<void> subscribed;
+    ASSERT_TRUE(subscriberClient->Subscribe(
+        subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
+    subscribed.get_future().get();
+
+    /* Publish a single QoS 1 message */
+    std::shared_ptr<Mqtt5::PublishPacket> publish = Aws::Crt::MakeShared<Mqtt5::PublishPacket>(
+        allocator, TEST_TOPIC, ByteCursorFromCString("hello"), Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);
+    ASSERT_TRUE(publisherClient->Publish(publish));
+
+    /* Wait for the first delivery */
+    firstReceived.get_future().get();
+
+    /* Wait for the broker to potentially resend if PUBACK was never sent.
+     * Fail fast if a duplicate arrives; otherwise wait for the broker retry interval to pass. */
+    auto duplicateFuture = duplicateReceived.get_future();
+    auto waitResult = duplicateFuture.wait_for(std::chrono::seconds(BROKER_PUBACK_RETRY_WAIT_SECONDS));
+
+    /* If auto-PUBACK worked, we should have received exactly 1 message (timeout = no duplicate = success) */
+    ASSERT_TRUE(waitResult == std::future_status::timeout);
+
+    ASSERT_TRUE(subscriberClient->Stop());
+    subscriberContext.stoppedPromise.get_future().get();
+    ASSERT_TRUE(publisherClient->Stop());
+    publisherContext.stoppedPromise.get_future().get();
+
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5QoS1AutoPubackNoDuplicate, s_TestMqtt5QoS1AutoPubackNoDuplicate)
+
 ///*
 // *  TODO:
 // * [QoS1-UC2] Happy path. No drop in connection, no retry, no reconnect.
@@ -2162,9 +2262,10 @@ static int s_TestMqtt5ManualPubackHold(Aws::Crt::Allocator *allocator, void *)
     firstDeliveryPromise.get_future().get();
     ASSERT_TRUE(capturedHandle != nullptr);
 
-    /* Wait up to 60 seconds for the broker to re-deliver the message (no PUBACK was sent) */
+    /* Wait for the broker to re-deliver the message (no PUBACK was sent) */
     auto redeliveryFuture = redeliveryPromise.get_future();
-    ASSERT_TRUE(redeliveryFuture.wait_for(std::chrono::seconds(60)) == std::future_status::ready);
+    ASSERT_TRUE(
+        redeliveryFuture.wait_for(std::chrono::seconds(BROKER_PUBACK_RETRY_WAIT_SECONDS)) == std::future_status::ready);
 
     /* Release the held PUBACK now that we've confirmed re-delivery */
     ASSERT_TRUE(mqtt5Client->InvokePublishAcknowledgement(*capturedHandle));
@@ -2277,9 +2378,10 @@ static int s_TestMqtt5ManualPubackInvoke(Aws::Crt::Allocator *allocator, void *)
     /* Immediately invoke the PUBACK using the acquired handle */
     ASSERT_TRUE(mqtt5Client->InvokePublishAcknowledgement(*capturedHandle));
 
-    /* Wait 60 seconds and confirm the broker does NOT re-deliver the message */
+    /* Wait and confirm the broker does NOT re-deliver the message */
     auto redeliveryFuture = unexpectedRedeliveryPromise.get_future();
-    bool redelivered = redeliveryFuture.wait_for(std::chrono::seconds(60)) == std::future_status::ready;
+    bool redelivered =
+        redeliveryFuture.wait_for(std::chrono::seconds(BROKER_PUBACK_RETRY_WAIT_SECONDS)) == std::future_status::ready;
     ASSERT_FALSE(redelivered);
 
     ASSERT_TRUE(mqtt5Client->Stop());

@@ -27,7 +27,7 @@ namespace Aws
 
             TlsContextOptions::TlsContextOptions() noexcept
                 : m_tlsVersion(AWS_IO_TLS_VER_SYS_DEFAULTS), m_cipherPref(AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT),
-                  m_metricsCertificateSource(CertificateSource::None), m_isInit(false)
+                  m_metricsCertificateSource(CertificateSource::None)
             {
                 AWS_ZERO_STRUCT(m_options);
             }
@@ -297,10 +297,11 @@ namespace Aws
             }
 
             TlsConnectionOptions::TlsConnectionOptions() noexcept
-                : m_lastError(AWS_ERROR_SUCCESS), m_isInit(false), m_metricsCertificateSource(CertificateSource::None),
+                : m_lastError(AWS_ERROR_SUCCESS), m_metricsCertificateSource(CertificateSource::None),
                   m_metricsTlsVersion(AWS_IO_TLS_VER_SYS_DEFAULTS),
                   m_metricsCipherPref(AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT)
             {
+                AWS_ZERO_STRUCT(m_tls_connection_options);
             }
 
             TlsConnectionInfo TlsConnectionOptions::GetTlsConnectionInfo() const noexcept
@@ -396,6 +397,8 @@ namespace Aws
                 : m_isInit(options.m_isInit), m_metricsCertificateSource(options.m_metricsCertificateSource),
                   m_metricsTlsVersion(options.m_metricsTlsVersion), m_metricsCipherPref(options.m_metricsCipherPref)
             {
+                AWS_ZERO_STRUCT(m_tls_connection_options);
+
                 if (options.m_isInit)
                 {
                     m_tls_connection_options = options.m_tls_connection_options;
