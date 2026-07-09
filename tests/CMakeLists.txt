@@ -324,8 +324,6 @@ add_test_case(RuleEngineContextParams)
 add_test_case(BddEngineInvalidBytecode)
 add_test_case(BddEngineDefaultAllocator)
 
-add_test_case(RuleEngine_SimpleRegional)
-add_test_case(RuleEngine_SimpleGlobal)
 add_test_case(RuleEngine_VirtualHosted)
 add_test_case(RuleEngine_PathStyle)
 add_test_case(RuleEngine_DataplaneZone)

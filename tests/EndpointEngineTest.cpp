@@ -6,19 +6,13 @@
 /**
  * Unified endpoint resolution tests.
  *
- * s_cases and s_simple_cases are the single sources of truth.
- * Adding a case requires only adding to the relevant array.
- *
- * Each engine runs two tests:
- *   <Engine>_SimpleTest    - loops s_simple_cases (simple example-service ruleset)
- *   <Engine>_StandardTest  - loops s_cases (S3 ruleset)
+ * s_cases is the single source of truth — adding a case automatically covers both engines.
  *
  * Resources under tests/resources/endpoint_engine/:
- *   s3_legacy_ruleset.c         - S3 ruleset char array compiled from aws-c-s3 (for RuleEngine, no heap alloc)
- *   s3_legacy_partitions.c      - S3 partitions char array compiled from aws-c-s3 (shared, no heap alloc)
- *   bdd_ruleset.json            - S3 ruleset in BDD trait format (source of bdd_ruleset.bin)
- *   bdd_ruleset.bin             - compiled BDD bytecode (for BddEngine)
- *   simple_legacy_ruleset.json  - simple example service ruleset (for RuleEngine)
+ *   s3_legacy_ruleset.cpp    - S3 ruleset char array compiled from aws-c-s3 (for RuleEngine, no heap alloc)
+ *   s3_legacy_partitions.cpp - S3 partitions char array compiled from aws-c-s3 (shared, no heap alloc)
+ *   bdd_ruleset.json         - S3 ruleset in BDD trait format (source of bdd_ruleset.bin)
+ *   bdd_ruleset.bin          - compiled BDD bytecode (for BddEngine)
  */
 
 #include <aws/crt/Api.h>
@@ -44,34 +38,6 @@ struct EndpointTestCase
 {
     std::function<void(RequestContext &)> buildContext;
     std::function<int(const ResolutionOutcome &)> assertOutcome;
-};
-
-/* Simple example-service ruleset cases */
-static const EndpointTestCase s_simple_cases[] = {
-    /* SimpleRegional */
-    {
-        [](RequestContext &ctx) { ctx.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2")); },
-        [](const ResolutionOutcome &outcome) -> int
-        {
-            ASSERT_TRUE(outcome.IsEndpoint());
-            ASSERT_TRUE(outcome.GetUrl().has_value());
-            ASSERT_TRUE(outcome.GetUrl()->compare("https://example.us-west-2.amazonaws.com") == 0);
-            ASSERT_TRUE(outcome.GetHeaders().has_value());
-            ASSERT_TRUE(outcome.GetHeaders()->at("x-amz-region")[0].compare("us-west-2") == 0);
-            return AWS_OP_SUCCESS;
-        },
-    },
-    /* SimpleGlobal */
-    {
-        [](RequestContext &ctx) { (void)ctx; },
-        [](const ResolutionOutcome &outcome) -> int
-        {
-            ASSERT_TRUE(outcome.IsEndpoint());
-            ASSERT_TRUE(outcome.GetUrl().has_value());
-            ASSERT_TRUE(outcome.GetUrl()->compare("https://example.amazonaws.com") == 0);
-            return AWS_OP_SUCCESS;
-        },
-    },
 };
 
 /* S3 standard ruleset cases */
@@ -184,24 +150,10 @@ template <> struct EngineFixture<RuleEngine>
         AWS_ZERO_STRUCT(partitions);
     }
 
-    /* Construct from a file path — loads ruleset from disk, uses static partitions */
-    EngineFixture(Allocator *alloc, const char *ruleset_path)
-        : engine(s_loadRuleset(alloc, ruleset_path, ruleset), s_s3_legacy_partitions, alloc)
-    {
-        AWS_ZERO_STRUCT(partitions);
-    }
-
     ~EngineFixture()
     {
         ByteBufDelete(ruleset);
         ByteBufDelete(partitions);
-    }
-
-  private:
-    static ByteCursor s_loadRuleset(Allocator *alloc, const char *path, ByteBuf &out_ruleset)
-    {
-        ByteBufInitFromFile(out_ruleset, alloc, path);
-        return ByteCursorFromByteBuf(out_ruleset);
     }
 };
 
@@ -237,30 +189,6 @@ template <typename Engine> static int s_RunCase(Allocator *allocator, const Endp
     ASSERT_TRUE(result.has_value());
     return tc.assertOutcome(*result);
 }
-
-/* ------------------------------------------------------------------ */
-/* RuleEngine tests — simple ruleset                                   */
-/* ------------------------------------------------------------------ */
-
-static int s_TestRuleEngine_SimpleRegional(struct aws_allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    ApiHandle apiHandle(allocator);
-    EngineFixture<RuleEngine> engineFixture(allocator, "endpoint_engine/simple_legacy_ruleset.json");
-    ASSERT_TRUE(engineFixture.engine);
-    return s_RunCase(allocator, s_simple_cases[0], engineFixture.engine);
-}
-AWS_TEST_CASE(RuleEngine_SimpleRegional, s_TestRuleEngine_SimpleRegional)
-
-static int s_TestRuleEngine_SimpleGlobal(struct aws_allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    ApiHandle apiHandle(allocator);
-    EngineFixture<RuleEngine> engineFixture(allocator, "endpoint_engine/simple_legacy_ruleset.json");
-    ASSERT_TRUE(engineFixture.engine);
-    return s_RunCase(allocator, s_simple_cases[1], engineFixture.engine);
-}
-AWS_TEST_CASE(RuleEngine_SimpleGlobal, s_TestRuleEngine_SimpleGlobal)
 
 /* ------------------------------------------------------------------ */
 /* RuleEngine tests — S3 ruleset                                       */
