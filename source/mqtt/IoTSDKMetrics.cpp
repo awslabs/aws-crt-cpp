@@ -88,26 +88,25 @@ namespace Aws
                 }
                 if (connectionCore.m_useTls)
                 {
-                    const Io::TlsConnectionOptions &tlsOptions = connectionCore.m_tlsOptions;
+                    Io::TlsConnectionInfo tlsInfo = connectionCore.m_tlsOptions.GetTlsConnectionInfo();
 
                     // I: certificate_source — automatically derived from TlsConnectionOptions
                     appendFeature(
                         features,
                         MetricsFeatureId::CertificateSource,
-                        metricsValueForCertificateSource(
-                            static_cast<Io::CertificateSource>(tlsOptions.m_metricsCertificateSource)));
+                        metricsValueForCertificateSource(tlsInfo.certificateSource));
 
                     // J: tls_cipher_preference
                     appendFeature(
                         features,
                         MetricsFeatureId::TlsCipherPreference,
-                        metricsValueForTlsCipherPreference(tlsOptions.m_metricsCipherPref));
+                        metricsValueForTlsCipherPreference(tlsInfo.cipherPref));
 
                     // K: minimum_tls_version
                     appendFeature(
                         features,
                         MetricsFeatureId::MinimumTlsVersion,
-                        metricsValueForMinimumTlsVersion(tlsOptions.m_metricsTlsVersion));
+                        metricsValueForMinimumTlsVersion(tlsInfo.tlsVersion));
                 }
 
                 return features;
@@ -169,24 +168,25 @@ namespace Aws
 
                 if (options.m_tlsConnectionOptions.has_value())
                 {
+                    Io::TlsConnectionInfo tlsInfo = options.m_tlsConnectionOptions->GetTlsConnectionInfo();
+
                     // I: certificate_source — automatically derived from TlsConnectionOptions
                     appendFeature(
                         features,
                         MetricsFeatureId::CertificateSource,
-                        metricsValueForCertificateSource(static_cast<Io::CertificateSource>(
-                            options.m_tlsConnectionOptions->m_metricsCertificateSource)));
+                        metricsValueForCertificateSource(tlsInfo.certificateSource));
 
                     // J: tls_cipher_preference
                     appendFeature(
                         features,
                         MetricsFeatureId::TlsCipherPreference,
-                        metricsValueForTlsCipherPreference(options.m_tlsConnectionOptions->m_metricsCipherPref));
+                        metricsValueForTlsCipherPreference(tlsInfo.cipherPref));
 
                     // K: minimum_tls_version
                     appendFeature(
                         features,
                         MetricsFeatureId::MinimumTlsVersion,
-                        metricsValueForMinimumTlsVersion(options.m_tlsConnectionOptions->m_metricsTlsVersion));
+                        metricsValueForMinimumTlsVersion(tlsInfo.tlsVersion));
                 }
 
                 return features;
@@ -454,7 +454,7 @@ namespace Aws
             {
 #if defined(_WIN32)
                 return MetricsSocketImplementationValue::Winsock;
-#elif defined(__APPLE__)
+#elif defined(AWS_USE_SECITEM)
                 return MetricsSocketImplementationValue::AppleNetworkFramework;
 #else
                 return MetricsSocketImplementationValue::Posix;
@@ -464,9 +464,13 @@ namespace Aws
             void IoTSDKMetricsEncoder::appendFeature(Crt::String &featureList, char featureId, char value)
             {
                 if (value == '\0')
+                {
                     return;
+                }
                 if (!featureList.empty())
+                {
                     featureList += ',';
+                }
                 featureList += featureId;
                 featureList += '/';
                 featureList += value;

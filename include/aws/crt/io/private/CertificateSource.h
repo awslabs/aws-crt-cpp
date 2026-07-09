@@ -1,3 +1,8 @@
+/*! \cond DOXYGEN_PRIVATE
+** Hide API from this file in doxygen. Set DOXYGEN_PRIVATE in doxygen
+** config to enable this file for doxygen.
+*/
+
 #pragma once
 /**
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -27,6 +32,18 @@ namespace Aws
                 WindowsCertStore = 3,
                 /// Certificate loaded from a PKCS#12 (.p12) file
                 Pkcs12File = 4,
+            };
+
+            /**
+             * @private
+             * Contains TLS connection metadata needed for IoT SDK metrics tracking.
+             * Not part of the public API.
+             */
+            struct TlsConnectionInfo
+            {
+                CertificateSource certificateSource;
+                aws_tls_versions tlsVersion;
+                aws_tls_cipher_pref cipherPref;
             };
 
         } // namespace Io

@@ -23,7 +23,7 @@ namespace Aws
             class MqttConnection;
 
             /**
-             * Options required to create an MqttConnection.
+             * Options required to create an MqttConnection. For internal use.
              */
             struct MqttConnectionOptions
             {

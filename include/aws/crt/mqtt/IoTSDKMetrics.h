@@ -28,28 +28,17 @@ namespace Aws
                  * The library name identifier (default: "IoTDeviceSDK/CPP").
                  * Maps to the SDK attribute in the username field.
                  */
-                Aws::Crt::String LibraryName;
+                Aws::Crt::String LibraryName = "IoTDeviceSDK/CPP";
 
                 /**
                  * Metadata key-value pairs to include in the Metadata field of the username.
                  */
                 Crt::Map<Crt::String, Crt::String> Metadata;
 
-                IoTDeviceSDKMetrics() { LibraryName = "IoTDeviceSDK/CPP"; }
-
-                /**
-                 * Adds or updates a metadata entry.
-                 * If a key already exists, its value is overwritten.
-                 *
-                 * @param key   Metadata key
-                 * @param value Metadata value
-                 */
-                void AddMetadata(const Crt::String &key, const Crt::String &value) noexcept;
-
+              private:
                 friend class Mqtt5::Mqtt5ClientOptions;
                 friend class MqttConnectionCore;
 
-              private:
                 /**
                  * Populates a raw aws_mqtt_iot_metrics struct from this object.
                  *

@@ -12,6 +12,11 @@ namespace Aws
 {
     namespace Crt
     {
+        namespace Mqtt
+        {
+            class IoTSDKMetricsEncoder;
+        } // namespace Mqtt
+
         namespace Mqtt5
         {
             class ConnectPacket;
