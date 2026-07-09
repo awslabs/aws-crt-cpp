@@ -246,8 +246,8 @@ static int s_TestIoTSDKMetricsMergeMultipleOverrides(Aws::Crt::Allocator *alloca
 
     // User features override A and K, and override F
     IoTDeviceSDKMetrics customMetrics;
-    customMetrics.AddMetadata("IoTSDKMetricsVersion", "1");
-    customMetrics.AddMetadata("IoTSDKFeature", "A/C,F/3,K/E");
+    customMetrics.metadata["IoTSDKMetricsVersion"] = "1";
+    customMetrics.metadata["IoTSDKFeature"] = "A/C,F/3,K/E";
     options.WithSdkMetrics(std::move(customMetrics));
 
     aws_mqtt5_client_options raw_options;
@@ -296,8 +296,8 @@ static int s_TestIoTSDKMetricsMergeEmptyCrt(Aws::Crt::Allocator *allocator, void
     options.WithHostName("localhost").WithPort(8883);
 
     IoTDeviceSDKMetrics customMetrics;
-    customMetrics.AddMetadata("IoTSDKMetricsVersion", "1");
-    customMetrics.AddMetadata("IoTSDKFeature", "I/B");
+    customMetrics.metadata["IoTSDKMetricsVersion"] = "1";
+    customMetrics.metadata["IoTSDKFeature"] = "I/B";
     options.WithSdkMetrics(std::move(customMetrics));
 
     aws_mqtt5_client_options raw_options;
@@ -354,8 +354,8 @@ static int s_TestIoTSDKMetricsCreateUserFeatureAdded(Aws::Crt::Allocator *alloca
     options.WithHostName("localhost").WithPort(8883);
 
     IoTDeviceSDKMetrics user;
-    user.AddMetadata("IoTSDKMetricsVersion", "1");
-    user.AddMetadata("IoTSDKFeature", "I/A");
+    user.metadata["IoTSDKMetricsVersion"] = "1";
+    user.metadata["IoTSDKFeature"] = "I/A";
     options.WithSdkMetrics(std::move(user));
 
     aws_mqtt5_client_options raw_options;
@@ -377,8 +377,8 @@ static int s_TestIoTSDKMetricsCreateUserOverridesCrt(Aws::Crt::Allocator *alloca
     options.WithHostName("localhost").WithPort(8883);
 
     IoTDeviceSDKMetrics user;
-    user.AddMetadata("IoTSDKMetricsVersion", "1");
-    user.AddMetadata("IoTSDKFeature", "F/3,I/B");
+    user.metadata["IoTSDKMetricsVersion"] = "1";
+    user.metadata["IoTSDKFeature"] = "F/3,I/B";
     options.WithSdkMetrics(std::move(user));
 
     aws_mqtt5_client_options raw_options;
@@ -400,8 +400,8 @@ static int s_TestIoTSDKMetricsVersionMismatch(Aws::Crt::Allocator *allocator, vo
     options.WithHostName("localhost").WithPort(8883);
 
     IoTDeviceSDKMetrics user;
-    user.AddMetadata("IoTSDKMetricsVersion", "99");
-    user.AddMetadata("IoTSDKFeature", "I/A");
+    user.metadata["IoTSDKMetricsVersion"] = "99";
+    user.metadata["IoTSDKFeature"] = "I/A";
     options.WithSdkMetrics(std::move(user));
 
     aws_mqtt5_client_options raw_options;
@@ -423,7 +423,7 @@ static int s_TestIoTSDKMetricsCRTVersionNotModifiable(Aws::Crt::Allocator *alloc
     options.WithHostName("localhost").WithPort(8883);
 
     IoTDeviceSDKMetrics user;
-    user.AddMetadata("CRTVersion", "fake_version");
+    user.metadata["CRTVersion"] = "fake_version";
     options.WithSdkMetrics(std::move(user));
 
     aws_mqtt5_client_options raw_options;
@@ -444,8 +444,8 @@ static int s_TestIoTSDKMetricsPreservesUserMetadata(Aws::Crt::Allocator *allocat
     options.WithHostName("localhost").WithPort(8883);
 
     IoTDeviceSDKMetrics user;
-    user.AddMetadata("IoTSDKVersion", "2.0.0");
-    user.AddMetadata("CustomKey", "custom_value");
+    user.metadata["IoTSDKVersion"] = "2.0.0";
+    user.metadata["CustomKey"] = "custom_value";
     options.WithSdkMetrics(std::move(user));
 
     aws_mqtt5_client_options raw_options;
@@ -465,7 +465,7 @@ static int s_TestIoTSDKMetricsCustomLibraryName(Aws::Crt::Allocator *allocator, 
     options.WithHostName("localhost").WithPort(8883);
 
     IoTDeviceSDKMetrics user;
-    user.LibraryName = "MyCustomSDK/1.0";
+    user.libraryName = "MyCustomSDK/1.0";
     options.WithSdkMetrics(std::move(user));
 
     aws_mqtt5_client_options raw_options;
@@ -490,10 +490,10 @@ static int s_TestIoTSDKMetricsMqtt5WithSdkMetrics(Aws::Crt::Allocator *allocator
 
     // Set custom metrics
     IoTDeviceSDKMetrics customMetrics;
-    customMetrics.LibraryName = "Mqtt5TestSDK/2.0";
-    customMetrics.AddMetadata("IoTSDKMetricsVersion", "1");
-    customMetrics.AddMetadata("IoTSDKFeature", "I/A");
-    customMetrics.AddMetadata("AppVersion", "3.0.0");
+    customMetrics.libraryName = "Mqtt5TestSDK/2.0";
+    customMetrics.metadata["IoTSDKMetricsVersion"] = "1";
+    customMetrics.metadata["IoTSDKFeature"] = "I/A";
+    customMetrics.metadata["AppVersion"] = "3.0.0";
     options.WithSdkMetrics(std::move(customMetrics));
 
     aws_mqtt5_client_options raw_options;
@@ -528,10 +528,10 @@ static int s_TestIoTSDKMetricsMqtt3Minimal(Aws::Crt::Allocator *allocator, void 
 
     // Create custom metrics to pass to the MQTT3 connection
     IoTDeviceSDKMetrics customMetrics;
-    customMetrics.LibraryName = "Mqtt3TestSDK/1.0";
-    customMetrics.AddMetadata("IoTSDKMetricsVersion", "1");
-    customMetrics.AddMetadata("IoTSDKFeature", "I/B");
-    customMetrics.AddMetadata("AppVersion", "2.0.0");
+    customMetrics.libraryName = "Mqtt3TestSDK/1.0";
+    customMetrics.metadata["IoTSDKMetricsVersion"] = "1";
+    customMetrics.metadata["IoTSDKFeature"] = "I/B";
+    customMetrics.metadata["AppVersion"] = "2.0.0";
 
     MqttClient mqttClient(allocator);
     ASSERT_TRUE(mqttClient);

@@ -542,8 +542,8 @@ namespace Aws
             if (m_enableMetricsCollection)
             {
                 Crt::Mqtt::IoTDeviceSDKMetrics metrics;
-                metrics.LibraryName = m_sdkName;
-                metrics.AddMetadata("IoTSDKVersion", m_sdkVersion);
+                metrics.libraryName = m_sdkName;
+                metrics.metadata["IoTSDKVersion"] = m_sdkVersion;
                 sdkMetrics = std::move(metrics);
             }
 

@@ -28,12 +28,12 @@ namespace Aws
                  * The library name identifier (default: "IoTDeviceSDK/CPP").
                  * Maps to the SDK attribute in the username field.
                  */
-                Aws::Crt::String LibraryName = "IoTDeviceSDK/CPP";
+                Aws::Crt::String libraryName = "IoTDeviceSDK/CPP";
 
                 /**
                  * Metadata key-value pairs to include in the Metadata field of the username.
                  */
-                Crt::Map<Crt::String, Crt::String> Metadata;
+                Crt::Map<Crt::String, Crt::String> metadata;
 
               private:
                 friend class Mqtt5::Mqtt5ClientOptions;

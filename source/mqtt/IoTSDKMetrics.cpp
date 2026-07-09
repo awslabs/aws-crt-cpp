@@ -19,20 +19,15 @@ namespace Aws
         {
             ////////// IoTDeviceSDKMetrics //////////
 
-            void IoTDeviceSDKMetrics::AddMetadata(const Crt::String &key, const Crt::String &value) noexcept
-            {
-                Metadata[key] = value;
-            }
-
             void IoTDeviceSDKMetrics::initializeRawOptions(struct aws_mqtt_iot_metrics &raw_options) noexcept
             {
-                raw_options.library_name = ByteCursorFromString(LibraryName);
+                raw_options.library_name = ByteCursorFromString(libraryName);
 
                 // Rebuild the raw entry array from the current Metadata contents.
                 // Byte cursors point directly into the strings stored in Metadata.
                 m_rawMetadataEntries.clear();
-                m_rawMetadataEntries.reserve(Metadata.size());
-                for (const auto &entry : Metadata)
+                m_rawMetadataEntries.reserve(metadata.size());
+                for (const auto &entry : metadata)
                 {
                     aws_mqtt_metadata_entry rawEntry;
                     rawEntry.key = ByteCursorFromString(entry.first);
@@ -198,13 +193,13 @@ namespace Aws
             {
                 // Determine the library name: use user-provided or default
                 IoTDeviceSDKMetrics resultMetrics;
-                if (userMetrics != nullptr && userMetrics->LibraryName != "IoTDeviceSDK/CPP")
+                if (userMetrics != nullptr && userMetrics->libraryName != "IoTDeviceSDK/CPP")
                 {
-                    resultMetrics.LibraryName = userMetrics->LibraryName;
+                    resultMetrics.libraryName = userMetrics->libraryName;
                 }
 
                 // CRTVersion: not modifiable by user, automatically set
-                resultMetrics.AddMetadata("CRTVersion", AWS_CRT_CPP_VERSION);
+                resultMetrics.metadata["CRTVersion"] = AWS_CRT_CPP_VERSION;
 
                 Crt::String userFeatureString;
 
@@ -214,13 +209,13 @@ namespace Aws
                     Crt::String userMetricsVersion;
                     Crt::String userFeature;
 
-                    auto versionIt = userMetrics->Metadata.find("IoTSDKMetricsVersion");
-                    if (versionIt != userMetrics->Metadata.end())
+                    auto versionIt = userMetrics->metadata.find("IoTSDKMetricsVersion");
+                    if (versionIt != userMetrics->metadata.end())
                     {
                         userMetricsVersion = versionIt->second;
                     }
-                    auto featureIt = userMetrics->Metadata.find("IoTSDKFeature");
-                    if (featureIt != userMetrics->Metadata.end())
+                    auto featureIt = userMetrics->metadata.find("IoTSDKFeature");
+                    if (featureIt != userMetrics->metadata.end())
                     {
                         userFeature = featureIt->second;
                     }
@@ -233,24 +228,24 @@ namespace Aws
                     }
 
                     // Preserve other user metadata (excluding reserved keys)
-                    for (const auto &entry : userMetrics->Metadata)
+                    for (const auto &entry : userMetrics->metadata)
                     {
                         if (entry.first != "IoTSDKFeature" && entry.first != "IoTSDKMetricsVersion" &&
                             entry.first != "CRTVersion")
                         {
-                            resultMetrics.Metadata[entry.first] = entry.second;
+                            resultMetrics.metadata[entry.first] = entry.second;
                         }
                     }
                 }
 
                 // Merge CRT and user features
                 Crt::String mergedFeatures = mergeFeatureLists(crtFeatureList, userFeatureString);
-                resultMetrics.AddMetadata("IoTSDKFeature", mergedFeatures);
+                resultMetrics.metadata["IoTSDKFeature"] = mergedFeatures;
 
                 // Always add the current metrics version
                 Crt::StringStream versionSS;
                 versionSS << IoTSDKMetricsFeatureVersion;
-                resultMetrics.AddMetadata("IoTSDKMetricsVersion", versionSS.str());
+                resultMetrics.metadata["IoTSDKMetricsVersion"] = versionSS.str();
 
                 return resultMetrics;
             }
