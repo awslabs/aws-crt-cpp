@@ -5977,7 +5977,4 @@ static const char s_s3_legacy_ruleset_chars[] = {
 	's', ' ', 't', 'o', ' ', 'S', '3', '.', '"', ',', '"', 't', 'y', 'p', 'e', '"', ':', '"', 'e', 'r',
 	'r', 'o', 'r', '"', '}', ']', '}'};
 
-extern const Aws::Crt::ByteCursor s_s3_legacy_ruleset = {
-	.len = 119287,
-	.ptr = (uint8_t *)s_s3_legacy_ruleset_chars
-};
+extern const Aws::Crt::ByteCursor s_s3_legacy_ruleset = {119287, (uint8_t *)s_s3_legacy_ruleset_chars};

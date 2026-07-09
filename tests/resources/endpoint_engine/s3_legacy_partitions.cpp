@@ -258,7 +258,4 @@ static const char s_s3_partitions_chars[] = {
 	't', ')', '"', '}', '}', '}', ']', ',', '"', 'v', 'e', 'r', 's', 'i', 'o', 'n', '"', ':', '"', '1',
 	'.', '1', '"', '}'};
 
-extern const Aws::Crt::ByteCursor s_s3_legacy_partitions = {
-	.len = 4904,
-	.ptr = (uint8_t *)s_s3_partitions_chars
-};
+extern const Aws::Crt::ByteCursor s_s3_legacy_partitions = {4904, (uint8_t *)s_s3_partitions_chars};
