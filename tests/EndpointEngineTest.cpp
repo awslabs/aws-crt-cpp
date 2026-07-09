@@ -33,8 +33,7 @@ struct EndpointTestCase
     std::function<int(const ResolutionOutcome &)> assertOutcome;
 };
 
-template <typename Engine>
-static int s_RunCase(Allocator *allocator, const EndpointTestCase &tc, const Engine &engine)
+template <typename Engine> static int s_RunCase(Allocator *allocator, const EndpointTestCase &tc, const Engine &engine)
 {
     RequestContext ctx(allocator);
     tc.buildContext(ctx);
@@ -77,10 +76,9 @@ static int s_TestEndpointResolution_RegionalEndpoint(struct aws_allocator *alloc
     return s_RunBothEngines(
         allocator,
         {
-            [](RequestContext &c) {
-                c.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
-            },
-            [](const ResolutionOutcome &outcome) -> int {
+            [](RequestContext &c) { c.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2")); },
+            [](const ResolutionOutcome &outcome) -> int
+            {
                 ASSERT_TRUE(outcome.IsEndpoint());
                 ASSERT_TRUE(outcome.GetUrl().has_value());
                 ASSERT_TRUE(outcome.GetUrl()->compare("https://example.us-west-2.amazonaws.com") == 0);
@@ -97,8 +95,12 @@ static int s_TestEndpointResolution_GlobalEndpoint(struct aws_allocator *allocat
     return s_RunBothEngines(
         allocator,
         {
-            [](RequestContext &c) { (void)c; /* no Region */ },
-            [](const ResolutionOutcome &outcome) -> int {
+            [](RequestContext &c)
+            {
+                (void)c; /* no Region */
+            },
+            [](const ResolutionOutcome &outcome) -> int
+            {
                 ASSERT_TRUE(outcome.IsEndpoint());
                 ASSERT_TRUE(outcome.GetUrl().has_value());
                 ASSERT_TRUE(outcome.GetUrl()->compare("https://example.amazonaws.com") == 0);
