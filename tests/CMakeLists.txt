@@ -233,6 +233,7 @@ add_test_case(IoTSDKMetricsCRTVersionNotModifiable)
 add_test_case(IoTSDKMetricsPreservesUserMetadata)
 add_test_case(IoTSDKMetricsCustomLibraryName)
 add_test_case(IoTSDKMetricsMqtt5WithSdkMetrics)
+add_test_case(IoTSDKMetricsMergeInvalidMixedValidAndInvalid)
 
 #MQTT5 related tests
 add_test_case(Mqtt5NewClientMinimal)

@@ -297,8 +297,7 @@ namespace Aws
             }
 
             TlsConnectionOptions::TlsConnectionOptions() noexcept
-                : m_lastError(AWS_ERROR_SUCCESS), m_metricsCertificateSource(CertificateSource::None),
-                  m_metricsTlsVersion(AWS_IO_TLS_VER_SYS_DEFAULTS),
+                : m_metricsCertificateSource(CertificateSource::None), m_metricsTlsVersion(AWS_IO_TLS_VER_SYS_DEFAULTS),
                   m_metricsCipherPref(AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT)
             {
                 AWS_ZERO_STRUCT(m_tls_connection_options);
@@ -315,9 +314,8 @@ namespace Aws
                 CertificateSource metricsCertificateSource,
                 aws_tls_versions metricsTlsVersion,
                 aws_tls_cipher_pref metricsCipherPref) noexcept
-                : m_allocator(allocator), m_lastError(AWS_ERROR_SUCCESS), m_isInit(true),
-                  m_metricsCertificateSource(metricsCertificateSource), m_metricsTlsVersion(metricsTlsVersion),
-                  m_metricsCipherPref(metricsCipherPref)
+                : m_allocator(allocator), m_isInit(true), m_metricsCertificateSource(metricsCertificateSource),
+                  m_metricsTlsVersion(metricsTlsVersion), m_metricsCipherPref(metricsCipherPref)
             {
                 aws_tls_connection_options_init_from_ctx(&m_tls_connection_options, ctx);
             }
@@ -333,7 +331,6 @@ namespace Aws
 
             TlsConnectionOptions::TlsConnectionOptions(const TlsConnectionOptions &options) noexcept
             {
-                m_isInit = false;
                 m_metricsCertificateSource = CertificateSource::None;
                 m_metricsTlsVersion = AWS_IO_TLS_VER_SYS_DEFAULTS;
                 m_metricsCipherPref = AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT;
@@ -428,12 +425,12 @@ namespace Aws
                     if (options.m_isInit)
                     {
                         m_tls_connection_options = options.m_tls_connection_options;
+                        AWS_ZERO_STRUCT(options.m_tls_connection_options);
+                        m_isInit = true;
                         m_allocator = options.m_allocator;
                         m_metricsCertificateSource = options.m_metricsCertificateSource;
                         m_metricsTlsVersion = options.m_metricsTlsVersion;
                         m_metricsCipherPref = options.m_metricsCipherPref;
-                        m_isInit = true;
-                        AWS_ZERO_STRUCT(options.m_tls_connection_options);
                         options.m_isInit = false;
                         options.m_metricsCertificateSource = CertificateSource::None;
                         options.m_metricsTlsVersion = AWS_IO_TLS_VER_SYS_DEFAULTS;

@@ -17,6 +17,18 @@ namespace Aws
     {
         namespace Mqtt
         {
+            // File-scoped helper: returns true if the given character is a recognized MetricsFeatureId (A-K).
+            static bool isValidFeatureId(char id)
+            {
+                return id == MetricsFeatureId::RetryJitterMode || id == MetricsFeatureId::SessionBehavior ||
+                       id == MetricsFeatureId::OfflineQueueBehavior ||
+                       id == MetricsFeatureId::OutboundTopicAliasBehavior ||
+                       id == MetricsFeatureId::InboundTopicAliasBehavior || id == MetricsFeatureId::ProtocolVersion ||
+                       id == MetricsFeatureId::SocketImplementation || id == MetricsFeatureId::HttpProxyType ||
+                       id == MetricsFeatureId::CertificateSource || id == MetricsFeatureId::TlsCipherPreference ||
+                       id == MetricsFeatureId::MinimumTlsVersion;
+            }
+
             ////////// IoTDeviceSDKMetrics //////////
 
             void IoTDeviceSDKMetrics::initializeRawOptions(struct aws_mqtt_iot_metrics &raw_options) noexcept
@@ -238,7 +250,7 @@ namespace Aws
                     }
                 }
 
-                // Merge CRT and user features
+                // Merge CRT and user features (both inputs are validated at this point)
                 Crt::String mergedFeatures = mergeFeatureLists(crtFeatureList, userFeatureString);
                 resultMetrics.metadata["IoTSDKFeature"] = mergedFeatures;
 
@@ -273,7 +285,11 @@ namespace Aws
                         Crt::String token =
                             features.substr(pos, commaPos == Crt::String::npos ? Crt::String::npos : commaPos - pos);
                         size_t slashPos = token.find('/');
-                        if (slashPos != Crt::String::npos && slashPos > 0 && slashPos + 1 < token.size())
+                        // A valid feature token must have the format "X/Y" where:
+                        // - The feature ID is exactly one character (slashPos == 1)
+                        // - The feature ID is a recognized MetricsFeatureId
+                        // - The value (after slash) is non-empty
+                        if (slashPos == 1 && slashPos + 1 < token.size() && isValidFeatureId(token[0]))
                         {
                             featureMap[token.substr(0, slashPos)] = token.substr(slashPos + 1);
                         }

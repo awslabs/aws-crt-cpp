@@ -113,7 +113,7 @@ static char s_socketVal()
 {
 #if defined(_WIN32)
     return 'B'; // Winsock
-#elif defined(__APPLE__)
+#elif defined(AWS_USE_SECITEM)
     return 'C'; // Apple Network Framework
 #else
     return 'A'; // Posix
@@ -543,3 +543,44 @@ static int s_TestIoTSDKMetricsMqtt3Minimal(Aws::Crt::Allocator *allocator, void 
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTSDKMetricsMqtt3Minimal, s_TestIoTSDKMetricsMqtt3Minimal)
+
+//////////////////////////////////////////////////////////
+// Merge Feature Lists: Invalid Data Handling
+//////////////////////////////////////////////////////////
+
+/**
+ * Mixed valid and invalid tokens: "I/A,/,C/,A/,/B,X/Y"
+ * Only "I/A" is valid (recognized feature ID with non-empty value).
+ * "X/Y" is invalid because 'X' is not a recognized MetricsFeatureId.
+ */
+static int s_TestIoTSDKMetricsMergeInvalidMixedValidAndInvalid(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    Mqtt5ClientOptions options(allocator);
+    options.WithHostName("localhost").WithPort(8883);
+
+    IoTDeviceSDKMetrics user;
+    user.metadata["IoTSDKMetricsVersion"] = "1";
+    user.metadata["IoTSDKFeature"] = "I/A,/,C/,A/,/B,X/Y";
+    options.WithSdkMetrics(std::move(user));
+
+    aws_mqtt5_client_options raw_options;
+    const auto *metrics = s_getMetricsFromOptions(options, raw_options);
+    ASSERT_NOT_NULL(metrics);
+
+    Aws::Crt::String features = s_getMetadataValue(metrics, "IoTSDKFeature");
+    // Valid user token (I is a recognized MetricsFeatureId)
+    ASSERT_TRUE(s_contains(features, "I/A"));
+    // CRT features
+    ASSERT_TRUE(s_contains(features, "F/5"));
+    ASSERT_TRUE(s_contains(features, Aws::Crt::String("G/") + s_socketVal()));
+    // Invalid tokens should not appear
+    ASSERT_FALSE(s_contains(features, "/"));
+    ASSERT_FALSE(s_contains(features, "C/"));
+    ASSERT_FALSE(s_contains(features, "A/"));
+    ASSERT_FALSE(s_contains(features, "/B"));
+    // X is not a recognized MetricsFeatureId, so X/Y should be filtered out
+    ASSERT_FALSE(s_contains(features, "X/Y"));
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTSDKMetricsMergeInvalidMixedValidAndInvalid, s_TestIoTSDKMetricsMergeInvalidMixedValidAndInvalid)
