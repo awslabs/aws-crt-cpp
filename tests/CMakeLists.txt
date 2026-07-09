@@ -322,10 +322,8 @@ add_test_case(RuleEngineContextParams)
 add_test_case(BddEngineInvalidBytecode)
 add_test_case(BddEngineDefaultAllocator)
 
-add_test_case(RuleEngine_RegionalEndpoint)
-add_test_case(RuleEngine_GlobalEndpoint)
-add_test_case(BddEngine_RegionalEndpoint)
-add_test_case(BddEngine_GlobalEndpoint)
+add_test_case(EndpointResolution_RegionalEndpoint)
+add_test_case(EndpointResolution_GlobalEndpoint)
 
 if(AWS_HAS_CI_ENVIRONMENT AND NOT BYO_CRYPTO)
     add_test_case(CognitoCredentialsProviderGetSuccess)

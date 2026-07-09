@@ -6,9 +6,8 @@
 /**
  * Unified endpoint resolution tests.
  *
- * Both RuleEngine and BddEngine are tested against an equivalent simple ruleset:
- *   Region set   -> https://example.{Region}.amazonaws.com
- *   Region unset -> https://example.amazonaws.com
+ * Each test exercises both RuleEngine and BddEngine against the same case.
+ * A test fails if either engine produces the wrong result.
  *
  * Resources under tests/resources/endpoint_engine/:
  *   model.json      - simple ruleset in legacy tree format (for RuleEngine)
@@ -23,107 +22,88 @@
 #include <aws/crt/endpoints/RuleEngine.h>
 #include <aws/testing/aws_test_harness.h>
 
+#include <functional>
+
 using namespace Aws::Crt;
 using namespace Aws::Crt::Endpoints;
 
-static int s_TestRuleEngine_RegionalEndpoint(struct aws_allocator *allocator, void *ctx)
+struct EndpointTestCase
 {
-    (void)ctx;
-    ApiHandle apiHandle(allocator);
+    std::function<void(RequestContext &)> buildContext;
+    std::function<int(const ResolutionOutcome &)> assertOutcome;
+};
 
-    ByteBuf ruleset, partitions;
-    ASSERT_TRUE(ByteBufInitFromFile(ruleset, allocator, "endpoint_engine/model.json"));
-    ASSERT_TRUE(ByteBufInitFromFile(partitions, allocator, "endpoint_engine/partitions.json"));
-
-    RuleEngine engine(ByteCursorFromByteBuf(ruleset), ByteCursorFromByteBuf(partitions), allocator);
-    ByteBufDelete(ruleset);
-    ByteBufDelete(partitions);
-    ASSERT_TRUE(engine);
-
-    RequestContext context(allocator);
-    context.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
-
-    auto resolved = engine.Resolve(context);
-    ASSERT_TRUE(resolved.has_value());
-    ASSERT_TRUE(resolved->IsEndpoint());
-    ASSERT_TRUE(resolved->GetUrl()->compare("https://example.us-west-2.amazonaws.com") == 0);
-
-    return AWS_OP_SUCCESS;
+template <typename Engine>
+static int s_RunCase(Allocator *allocator, const EndpointTestCase &tc, const Engine &engine)
+{
+    RequestContext ctx(allocator);
+    tc.buildContext(ctx);
+    auto result = engine.Resolve(ctx);
+    ASSERT_TRUE(result.has_value());
+    return tc.assertOutcome(*result);
 }
-AWS_TEST_CASE(RuleEngine_RegionalEndpoint, s_TestRuleEngine_RegionalEndpoint)
 
-static int s_TestRuleEngine_GlobalEndpoint(struct aws_allocator *allocator, void *ctx)
+static int s_RunBothEngines(Allocator *allocator, const EndpointTestCase &tc)
 {
-    (void)ctx;
-    ApiHandle apiHandle(allocator);
-
-    ByteBuf ruleset, partitions;
+    ByteBuf ruleset, bytecode, partitions;
     ASSERT_TRUE(ByteBufInitFromFile(ruleset, allocator, "endpoint_engine/model.json"));
-    ASSERT_TRUE(ByteBufInitFromFile(partitions, allocator, "endpoint_engine/partitions.json"));
-
-    RuleEngine engine(ByteCursorFromByteBuf(ruleset), ByteCursorFromByteBuf(partitions), allocator);
-    ByteBufDelete(ruleset);
-    ByteBufDelete(partitions);
-    ASSERT_TRUE(engine);
-
-    RequestContext context(allocator); /* no Region */
-
-    auto resolved = engine.Resolve(context);
-    ASSERT_TRUE(resolved.has_value());
-    ASSERT_TRUE(resolved->IsEndpoint());
-    ASSERT_TRUE(resolved->GetUrl()->compare("https://example.amazonaws.com") == 0);
-
-    return AWS_OP_SUCCESS;
-}
-AWS_TEST_CASE(RuleEngine_GlobalEndpoint, s_TestRuleEngine_GlobalEndpoint)
-
-static int s_TestBddEngine_RegionalEndpoint(struct aws_allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    ApiHandle apiHandle(allocator);
-
-    ByteBuf bytecode, partitions;
     ASSERT_TRUE(ByteBufInitFromFile(bytecode, allocator, "endpoint_engine/model.bin"));
     ASSERT_TRUE(ByteBufInitFromFile(partitions, allocator, "endpoint_engine/partitions.json"));
 
-    BddEngine engine(ByteCursorFromByteBuf(bytecode), ByteCursorFromByteBuf(partitions), allocator);
-    ASSERT_TRUE(engine);
+    RuleEngine ruleEngine(ByteCursorFromByteBuf(ruleset), ByteCursorFromByteBuf(partitions), allocator);
+    BddEngine bddEngine(ByteCursorFromByteBuf(bytecode), ByteCursorFromByteBuf(partitions), allocator);
 
-    RequestContext context(allocator);
-    context.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
+    ASSERT_TRUE(ruleEngine);
+    ASSERT_TRUE(bddEngine);
 
-    auto resolved = engine.Resolve(context);
+    ASSERT_SUCCESS(s_RunCase(allocator, tc, ruleEngine));
+    ASSERT_SUCCESS(s_RunCase(allocator, tc, bddEngine));
+
+    ByteBufDelete(ruleset);
     ByteBufDelete(bytecode);
     ByteBufDelete(partitions);
-    ASSERT_TRUE(resolved.has_value());
-    ASSERT_TRUE(resolved->IsEndpoint());
-    ASSERT_TRUE(resolved->GetUrl()->compare("https://example.us-west-2.amazonaws.com") == 0);
 
     return AWS_OP_SUCCESS;
 }
-AWS_TEST_CASE(BddEngine_RegionalEndpoint, s_TestBddEngine_RegionalEndpoint)
 
-static int s_TestBddEngine_GlobalEndpoint(struct aws_allocator *allocator, void *ctx)
+/* ------------------------------------------------------------------ */
+/* Test cases                                                           */
+/* ------------------------------------------------------------------ */
+
+static int s_TestEndpointResolution_RegionalEndpoint(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
     ApiHandle apiHandle(allocator);
-
-    ByteBuf bytecode, partitions;
-    ASSERT_TRUE(ByteBufInitFromFile(bytecode, allocator, "endpoint_engine/model.bin"));
-    ASSERT_TRUE(ByteBufInitFromFile(partitions, allocator, "endpoint_engine/partitions.json"));
-
-    BddEngine engine(ByteCursorFromByteBuf(bytecode), ByteCursorFromByteBuf(partitions), allocator);
-    ASSERT_TRUE(engine);
-
-    RequestContext context(allocator); /* no Region */
-
-    auto resolved = engine.Resolve(context);
-    ByteBufDelete(bytecode);
-    ByteBufDelete(partitions);
-    ASSERT_TRUE(resolved.has_value());
-    ASSERT_TRUE(resolved->IsEndpoint());
-    ASSERT_TRUE(resolved->GetUrl()->compare("https://example.amazonaws.com") == 0);
-
-    return AWS_OP_SUCCESS;
+    return s_RunBothEngines(
+        allocator,
+        {
+            [](RequestContext &c) {
+                c.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
+            },
+            [](const ResolutionOutcome &outcome) -> int {
+                ASSERT_TRUE(outcome.IsEndpoint());
+                ASSERT_TRUE(outcome.GetUrl().has_value());
+                ASSERT_TRUE(outcome.GetUrl()->compare("https://example.us-west-2.amazonaws.com") == 0);
+                return AWS_OP_SUCCESS;
+            },
+        });
 }
-AWS_TEST_CASE(BddEngine_GlobalEndpoint, s_TestBddEngine_GlobalEndpoint)
+AWS_TEST_CASE(EndpointResolution_RegionalEndpoint, s_TestEndpointResolution_RegionalEndpoint)
+
+static int s_TestEndpointResolution_GlobalEndpoint(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    ApiHandle apiHandle(allocator);
+    return s_RunBothEngines(
+        allocator,
+        {
+            [](RequestContext &c) { (void)c; /* no Region */ },
+            [](const ResolutionOutcome &outcome) -> int {
+                ASSERT_TRUE(outcome.IsEndpoint());
+                ASSERT_TRUE(outcome.GetUrl().has_value());
+                ASSERT_TRUE(outcome.GetUrl()->compare("https://example.amazonaws.com") == 0);
+                return AWS_OP_SUCCESS;
+            },
+        });
+}
+AWS_TEST_CASE(EndpointResolution_GlobalEndpoint, s_TestEndpointResolution_GlobalEndpoint)
