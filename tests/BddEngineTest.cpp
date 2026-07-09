@@ -2,6 +2,12 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+
+/**
+ * BddEngine-specific tests.
+ * Endpoint resolution cases live in EndpointEngineTest.cpp.
+ */
+
 #include <aws/crt/Api.h>
 #include <aws/crt/Types.h>
 #include <aws/crt/endpoints/BddEngine.h>
@@ -9,172 +15,49 @@
 
 using namespace Aws::Crt;
 
-static int s_RunResolve(
-    Allocator *allocator,
-    Endpoints::RequestContext &context,
-    Optional<Endpoints::ResolutionOutcome> &out_resolved)
-{
-    ByteBuf bytecode_buf;
-    ASSERT_TRUE(ByteBufInitFromFile(bytecode_buf, allocator, "bdd/endpoint-bdd-encoded.bin"));
-
-    ByteBuf partitions_buf;
-    ASSERT_TRUE(ByteBufInitFromFile(partitions_buf, allocator, "sample_partitions.json"));
-
-    Endpoints::BddEngine engine(ByteCursorFromByteBuf(bytecode_buf), ByteCursorFromByteBuf(partitions_buf), allocator);
-    ASSERT_TRUE(engine);
-
-    out_resolved = engine.Resolve(context);
-    ASSERT_TRUE(out_resolved.has_value());
-    ASSERT_TRUE(out_resolved->IsEndpoint());
-
-    ByteBufDelete(bytecode_buf);
-    ByteBufDelete(partitions_buf);
-    return AWS_OP_SUCCESS;
-}
-
-AWS_TEST_CASE(BddEngineVirtual, s_TestBddEngineVirtual)
-static int s_TestBddEngineVirtual(Allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-
-    Aws::Crt::Endpoints::RequestContext context(allocator);
-    context.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
-    context.AddString(ByteCursorFromCString("Bucket"), ByteCursorFromCString("bucket-name"));
-
-    Aws::Crt::Optional<Aws::Crt::Endpoints::ResolutionOutcome> resolved;
-    ASSERT_SUCCESS(s_RunResolve(allocator, context, resolved));
-    ASSERT_TRUE(resolved->GetUrl()->compare("https://bucket-name.s3.us-west-2.amazonaws.com") == 0);
-
-    return AWS_OP_SUCCESS;
-}
-
-AWS_TEST_CASE(BddEnginePath, s_TestBddEnginePath)
-static int s_TestBddEnginePath(Allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-
-    Aws::Crt::Endpoints::RequestContext context(allocator);
-    context.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
-    context.AddBoolean(ByteCursorFromCString("ForcePathStyle"), true);
-    context.AddString(ByteCursorFromCString("Bucket"), ByteCursorFromCString("bucket-name"));
-
-    Aws::Crt::Optional<Aws::Crt::Endpoints::ResolutionOutcome> resolved;
-    ASSERT_SUCCESS(s_RunResolve(allocator, context, resolved));
-    ASSERT_TRUE(resolved->GetUrl()->compare("https://s3.us-west-2.amazonaws.com/bucket-name") == 0);
-
-    return AWS_OP_SUCCESS;
-}
-
-AWS_TEST_CASE(BddEngineDataplaneZone, s_TestBddEngineDataplaneZone)
-static int s_TestBddEngineDataplaneZone(Allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-
-    Aws::Crt::Endpoints::RequestContext context(allocator);
-    context.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-east-1"));
-    context.AddString(ByteCursorFromCString("Bucket"), ByteCursorFromCString("mybucket--abcd-ab1--x-s3"));
-
-    Aws::Crt::Optional<Aws::Crt::Endpoints::ResolutionOutcome> resolved;
-    ASSERT_SUCCESS(s_RunResolve(allocator, context, resolved));
-    ASSERT_TRUE(
-        resolved->GetUrl()->compare("https://mybucket--abcd-ab1--x-s3.s3express-abcd-ab1.us-east-1.amazonaws.com") ==
-        0);
-
-    return AWS_OP_SUCCESS;
-}
-
-AWS_TEST_CASE(BddEngineAccessPoint, s_TestBddEngineAccessPoint)
-static int s_TestBddEngineAccessPoint(Allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-
-    Aws::Crt::Endpoints::RequestContext context(allocator);
-    context.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
-    context.AddString(
-        ByteCursorFromCString("Bucket"),
-        ByteCursorFromCString("arn:aws:s3:us-west-2:123456789012:accesspoint:myendpoint"));
-
-    Aws::Crt::Optional<Aws::Crt::Endpoints::ResolutionOutcome> resolved;
-    ASSERT_SUCCESS(s_RunResolve(allocator, context, resolved));
-    ASSERT_TRUE(
-        resolved->GetUrl()->compare("https://myendpoint-123456789012.s3-accesspoint.us-west-2.amazonaws.com") == 0);
-
-    return AWS_OP_SUCCESS;
-}
-
-AWS_TEST_CASE(BddEngineOutpost, s_TestBddEngineOutpost)
-static int s_TestBddEngineOutpost(Allocator *allocator, void *ctx)
-{
-    (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
-
-    Aws::Crt::Endpoints::RequestContext context(allocator);
-    context.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
-    context.AddString(
-        ByteCursorFromCString("Bucket"),
-        ByteCursorFromCString(
-            "arn:aws:s3-outposts:us-west-2:123456789012:outpost/op-01234567890123456/accesspoint/reports"));
-
-    Aws::Crt::Optional<Aws::Crt::Endpoints::ResolutionOutcome> resolved;
-    ASSERT_SUCCESS(s_RunResolve(allocator, context, resolved));
-    ASSERT_TRUE(
-        resolved->GetUrl()->compare(
-            "https://reports-123456789012.op-01234567890123456.s3-outposts.us-west-2.amazonaws.com") == 0);
-
-    return AWS_OP_SUCCESS;
-}
-
-AWS_TEST_CASE(BddEngineInvalidBytecode, s_TestBddEngineInvalidBytecode)
 static int s_TestBddEngineInvalidBytecode(Allocator *allocator, void *ctx)
 {
     (void)ctx;
-    Aws::Crt::ApiHandle apiHandle(allocator);
+    ApiHandle apiHandle(allocator);
 
-    ByteBuf partitions_buf;
-    ASSERT_TRUE(ByteBufInitFromFile(partitions_buf, allocator, "sample_partitions.json"));
+    ByteBuf partitions;
+    ASSERT_TRUE(ByteBufInitFromFile(partitions, allocator, "endpoint_engine/partitions.json"));
 
     static const uint8_t bad_bytecode[] = {0x00, 0x01, 0x02, 0x03};
     ByteCursor bytecode = ByteCursorFromArray(bad_bytecode, sizeof(bad_bytecode));
-    ByteCursor partitions = ByteCursorFromByteBuf(partitions_buf);
 
-    Aws::Crt::Endpoints::BddEngine engine(bytecode, partitions, allocator);
-    ByteBufDelete(partitions_buf);
+    Endpoints::BddEngine engine(bytecode, ByteCursorFromByteBuf(partitions), allocator);
+    ByteBufDelete(partitions);
     ASSERT_FALSE(engine);
 
     return AWS_OP_SUCCESS;
 }
+AWS_TEST_CASE(BddEngineInvalidBytecode, s_TestBddEngineInvalidBytecode)
 
-AWS_TEST_CASE(BddEngineDefaultAllocator, s_TestBddEngineDefaultAllocator)
 static int s_TestBddEngineDefaultAllocator(Allocator *allocator, void *ctx)
 {
     (void)ctx;
     (void)allocator;
-    Aws::Crt::ApiHandle apiHandle;
+    ApiHandle apiHandle;
 
-    ByteBuf bytecode_buf;
-    ASSERT_TRUE(ByteBufInitFromFile(bytecode_buf, Aws::Crt::ApiAllocator(), "bdd/endpoint-bdd-encoded.bin"));
-
-    ByteBuf partitions_buf;
-    ASSERT_TRUE(ByteBufInitFromFile(partitions_buf, Aws::Crt::ApiAllocator(), "sample_partitions.json"));
+    ByteBuf bytecode, partitions;
+    ASSERT_TRUE(ByteBufInitFromFile(bytecode, ApiAllocator(), "endpoint_engine/model.bin"));
+    ASSERT_TRUE(ByteBufInitFromFile(partitions, ApiAllocator(), "endpoint_engine/partitions.json"));
 
     /* No allocator passed — uses ApiAllocator() default */
-    Endpoints::BddEngine engine(ByteCursorFromByteBuf(bytecode_buf), ByteCursorFromByteBuf(partitions_buf));
+    Endpoints::BddEngine engine(ByteCursorFromByteBuf(bytecode), ByteCursorFromByteBuf(partitions));
     ASSERT_TRUE(engine);
 
     Endpoints::RequestContext context;
     context.AddString(ByteCursorFromCString("Region"), ByteCursorFromCString("us-west-2"));
-    context.AddString(ByteCursorFromCString("Bucket"), ByteCursorFromCString("bucket-name"));
 
     auto resolved = engine.Resolve(context);
+    ByteBufDelete(bytecode);
+    ByteBufDelete(partitions);
     ASSERT_TRUE(resolved.has_value());
     ASSERT_TRUE(resolved->IsEndpoint());
-    ASSERT_TRUE(resolved->GetUrl()->compare("https://bucket-name.s3.us-west-2.amazonaws.com") == 0);
+    ASSERT_TRUE(resolved->GetUrl()->compare("https://example.us-west-2.amazonaws.com") == 0);
 
-    ByteBufDelete(bytecode_buf);
-    ByteBufDelete(partitions_buf);
     return AWS_OP_SUCCESS;
 }
+AWS_TEST_CASE(BddEngineDefaultAllocator, s_TestBddEngineDefaultAllocator)
