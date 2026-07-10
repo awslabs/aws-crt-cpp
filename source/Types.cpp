@@ -40,6 +40,11 @@ namespace Aws
             return buff;
         }
 
+        bool ByteBufInitFromFile(ByteBuf &buf, Allocator *alloc, const char *filename)
+        {
+            return aws_byte_buf_init_from_file(&buf, alloc, filename) == AWS_OP_SUCCESS;
+        }
+
         void ByteBufDelete(ByteBuf &buf)
         {
             aws_byte_buf_clean_up(&buf);
