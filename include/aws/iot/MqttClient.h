@@ -44,8 +44,8 @@ namespace Aws
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext,
                 bool enableMetrics = true,
-                const Crt::Optional<Crt::Mqtt::IoTDeviceSDKMetrics> &sdkMetrics =
-                    Crt::Optional<Crt::Mqtt::IoTDeviceSDKMetrics>());
+                const Crt::Optional<Crt::Mqtt::AWSIoTMetrics> &sdkMetrics =
+                    Crt::Optional<Crt::Mqtt::AWSIoTMetrics>());
 
             /**
              * Creates a client configuration for use with making new AWS Iot specific MQTT Connections with web
@@ -74,8 +74,8 @@ namespace Aws
                 Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
                 const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
                 bool enableMetrics = true,
-                const Crt::Optional<Crt::Mqtt::IoTDeviceSDKMetrics> &sdkMetrics =
-                    Crt::Optional<Crt::Mqtt::IoTDeviceSDKMetrics>());
+                const Crt::Optional<Crt::Mqtt::AWSIoTMetrics> &sdkMetrics =
+                    Crt::Optional<Crt::Mqtt::AWSIoTMetrics>());
 
             /**
              * @return true if the instance is in a valid state, false otherwise.
@@ -97,8 +97,8 @@ namespace Aws
                 Crt::Io::TlsContext &&tlsContext,
                 const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
                 bool enableMetrics = true,
-                const Crt::Optional<Crt::Mqtt::IoTDeviceSDKMetrics> &sdkMetrics =
-                    Crt::Optional<Crt::Mqtt::IoTDeviceSDKMetrics>());
+                const Crt::Optional<Crt::Mqtt::AWSIoTMetrics> &sdkMetrics =
+                    Crt::Optional<Crt::Mqtt::AWSIoTMetrics>());
 
             Crt::String m_endpoint;
             uint32_t m_port;
@@ -109,7 +109,7 @@ namespace Aws
             Crt::String m_password;
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
             bool m_enableMetricsCollection;
-            Crt::Optional<Crt::Mqtt::IoTDeviceSDKMetrics> m_sdkMetrics;
+            Crt::Optional<Crt::Mqtt::AWSIoTMetrics> m_sdkMetrics;
             int m_lastError;
 
             friend class MqttClient;

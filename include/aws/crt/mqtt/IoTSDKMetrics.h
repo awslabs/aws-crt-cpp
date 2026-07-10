@@ -22,7 +22,7 @@ namespace Aws
              * Holds the library name and a list of metadata key-value pairs to be appended
              * to the MQTT CONNECT packet's username field.
              */
-            struct AWS_CRT_CPP_API IoTDeviceSDKMetrics
+            struct AWS_CRT_CPP_API AWSIoTMetrics
             {
                 /**
                  * The library name identifier (default: "IoTDeviceSDK/CPP").
@@ -43,7 +43,7 @@ namespace Aws
                  * Populates a raw aws_mqtt_iot_metrics struct from this object.
                  *
                  * The byte cursors in the output struct point into the strings owned by
-                 * this IoTDeviceSDKMetrics instance. Do not modify LibraryName or Metadata
+                 * this AWSIoTMetrics instance. Do not modify LibraryName or Metadata
                  * after calling this method while the output struct is still in use.
                  *
                  * @param raw_options Output C struct to populate.

@@ -99,8 +99,8 @@ namespace Aws
                     const Crt::Io::TlsContext &tlsContext,
                     bool useWebsocket = false,
                     bool enableMetrics = true,
-                    const Crt::Optional<Mqtt::IoTDeviceSDKMetrics> &sdkMetrics =
-                        Crt::Optional<Mqtt::IoTDeviceSDKMetrics>()) noexcept;
+                    const Crt::Optional<Mqtt::AWSIoTMetrics> &sdkMetrics =
+                        Crt::Optional<Mqtt::AWSIoTMetrics>()) noexcept;
 
                 /**
                  * Create a new connection object over plain text from the client. The client must outlive
@@ -122,8 +122,8 @@ namespace Aws
                     const Io::SocketOptions &socketOptions,
                     bool useWebsocket = false,
                     bool enableMetrics = true,
-                    const Crt::Optional<Mqtt::IoTDeviceSDKMetrics> &sdkMetrics =
-                        Crt::Optional<Mqtt::IoTDeviceSDKMetrics>()) noexcept;
+                    const Crt::Optional<Mqtt::AWSIoTMetrics> &sdkMetrics =
+                        Crt::Optional<Mqtt::AWSIoTMetrics>()) noexcept;
 
               private:
                 aws_mqtt_client *m_client;

@@ -586,7 +586,7 @@ namespace Aws
             m_options->WithMetricsCollection(m_enableMetricsCollection);
             if (m_enableMetricsCollection)
             {
-                Crt::Mqtt::IoTDeviceSDKMetrics metrics;
+                Crt::Mqtt::AWSIoTMetrics metrics;
                 metrics.libraryName = m_sdkName;
                 metrics.metadata["IoTSDKVersion"] = m_sdkVersion;
                 m_options->WithSdkMetrics(metrics);

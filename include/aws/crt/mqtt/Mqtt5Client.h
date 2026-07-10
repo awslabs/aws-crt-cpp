@@ -748,7 +748,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &WithSdkMetrics(Mqtt::IoTDeviceSDKMetrics sdkMetrics) noexcept;
+                Mqtt5ClientOptions &WithSdkMetrics(Mqtt::AWSIoTMetrics sdkMetrics) noexcept;
 
                 /**
                  * Initializes the C aws_mqtt5_client_options from Mqtt5ClientOptions. For internal use
@@ -897,7 +897,7 @@ namespace Aws
                 uint32_t m_ackTimeoutSec;
 
                 bool m_enableMetrics = true;
-                Crt::Optional<Crt::Mqtt::IoTDeviceSDKMetrics> m_sdkMetrics;
+                Crt::Optional<Crt::Mqtt::AWSIoTMetrics> m_sdkMetrics;
 
                 /* Underlying Parameters */
                 Crt::Allocator *m_allocator;
@@ -905,13 +905,13 @@ namespace Aws
                 aws_mqtt5_packet_connect_view m_packetConnectViewStorage;
 
                 /**
-                 * Stores the final IoTDeviceSDKMetrics object so that the byte cursors in m_metricsStorage remain
+                 * Stores the final AWSIoTMetrics object so that the byte cursors in m_metricsStorage remain
                  * valid. The m_metricsStorage point into the strings owned by m_finalMetrics.
                  *
                  * Mutable so that initializeRawOptions() can rebuild the metrics struct from the latest client options
                  * before client creation.
                  */
-                mutable Mqtt::IoTDeviceSDKMetrics m_finalMetrics;
+                mutable Mqtt::AWSIoTMetrics m_finalMetrics;
                 mutable struct aws_mqtt_iot_metrics m_metricsStorage;
             };
 

@@ -29,9 +29,9 @@ namespace Aws
                        id == MetricsFeatureId::MinimumTlsVersion;
             }
 
-            ////////// IoTDeviceSDKMetrics //////////
+            ////////// AWSIoTMetrics //////////
 
-            void IoTDeviceSDKMetrics::initializeRawOptions(struct aws_mqtt_iot_metrics &raw_options) noexcept
+            void AWSIoTMetrics::initializeRawOptions(struct aws_mqtt_iot_metrics &raw_options) noexcept
             {
                 raw_options.library_name = ByteCursorFromString(libraryName);
 
@@ -53,21 +53,21 @@ namespace Aws
 
             /*! \cond DOXYGEN_PRIVATE */
             ////////// IoTSDKMetricsEncoder //////////
-            IoTDeviceSDKMetrics IoTSDKMetricsEncoder::createMetricsForMqtt5(const Mqtt5::Mqtt5ClientOptions &options)
+            AWSIoTMetrics IoTSDKMetricsEncoder::createMetricsForMqtt5(const Mqtt5::Mqtt5ClientOptions &options)
             {
                 Crt::String crtFeatureList = getEncodedFeatureListForMqtt5(options);
 
                 // Get user-provided metrics from the options
-                const IoTDeviceSDKMetrics *userMetrics =
+                const AWSIoTMetrics *userMetrics =
                     options.m_sdkMetrics.has_value() ? &options.m_sdkMetrics.value() : nullptr;
 
                 return createMetricsFromFeatureList(crtFeatureList, userMetrics);
             }
 
-            IoTDeviceSDKMetrics IoTSDKMetricsEncoder::createMetricsForMqtt311(const MqttConnectionCore &connectionCore)
+            AWSIoTMetrics IoTSDKMetricsEncoder::createMetricsForMqtt311(const MqttConnectionCore &connectionCore)
             {
                 Crt::String crtFeatureList = getEncodedFeatureListForMqtt311(connectionCore);
-                const IoTDeviceSDKMetrics *userMetrics =
+                const AWSIoTMetrics *userMetrics =
                     connectionCore.m_sdkMetrics.has_value() ? &connectionCore.m_sdkMetrics.value() : nullptr;
                 return createMetricsFromFeatureList(crtFeatureList, userMetrics);
             }
@@ -199,12 +199,12 @@ namespace Aws
                 return features;
             }
 
-            IoTDeviceSDKMetrics IoTSDKMetricsEncoder::createMetricsFromFeatureList(
+            AWSIoTMetrics IoTSDKMetricsEncoder::createMetricsFromFeatureList(
                 const Crt::String &crtFeatureList,
-                const IoTDeviceSDKMetrics *userMetrics)
+                const AWSIoTMetrics *userMetrics)
             {
                 // Determine the library name: use user-provided or default
-                IoTDeviceSDKMetrics resultMetrics;
+                AWSIoTMetrics resultMetrics;
                 if (userMetrics != nullptr && userMetrics->libraryName != "IoTDeviceSDK/CPP")
                 {
                     resultMetrics.libraryName = userMetrics->libraryName;

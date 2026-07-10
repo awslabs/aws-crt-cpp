@@ -113,28 +113,28 @@ namespace Aws
             } // namespace MetricsMinimumTlsVersionValue
 
             /**
-             * Encoder for IoT SDK metrics. Used to create the final IoTDeviceSDKMetrics directly from client options
+             * Encoder for IoT SDK metrics. Used to create the final AWSIoTMetrics directly from client options
              */
             class IoTSDKMetricsEncoder
             {
               public:
                 /**
-                 * Creates the final IoTDeviceSDKMetrics directly from Mqtt5ClientOptions.
+                 * Creates the final AWSIoTMetrics directly from Mqtt5ClientOptions.
                  * Reads features directly from the options.
                  *
                  * @param options The Mqtt5ClientOptions to extract features from.
-                 * @return The final IoTDeviceSDKMetrics with all metadata set.
+                 * @return The final AWSIoTMetrics with all metadata set.
                  */
-                static IoTDeviceSDKMetrics createMetricsForMqtt5(const Mqtt5::Mqtt5ClientOptions &options);
+                static AWSIoTMetrics createMetricsForMqtt5(const Mqtt5::Mqtt5ClientOptions &options);
 
                 /**
-                 * Creates the final IoTDeviceSDKMetrics for an MQTT 3.1.1 connection.
+                 * Creates the final AWSIoTMetrics for an MQTT 3.1.1 connection.
                  *
                  * @param connectionCore The MqttConnectionCore to extract connection parameters from.
                  *
-                 * @return The final IoTDeviceSDKMetrics with all metadata set.
+                 * @return The final AWSIoTMetrics with all metadata set.
                  */
-                static IoTDeviceSDKMetrics createMetricsForMqtt311(const MqttConnectionCore &connectionCore);
+                static AWSIoTMetrics createMetricsForMqtt311(const MqttConnectionCore &connectionCore);
 
               private:
                 // Appends a "featureId/value" token to the feature list string.
@@ -154,9 +154,9 @@ namespace Aws
                  *   metrics version matches.
                  * - Other user metadata: preserved in the output (excluding reserved keys).
                  */
-                static IoTDeviceSDKMetrics createMetricsFromFeatureList(
+                static AWSIoTMetrics createMetricsFromFeatureList(
                     const Crt::String &crtFeatureList,
-                    const IoTDeviceSDKMetrics *userMetrics);
+                    const AWSIoTMetrics *userMetrics);
 
                 /**
                  * Generates the encoded feature list string directly from Mqtt5ClientOptions.

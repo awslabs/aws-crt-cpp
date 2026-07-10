@@ -614,7 +614,7 @@ namespace Aws
             {
                 if (m_enableMetrics)
                 {
-                    IoTDeviceSDKMetrics finalMetrics = IoTSDKMetricsEncoder::createMetricsForMqtt311(*this);
+                    AWSIoTMetrics finalMetrics = IoTSDKMetricsEncoder::createMetricsForMqtt311(*this);
 
                     struct aws_mqtt_iot_metrics metrics;
                     AWS_ZERO_STRUCT(metrics);

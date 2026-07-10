@@ -453,7 +453,7 @@ namespace Aws
                 return *this;
             }
 
-            Mqtt5ClientOptions &Mqtt5ClientOptions::WithSdkMetrics(Mqtt::IoTDeviceSDKMetrics sdkMetrics) noexcept
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithSdkMetrics(Mqtt::AWSIoTMetrics sdkMetrics) noexcept
             {
                 m_sdkMetrics = std::move(sdkMetrics);
                 return *this;

@@ -35,7 +35,7 @@ namespace Aws
                 bool useWebsocket = false;
                 bool useTls = false;
                 bool enableMetrics = true;
-                Crt::Optional<IoTDeviceSDKMetrics> sdkMetrics;
+                Crt::Optional<AWSIoTMetrics> sdkMetrics;
                 Allocator *allocator = nullptr;
             };
 

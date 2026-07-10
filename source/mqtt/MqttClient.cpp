@@ -72,7 +72,7 @@ namespace Aws
                 const Crt::Io::TlsContext &tlsContext,
                 bool useWebsocket,
                 bool enableMetrics,
-                const Crt::Optional<Mqtt::IoTDeviceSDKMetrics> &sdkMetrics) noexcept
+                const Crt::Optional<Mqtt::AWSIoTMetrics> &sdkMetrics) noexcept
             {
                 if (!tlsContext)
                 {
@@ -105,7 +105,7 @@ namespace Aws
                 const Io::SocketOptions &socketOptions,
                 bool useWebsocket,
                 bool enableMetrics,
-                const Crt::Optional<Mqtt::IoTDeviceSDKMetrics> &sdkMetrics) noexcept
+                const Crt::Optional<Mqtt::AWSIoTMetrics> &sdkMetrics) noexcept
 
             {
                 MqttConnectionOptions connectionOptions;

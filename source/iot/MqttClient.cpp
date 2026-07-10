@@ -33,7 +33,7 @@ namespace Aws
             const Crt::Io::SocketOptions &socketOptions,
             Crt::Io::TlsContext &&tlsContext,
             bool enableMetrics,
-            const Crt::Optional<Crt::Mqtt::IoTDeviceSDKMetrics> &sdkMetrics)
+            const Crt::Optional<Crt::Mqtt::AWSIoTMetrics> &sdkMetrics)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
               m_enableMetricsCollection(enableMetrics), m_sdkMetrics(sdkMetrics), m_lastError(0)
         {
@@ -47,7 +47,7 @@ namespace Aws
             Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
             const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
             bool enableMetrics,
-            const Crt::Optional<Crt::Mqtt::IoTDeviceSDKMetrics> &sdkMetrics)
+            const Crt::Optional<Crt::Mqtt::AWSIoTMetrics> &sdkMetrics)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
               m_webSocketInterceptor(std::move(interceptor)), m_proxyOptions(proxyOptions),
               m_enableMetricsCollection(enableMetrics), m_sdkMetrics(sdkMetrics), m_lastError(0)
@@ -61,7 +61,7 @@ namespace Aws
             Crt::Io::TlsContext &&tlsContext,
             const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
             bool enableMetrics,
-            const Crt::Optional<Crt::Mqtt::IoTDeviceSDKMetrics> &sdkMetrics)
+            const Crt::Optional<Crt::Mqtt::AWSIoTMetrics> &sdkMetrics)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
               m_proxyOptions(proxyOptions), m_enableMetricsCollection(enableMetrics), m_sdkMetrics(sdkMetrics),
               m_lastError(0)
@@ -538,10 +538,10 @@ namespace Aws
             }
 
             // Build SDK metrics for the config
-            Crt::Optional<Crt::Mqtt::IoTDeviceSDKMetrics> sdkMetrics;
+            Crt::Optional<Crt::Mqtt::AWSIoTMetrics> sdkMetrics;
             if (m_enableMetricsCollection)
             {
-                Crt::Mqtt::IoTDeviceSDKMetrics metrics;
+                Crt::Mqtt::AWSIoTMetrics metrics;
                 metrics.libraryName = m_sdkName;
                 metrics.metadata["IoTSDKVersion"] = m_sdkVersion;
                 sdkMetrics = std::move(metrics);
