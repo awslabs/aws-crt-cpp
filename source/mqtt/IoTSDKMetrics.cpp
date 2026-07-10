@@ -51,8 +51,8 @@ namespace Aws
                 raw_options.metadata_entries = m_rawMetadataEntries.empty() ? nullptr : m_rawMetadataEntries.data();
             }
 
+            /*! \cond DOXYGEN_PRIVATE */
             ////////// IoTSDKMetricsEncoder //////////
-
             IoTDeviceSDKMetrics IoTSDKMetricsEncoder::createMetricsForMqtt5(const Mqtt5::Mqtt5ClientOptions &options)
             {
                 Crt::String crtFeatureList = getEncodedFeatureListForMqtt5(options);
@@ -487,6 +487,7 @@ namespace Aws
                 featureList += value;
             }
 
+            /*! \endcond */
         } // namespace Mqtt
     } // namespace Crt
 } // namespace Aws
