@@ -49,3 +49,4 @@ namespace Aws
         } // namespace Io
     } // namespace Crt
 } // namespace Aws
+/*! \endcond */

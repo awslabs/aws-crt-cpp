@@ -227,3 +227,4 @@ namespace Aws
         } // namespace Mqtt
     } // namespace Crt
 } // namespace Aws
+/*! \endcond */
