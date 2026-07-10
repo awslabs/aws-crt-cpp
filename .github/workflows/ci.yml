@@ -7,8 +7,8 @@ on:
       - 'docs'
 
 env:
-  BUILDER_VERSION: v0.9.96
-  BUILDER_SOURCE: releases
+  BUILDER_VERSION: ubuntu-22-msan-image # TODO: switch back to release tag (e.g. v0.9.97) once builder image is released
+  BUILDER_SOURCE: channels
   BUILDER_HOST: https://d19elf31gohf1l.cloudfront.net
   PACKAGE_NAME: aws-crt-cpp
   LINUX_BASE_IMAGE: ubuntu-18-x64
@@ -418,19 +418,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - sanitizers: "thread"
-            compiler: clang-latest
-            extra-cmake: ""
-          - sanitizers: "address,undefined"
-            compiler: clang-latest
-            extra-cmake: ""
-          - sanitizers: "memory"
-            compiler: clang-latest
-            extra-cmake: >-
-              --cmake-extra=-DCMAKE_CXX_FLAGS=-stdlib=libc++
-              --cmake-extra=-DCMAKE_EXE_LINKER_FLAGS=-stdlib=libc++
-              --cmake-extra=-DCMAKE_C_FLAGS=-fsanitize-memory-track-origins=2
+        sanitizers: ["thread", "address,undefined"]
     steps:
     - uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -440,4 +428,26 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }} --cmake-extra=-DENABLE_SANITIZERS=ON --cmake-extra=-DSANITIZERS="${{ matrix.sanitizers }}" ${{ matrix.extra-cmake }}
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=clang-latest --cmake-extra=-DENABLE_SANITIZERS=ON --cmake-extra=-DSANITIZERS="${{ matrix.sanitizers }}"
+
+  clang-msan:
+    # MemorySanitizer needs the whole stack instrumented, so it runs in its own job
+    # on a dedicated image (ubuntu-22-msan-x64) that ships an MSan-instrumented libc++
+    # at /opt/libcxx-msan. aws-lc is instrumented via the -DMSAN gate in CMakeLists.txt.
+    # clang-19 must match the compiler that built that libc++. Flag paths are hardcoded
+    # (not $LIBCXX_MSAN_ROOT) because that env var only exists inside the container.
+    # TODO: move these MSan flags into a CMake toolchain file baked into the image
+    # and pass a single -DCMAKE_TOOLCHAIN_FILE, once the flag set is finalized.
+    runs-on: ubuntu-26.04 # latest
+    steps:
+    - uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ env.CRT_CI_ROLE }}
+        aws-region: ${{ env.AWS_DEFAULT_REGION }}
+    - name: Build ${{ env.PACKAGE_NAME }}
+      run: |
+        aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-ubuntu-22-msan-x64 build -p ${{ env.PACKAGE_NAME }} --compiler=clang-19 --cmake-extra=-DENABLE_SANITIZERS=ON --cmake-extra=-DSANITIZERS=memory \
+          --cmake-extra="-DCMAKE_C_FLAGS=-fsanitize=memory -fsanitize-memory-track-origins=2" \
+          --cmake-extra="-DCMAKE_CXX_FLAGS=-fsanitize=memory -fsanitize-memory-track-origins=2 -nostdinc++ -isystem /opt/libcxx-msan/include/c++/v1" \
+          --cmake-extra="-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=memory -nostdlib++ -L/opt/libcxx-msan/lib -Wl,-rpath,/opt/libcxx-msan/lib -lc++ -lc++abi -lgcc_s"
