@@ -2674,6 +2674,8 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *)
             }
         }));
 
+    // Wait for retain cleared.
+    retainCleared.get_future().get();
     // 5. client3 start and subscribe to retain topic
     ASSERT_TRUE(mqtt5Client3->Start());
     ASSERT_TRUE(testContext3.connectionPromise.get_future().get());
