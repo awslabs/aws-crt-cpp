@@ -516,6 +516,7 @@ static Mqtt5TestContext createTestContext(
 
     Mqtt5ClientOptions mqtt5Options(allocator);
     mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string);
+    fprintf(stderr, "=== port is %lu\n", static_cast<unsigned long>(mqtt5TestVars.m_port_value));
     mqtt5Options.WithPort(mqtt5TestVars.m_port_value);
 
     s_setupConnectionLifeCycle(mqtt5Options, context.connectionPromise, context.stoppedPromise);
