@@ -195,6 +195,10 @@ file(GLOB AWS_CRT_CBOR_HEADERS
     "include/aws/crt/cbor/*.h"
 )
 
+file(GLOB AWS_CRT_S3_HEADERS
+    "include/aws/crt/s3/*.h"
+)
+
 file(GLOB AWS_CRT_PUBLIC_HEADERS
     ${AWS_CRT_HEADERS}
     ${AWS_CRT_AUTH_HEADERS}
@@ -206,6 +210,7 @@ file(GLOB AWS_CRT_PUBLIC_HEADERS
     ${AWS_CRT_HTTP_HEADERS}
     ${AWS_CRT_ENDPOINT_HEADERS}
     ${AWS_CRT_CBOR_HEADERS}
+    ${AWS_CRT_S3_HEADERS}
 )
 
 if(BUILD_DEPS)
@@ -257,6 +262,10 @@ file(GLOB AWS_CRT_CBOR_SRC
     "source/cbor/*.cpp"
 )
 
+file(GLOB AWS_CRT_S3_SRC
+    "source/s3/*.cpp"
+)
+
 file(GLOB AWS_CRT_CPP_SRC
     ${AWS_CRT_SRC}
     ${AWS_CRT_AUTH_SRC}
@@ -268,6 +277,7 @@ file(GLOB AWS_CRT_CPP_SRC
     ${AWS_CRT_HTTP_SRC}
     ${AWS_CRT_ENDPOINTS_SRC}
     ${AWS_CRT_CBOR_SRC}
+    ${AWS_CRT_S3_SRC}
 )
 
 if(WIN32)
@@ -282,6 +292,7 @@ if(WIN32)
         source_group("Header Files\\aws\\crt\\http" FILES ${AWS_CRT_HTTP_HEADERS})
         source_group("Header Files\\aws\\crt\\endpoints" FILES ${AWS_CRT_ENDPOINT_HEADERS})
         source_group("Header Files\\aws\\crt\\cbor" FILES ${AWS_CRT_CBOR_HEADERS})
+        source_group("Header Files\\aws\\crt\\s3" FILES ${AWS_CRT_S3_HEADERS})
 
         source_group("Source Files" FILES ${AWS_CRT_SRC})
         source_group("Source Files\\auth" FILES ${AWS_CRT_AUTH_SRC})
@@ -293,6 +304,7 @@ if(WIN32)
         source_group("Source Files\\http" FILES ${AWS_CRT_HTTP_SRC})
         source_group("Source Files\\endpoints" FILES ${AWS_CRT_ENDPOINTS_SRC})
         source_group("Source Files\\cbor" FILES ${AWS_CRT_CBOR_SRC})
+        source_group("Source Files\\s3" FILES ${AWS_CRT_S3_SRC})
     endif()
 endif()
 
@@ -385,6 +397,7 @@ install(FILES ${AWS_CRT_MQTT_HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/a
 install(FILES ${AWS_CRT_HTTP_HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/aws/crt/http" COMPONENT Development)
 install(FILES ${AWS_CRT_ENDPOINT_HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/aws/crt/endpoints" COMPONENT Development)
 install(FILES ${AWS_CRT_CBOR_HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/aws/crt/cbor" COMPONENT Development)
+install(FILES ${AWS_CRT_S3_HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/aws/crt/s3" COMPONENT Development)
 
 install(
     TARGETS ${PROJECT_NAME}
