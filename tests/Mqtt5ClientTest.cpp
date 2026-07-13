@@ -479,7 +479,7 @@ struct Mqtt5TestEnvVars
     struct aws_string *m_httpproxy_port = NULL;
 
     Aws::Crt::String m_hostname_string;
-    uint32_t m_port_value;
+    uint32_t m_port_value = 0;
     Aws::Crt::String m_username_string;
     Aws::Crt::ByteCursor m_password_cursor;
     Aws::Crt::String m_certificate_path_string;
@@ -516,7 +516,6 @@ static Mqtt5TestContext createTestContext(
 
     Mqtt5ClientOptions mqtt5Options(allocator);
     mqtt5Options.WithHostName(mqtt5TestVars.m_hostname_string);
-    fprintf(stderr, "=== port is %lu\n", static_cast<unsigned long>(mqtt5TestVars.m_port_value));
     mqtt5Options.WithPort(mqtt5TestVars.m_port_value);
 
     s_setupConnectionLifeCycle(mqtt5Options, context.connectionPromise, context.stoppedPromise);
