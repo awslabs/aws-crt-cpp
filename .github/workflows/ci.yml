@@ -397,7 +397,7 @@ jobs:
         ./make-docs.py
 
   check-submodules:
-    runs-on: ubuntu-26.04 # latest
+    runs-on: ubuntu-24.04 # latest
     steps:
     - uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -414,7 +414,7 @@ jobs:
       uses: awslabs/aws-crt-builder/.github/actions/check-submodules@main
 
   clang-sanitizers:
-    runs-on: ubuntu-24.04 # latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -431,11 +431,12 @@ jobs:
         ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=clang-latest --cmake-extra=-DENABLE_SANITIZERS=ON --cmake-extra=-DSANITIZERS="${{ matrix.sanitizers }}"
 
   clang-msan:
-    # MemorySanitizer needs the whole stack instrumented, so it runs in its own job
-    # on a dedicated image (ubuntu-22-msan-x64) that ships an MSan-instrumented libc++
-    # and a matching toolchain file. aws-lc is instrumented via the -DMSAN gate in
-    # CMakeLists.txt. clang-19 must match the compiler that built that libc++.
-    runs-on: ubuntu-24.04 # latest
+    # MemorySanitizer needs the whole stack instrumented, so it runs in its own job on a dedicated image
+    # that ships an MSan-instrumented libc++ and a matching toolchain file.
+    runs-on: ubuntu-24.04
+    env:
+      # Must match the clang that built the instrumented libc++ in the image; do not bump this alone.
+      MSAN_COMPILER: clang-19
     steps:
     - uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -444,4 +445,4 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-ubuntu-22-msan-x64 build -p ${{ env.PACKAGE_NAME }} --compiler=clang-19 --cmake-extra=-DENABLE_SANITIZERS=ON --cmake-extra=-DSANITIZERS=memory --cmake-extra=-DCMAKE_TOOLCHAIN_FILE=/opt/msan-toolchain.cmake
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-ubuntu-22-msan-x64 build -p ${{ env.PACKAGE_NAME }} --compiler=${{ env.MSAN_COMPILER }} --cmake-extra=-DENABLE_SANITIZERS=ON --cmake-extra=-DSANITIZERS=memory --cmake-extra=-DCMAKE_TOOLCHAIN_FILE=/opt/msan-toolchain.cmake

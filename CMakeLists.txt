@@ -89,6 +89,7 @@ if(BUILD_DEPS)
 
             set(AWSLC_SANITIZER_ARGUMENTS "")
             if(ENABLE_SANITIZERS AND SANITIZERS MATCHES "memory")
+                # OPENSSL_NO_ASM is used because MSan can't see into asm.
                 list(APPEND AWSLC_SANITIZER_ARGUMENTS -DMSAN=1 -DOPENSSL_NO_ASM=1)
             endif()
 
