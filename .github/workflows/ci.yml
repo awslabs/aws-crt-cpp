@@ -7,8 +7,8 @@ on:
       - 'docs'
 
 env:
-  BUILDER_VERSION: ubuntu-22-msan-image # TODO: switch back to release tag (e.g. v0.9.97) once builder image is released
-  BUILDER_SOURCE: channels
+  BUILDER_VERSION: v0.9.97
+  BUILDER_SOURCE: releases
   BUILDER_HOST: https://d19elf31gohf1l.cloudfront.net
   PACKAGE_NAME: aws-crt-cpp
   LINUX_BASE_IMAGE: ubuntu-18-x64
