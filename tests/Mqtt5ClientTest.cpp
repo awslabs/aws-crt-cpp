@@ -479,7 +479,7 @@ struct Mqtt5TestEnvVars
     struct aws_string *m_httpproxy_port = NULL;
 
     Aws::Crt::String m_hostname_string;
-    uint32_t m_port_value;
+    uint32_t m_port_value = 0;
     Aws::Crt::String m_username_string;
     Aws::Crt::ByteCursor m_password_cursor;
     Aws::Crt::String m_certificate_path_string;
