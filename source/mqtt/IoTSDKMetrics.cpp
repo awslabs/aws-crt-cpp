@@ -7,7 +7,7 @@
 #include <aws/crt/mqtt/private/MqttConnectionCore.h>
 
 #include <aws/crt/Config.h>
-#include <aws/crt/io/private/CertificateSource.h>
+#include <aws/crt/io/private/TlsMetrics.h>
 
 #include <cstdlib>
 
@@ -294,7 +294,9 @@ namespace Aws
                             featureMap[token.substr(0, slashPos)] = token.substr(slashPos + 1);
                         }
                         if (commaPos == Crt::String::npos)
+                        {
                             break;
+                        }
                         pos = commaPos + 1;
                     }
                 };
@@ -308,7 +310,9 @@ namespace Aws
                 for (const auto &entry : featureMap)
                 {
                     if (!result.empty())
+                    {
                         result += ',';
+                    }
                     result += entry.first;
                     result += '/';
                     result += entry.second;

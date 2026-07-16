@@ -32,10 +32,10 @@ namespace Aws
             uint32_t port,
             const Crt::Io::SocketOptions &socketOptions,
             Crt::Io::TlsContext &&tlsContext,
-            bool enableMetrics,
+            bool disableMetrics,
             const Crt::Optional<Crt::Mqtt::AWSIoTMetrics> &sdkMetrics)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
-              m_enableMetricsCollection(enableMetrics), m_sdkMetrics(sdkMetrics), m_lastError(0)
+              m_disableMetricsCollection(disableMetrics), m_sdkMetrics(sdkMetrics), m_lastError(0)
         {
         }
 
@@ -46,11 +46,11 @@ namespace Aws
             Crt::Io::TlsContext &&tlsContext,
             Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
             const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
-            bool enableMetrics,
+            bool disableMetrics,
             const Crt::Optional<Crt::Mqtt::AWSIoTMetrics> &sdkMetrics)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
               m_webSocketInterceptor(std::move(interceptor)), m_proxyOptions(proxyOptions),
-              m_enableMetricsCollection(enableMetrics), m_sdkMetrics(sdkMetrics), m_lastError(0)
+              m_disableMetricsCollection(disableMetrics), m_sdkMetrics(sdkMetrics), m_lastError(0)
         {
         }
 
@@ -60,10 +60,10 @@ namespace Aws
             const Crt::Io::SocketOptions &socketOptions,
             Crt::Io::TlsContext &&tlsContext,
             const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
-            bool enableMetrics,
+            bool disableMetrics,
             const Crt::Optional<Crt::Mqtt::AWSIoTMetrics> &sdkMetrics)
             : m_endpoint(endpoint), m_port(port), m_context(std::move(tlsContext)), m_socketOptions(socketOptions),
-              m_proxyOptions(proxyOptions), m_enableMetricsCollection(enableMetrics), m_sdkMetrics(sdkMetrics),
+              m_proxyOptions(proxyOptions), m_disableMetricsCollection(disableMetrics), m_sdkMetrics(sdkMetrics),
               m_lastError(0)
         {
         }
@@ -76,13 +76,7 @@ namespace Aws
 
         // Common setup shared by all valid constructors
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(Crt::Allocator *allocator) noexcept
-            : m_allocator(allocator), m_portOverride(0),
-#    ifdef AWS_IOT_SDK_VERSION
-              m_sdkVersion(AWS_IOT_SDK_VERSION),
-#    else
-              m_sdkVersion(AWS_CRT_CPP_VERSION),
-#    endif
-              m_lastError(0)
+            : m_allocator(allocator), m_portOverride(0), m_lastError(0)
         {
             m_socketOptions.SetConnectTimeoutMs(3000);
         }
@@ -204,25 +198,6 @@ namespace Aws
         MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithEndpoint(Crt::String &&endpoint)
         {
             m_endpoint = std::move(endpoint);
-            return *this;
-        }
-
-        MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithMetricsCollection(bool enabled)
-        {
-            m_enableMetricsCollection = enabled;
-            return *this;
-        }
-
-        MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithSdkName(const Crt::String &sdkName)
-        {
-            m_sdkName = sdkName;
-            return *this;
-        }
-
-        MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithSdkVersion(
-            const Crt::String &sdkVersion)
-        {
-            m_sdkVersion = sdkVersion;
             return *this;
         }
 
@@ -514,23 +489,6 @@ namespace Aws
                 }
             }
 
-            // add metrics string to username (if metrics enabled)
-            if (m_enableMetricsCollection)
-            {
-                if (username.find('?') != Crt::String::npos)
-                {
-                    username += "&";
-                }
-                else
-                {
-                    username += "?";
-                }
-                username += "SDK=";
-                username += m_sdkName;
-                username += "&Version=";
-                username += m_sdkVersion;
-            }
-
             auto tlsContext = Crt::Io::TlsContext(m_contextOptions, Crt::Io::TlsMode::CLIENT, m_allocator);
             if (!tlsContext)
             {
@@ -539,24 +497,18 @@ namespace Aws
 
             // Build SDK metrics for the config
             Crt::Optional<Crt::Mqtt::AWSIoTMetrics> sdkMetrics;
-            if (m_enableMetricsCollection)
             {
                 Crt::Mqtt::AWSIoTMetrics metrics;
-                metrics.libraryName = m_sdkName;
-                metrics.metadata["IoTSDKVersion"] = m_sdkVersion;
+#    ifdef AWS_IOT_SDK_VERSION
+                metrics.metadata["IoTSDKVersion"] = AWS_IOT_SDK_VERSION;
+#    endif
                 sdkMetrics = std::move(metrics);
             }
 
             if (!m_websocketConfig)
             {
                 auto config = MqttClientConnectionConfig(
-                    m_endpoint,
-                    port,
-                    m_socketOptions,
-                    std::move(tlsContext),
-                    m_proxyOptions,
-                    m_enableMetricsCollection,
-                    sdkMetrics);
+                    m_endpoint, port, m_socketOptions, std::move(tlsContext), m_proxyOptions, false, sdkMetrics);
                 config.m_username = username;
                 config.m_password = password;
                 return config;
@@ -587,7 +539,7 @@ namespace Aws
                 std::move(tlsContext),
                 signerTransform,
                 useWebsocketProxyOptions ? m_websocketConfig->ProxyOptions : m_proxyOptions,
-                m_enableMetricsCollection,
+                false,
                 sdkMetrics);
             config.m_username = username;
             config.m_password = password;
@@ -624,7 +576,7 @@ namespace Aws
                 config.m_socketOptions,
                 config.m_context,
                 useWebsocket,
-                config.m_enableMetricsCollection,
+                config.m_disableMetricsCollection,
                 config.m_sdkMetrics);
 
             if (!newConnection)

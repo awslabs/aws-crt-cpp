@@ -11,7 +11,7 @@
 
 #include <aws/crt/Types.h>
 #include <aws/crt/io/TlsOptions.h>
-#include <aws/crt/io/private/CertificateSource.h>
+#include <aws/crt/io/private/TlsMetrics.h>
 #include <aws/crt/mqtt/IoTSDKMetrics.h>
 #include <aws/crt/mqtt/Mqtt5Client.h>
 #include <aws/io/tls_channel_handler.h>

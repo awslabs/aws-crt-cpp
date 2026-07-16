@@ -105,7 +105,7 @@ namespace Aws
          *****************************************************/
 
         Mqtt5ClientBuilder::Mqtt5ClientBuilder(Crt::Allocator *allocator) noexcept
-            : m_allocator(allocator), m_port(0), m_lastError(0), m_enableMetricsCollection(true)
+            : m_allocator(allocator), m_port(0), m_lastError(0)
         {
             m_options = new Crt::Mqtt5::Mqtt5ClientOptions(allocator);
         }
@@ -437,18 +437,6 @@ namespace Aws
             return WithAckTimeoutSec(ackTimeoutSec);
         }
 
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithSdkName(const Crt::String &sdkName)
-        {
-            m_sdkName = sdkName;
-            return *this;
-        }
-
-        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithSdkVersion(const Crt::String &sdkVersion)
-        {
-            m_sdkVersion = sdkVersion;
-            return *this;
-        }
-
         Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithClientConnectionSuccessCallback(
             OnConnectionSuccessHandler callback) noexcept
         {
@@ -536,8 +524,7 @@ namespace Aws
                 }
             }
 
-            // add metrics string to username (if metrics enabled)
-            if (m_enableMetricsCollection || m_customAuthConfig.has_value())
+            if (m_customAuthConfig.has_value())
             {
                 Crt::String username = "";
                 if (m_connectOptions != nullptr)
@@ -583,14 +570,12 @@ namespace Aws
                 m_options->WithConnectOptions(m_connectOptions);
             }
 
-            m_options->WithMetricsCollection(m_enableMetricsCollection);
-            if (m_enableMetricsCollection)
-            {
-                Crt::Mqtt::AWSIoTMetrics metrics;
-                metrics.libraryName = m_sdkName;
-                metrics.metadata["IoTSDKVersion"] = m_sdkVersion;
-                m_options->WithSdkMetrics(metrics);
-            }
+            m_options->WithMetricsCollection(true);
+            Crt::Mqtt::AWSIoTMetrics metrics;
+#    ifdef AWS_IOT_SDK_VERSION
+            metrics.metadata["IoTSDKVersion"] = AWS_IOT_SDK_VERSION;
+#    endif
+            m_options->WithSdkMetrics(metrics);
 
             bool proxyOptionsSet = false;
 
@@ -631,8 +616,6 @@ namespace Aws
             {
                 m_options->WithHttpProxyOptions(m_proxyOptions.value());
             }
-
-            m_options->WithMetricsCollection(m_enableMetricsCollection);
 
             return Crt::Mqtt5::Mqtt5Client::NewMqtt5Client(*m_options, m_allocator);
         }

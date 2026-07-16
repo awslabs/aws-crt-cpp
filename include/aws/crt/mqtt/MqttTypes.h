@@ -34,7 +34,7 @@ namespace Aws
                 Crt::Io::TlsConnectionOptions tlsConnectionOptions;
                 bool useWebsocket = false;
                 bool useTls = false;
-                bool enableMetrics = true;
+                bool disableMetrics = false;
                 Crt::Optional<AWSIoTMetrics> sdkMetrics;
                 Allocator *allocator = nullptr;
             };

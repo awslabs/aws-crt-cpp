@@ -85,9 +85,9 @@ namespace Aws
                  * @param socketOptions socket options to use when establishing the connection
                  * @param tlsContext tls context to use with the connection
                  * @param useWebsocket should the connection use websockets or should it use direct mqtt?
-                 * @param enableMetrics enable AWS IoT metrics collection. Default to true.
+                 * @param disableMetrics disable AWS IoT metrics collection. Default to false.
                  * @param sdkMetrics optional custom SDK metrics to include in the MQTT CONNECT packet.
-                 *   If not provided, default metrics will be used when enableMetrics is true.
+                 *   If not provided, default metrics will be used when disableMetrics is false.
                  *
                  * @return a new connection object.  Connect() will still need to be called after all further
                  * configuration is finished.
@@ -98,7 +98,7 @@ namespace Aws
                     const Io::SocketOptions &socketOptions,
                     const Crt::Io::TlsContext &tlsContext,
                     bool useWebsocket = false,
-                    bool enableMetrics = true,
+                    bool disableMetrics = false,
                     const Crt::Optional<Mqtt::AWSIoTMetrics> &sdkMetrics =
                         Crt::Optional<Mqtt::AWSIoTMetrics>()) noexcept;
 
@@ -109,9 +109,9 @@ namespace Aws
                  * @param port port to connect to
                  * @param socketOptions socket options to use when establishing the connection
                  * @param useWebsocket should the connection use websockets or should it use direct mqtt?
-                 * @param enableMetrics enable AWS IoT metrics collection. Default to true.
+                 * @param disableMetrics disable AWS IoT metrics collection. Default to false.
                  * @param sdkMetrics optional custom SDK metrics to include in the MQTT CONNECT packet.
-                 *   If not provided, default metrics will be used when enableMetrics is true.
+                 *   If not provided, default metrics will be used when disableMetrics is false.
                  *
                  * @return a new connection object.  Connect() will still need to be called after all further
                  * configuration is finished.
@@ -121,7 +121,7 @@ namespace Aws
                     uint32_t port,
                     const Io::SocketOptions &socketOptions,
                     bool useWebsocket = false,
-                    bool enableMetrics = true,
+                    bool disableMetrics = false,
                     const Crt::Optional<Mqtt::AWSIoTMetrics> &sdkMetrics =
                         Crt::Optional<Mqtt::AWSIoTMetrics>()) noexcept;
 
