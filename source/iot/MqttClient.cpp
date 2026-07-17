@@ -496,14 +496,10 @@ namespace Aws
             }
 
             // Build SDK metrics for the config
-            Crt::Optional<Crt::Mqtt::AWSIoTMetrics> sdkMetrics;
-            {
-                Crt::Mqtt::AWSIoTMetrics metrics;
+            Crt::Mqtt::AWSIoTMetrics sdkMetrics;
 #    ifdef AWS_IOT_SDK_VERSION
-                metrics.metadata["IoTSDKVersion"] = AWS_IOT_SDK_VERSION;
+            sdkMetrics.SetMetadataEntry("IoTSDKVersion", AWS_IOT_SDK_VERSION);
 #    endif
-                sdkMetrics = std::move(metrics);
-            }
 
             if (!m_websocketConfig)
             {

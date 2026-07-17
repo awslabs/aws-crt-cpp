@@ -573,7 +573,7 @@ namespace Aws
             m_options->WithMetricsCollection(true);
             Crt::Mqtt::AWSIoTMetrics metrics;
 #    ifdef AWS_IOT_SDK_VERSION
-            metrics.metadata["IoTSDKVersion"] = AWS_IOT_SDK_VERSION;
+            metrics.SetMetadataEntry("IoTSDKVersion", AWS_IOT_SDK_VERSION);
 #    endif
             m_options->WithSdkMetrics(metrics);
 

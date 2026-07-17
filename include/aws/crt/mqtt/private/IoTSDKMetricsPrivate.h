@@ -119,22 +119,23 @@ namespace Aws
             {
               public:
                 /**
-                 * Creates the final AWSIoTMetrics directly from Mqtt5ClientOptions.
+                 * Populates the output AWSIoTMetrics directly from Mqtt5ClientOptions.
                  * Reads features directly from the options.
                  *
                  * @param options The Mqtt5ClientOptions to extract features from.
-                 * @return The final AWSIoTMetrics with all metadata set.
+                 * @param outMetrics Output AWSIoTMetrics to populate with all metadata.
                  */
-                static AWSIoTMetrics createMetricsForMqtt5(const Mqtt5::Mqtt5ClientOptions &options);
+                static void createMetricsForMqtt5(const Mqtt5::Mqtt5ClientOptions &options, AWSIoTMetrics &outMetrics);
 
                 /**
-                 * Creates the final AWSIoTMetrics for an MQTT 3.1.1 connection.
+                 * Populates the output AWSIoTMetrics for an MQTT 3.1.1 connection.
                  *
                  * @param connectionCore The MqttConnectionCore to extract connection parameters from.
-                 *
-                 * @return The final AWSIoTMetrics with all metadata set.
+                 * @param outMetrics Output AWSIoTMetrics to populate with all metadata.
                  */
-                static AWSIoTMetrics createMetricsForMqtt311(const MqttConnectionCore &connectionCore);
+                static void createMetricsForMqtt311(
+                    const MqttConnectionCore &connectionCore,
+                    AWSIoTMetrics &outMetrics);
 
               private:
                 // Appends a "featureId/value" token to the feature list string.
@@ -154,9 +155,10 @@ namespace Aws
                  *   metrics version matches.
                  * - Other user metadata: preserved in the output (excluding reserved keys).
                  */
-                static AWSIoTMetrics createMetricsFromFeatureList(
+                static void createMetricsFromFeatureList(
                     const Crt::String &crtFeatureList,
-                    const AWSIoTMetrics *userMetrics);
+                    const AWSIoTMetrics *userMetrics,
+                    AWSIoTMetrics &outMetrics);
 
                 /**
                  * Generates the encoded feature list string directly from Mqtt5ClientOptions.

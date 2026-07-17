@@ -244,7 +244,7 @@ static int s_TestMqtt311DirectConnectionWithBasicAuth(Aws::Crt::Allocator *alloc
     Aws::Crt::Io::SocketOptions socketOptions;
     socketOptions.SetConnectTimeoutMs(3000);
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
-        aws_string_c_str(endpoint), (uint32_t)std::stoi(aws_string_c_str(port)), socketOptions, false, false);
+        aws_string_c_str(endpoint), (uint32_t)std::stoi(aws_string_c_str(port)), socketOptions, false, true);
     connection->SetLogin(aws_string_c_str(username), aws_string_c_str(password));
     int connectResult = s_ConnectAndDisconnect(connection);
     ASSERT_SUCCESS(connectResult);
@@ -525,7 +525,7 @@ static int s_TestMqtt311WSConnectionWithBasicAuth(Aws::Crt::Allocator *allocator
     Aws::Crt::Io::SocketOptions socketOptions;
     socketOptions.SetConnectTimeoutMs(3000);
     std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection = client.NewConnection(
-        aws_string_c_str(endpoint), (uint32_t)std::stoi(aws_string_c_str(port)), socketOptions, true, false);
+        aws_string_c_str(endpoint), (uint32_t)std::stoi(aws_string_c_str(port)), socketOptions, true, true);
     connection->SetLogin(aws_string_c_str(username), aws_string_c_str(password));
     int connectResult = s_ConnectAndDisconnect(connection);
     ASSERT_SUCCESS(connectResult);

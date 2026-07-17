@@ -31,15 +31,83 @@ namespace Aws
 
             ////////// AWSIoTMetrics //////////
 
+            AWSIoTMetrics::AWSIoTMetrics(const AWSIoTMetrics &other)
+                : m_libraryName(other.m_libraryName), m_metadata(other.m_metadata)
+            {
+            }
+
+            AWSIoTMetrics &AWSIoTMetrics::operator=(const AWSIoTMetrics &other)
+            {
+                if (this != &other)
+                {
+                    m_libraryName = other.m_libraryName;
+                    m_metadata = other.m_metadata;
+                    m_rawMetadataEntries.clear();
+                }
+                return *this;
+            }
+
+            AWSIoTMetrics::AWSIoTMetrics(AWSIoTMetrics &&other) noexcept
+                : m_libraryName(std::move(other.m_libraryName)), m_metadata(std::move(other.m_metadata))
+            {
+                // m_rawMetadataEntries intentionally not moved — byte cursors would dangle.
+                other.m_rawMetadataEntries.clear();
+            }
+
+            AWSIoTMetrics &AWSIoTMetrics::operator=(AWSIoTMetrics &&other) noexcept
+            {
+                if (this != &other)
+                {
+                    m_libraryName = std::move(other.m_libraryName);
+                    m_metadata = std::move(other.m_metadata);
+                    m_rawMetadataEntries.clear();
+                    other.m_rawMetadataEntries.clear();
+                }
+                return *this;
+            }
+
+            void AWSIoTMetrics::SetLibraryName(Aws::Crt::String name)
+            {
+                m_libraryName = std::move(name);
+                resetRawData();
+            }
+
+            const Aws::Crt::String &AWSIoTMetrics::GetLibraryName() const
+            {
+                return m_libraryName;
+            }
+
+            void AWSIoTMetrics::SetMetadata(Crt::Map<Crt::String, Crt::String> metadata)
+            {
+                m_metadata = std::move(metadata);
+                resetRawData();
+            }
+
+            void AWSIoTMetrics::SetMetadataEntry(const Crt::String &key, const Crt::String &value)
+            {
+                m_metadata[key] = value;
+                resetRawData();
+            }
+
+            const Crt::Map<Crt::String, Crt::String> &AWSIoTMetrics::GetMetadata() const
+            {
+                return m_metadata;
+            }
+
+            void AWSIoTMetrics::resetRawData() noexcept
+            {
+                m_rawMetadataEntries.clear();
+            }
+
             void AWSIoTMetrics::initializeRawOptions(struct aws_mqtt_iot_metrics &raw_options) noexcept
             {
-                raw_options.library_name = ByteCursorFromString(libraryName);
+                raw_options.library_name = ByteCursorFromString(m_libraryName);
 
-                // Rebuild the raw entry array from the current Metadata contents.
-                // Byte cursors point directly into the strings stored in Metadata.
+                // Rebuild the raw entry array from the current m_metadata contents.
+                // Byte cursors point directly into the strings stored in m_metadata.
                 m_rawMetadataEntries.clear();
-                m_rawMetadataEntries.reserve(metadata.size());
-                for (const auto &entry : metadata)
+                m_rawMetadataEntries.reserve(m_metadata.size());
+                for (const auto &entry : m_metadata)
                 {
                     aws_mqtt_metadata_entry rawEntry;
                     rawEntry.key = ByteCursorFromString(entry.first);
@@ -53,7 +121,9 @@ namespace Aws
 
             /*! \cond DOXYGEN_PRIVATE */
             ////////// IoTSDKMetricsEncoder //////////
-            AWSIoTMetrics IoTSDKMetricsEncoder::createMetricsForMqtt5(const Mqtt5::Mqtt5ClientOptions &options)
+            void IoTSDKMetricsEncoder::createMetricsForMqtt5(
+                const Mqtt5::Mqtt5ClientOptions &options,
+                AWSIoTMetrics &outMetrics)
             {
                 Crt::String crtFeatureList = getEncodedFeatureListForMqtt5(options);
 
@@ -61,15 +131,17 @@ namespace Aws
                 const AWSIoTMetrics *userMetrics =
                     options.m_sdkMetrics.has_value() ? &options.m_sdkMetrics.value() : nullptr;
 
-                return createMetricsFromFeatureList(crtFeatureList, userMetrics);
+                createMetricsFromFeatureList(crtFeatureList, userMetrics, outMetrics);
             }
 
-            AWSIoTMetrics IoTSDKMetricsEncoder::createMetricsForMqtt311(const MqttConnectionCore &connectionCore)
+            void IoTSDKMetricsEncoder::createMetricsForMqtt311(
+                const MqttConnectionCore &connectionCore,
+                AWSIoTMetrics &outMetrics)
             {
                 Crt::String crtFeatureList = getEncodedFeatureListForMqtt311(connectionCore);
                 const AWSIoTMetrics *userMetrics =
                     connectionCore.m_sdkMetrics.has_value() ? &connectionCore.m_sdkMetrics.value() : nullptr;
-                return createMetricsFromFeatureList(crtFeatureList, userMetrics);
+                createMetricsFromFeatureList(crtFeatureList, userMetrics, outMetrics);
             }
 
             Crt::String IoTSDKMetricsEncoder::getEncodedFeatureListForMqtt311(const MqttConnectionCore &connectionCore)
@@ -199,19 +271,24 @@ namespace Aws
                 return features;
             }
 
-            AWSIoTMetrics IoTSDKMetricsEncoder::createMetricsFromFeatureList(
+            void IoTSDKMetricsEncoder::createMetricsFromFeatureList(
                 const Crt::String &crtFeatureList,
-                const AWSIoTMetrics *userMetrics)
+                const AWSIoTMetrics *userMetrics,
+                AWSIoTMetrics &outMetrics)
             {
+                // Reset the output to defaults
+                outMetrics.m_libraryName = "IoTDeviceSDK/CPP";
+                outMetrics.m_metadata.clear();
+                outMetrics.m_rawMetadataEntries.clear();
+
                 // Determine the library name: use user-provided or default
-                AWSIoTMetrics resultMetrics;
-                if (userMetrics != nullptr && userMetrics->libraryName != "IoTDeviceSDK/CPP")
+                if (userMetrics != nullptr && userMetrics->m_libraryName != "IoTDeviceSDK/CPP")
                 {
-                    resultMetrics.libraryName = userMetrics->libraryName;
+                    outMetrics.m_libraryName = userMetrics->m_libraryName;
                 }
 
                 // CRTVersion: not modifiable by user, automatically set
-                resultMetrics.metadata["CRTVersion"] = AWS_CRT_CPP_VERSION;
+                outMetrics.m_metadata["CRTVersion"] = AWS_CRT_CPP_VERSION;
 
                 Crt::String userFeatureString;
 
@@ -221,13 +298,13 @@ namespace Aws
                     Crt::String userMetricsVersion;
                     Crt::String userFeature;
 
-                    auto versionIt = userMetrics->metadata.find("IoTSDKMetricsVersion");
-                    if (versionIt != userMetrics->metadata.end())
+                    auto versionIt = userMetrics->m_metadata.find("IoTSDKMetricsVersion");
+                    if (versionIt != userMetrics->m_metadata.end())
                     {
                         userMetricsVersion = versionIt->second;
                     }
-                    auto featureIt = userMetrics->metadata.find("IoTSDKFeature");
-                    if (featureIt != userMetrics->metadata.end())
+                    auto featureIt = userMetrics->m_metadata.find("IoTSDKFeature");
+                    if (featureIt != userMetrics->m_metadata.end())
                     {
                         userFeature = featureIt->second;
                     }
@@ -240,26 +317,24 @@ namespace Aws
                     }
 
                     // Preserve other user metadata (excluding reserved keys)
-                    for (const auto &entry : userMetrics->metadata)
+                    for (const auto &entry : userMetrics->m_metadata)
                     {
                         if (entry.first != "IoTSDKFeature" && entry.first != "IoTSDKMetricsVersion" &&
                             entry.first != "CRTVersion")
                         {
-                            resultMetrics.metadata[entry.first] = entry.second;
+                            outMetrics.m_metadata[entry.first] = entry.second;
                         }
                     }
                 }
 
                 // Merge CRT and user features (both inputs are validated at this point)
                 Crt::String mergedFeatures = mergeFeatureLists(crtFeatureList, userFeatureString);
-                resultMetrics.metadata["IoTSDKFeature"] = mergedFeatures;
+                outMetrics.m_metadata["IoTSDKFeature"] = mergedFeatures;
 
                 // Always add the current metrics version
                 Crt::StringStream versionSS;
                 versionSS << IoTSDKMetricsFeatureVersion;
-                resultMetrics.metadata["IoTSDKMetricsVersion"] = versionSS.str();
-
-                return resultMetrics;
+                outMetrics.m_metadata["IoTSDKMetricsVersion"] = versionSS.str();
             }
 
             Crt::String IoTSDKMetricsEncoder::mergeFeatureLists(

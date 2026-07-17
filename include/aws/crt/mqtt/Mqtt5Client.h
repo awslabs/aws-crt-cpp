@@ -748,7 +748,7 @@ namespace Aws
                  *
                  * @return this option object
                  */
-                Mqtt5ClientOptions &WithSdkMetrics(Mqtt::AWSIoTMetrics sdkMetrics) noexcept;
+                Mqtt5ClientOptions &WithSdkMetrics(const Mqtt::AWSIoTMetrics &sdkMetrics) noexcept;
 
                 /**
                  * Initializes the C aws_mqtt5_client_options from Mqtt5ClientOptions. For internal use

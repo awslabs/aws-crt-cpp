@@ -22,28 +22,69 @@ namespace Aws
              * Holds the library name and a list of metadata key-value pairs to be appended
              * to the MQTT CONNECT packet's username field.
              */
-            struct AWS_CRT_CPP_API AWSIoTMetrics
+            class AWS_CRT_CPP_API AWSIoTMetrics
             {
-                /**
-                 * The library name identifier (default: "IoTDeviceSDK/CPP").
-                 * Maps to the SDK attribute in the username field.
-                 */
-                Aws::Crt::String libraryName = "IoTDeviceSDK/CPP";
+              public:
+                AWSIoTMetrics() = default;
+                ~AWSIoTMetrics() = default;
+                AWSIoTMetrics(const AWSIoTMetrics &other);
+                AWSIoTMetrics &operator=(const AWSIoTMetrics &other);
+                AWSIoTMetrics(AWSIoTMetrics &&other) noexcept;
+                AWSIoTMetrics &operator=(AWSIoTMetrics &&other) noexcept;
 
                 /**
-                 * Metadata key-value pairs to include in the Metadata field of the username.
+                 * Sets the library name identifier.
+                 *
+                 * @param name The library name (e.g. "IoTDeviceSDK/CPP").
                  */
-                Crt::Map<Crt::String, Crt::String> metadata;
+                void SetLibraryName(Aws::Crt::String name);
+
+                /**
+                 * Returns a const reference to the library name.
+                 */
+                const Aws::Crt::String &GetLibraryName() const;
+
+                /**
+                 * Sets the entire metadata map, replacing any existing entries.
+                 *
+                 * @param metadata The metadata key-value pairs.
+                 */
+                void SetMetadata(Crt::Map<Crt::String, Crt::String> metadata);
+
+                /**
+                 * Sets or updates a single metadata entry.
+                 *
+                 * @param key The metadata key.
+                 * @param value The metadata value.
+                 */
+                void SetMetadataEntry(const Crt::String &key, const Crt::String &value);
+
+                /**
+                 * Returns a const reference to the metadata map.
+                 */
+                const Crt::Map<Crt::String, Crt::String> &GetMetadata() const;
 
               private:
                 friend class Mqtt5::Mqtt5ClientOptions;
                 friend class MqttConnectionCore;
+                friend class IoTSDKMetricsEncoder;
+
+                /**
+                 * The library name identifier (default: "IoTDeviceSDK/CPP").
+                 * Maps to the SDK attribute in the username field.
+                 */
+                Aws::Crt::String m_libraryName = "IoTDeviceSDK/CPP";
+
+                /**
+                 * Metadata key-value pairs to include in the Metadata field of the username.
+                 */
+                Crt::Map<Crt::String, Crt::String> m_metadata;
 
                 /**
                  * Populates a raw aws_mqtt_iot_metrics struct from this object.
                  *
                  * The byte cursors in the output struct point into the strings owned by
-                 * this AWSIoTMetrics instance. Do not modify LibraryName or Metadata
+                 * this AWSIoTMetrics instance. Do not modify m_libraryName or m_metadata
                  * after calling this method while the output struct is still in use.
                  *
                  * @param raw_options Output C struct to populate.
@@ -51,8 +92,14 @@ namespace Aws
                 void initializeRawOptions(struct aws_mqtt_iot_metrics &raw_options) noexcept;
 
                 /**
+                 * Resets the raw metadata entry cache.
+                 * Must be called whenever m_libraryName or m_metadata is modified.
+                 */
+                void resetRawData() noexcept;
+
+                /**
                  * Storage for the raw C metadata entry array.
-                 * Byte cursors in these entries point into the strings in Metadata.
+                 * Byte cursors in these entries point into the strings in m_metadata.
                  * Must not be modified after initializeRawOptions() is called while the
                  * corresponding aws_mqtt_iot_metrics struct is still in use.
                  */
