@@ -896,7 +896,7 @@ namespace Aws
                  */
                 uint32_t m_ackTimeoutSec;
 
-                bool m_disableMetrics = false;
+                bool m_enableMetrics = true;
                 Crt::Optional<Crt::Mqtt::AWSIoTMetrics> m_sdkMetrics;
 
                 /* Underlying Parameters */

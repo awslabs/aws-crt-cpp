@@ -208,7 +208,7 @@ namespace Aws
                   m_extendedValidationAndFlowControlOptions(AWS_MQTT5_EVAFCO_AWS_IOT_CORE_DEFAULTS),
                   m_offlineQueueBehavior(AWS_MQTT5_COQBT_DEFAULT),
                   m_reconnectionOptions({AWS_EXPONENTIAL_BACKOFF_JITTER_DEFAULT, 0, 0, 0}), m_pingTimeoutMs(0),
-                  m_connackTimeoutMs(0), m_ackTimeoutSec(0), m_disableMetrics(false), m_allocator(allocator)
+                  m_connackTimeoutMs(0), m_ackTimeoutSec(0), m_enableMetrics(true), m_allocator(allocator)
             {
                 AWS_ZERO_STRUCT(m_metricsStorage);
                 m_socketOptions.SetSocketType(Io::SocketType::Stream);
@@ -257,7 +257,7 @@ namespace Aws
                 raw_options.ack_timeout_seconds = m_ackTimeoutSec;
                 raw_options.topic_aliasing_options = &m_topicAliasingOptions;
 
-                if (!m_disableMetrics)
+                if (m_enableMetrics)
                 {
                     // Create final metrics and store in member so strings outlive the byte cursors
                     // in m_metricsStorage (similar to how UserProperty objects are stored as members
@@ -449,7 +449,7 @@ namespace Aws
 
             Mqtt5ClientOptions &Mqtt5ClientOptions::WithMetricsCollection(bool enabled) noexcept
             {
-                m_disableMetrics = !enabled;
+                m_enableMetrics = enabled;
                 return *this;
             }
 

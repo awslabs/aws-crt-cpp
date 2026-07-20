@@ -373,7 +373,7 @@ namespace Aws
                 bool m_useTls;
                 bool m_useWebsocket;
                 MqttConnectionOperationStatistics m_operationStatistics;
-                bool m_disableMetrics = false;
+                bool m_enableMetrics = true;
                 Crt::Optional<AWSIoTMetrics> m_sdkMetrics;
                 Allocator *m_allocator;
 

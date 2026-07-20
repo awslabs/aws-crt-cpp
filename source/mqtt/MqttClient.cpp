@@ -71,7 +71,7 @@ namespace Aws
                 const Io::SocketOptions &socketOptions,
                 const Crt::Io::TlsContext &tlsContext,
                 bool useWebsocket,
-                bool disableMetrics,
+                bool enableMetrics,
                 const Crt::Optional<Mqtt::AWSIoTMetrics> &sdkMetrics) noexcept
             {
                 if (!tlsContext)
@@ -91,7 +91,7 @@ namespace Aws
                 connectionOptions.tlsContext = tlsContext;
                 connectionOptions.tlsConnectionOptions = tlsContext.NewConnectionOptions();
                 connectionOptions.useWebsocket = useWebsocket;
-                connectionOptions.disableMetrics = disableMetrics;
+                connectionOptions.enableMetrics = enableMetrics;
                 connectionOptions.sdkMetrics = sdkMetrics;
                 connectionOptions.useTls = true;
                 connectionOptions.allocator = m_client->allocator;
@@ -104,7 +104,7 @@ namespace Aws
                 uint32_t port,
                 const Io::SocketOptions &socketOptions,
                 bool useWebsocket,
-                bool disableMetrics,
+                bool enableMetrics,
                 const Crt::Optional<Mqtt::AWSIoTMetrics> &sdkMetrics) noexcept
 
             {
@@ -114,7 +114,7 @@ namespace Aws
                 connectionOptions.socketOptions = socketOptions;
                 connectionOptions.useWebsocket = useWebsocket;
                 connectionOptions.useTls = false;
-                connectionOptions.disableMetrics = disableMetrics;
+                connectionOptions.enableMetrics = enableMetrics;
                 connectionOptions.sdkMetrics = sdkMetrics;
                 connectionOptions.allocator = m_client->allocator;
 

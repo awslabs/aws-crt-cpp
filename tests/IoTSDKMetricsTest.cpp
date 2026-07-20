@@ -537,7 +537,7 @@ static int s_TestIoTSDKMetricsMqtt3Minimal(Aws::Crt::Allocator *allocator, void 
     ASSERT_TRUE(mqttClient);
 
     auto connection = mqttClient.NewConnection(
-        "localhost", 8883, socketOptions, false /* no websocket */, false /* disableMetrics */, customMetrics);
+        "localhost", 8883, socketOptions, false /* no websocket */, true /* enableMetrics */, customMetrics);
     ASSERT_NOT_NULL(connection.get());
     ASSERT_TRUE(*connection);
     return AWS_OP_SUCCESS;

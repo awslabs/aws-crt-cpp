@@ -35,7 +35,7 @@ namespace Aws
              * @param port port to connect to
              * @param socketOptions socket options to use when establishing the connection
              * @param tlsContext tls context that should be used for all connections sourced from this config
-             * @param disableMetrics Whether to disable AWS IoT Metrics in the MQTT CONNECT packet. Default is False.
+             * @param enableMetrics Whether to set AWS IoT Metrics in the MQTT CONNECT packet. Default is True.
              * @param sdkMetrics optional SDK metrics to include in the MQTT CONNECT packet
              */
             MqttClientConnectionConfig(
@@ -43,7 +43,7 @@ namespace Aws
                 uint32_t port,
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext,
-                bool disableMetrics = false,
+                bool enableMetrics = true,
                 const Crt::Optional<Crt::Mqtt::AWSIoTMetrics> &sdkMetrics = Crt::Optional<Crt::Mqtt::AWSIoTMetrics>());
 
             /**
@@ -62,7 +62,7 @@ namespace Aws
              * @param tlsContext tls context that should be used for all connections sourced from this config
              * @param interceptor websocket upgrade handshake transformation function
              * @param proxyOptions proxy configuration options
-             * @param disableMetrics Whether to disable AWS IoT Metrics in the MQTT CONNECT packet. Default is False.
+             * @param enableMetrics Whether to set AWS IoT Metrics in the MQTT CONNECT packet. Default is True.
              * @param sdkMetrics optional SDK metrics to include in the MQTT CONNECT packet
              */
             MqttClientConnectionConfig(
@@ -72,7 +72,7 @@ namespace Aws
                 Crt::Io::TlsContext &&tlsContext,
                 Crt::Mqtt::OnWebSocketHandshakeIntercept &&interceptor,
                 const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
-                bool disableMetrics = false,
+                bool enableMetrics = true,
                 const Crt::Optional<Crt::Mqtt::AWSIoTMetrics> &sdkMetrics = Crt::Optional<Crt::Mqtt::AWSIoTMetrics>());
 
             /**
@@ -94,7 +94,7 @@ namespace Aws
                 const Crt::Io::SocketOptions &socketOptions,
                 Crt::Io::TlsContext &&tlsContext,
                 const Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> &proxyOptions,
-                bool disableMetrics = false,
+                bool enableMetrics = true,
                 const Crt::Optional<Crt::Mqtt::AWSIoTMetrics> &sdkMetrics = Crt::Optional<Crt::Mqtt::AWSIoTMetrics>());
 
             Crt::String m_endpoint;
@@ -105,7 +105,7 @@ namespace Aws
             Crt::String m_username;
             Crt::String m_password;
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
-            bool m_disableMetricsCollection = false;
+            bool m_enableMetricsCollection;
             Crt::Optional<Crt::Mqtt::AWSIoTMetrics> m_sdkMetrics;
             int m_lastError;
 
@@ -333,6 +333,34 @@ namespace Aws
                 const Crt::Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
 
             /**
+             * Whether to send the SDK name and version number in the MQTT CONNECT packet.
+             * Default is True.
+             *
+             * @param enabled true to send SDK version/name/platform in the connect for metrics gathering purposes.
+             *
+             * @return this builder object
+             */
+            MqttClientConnectionConfigBuilder &WithMetricsCollection(bool enabled);
+
+            /**
+             * Overrides the default SDK Name to send as a metric in the MQTT CONNECT packet.
+             *
+             * @param sdkName string to use as the SDK name parameter in the connection string
+             *
+             * @return this builder object
+             */
+            MqttClientConnectionConfigBuilder &WithSdkName(const Crt::String &sdkName);
+
+            /**
+             * Overrides the default SDK Version to send as a metric in the MQTT CONNECT packet.
+             *
+             * @param sdkVersion string to use as the SDK version parameter in the connection string
+             *
+             * @return this builder object
+             */
+            MqttClientConnectionConfigBuilder &WithSdkVersion(const Crt::String &sdkVersion);
+
+            /**
              * Sets the custom authorizer settings. This function will modify the username, port, and TLS options.
              *
              * @param username The username to use with the custom authorizer. If an empty string is passed, it will
@@ -439,6 +467,9 @@ namespace Aws
             Crt::Io::TlsContextOptions m_contextOptions;
             Crt::Optional<WebsocketConfig> m_websocketConfig;
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
+            bool m_enableMetricsCollection = true;
+            Crt::String m_sdkName = "IoTDeviceSDK/CPP";
+            Crt::String m_sdkVersion;
             Crt::String m_username = "";
             Crt::String m_password = "";
             bool m_isUsingCustomAuthorizer = false;

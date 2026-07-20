@@ -105,7 +105,7 @@ namespace Aws
          *****************************************************/
 
         Mqtt5ClientBuilder::Mqtt5ClientBuilder(Crt::Allocator *allocator) noexcept
-            : m_allocator(allocator), m_port(0), m_lastError(0)
+            : m_allocator(allocator), m_port(0), m_lastError(0), m_enableMetricsCollection(true)
         {
             m_options = new Crt::Mqtt5::Mqtt5ClientOptions(allocator);
         }
@@ -437,6 +437,18 @@ namespace Aws
             return WithAckTimeoutSec(ackTimeoutSec);
         }
 
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithSdkName(const Crt::String &sdkName)
+        {
+            m_sdkName = sdkName;
+            return *this;
+        }
+
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithSdkVersion(const Crt::String &sdkVersion)
+        {
+            m_sdkVersion = sdkVersion;
+            return *this;
+        }
+
         Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithClientConnectionSuccessCallback(
             OnConnectionSuccessHandler callback) noexcept
         {
@@ -570,12 +582,14 @@ namespace Aws
                 m_options->WithConnectOptions(m_connectOptions);
             }
 
-            m_options->WithMetricsCollection(true);
-            Crt::Mqtt::AWSIoTMetrics metrics;
-#    ifdef AWS_IOT_SDK_VERSION
-            metrics.SetMetadataEntry("IoTSDKVersion", AWS_IOT_SDK_VERSION);
-#    endif
-            m_options->WithSdkMetrics(metrics);
+            m_options->WithMetricsCollection(m_enableMetricsCollection);
+            if (m_enableMetricsCollection)
+            {
+                Crt::Mqtt::AWSIoTMetrics metrics;
+                metrics.SetLibraryName(m_sdkName);
+                metrics.SetMetadataEntry("IoTSDKVersion", m_sdkVersion);
+                m_options->WithSdkMetrics(metrics);
+            }
 
             bool proxyOptionsSet = false;
 

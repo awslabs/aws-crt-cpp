@@ -452,6 +452,24 @@ namespace Aws
             Mqtt5ClientBuilder &WithAckTimeoutSeconds(uint32_t ackTimeoutSec) noexcept;
 
             /**
+             * Overrides the default SDK Name to send as a metric in the MQTT CONNECT packet.
+             *
+             * @param sdkName string to use as the SDK name parameter in the connection string
+             *
+             * @return this builder object
+             */
+            Mqtt5ClientBuilder &WithSdkName(const Crt::String &sdkName);
+
+            /**
+             * Overrides the default SDK Version to send as a metric in the MQTT CONNECT packet.
+             *
+             * @param sdkVersion string to use as the SDK version parameter in the connection string
+             *
+             * @return this builder object
+             */
+            Mqtt5ClientBuilder &WithSdkVersion(const Crt::String &sdkVersion);
+
+            /**
              * Builds a client configuration object from the set options.
              *
              * @return a new client connection config instance
@@ -651,6 +669,15 @@ namespace Aws
 
             /* Error */
             int m_lastError;
+
+            /** Enable AWS IoT Metrics Collection. This is always set to true for now. */
+            bool m_enableMetricsCollection;
+            Crt::String m_sdkName = "IoTDeviceSDK/CPP";
+#    ifdef AWS_IOT_SDK_VERSION
+            Crt::String m_sdkVersion = AWS_IOT_SDK_VERSION;
+#    else
+            Crt::String m_sdkVersion = AWS_CRT_CPP_VERSION;
+#    endif
         };
 
     } // namespace Iot
