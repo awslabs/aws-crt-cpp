@@ -25,7 +25,7 @@ namespace Aws
             class AWS_CRT_CPP_API AWSIoTMetrics
             {
               public:
-                AWSIoTMetrics() = default;
+                AWSIoTMetrics();
                 ~AWSIoTMetrics() = default;
                 AWSIoTMetrics(const AWSIoTMetrics &other);
                 AWSIoTMetrics &operator=(const AWSIoTMetrics &other);
@@ -35,7 +35,7 @@ namespace Aws
                 /**
                  * Sets the library name identifier.
                  *
-                 * @param name The library name (e.g. "IoTDeviceSDK/CPP").
+                 * @param name The library name
                  */
                 void SetLibraryName(Aws::Crt::String name);
 
@@ -45,19 +45,20 @@ namespace Aws
                 const Aws::Crt::String &GetLibraryName() const;
 
                 /**
-                 * Sets the entire metadata map, replacing any existing entries.
-                 *
-                 * @param metadata The metadata key-value pairs.
-                 */
-                void SetMetadata(Crt::Map<Crt::String, Crt::String> metadata);
-
-                /**
                  * Sets or updates a single metadata entry.
                  *
                  * @param key The metadata key.
                  * @param value The metadata value.
                  */
                 void SetMetadataEntry(const Crt::String &key, const Crt::String &value);
+
+                /**
+                 * Removes a single metadata entry by key.
+                 * No-op if the key does not exist.
+                 *
+                 * @param key The metadata key to remove.
+                 */
+                void RemoveMetadataEntry(const Crt::String &key);
 
                 /**
                  * Returns a const reference to the metadata map.
@@ -70,10 +71,10 @@ namespace Aws
                 friend class IoTSDKMetricsEncoder;
 
                 /**
-                 * The library name identifier (default: "IoTDeviceSDK/CPP").
+                 * The library name identifier.
                  * Maps to the SDK attribute in the username field.
                  */
-                Aws::Crt::String m_libraryName = "IoTDeviceSDK/CPP";
+                Aws::Crt::String m_libraryName;
 
                 /**
                  * Metadata key-value pairs to include in the Metadata field of the username.

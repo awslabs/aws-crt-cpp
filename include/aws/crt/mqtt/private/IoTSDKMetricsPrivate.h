@@ -118,24 +118,25 @@ namespace Aws
             class IoTSDKMetricsEncoder
             {
               public:
+                // Default library name identifier used when no custom name is provided for metrics.
+                static constexpr const char *DEFAULT_METRICS_LIBRARY_NAME = "IoTDeviceSDK/CPP";
+
                 /**
-                 * Populates the output AWSIoTMetrics directly from Mqtt5ClientOptions.
+                 * Creates and returns a new AWSIoTMetrics from Mqtt5ClientOptions.
                  * Reads features directly from the options.
                  *
                  * @param options The Mqtt5ClientOptions to extract features from.
-                 * @param outMetrics Output AWSIoTMetrics to populate with all metadata.
+                 * @return A new AWSIoTMetrics populated with all metadata.
                  */
-                static void createMetricsForMqtt5(const Mqtt5::Mqtt5ClientOptions &options, AWSIoTMetrics &outMetrics);
+                static AWSIoTMetrics createMetricsForMqtt5(const Mqtt5::Mqtt5ClientOptions &options);
 
                 /**
-                 * Populates the output AWSIoTMetrics for an MQTT 3.1.1 connection.
+                 * Creates and returns a new AWSIoTMetrics for an MQTT 3.1.1 connection.
                  *
                  * @param connectionCore The MqttConnectionCore to extract connection parameters from.
-                 * @param outMetrics Output AWSIoTMetrics to populate with all metadata.
+                 * @return A new AWSIoTMetrics populated with all metadata.
                  */
-                static void createMetricsForMqtt311(
-                    const MqttConnectionCore &connectionCore,
-                    AWSIoTMetrics &outMetrics);
+                static AWSIoTMetrics createMetricsForMqtt311(const MqttConnectionCore &connectionCore);
 
               private:
                 // Appends a "featureId/value" token to the feature list string.

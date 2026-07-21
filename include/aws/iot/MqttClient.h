@@ -468,7 +468,7 @@ namespace Aws
             Crt::Optional<WebsocketConfig> m_websocketConfig;
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
             bool m_enableMetricsCollection = true;
-            Crt::String m_sdkName = "IoTDeviceSDK/CPP";
+            Crt::String m_sdkName;
             Crt::String m_sdkVersion;
             Crt::String m_username = "";
             Crt::String m_password = "";

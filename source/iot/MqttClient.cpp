@@ -10,6 +10,8 @@
 #include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Uri.h>
 
+#include <aws/crt/mqtt/private/IoTSDKMetricsPrivate.h>
+
 #if !BYO_CRYPTO
 
 namespace Aws
@@ -77,6 +79,7 @@ namespace Aws
         // Common setup shared by all valid constructors
         MqttClientConnectionConfigBuilder::MqttClientConnectionConfigBuilder(Crt::Allocator *allocator) noexcept
             : m_allocator(allocator), m_portOverride(0),
+              m_sdkName(Crt::Mqtt::IoTSDKMetricsEncoder::DEFAULT_METRICS_LIBRARY_NAME),
 #    ifdef AWS_IOT_SDK_VERSION
               m_sdkVersion(AWS_IOT_SDK_VERSION),
 #    else

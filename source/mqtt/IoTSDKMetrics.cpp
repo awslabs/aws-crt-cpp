@@ -31,6 +31,8 @@ namespace Aws
 
             ////////// AWSIoTMetrics //////////
 
+            AWSIoTMetrics::AWSIoTMetrics() : m_libraryName(Mqtt::IoTSDKMetricsEncoder::DEFAULT_METRICS_LIBRARY_NAME) {}
+
             AWSIoTMetrics::AWSIoTMetrics(const AWSIoTMetrics &other)
                 : m_libraryName(other.m_libraryName), m_metadata(other.m_metadata)
             {
@@ -77,15 +79,15 @@ namespace Aws
                 return m_libraryName;
             }
 
-            void AWSIoTMetrics::SetMetadata(Crt::Map<Crt::String, Crt::String> metadata)
-            {
-                m_metadata = std::move(metadata);
-                resetRawData();
-            }
-
             void AWSIoTMetrics::SetMetadataEntry(const Crt::String &key, const Crt::String &value)
             {
                 m_metadata[key] = value;
+                resetRawData();
+            }
+
+            void AWSIoTMetrics::RemoveMetadataEntry(const Crt::String &key)
+            {
+                m_metadata.erase(key);
                 resetRawData();
             }
 
@@ -105,7 +107,7 @@ namespace Aws
 
                 // Rebuild the raw entry array from the current m_metadata contents.
                 // Byte cursors point directly into the strings stored in m_metadata.
-                m_rawMetadataEntries.clear();
+                resetRawData();
                 m_rawMetadataEntries.reserve(m_metadata.size());
                 for (const auto &entry : m_metadata)
                 {
@@ -121,10 +123,9 @@ namespace Aws
 
             /*! \cond DOXYGEN_PRIVATE */
             ////////// IoTSDKMetricsEncoder //////////
-            void IoTSDKMetricsEncoder::createMetricsForMqtt5(
-                const Mqtt5::Mqtt5ClientOptions &options,
-                AWSIoTMetrics &outMetrics)
+            AWSIoTMetrics IoTSDKMetricsEncoder::createMetricsForMqtt5(const Mqtt5::Mqtt5ClientOptions &options)
             {
+                AWSIoTMetrics outMetrics;
                 Crt::String crtFeatureList = getEncodedFeatureListForMqtt5(options);
 
                 // Get user-provided metrics from the options
@@ -132,16 +133,17 @@ namespace Aws
                     options.m_sdkMetrics.has_value() ? &options.m_sdkMetrics.value() : nullptr;
 
                 createMetricsFromFeatureList(crtFeatureList, userMetrics, outMetrics);
+                return outMetrics;
             }
 
-            void IoTSDKMetricsEncoder::createMetricsForMqtt311(
-                const MqttConnectionCore &connectionCore,
-                AWSIoTMetrics &outMetrics)
+            AWSIoTMetrics IoTSDKMetricsEncoder::createMetricsForMqtt311(const MqttConnectionCore &connectionCore)
             {
+                AWSIoTMetrics outMetrics;
                 Crt::String crtFeatureList = getEncodedFeatureListForMqtt311(connectionCore);
                 const AWSIoTMetrics *userMetrics =
                     connectionCore.m_sdkMetrics.has_value() ? &connectionCore.m_sdkMetrics.value() : nullptr;
                 createMetricsFromFeatureList(crtFeatureList, userMetrics, outMetrics);
+                return outMetrics;
             }
 
             Crt::String IoTSDKMetricsEncoder::getEncodedFeatureListForMqtt311(const MqttConnectionCore &connectionCore)
@@ -217,15 +219,17 @@ namespace Aws
                 appendFeature(
                     features,
                     MetricsFeatureId::OutboundTopicAliasBehavior,
-                    metricsValueForOutboundTopicAliasBehavior(static_cast<Mqtt5::OutboundTopicAliasBehaviorType>(
-                        options.m_topicAliasingOptions.outbound_topic_alias_behavior)));
+                    metricsValueForOutboundTopicAliasBehavior(
+                        static_cast<Mqtt5::OutboundTopicAliasBehaviorType>(
+                            options.m_topicAliasingOptions.outbound_topic_alias_behavior)));
 
                 // E: inbound_topic_alias_behavior
                 appendFeature(
                     features,
                     MetricsFeatureId::InboundTopicAliasBehavior,
-                    metricsValueForInboundTopicAliasBehavior(static_cast<Mqtt5::InboundTopicAliasBehaviorType>(
-                        options.m_topicAliasingOptions.inbound_topic_alias_behavior)));
+                    metricsValueForInboundTopicAliasBehavior(
+                        static_cast<Mqtt5::InboundTopicAliasBehaviorType>(
+                            options.m_topicAliasingOptions.inbound_topic_alias_behavior)));
 
                 // F: protocol_version — MQTT5 is always used for Mqtt5Client
                 appendFeature(features, MetricsFeatureId::ProtocolVersion, MetricsProtocolVersionValue::Mqtt5);
@@ -277,12 +281,12 @@ namespace Aws
                 AWSIoTMetrics &outMetrics)
             {
                 // Reset the output to defaults
-                outMetrics.m_libraryName = "IoTDeviceSDK/CPP";
+                outMetrics.m_libraryName = IoTSDKMetricsEncoder::DEFAULT_METRICS_LIBRARY_NAME;
                 outMetrics.m_metadata.clear();
                 outMetrics.m_rawMetadataEntries.clear();
 
                 // Determine the library name: use user-provided or default
-                if (userMetrics != nullptr && userMetrics->m_libraryName != "IoTDeviceSDK/CPP")
+                if (userMetrics != nullptr && !userMetrics->m_libraryName.empty())
                 {
                     outMetrics.m_libraryName = userMetrics->m_libraryName;
                 }
