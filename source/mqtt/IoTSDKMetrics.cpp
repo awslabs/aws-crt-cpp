@@ -219,17 +219,15 @@ namespace Aws
                 appendFeature(
                     features,
                     MetricsFeatureId::OutboundTopicAliasBehavior,
-                    metricsValueForOutboundTopicAliasBehavior(
-                        static_cast<Mqtt5::OutboundTopicAliasBehaviorType>(
-                            options.m_topicAliasingOptions.outbound_topic_alias_behavior)));
+                    metricsValueForOutboundTopicAliasBehavior(static_cast<Mqtt5::OutboundTopicAliasBehaviorType>(
+                        options.m_topicAliasingOptions.outbound_topic_alias_behavior)));
 
                 // E: inbound_topic_alias_behavior
                 appendFeature(
                     features,
                     MetricsFeatureId::InboundTopicAliasBehavior,
-                    metricsValueForInboundTopicAliasBehavior(
-                        static_cast<Mqtt5::InboundTopicAliasBehaviorType>(
-                            options.m_topicAliasingOptions.inbound_topic_alias_behavior)));
+                    metricsValueForInboundTopicAliasBehavior(static_cast<Mqtt5::InboundTopicAliasBehaviorType>(
+                        options.m_topicAliasingOptions.inbound_topic_alias_behavior)));
 
                 // F: protocol_version — MQTT5 is always used for Mqtt5Client
                 appendFeature(features, MetricsFeatureId::ProtocolVersion, MetricsProtocolVersionValue::Mqtt5);
