@@ -1,0 +1,360 @@
+name: Nightly CI
+
+on:
+  schedule:
+    - cron: '0 7 * * *' # 7:00 UTC daily (midnight PDT)
+  workflow_dispatch: # Allow manual trigger
+
+env:
+  BUILDER_VERSION: v0.9.97
+  BUILDER_SOURCE: releases
+  BUILDER_HOST: https://d19elf31gohf1l.cloudfront.net
+  PACKAGE_NAME: aws-crt-cpp
+  LINUX_BASE_IMAGE: ubuntu-18-x64
+  RUN: ${{ github.run_id }}-${{ github.run_number }}
+  CRT_CI_ROLE: ${{ secrets.CRT_CI_ROLE_ARN }}
+  AWS_DEFAULT_REGION: us-east-1
+
+permissions:
+  id-token: write
+
+jobs:
+  # Update all submodules to latest main before building.
+  # This validates the full integration of the C layer at HEAD.
+  linux-compiler-compat:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler:
+          - gcc-4.8
+          - gcc-5
+          - gcc-7
+          - gcc-8
+          - gcc-9
+          - gcc-11
+          - gcc-12
+          - gcc-14
+          - clang-6
+          - clang-9
+          - clang-11
+          - clang-14
+          - clang-18
+    steps:
+    - uses: aws-actions/configure-aws-credentials@v6
+      with:
+        role-to-assume: ${{ env.CRT_CI_ROLE }}
+        aws-region: ${{ env.AWS_DEFAULT_REGION }}
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Update submodules to main (our repos only; 3P deps stay pinned)
+      run: |
+        for dir in crt/aws-c-*; do
+          echo "Updating $dir to main..."
+          (cd "$dir" && git fetch origin main && git checkout origin/main)
+        done
+        echo "Updating crt/aws-checksums to main..."
+        (cd crt/aws-checksums && git fetch origin main && git checkout origin/main)
+    - name: Build ${{ env.PACKAGE_NAME }}
+      run: |
+        aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }}
+
+  linux-distro-compat:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - fedora-34-x64
+          - opensuse-leap
+          - rhel8-x64
+          - raspbian-bullseye
+    steps:
+    - uses: aws-actions/configure-aws-credentials@v6
+      with:
+        role-to-assume: ${{ env.CRT_CI_ROLE }}
+        aws-region: ${{ env.AWS_DEFAULT_REGION }}
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Update submodules to main (our repos only; 3P deps stay pinned)
+      run: |
+        for dir in crt/aws-c-*; do
+          echo "Updating $dir to main..."
+          (cd "$dir" && git fetch origin main && git checkout origin/main)
+        done
+        echo "Updating crt/aws-checksums to main..."
+        (cd crt/aws-checksums && git fetch origin main && git checkout origin/main)
+    - name: Build ${{ env.PACKAGE_NAME }}
+      run: |
+        aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
+        docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ matrix.image }} build -p ${{ env.PACKAGE_NAME }}
+
+  cmake-min-version:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: aws-actions/configure-aws-credentials@v6
+      with:
+        role-to-assume: ${{ env.CRT_CI_ROLE }}
+        aws-region: ${{ env.AWS_DEFAULT_REGION }}
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Update submodules to main (our repos only; 3P deps stay pinned)
+      run: |
+        for dir in crt/aws-c-*; do
+          echo "Updating $dir to main..."
+          (cd "$dir" && git fetch origin main && git checkout origin/main)
+        done
+        echo "Updating crt/aws-checksums to main..."
+        (cd crt/aws-checksums && git fetch origin main && git checkout origin/main)
+    - name: Install CMake 3.9
+      run: |
+        wget -q https://github.com/Kitware/CMake/releases/download/v3.9.6/cmake-3.9.6-Linux-x86_64.tar.gz
+        tar xzf cmake-3.9.6-Linux-x86_64.tar.gz
+        echo "$PWD/cmake-3.9.6-Linux-x86_64/bin" >> $GITHUB_PATH
+    - name: Verify CMake version
+      run: cmake --version
+    - name: Build with CMake 3.9
+      run: |
+        mkdir build && cd build
+        cmake .. -DBUILD_DEPS=ON -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
+        cmake --build . --parallel $(nproc)
+    - name: Test
+      run: |
+        cd build
+        ctest --output-on-failure
+
+  sanitizers:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizers: [",thread", ",address,undefined"]
+    steps:
+    - uses: aws-actions/configure-aws-credentials@v6
+      with:
+        role-to-assume: ${{ env.CRT_CI_ROLE }}
+        aws-region: ${{ env.AWS_DEFAULT_REGION }}
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Update submodules to main (our repos only; 3P deps stay pinned)
+      run: |
+        for dir in crt/aws-c-*; do
+          echo "Updating $dir to main..."
+          (cd "$dir" && git fetch origin main && git checkout origin/main)
+        done
+        echo "Updating crt/aws-checksums to main..."
+        (cd crt/aws-checksums && git fetch origin main && git checkout origin/main)
+    - name: Build ${{ env.PACKAGE_NAME }} with sanitizers
+      run: |
+        aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=clang-17 --cmake-extra=-DENABLE_SANITIZERS=ON --cmake-extra=-DSANITIZERS="${{ matrix.sanitizers }}"
+
+  clang-msan:
+    runs-on: ubuntu-24.04
+    env:
+      MSAN_COMPILER: clang-19
+    steps:
+    - uses: aws-actions/configure-aws-credentials@v6
+      with:
+        role-to-assume: ${{ env.CRT_CI_ROLE }}
+        aws-region: ${{ env.AWS_DEFAULT_REGION }}
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Update submodules to main (our repos only; 3P deps stay pinned)
+      run: |
+        for dir in crt/aws-c-*; do
+          echo "Updating $dir to main..."
+          (cd "$dir" && git fetch origin main && git checkout origin/main)
+        done
+        echo "Updating crt/aws-checksums to main..."
+        (cd crt/aws-checksums && git fetch origin main && git checkout origin/main)
+    - name: Build ${{ env.PACKAGE_NAME }} with MSan
+      run: |
+        aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-ubuntu-22-msan-x64 build -p ${{ env.PACKAGE_NAME }} --compiler=${{ env.MSAN_COMPILER }} --cmake-extra=-DENABLE_SANITIZERS=ON --cmake-extra=-DSANITIZERS=memory --cmake-extra=-DCMAKE_TOOLCHAIN_FILE=/opt/msan-toolchain.cmake
+
+  macos:
+    runs-on: macos-14
+    steps:
+    - uses: aws-actions/configure-aws-credentials@v6
+      with:
+        role-to-assume: ${{ env.CRT_CI_ROLE }}
+        aws-region: ${{ env.AWS_DEFAULT_REGION }}
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Update submodules to main (our repos only; 3P deps stay pinned)
+      run: |
+        for dir in crt/aws-c-*; do
+          echo "Updating $dir to main..."
+          (cd "$dir" && git fetch origin main && git checkout origin/main)
+        done
+        echo "Updating crt/aws-checksums to main..."
+        (cd crt/aws-checksums && git fetch origin main && git checkout origin/main)
+    - name: Build ${{ env.PACKAGE_NAME }}
+      run: |
+        python3 -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder')"
+        chmod a+x builder
+        ./builder build -p ${{ env.PACKAGE_NAME }}
+
+  windows:
+    runs-on: windows-2025
+    steps:
+    - uses: aws-actions/configure-aws-credentials@v6
+      with:
+        role-to-assume: ${{ env.CRT_CI_ROLE }}
+        aws-region: ${{ env.AWS_DEFAULT_REGION }}
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Update submodules to main (our repos only; 3P deps stay pinned)
+      shell: bash
+      run: |
+        for dir in crt/aws-c-*; do
+          echo "Updating $dir to main..."
+          (cd "$dir" && git fetch origin main && git checkout origin/main)
+        done
+        echo "Updating crt/aws-checksums to main..."
+        (cd crt/aws-checksums && git fetch origin main && git checkout origin/main)
+    - name: Build ${{ env.PACKAGE_NAME }}
+      run: |
+        python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
+        python builder.pyz build -p ${{ env.PACKAGE_NAME }}
+
+  # Run tests for each upstream C repo individually
+  # Catches test failures in upstream repos at HEAD that aws-crt-cpp tests don't exercise.
+  upstream-tests-linux:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - aws-c-common
+          - aws-c-io
+          - aws-c-cal
+          - aws-c-compression
+          - aws-c-http
+          - aws-c-mqtt
+          - aws-c-auth
+          - aws-c-s3
+          - aws-c-event-stream
+          - aws-c-sdkutils
+          - aws-c-iot
+          - aws-checksums
+    steps:
+    - uses: aws-actions/configure-aws-credentials@v6
+      with:
+        role-to-assume: ${{ env.CRT_CI_ROLE }}
+        aws-region: ${{ env.AWS_DEFAULT_REGION }}
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Update submodules to main (our repos only; 3P deps stay pinned)
+      run: |
+        for dir in crt/aws-c-*; do
+          echo "Updating $dir to main..."
+          (cd "$dir" && git fetch origin main && git checkout origin/main)
+        done
+        echo "Updating crt/aws-checksums to main..."
+        (cd crt/aws-checksums && git fetch origin main && git checkout origin/main)
+    - name: Build and test ${{ matrix.package }}
+      run: |
+        aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ matrix.package }}
+
+  upstream-tests-macos:
+    runs-on: macos-14
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - aws-c-common
+          - aws-c-io
+          - aws-c-cal
+          - aws-c-compression
+          - aws-c-http
+          - aws-c-mqtt
+          - aws-c-auth
+          - aws-c-s3
+          - aws-c-event-stream
+          - aws-c-sdkutils
+          - aws-c-iot
+          - aws-checksums
+    steps:
+    - uses: aws-actions/configure-aws-credentials@v6
+      with:
+        role-to-assume: ${{ env.CRT_CI_ROLE }}
+        aws-region: ${{ env.AWS_DEFAULT_REGION }}
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Update submodules to main (our repos only; 3P deps stay pinned)
+      run: |
+        for dir in crt/aws-c-*; do
+          echo "Updating $dir to main..."
+          (cd "$dir" && git fetch origin main && git checkout origin/main)
+        done
+        echo "Updating crt/aws-checksums to main..."
+        (cd crt/aws-checksums && git fetch origin main && git checkout origin/main)
+    - name: Build and test ${{ matrix.package }}
+      run: |
+        python3 -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder')"
+        chmod a+x builder
+        ./builder build -p ${{ matrix.package }}
+
+  upstream-tests-windows:
+    runs-on: windows-2025
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - aws-c-common
+          - aws-c-io
+          - aws-c-cal
+          - aws-c-compression
+          - aws-c-http
+          - aws-c-mqtt
+          - aws-c-auth
+          - aws-c-s3
+          - aws-c-event-stream
+          - aws-c-sdkutils
+          - aws-c-iot
+          - aws-checksums
+    steps:
+    - uses: aws-actions/configure-aws-credentials@v6
+      with:
+        role-to-assume: ${{ env.CRT_CI_ROLE }}
+        aws-region: ${{ env.AWS_DEFAULT_REGION }}
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Update submodules to main (our repos only; 3P deps stay pinned)
+      shell: bash
+      run: |
+        for dir in crt/aws-c-*; do
+          echo "Updating $dir to main..."
+          (cd "$dir" && git fetch origin main && git checkout origin/main)
+        done
+        echo "Updating crt/aws-checksums to main..."
+        (cd crt/aws-checksums && git fetch origin main && git checkout origin/main)
+    - name: Build and test ${{ matrix.package }}
+      run: |
+        python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
+        python builder.pyz build -p ${{ matrix.package }}
