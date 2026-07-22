@@ -18,6 +18,8 @@ env:
   RUN: ${{ github.run_id }}-${{ github.run_number }}
   CRT_CI_ROLE: ${{ secrets.CRT_CI_ROLE_ARN }}
   AWS_DEFAULT_REGION: us-east-1
+  # Nightly updates submodules to main, which may diverge from pinned commits
+  NIGHTLY_CMAKE_ARGS: --cmake-extra=-DENFORCE_SUBMODULE_VERSIONS=OFF
 
 permissions:
   id-token: write
@@ -64,7 +66,7 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }}
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }} ${{ env.NIGHTLY_CMAKE_ARGS }}
 
   linux-distro-compat:
     runs-on: ubuntu-24.04
@@ -97,7 +99,7 @@ jobs:
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
         docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ matrix.image }} build -p ${{ env.PACKAGE_NAME }}
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ matrix.image }} build -p ${{ env.PACKAGE_NAME }} ${{ env.NIGHTLY_CMAKE_ARGS }}
 
   cmake-min-version:
     runs-on: ubuntu-24.04
@@ -128,7 +130,7 @@ jobs:
     - name: Build with CMake 3.9
       run: |
         mkdir build && cd build
-        cmake .. -DBUILD_DEPS=ON -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
+        cmake .. -DBUILD_DEPS=ON -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENFORCE_SUBMODULE_VERSIONS=OFF
         cmake --build . --parallel $(nproc)
     - name: Test
       run: |
@@ -161,7 +163,7 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }} with sanitizers
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=clang-17 --cmake-extra=-DENABLE_SANITIZERS=ON --cmake-extra=-DSANITIZERS="${{ matrix.sanitizers }}"
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=clang-17 --cmake-extra=-DENABLE_SANITIZERS=ON --cmake-extra=-DSANITIZERS="${{ matrix.sanitizers }}" ${{ env.NIGHTLY_CMAKE_ARGS }}
 
   clang-msan:
     runs-on: ubuntu-24.04
@@ -187,7 +189,7 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }} with MSan
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-ubuntu-22-msan-x64 build -p ${{ env.PACKAGE_NAME }} --compiler=${{ env.MSAN_COMPILER }} --cmake-extra=-DENABLE_SANITIZERS=ON --cmake-extra=-DSANITIZERS=memory --cmake-extra=-DCMAKE_TOOLCHAIN_FILE=/opt/msan-toolchain.cmake
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-ubuntu-22-msan-x64 build -p ${{ env.PACKAGE_NAME }} --compiler=${{ env.MSAN_COMPILER }} --cmake-extra=-DENABLE_SANITIZERS=ON --cmake-extra=-DSANITIZERS=memory --cmake-extra=-DCMAKE_TOOLCHAIN_FILE=/opt/msan-toolchain.cmake ${{ env.NIGHTLY_CMAKE_ARGS }}
 
   macos:
     runs-on: macos-14
@@ -212,7 +214,7 @@ jobs:
       run: |
         python3 -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder')"
         chmod a+x builder
-        ./builder build -p ${{ env.PACKAGE_NAME }}
+        ./builder build -p ${{ env.PACKAGE_NAME }} ${{ env.NIGHTLY_CMAKE_ARGS }}
 
   windows:
     runs-on: windows-2025
@@ -237,7 +239,7 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
-        python builder.pyz build -p ${{ env.PACKAGE_NAME }}
+        python builder.pyz build -p ${{ env.PACKAGE_NAME }} ${{ env.NIGHTLY_CMAKE_ARGS }}
 
   # Run tests for each upstream C repo individually
   # Catches test failures in upstream repos at HEAD that aws-crt-cpp tests don't exercise.
@@ -279,7 +281,7 @@ jobs:
     - name: Build and test ${{ matrix.package }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ matrix.package }}
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ matrix.package }} ${{ env.NIGHTLY_CMAKE_ARGS }}
 
   upstream-tests-macos:
     runs-on: macos-14
@@ -320,7 +322,7 @@ jobs:
       run: |
         python3 -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder')"
         chmod a+x builder
-        ./builder build -p ${{ matrix.package }}
+        ./builder build -p ${{ matrix.package }} ${{ env.NIGHTLY_CMAKE_ARGS }}
 
   upstream-tests-windows:
     runs-on: windows-2025
@@ -361,4 +363,4 @@ jobs:
     - name: Build and test ${{ matrix.package }}
       run: |
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
-        python builder.pyz build -p ${{ matrix.package }}
+        python builder.pyz build -p ${{ matrix.package }} ${{ env.NIGHTLY_CMAKE_ARGS }}
