@@ -114,11 +114,11 @@ jobs:
           echo "Updating $dir to main..."
           (cd "$dir" && git fetch origin main && git checkout origin/main)
         done
-    - name: Install CMake 3.9
+    - name: Install CMake 3.10 (effective min due to s2n dependency)
       run: |
-        wget -q https://github.com/Kitware/CMake/releases/download/v3.9.6/cmake-3.9.6-Linux-x86_64.tar.gz
-        tar xzf cmake-3.9.6-Linux-x86_64.tar.gz
-        echo "$PWD/cmake-3.9.6-Linux-x86_64/bin" >> $GITHUB_PATH
+        wget -q https://github.com/Kitware/CMake/releases/download/v3.10.3/cmake-3.10.3-Linux-x86_64.tar.gz
+        tar xzf cmake-3.10.3-Linux-x86_64.tar.gz
+        echo "$PWD/cmake-3.10.3-Linux-x86_64/bin" >> $GITHUB_PATH
     - name: Verify CMake version
       run: cmake --version
     - name: Build with CMake 3.9
