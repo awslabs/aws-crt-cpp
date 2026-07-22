@@ -7,6 +7,7 @@
 #include <aws/crt/Types.h>
 #include <aws/crt/io/SocketOptions.h>
 #include <aws/crt/io/TlsOptions.h>
+#include <aws/crt/mqtt/IoTSDKMetrics.h>
 
 #include <aws/mqtt/client.h>
 #include <aws/mqtt/v5/mqtt5_client.h>
@@ -22,7 +23,7 @@ namespace Aws
             class MqttConnection;
 
             /**
-             * Options required to create an MqttConnection.
+             * Options required to create an MqttConnection. For internal use.
              */
             struct MqttConnectionOptions
             {
@@ -34,6 +35,7 @@ namespace Aws
                 bool useWebsocket = false;
                 bool useTls = false;
                 bool enableMetrics = true;
+                Crt::Optional<AWSIoTMetrics> sdkMetrics;
                 Allocator *allocator = nullptr;
             };
 

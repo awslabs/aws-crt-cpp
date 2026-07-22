@@ -6,7 +6,7 @@ option(USE_OPENSSL "Set this if you want to use your system's OpenSSL 1.0.2/1.1.
 option(ENFORCE_SUBMODULE_VERSIONS "Check and enforce submodule versions to verify they are the minimum expected version or later. Versioning is only checked if BUILD_DEPS is ON." ON)
 
 # Let aws-iot-device-sdk-cpp-v2 report its own version in MQTT connections (instead of reporting aws-crt-cpp's version).
-option(AWS_IOT_SDK_VERSION "Set the version reported by Aws::Iot::MqttClientConnectionConfigBuilder")
+option(AWS_IOT_SDK_VERSION "Set the version reported by Aws::Iot::MqttClientConnectionConfigBuilder and Aws::Iot::Mqtt5ClientBuilder")
 
 # Tests require environment variables setup in order to run properly.
 # See https://github.com/awslabs/aws-crt-builder/blob/main/builder/actions/setup_cross_ci_crt_environment.py

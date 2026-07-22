@@ -5,6 +5,7 @@
 #include <aws/crt/io/TlsOptions.h>
 
 #include <aws/crt/io/Pkcs11.h>
+#include <aws/crt/io/private/TlsMetrics.h>
 
 #include <aws/crt/Api.h>
 #include <aws/io/logging.h>
@@ -25,6 +26,9 @@ namespace Aws
             }
 
             TlsContextOptions::TlsContextOptions() noexcept
+                : m_metricsTlsVersion(AWS_IO_TLS_VER_SYS_DEFAULTS),
+                  m_metricsCipherPref(AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT),
+                  m_metricsCertificateSource(CertificateSource::None)
             {
                 AWS_ZERO_STRUCT(m_options);
             }
@@ -32,8 +36,14 @@ namespace Aws
             TlsContextOptions::TlsContextOptions(TlsContextOptions &&other) noexcept
             {
                 m_options = other.m_options;
+                m_metricsCertificateSource = other.m_metricsCertificateSource;
+                m_metricsTlsVersion = other.m_metricsTlsVersion;
+                m_metricsCipherPref = other.m_metricsCipherPref;
                 m_isInit = other.m_isInit;
                 AWS_ZERO_STRUCT(other.m_options);
+                other.m_metricsCertificateSource = CertificateSource::None;
+                other.m_metricsTlsVersion = AWS_IO_TLS_VER_SYS_DEFAULTS;
+                other.m_metricsCipherPref = AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT;
                 other.m_isInit = false;
             }
 
@@ -47,8 +57,14 @@ namespace Aws
                     }
 
                     m_options = other.m_options;
+                    m_metricsCertificateSource = other.m_metricsCertificateSource;
+                    m_metricsTlsVersion = other.m_metricsTlsVersion;
+                    m_metricsCipherPref = other.m_metricsCipherPref;
                     m_isInit = other.m_isInit;
                     AWS_ZERO_STRUCT(other.m_options);
+                    other.m_metricsCertificateSource = CertificateSource::None;
+                    other.m_metricsTlsVersion = AWS_IO_TLS_VER_SYS_DEFAULTS;
+                    other.m_metricsCipherPref = AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT;
                     other.m_isInit = false;
                 }
 
@@ -72,6 +88,7 @@ namespace Aws
                 if (!aws_tls_ctx_options_init_client_mtls_from_path(
                         &ctxOptions.m_options, allocator, certPath, pKeyPath))
                 {
+                    ctxOptions.m_metricsCertificateSource = CertificateSource::CertificateFiles;
                     ctxOptions.m_isInit = true;
                 }
                 return ctxOptions;
@@ -89,6 +106,7 @@ namespace Aws
                         const_cast<ByteCursor *>(&cert),
                         const_cast<ByteCursor *>(&pkey)))
                 {
+                    ctxOptions.m_metricsCertificateSource = CertificateSource::CertificateFiles;
                     ctxOptions.m_isInit = true;
                 }
                 return ctxOptions;
@@ -103,6 +121,7 @@ namespace Aws
                 if (!aws_tls_ctx_options_init_client_mtls_with_pkcs11(
                         &ctxOptions.m_options, allocator, &nativePkcs11Options))
                 {
+                    ctxOptions.m_metricsCertificateSource = CertificateSource::Pkcs11;
                     ctxOptions.m_isInit = true;
                 }
                 return ctxOptions;
@@ -118,6 +137,7 @@ namespace Aws
                 if (!aws_tls_ctx_options_init_client_mtls_pkcs12_from_path(
                         &ctxOptions.m_options, allocator, pkcs12Path, &password))
                 {
+                    ctxOptions.m_metricsCertificateSource = CertificateSource::Pkcs12File;
                     ctxOptions.m_isInit = true;
                 }
                 return ctxOptions;
@@ -137,6 +157,7 @@ namespace Aws
                 if (!aws_tls_ctx_options_init_client_mtls_from_system_path(
                         &ctxOptions.m_options, allocator, windowsCertStorePath))
                 {
+                    ctxOptions.m_metricsCertificateSource = CertificateSource::WindowsCertStore;
                     ctxOptions.m_isInit = true;
                 }
                 return ctxOptions;
@@ -174,12 +195,14 @@ namespace Aws
             {
                 AWS_ASSERT(m_isInit);
                 aws_tls_ctx_options_set_minimum_tls_version(&m_options, minimumTlsVersion);
+                m_metricsTlsVersion = minimumTlsVersion;
             }
 
             void TlsContextOptions::SetTlsCipherPreference(aws_tls_cipher_pref cipher_pref)
             {
                 AWS_ASSERT(m_isInit);
                 aws_tls_ctx_options_set_tls_cipher_preference(&m_options, cipher_pref);
+                m_metricsCipherPref = cipher_pref;
             }
 
             bool TlsContextOptions::OverrideDefaultTrustStore(const char *caPath, const char *caFile) noexcept
@@ -275,12 +298,25 @@ namespace Aws
             }
 
             TlsConnectionOptions::TlsConnectionOptions() noexcept
+                : m_metricsCertificateSource(CertificateSource::None), m_metricsTlsVersion(AWS_IO_TLS_VER_SYS_DEFAULTS),
+                  m_metricsCipherPref(AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT)
             {
                 AWS_ZERO_STRUCT(m_tls_connection_options);
             }
 
-            TlsConnectionOptions::TlsConnectionOptions(aws_tls_ctx *ctx, Allocator *allocator) noexcept
-                : m_allocator(allocator), m_isInit(true)
+            TlsConnectionInfo TlsConnectionOptions::GetTlsConnectionInfo() const noexcept
+            {
+                return TlsConnectionInfo{m_metricsCertificateSource, m_metricsTlsVersion, m_metricsCipherPref};
+            }
+
+            TlsConnectionOptions::TlsConnectionOptions(
+                aws_tls_ctx *ctx,
+                Allocator *allocator,
+                CertificateSource metricsCertificateSource,
+                aws_tls_versions metricsTlsVersion,
+                aws_tls_cipher_pref metricsCipherPref) noexcept
+                : m_allocator(allocator), m_isInit(true), m_metricsCertificateSource(metricsCertificateSource),
+                  m_metricsTlsVersion(metricsTlsVersion), m_metricsCipherPref(metricsCipherPref)
             {
                 aws_tls_connection_options_init_from_ctx(&m_tls_connection_options, ctx);
             }
@@ -296,11 +332,17 @@ namespace Aws
 
             TlsConnectionOptions::TlsConnectionOptions(const TlsConnectionOptions &options) noexcept
             {
+                m_metricsCertificateSource = CertificateSource::None;
+                m_metricsTlsVersion = AWS_IO_TLS_VER_SYS_DEFAULTS;
+                m_metricsCipherPref = AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT;
                 AWS_ZERO_STRUCT(m_tls_connection_options);
 
                 if (options.m_isInit)
                 {
                     m_allocator = options.m_allocator;
+                    m_metricsCertificateSource = options.m_metricsCertificateSource;
+                    m_metricsTlsVersion = options.m_metricsTlsVersion;
+                    m_metricsCipherPref = options.m_metricsCipherPref;
 
                     if (!aws_tls_connection_options_copy(&m_tls_connection_options, &options.m_tls_connection_options))
                     {
@@ -323,11 +365,17 @@ namespace Aws
                     }
 
                     m_isInit = false;
+                    m_metricsCertificateSource = CertificateSource::None;
+                    m_metricsTlsVersion = AWS_IO_TLS_VER_SYS_DEFAULTS;
+                    m_metricsCipherPref = AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT;
                     AWS_ZERO_STRUCT(m_tls_connection_options);
 
                     if (options.m_isInit)
                     {
                         m_allocator = options.m_allocator;
+                        m_metricsCertificateSource = options.m_metricsCertificateSource;
+                        m_metricsTlsVersion = options.m_metricsTlsVersion;
+                        m_metricsCipherPref = options.m_metricsCipherPref;
                         if (!aws_tls_connection_options_copy(
                                 &m_tls_connection_options, &options.m_tls_connection_options))
                         {
@@ -344,7 +392,8 @@ namespace Aws
             }
 
             TlsConnectionOptions::TlsConnectionOptions(TlsConnectionOptions &&options) noexcept
-                : m_isInit(options.m_isInit)
+                : m_isInit(options.m_isInit), m_metricsCertificateSource(options.m_metricsCertificateSource),
+                  m_metricsTlsVersion(options.m_metricsTlsVersion), m_metricsCipherPref(options.m_metricsCipherPref)
             {
                 AWS_ZERO_STRUCT(m_tls_connection_options);
 
@@ -354,6 +403,9 @@ namespace Aws
                     m_allocator = options.m_allocator;
                     AWS_ZERO_STRUCT(options.m_tls_connection_options);
                     options.m_isInit = false;
+                    options.m_metricsCertificateSource = CertificateSource::None;
+                    options.m_metricsTlsVersion = AWS_IO_TLS_VER_SYS_DEFAULTS;
+                    options.m_metricsCipherPref = AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT;
                 }
             }
 
@@ -367,14 +419,23 @@ namespace Aws
                     }
 
                     m_isInit = false;
+                    m_metricsCertificateSource = CertificateSource::None;
+                    m_metricsTlsVersion = AWS_IO_TLS_VER_SYS_DEFAULTS;
+                    m_metricsCipherPref = AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT;
 
                     if (options.m_isInit)
                     {
                         m_tls_connection_options = options.m_tls_connection_options;
                         AWS_ZERO_STRUCT(options.m_tls_connection_options);
-                        options.m_isInit = false;
                         m_isInit = true;
                         m_allocator = options.m_allocator;
+                        m_metricsCertificateSource = options.m_metricsCertificateSource;
+                        m_metricsTlsVersion = options.m_metricsTlsVersion;
+                        m_metricsCipherPref = options.m_metricsCipherPref;
+                        options.m_isInit = false;
+                        options.m_metricsCertificateSource = CertificateSource::None;
+                        options.m_metricsTlsVersion = AWS_IO_TLS_VER_SYS_DEFAULTS;
+                        options.m_metricsCipherPref = AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT;
                     }
                 }
 
@@ -415,10 +476,17 @@ namespace Aws
                 return true;
             }
 
-            TlsContext::TlsContext() noexcept : m_ctx(nullptr), m_initializationError(AWS_ERROR_SUCCESS) {}
+            TlsContext::TlsContext() noexcept
+                : m_ctx(nullptr), m_initializationError(AWS_ERROR_SUCCESS),
+                  m_metricsCertificateSource(CertificateSource::None), m_metricsTlsVersion(AWS_IO_TLS_VER_SYS_DEFAULTS),
+                  m_metricsCipherPref(AWS_IO_TLS_CIPHER_PREF_SYSTEM_DEFAULT)
+            {
+            }
 
             TlsContext::TlsContext(TlsContextOptions &options, TlsMode mode, Allocator *allocator) noexcept
-                : m_ctx(nullptr), m_initializationError(AWS_ERROR_SUCCESS)
+                : m_ctx(nullptr), m_initializationError(AWS_ERROR_SUCCESS),
+                  m_metricsCertificateSource(options.m_metricsCertificateSource),
+                  m_metricsTlsVersion(options.m_metricsTlsVersion), m_metricsCipherPref(options.m_metricsCipherPref)
             {
 #if BYO_CRYPTO
                 if (!ApiHandle::GetBYOCryptoNewTlsContextImplCallback() ||
@@ -488,7 +556,8 @@ namespace Aws
                     return TlsConnectionOptions();
                 }
 
-                return TlsConnectionOptions(m_ctx.get(), m_ctx->alloc);
+                return TlsConnectionOptions(
+                    m_ctx.get(), m_ctx->alloc, m_metricsCertificateSource, m_metricsTlsVersion, m_metricsCipherPref);
             }
 
             TlsChannelHandler::TlsChannelHandler(

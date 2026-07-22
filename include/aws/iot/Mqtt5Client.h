@@ -620,6 +620,7 @@ namespace Aws
                 Crt::Allocator *allocator) noexcept;
 
           private:
+            Mqtt5ClientBuilder() noexcept;
             // Common setup shared by all valid constructors
             Mqtt5ClientBuilder(Crt::Allocator *allocator) noexcept;
             // Common setup shared by all valid constructors
@@ -672,8 +673,12 @@ namespace Aws
 
             /** Enable AWS IoT Metrics Collection. This is always set to true for now. */
             bool m_enableMetricsCollection;
-            Crt::String m_sdkName = "IoTDeviceSDK/CPP";
+            Crt::String m_sdkName;
+#    ifdef AWS_IOT_SDK_VERSION
+            Crt::String m_sdkVersion = AWS_IOT_SDK_VERSION;
+#    else
             Crt::String m_sdkVersion = AWS_CRT_CPP_VERSION;
+#    endif
         };
 
     } // namespace Iot
