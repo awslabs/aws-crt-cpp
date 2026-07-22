@@ -55,18 +55,16 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: true
-    - name: Update submodules to main (our repos only; 3P deps stay pinned)
+    - name: Update submodules to main (our repos only; aws-lc and s2n stay pinned)
       run: |
-        for dir in crt/aws-c-*; do
+        for dir in crt/aws-c-* crt/aws-checksums; do
           echo "Updating $dir to main..."
           (cd "$dir" && git fetch origin main && git checkout origin/main)
         done
-        echo "Updating crt/aws-checksums to main..."
-        (cd crt/aws-checksums && git fetch origin main && git checkout origin/main)
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
-        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }} ${{ env.NIGHTLY_CMAKE_ARGS }}
+        ./linux-container-ci.sh ${{ env.BUILDER_VERSION }} aws-crt-${{ env.LINUX_BASE_IMAGE }} build -p ${{ env.PACKAGE_NAME }} --compiler=${{ matrix.compiler }} run_tests=false ${{ env.NIGHTLY_CMAKE_ARGS }}
 
   linux-distro-compat:
     runs-on: ubuntu-24.04
@@ -87,14 +85,12 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: true
-    - name: Update submodules to main (our repos only; 3P deps stay pinned)
+    - name: Update submodules to main (our repos only; aws-lc and s2n stay pinned — we only test what we own)
       run: |
-        for dir in crt/aws-c-*; do
+        for dir in crt/aws-c-* crt/aws-checksums; do
           echo "Updating $dir to main..."
           (cd "$dir" && git fetch origin main && git checkout origin/main)
         done
-        echo "Updating crt/aws-checksums to main..."
-        (cd crt/aws-checksums && git fetch origin main && git checkout origin/main)
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
@@ -112,14 +108,12 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: true
-    - name: Update submodules to main (our repos only; 3P deps stay pinned)
+    - name: Update submodules to main (our repos only; aws-lc and s2n stay pinned — we only test what we own)
       run: |
-        for dir in crt/aws-c-*; do
+        for dir in crt/aws-c-* crt/aws-checksums; do
           echo "Updating $dir to main..."
           (cd "$dir" && git fetch origin main && git checkout origin/main)
         done
-        echo "Updating crt/aws-checksums to main..."
-        (cd crt/aws-checksums && git fetch origin main && git checkout origin/main)
     - name: Install CMake 3.9
       run: |
         wget -q https://github.com/Kitware/CMake/releases/download/v3.9.6/cmake-3.9.6-Linux-x86_64.tar.gz
@@ -152,14 +146,12 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: true
-    - name: Update submodules to main (our repos only; 3P deps stay pinned)
+    - name: Update submodules to main (our repos only; aws-lc and s2n stay pinned — we only test what we own)
       run: |
-        for dir in crt/aws-c-*; do
+        for dir in crt/aws-c-* crt/aws-checksums; do
           echo "Updating $dir to main..."
           (cd "$dir" && git fetch origin main && git checkout origin/main)
         done
-        echo "Updating crt/aws-checksums to main..."
-        (cd crt/aws-checksums && git fetch origin main && git checkout origin/main)
     - name: Build ${{ env.PACKAGE_NAME }} with sanitizers
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
@@ -178,14 +170,12 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: true
-    - name: Update submodules to main (our repos only; 3P deps stay pinned)
+    - name: Update submodules to main (our repos only; aws-lc and s2n stay pinned — we only test what we own)
       run: |
-        for dir in crt/aws-c-*; do
+        for dir in crt/aws-c-* crt/aws-checksums; do
           echo "Updating $dir to main..."
           (cd "$dir" && git fetch origin main && git checkout origin/main)
         done
-        echo "Updating crt/aws-checksums to main..."
-        (cd crt/aws-checksums && git fetch origin main && git checkout origin/main)
     - name: Build ${{ env.PACKAGE_NAME }} with MSan
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
@@ -202,14 +192,12 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: true
-    - name: Update submodules to main (our repos only; 3P deps stay pinned)
+    - name: Update submodules to main (our repos only; aws-lc and s2n stay pinned — we only test what we own)
       run: |
-        for dir in crt/aws-c-*; do
+        for dir in crt/aws-c-* crt/aws-checksums; do
           echo "Updating $dir to main..."
           (cd "$dir" && git fetch origin main && git checkout origin/main)
         done
-        echo "Updating crt/aws-checksums to main..."
-        (cd crt/aws-checksums && git fetch origin main && git checkout origin/main)
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         python3 -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder')"
@@ -227,15 +215,13 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: true
-    - name: Update submodules to main (our repos only; 3P deps stay pinned)
+    - name: Update submodules to main (our repos only; aws-lc and s2n stay pinned — we only test what we own)
       shell: bash
       run: |
-        for dir in crt/aws-c-*; do
+        for dir in crt/aws-c-* crt/aws-checksums; do
           echo "Updating $dir to main..."
           (cd "$dir" && git fetch origin main && git checkout origin/main)
         done
-        echo "Updating crt/aws-checksums to main..."
-        (cd crt/aws-checksums && git fetch origin main && git checkout origin/main)
     - name: Build ${{ env.PACKAGE_NAME }}
       run: |
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
@@ -270,14 +256,12 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: true
-    - name: Update submodules to main (our repos only; 3P deps stay pinned)
+    - name: Update submodules to main (our repos only; aws-lc and s2n stay pinned — we only test what we own)
       run: |
-        for dir in crt/aws-c-*; do
+        for dir in crt/aws-c-* crt/aws-checksums; do
           echo "Updating $dir to main..."
           (cd "$dir" && git fetch origin main && git checkout origin/main)
         done
-        echo "Updating crt/aws-checksums to main..."
-        (cd crt/aws-checksums && git fetch origin main && git checkout origin/main)
     - name: Build and test ${{ matrix.package }}
       run: |
         aws s3 cp s3://aws-crt-test-stuff/ci/${{ env.BUILDER_VERSION }}/linux-container-ci.sh ./linux-container-ci.sh && chmod a+x ./linux-container-ci.sh
@@ -310,14 +294,12 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: true
-    - name: Update submodules to main (our repos only; 3P deps stay pinned)
+    - name: Update submodules to main (our repos only; aws-lc and s2n stay pinned — we only test what we own)
       run: |
-        for dir in crt/aws-c-*; do
+        for dir in crt/aws-c-* crt/aws-checksums; do
           echo "Updating $dir to main..."
           (cd "$dir" && git fetch origin main && git checkout origin/main)
         done
-        echo "Updating crt/aws-checksums to main..."
-        (cd crt/aws-checksums && git fetch origin main && git checkout origin/main)
     - name: Build and test ${{ matrix.package }}
       run: |
         python3 -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder')"
@@ -351,15 +333,13 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: true
-    - name: Update submodules to main (our repos only; 3P deps stay pinned)
+    - name: Update submodules to main (our repos only; aws-lc and s2n stay pinned — we only test what we own)
       shell: bash
       run: |
-        for dir in crt/aws-c-*; do
+        for dir in crt/aws-c-* crt/aws-checksums; do
           echo "Updating $dir to main..."
           (cd "$dir" && git fetch origin main && git checkout origin/main)
         done
-        echo "Updating crt/aws-checksums to main..."
-        (cd crt/aws-checksums && git fetch origin main && git checkout origin/main)
     - name: Build and test ${{ matrix.package }}
       run: |
         python -c "from urllib.request import urlretrieve; urlretrieve('${{ env.BUILDER_HOST }}/${{ env.BUILDER_SOURCE }}/${{ env.BUILDER_VERSION }}/builder.pyz?run=${{ env.RUN }}', 'builder.pyz')"
