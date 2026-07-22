@@ -1,6 +1,10 @@
 name: Nightly CI
 
 on:
+  # TODO: Remove push trigger before merging to main
+  push:
+    branches:
+      - 'add-nightly-builds'
   schedule:
     - cron: '0 7 * * *' # 7:00 UTC daily (midnight PDT)
   workflow_dispatch: # Allow manual trigger
