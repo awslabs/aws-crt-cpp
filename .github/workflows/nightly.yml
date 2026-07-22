@@ -121,11 +121,11 @@ jobs:
         echo "$PWD/cmake-3.10.3-Linux-x86_64/bin" >> $GITHUB_PATH
     - name: Verify CMake version
       run: cmake --version
-    - name: Build with CMake 3.9
+    - name: Build with CMake 3.10
       run: |
         mkdir build && cd build
         cmake .. -DBUILD_DEPS=ON -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENFORCE_SUBMODULE_VERSIONS=OFF
-        cmake --build . --parallel $(nproc)
+        cmake --build .
     - name: Test
       run: |
         cd build
