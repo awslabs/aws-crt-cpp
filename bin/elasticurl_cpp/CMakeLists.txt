@@ -20,7 +20,7 @@ if (MSVC)
         target_compile_options(${ELASTICURL_CPP_PROJECT_NAME} PRIVATE "/MD$<$<CONFIG:Debug>:d>")
     endif()
     target_compile_options(${ELASTICURL_CPP_PROJECT_NAME} PRIVATE /W4 /WX)
-else ()
+elseif (AWS_WARNINGS_ARE_ERRORS)
     target_compile_options(${ELASTICURL_CPP_PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
 endif ()
 
