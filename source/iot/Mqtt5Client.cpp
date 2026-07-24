@@ -105,8 +105,6 @@ namespace Aws
          *
          *****************************************************/
 
-        Mqtt5ClientBuilder::Mqtt5ClientBuilder() noexcept : Mqtt5ClientBuilder(Crt::ApiAllocator()) {}
-
         Mqtt5ClientBuilder::Mqtt5ClientBuilder(Crt::Allocator *allocator) noexcept
             : m_allocator(allocator), m_port(0), m_lastError(0), m_enableMetricsCollection(true),
               m_sdkName(Crt::Mqtt::IoTSDKMetricsEncoder::DEFAULT_METRICS_LIBRARY_NAME)
