@@ -42,6 +42,28 @@ namespace Aws
             };
 
             /**
+             * Controls the TCP_NODELAY socket option (whether Nagle's algorithm is disabled).
+             * TCP only. Ignored for Dgram sockets and the Local socket domain.
+             */
+            enum class SocketTcpNodelay
+            {
+                /**
+                 * Leave the OS default in place (Nagle's algorithm enabled on most platforms).
+                 */
+                Default = AWS_SOCKET_TCP_NODELAY_DEFAULT,
+
+                /**
+                 * Set TCP_NODELAY on, disabling Nagle's algorithm so small writes are sent immediately.
+                 */
+                On = AWS_SOCKET_TCP_NODELAY_ON,
+
+                /**
+                 * Set TCP_NODELAY off, explicitly (re)enabling Nagle's algorithm.
+                 */
+                Off = AWS_SOCKET_TCP_NODELAY_OFF,
+            };
+
+            /**
              * Socket configuration options
              */
             class AWS_CRT_CPP_API SocketOptions
@@ -143,6 +165,22 @@ namespace Aws
                  * @return true/false if the socket implementation should use TCP keepalive
                  */
                 bool GetKeepAlive() const { return options.keepalive; }
+
+                /**
+                 * Set the TCP_NODELAY option (Nagle's algorithm). TCP only, ignored for Dgram sockets and the
+                 * Local socket domain. Defaults to On.
+                 * @param tcpNodelay: Default leaves the OS default in place, On disables Nagle's algorithm so
+                 * small writes are sent immediately, Off explicitly (re)enables it.
+                 */
+                void SetTcpNodelay(SocketTcpNodelay tcpNodelay)
+                {
+                    options.tcp_nodelay = (enum aws_socket_tcp_nodelay)tcpNodelay;
+                }
+
+                /**
+                 * @return how the TCP_NODELAY option (Nagle's algorithm) should be configured on the socket
+                 */
+                SocketTcpNodelay GetTcpNodelay() const { return (SocketTcpNodelay)options.tcp_nodelay; }
 
                 /// @private
                 aws_socket_options &GetImpl() { return options; }
