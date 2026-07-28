@@ -23,6 +23,7 @@ namespace Aws
                 options.keep_alive_timeout_sec = 0;
                 options.keep_alive_interval_sec = 0;
                 options.keepalive = false;
+                options.tcp_nodelay = AWS_SOCKET_TCP_NODELAY_ON;
             }
         } // namespace Io
     } // namespace Crt
