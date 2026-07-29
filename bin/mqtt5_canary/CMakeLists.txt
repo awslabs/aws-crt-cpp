@@ -20,10 +20,15 @@ if (MSVC)
     else()
         target_compile_options(${MQTT5_CANARY_PROJECT_NAME} PRIVATE "/MD$<$<CONFIG:Debug>:d>")
     endif()
-    target_compile_options(${MQTT5_CANARY_PROJECT_NAME} PRIVATE /W4 /WX)
-elseif (AWS_WARNINGS_ARE_ERRORS)
-    target_compile_options(${MQTT5_CANARY_PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
 endif ()
+
+if(AWS_WARNINGS_ARE_ERRORS)
+    if(MSVC)    
+        target_compile_options(${ELASTICURL_CPP_PROJECT_NAME} PRIVATE /W4 /WX)
+    else()
+       target_compile_options(${ELASTICURL_CPP_PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
+    endif()
+endif()
 
 target_compile_definitions(${MQTT5_CANARY_PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:DEBUG_BUILD>)
 
