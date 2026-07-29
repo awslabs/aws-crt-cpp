@@ -78,10 +78,14 @@ namespace Aws
         Vector<uint8_t> Base64Decode(const String &decode) noexcept
         {
             ByteCursor toDecode = ByteCursorFromString(decode);
+            return Base64Decode(toDecode);
+        }
 
+        Vector<uint8_t> Base64Decode(ByteCursor decode) noexcept
+        {
             size_t allocationSize = 0;
 
-            if (AWS_OP_SUCCESS != aws_base64_compute_decoded_len(&toDecode, &allocationSize))
+            if (AWS_OP_SUCCESS != aws_base64_compute_decoded_len(&decode, &allocationSize))
             {
                 return {};
             }
@@ -89,7 +93,7 @@ namespace Aws
             Vector<uint8_t> output(allocationSize, 0x00);
             ByteBuf tempBuf = aws_byte_buf_from_empty_array(output.data(), output.size());
 
-            if (AWS_OP_SUCCESS != aws_base64_decode(&toDecode, &tempBuf))
+            if (AWS_OP_SUCCESS != aws_base64_decode(&decode, &tempBuf))
             {
                 return {};
             }
@@ -97,12 +101,23 @@ namespace Aws
             return output;
         }
 
+        size_t Base64DecodedLength(ByteCursor decode) noexcept
+        {
+            size_t allocationSize = 0;
+            (void)aws_base64_compute_decoded_len(&decode, &allocationSize);
+            return allocationSize;
+        }
+
         String Base64Encode(const Vector<uint8_t> &encode) noexcept
         {
             auto toEncode = aws_byte_cursor_from_array((const void *)encode.data(), encode.size());
+            return Base64Encode(toEncode);
+        }
 
+        String Base64Encode(ByteCursor encode) noexcept
+        {
             size_t allocationSize = 0;
-            if (AWS_OP_SUCCESS != aws_base64_compute_encoded_len(toEncode.len, &allocationSize))
+            if (AWS_OP_SUCCESS != aws_base64_compute_encoded_len(encode.len, &allocationSize))
             {
                 return {};
             }
@@ -110,7 +125,7 @@ namespace Aws
             String outputStr(allocationSize, 0x00);
             auto tempBuf = aws_byte_buf_from_empty_array(outputStr.data(), outputStr.size());
 
-            if (AWS_OP_SUCCESS != aws_base64_encode(&toEncode, &tempBuf))
+            if (AWS_OP_SUCCESS != aws_base64_encode(&encode, &tempBuf))
             {
                 return {};
             }
@@ -118,6 +133,13 @@ namespace Aws
             AWS_ASSERT(outputStr.length() == tempBuf.len);
 
             return outputStr;
+        }
+
+        size_t Base64EncodedLength(ByteCursor encode) noexcept
+        {
+            size_t allocationSize = 0;
+            (void)aws_base64_compute_encoded_len(encode.len, &allocationSize);
+            return allocationSize;
         }
     } // namespace Crt
 } // namespace Aws

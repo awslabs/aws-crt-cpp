@@ -68,7 +68,11 @@ namespace Aws
         AWS_CRT_CPP_API ByteCursor ByteCursorFromArray(const uint8_t *array, size_t len) noexcept;
 
         AWS_CRT_CPP_API Vector<uint8_t> Base64Decode(const String &decode) noexcept;
+        AWS_CRT_CPP_API Vector<uint8_t> Base64Decode(ByteCursor decode) noexcept;
+        AWS_CRT_CPP_API size_t Base64DecodedLength(ByteCursor decode) noexcept;
         AWS_CRT_CPP_API String Base64Encode(const Vector<uint8_t> &encode) noexcept;
+        AWS_CRT_CPP_API String Base64Encode(ByteCursor encode) noexcept;
+        AWS_CRT_CPP_API size_t Base64EncodedLength(ByteCursor encode) noexcept;
 
         template <typename RawType, typename TargetType> using TypeConvertor = std::function<TargetType(RawType)>;
 
