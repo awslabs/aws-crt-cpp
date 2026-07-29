@@ -23,9 +23,9 @@ endif()
 
 if(AWS_WARNINGS_ARE_ERRORS)
     if(MSVC)    
-        target_compile_options(${ELASTICURL_CPP_PROJECT_NAME} PRIVATE /W4 /WX)
+        target_compile_options(${MQTT5_APP_PROJECT_NAME} PRIVATE /W4 /WX)
     else()
-       target_compile_options(${ELASTICURL_CPP_PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
+        target_compile_options(${MQTT5_APP_PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
     endif()
 endif()
 
