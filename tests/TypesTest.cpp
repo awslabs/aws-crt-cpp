@@ -22,9 +22,13 @@ static int s_base64_round_trip(struct aws_allocator *allocator, void *ctx)
 
         Aws::Crt::String encoded = Aws::Crt::Base64Encode(test_vector);
         ASSERT_BIN_ARRAYS_EQUALS(expected.data(), expected.size(), encoded.data(), encoded.size());
+        ASSERT_UINT_EQUALS(
+            encoded.size(),
+            Aws::Crt::Base64EncodedLength(Aws::Crt::ByteCursorFromArray(test_vector.data(), test_vector.size())));
 
         Aws::Crt::Vector<uint8_t> decoded = Aws::Crt::Base64Decode(encoded);
         ASSERT_BIN_ARRAYS_EQUALS(test_vector.data(), test_vector.size(), decoded.data(), decoded.size());
+        ASSERT_UINT_EQUALS(decoded.size(), Aws::Crt::Base64DecodedLength(Aws::Crt::ByteCursorFromString(encoded)));
     }
 
     return 0;
