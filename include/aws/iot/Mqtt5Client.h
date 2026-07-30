@@ -620,7 +620,6 @@ namespace Aws
                 Crt::Allocator *allocator) noexcept;
 
           private:
-            Mqtt5ClientBuilder() noexcept;
             // Common setup shared by all valid constructors
             Mqtt5ClientBuilder(Crt::Allocator *allocator) noexcept;
             // Common setup shared by all valid constructors
