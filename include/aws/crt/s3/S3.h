@@ -221,6 +221,54 @@ namespace Aws
             class S3MetaRequestOptions;
 
             /**
+             * C++ mirror of the aws-c-s3 error codes reported on
+             * S3MetaRequestResult, so callers can switch on a typed enum instead
+             * of pulling in the C header for AWS_ERROR_S3_*. Success indicates
+             * the meta request completed without error; Unknown is returned for
+             * any code the binding does not (yet) recognize.
+             */
+            enum class S3ErrorCode
+            {
+                Success,
+                Unknown,
+                Canceled,
+                Paused,
+                SlowDown,
+                RequestTimeout,
+                RequestTimeTooSkewed,
+                InvalidResponseStatus,
+                ResponseChecksumMismatch,
+                ChecksumCalculationFailed,
+                IncorrectContentLength,
+                MissingContentRangeHeader,
+                InvalidContentRangeHeader,
+                MissingContentLengthHeader,
+                InvalidContentLengthHeader,
+                MissingETag,
+                MissingUploadId,
+                InvalidRangeHeader,
+                MultirangeHeaderUnsupported,
+                InvalidMemoryLimitConfig,
+                ExceedsMemoryLimit,
+                InternalError,
+                ProxyParseFailed,
+                UnsupportedProxyScheme,
+                NonRecoverableAsyncError,
+                MetricDataNotAvailable,
+                ListPartsParseFailed,
+                ResumedPartChecksumMismatch,
+                ResumeFailed,
+                ObjectModified,
+                FileModified,
+                InternalPartSizeMismatchRetryingWithRange,
+                RequestHasCompleted,
+                RecvFileAlreadyExists,
+                RecvFileNotFound,
+                BufferAllocationFailed,
+                S3ExpressCreateSessionFailed,
+            };
+
+            /**
              * Result delivered to FinishCallback when a meta request terminates.
              * Mirrors aws_s3_meta_request_result. errorResponseHeaders is a deep copy
              * you may retain freely. errorResponseBody is a borrowed view into
@@ -231,6 +279,14 @@ namespace Aws
             {
                 /** AWS_ERROR_SUCCESS on success, a CRT error code otherwise. */
                 int errorCode;
+
+                /**
+                 * Typed view of errorCode. Returns S3ErrorCode::Success when errorCode
+                 * is AWS_ERROR_SUCCESS, S3ErrorCode::Unknown for any code the binding
+                 * does not recognize. Lets callers switch on the enum without pulling
+                 * in the aws-c-s3 C header.
+                 */
+                S3ErrorCode GetErrorCode() const noexcept;
 
                 /** HTTP status of the request (the successful response on success, or the failed request on an S3 error
                  * response); 0 for other error codes. */
@@ -568,6 +624,26 @@ namespace Aws
                 struct aws_s3_client_config *GetUnderlyingHandle() const noexcept;
 
                 /**
+                 * @return the region requests are signed for; "us-east-1" if never set.
+                 */
+                String GetRegion() const noexcept { return m_region; }
+
+                /**
+                 * @return the target part size in bytes, or 0 if unset.
+                 */
+                uint64_t GetPartSize() const noexcept;
+
+                /**
+                 * @return the multipart-upload threshold in bytes, or 0 if unset.
+                 */
+                uint64_t GetMultipartUploadThreshold() const noexcept;
+
+                /**
+                 * @return the target throughput in Gbps, or 0 if unset.
+                 */
+                double GetThroughputTargetGbps() const noexcept;
+
+                /**
                  * @return the configured retry-strategy flavor (Default if unset).
                  */
                 S3RetryStrategyType GetRetryStrategyType() const noexcept { return m_retryStrategyType; }
@@ -603,6 +679,14 @@ namespace Aws
                 const std::function<void()> &GetClientShutdownCallback() const noexcept
                 {
                     return m_clientShutdownCallback;
+                }
+
+                /**
+                 * @return the credentials provider this config signs with.
+                 */
+                std::shared_ptr<Auth::ICredentialsProvider> GetCredentialsProvider() const noexcept
+                {
+                    return m_credentialsProvider;
                 }
 
               private:
@@ -646,13 +730,16 @@ namespace Aws
             class AWS_CRT_CPP_API S3MetaRequestOptions
             {
               public:
+                // Callbacks return bool (continue/abort) so C++ callers don't have to name the C
+                // AWS_OP_SUCCESS sentinel; the binding translates false to an aborted meta request.
+
                 /**
                  * Invoked once per delivered body chunk during a download.
                  * @param body the chunk of object bytes for this delivery.
                  * @param rangeStart byte offset within the object that this chunk starts at.
-                 * @return AWS_OP_SUCCESS to continue, or an error code to abort the meta request.
+                 * @return true to continue the meta request, false to abort it.
                  */
-                using BodyCallback = std::function<int(ByteCursor body, uint64_t rangeStart)>;
+                using BodyCallback = std::function<bool(ByteCursor body, uint64_t rangeStart)>;
 
                 /**
                  * Like BodyCallback, but the chunk is delivered with a borrowed
@@ -662,17 +749,19 @@ namespace Aws
                  * @param body the chunk of object bytes for this delivery.
                  * @param rangeStart byte offset within the object that this chunk starts at.
                  * @param ticket borrowed handle to the CRT-owned buffer holding body.
-                 * @return AWS_OP_SUCCESS to continue, or an error code to abort the meta request.
+                 * @return true to continue the meta request, false to abort it.
                  */
-                using BodyCallbackEx = std::function<int(ByteCursor body, uint64_t rangeStart, S3BufferTicket &ticket)>;
+                using BodyCallbackEx =
+                    std::function<bool(ByteCursor body, uint64_t rangeStart, S3BufferTicket &ticket)>;
 
                 /**
                  * Invoked once when response headers are available.
                  * @param headers materialized snapshot of the response headers.
                  * @param responseStatus HTTP status code from the response.
-                 * @return AWS_OP_SUCCESS to continue, or an error code to abort the meta request.
+                 * @return true to continue the meta request, false to abort it.
                  */
-                using HeadersCallback = std::function<int(const Vector<Http::HttpHeader> &headers, int responseStatus)>;
+                using HeadersCallback =
+                    std::function<bool(const Vector<Http::HttpHeader> &headers, int responseStatus)>;
 
                 /**
                  * Invoked periodically as bytes flow.
@@ -717,6 +806,27 @@ namespace Aws
                  * @return this object, to allow chaining.
                  */
                 S3MetaRequestOptions &SetSigningConfig(const Auth::AwsSigningConfig &config) noexcept;
+
+                /**
+                 * Configure this meta request's signing from a resolved endpoint's auth scheme. The
+                 * config is owned by this options object. Prefer this over SetSigningConfig for
+                 * endpoint-resolved signing, since the S3Express algorithm is not expressible via
+                 * the public SigningAlgorithm enum.
+                 *
+                 * @param region the client region, used as the signing-config base.
+                 * @param signingRegion signing region from the auth scheme, or empty to keep region.
+                 * @param signingName signing service name from the auth scheme, or empty to keep "s3".
+                 * @param isS3Express true for a directory bucket (use V4-S3Express); false for SigV4.
+                 * @param provider the credentials provider used during signing. Required; a null
+                 *        provider is recorded as an error and fails MakeMetaRequest.
+                 * @return this object, to allow chaining.
+                 */
+                S3MetaRequestOptions &SetSigningConfigFromEndpoint(
+                    const String &region,
+                    const String &signingRegion,
+                    const String &signingName,
+                    bool isS3Express,
+                    const std::shared_ptr<Auth::ICredentialsProvider> &provider) noexcept;
 
                 /**
                  * Set the checksum configuration for this meta request.
@@ -1151,9 +1261,47 @@ namespace Aws
                  */
                 int LastError() const noexcept;
 
+                /**
+                 * The four getters below report what this client was constructed with, copied from
+                 * its S3ClientConfig. aws_s3_client is opaque and a config is typically a local that
+                 * dies once construction returns, so a caller handed only the client would otherwise
+                 * have no way to learn how it was configured.
+                 *
+                 * @return the region this client signs requests for.
+                 */
+                String GetRegion() const noexcept { return m_region; }
+
+                /**
+                 * @return the target part size in bytes, or 0 if unset.
+                 */
+                uint64_t GetPartSize() const noexcept { return m_partSize; }
+
+                /**
+                 * @return the multipart-upload threshold in bytes, or 0 if unset.
+                 */
+                uint64_t GetMultipartUploadThreshold() const noexcept { return m_multipartUploadThreshold; }
+
+                /**
+                 * @return the target throughput in Gbps, or 0 if unset.
+                 */
+                double GetThroughputTargetGbps() const noexcept { return m_throughputTargetGbps; }
+
+                /**
+                 * @return the credentials provider this client signs with.
+                 */
+                std::shared_ptr<Auth::ICredentialsProvider> GetCredentialsProvider() const noexcept
+                {
+                    return m_credentialsProvider;
+                }
+
               private:
                 ScopedResource<struct aws_s3_client> m_client;
                 int m_lastError;
+                String m_region;
+                uint64_t m_partSize = 0;
+                uint64_t m_multipartUploadThreshold = 0;
+                double m_throughputTargetGbps = 0.0;
+                std::shared_ptr<Auth::ICredentialsProvider> m_credentialsProvider;
             };
 
             /**

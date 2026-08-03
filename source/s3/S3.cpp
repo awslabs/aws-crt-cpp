@@ -23,6 +23,87 @@ namespace Aws
     {
         namespace S3
         {
+            S3ErrorCode S3MetaRequestResult::GetErrorCode() const noexcept
+            {
+                switch (errorCode)
+                {
+                    case AWS_ERROR_SUCCESS:
+                        return S3ErrorCode::Success;
+                    case AWS_ERROR_S3_CANCELED:
+                        return S3ErrorCode::Canceled;
+                    case AWS_ERROR_S3_PAUSED:
+                        return S3ErrorCode::Paused;
+                    case AWS_ERROR_S3_SLOW_DOWN:
+                        return S3ErrorCode::SlowDown;
+                    case AWS_ERROR_S3_REQUEST_TIMEOUT:
+                        return S3ErrorCode::RequestTimeout;
+                    case AWS_ERROR_S3_REQUEST_TIME_TOO_SKEWED:
+                        return S3ErrorCode::RequestTimeTooSkewed;
+                    case AWS_ERROR_S3_INVALID_RESPONSE_STATUS:
+                        return S3ErrorCode::InvalidResponseStatus;
+                    case AWS_ERROR_S3_RESPONSE_CHECKSUM_MISMATCH:
+                        return S3ErrorCode::ResponseChecksumMismatch;
+                    case AWS_ERROR_S3_CHECKSUM_CALCULATION_FAILED:
+                        return S3ErrorCode::ChecksumCalculationFailed;
+                    case AWS_ERROR_S3_INCORRECT_CONTENT_LENGTH:
+                        return S3ErrorCode::IncorrectContentLength;
+                    case AWS_ERROR_S3_MISSING_CONTENT_RANGE_HEADER:
+                        return S3ErrorCode::MissingContentRangeHeader;
+                    case AWS_ERROR_S3_INVALID_CONTENT_RANGE_HEADER:
+                        return S3ErrorCode::InvalidContentRangeHeader;
+                    case AWS_ERROR_S3_MISSING_CONTENT_LENGTH_HEADER:
+                        return S3ErrorCode::MissingContentLengthHeader;
+                    case AWS_ERROR_S3_INVALID_CONTENT_LENGTH_HEADER:
+                        return S3ErrorCode::InvalidContentLengthHeader;
+                    case AWS_ERROR_S3_MISSING_ETAG:
+                        return S3ErrorCode::MissingETag;
+                    case AWS_ERROR_S3_MISSING_UPLOAD_ID:
+                        return S3ErrorCode::MissingUploadId;
+                    case AWS_ERROR_S3_INVALID_RANGE_HEADER:
+                        return S3ErrorCode::InvalidRangeHeader;
+                    case AWS_ERROR_S3_MULTIRANGE_HEADER_UNSUPPORTED:
+                        return S3ErrorCode::MultirangeHeaderUnsupported;
+                    case AWS_ERROR_S3_INVALID_MEMORY_LIMIT_CONFIG:
+                        return S3ErrorCode::InvalidMemoryLimitConfig;
+                    case AWS_ERROR_S3_EXCEEDS_MEMORY_LIMIT:
+                        return S3ErrorCode::ExceedsMemoryLimit;
+                    case AWS_ERROR_S3_INTERNAL_ERROR:
+                        return S3ErrorCode::InternalError;
+                    case AWS_ERROR_S3_PROXY_PARSE_FAILED:
+                        return S3ErrorCode::ProxyParseFailed;
+                    case AWS_ERROR_S3_UNSUPPORTED_PROXY_SCHEME:
+                        return S3ErrorCode::UnsupportedProxyScheme;
+                    case AWS_ERROR_S3_NON_RECOVERABLE_ASYNC_ERROR:
+                        return S3ErrorCode::NonRecoverableAsyncError;
+                    case AWS_ERROR_S3_METRIC_DATA_NOT_AVAILABLE:
+                        return S3ErrorCode::MetricDataNotAvailable;
+                    case AWS_ERROR_S3_LIST_PARTS_PARSE_FAILED:
+                        return S3ErrorCode::ListPartsParseFailed;
+                    case AWS_ERROR_S3_RESUMED_PART_CHECKSUM_MISMATCH:
+                        return S3ErrorCode::ResumedPartChecksumMismatch;
+                    case AWS_ERROR_S3_RESUME_FAILED:
+                        return S3ErrorCode::ResumeFailed;
+                    case AWS_ERROR_S3_OBJECT_MODIFIED:
+                        return S3ErrorCode::ObjectModified;
+                    case AWS_ERROR_S3_FILE_MODIFIED:
+                        return S3ErrorCode::FileModified;
+                    case AWS_ERROR_S3_INTERNAL_PART_SIZE_MISMATCH_RETRYING_WITH_RANGE:
+                        return S3ErrorCode::InternalPartSizeMismatchRetryingWithRange;
+                    case AWS_ERROR_S3_REQUEST_HAS_COMPLETED:
+                        return S3ErrorCode::RequestHasCompleted;
+                    case AWS_ERROR_S3_RECV_FILE_ALREADY_EXISTS:
+                        return S3ErrorCode::RecvFileAlreadyExists;
+                    case AWS_ERROR_S3_RECV_FILE_NOT_FOUND:
+                        return S3ErrorCode::RecvFileNotFound;
+                    case AWS_ERROR_S3_BUFFER_ALLOCATION_FAILED:
+                        return S3ErrorCode::BufferAllocationFailed;
+                    case AWS_ERROR_S3EXPRESS_CREATE_SESSION_FAILED:
+                        return S3ErrorCode::S3ExpressCreateSessionFailed;
+                    default:
+                        return S3ErrorCode::Unknown;
+                }
+            }
+
             S3ChecksumConfig::S3ChecksumConfig() noexcept
                 // Trailer + CRC64NVME matches the AWS SDK default. A location
                 // of None disables the algorithm entirely.
@@ -144,6 +225,21 @@ namespace Aws
             {
                 m_impl->config.multipart_upload_threshold = bytes;
                 return *this;
+            }
+
+            uint64_t S3ClientConfig::GetPartSize() const noexcept
+            {
+                return m_impl->config.part_size;
+            }
+
+            uint64_t S3ClientConfig::GetMultipartUploadThreshold() const noexcept
+            {
+                return m_impl->config.multipart_upload_threshold;
+            }
+
+            double S3ClientConfig::GetThroughputTargetGbps() const noexcept
+            {
+                return m_impl->config.throughput_target_gbps;
             }
 
             S3ClientConfig &S3ClientConfig::SetMemoryLimit(uint64_t bytes) noexcept
@@ -270,6 +366,9 @@ namespace Aws
             {
                 aws_s3_meta_request_options options = {};
                 aws_s3_checksum_config checksum = {};
+                aws_signing_config_aws endpointSigningConfig = {};
+                String endpointSigningRegion;
+                String endpointSigningName;
             };
 
             S3MetaRequestOptions::S3MetaRequestOptions(
@@ -313,6 +412,44 @@ namespace Aws
             S3MetaRequestOptions &S3MetaRequestOptions::SetSigningConfig(const Auth::AwsSigningConfig &config) noexcept
             {
                 m_impl->options.signing_config = config.GetUnderlyingHandle();
+                return *this;
+            }
+
+            S3MetaRequestOptions &S3MetaRequestOptions::SetSigningConfigFromEndpoint(
+                const String &region,
+                const String &signingRegion,
+                const String &signingName,
+                bool isS3Express,
+                const std::shared_ptr<Auth::ICredentialsProvider> &provider) noexcept
+            {
+                // Required: aws-c-s3's S3Express signing path has no error branch for a config with
+                // no credentials, so it would stall rather than fail.
+                if (provider == nullptr)
+                {
+                    m_lastError = AWS_ERROR_INVALID_ARGUMENT;
+                    return *this;
+                }
+
+                // Zeroed so a re-set leaves no stale cursors.
+                aws_signing_config_aws &config = m_impl->endpointSigningConfig;
+                AWS_ZERO_STRUCT(config);
+                aws_s3_init_default_signing_config(
+                    &config, ByteCursorFromString(region), provider->GetUnderlyingHandle());
+                // S3 requires single URI encoding, or keys with reserved characters fail with
+                // SignatureDoesNotMatch.
+                config.flags.use_double_uri_encode = false;
+                config.algorithm = isS3Express ? AWS_SIGNING_ALGORITHM_V4_S3EXPRESS : AWS_SIGNING_ALGORITHM_V4;
+
+                // Cursors must point into storage this object owns, not the caller's temporaries.
+                m_impl->endpointSigningRegion = signingRegion.empty() ? region : signingRegion;
+                config.region = ByteCursorFromString(m_impl->endpointSigningRegion);
+                if (!signingName.empty())
+                {
+                    m_impl->endpointSigningName = signingName;
+                    config.service = ByteCursorFromString(m_impl->endpointSigningName);
+                }
+
+                m_impl->options.signing_config = &config;
                 return *this;
             }
 
@@ -681,7 +818,12 @@ namespace Aws
                 {
                     return AWS_OP_SUCCESS;
                 }
-                return data->headersCb(s_materializeHeaders(headers), responseStatus);
+                if (data->headersCb(s_materializeHeaders(headers), responseStatus))
+                {
+                    return AWS_OP_SUCCESS;
+                }
+                // Raise before returning: the CRT reads aws_last_error() on a non-zero return.
+                return aws_raise_error(AWS_ERROR_HTTP_CALLBACK_FAILURE);
             }
 
             static int s_onBody(
@@ -691,7 +833,15 @@ namespace Aws
                 void *user_data)
             {
                 auto *data = static_cast<S3MetaRequestCallbackData *>(user_data);
-                return data->bodyCb ? data->bodyCb(*body, rangeStart) : AWS_OP_SUCCESS;
+                if (!data->bodyCb)
+                {
+                    return AWS_OP_SUCCESS;
+                }
+                if (data->bodyCb(*body, rangeStart))
+                {
+                    return AWS_OP_SUCCESS;
+                }
+                return aws_raise_error(AWS_ERROR_HTTP_CALLBACK_FAILURE);
             }
 
             static int s_onBodyEx(
@@ -705,13 +855,14 @@ namespace Aws
                 {
                     return AWS_OP_SUCCESS;
                 }
-                // Stack-only, non-owning wrapper over the CRT's borrowed ticket
-                // (which may be null, ex. HEAD_OBJECT): no heap allocation and no
-                // reference taken on the per-chunk path. If the callback needs the
-                // buffer past its return, it calls ticket.Acquire(), which is the
-                // only path that takes a reference and allocates.
+                // Non-owning wrapper over the CRT's borrowed ticket (may be null, ex. HEAD_OBJECT).
+                // Takes no reference; the callback calls ticket.Acquire() to outlive its return.
                 S3BufferTicket ticket(info.ticket);
-                return data->bodyCbEx(*body, info.range_start, ticket);
+                if (data->bodyCbEx(*body, info.range_start, ticket))
+                {
+                    return AWS_OP_SUCCESS;
+                }
+                return aws_raise_error(AWS_ERROR_HTTP_CALLBACK_FAILURE);
             }
 
             static void s_onProgress(
@@ -812,7 +963,11 @@ namespace Aws
                 Delete(data, ApiAllocator());
             }
 
-            S3Client::S3Client(const S3ClientConfig &config) noexcept : m_lastError(AWS_ERROR_SUCCESS)
+            S3Client::S3Client(const S3ClientConfig &config) noexcept
+                : m_lastError(AWS_ERROR_SUCCESS), m_region(config.GetRegion()), m_partSize(config.GetPartSize()),
+                  m_multipartUploadThreshold(config.GetMultipartUploadThreshold()),
+                  m_throughputTargetGbps(config.GetThroughputTargetGbps()),
+                  m_credentialsProvider(config.GetCredentialsProvider())
             {
                 Allocator *allocator = ApiAllocator();
                 struct aws_s3_client_config *rawConfig = config.GetUnderlyingHandle();
