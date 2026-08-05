@@ -461,6 +461,11 @@ namespace Aws
             return aws_error_debug_str(error);
         }
 
+        const char *ErrorName(int error) noexcept
+        {
+            return aws_error_name(error);
+        }
+
         int LastError() noexcept
         {
             return aws_last_error();

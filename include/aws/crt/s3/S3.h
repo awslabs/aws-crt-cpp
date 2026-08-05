@@ -221,54 +221,6 @@ namespace Aws
             class S3MetaRequestOptions;
 
             /**
-             * C++ mirror of the aws-c-s3 error codes reported on
-             * S3MetaRequestResult, so callers can switch on a typed enum instead
-             * of pulling in the C header for AWS_ERROR_S3_*. Success indicates
-             * the meta request completed without error; Unknown is returned for
-             * any code the binding does not (yet) recognize.
-             */
-            enum class S3ErrorCode
-            {
-                Success,
-                Unknown,
-                Canceled,
-                Paused,
-                SlowDown,
-                RequestTimeout,
-                RequestTimeTooSkewed,
-                InvalidResponseStatus,
-                ResponseChecksumMismatch,
-                ChecksumCalculationFailed,
-                IncorrectContentLength,
-                MissingContentRangeHeader,
-                InvalidContentRangeHeader,
-                MissingContentLengthHeader,
-                InvalidContentLengthHeader,
-                MissingETag,
-                MissingUploadId,
-                InvalidRangeHeader,
-                MultirangeHeaderUnsupported,
-                InvalidMemoryLimitConfig,
-                ExceedsMemoryLimit,
-                InternalError,
-                ProxyParseFailed,
-                UnsupportedProxyScheme,
-                NonRecoverableAsyncError,
-                MetricDataNotAvailable,
-                ListPartsParseFailed,
-                ResumedPartChecksumMismatch,
-                ResumeFailed,
-                ObjectModified,
-                FileModified,
-                InternalPartSizeMismatchRetryingWithRange,
-                RequestHasCompleted,
-                RecvFileAlreadyExists,
-                RecvFileNotFound,
-                BufferAllocationFailed,
-                S3ExpressCreateSessionFailed,
-            };
-
-            /**
              * Result delivered to FinishCallback when a meta request terminates.
              * Mirrors aws_s3_meta_request_result. errorResponseHeaders is a deep copy
              * you may retain freely. errorResponseBody is a borrowed view into
@@ -280,13 +232,8 @@ namespace Aws
                 /** AWS_ERROR_SUCCESS on success, a CRT error code otherwise. */
                 int errorCode;
 
-                /**
-                 * Typed view of errorCode. Returns S3ErrorCode::Success when errorCode
-                 * is AWS_ERROR_SUCCESS, S3ErrorCode::Unknown for any code the binding
-                 * does not recognize. Lets callers switch on the enum without pulling
-                 * in the aws-c-s3 C header.
-                 */
-                S3ErrorCode GetErrorCode() const noexcept;
+                /** True when the meta request completed without error. */
+                bool IsSuccess() const noexcept;
 
                 /** HTTP status of the request (the successful response on success, or the failed request on an S3 error
                  * response); 0 for other error codes. */

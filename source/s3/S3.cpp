@@ -23,85 +23,9 @@ namespace Aws
     {
         namespace S3
         {
-            S3ErrorCode S3MetaRequestResult::GetErrorCode() const noexcept
+            bool S3MetaRequestResult::IsSuccess() const noexcept
             {
-                switch (errorCode)
-                {
-                    case AWS_ERROR_SUCCESS:
-                        return S3ErrorCode::Success;
-                    case AWS_ERROR_S3_CANCELED:
-                        return S3ErrorCode::Canceled;
-                    case AWS_ERROR_S3_PAUSED:
-                        return S3ErrorCode::Paused;
-                    case AWS_ERROR_S3_SLOW_DOWN:
-                        return S3ErrorCode::SlowDown;
-                    case AWS_ERROR_S3_REQUEST_TIMEOUT:
-                        return S3ErrorCode::RequestTimeout;
-                    case AWS_ERROR_S3_REQUEST_TIME_TOO_SKEWED:
-                        return S3ErrorCode::RequestTimeTooSkewed;
-                    case AWS_ERROR_S3_INVALID_RESPONSE_STATUS:
-                        return S3ErrorCode::InvalidResponseStatus;
-                    case AWS_ERROR_S3_RESPONSE_CHECKSUM_MISMATCH:
-                        return S3ErrorCode::ResponseChecksumMismatch;
-                    case AWS_ERROR_S3_CHECKSUM_CALCULATION_FAILED:
-                        return S3ErrorCode::ChecksumCalculationFailed;
-                    case AWS_ERROR_S3_INCORRECT_CONTENT_LENGTH:
-                        return S3ErrorCode::IncorrectContentLength;
-                    case AWS_ERROR_S3_MISSING_CONTENT_RANGE_HEADER:
-                        return S3ErrorCode::MissingContentRangeHeader;
-                    case AWS_ERROR_S3_INVALID_CONTENT_RANGE_HEADER:
-                        return S3ErrorCode::InvalidContentRangeHeader;
-                    case AWS_ERROR_S3_MISSING_CONTENT_LENGTH_HEADER:
-                        return S3ErrorCode::MissingContentLengthHeader;
-                    case AWS_ERROR_S3_INVALID_CONTENT_LENGTH_HEADER:
-                        return S3ErrorCode::InvalidContentLengthHeader;
-                    case AWS_ERROR_S3_MISSING_ETAG:
-                        return S3ErrorCode::MissingETag;
-                    case AWS_ERROR_S3_MISSING_UPLOAD_ID:
-                        return S3ErrorCode::MissingUploadId;
-                    case AWS_ERROR_S3_INVALID_RANGE_HEADER:
-                        return S3ErrorCode::InvalidRangeHeader;
-                    case AWS_ERROR_S3_MULTIRANGE_HEADER_UNSUPPORTED:
-                        return S3ErrorCode::MultirangeHeaderUnsupported;
-                    case AWS_ERROR_S3_INVALID_MEMORY_LIMIT_CONFIG:
-                        return S3ErrorCode::InvalidMemoryLimitConfig;
-                    case AWS_ERROR_S3_EXCEEDS_MEMORY_LIMIT:
-                        return S3ErrorCode::ExceedsMemoryLimit;
-                    case AWS_ERROR_S3_INTERNAL_ERROR:
-                        return S3ErrorCode::InternalError;
-                    case AWS_ERROR_S3_PROXY_PARSE_FAILED:
-                        return S3ErrorCode::ProxyParseFailed;
-                    case AWS_ERROR_S3_UNSUPPORTED_PROXY_SCHEME:
-                        return S3ErrorCode::UnsupportedProxyScheme;
-                    case AWS_ERROR_S3_NON_RECOVERABLE_ASYNC_ERROR:
-                        return S3ErrorCode::NonRecoverableAsyncError;
-                    case AWS_ERROR_S3_METRIC_DATA_NOT_AVAILABLE:
-                        return S3ErrorCode::MetricDataNotAvailable;
-                    case AWS_ERROR_S3_LIST_PARTS_PARSE_FAILED:
-                        return S3ErrorCode::ListPartsParseFailed;
-                    case AWS_ERROR_S3_RESUMED_PART_CHECKSUM_MISMATCH:
-                        return S3ErrorCode::ResumedPartChecksumMismatch;
-                    case AWS_ERROR_S3_RESUME_FAILED:
-                        return S3ErrorCode::ResumeFailed;
-                    case AWS_ERROR_S3_OBJECT_MODIFIED:
-                        return S3ErrorCode::ObjectModified;
-                    case AWS_ERROR_S3_FILE_MODIFIED:
-                        return S3ErrorCode::FileModified;
-                    case AWS_ERROR_S3_INTERNAL_PART_SIZE_MISMATCH_RETRYING_WITH_RANGE:
-                        return S3ErrorCode::InternalPartSizeMismatchRetryingWithRange;
-                    case AWS_ERROR_S3_REQUEST_HAS_COMPLETED:
-                        return S3ErrorCode::RequestHasCompleted;
-                    case AWS_ERROR_S3_RECV_FILE_ALREADY_EXISTS:
-                        return S3ErrorCode::RecvFileAlreadyExists;
-                    case AWS_ERROR_S3_RECV_FILE_NOT_FOUND:
-                        return S3ErrorCode::RecvFileNotFound;
-                    case AWS_ERROR_S3_BUFFER_ALLOCATION_FAILED:
-                        return S3ErrorCode::BufferAllocationFailed;
-                    case AWS_ERROR_S3EXPRESS_CREATE_SESSION_FAILED:
-                        return S3ErrorCode::S3ExpressCreateSessionFailed;
-                    default:
-                        return S3ErrorCode::Unknown;
-                }
+                return errorCode == AWS_ERROR_SUCCESS;
             }
 
             S3ChecksumConfig::S3ChecksumConfig() noexcept

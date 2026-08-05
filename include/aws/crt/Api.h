@@ -239,6 +239,13 @@ namespace Aws
         AWS_CRT_CPP_API const char *ErrorDebugString(int error) noexcept;
 
         /**
+         * Gets the name of a CRT error code, e.g. "AWS_ERROR_S3_CANCELED"
+         * @param error error code to get the name for
+         * @return the name of the error code, or "Unknown Error Code" if unregistered
+         */
+        AWS_CRT_CPP_API const char *ErrorName(int error) noexcept;
+
+        /**
          * @return the value of the last aws error on the current thread. Return 0 if no aws-error raised before.
          */
         AWS_CRT_CPP_API int LastError() noexcept;
