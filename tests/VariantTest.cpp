@@ -433,6 +433,15 @@ template <> struct TestStringOnlyVisitor::MyVisitUtil<Aws::Crt::String>
     }
 };
 
+/*
+ * gcc-12 emits a spurious -Wmaybe-uninitialized here: it mis-analyzes the Destroyer visitor path
+ * taken by Variant::emplace() and wrongly concludes that the destroyed std::string alternative's
+ * internal pointer may be read uninitialized. Scoped to the gcc-12 series only.
+ */
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ == 12
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
 static int s_VariantEmplace(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
@@ -466,6 +475,9 @@ static int s_VariantEmplace(struct aws_allocator *allocator, void *ctx)
 }
 
 AWS_TEST_CASE(VariantEmplace, s_VariantEmplace)
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ == 12
+#    pragma GCC diagnostic pop
+#endif
 
 /* This is an example of a template visitor that accepts an alternative template and handles as a template */
 struct TestVisitor
