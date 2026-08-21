@@ -18,8 +18,8 @@ option(ENABLE_PROXY_INTEGRATION_TESTS "Whether or not to build and run the proxy
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-include(AwsGetFullVersion)
-aws_get_full_version(SIMPLE_VERSION FULL_VERSION GIT_HASH)
+include(AwsCrtCppGetVersion)
+aws_crt_cpp_get_version(SIMPLE_VERSION FULL_VERSION GIT_HASH)
 message(STATUS "AWS CRT C++ ${FULL_VERSION}")
 
 project("aws-crt-cpp"
