@@ -136,6 +136,12 @@ namespace Aws
                 }
                 managerOptions.host = aws_byte_cursor_from_c_str(connectionOptions.HostName.c_str());
 
+                if (m_options.NetworkInterfaces.size() > 0)
+                {
+                    managerOptions.network_interface_names_array = m_options.NetworkInterfaces.data();
+                    managerOptions.num_network_interface_names = m_options.NetworkInterfaces.size();
+                }
+
                 m_connectionManager = aws_http_connection_manager_new(allocator, &managerOptions);
             }
 
