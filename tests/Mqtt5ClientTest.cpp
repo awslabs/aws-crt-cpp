@@ -9,6 +9,11 @@
 #include <aws/crt/http/HttpProxyStrategy.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
 #include <aws/iot/Mqtt5Client.h>
+#include <aws/testing/socks5_server.h>
+
+#include "aws/crt/io/L4Proxy.h"
+#include "aws/crt/io/Socks5.h"
+
 #include <aws/iot/MqttCommon.h>
 #include <aws/testing/aws_test_harness.h>
 
@@ -492,12 +497,23 @@ struct Mqtt5TestEnvVars
 // Test Helper
 //////////////////////////////////////////////////////////
 
+struct Socks5ServerTestContext
+{
+    Socks5ServerTestContext() { AWS_ZERO_STRUCT(context); }
+
+    ~Socks5ServerTestContext() { aws_socks5_server_test_context_clean_up(&context); }
+
+    struct aws_socks5_server_test_context context;
+};
+
 struct Mqtt5TestContext
 {
     int testDirective;
     std::shared_ptr<Mqtt5Client> client;
     std::promise<bool> connectionPromise;
     std::promise<void> stoppedPromise;
+
+    std::shared_ptr<Socks5ServerTestContext> socks5ServerTestContext;
 };
 
 static Mqtt5TestContext createTestContext(
@@ -847,6 +863,64 @@ static int s_TestMqtt5DirectConnectionWithMutualTLS(Aws::Crt::Allocator *allocat
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5DirectConnectionWithMutualTLS, s_TestMqtt5DirectConnectionWithMutualTLS)
+
+static int s_configureSocks5ProxyUsage(
+    Mqtt5ClientOptions &clientOptions,
+    const Mqtt5TestEnvVars &testEnv,
+    Mqtt5TestContext &testContext)
+{
+    Aws::Crt::Allocator *allocator = ApiAllocator();
+    testContext.socks5ServerTestContext = Aws::Crt::MakeShared<Socks5ServerTestContext>(allocator);
+
+    struct aws_socks5_server_test_context_options server_options = {
+        .fault_mode = AWS_SOCKS5_SFM_NONE,
+    };
+
+    struct aws_socks5_server_test_context &socks5_server_context = testContext.socks5ServerTestContext->context;
+
+    aws_socks5_server_test_context_init(&socks5_server_context, allocator, &server_options);
+    aws_socks5_server_test_context_wait_on_server_setup(&socks5_server_context);
+
+    std::shared_ptr<Aws::Crt::Io::Socks5ProxyNegotiationStrategy> strategy =
+        Io::Socks5ProxyNegotiationStrategy::newStrategyNoAuth(allocator);
+
+    uint16_t proxyPort = aws_socks5_server_get_listener_port(socks5_server_context.server);
+    Io::Socks5ProxyOptions proxyOptions("127.0.0.1", proxyPort, strategy);
+    proxyOptions.withTimeout(std::chrono::milliseconds(10000));
+
+    std::shared_ptr<Io::L4ProxyConfig> proxyConfig = Io::L4ProxyConfig::newSocks5ProxyConfig(proxyOptions);
+
+    clientOptions.WithL4ProxyOptions(proxyConfig);
+
+    return AWS_OP_SUCCESS;
+}
+
+/*
+ * Direct connection with mutual TLS through SOCKS5 proxy
+ */
+static int s_TestMqtt5DirectConnectionWithMutualTLSViaSocks5(Aws::Crt::Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    Mqtt5TestContext testContext =
+        createTestContext(allocator, MQTT5CONNECT_DIRECT_IOT_CORE, s_configureSocks5ProxyUsage);
+    if (testContext.testDirective == AWS_OP_SKIP)
+    {
+        return AWS_OP_SKIP;
+    }
+
+    std::shared_ptr<Mqtt5Client> mqtt5Client = testContext.client;
+    ASSERT_TRUE(mqtt5Client);
+    ASSERT_TRUE(mqtt5Client->Start());
+    ASSERT_TRUE(testContext.connectionPromise.get_future().get());
+    ASSERT_TRUE(mqtt5Client->Stop());
+    testContext.stoppedPromise.get_future().get();
+
+    struct aws_socks5_server_test_context &socks5_server_context = testContext.socks5ServerTestContext->context;
+    ASSERT_INT_EQUALS(1, aws_socks5_server_get_connections_created(socks5_server_context.server));
+
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(Mqtt5DirectConnectionWithMutualTLSViaSocks5, s_TestMqtt5DirectConnectionWithMutualTLSViaSocks5)
 
 /*
  * Direct connection with mutual TLS and ALPN
