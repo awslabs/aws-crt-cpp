@@ -27,6 +27,11 @@ namespace Aws
             class HttpRequest;
         }
 
+        namespace Io
+        {
+            class L4ProxyConfig;
+        }
+
         namespace Mqtt5
         {
             class Mqtt5Client;
@@ -214,11 +219,20 @@ namespace Aws
                  *   (1) Websockets are used
                  *   (2) Mqtt-over-tls is used and the ALPN list of the tls context contains a tag that resolves to mqtt
                  *
-                 * @param proxyOptions proxy configuration for making the mqtt connection
+                 * @param proxyOptions HTTP proxy configuration for making the mqtt connection
                  *
                  * @return success/failure
                  */
                 bool SetHttpProxyOptions(const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
+
+                /**
+                 * Sets l4 proxy options.
+                 *
+                 * @param proxyOptions l4 proxy configuration for making the mqtt connection
+                 *
+                 * @return success/failure
+                 */
+                bool SetL4ProxyOptions(const std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> &l4ProxyOptions) noexcept;
 
                 /**
                  * Customize time to wait between reconnect attempts.
