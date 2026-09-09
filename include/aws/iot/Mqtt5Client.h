@@ -15,13 +15,17 @@ namespace Aws
 {
     using namespace Crt::Mqtt5;
 
-    namespace Io
+    namespace Crt
     {
-        class ClientBootstrap;
-        class SocketOptions;
-        class TlsContextOptions;
-        class WebsocketConfig;
-    } // namespace Io
+        namespace Io
+        {
+            class ClientBootstrap;
+            class L4ProxyConfig;
+            class SocketOptions;
+            class TlsContextOptions;
+            class WebsocketConfig;
+        } // namespace Io
+    } // namespace Crt
 
     namespace Iot
     {
@@ -328,6 +332,16 @@ namespace Aws
              */
             Mqtt5ClientBuilder &WithHttpProxyOptions(
                 const Crt::Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
+
+            /**
+             * Sets L4 proxy options.  Mutually exclusive with HTTP proxy options.
+             *
+             * @param proxyOptions L4 proxy configuration for connection establishment
+             *
+             * @return this option object
+             */
+            Mqtt5ClientBuilder &WithL4ProxyOptions(
+                const std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> &proxyOptions) noexcept;
 
             /**
              * Sets the custom authorizer settings. This function will modify the username, port, and TLS options.
@@ -648,6 +662,8 @@ namespace Aws
              * Configures (tunneling) HTTP proxy usage when establishing MQTT connections
              */
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
+
+            std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> m_l4ProxyConfig;
 
             /**
              * Websocket related options. The clinet with use websocket for connection when set.

@@ -955,12 +955,12 @@ static int s_TestIoTMqtt311ConnectWSDefaultViaSocks5Proxy(Aws::Crt::Allocator *a
     Aws::Iot::MqttClient client;
     auto clientConfigBuilder = Aws::Iot::MqttClientConnectionConfigBuilder(config);
     clientConfigBuilder.WithEndpoint(aws_string_c_str(endpoint));
+    clientConfigBuilder.WithL4ProxyOptions(proxyConfig);
+
     auto clientConfig = clientConfigBuilder.Build();
     ASSERT_TRUE(clientConfig);
     auto connection = client.NewConnection(clientConfig);
     ASSERT_TRUE(*connection);
-
-    connection->SetL4ProxyOptions(proxyConfig);
 
     std::promise<bool> connectionCompletedPromise;
     std::promise<void> connectionClosedPromise;

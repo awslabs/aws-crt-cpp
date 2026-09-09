@@ -7,11 +7,14 @@
 #include <aws/crt/UUID.h>
 #include <aws/crt/auth/Credentials.h>
 #include <aws/crt/http/HttpProxyStrategy.h>
+#include <aws/crt/io/L4Proxy.h>
 #include <aws/crt/io/Pkcs11.h>
+#include <aws/crt/io/Socks5.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
 #include <aws/iot/Mqtt5Client.h>
 #include <aws/iot/MqttCommon.h>
 #include <aws/testing/aws_test_harness.h>
+#include <aws/testing/socks5_server.h>
 
 #include <utility>
 #if !BYO_CRYPTO
@@ -205,6 +208,72 @@ static int s_TestIoTMqtt5ConnectWithmTLS(Aws::Crt::Allocator *allocator, void *)
 }
 AWS_TEST_CASE(IoTMqtt5ConnectWithmTLS, s_TestIoTMqtt5ConnectWithmTLS)
 
+static int s_TestIoTMqtt5ConnectWithmTLSViaSocks5Proxy(Aws::Crt::Allocator *allocator, void *)
+{
+    struct aws_string *endpoint = NULL;
+    struct aws_string *cert = NULL;
+    struct aws_string *key = NULL;
+
+    int error = s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_rsa_cert, &cert);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_rsa_key, &key);
+    if (error != AWS_OP_SUCCESS)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        aws_string_destroy(endpoint);
+        aws_string_destroy(cert);
+        aws_string_destroy(key);
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    struct aws_socks5_server_test_context socks5_server_context;
+    AWS_ZERO_STRUCT(socks5_server_context);
+
+    struct aws_socks5_server_test_context_options server_options = {
+        .fault_mode = AWS_SOCKS5_SFM_NONE,
+    };
+
+    aws_socks5_server_test_context_init(&socks5_server_context, allocator, &server_options);
+    aws_socks5_server_test_context_wait_on_server_setup(&socks5_server_context);
+
+    std::shared_ptr<Aws::Crt::Io::Socks5ProxyNegotiationStrategy> strategy =
+        Aws::Crt::Io::Socks5ProxyNegotiationStrategy::newStrategyNoAuth(allocator);
+
+    uint16_t proxyPort = aws_socks5_server_get_listener_port(socks5_server_context.server);
+    Aws::Crt::Io::Socks5ProxyOptions proxyOptions("127.0.0.1", proxyPort, strategy);
+    proxyOptions.withTimeout(std::chrono::milliseconds(10000));
+
+    std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> proxyConfig =
+        Aws::Crt::Io::L4ProxyConfig::newSocks5ProxyConfig(proxyOptions);
+
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithMtlsFromPath(
+        aws_string_c_str(endpoint), aws_string_c_str(cert), aws_string_c_str(key), allocator);
+
+    ASSERT_TRUE(builder);
+    builder->WithL4ProxyOptions(proxyConfig);
+
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+
+    s_setupConnectionLifeCycle(builder, connectionPromise, stoppedPromise);
+
+    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
+
+    ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise, &stoppedPromise));
+
+    ASSERT_INT_EQUALS(1, aws_socks5_server_get_connections_created(socks5_server_context.server));
+
+    aws_socks5_server_test_context_clean_up(&socks5_server_context);
+
+    aws_string_destroy(endpoint);
+    aws_string_destroy(cert);
+    aws_string_destroy(key);
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTMqtt5ConnectWithmTLSViaSocks5Proxy, s_TestIoTMqtt5ConnectWithmTLSViaSocks5Proxy)
+
 /*
  * IoT Builder with websocket connect
  */
@@ -251,6 +320,75 @@ static int s_TestIoTMqtt5ConnectWithWebsocket(Aws::Crt::Allocator *allocator, vo
 }
 
 AWS_TEST_CASE(IoTMqtt5ConnectWithWebsocket, s_TestIoTMqtt5ConnectWithWebsocket)
+
+static int s_TestIoTMqtt5ConnectWithWebsocketViaSocks5Proxy(Aws::Crt::Allocator *allocator, void *)
+{
+    struct aws_string *endpoint = NULL;
+    struct aws_string *region = NULL;
+
+    int error = s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt5_test_envName_iot_region, &region);
+    if (error != AWS_OP_SUCCESS)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        aws_string_destroy(endpoint);
+        aws_string_destroy(region);
+        return AWS_OP_SKIP;
+    }
+
+    ApiHandle apiHandle(allocator);
+
+    struct aws_socks5_server_test_context socks5_server_context;
+    AWS_ZERO_STRUCT(socks5_server_context);
+
+    struct aws_socks5_server_test_context_options server_options = {
+        .fault_mode = AWS_SOCKS5_SFM_NONE,
+    };
+
+    aws_socks5_server_test_context_init(&socks5_server_context, allocator, &server_options);
+    aws_socks5_server_test_context_wait_on_server_setup(&socks5_server_context);
+
+    std::shared_ptr<Aws::Crt::Io::Socks5ProxyNegotiationStrategy> strategy =
+        Aws::Crt::Io::Socks5ProxyNegotiationStrategy::newStrategyNoAuth(allocator);
+
+    uint16_t proxyPort = aws_socks5_server_get_listener_port(socks5_server_context.server);
+    Aws::Crt::Io::Socks5ProxyOptions proxyOptions("127.0.0.1", proxyPort, strategy);
+    proxyOptions.withTimeout(std::chrono::milliseconds(10000));
+
+    std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> proxyConfig =
+        Aws::Crt::Io::L4ProxyConfig::newSocks5ProxyConfig(proxyOptions);
+
+    // Create websocket configuration
+    Aws::Crt::Auth::CredentialsProviderChainDefaultConfig defaultConfig;
+    std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> provider =
+        Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(defaultConfig);
+    ASSERT_TRUE(provider);
+    Aws::Iot::WebsocketConfig websocketConfig(aws_string_c_str(region), provider);
+
+    auto builder = Aws::Iot::Mqtt5ClientBuilder::CreateMqtt5ClientBuilderWithWebsocket(
+        aws_string_c_str(endpoint), websocketConfig, allocator);
+    ASSERT_TRUE(builder);
+    builder->WithL4ProxyOptions(proxyConfig);
+
+    std::promise<bool> connectionPromise;
+    std::promise<void> stoppedPromise;
+
+    s_setupConnectionLifeCycle(builder, connectionPromise, stoppedPromise);
+
+    std::shared_ptr<Aws::Crt::Mqtt5::Mqtt5Client> mqtt5Client = builder->Build();
+
+    ASSERT_SUCCESS(s_CheckClientAndStop(mqtt5Client, &connectionPromise, &stoppedPromise));
+
+    ASSERT_INT_EQUALS(1, aws_socks5_server_get_connections_created(socks5_server_context.server));
+
+    aws_socks5_server_test_context_clean_up(&socks5_server_context);
+
+    aws_string_destroy(endpoint);
+    aws_string_destroy(region);
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(IoTMqtt5ConnectWithWebsocketViaSocks5Proxy, s_TestIoTMqtt5ConnectWithWebsocketViaSocks5Proxy)
 
 /*
  * Custom Auth (signing) connect
