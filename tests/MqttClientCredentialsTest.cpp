@@ -9,11 +9,14 @@
 #include <aws/common/string.h>
 #include <aws/crt/UUID.h>
 #include <aws/crt/auth/Credentials.h>
+#include <aws/crt/io/L4Proxy.h>
 #include <aws/crt/io/Pkcs11.h>
+#include <aws/crt/io/Socks5.h>
 #include <aws/iot/MqttClient.h>
 #include <aws/iot/MqttCommon.h>
 
 #include <aws/testing/aws_test_harness.h>
+#include <aws/testing/socks5_server.h>
 #include <utility>
 
 #if !BYO_CRYPTO
@@ -905,6 +908,98 @@ static int s_TestIoTMqtt311ConnectWSDefault(Aws::Crt::Allocator *allocator, void
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(IoTMqtt311ConnectWSDefault, s_TestIoTMqtt311ConnectWSDefault)
+
+static int s_TestIoTMqtt311ConnectWSDefaultViaSocks5Proxy(Aws::Crt::Allocator *allocator, void *)
+{
+    struct aws_string *endpoint = NULL;
+    struct aws_string *region = NULL;
+
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_region, &region);
+    if (error != AWS_OP_SUCCESS)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        aws_string_destroy(endpoint);
+        aws_string_destroy(region);
+        return AWS_OP_SKIP;
+    }
+
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
+    struct aws_socks5_server_test_context socks5_server_context;
+    AWS_ZERO_STRUCT(socks5_server_context);
+
+    struct aws_socks5_server_test_context_options server_options = {
+        .fault_mode = AWS_SOCKS5_SFM_NONE,
+    };
+
+    aws_socks5_server_test_context_init(&socks5_server_context, allocator, &server_options);
+    aws_socks5_server_test_context_wait_on_server_setup(&socks5_server_context);
+
+    std::shared_ptr<Aws::Crt::Io::Socks5ProxyNegotiationStrategy> strategy =
+        Aws::Crt::Io::Socks5ProxyNegotiationStrategy::newStrategyNoAuth(allocator);
+
+    uint16_t proxyPort = aws_socks5_server_get_listener_port(socks5_server_context.server);
+    Aws::Crt::Io::Socks5ProxyOptions proxyOptions("127.0.0.1", proxyPort, strategy);
+    proxyOptions.withTimeout(std::chrono::milliseconds(10000));
+
+    std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> proxyConfig =
+        Aws::Crt::Io::L4ProxyConfig::newSocks5ProxyConfig(proxyOptions);
+
+    std::shared_ptr<Aws::Crt::Auth::ICredentialsProvider> provider = nullptr;
+    Aws::Crt::Auth::CredentialsProviderChainDefaultConfig defaultConfig;
+    provider = Aws::Crt::Auth::CredentialsProvider::CreateCredentialsProviderChainDefault(defaultConfig);
+    ASSERT_TRUE(provider);
+    Aws::Iot::WebsocketConfig config(aws_string_c_str(region), provider);
+
+    Aws::Iot::MqttClient client;
+    auto clientConfigBuilder = Aws::Iot::MqttClientConnectionConfigBuilder(config);
+    clientConfigBuilder.WithEndpoint(aws_string_c_str(endpoint));
+    auto clientConfig = clientConfigBuilder.Build();
+    ASSERT_TRUE(clientConfig);
+    auto connection = client.NewConnection(clientConfig);
+    ASSERT_TRUE(*connection);
+
+    connection->SetL4ProxyOptions(proxyConfig);
+
+    std::promise<bool> connectionCompletedPromise;
+    std::promise<void> connectionClosedPromise;
+    auto onConnectionCompleted =
+        [&](Aws::Crt::Mqtt::MqttConnection &, int errorCode, Aws::Crt::Mqtt::ReturnCode returnCode, bool)
+    {
+        (void)returnCode;
+        if (errorCode)
+        {
+            connectionCompletedPromise.set_value(false);
+        }
+        else
+        {
+            connectionCompletedPromise.set_value(true);
+        }
+    };
+    auto onDisconnect = [&](Aws::Crt::Mqtt::MqttConnection &) { connectionClosedPromise.set_value(); };
+    connection->OnConnectionCompleted = std::move(onConnectionCompleted);
+    connection->OnDisconnect = std::move(onDisconnect);
+
+    Aws::Crt::UUID Uuid;
+    Aws::Crt::String uuidStr = Uuid.ToString();
+
+    ASSERT_TRUE(connection->Connect(uuidStr.c_str(), true /*cleanSession*/, 5000 /*keepAliveTimeSecs*/));
+    ASSERT_TRUE(connectionCompletedPromise.get_future().get());
+    if (connection->Disconnect())
+    {
+        connectionClosedPromise.get_future().wait();
+    }
+
+    ASSERT_INT_EQUALS(1, aws_socks5_server_get_connections_created(socks5_server_context.server));
+
+    aws_socks5_server_test_context_clean_up(&socks5_server_context);
+
+    aws_string_destroy(endpoint);
+    aws_string_destroy(region);
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(IoTMqtt311ConnectWSDefaultViaSocks5Proxy, s_TestIoTMqtt311ConnectWSDefaultViaSocks5Proxy)
 
 /*
  * AWS Static Credentials Provider connect for MQTT311
