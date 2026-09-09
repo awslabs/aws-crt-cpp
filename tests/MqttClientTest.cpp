@@ -8,10 +8,11 @@
 #include <aws/common/environment.h>
 #include <aws/common/string.h>
 #include <aws/crt/UUID.h>
+#include <aws/crt/io/L4Proxy.h>
+#include <aws/crt/io/Socks5.h>
 #include <aws/iot/MqttClient.h>
-#include <aws/iot/MqttCommon.h>
-
 #include <aws/testing/aws_test_harness.h>
+#include <aws/testing/socks5_server.h>
 #include <utility>
 
 #if !BYO_CRYPTO
@@ -406,6 +407,76 @@ static int s_TestMqtt311DirectConnectionWithMutualTLS(Aws::Crt::Allocator *alloc
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt311DirectConnectionWithMutualTLS, s_TestMqtt311DirectConnectionWithMutualTLS)
+
+static int s_TestMqtt311DirectConnectionWithMutualTLSViaSocks5Proxy(Aws::Crt::Allocator *allocator, void *)
+{
+    struct aws_string *endpoint = NULL;
+    struct aws_string *cert_path = NULL;
+    struct aws_string *key_path = NULL;
+
+    int error = s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_hostname, &endpoint);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_cert, &cert_path);
+    error |= s_GetEnvVariable(allocator, s_mqtt311_test_envName_iot_key, &key_path);
+    if (error != AWS_OP_SUCCESS)
+    {
+        printf("Environment Variables are not set for the test, skip the test");
+        aws_string_destroy(endpoint);
+        aws_string_destroy(cert_path);
+        aws_string_destroy(key_path);
+        return AWS_OP_SKIP;
+    }
+
+    Aws::Crt::ApiHandle apiHandle(allocator);
+
+    Aws::Crt::Io::TlsContextOptions tlsCtxOptions = Aws::Crt::Io::TlsContextOptions::InitClientWithMtls(
+        aws_string_c_str(cert_path), aws_string_c_str(key_path), allocator);
+    Aws::Crt::Io::TlsContext tlsContext(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT, allocator);
+    ASSERT_TRUE(tlsContext);
+
+    //
+    struct aws_socks5_server_test_context socks5_server_context;
+    AWS_ZERO_STRUCT(socks5_server_context);
+
+    struct aws_socks5_server_test_context_options server_options = {
+        .fault_mode = AWS_SOCKS5_SFM_NONE,
+    };
+
+    aws_socks5_server_test_context_init(&socks5_server_context, allocator, &server_options);
+    aws_socks5_server_test_context_wait_on_server_setup(&socks5_server_context);
+
+    std::shared_ptr<Aws::Crt::Io::Socks5ProxyNegotiationStrategy> strategy =
+        Aws::Crt::Io::Socks5ProxyNegotiationStrategy::newStrategyNoAuth(allocator);
+
+    uint16_t proxyPort = aws_socks5_server_get_listener_port(socks5_server_context.server);
+    Aws::Crt::Io::Socks5ProxyOptions proxyOptions("127.0.0.1", proxyPort, strategy);
+    proxyOptions.withTimeout(std::chrono::milliseconds(10000));
+
+    std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> proxyConfig =
+        Aws::Crt::Io::L4ProxyConfig::newSocks5ProxyConfig(proxyOptions);
+
+    Aws::Crt::Mqtt::MqttClient client;
+    Aws::Crt::Io::SocketOptions socketOptions;
+    socketOptions.SetConnectTimeoutMs(3000);
+    std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> connection =
+        client.NewConnection(aws_string_c_str(endpoint), 8883, socketOptions, tlsContext, false);
+
+    connection->SetL4ProxyOptions(proxyConfig);
+
+    int connectResult = s_ConnectAndDisconnect(connection);
+    ASSERT_SUCCESS(connectResult);
+    aws_string_destroy(endpoint);
+    aws_string_destroy(cert_path);
+    aws_string_destroy(key_path);
+
+    ASSERT_INT_EQUALS(1, aws_socks5_server_get_connections_created(socks5_server_context.server));
+
+    aws_socks5_server_test_context_clean_up(&socks5_server_context);
+
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(
+    Mqtt311DirectConnectionWithMutualTLSViaSocks5Proxy,
+    s_TestMqtt311DirectConnectionWithMutualTLSViaSocks5Proxy)
 
 /*
  * [ConnDC-UC5] Direct connection with HttpProxy options
