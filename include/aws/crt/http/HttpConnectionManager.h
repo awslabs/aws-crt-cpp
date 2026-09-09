@@ -57,6 +57,14 @@ namespace Aws
                  * reference to the connection manager.
                  */
                 bool EnableBlockingShutdown;
+
+                /**
+                 * Enable connection health monitoring. When MinThroughputBytesPerSecond is non-zero, a connection is
+                 * shut down if its throughput stays below the minimum for longer than
+                 * AllowableThroughputFailureIntervalSeconds. Zero (the default) disables monitoring.
+                 */
+                uint64_t MinThroughputBytesPerSecond;
+                uint32_t AllowableThroughputFailureIntervalSeconds;
             };
 
             /**
