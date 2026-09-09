@@ -63,7 +63,15 @@ static int s_VerifyFilesAreTheSame(Allocator *allocator, const char *fileName1, 
     return AWS_OP_SUCCESS;
 }
 
-static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, ByteCursor urlCursor, bool h2Required)
+#    include <aws/crt/io/L4Proxy.h>
+#    include <aws/crt/io/Socks5.h>
+#    include <aws/testing/socks5_server.h>
+
+static int s_TestHttpDownloadNoBackPressure(
+    struct aws_allocator *allocator,
+    ByteCursor urlCursor,
+    bool h2Required,
+    bool useSocks5)
 {
     int result = AWS_OP_ERR;
 
@@ -134,6 +142,28 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, Byt
             semaphore.notify_one();
         };
 
+        struct aws_socks5_server_test_context socks5_server_context;
+        AWS_ZERO_STRUCT(socks5_server_context);
+        std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> proxyConfig = nullptr;
+        if (useSocks5)
+        {
+            struct aws_socks5_server_test_context_options server_options = {
+                .fault_mode = AWS_SOCKS5_SFM_NONE,
+            };
+
+            aws_socks5_server_test_context_init(&socks5_server_context, allocator, &server_options);
+            aws_socks5_server_test_context_wait_on_server_setup(&socks5_server_context);
+
+            std::shared_ptr<Aws::Crt::Io::Socks5ProxyNegotiationStrategy> strategy =
+                Aws::Crt::Io::Socks5ProxyNegotiationStrategy::newStrategyNoAuth(allocator);
+
+            uint16_t proxyPort = aws_socks5_server_get_listener_port(socks5_server_context.server);
+            Aws::Crt::Io::Socks5ProxyOptions proxyOptions("127.0.0.1", proxyPort, strategy);
+            proxyOptions.withTimeout(std::chrono::milliseconds(10000));
+
+            proxyConfig = Aws::Crt::Io::L4ProxyConfig::newSocks5ProxyConfig(proxyOptions);
+        }
+
         Http::HttpClientConnectionOptions httpClientConnectionOptions;
         httpClientConnectionOptions.Bootstrap = &clientBootstrap;
         httpClientConnectionOptions.OnConnectionSetupCallback = onConnectionSetup;
@@ -142,6 +172,7 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, Byt
         httpClientConnectionOptions.TlsOptions = tlsConnectionOptions;
         httpClientConnectionOptions.HostName = String((const char *)hostName.ptr, hostName.len);
         httpClientConnectionOptions.Port = 443;
+        httpClientConnectionOptions.L4ProxyOptions = proxyConfig;
 
         std::unique_lock<std::mutex> semaphoreULock(semaphoreLock);
         ASSERT_TRUE(Http::HttpClientConnection::CreateConnection(httpClientConnectionOptions, allocator));
@@ -202,6 +233,13 @@ static int s_TestHttpDownloadNoBackPressure(struct aws_allocator *allocator, Byt
         downloadedFile.flush();
         downloadedFile.close();
         result = s_VerifyFilesAreTheSame(allocator, fileName.c_str(), "http_test_doc.txt");
+
+        if (useSocks5)
+        {
+            ASSERT_INT_EQUALS(1, aws_socks5_server_get_connections_created(socks5_server_context.server));
+
+            aws_socks5_server_test_context_clean_up(&socks5_server_context);
+        }
     }
 
     return result;
@@ -211,16 +249,25 @@ static int s_TestHttpDownloadNoBackPressureHTTP1_1(struct aws_allocator *allocat
 {
     (void)ctx;
     ByteCursor cursor = ByteCursorFromCString("https://aws-crt-test-stuff.s3.amazonaws.com/http_test_doc.txt");
-    return s_TestHttpDownloadNoBackPressure(allocator, cursor, false /*h2Required*/);
+    return s_TestHttpDownloadNoBackPressure(allocator, cursor, false /*h2Required*/, false /*useSocks5*/);
 }
 
 AWS_TEST_CASE(HttpDownloadNoBackPressureHTTP1_1, s_TestHttpDownloadNoBackPressureHTTP1_1)
+
+static int s_TestHttpDownloadNoBackPressureHTTP1_1ViaSocks5Proxy(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    ByteCursor cursor = ByteCursorFromCString("https://aws-crt-test-stuff.s3.amazonaws.com/http_test_doc.txt");
+    return s_TestHttpDownloadNoBackPressure(allocator, cursor, false /*h2Required*/, true /*useSocks5*/);
+}
+
+AWS_TEST_CASE(HttpDownloadNoBackPressureHTTP1_1ViaSocks5Proxy, s_TestHttpDownloadNoBackPressureHTTP1_1ViaSocks5Proxy)
 
 static int s_TestHttpDownloadNoBackPressureHTTP2(struct aws_allocator *allocator, void *ctx)
 {
     (void)ctx;
     ByteCursor cursor = ByteCursorFromCString("https://d1cz66xoahf9cl.cloudfront.net/http_test_doc.txt");
-    return s_TestHttpDownloadNoBackPressure(allocator, cursor, true /*h2Required*/);
+    return s_TestHttpDownloadNoBackPressure(allocator, cursor, true /*h2Required*/, false /*useSocks5*/);
 }
 
 AWS_TEST_CASE(HttpDownloadNoBackPressureHTTP2, s_TestHttpDownloadNoBackPressureHTTP2)

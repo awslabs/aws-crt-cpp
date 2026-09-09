@@ -81,6 +81,7 @@ endif()
 
 if(NOT BYO_CRYPTO)
     add_net_test_case(HttpDownloadNoBackPressureHTTP1_1)
+    add_net_test_case(HttpDownloadNoBackPressureHTTP1_1ViaSocks5Proxy)
     add_net_test_case(HttpDownloadNoBackPressureHTTP2)
     add_net_test_case(HttpStreamUnActivated)
     add_net_test_case(HttpCreateConnectionInvalidTlsConnectionOptions)
