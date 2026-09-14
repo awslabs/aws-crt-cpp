@@ -147,9 +147,9 @@ static int s_TestHttpDownloadNoBackPressure(
         std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> proxyConfig = nullptr;
         if (useSocks5)
         {
-            struct aws_socks5_server_test_context_options server_options = {
-                .fault_mode = AWS_SOCKS5_SFM_NONE,
-            };
+            struct aws_socks5_server_test_context_options server_options;
+            AWS_ZERO_STRUCT(server_options);
+            server_options.fault_mode = AWS_SOCKS5_SFM_NONE;
 
             aws_socks5_server_test_context_init(&socks5_server_context, allocator, &server_options);
             aws_socks5_server_test_context_wait_on_server_setup(&socks5_server_context);
