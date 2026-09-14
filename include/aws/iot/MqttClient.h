@@ -14,6 +14,14 @@
 
 namespace Aws
 {
+    namespace Crt
+    {
+        namespace Io
+        {
+            class L4ProxyConfig;
+        } // namespace Io
+    } // namespace Crt
+
     namespace Iot
     {
         class MqttClient;
@@ -105,6 +113,7 @@ namespace Aws
             Crt::String m_username;
             Crt::String m_password;
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
+            std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> m_l4ProxyConfig;
             bool m_enableMetricsCollection;
             Crt::Optional<Crt::Mqtt::AWSIoTMetrics> m_sdkMetrics;
             int m_lastError;
@@ -323,14 +332,24 @@ namespace Aws
             MqttClientConnectionConfigBuilder &WithTlsCipherPreference(aws_tls_cipher_pref cipherPref) noexcept;
 
             /**
-             * Sets http proxy options.
+             * Sets http proxy options.  Mutually exclusive with L4 proxy options.
              *
-             * @param proxyOptions proxy configuration options for connection establishment
+             * @param proxyOptions HTTP proxy configuration options for connection establishment
              *
              * @return this builder object
              */
             MqttClientConnectionConfigBuilder &WithHttpProxyOptions(
                 const Crt::Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
+
+            /**
+             * Sets L4 proxy options.  Mutually exclusive with HTTP proxy options.
+             *
+             * @param proxyOptions L4 proxy configuration options for connection establishment
+             *
+             * @return this builder object
+             */
+            MqttClientConnectionConfigBuilder &WithL4ProxyOptions(
+                const std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> &proxyOptions) noexcept;
 
             /**
              * Whether to send the SDK name and version number in the MQTT CONNECT packet.
@@ -467,6 +486,7 @@ namespace Aws
             Crt::Io::TlsContextOptions m_contextOptions;
             Crt::Optional<WebsocketConfig> m_websocketConfig;
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
+            std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> m_l4ProxyConfig;
             bool m_enableMetricsCollection = true;
             Crt::String m_sdkName;
             Crt::String m_sdkVersion;

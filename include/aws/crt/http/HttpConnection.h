@@ -23,7 +23,8 @@ namespace Aws
         namespace Io
         {
             class ClientBootstrap;
-        }
+            class L4ProxyConfig;
+        } // namespace Io
 
         namespace Http
         {
@@ -341,7 +342,7 @@ namespace Aws
                 AwsHttpProxyConnectionType ProxyConnectionType;
 
                 /**
-                 * Proxy strategy to use while negotiating the connection.  Use null for no additional
+                 * HTTP Proxy strategy to use while negotiating the connection.  Use null for no additional
                  * steps.
                  */
                 std::shared_ptr<HttpProxyStrategy> ProxyStrategy;
@@ -501,10 +502,16 @@ namespace Aws
                 Optional<Io::TlsConnectionOptions> TlsOptions;
 
                 /**
-                 * The proxy options for the http connection.
+                 * HTTP proxy options for the connection.  Mutually exclusive with 'L4ProxyOptions`
                  * Optional.
                  */
                 Optional<HttpClientConnectionProxyOptions> ProxyOptions;
+
+                /**
+                 * L4 proxy configuration options for the connection.  Mutually exclusive with `ProxyOptions`
+                 * Optional.
+                 */
+                std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> L4ProxyOptions;
 
                 /**
                  * If set to true, then the TCP read back pressure mechanism will be enabled. You should
