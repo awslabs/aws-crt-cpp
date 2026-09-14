@@ -12,10 +12,11 @@
 #include <aws/crt/io/Socks5.h>
 #include <aws/iot/MqttClient.h>
 #include <aws/testing/aws_test_harness.h>
-#include <aws/testing/socks5_server.h>
 #include <utility>
 
 #if !BYO_CRYPTO
+
+#    include <aws/testing/socks5_server.h>
 
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_direct_hostname, "AWS_TEST_MQTT311_DIRECT_MQTT_HOST");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_direct_port, "AWS_TEST_MQTT311_DIRECT_MQTT_PORT");

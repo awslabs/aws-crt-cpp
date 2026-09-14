@@ -16,10 +16,11 @@
 #include <aws/iot/MqttCommon.h>
 
 #include <aws/testing/aws_test_harness.h>
-#include <aws/testing/socks5_server.h>
 #include <utility>
 
 #if !BYO_CRYPTO
+
+#    include <aws/testing/socks5_server.h>
 
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_hostname, "AWS_TEST_MQTT311_IOT_CORE_HOST");
 AWS_STATIC_STRING_FROM_LITERAL(s_mqtt311_test_envName_iot_region, "AWS_TEST_MQTT311_IOT_CORE_REGION");
