@@ -7,6 +7,8 @@
 
 #include <aws/crt/ByteBufUtils.h>
 
+#include <chrono>
+
 struct aws_socks5_proxy_negotiation_strategy;
 
 namespace Aws
