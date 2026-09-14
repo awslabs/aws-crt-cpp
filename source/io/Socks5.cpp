@@ -72,6 +72,44 @@ namespace Aws
             {
             }
 
+            Socks5ProxyOptions::Socks5ProxyOptions(const Socks5ProxyOptions &rhs) noexcept
+                : m_proxyHost(rhs.m_proxyHost), m_proxyPort(rhs.m_proxyPort), m_strategy(rhs.m_strategy),
+                  m_timeout(rhs.m_timeout)
+            {
+            }
+
+            Socks5ProxyOptions::Socks5ProxyOptions(Socks5ProxyOptions &&rhs) noexcept
+                : m_proxyHost(std::move(rhs.m_proxyHost)), m_proxyPort(rhs.m_proxyPort),
+                  m_strategy(std::move(rhs.m_strategy)), m_timeout(std::move(rhs.m_timeout))
+            {
+            }
+
+            Socks5ProxyOptions &Socks5ProxyOptions::operator=(const Socks5ProxyOptions &rhs)
+            {
+                if (this != &rhs)
+                {
+                    m_proxyHost = rhs.m_proxyHost;
+                    m_proxyPort = rhs.m_proxyPort;
+                    m_strategy = rhs.m_strategy;
+                    m_timeout = rhs.m_timeout;
+                }
+
+                return *this;
+            }
+
+            Socks5ProxyOptions &Socks5ProxyOptions::operator=(Socks5ProxyOptions &&rhs) noexcept
+            {
+                if (this != &rhs)
+                {
+                    m_proxyHost = std::move(rhs.m_proxyHost);
+                    m_proxyPort = rhs.m_proxyPort;
+                    m_strategy = std::move(rhs.m_strategy);
+                    m_timeout = rhs.m_timeout;
+                }
+
+                return *this;
+            }
+
             Socks5ProxyOptions &Socks5ProxyOptions::withTimeout(std::chrono::milliseconds timeout) noexcept
             {
                 m_timeout = timeout;

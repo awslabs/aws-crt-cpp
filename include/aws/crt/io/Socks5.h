@@ -147,10 +147,10 @@ namespace Aws
                     const Aws::Crt::String &proxyHost,
                     uint16_t proxyPort,
                     std::shared_ptr<Socks5ProxyNegotiationStrategy> strategy) noexcept;
-                Socks5ProxyOptions(const Socks5ProxyOptions &rhs) = default;
-                Socks5ProxyOptions(Socks5ProxyOptions &&rhs) noexcept = default;
-                Socks5ProxyOptions &operator=(const Socks5ProxyOptions &rhs) = default;
-                Socks5ProxyOptions &operator=(Socks5ProxyOptions &&rhs) noexcept = default;
+                Socks5ProxyOptions(const Socks5ProxyOptions &rhs) noexcept;
+                Socks5ProxyOptions(Socks5ProxyOptions &&rhs) noexcept;
+                Socks5ProxyOptions &operator=(const Socks5ProxyOptions &rhs);
+                Socks5ProxyOptions &operator=(Socks5ProxyOptions &&rhs) noexcept;
 
                 ~Socks5ProxyOptions() = default;
 
