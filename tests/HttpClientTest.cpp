@@ -6,6 +6,8 @@
 #include <aws/crt/crypto/Hash.h>
 #include <aws/crt/http/HttpConnection.h>
 #include <aws/crt/http/HttpRequestResponse.h>
+#include <aws/crt/io/L4Proxy.h>
+#include <aws/crt/io/Socks5.h>
 #include <aws/crt/io/Uri.h>
 
 #include <aws/io/event_loop.h>
@@ -19,6 +21,8 @@
 using namespace Aws::Crt;
 
 #if !BYO_CRYPTO
+
+#    include <aws/testing/socks5_server.h>
 
 static int s_VerifyFilesAreTheSame(Allocator *allocator, const char *fileName1, const char *fileName2)
 {
@@ -62,10 +66,6 @@ static int s_VerifyFilesAreTheSame(Allocator *allocator, const char *fileName1, 
     ASSERT_BIN_ARRAYS_EQUALS(file2DigestBuf.buffer, file2DigestBuf.len, file1DigestBuf.buffer, file1DigestBuf.len);
     return AWS_OP_SUCCESS;
 }
-
-#    include <aws/crt/io/L4Proxy.h>
-#    include <aws/crt/io/Socks5.h>
-#    include <aws/testing/socks5_server.h>
 
 static int s_TestHttpDownloadNoBackPressure(
     struct aws_allocator *allocator,
@@ -157,7 +157,8 @@ static int s_TestHttpDownloadNoBackPressure(
             std::shared_ptr<Aws::Crt::Io::Socks5ProxyNegotiationStrategy> strategy =
                 Aws::Crt::Io::Socks5ProxyNegotiationStrategy::newStrategyNoAuth(allocator);
 
-            uint16_t proxyPort = aws_socks5_server_get_listener_port(socks5_server_context.server);
+            uint16_t proxyPort =
+                static_cast<uint16_t>(aws_socks5_server_get_listener_port(socks5_server_context.server));
             Aws::Crt::Io::Socks5ProxyOptions proxyOptions("127.0.0.1", proxyPort, strategy);
             proxyOptions.withTimeout(std::chrono::milliseconds(10000));
 

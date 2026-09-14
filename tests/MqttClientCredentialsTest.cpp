@@ -939,7 +939,7 @@ static int s_TestIoTMqtt311ConnectWSDefaultViaSocks5Proxy(Aws::Crt::Allocator *a
     std::shared_ptr<Aws::Crt::Io::Socks5ProxyNegotiationStrategy> strategy =
         Aws::Crt::Io::Socks5ProxyNegotiationStrategy::newStrategyNoAuth(allocator);
 
-    uint16_t proxyPort = aws_socks5_server_get_listener_port(socks5_server_context.server);
+    uint16_t proxyPort = static_cast<uint16_t>(aws_socks5_server_get_listener_port(socks5_server_context.server));
     Aws::Crt::Io::Socks5ProxyOptions proxyOptions("127.0.0.1", proxyPort, strategy);
     proxyOptions.withTimeout(std::chrono::milliseconds(10000));
 

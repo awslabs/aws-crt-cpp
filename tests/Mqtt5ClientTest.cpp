@@ -887,7 +887,7 @@ static int s_configureSocks5ProxyUsage(
     std::shared_ptr<Aws::Crt::Io::Socks5ProxyNegotiationStrategy> strategy =
         Io::Socks5ProxyNegotiationStrategy::newStrategyNoAuth(allocator);
 
-    uint16_t proxyPort = aws_socks5_server_get_listener_port(socks5_server_context.server);
+    uint16_t proxyPort = static_cast<uint16_t>(aws_socks5_server_get_listener_port(socks5_server_context.server));
     Io::Socks5ProxyOptions proxyOptions("127.0.0.1", proxyPort, strategy);
     proxyOptions.withTimeout(std::chrono::milliseconds(10000));
 
