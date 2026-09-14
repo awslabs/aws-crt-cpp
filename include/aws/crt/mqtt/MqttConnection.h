@@ -228,7 +228,7 @@ namespace Aws
                 /**
                  * Sets l4 proxy options.
                  *
-                 * @param proxyOptions l4 proxy configuration for making the mqtt connection
+                 * @param l4ProxyOptions l4 proxy configuration for making the mqtt connection
                  *
                  * @return success/failure
                  */
