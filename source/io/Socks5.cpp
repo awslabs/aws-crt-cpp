@@ -36,10 +36,11 @@ namespace Aws
                 const Socks5BasicAuthOptions &options,
                 Allocator *allocator)
             {
-                struct aws_socks5_proxy_negotiation_basic_auth_options basic_auth_options = {
-                    .username = options.getUsername().cursor(),
-                    .password = options.getPassword().cursor(),
-                };
+                struct aws_socks5_proxy_negotiation_basic_auth_options basic_auth_options;
+                AWS_ZERO_STRUCT(basic_auth_options);
+                basic_auth_options.username = options.getUsername().cursor();
+                basic_auth_options.password = options.getPassword().cursor();
+
                 struct aws_socks5_proxy_negotiation_strategy *strategy =
                     aws_socks5_proxy_negotiation_strategy_new_basic_auth(allocator, &basic_auth_options);
 

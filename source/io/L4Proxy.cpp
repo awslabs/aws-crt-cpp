@@ -28,12 +28,13 @@ namespace Aws
                 const Socks5ProxyOptions &options,
                 Allocator *allocator)
             {
-                struct aws_socks5_proxy_options proxy_options = {
-                    .proxy_host = aws_byte_cursor_from_c_str(options.proxyHost().c_str()),
-                    .proxy_port = options.proxyPort(),
-                    .negotiation_strategy = options.strategy()->get(),
-                    .negotiation_timeout_ms =
-                        static_cast<uint32_t>(aws_min_u64(UINT32_MAX, options.timeout().count()))};
+                struct aws_socks5_proxy_options proxy_options;
+                AWS_ZERO_STRUCT(proxy_options);
+                proxy_options.proxy_host = aws_byte_cursor_from_c_str(options.proxyHost().c_str());
+                proxy_options.proxy_port = options.proxyPort();
+                proxy_options.negotiation_strategy = options.strategy()->get();
+                proxy_options.negotiation_timeout_ms =
+                    static_cast<uint32_t>(aws_min_u64(UINT32_MAX, options.timeout().count()));
 
                 struct aws_l4_proxy_config *l4_proxy_config = aws_l4_proxy_config_new_socks5(allocator, &proxy_options);
 
