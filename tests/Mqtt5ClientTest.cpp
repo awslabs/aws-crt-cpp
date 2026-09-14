@@ -9,7 +9,6 @@
 #include <aws/crt/http/HttpProxyStrategy.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
 #include <aws/iot/Mqtt5Client.h>
-#include <aws/testing/socks5_server.h>
 
 #include "aws/crt/io/L4Proxy.h"
 #include "aws/crt/io/Socks5.h"
@@ -20,6 +19,10 @@
 #include <atomic>
 #include <thread>
 #include <utility>
+
+#if !BYO_CRYPTO
+#    include <aws/testing/socks5_server.h>
+#endif
 
 using namespace Aws::Crt;
 using namespace Aws::Crt::Mqtt5;
@@ -872,9 +875,9 @@ static int s_configureSocks5ProxyUsage(
     Aws::Crt::Allocator *allocator = ApiAllocator();
     testContext.socks5ServerTestContext = Aws::Crt::MakeShared<Socks5ServerTestContext>(allocator);
 
-    struct aws_socks5_server_test_context_options server_options = {
-        .fault_mode = AWS_SOCKS5_SFM_NONE,
-    };
+    struct aws_socks5_server_test_context_options server_options;
+    AWS_ZERO_STRUCT(server_options);
+    server_options.fault_mode = AWS_SOCKS5_SFM_NONE;
 
     struct aws_socks5_server_test_context &socks5_server_context = testContext.socks5ServerTestContext->context;
 

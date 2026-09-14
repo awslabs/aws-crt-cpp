@@ -14,10 +14,11 @@
 #include <aws/iot/Mqtt5Client.h>
 #include <aws/iot/MqttCommon.h>
 #include <aws/testing/aws_test_harness.h>
-#include <aws/testing/socks5_server.h>
 
 #include <utility>
 #if !BYO_CRYPTO
+
+#    include <aws/testing/socks5_server.h>
 
 using namespace Aws::Crt;
 using namespace Aws::Crt::Mqtt5;
@@ -231,9 +232,9 @@ static int s_TestIoTMqtt5ConnectWithmTLSViaSocks5Proxy(Aws::Crt::Allocator *allo
     struct aws_socks5_server_test_context socks5_server_context;
     AWS_ZERO_STRUCT(socks5_server_context);
 
-    struct aws_socks5_server_test_context_options server_options = {
-        .fault_mode = AWS_SOCKS5_SFM_NONE,
-    };
+    struct aws_socks5_server_test_context_options server_options;
+    AWS_ZERO_STRUCT(server_options);
+    server_options.fault_mode = AWS_SOCKS5_SFM_NONE;
 
     aws_socks5_server_test_context_init(&socks5_server_context, allocator, &server_options);
     aws_socks5_server_test_context_wait_on_server_setup(&socks5_server_context);
@@ -341,9 +342,9 @@ static int s_TestIoTMqtt5ConnectWithWebsocketViaSocks5Proxy(Aws::Crt::Allocator 
     struct aws_socks5_server_test_context socks5_server_context;
     AWS_ZERO_STRUCT(socks5_server_context);
 
-    struct aws_socks5_server_test_context_options server_options = {
-        .fault_mode = AWS_SOCKS5_SFM_NONE,
-    };
+    struct aws_socks5_server_test_context_options server_options;
+    AWS_ZERO_STRUCT(server_options);
+    server_options.fault_mode = AWS_SOCKS5_SFM_NONE;
 
     aws_socks5_server_test_context_init(&socks5_server_context, allocator, &server_options);
     aws_socks5_server_test_context_wait_on_server_setup(&socks5_server_context);
