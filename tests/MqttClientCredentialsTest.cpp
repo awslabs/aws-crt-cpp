@@ -929,9 +929,9 @@ static int s_TestIoTMqtt311ConnectWSDefaultViaSocks5Proxy(Aws::Crt::Allocator *a
     struct aws_socks5_server_test_context socks5_server_context;
     AWS_ZERO_STRUCT(socks5_server_context);
 
-    struct aws_socks5_server_test_context_options server_options = {
-        .fault_mode = AWS_SOCKS5_SFM_NONE,
-    };
+    struct aws_socks5_server_test_context_options server_options;
+    AWS_ZERO_STRUCT(server_options);
+    server_options.fault_mode = AWS_SOCKS5_SFM_NONE;
 
     aws_socks5_server_test_context_init(&socks5_server_context, allocator, &server_options);
     aws_socks5_server_test_context_wait_on_server_setup(&socks5_server_context);
