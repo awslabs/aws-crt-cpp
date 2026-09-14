@@ -24,7 +24,7 @@ namespace Aws
              *
              * See https://www.rfc-editor.org/info/rfc1929/
              */
-            class Socks5BasicAuthOptions
+            class AWS_CRT_CPP_API Socks5BasicAuthOptions
             {
               public:
                 Socks5BasicAuthOptions() noexcept = default;
@@ -82,7 +82,7 @@ namespace Aws
              * Opaque wrapper that represents an authentication strategy to use when negotiating a tunnel through
              * a SOCKS5 proxy.  Currently, only no-authentication and basic authentication are supported.
              */
-            class Socks5ProxyNegotiationStrategy
+            class AWS_CRT_CPP_API Socks5ProxyNegotiationStrategy
             {
               public:
                 Socks5ProxyNegotiationStrategy() noexcept = delete;
@@ -133,7 +133,7 @@ namespace Aws
             /**
              * Configuration options relevant to routing connections through a SOCKS5 proxy.
              */
-            class Socks5ProxyOptions
+            class AWS_CRT_CPP_API Socks5ProxyOptions
             {
               public:
                 /**

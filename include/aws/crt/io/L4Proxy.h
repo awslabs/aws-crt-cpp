@@ -21,7 +21,7 @@ namespace Aws
              * Wrapper around a C implementation of an object capable of routing connection attempts properly
              * through an L4 proxy.  Only SOCKS5 is supported.
              */
-            class L4ProxyConfig
+            class AWS_CRT_CPP_API L4ProxyConfig
             {
               public:
                 L4ProxyConfig() noexcept = delete;
