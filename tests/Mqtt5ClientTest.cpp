@@ -2339,6 +2339,8 @@ static int s_TestMqtt5ManualPubackHold(Aws::Crt::Allocator *allocator, void *)
         subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
     subscribed.get_future().get();
 
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
     /* Publish a QoS 1 message with a unique UUID payload */
     ByteBuf payloadBuf = Aws::Crt::ByteBufFromCString(PAYLOAD.c_str());
     std::shared_ptr<Mqtt5::PublishPacket> publish = Aws::Crt::MakeShared<Mqtt5::PublishPacket>(
