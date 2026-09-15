@@ -2115,6 +2115,8 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *)
         subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
     subscribed.get_future().get();
 
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
     /* Publish 10 messages to test topic */
     for (int i = 0; i < MESSAGE_NUMBER; i++)
     {
@@ -2213,6 +2215,8 @@ static int s_TestMqtt5QoS1AutoPubackNoDuplicate(Aws::Crt::Allocator *allocator, 
     ASSERT_TRUE(subscriberClient->Subscribe(
         subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
     subscribed.get_future().get();
+
+    std::this_thread::sleep_for(std::chrono::seconds(2));
 
     /* Publish a single QoS 1 message */
     std::shared_ptr<Mqtt5::PublishPacket> publish = Aws::Crt::MakeShared<Mqtt5::PublishPacket>(
@@ -3452,6 +3456,8 @@ static int s_TestMqtt5to3AdapterOperations(Aws::Crt::Allocator *allocator, void 
         testTopic.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, std::move(onMessage), std::move(onSubAck));
     subscribed.get_future().get();
 
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
     mqttConnection->Publish(testTopic.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, testPayload, onPubAck);
     published.get_future().get();
 
@@ -3464,6 +3470,8 @@ static int s_TestMqtt5to3AdapterOperations(Aws::Crt::Allocator *allocator, void 
     mqttConnection->Unsubscribe(testTopic.c_str(), onUnsubAck);
     unsubscribed.get_future().get();
 
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
     published = {};
     mqttConnection->Publish(testTopic.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, testPayload, onPubAck);
 
@@ -3471,7 +3479,7 @@ static int s_TestMqtt5to3AdapterOperations(Aws::Crt::Allocator *allocator, void 
     published.get_future().get();
 
     // give a chance for the publish to reflect if we were subscribed (which we're not)
-    aws_thread_current_sleep(2000 * 1000 * 1000);
+    std::this_thread::sleep_for(std::chrono::seconds(2));
 
     /* Stop immediately */
     ASSERT_TRUE(mqtt5Client->Stop());
