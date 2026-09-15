@@ -6,6 +6,7 @@
 
 #include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
+#include <aws/crt/io/EventLoopGroup.h>
 #include <aws/io/channel.h>
 
 #include <chrono>
@@ -29,12 +30,6 @@ namespace Aws
             enum class MessageType
             {
                 ApplicationData,
-            };
-
-            enum class TaskStatus
-            {
-                RunReady,
-                Canceled,
             };
 
             /**

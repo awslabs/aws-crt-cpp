@@ -13,6 +13,8 @@ add_test_case(ApiMultiDefaultCreateDestroy)
 add_test_case(ApiStaticDefaultCreateDestroy)
 add_test_case(ApiStaticVersionReporting)
 add_test_case(EventLoopResourceSafety)
+add_test_case(EventLoopScheduleRunsAfterDelay)
+add_test_case(EventLoopScheduleCanceledOnShutdown)
 add_test_case(ClientBootstrapResourceSafety)
 
 if(NOT BYO_CRYPTO)
