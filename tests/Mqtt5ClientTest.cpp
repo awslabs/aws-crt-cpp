@@ -1887,6 +1887,10 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *)
         subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
     subscribed.get_future().get();
 
+    // there's some eventual consistency gap possibility here according to IoT Core.  There suggestions
+    // was to wait here for a little bit
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
     std::shared_ptr<Mqtt5::DisconnectPacket> disconnect =
         Aws::Crt::MakeShared<Mqtt5::DisconnectPacket>(allocator, allocator);
     disconnect->WithReasonCode(AWS_MQTT5_DRC_DISCONNECT_WITH_WILL_MESSAGE);
