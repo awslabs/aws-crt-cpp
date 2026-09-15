@@ -89,6 +89,12 @@ namespace Aws
                  */
                 void EnableBlockingShutdown() noexcept;
 
+                /**
+                 * Returns a non-owning view of the next event loop from the EventLoopGroup this bootstrap was
+                 * constructed with. Use it to schedule tasks (such as delayed work) on the transport's loop.
+                 */
+                EventLoop GetNextEventLoop() const noexcept;
+
                 /// @private
                 aws_client_bootstrap *GetUnderlyingHandle() const noexcept;
 

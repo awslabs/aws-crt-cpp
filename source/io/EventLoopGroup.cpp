@@ -3,6 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 #include <aws/crt/io/EventLoopGroup.h>
+
+#include <aws/common/task_scheduler.h>
+
 #include <iostream>
 
 namespace Aws
@@ -74,6 +77,45 @@ namespace Aws
                 return nullptr;
             }
 
+            namespace
+            {
+                class EventLoopTask
+                {
+                  public:
+                    EventLoopTask(Allocator *allocator, std::function<void(TaskStatus)> &&fn)
+                        : m_allocator(allocator), m_fn(std::move(fn))
+                    {
+                        aws_task_init(&m_task, EventLoopTask::OnTaskRun, this, "cpp-crt-event-loop-task");
+                    }
+
+                    aws_task *GetTask() noexcept { return &m_task; }
+
+                  private:
+                    static void OnTaskRun(struct aws_task *, void *arg, enum aws_task_status status)
+                    {
+                        auto *self = reinterpret_cast<EventLoopTask *>(arg);
+                        self->m_fn(static_cast<TaskStatus>(status));
+                        Delete(self, self->m_allocator);
+                    }
+
+                    aws_task m_task;
+                    Allocator *m_allocator;
+                    std::function<void(TaskStatus)> m_fn;
+                };
+            } // namespace
+
+            EventLoop::EventLoop(aws_event_loop *loop) noexcept : m_loop(loop) {}
+
+            void EventLoop::Schedule(std::function<void(TaskStatus)> &&task, std::chrono::nanoseconds run_in) noexcept
+            {
+                Allocator *allocator = ApiAllocator();
+                auto *loopTask = New<EventLoopTask>(allocator, allocator, std::move(task));
+
+                uint64_t currentTimestamp = 0;
+                aws_event_loop_current_clock_time(m_loop, &currentTimestamp);
+                aws_event_loop_schedule_task_future(
+                    m_loop, loopTask->GetTask(), currentTimestamp + static_cast<uint64_t>(run_in.count()));
+            }
         } // namespace Io
 
     } // namespace Crt

@@ -7,12 +7,52 @@
 
 #include <aws/io/event_loop.h>
 
+#include <chrono>
+#include <functional>
+
 namespace Aws
 {
     namespace Crt
     {
         namespace Io
         {
+            /**
+             * The status a scheduled task runs with: RunReady if it fired normally, or Canceled if the
+             * owning event loop shut down before it fired.
+             */
+            enum class TaskStatus
+            {
+                RunReady,
+                Canceled,
+            };
+
+            /**
+             * A non-owning view of a single event-loop belonging to an EventLoopGroup, on which tasks may be
+             * scheduled to run after a delay. Obtain one from EventLoopGroup or ClientBootstrap; the referenced
+             * loop is owned by the EventLoopGroup and must outlive any scheduled work.
+             */
+            class AWS_CRT_CPP_API EventLoop final
+            {
+              public:
+                /**
+                 * @return true if this view refers to a valid event loop.
+                 */
+                explicit operator bool() const noexcept { return m_loop != nullptr; }
+
+                /**
+                 * Schedule a task to run on this event loop after run_in has elapsed. The task is invoked with
+                 * TaskStatus::Canceled instead if the event loop shuts down before run_in elapses.
+                 */
+                void Schedule(std::function<void(TaskStatus)> &&task, std::chrono::nanoseconds run_in) noexcept;
+
+              private:
+                explicit EventLoop(aws_event_loop *loop) noexcept;
+
+                aws_event_loop *m_loop;
+
+                friend class ClientBootstrap;
+            };
+
             /**
              * A collection of event loops.
              *
