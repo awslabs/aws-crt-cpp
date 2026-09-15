@@ -32,7 +32,7 @@ namespace Aws
 
             HttpClientConnectionManagerOptions::HttpClientConnectionManagerOptions() noexcept
                 : ConnectionOptions(), MaxConnections(1), EnableBlockingShutdown(false), MinThroughputBytesPerSecond(0),
-                  AllowableThroughputFailureIntervalSeconds(0)
+                  AllowableThroughputFailureIntervalSeconds(0), ResponseFirstByteTimeoutMs(0)
             {
             }
 
@@ -147,6 +147,8 @@ namespace Aws
                         m_options.AllowableThroughputFailureIntervalSeconds;
                     managerOptions.monitoring_options = &monitoringOptions;
                 }
+
+                managerOptions.response_first_byte_timeout_ms = m_options.ResponseFirstByteTimeoutMs;
 
                 m_connectionManager = aws_http_connection_manager_new(allocator, &managerOptions);
             }

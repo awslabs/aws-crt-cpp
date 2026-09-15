@@ -140,6 +140,14 @@ namespace Aws
                  * end_stream=true.
                  */
                 bool UseManualDataWrites = false;
+
+                /**
+                 * Optional (ignored if 0).
+                 * After the request is fully sent, if the server does not begin responding within this many
+                 * milliseconds, the stream fails with AWS_ERROR_HTTP_RESPONSE_FIRST_BYTE_TIMEOUT.
+                 * Overrides any connection-level setting for this request. Supported for HTTP/1.1 and HTTP/2.
+                 */
+                uint64_t ResponseFirstByteTimeoutMs = 0;
             };
 
             /**
