@@ -14,6 +14,7 @@
 #include <aws/crt/http/HttpProxyStrategy.h>
 #include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Bootstrap.h>
+#include <aws/crt/io/L4Proxy.h>
 #include <aws/iot/MqttClient.h>
 
 #include <utility>
@@ -243,6 +244,11 @@ namespace Aws
                     raw_options.http_proxy_options = &m_httpProxyOptionsStorage;
                 }
 
+                if (m_l4ProxyOptions)
+                {
+                    raw_options.l4_proxy_config = m_l4ProxyOptions->get();
+                }
+
                 raw_options.connect_options = &m_packetConnectViewStorage;
                 raw_options.session_behavior = m_sessionBehavior;
                 raw_options.extended_validation_and_flow_control_options = m_extendedValidationAndFlowControlOptions;
@@ -313,6 +319,13 @@ namespace Aws
             {
                 m_proxyOptions = proxyOptions;
                 m_proxyOptions->InitializeRawProxyOptions(m_httpProxyOptionsStorage);
+                return *this;
+            }
+
+            Mqtt5ClientOptions &Mqtt5ClientOptions::WithL4ProxyOptions(
+                const std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> &proxyOptions) noexcept
+            {
+                m_l4ProxyOptions = proxyOptions;
                 return *this;
             }
 

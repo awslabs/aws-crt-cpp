@@ -7,6 +7,7 @@
 #include <aws/crt/http/HttpProxyStrategy.h>
 #include <aws/crt/http/HttpRequestResponse.h>
 #include <aws/crt/io/Bootstrap.h>
+#include <aws/crt/io/L4Proxy.h>
 
 namespace Aws
 {
@@ -108,6 +109,16 @@ namespace Aws
 
                 if (connectionOptions.ProxyOptions)
                 {
+                    if (connectionOptions.L4ProxyOptions)
+                    {
+                        AWS_LOGF_ERROR(
+                            AWS_LS_HTTP_GENERAL,
+                            "Cannot create HttpClientConnection: HTTP proxy options and L4 proxy options cannot both"
+                            "be set.");
+                        aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
+                        return false;
+                    }
+
                     const auto &proxyOpts = connectionOptions.ProxyOptions.value();
 
                     if (proxyOpts.TlsOptions && !(*proxyOpts.TlsOptions))
@@ -178,6 +189,11 @@ namespace Aws
                        inline with underlying c structs. So keeping a ref to shared ptr, to make sure it survives after
                        options are gone. */
                     callbackData->proxyStrategy = proxyOpts.ProxyStrategy;
+                }
+
+                if (connectionOptions.L4ProxyOptions)
+                {
+                    options.l4_proxy_config = connectionOptions.L4ProxyOptions->get();
                 }
 
                 if (aws_http_client_connect(&options))

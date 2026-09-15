@@ -12,6 +12,11 @@ namespace Aws
 {
     namespace Crt
     {
+        namespace Io
+        {
+            class L4ProxyConfig;
+        } // namespace Io
+
         namespace Mqtt
         {
             class IoTSDKMetricsEncoder;
@@ -553,7 +558,7 @@ namespace Aws
                 Mqtt5ClientOptions &WithTlsConnectionOptions(const Io::TlsConnectionOptions &tslOptions) noexcept;
 
                 /**
-                 * Sets http proxy options.
+                 * Sets http proxy options.  Mutually exclusive with L4 proxy options.
                  *
                  * @param proxyOptions http proxy configuration for connection establishment
                  *
@@ -561,6 +566,16 @@ namespace Aws
                  */
                 Mqtt5ClientOptions &WithHttpProxyOptions(
                     const Crt::Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
+
+                /**
+                 * Sets l4 proxy options.  Mutually exclusive with HTTP proxy options.
+                 *
+                 * @param proxyOptions L4 proxy configuration for connection establishment
+                 *
+                 * @return this option object
+                 */
+                Mqtt5ClientOptions &WithL4ProxyOptions(
+                    const std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> &proxyOptions) noexcept;
 
                 /**
                  * Sets mqtt5 connection options
@@ -842,6 +857,11 @@ namespace Aws
                  * Configures (tunneling) HTTP proxy usage when establishing MQTT connections
                  */
                 Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
+
+                /**
+                 * Configures L4 proxy usage when establishing MQTT connections
+                 */
+                std::shared_ptr<Crt::Io::L4ProxyConfig> m_l4ProxyOptions;
 
                 /**
                  * All configurable options with respect to the CONNECT packet sent by the client, including the will.

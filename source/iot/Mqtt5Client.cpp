@@ -370,6 +370,13 @@ namespace Aws
             return *this;
         }
 
+        Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithL4ProxyOptions(
+            const std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> &proxyOptions) noexcept
+        {
+            m_l4ProxyConfig = proxyOptions;
+            return *this;
+        }
+
         Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithCustomAuthorizer(const Iot::Mqtt5CustomAuthConfig &config) noexcept
         {
             m_customAuthConfig = config;
@@ -632,6 +639,8 @@ namespace Aws
             {
                 m_options->WithHttpProxyOptions(m_proxyOptions.value());
             }
+
+            m_options->WithL4ProxyOptions(m_l4ProxyConfig);
 
             return Crt::Mqtt5::Mqtt5Client::NewMqtt5Client(*m_options, m_allocator);
         }
