@@ -65,6 +65,15 @@ namespace Aws
                  */
                 uint64_t MinThroughputBytesPerSecond;
                 uint32_t AllowableThroughputFailureIntervalSeconds;
+
+                /**
+                 * Optional (ignored if 0).
+                 * After a request is fully sent on a connection from this manager, if the server does not begin
+                 * responding within this many milliseconds, the request fails with
+                 * AWS_ERROR_HTTP_RESPONSE_FIRST_BYTE_TIMEOUT. Can be overridden per-request via
+                 * HttpRequestOptions::ResponseFirstByteTimeoutMs. Supported for HTTP/1.1 and HTTP/2.
+                 */
+                uint64_t ResponseFirstByteTimeoutMs;
             };
 
             /**

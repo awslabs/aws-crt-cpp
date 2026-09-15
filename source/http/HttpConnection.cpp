@@ -209,6 +209,7 @@ namespace Aws
                 options.on_response_header_block_done = HttpStream::s_onIncomingHeaderBlockDone;
                 options.on_complete = HttpStream::s_onStreamComplete;
                 options.use_manual_data_writes = requestOptions.UseManualDataWrites;
+                options.response_first_byte_timeout_ms = requestOptions.ResponseFirstByteTimeoutMs;
 
                 /* Do the same ref counting trick we did with HttpClientConnection. We need to maintain a reference
                  * internally (regardless of what the user does), until the Stream shuts down. */
