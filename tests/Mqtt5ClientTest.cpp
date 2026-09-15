@@ -872,6 +872,8 @@ static int s_configureSocks5ProxyUsage(
     const Mqtt5TestEnvVars &testEnv,
     Mqtt5TestContext &testContext)
 {
+    (void)testEnv;
+
     Aws::Crt::Allocator *allocator = ApiAllocator();
     testContext.socks5ServerTestContext = Aws::Crt::MakeShared<Socks5ServerTestContext>(allocator);
 
