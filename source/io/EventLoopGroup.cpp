@@ -6,6 +6,7 @@
 
 #include <aws/common/task_scheduler.h>
 
+#include <atomic>
 #include <iostream>
 
 namespace Aws
@@ -77,44 +78,90 @@ namespace Aws
                 return nullptr;
             }
 
-            namespace
+            class ScheduledTask::Impl : public std::enable_shared_from_this<ScheduledTask::Impl>
             {
-                class EventLoopTask
+              public:
+                Impl(aws_event_loop *loop, std::function<void(TaskStatus)> &&fn) : m_loop(loop), m_fn(std::move(fn))
                 {
-                  public:
-                    EventLoopTask(Allocator *allocator, std::function<void(TaskStatus)> &&fn)
-                        : m_allocator(allocator), m_fn(std::move(fn))
+                    aws_task_init(&m_run.task, Impl::OnRun, this, "cpp-crt-event-loop-task");
+                    aws_task_init(&m_cancel.task, Impl::OnCancel, this, "cpp-crt-event-loop-cancel-task");
+                }
+
+                void Schedule(std::chrono::nanoseconds run_in) noexcept
+                {
+                    m_run.self = shared_from_this();
+
+                    uint64_t currentTimestamp = 0;
+                    aws_event_loop_current_clock_time(m_loop, &currentTimestamp);
+                    aws_event_loop_schedule_task_future(
+                        m_loop, &m_run.task, currentTimestamp + static_cast<uint64_t>(run_in.count()));
+                }
+
+                void Cancel() noexcept
+                {
+                    if (m_done.load() || m_cancelRequested.exchange(true))
                     {
-                        aws_task_init(&m_task, EventLoopTask::OnTaskRun, this, "cpp-crt-event-loop-task");
+                        return;
                     }
 
-                    aws_task *GetTask() noexcept { return &m_task; }
+                    m_cancel.self = shared_from_this();
+                    aws_event_loop_schedule_task_now(m_loop, &m_cancel.task);
+                }
 
-                  private:
-                    static void OnTaskRun(struct aws_task *, void *arg, enum aws_task_status status)
-                    {
-                        auto *self = reinterpret_cast<EventLoopTask *>(arg);
-                        self->m_fn(static_cast<TaskStatus>(status));
-                        Delete(self, self->m_allocator);
-                    }
-
-                    aws_task m_task;
-                    Allocator *m_allocator;
-                    std::function<void(TaskStatus)> m_fn;
+              private:
+                struct Queued
+                {
+                    aws_task task;
+                    std::shared_ptr<Impl> self;
                 };
-            } // namespace
+
+                static void OnRun(struct aws_task *, void *arg, enum aws_task_status status)
+                {
+                    auto *self = reinterpret_cast<Impl *>(arg);
+                    std::shared_ptr<Impl> runSelf = std::move(self->m_run.self);
+                    std::function<void(TaskStatus)> fn;
+                    fn.swap(self->m_fn);
+                    self->m_done.store(true);
+                    fn(static_cast<TaskStatus>(status));
+                }
+
+                static void OnCancel(struct aws_task *, void *arg, enum aws_task_status status)
+                {
+                    auto *self = reinterpret_cast<Impl *>(arg);
+                    std::shared_ptr<Impl> cancelSelf = std::move(self->m_cancel.self);
+                    if (status == AWS_TASK_STATUS_RUN_READY && !self->m_done.load())
+                    {
+                        aws_event_loop_cancel_task(self->m_loop, &self->m_run.task);
+                    }
+                }
+
+                aws_event_loop *m_loop;
+                std::function<void(TaskStatus)> m_fn;
+                Queued m_run;
+                Queued m_cancel;
+                std::atomic<bool> m_cancelRequested{false};
+                std::atomic<bool> m_done{false};
+            };
+
+            ScheduledTask::ScheduledTask(std::shared_ptr<Impl> impl) noexcept : m_impl(std::move(impl)) {}
+
+            void ScheduledTask::Cancel() noexcept
+            {
+                if (m_impl)
+                {
+                    m_impl->Cancel();
+                }
+            }
 
             EventLoop::EventLoop(aws_event_loop *loop) noexcept : m_loop(loop) {}
 
-            void EventLoop::Schedule(std::function<void(TaskStatus)> &&task, std::chrono::nanoseconds run_in) noexcept
+            ScheduledTask EventLoop::Schedule(
+                std::function<void(TaskStatus)> &&task,
+                std::chrono::nanoseconds run_in) noexcept
             {
-                Allocator *allocator = ApiAllocator();
-                auto *loopTask = New<EventLoopTask>(allocator, allocator, std::move(task));
-
-                uint64_t currentTimestamp = 0;
-                aws_event_loop_current_clock_time(m_loop, &currentTimestamp);
-                aws_event_loop_schedule_task_future(
-                    m_loop, loopTask->GetTask(), currentTimestamp + static_cast<uint64_t>(run_in.count()));
+                auto impl = MakeShared<ScheduledTask::Impl>(ApiAllocator(), m_loop, std::move(task));
+                impl->Schedule(run_in);
+                return ScheduledTask(impl);
             }
         } // namespace Io
 
