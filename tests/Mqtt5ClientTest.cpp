@@ -1686,6 +1686,9 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
     const auto &suback = subscribed.get_future().get();
     ASSERT_NOT_NULL(suback.get());
 
+    // subscribe eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
     /* Publish message 1 to test topic */
     ByteBuf payload = Aws::Crt::ByteBufFromCString("Hello World");
     std::shared_ptr<Mqtt5::PublishPacket> publish = Aws::Crt::MakeShared<Mqtt5::PublishPacket>(
@@ -1809,6 +1812,9 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(subscriberClient->Subscribe(
         subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
     subscribed.get_future().get();
+
+    // subscribe eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     std::shared_ptr<Mqtt5::DisconnectPacket> disconnect =
         Aws::Crt::MakeShared<Mqtt5::DisconnectPacket>(allocator, allocator);
@@ -2032,6 +2038,9 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *)
         subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
     subscribed.get_future().get();
 
+    // subscribe eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
     /* Publish 10 messages to test topic */
     for (int i = 0; i < MESSAGE_NUMBER; i++)
     {
@@ -2130,6 +2139,9 @@ static int s_TestMqtt5QoS1AutoPubackNoDuplicate(Aws::Crt::Allocator *allocator, 
     ASSERT_TRUE(subscriberClient->Subscribe(
         subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
     subscribed.get_future().get();
+
+    // subscribe eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     /* Publish a single QoS 1 message */
     std::shared_ptr<Mqtt5::PublishPacket> publish = Aws::Crt::MakeShared<Mqtt5::PublishPacket>(
@@ -2252,6 +2264,9 @@ static int s_TestMqtt5ManualPubackHold(Aws::Crt::Allocator *allocator, void *)
         subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
     subscribed.get_future().get();
 
+    // subscribe eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
     /* Publish a QoS 1 message with a unique UUID payload */
     ByteBuf payloadBuf = Aws::Crt::ByteBufFromCString(PAYLOAD.c_str());
     std::shared_ptr<Mqtt5::PublishPacket> publish = Aws::Crt::MakeShared<Mqtt5::PublishPacket>(
@@ -2365,6 +2380,9 @@ static int s_TestMqtt5ManualPubackInvoke(Aws::Crt::Allocator *allocator, void *)
         subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
     subscribed.get_future().get();
 
+    // subscribe eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
     /* Publish a QoS 1 message with a unique UUID payload */
     ByteBuf payloadBuf = Aws::Crt::ByteBufFromCString(PAYLOAD.c_str());
     std::shared_ptr<Mqtt5::PublishPacket> publish = Aws::Crt::MakeShared<Mqtt5::PublishPacket>(
@@ -2471,6 +2489,9 @@ static int s_TestMqtt5ManualPubackAcquireDoubleCallReturnsNull(Aws::Crt::Allocat
         subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
     subscribed.get_future().get();
 
+    // subscribe eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
     /* Publish a QoS 1 message */
     ByteBuf payloadBuf = Aws::Crt::ByteBufFromCString("test");
     std::shared_ptr<Mqtt5::PublishPacket> publish = Aws::Crt::MakeShared<Mqtt5::PublishPacket>(
@@ -2545,6 +2566,9 @@ static int s_TestMqtt5ManualPubackQoS0AcquireIsNull(Aws::Crt::Allocator *allocat
     ASSERT_TRUE(mqtt5Client->Subscribe(
         subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
     subscribed.get_future().get();
+
+    // subscribe eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     /* Publish a QoS 0 message — no PUBACK involved */
     ByteBuf payloadBuf = Aws::Crt::ByteBufFromCString("Hello QoS0");
@@ -2644,6 +2668,9 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *)
     setRetainPacket->WithTopic(TEST_TOPIC).WithPayload(ByteCursorFromString(RETAIN_MESSAGE)).WithRetain(true);
     ASSERT_TRUE(mqtt5Client1->Publish(setRetainPacket));
 
+    // eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
     // 2. connect to client 2
     ASSERT_TRUE(mqtt5Client2->Start());
     ASSERT_TRUE(testContext2.connectionPromise.get_future().get());
@@ -2676,6 +2703,10 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *)
 
     // Wait for retain cleared.
     retainCleared.get_future().get();
+
+    // eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
     // 5. client3 start and subscribe to retain topic
     ASSERT_TRUE(mqtt5Client3->Start());
     ASSERT_TRUE(testContext3.connectionPromise.get_future().get());
