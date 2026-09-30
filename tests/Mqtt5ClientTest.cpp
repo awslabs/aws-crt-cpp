@@ -1710,6 +1710,9 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
         unsub, [&unsubscribed](int, std::shared_ptr<UnSubAckPacket> unsuback) { unsubscribed.set_value(unsuback); }));
     unsubscribed.get_future().get();
 
+    // unsubscribe eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
     /* Publish message2 to test topic */
     ASSERT_TRUE(mqtt5Client->Publish(publish));
 
