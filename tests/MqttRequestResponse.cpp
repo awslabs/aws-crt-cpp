@@ -15,6 +15,7 @@
 #include <aws/testing/aws_test_harness.h>
 
 #include <atomic>
+#include <thread>
 #include <utility>
 
 enum ProtocolType
