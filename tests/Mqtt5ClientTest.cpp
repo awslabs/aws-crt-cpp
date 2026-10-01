@@ -3403,6 +3403,9 @@ static int s_TestMqtt5to3AdapterOperations(Aws::Crt::Allocator *allocator, void 
         testTopic.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, std::move(onMessage), std::move(onSubAck));
     subscribed.get_future().get();
 
+    // eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
     mqttConnection->Publish(testTopic.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, testPayload, onPubAck);
     published.get_future().get();
 
@@ -3414,6 +3417,9 @@ static int s_TestMqtt5to3AdapterOperations(Aws::Crt::Allocator *allocator, void 
 
     mqttConnection->Unsubscribe(testTopic.c_str(), onUnsubAck);
     unsubscribed.get_future().get();
+
+    // eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     published = {};
     mqttConnection->Publish(testTopic.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, testPayload, onPubAck);
