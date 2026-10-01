@@ -3073,6 +3073,9 @@ static int s_TestMqtt5to3AdapterDirectConnectionMinimalThroughMqtt3(Aws::Crt::Al
     ASSERT_TRUE(mqttConnection);
     int connectResult = s_ConnectAndDisconnectThroughMqtt3(mqttConnection);
     ASSERT_SUCCESS(connectResult);
+
+    testContext.stoppedPromise.get_future().wait();
+
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(
@@ -3135,6 +3138,8 @@ static int s_TestMqtt5to3AdapterWSConnectionMinimalThroughMqtt3(Aws::Crt::Alloca
     int connectResult = s_ConnectAndDisconnectThroughMqtt3(mqttConnection);
     ASSERT_SUCCESS(connectResult);
 
+    testContext.stoppedPromise.get_future().wait();
+
     mqtt311Signing.get_future().get();
 
     return AWS_OP_SUCCESS;
@@ -3163,6 +3168,8 @@ static int s_TestMqtt5to3AdapterWithIoTConnectionThroughMqtt3(Aws::Crt::Allocato
     int connectResult = s_ConnectAndDisconnectThroughMqtt3(mqttConnection);
     ASSERT_SUCCESS(connectResult);
 
+    testContext.stoppedPromise.get_future().wait();
+
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5to3AdapterWithIoTConnectionThroughMqtt3, s_TestMqtt5to3AdapterWithIoTConnectionThroughMqtt3)
@@ -3188,6 +3195,8 @@ static int s_TestMqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt3(Aws::C
     ASSERT_TRUE(mqttConnection);
     int connectResult = s_ConnectAndDisconnectThroughMqtt3(mqttConnection);
     ASSERT_SUCCESS(connectResult);
+
+    testContext.stoppedPromise.get_future().wait();
 
     return AWS_OP_SUCCESS;
 }
