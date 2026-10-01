@@ -3544,6 +3544,9 @@ static int s_TestMqtt5to3AdapterMultipleAdapters(Aws::Crt::Allocator *allocator,
     mqttConnection2->Subscribe(testTopic2.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, onMessage2, onSubAck2);
     subscribed2.get_future().get();
 
+    // eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
     auto onPubAck = [&](Mqtt::MqttConnection &, uint16_t, int) { published.set_value(); };
 
     // Publish to testTopic1
