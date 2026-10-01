@@ -9,6 +9,9 @@
 #include <aws/crt/http/HttpProxyStrategy.h>
 #include <aws/crt/mqtt/Mqtt5Packets.h>
 #include <aws/iot/Mqtt5Client.h>
+
+#include "aws/common/clock.h"
+
 #include <aws/iot/MqttCommon.h>
 #include <aws/testing/aws_test_harness.h>
 
@@ -1313,6 +1316,17 @@ static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void
         MQTT5CONNECT_DIRECT_IOT_CORE,
         [&](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &)
         {
+            // ensure that the first client can't reconnect quickly and break the second, causing the test to fail
+            ReconnectOptions reconnectOptions;
+            reconnectOptions.m_reconnectMode = AWS_EXPONENTIAL_BACKOFF_JITTER_NONE;
+            reconnectOptions.m_minReconnectDelayMs =
+                aws_timestamp_convert(10, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_MILLIS, NULL);
+            reconnectOptions.m_maxReconnectDelayMs =
+                aws_timestamp_convert(120, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_MILLIS, NULL);
+            reconnectOptions.m_minReconnectDelayMs =
+                aws_timestamp_convert(30, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_MILLIS, NULL);
+
+            options.WithReconnectOptions(reconnectOptions);
             options.WithConnectOptions(packetConnect);
             options.WithClientDisconnectionCallback(
                 [&](const OnDisconnectionEventData &)
