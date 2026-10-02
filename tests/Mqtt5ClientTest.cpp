@@ -1318,12 +1318,13 @@ static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void
         {
             // ensure that the first client can't reconnect quickly and break the second, causing the test to fail
             ReconnectOptions reconnectOptions;
+            AWS_ZERO_STRUCT(reconnectOptions);
             reconnectOptions.m_reconnectMode = AWS_EXPONENTIAL_BACKOFF_JITTER_NONE;
             reconnectOptions.m_minReconnectDelayMs =
                 aws_timestamp_convert(10, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_MILLIS, NULL);
             reconnectOptions.m_maxReconnectDelayMs =
                 aws_timestamp_convert(120, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_MILLIS, NULL);
-            reconnectOptions.m_minReconnectDelayMs =
+            reconnectOptions.m_minConnectedTimeToResetReconnectDelayMs =
                 aws_timestamp_convert(30, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_MILLIS, NULL);
 
             options.WithReconnectOptions(reconnectOptions);
