@@ -97,12 +97,23 @@ namespace Aws
                  * Sets http proxy options. In order to use an http proxy with mqtt either
                  *   (1) Websockets are used
                  *   (2) Mqtt-over-tls is used and the ALPN list of the tls context contains a tag that resolves to mqtt
+                 * Mutually exclusive with L4 proxy options.
                  *
-                 * @param proxyOptions proxy configuration for making the mqtt connection
+                 * @param proxyOptions HTTP proxy configuration for making the mqtt connection
                  *
                  * @return success/failure
                  */
                 bool SetHttpProxyOptions(const Http::HttpClientConnectionProxyOptions &proxyOptions) noexcept;
+
+                /**
+                 * @internal
+                 * Sets L4 proxy options. Mutually exclusive with HTTP proxy options.
+                 *
+                 * @param l4ProxyOptions L4 proxy configuration for making the mqtt connection
+                 *
+                 * @return success/failure
+                 */
+                bool SetL4ProxyOptions(const std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> &l4ProxyOptions) noexcept;
 
                 /**
                  * @internal
@@ -369,6 +380,7 @@ namespace Aws
                 Io::TlsConnectionOptions m_tlsOptions;
                 Io::SocketOptions m_socketOptions;
                 Crt::Optional<Http::HttpClientConnectionProxyOptions> m_proxyOptions;
+                std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> m_l4ProxyOptions;
                 void *m_onAnyCbData;
                 bool m_useTls;
                 bool m_useWebsocket;
