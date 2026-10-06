@@ -126,6 +126,11 @@ namespace Aws
 
                 return nullptr;
             }
+
+            EventLoop ClientBootstrap::GetNextEventLoop() const noexcept
+            {
+                return EventLoop(aws_event_loop_group_get_next_loop(m_bootstrap->event_loop_group));
+            }
         } // namespace Io
     } // namespace Crt
 } // namespace Aws
