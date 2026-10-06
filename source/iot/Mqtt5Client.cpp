@@ -373,7 +373,7 @@ namespace Aws
         Mqtt5ClientBuilder &Mqtt5ClientBuilder::WithL4ProxyOptions(
             const std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> &proxyOptions) noexcept
         {
-            m_l4ProxyConfig = proxyOptions;
+            m_l4ProxyOptions = proxyOptions;
             return *this;
         }
 
@@ -640,7 +640,7 @@ namespace Aws
                 m_options->WithHttpProxyOptions(m_proxyOptions.value());
             }
 
-            m_options->WithL4ProxyOptions(m_l4ProxyConfig);
+            m_options->WithL4ProxyOptions(m_l4ProxyOptions);
 
             return Crt::Mqtt5::Mqtt5Client::NewMqtt5Client(*m_options, m_allocator);
         }

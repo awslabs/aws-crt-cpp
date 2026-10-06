@@ -67,7 +67,7 @@ namespace Aws
                 const Aws::Crt::String &proxyHost,
                 uint16_t proxyPort,
                 std::shared_ptr<Socks5ProxyNegotiationStrategy> strategy) noexcept
-                : m_proxyHost(proxyHost), m_proxyPort(proxyPort), m_strategy(strategy),
+                : m_proxyHost(proxyHost), m_proxyPort(proxyPort), m_strategy(std::move(strategy)),
                   m_timeout(std::chrono::milliseconds(0))
             {
             }

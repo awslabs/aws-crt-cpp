@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: Apache-2.0.
  */
 
+#include <aws/crt/Exports.h>
 #include <aws/crt/Types.h>
 
 namespace Aws
@@ -19,7 +20,7 @@ namespace Aws
          * write out every move and copy API (or forbid them which isn't great for usability).  If we use this instead,
          * we can just "= default" and get correct behavior.
          */
-        class ManagedByteBuffer
+        class AWS_CRT_CPP_API ManagedByteBuffer
         {
           public:
             ManagedByteBuffer() noexcept;
@@ -27,7 +28,6 @@ namespace Aws
             explicit ManagedByteBuffer(const struct aws_byte_buf &buf) noexcept;
             explicit ManagedByteBuffer(struct aws_byte_cursor cursor, Allocator *allocator = ApiAllocator()) noexcept;
             explicit ManagedByteBuffer(const char *cstring, Allocator *allocator = ApiAllocator()) noexcept;
-            explicit ManagedByteBuffer(Aws::Crt::String value) noexcept;
             explicit ManagedByteBuffer(const Aws::Crt::String &value) noexcept;
             ManagedByteBuffer(uint8_t *data, size_t len, Allocator *allocator = ApiAllocator()) noexcept;
 

@@ -663,7 +663,7 @@ namespace Aws
              */
             Crt::Optional<Crt::Http::HttpClientConnectionProxyOptions> m_proxyOptions;
 
-            std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> m_l4ProxyConfig;
+            std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> m_l4ProxyOptions;
 
             /**
              * Websocket related options. The clinet with use websocket for connection when set.

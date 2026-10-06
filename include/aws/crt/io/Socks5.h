@@ -27,14 +27,6 @@ namespace Aws
             class AWS_CRT_CPP_API Socks5BasicAuthOptions
             {
               public:
-                Socks5BasicAuthOptions() noexcept = default;
-                Socks5BasicAuthOptions(const Socks5BasicAuthOptions &rhs) noexcept = default;
-                Socks5BasicAuthOptions(Socks5BasicAuthOptions &&rhs) noexcept = default;
-                Socks5BasicAuthOptions &operator=(const Socks5BasicAuthOptions &rhs) noexcept = default;
-                Socks5BasicAuthOptions &operator=(Socks5BasicAuthOptions &&rhs) noexcept = default;
-
-                ~Socks5BasicAuthOptions() = default;
-
                 /**
                  * Sets the username to use during basic authentication
                  *
@@ -151,8 +143,6 @@ namespace Aws
                 Socks5ProxyOptions(Socks5ProxyOptions &&rhs) noexcept;
                 Socks5ProxyOptions &operator=(const Socks5ProxyOptions &rhs);
                 Socks5ProxyOptions &operator=(Socks5ProxyOptions &&rhs) noexcept;
-
-                ~Socks5ProxyOptions() = default;
 
                 /**
                  * Sets the maximum amount of time to wait before a SOCKS5 negotiation attempt is considered failed

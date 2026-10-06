@@ -113,7 +113,7 @@ namespace Aws
                     {
                         AWS_LOGF_ERROR(
                             AWS_LS_HTTP_GENERAL,
-                            "Cannot create HttpClientConnection: HTTP proxy options and L4 proxy options cannot both"
+                            "Cannot create HttpClientConnection: HTTP proxy options and L4 proxy options cannot both "
                             "be set.");
                         aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
                         return false;

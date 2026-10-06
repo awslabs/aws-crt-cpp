@@ -50,24 +50,16 @@ namespace Aws
 
         ManagedByteBuffer::ManagedByteBuffer(const char *cstring, Allocator *allocator) noexcept
         {
-            size_t len = strlen(cstring);
+            size_t len = 0;
+
+            if (cstring != NULL)
+            {
+                len = strlen(cstring);
+            }
+
             if (allocator && len > 0)
             {
                 aws_byte_buf_init_copy_from_cursor(&m_buffer, allocator, aws_byte_cursor_from_array(cstring, len));
-            }
-            else
-            {
-                AWS_ZERO_STRUCT(m_buffer);
-            }
-        }
-
-        ManagedByteBuffer::ManagedByteBuffer(Aws::Crt::String value) noexcept
-        {
-            struct aws_allocator *allocator = value.get_allocator().m_allocator;
-            size_t len = value.size();
-            if (allocator && len > 0)
-            {
-                aws_byte_buf_init_copy_from_cursor(&m_buffer, allocator, aws_byte_cursor_from_array(value.data(), len));
             }
             else
             {

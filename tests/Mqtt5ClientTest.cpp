@@ -793,7 +793,7 @@ static int s_TestMqtt5DirectConnectionWithTLS(Aws::Crt::Allocator *allocator, vo
     std::shared_ptr<Mqtt5Client> mqtt5Client = testContext.client;
     ASSERT_TRUE(mqtt5Client);
     ASSERT_TRUE(mqtt5Client->Start());
-    testContext.connectionPromise.get_future().get();
+    ASSERT_TRUE(testContext.connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     testContext.stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
@@ -1132,7 +1132,7 @@ static int s_TestMqtt5WSConnectionWithTLS(Aws::Crt::Allocator *allocator, void *
     ASSERT_TRUE(mqtt5Client);
 
     ASSERT_TRUE(mqtt5Client->Start());
-    testContext.connectionPromise.get_future().get();
+    ASSERT_TRUE(testContext.connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     testContext.stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
@@ -1155,7 +1155,7 @@ static int s_TestMqtt5WSConnectionWithMutualTLS(Aws::Crt::Allocator *allocator, 
     ASSERT_TRUE(mqtt5Client);
 
     ASSERT_TRUE(mqtt5Client->Start());
-    testContext.connectionPromise.get_future().get();
+    ASSERT_TRUE(testContext.connectionPromise.get_future().get());
     ASSERT_TRUE(mqtt5Client->Stop());
     testContext.stoppedPromise.get_future().get();
     return AWS_OP_SUCCESS;
@@ -1784,7 +1784,7 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
     unsub->WithTopicFilters(topics);
     ASSERT_TRUE(mqtt5Client->Unsubscribe(
         unsub, [&unsubscribed](int, std::shared_ptr<UnSubAckPacket> unsuback) { unsubscribed.set_value(unsuback); }));
-    unsubscribed.get_future().get();
+    ASSERT_NOT_NULL(unsubscribed.get_future().get().get());
 
     /* Publish message2 to test topic */
     ASSERT_TRUE(mqtt5Client->Publish(publish));
@@ -1872,10 +1872,10 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(publisherClient);
 
     ASSERT_TRUE(publisherClient->Start());
-    publisherContext.connectionPromise.get_future().get();
+    ASSERT_TRUE(publisherContext.connectionPromise.get_future().get());
 
     ASSERT_TRUE(subscriberClient->Start());
-    subscriberContext.connectionPromise.get_future().get();
+    ASSERT_TRUE(subscriberContext.connectionPromise.get_future().get());
 
     /* Subscribe to test topic */
     Mqtt5::Subscription subscription(TEST_TOPIC, Mqtt5::QOS::AWS_MQTT5_QOS_AT_LEAST_ONCE, allocator);

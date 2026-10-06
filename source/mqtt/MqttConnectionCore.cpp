@@ -690,7 +690,11 @@ namespace Aws
 
                 if (m_l4ProxyOptions)
                 {
-                    aws_mqtt_client_connection_set_l4_proxy_options(m_underlyingConnection, m_l4ProxyOptions->get());
+                    if (aws_mqtt_client_connection_set_l4_proxy_options(
+                            m_underlyingConnection, m_l4ProxyOptions->get()) != AWS_OP_SUCCESS)
+                    {
+                        return false;
+                    }
                 }
 
                 return aws_mqtt_client_connection_connect(m_underlyingConnection, &options) == AWS_OP_SUCCESS;
