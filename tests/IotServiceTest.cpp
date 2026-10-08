@@ -243,6 +243,9 @@ static int s_TestIotPublishSubscribe(Aws::Crt::Allocator *allocator, void *ctx)
             cv.wait(lock, [&]() { return subscribed; });
         }
 
+        // eventual consistency
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
         Aws::Crt::ByteBuf payload = Aws::Crt::ByteBufFromCString("notice me pls");
         mqttConnection->Publish("/publish/me/senpai", QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, payload, onPubAck);
 
