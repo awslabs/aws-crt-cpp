@@ -15,6 +15,7 @@
 #include <aws/testing/aws_test_harness.h>
 
 #include <atomic>
+#include <thread>
 #include <utility>
 
 enum ProtocolType
@@ -370,6 +371,9 @@ void s_publishToProtocolClient(
     const Aws::Crt::Optional<uint32_t> &messageExpiryIntervalSeconds,
     Aws::Crt::Allocator *allocator)
 {
+    // eventual consistency if this is an op
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
     if (context.protocolClient5)
     {
         auto packet = Aws::Crt::MakeShared<Aws::Crt::Mqtt5::PublishPacket>(
