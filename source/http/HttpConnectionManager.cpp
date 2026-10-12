@@ -7,6 +7,7 @@
 #include <aws/crt/http/HttpProxyStrategy.h>
 
 #include <algorithm>
+#include <aws/http/connection.h>
 #include <aws/http/connection_manager.h>
 
 namespace Aws
@@ -30,7 +31,8 @@ namespace Aws
             }
 
             HttpClientConnectionManagerOptions::HttpClientConnectionManagerOptions() noexcept
-                : ConnectionOptions(), MaxConnections(1), EnableBlockingShutdown(false)
+                : ConnectionOptions(), MaxConnections(1), EnableBlockingShutdown(false), MinThroughputBytesPerSecond(0),
+                  AllowableThroughputFailureIntervalSeconds(0)
             {
             }
 
@@ -135,6 +137,16 @@ namespace Aws
                         const_cast<aws_tls_connection_options *>(connectionOptions.TlsOptions->GetUnderlyingHandle());
                 }
                 managerOptions.host = aws_byte_cursor_from_c_str(connectionOptions.HostName.c_str());
+
+                aws_http_connection_monitoring_options monitoringOptions;
+                AWS_ZERO_STRUCT(monitoringOptions);
+                if (m_options.MinThroughputBytesPerSecond > 0)
+                {
+                    monitoringOptions.minimum_throughput_bytes_per_second = m_options.MinThroughputBytesPerSecond;
+                    monitoringOptions.allowable_throughput_failure_interval_seconds =
+                        m_options.AllowableThroughputFailureIntervalSeconds;
+                    managerOptions.monitoring_options = &monitoringOptions;
+                }
 
                 m_connectionManager = aws_http_connection_manager_new(allocator, &managerOptions);
             }

@@ -2,16 +2,15 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0.
  */
+#include "aws/common/clock.h"
 #include <aws/common/environment.h>
 #include <aws/crt/Api.h>
 #include <aws/crt/UUID.h>
 #include <aws/crt/auth/Credentials.h>
 #include <aws/crt/http/HttpProxyStrategy.h>
-#include <aws/crt/mqtt/Mqtt5Packets.h>
-#include <aws/iot/Mqtt5Client.h>
-
 #include "aws/crt/io/L4Proxy.h"
 #include "aws/crt/io/Socks5.h"
+#include <aws/crt/mqtt/Mqtt5Packets.h>
 
 #include <aws/iot/MqttCommon.h>
 #include <aws/testing/aws_test_harness.h>
@@ -1392,6 +1391,18 @@ static int s_TestMqtt5DoubleClientIDFailure(Aws::Crt::Allocator *allocator, void
         MQTT5CONNECT_DIRECT_IOT_CORE,
         [&](Mqtt5ClientOptions &options, const Mqtt5TestEnvVars &, Mqtt5TestContext &)
         {
+            // ensure that the first client can't reconnect quickly and break the second, causing the test to fail
+            ReconnectOptions reconnectOptions;
+            AWS_ZERO_STRUCT(reconnectOptions);
+            reconnectOptions.m_reconnectMode = AWS_EXPONENTIAL_BACKOFF_JITTER_NONE;
+            reconnectOptions.m_minReconnectDelayMs =
+                aws_timestamp_convert(10, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_MILLIS, NULL);
+            reconnectOptions.m_maxReconnectDelayMs =
+                aws_timestamp_convert(120, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_MILLIS, NULL);
+            reconnectOptions.m_minConnectedTimeToResetReconnectDelayMs =
+                aws_timestamp_convert(30, AWS_TIMESTAMP_SECS, AWS_TIMESTAMP_MILLIS, NULL);
+
+            options.WithReconnectOptions(reconnectOptions);
             options.WithConnectOptions(packetConnect);
             options.WithClientDisconnectionCallback(
                 [&](const OnDisconnectionEventData &)
@@ -1765,6 +1776,9 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
     const auto &suback = subscribed.get_future().get();
     ASSERT_NOT_NULL(suback.get());
 
+    // subscribe eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
     /* Publish message 1 to test topic */
     ByteBuf payload = Aws::Crt::ByteBufFromCString("Hello World");
     std::shared_ptr<Mqtt5::PublishPacket> publish = Aws::Crt::MakeShared<Mqtt5::PublishPacket>(
@@ -1785,6 +1799,9 @@ static int s_TestMqtt5SubUnsub(Aws::Crt::Allocator *allocator, void *)
     ASSERT_TRUE(mqtt5Client->Unsubscribe(
         unsub, [&unsubscribed](int, std::shared_ptr<UnSubAckPacket> unsuback) { unsubscribed.set_value(unsuback); }));
     ASSERT_NOT_NULL(unsubscribed.get_future().get().get());
+
+    // unsubscribe eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     /* Publish message2 to test topic */
     ASSERT_TRUE(mqtt5Client->Publish(publish));
@@ -1889,9 +1906,8 @@ static int s_TestMqtt5WillTest(Aws::Crt::Allocator *allocator, void *)
         subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
     subscribed.get_future().get();
 
-    // there's some eventual consistency gap possibility here according to IoT Core.  There suggestions
-    // was to wait here for a little bit
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    // subscribe eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     std::shared_ptr<Mqtt5::DisconnectPacket> disconnect =
         Aws::Crt::MakeShared<Mqtt5::DisconnectPacket>(allocator, allocator);
@@ -2115,7 +2131,8 @@ static int s_TestMqtt5QoS1SubPub(Aws::Crt::Allocator *allocator, void *)
         subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
     subscribed.get_future().get();
 
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    // subscribe eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     /* Publish 10 messages to test topic */
     for (int i = 0; i < MESSAGE_NUMBER; i++)
@@ -2216,7 +2233,8 @@ static int s_TestMqtt5QoS1AutoPubackNoDuplicate(Aws::Crt::Allocator *allocator, 
         subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
     subscribed.get_future().get();
 
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    // subscribe eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     /* Publish a single QoS 1 message */
     std::shared_ptr<Mqtt5::PublishPacket> publish = Aws::Crt::MakeShared<Mqtt5::PublishPacket>(
@@ -2339,7 +2357,8 @@ static int s_TestMqtt5ManualPubackHold(Aws::Crt::Allocator *allocator, void *)
         subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
     subscribed.get_future().get();
 
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    // subscribe eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     /* Publish a QoS 1 message with a unique UUID payload */
     ByteBuf payloadBuf = Aws::Crt::ByteBufFromCString(PAYLOAD.c_str());
@@ -2454,6 +2473,9 @@ static int s_TestMqtt5ManualPubackInvoke(Aws::Crt::Allocator *allocator, void *)
         subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
     subscribed.get_future().get();
 
+    // subscribe eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
     /* Publish a QoS 1 message with a unique UUID payload */
     ByteBuf payloadBuf = Aws::Crt::ByteBufFromCString(PAYLOAD.c_str());
     std::shared_ptr<Mqtt5::PublishPacket> publish = Aws::Crt::MakeShared<Mqtt5::PublishPacket>(
@@ -2560,7 +2582,8 @@ static int s_TestMqtt5ManualPubackAcquireDoubleCallReturnsNull(Aws::Crt::Allocat
         subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
     subscribed.get_future().get();
 
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    // subscribe eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     /* Publish a QoS 1 message */
     ByteBuf payloadBuf = Aws::Crt::ByteBufFromCString("test");
@@ -2636,6 +2659,9 @@ static int s_TestMqtt5ManualPubackQoS0AcquireIsNull(Aws::Crt::Allocator *allocat
     ASSERT_TRUE(mqtt5Client->Subscribe(
         subscribe, [&subscribed](int, std::shared_ptr<Mqtt5::SubAckPacket>) { subscribed.set_value(); }));
     subscribed.get_future().get();
+
+    // subscribe eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     /* Publish a QoS 0 message — no PUBACK involved */
     ByteBuf payloadBuf = Aws::Crt::ByteBufFromCString("Hello QoS0");
@@ -2735,6 +2761,9 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *)
     setRetainPacket->WithTopic(TEST_TOPIC).WithPayload(ByteCursorFromString(RETAIN_MESSAGE)).WithRetain(true);
     ASSERT_TRUE(mqtt5Client1->Publish(setRetainPacket));
 
+    // eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
     // 2. connect to client 2
     ASSERT_TRUE(mqtt5Client2->Start());
     ASSERT_TRUE(testContext2.connectionPromise.get_future().get());
@@ -2767,6 +2796,10 @@ static int s_TestMqtt5RetainSetAndClear(Aws::Crt::Allocator *allocator, void *)
 
     // Wait for retain cleared.
     retainCleared.get_future().get();
+
+    // eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
     // 5. client3 start and subscribe to retain topic
     ASSERT_TRUE(mqtt5Client3->Start());
     ASSERT_TRUE(testContext3.connectionPromise.get_future().get());
@@ -3130,6 +3163,9 @@ static int s_TestMqtt5to3AdapterDirectConnectionMinimalThroughMqtt3(Aws::Crt::Al
     ASSERT_TRUE(mqttConnection);
     int connectResult = s_ConnectAndDisconnectThroughMqtt3(mqttConnection);
     ASSERT_SUCCESS(connectResult);
+
+    testContext.stoppedPromise.get_future().wait();
+
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(
@@ -3192,6 +3228,8 @@ static int s_TestMqtt5to3AdapterWSConnectionMinimalThroughMqtt3(Aws::Crt::Alloca
     int connectResult = s_ConnectAndDisconnectThroughMqtt3(mqttConnection);
     ASSERT_SUCCESS(connectResult);
 
+    testContext.stoppedPromise.get_future().wait();
+
     mqtt311Signing.get_future().get();
 
     return AWS_OP_SUCCESS;
@@ -3220,6 +3258,8 @@ static int s_TestMqtt5to3AdapterWithIoTConnectionThroughMqtt3(Aws::Crt::Allocato
     int connectResult = s_ConnectAndDisconnectThroughMqtt3(mqttConnection);
     ASSERT_SUCCESS(connectResult);
 
+    testContext.stoppedPromise.get_future().wait();
+
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(Mqtt5to3AdapterWithIoTConnectionThroughMqtt3, s_TestMqtt5to3AdapterWithIoTConnectionThroughMqtt3)
@@ -3245,6 +3285,8 @@ static int s_TestMqtt5to3AdapterDirectConnectionWithMutualTLSThroughMqtt3(Aws::C
     ASSERT_TRUE(mqttConnection);
     int connectResult = s_ConnectAndDisconnectThroughMqtt3(mqttConnection);
     ASSERT_SUCCESS(connectResult);
+
+    testContext.stoppedPromise.get_future().wait();
 
     return AWS_OP_SUCCESS;
 }
@@ -3460,7 +3502,8 @@ static int s_TestMqtt5to3AdapterOperations(Aws::Crt::Allocator *allocator, void 
         testTopic.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, std::move(onMessage), std::move(onSubAck));
     subscribed.get_future().get();
 
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    // eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     mqttConnection->Publish(testTopic.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, testPayload, onPubAck);
     published.get_future().get();
@@ -3474,7 +3517,8 @@ static int s_TestMqtt5to3AdapterOperations(Aws::Crt::Allocator *allocator, void 
     mqttConnection->Unsubscribe(testTopic.c_str(), onUnsubAck);
     unsubscribed.get_future().get();
 
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    // eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     published = {};
     mqttConnection->Publish(testTopic.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, false, testPayload, onPubAck);
@@ -3604,6 +3648,9 @@ static int s_TestMqtt5to3AdapterMultipleAdapters(Aws::Crt::Allocator *allocator,
 
     mqttConnection2->Subscribe(testTopic2.c_str(), Mqtt::QOS::AWS_MQTT_QOS_AT_LEAST_ONCE, onMessage2, onSubAck2);
     subscribed2.get_future().get();
+
+    // eventual consistency
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     auto onPubAck = [&](Mqtt::MqttConnection &, uint16_t, int) { published.set_value(); };
 
