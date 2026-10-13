@@ -257,3 +257,125 @@ static int s_CborLastErrorTest(struct aws_allocator *allocator, void *ctx)
 }
 
 AWS_TEST_CASE(CborLastErrorTest, s_CborLastErrorTest)
+
+static int s_CborBigIntegerTest(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        ApiHandle apiHandle(allocator);
+
+        const char *inputs[] = {
+            "0",
+            "42",
+            "-1",
+            "18446744073709551615",  /* 2^64 - 1, largest plain UInt */
+            "18446744073709551616",  /* 2^64, smallest positive bignum */
+            "-18446744073709551616", /* -2^64, largest plain NegInt */
+            "-18446744073709551617", /* -2^64 - 1, smallest negative bignum */
+            "123456789012345678901234567890123456789012345678901234567890",
+        };
+
+        Cbor::CborEncoder encoder(allocator);
+        for (const char *input : inputs)
+        {
+            encoder.WriteBigInteger(BigInteger::FromString(aws_byte_cursor_from_c_str(input), allocator).value());
+        }
+
+        Cbor::CborDecoder decoder(encoder.GetEncodedData(), allocator);
+        for (const char *input : inputs)
+        {
+            auto value = decoder.PopNextBigIntegerVal();
+            ASSERT_TRUE(value.has_value());
+            ASSERT_TRUE(value->ToString() == input);
+        }
+        ASSERT_UINT_EQUALS(0, decoder.GetRemainingLength());
+
+        // Only values outside the 64-bit range use a tag.
+        Cbor::CborEncoder tagEncoder(allocator);
+        tagEncoder.WriteBigInteger(BigInteger::FromString(aws_byte_cursor_from_c_str("42"), allocator).value());
+        tagEncoder.WriteBigInteger(
+            BigInteger::FromString(aws_byte_cursor_from_c_str("18446744073709551616"), allocator).value());
+        Cbor::CborDecoder tagDecoder(tagEncoder.GetEncodedData(), allocator);
+        ASSERT_TRUE(tagDecoder.PeekType().value() == Cbor::CborType::UInt);
+        ASSERT_TRUE(tagDecoder.PopNextBigIntegerVal().has_value());
+        ASSERT_TRUE(tagDecoder.PeekType().value() == Cbor::CborType::Tag);
+        ASSERT_UINT_EQUALS(AWS_CBOR_TAG_UNSIGNED_BIGNUM, tagDecoder.PopNextTagVal().value());
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(CborBigIntegerTest, s_CborBigIntegerTest)
+
+static int s_CborBigDecimalTest(struct aws_allocator *allocator, void *ctx)
+{
+    (void)ctx;
+    {
+        ApiHandle apiHandle(allocator);
+
+        const char *inputs[] = {
+            "273.15",
+            "1.50",
+            "15e-1",
+            "0e0",
+            "-5e3",
+            "-123456789012345678901234567890123456789012345678901234567890e-30",
+            "1e-9223372036854775808",
+            "1e9223372036854775807",
+        };
+        const char *expected[] = {
+            "27315e-2",
+            "150e-2",
+            "15e-1",
+            "0e0",
+            "-5e3",
+            "-123456789012345678901234567890123456789012345678901234567890e-30",
+            "1e-9223372036854775808",
+            "1e9223372036854775807",
+        };
+
+        Cbor::CborEncoder encoder(allocator);
+        for (const char *input : inputs)
+        {
+            encoder.WriteBigDecimal(BigDecimal::FromString(aws_byte_cursor_from_c_str(input), allocator).value());
+        }
+
+        Cbor::CborDecoder decoder(encoder.GetEncodedData(), allocator);
+        for (size_t i = 0; i < AWS_ARRAY_SIZE(inputs); ++i)
+        {
+            auto value = decoder.PopNextBigDecimalVal();
+            ASSERT_TRUE(value.has_value(), "%s", inputs[i]);
+            ASSERT_TRUE(value->ToString() == expected[i], "%s -> %s", inputs[i], value->ToString().c_str());
+        }
+        ASSERT_UINT_EQUALS(0, decoder.GetRemainingLength());
+
+        // 273.15 is the RFC8949 section 3.4.4 example: tag 4, [-2, 27315].
+        Cbor::CborEncoder rfcEncoder(allocator);
+        rfcEncoder.WriteBigDecimal(BigDecimal::FromString(aws_byte_cursor_from_c_str("273.15"), allocator).value());
+        const uint8_t rfcExpected[] = {0xc4, 0x82, 0x21, 0x19, 0x6a, 0xb3};
+        ByteCursor rfcEncoded = rfcEncoder.GetEncodedData();
+        ASSERT_BIN_ARRAYS_EQUALS(rfcExpected, sizeof(rfcExpected), rfcEncoded.ptr, rfcEncoded.len);
+
+        Cbor::CborDecoder rfcDecoder(rfcEncoded, allocator);
+        ASSERT_TRUE(rfcDecoder.PeekType().value() == Cbor::CborType::Tag);
+
+        // The array may also be indefinite-length: tag 4, [_ -2, 27315], then an unsigned integer.
+        const uint8_t indefinite[] = {0xc4, 0x9f, 0x21, 0x19, 0x6a, 0xb3, 0xff, 0x05};
+        Cbor::CborDecoder indefiniteDecoder(aws_byte_cursor_from_array(indefinite, sizeof(indefinite)), allocator);
+        auto indefiniteValue = indefiniteDecoder.PopNextBigDecimalVal();
+        ASSERT_TRUE(indefiniteValue.has_value());
+        ASSERT_TRUE(indefiniteValue->ToString() == "27315e-2");
+        ASSERT_TRUE(indefiniteDecoder.PopNextUnsignedIntVal().value() == 5);
+
+        // Failure sets LastError(): a plain integer is not a decimal fraction.
+        Cbor::CborEncoder intEncoder(allocator);
+        intEncoder.WriteUInt(1);
+        Cbor::CborDecoder intDecoder(intEncoder.GetEncodedData(), allocator);
+        ASSERT_FALSE(intDecoder.PopNextBigDecimalVal().has_value());
+        ASSERT_INT_EQUALS(AWS_ERROR_CBOR_UNEXPECTED_TYPE, intDecoder.LastError());
+    }
+
+    return AWS_OP_SUCCESS;
+}
+
+AWS_TEST_CASE(CborBigDecimalTest, s_CborBigDecimalTest)
