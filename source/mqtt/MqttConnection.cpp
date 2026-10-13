@@ -164,6 +164,13 @@ namespace Aws
                 return m_connectionCore->SetHttpProxyOptions(proxyOptions);
             }
 
+            bool MqttConnection::SetL4ProxyOptions(
+                const std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> &l4ProxyOptions) noexcept
+            {
+                AWS_ASSERT(m_connectionCore != nullptr);
+                return m_connectionCore->SetL4ProxyOptions(l4ProxyOptions);
+            }
+
             bool MqttConnection::SetReconnectTimeout(uint64_t min_seconds, uint64_t max_seconds) noexcept
             {
                 AWS_ASSERT(m_connectionCore != nullptr);

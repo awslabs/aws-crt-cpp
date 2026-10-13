@@ -13,6 +13,7 @@
 
 #include <aws/crt/Api.h>
 #include <aws/crt/http/HttpRequestResponse.h>
+#include <aws/crt/io/L4Proxy.h>
 
 #define AWS_MQTT_MAX_TOPIC_LENGTH 65535
 
@@ -598,6 +599,13 @@ namespace Aws
                 return true;
             }
 
+            bool MqttConnectionCore::SetL4ProxyOptions(
+                const std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> &l4ProxyOptions) noexcept
+            {
+                m_l4ProxyOptions = l4ProxyOptions;
+                return true;
+            }
+
             bool MqttConnectionCore::SetReconnectTimeout(uint64_t min_seconds, uint64_t max_seconds) noexcept
             {
                 return aws_mqtt_client_connection_set_reconnect_timeout(
@@ -675,6 +683,15 @@ namespace Aws
                     m_proxyOptions->InitializeRawProxyOptions(proxyOptions);
 
                     if (aws_mqtt_client_connection_set_http_proxy_options(m_underlyingConnection, &proxyOptions) != 0)
+                    {
+                        return false;
+                    }
+                }
+
+                if (m_l4ProxyOptions)
+                {
+                    if (aws_mqtt_client_connection_set_l4_proxy_options(
+                            m_underlyingConnection, m_l4ProxyOptions->get()) != AWS_OP_SUCCESS)
                     {
                         return false;
                     }

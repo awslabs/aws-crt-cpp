@@ -323,6 +323,13 @@ namespace Aws
             return *this;
         }
 
+        MqttClientConnectionConfigBuilder &MqttClientConnectionConfigBuilder::WithL4ProxyOptions(
+            const std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> &proxyOptions) noexcept
+        {
+            m_l4ProxyConfig = proxyOptions;
+            return *this;
+        }
+
         Crt::String MqttClientConnectionConfigBuilder::AddToUsernameParameter(
             Crt::String currentUsername,
             Crt::String parameterValue,
@@ -545,6 +552,7 @@ namespace Aws
                     sdkMetrics);
                 config.m_username = username;
                 config.m_password = password;
+                config.m_l4ProxyConfig = m_l4ProxyConfig;
                 return config;
             }
 
@@ -577,6 +585,7 @@ namespace Aws
                 sdkMetrics);
             config.m_username = username;
             config.m_password = password;
+            config.m_l4ProxyConfig = m_l4ProxyConfig;
             return config;
         }
 
@@ -642,6 +651,11 @@ namespace Aws
             if (config.m_proxyOptions)
             {
                 newConnection->SetHttpProxyOptions(config.m_proxyOptions.value());
+            }
+
+            if (config.m_l4ProxyConfig)
+            {
+                newConnection->SetL4ProxyOptions(config.m_l4ProxyConfig);
             }
 
             return newConnection;
