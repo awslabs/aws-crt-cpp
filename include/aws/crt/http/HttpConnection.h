@@ -502,7 +502,7 @@ namespace Aws
                 Optional<Io::TlsConnectionOptions> TlsOptions;
 
                 /**
-                 * HTTP proxy options for the connection.  Mutually exclusive with 'L4ProxyOptions`
+                 * HTTP proxy options for the connection.  Mutually exclusive with `L4ProxyOptions`
                  * Optional.
                  */
                 Optional<HttpClientConnectionProxyOptions> ProxyOptions;
