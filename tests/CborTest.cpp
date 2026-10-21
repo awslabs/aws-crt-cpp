@@ -6,6 +6,8 @@
 #include <aws/crt/cbor/Cbor.h>
 #include <aws/testing/aws_test_harness.h>
 
+#include <cmath>
+
 using namespace Aws::Crt;
 
 static int s_CborSanityTest(struct aws_allocator *allocator, void *ctx)
@@ -129,8 +131,8 @@ static void s_encode_timestamp_helper(
     const std::chrono::system_clock::time_point &timePoint) noexcept
 {
     /* Get seconds with MS precision. */
-    std::chrono::duration<double, std::chrono::seconds::period> timestamp(timePoint.time_since_epoch());
-    double seconds = timestamp.count();
+    auto timestampMs = std::chrono::duration_cast<std::chrono::milliseconds>(timePoint.time_since_epoch());
+    double seconds = static_cast<double>(timestampMs.count()) / 1000.0;
 
     encoder.WriteTag(AWS_CBOR_TAG_EPOCH_TIME);
     // Use the encoder to write the duration in seconds
@@ -183,9 +185,10 @@ static int s_decode_timestamp_helper(Cbor::CborDecoder &decoder, std::chrono::sy
         case Cbor::CborType::Float:
         {
             double double_val = decoder.PopNextFloatVal().value();
-            std::chrono::duration<double, std::chrono::seconds::period> timestamp(double_val);
-            outTimePoint = std::chrono::system_clock::time_point(
-                std::chrono::duration_cast<std::chrono::system_clock::duration>(timestamp));
+            /* The timestamp has MS precision, but the double may not represent it exactly, so round to the nearest ms
+             * instead of truncating. */
+            std::chrono::milliseconds timestampMs(std::llround(double_val * 1000.0));
+            outTimePoint = std::chrono::system_clock::time_point(timestampMs);
             return AWS_OP_SUCCESS;
         }
         default:
