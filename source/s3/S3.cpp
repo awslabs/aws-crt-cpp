@@ -857,6 +857,10 @@ namespace Aws
                     }
                     data->finishCb(cppResult);
                 }
+                // The wrapper keeps the request alive while it runs. Holding it past finish would be a cycle: it
+                // owns the C meta request, whose shutdown is what frees this data, so shutdown would never come.
+                // The client still holds its own reference here, so this can't release the last one.
+                data->wrapper.reset();
             }
 
             static void s_onShutdown(void *user_data)
