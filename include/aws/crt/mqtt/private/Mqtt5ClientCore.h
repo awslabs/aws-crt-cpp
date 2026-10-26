@@ -34,7 +34,7 @@ namespace Aws
                 /**
                  * Factory function for mqtt5 client core
                  *
-                 * @param options: Mqtt5 Client Options
+                 * @param options Mqtt5 Client Options
                  * @param allocator allocator to use
                  * @return a new mqtt5 client
                  */
@@ -43,7 +43,7 @@ namespace Aws
                     Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
-                 * Get shared poitner of the Mqtt5ClientCore. Mqtt5ClientCore is inherited to enable_shared_from_this to
+                 * Get shared pointer of the Mqtt5ClientCore. Mqtt5ClientCore inherits from enable_shared_from_this to
                  * help with memory safety.
                  *
                  * @return shared_ptr for the Mqtt5ClientCore
@@ -63,8 +63,8 @@ namespace Aws
                 /**
                  * Tells the client to attempt to send a PUBLISH packet
                  *
-                 * @param publishOptions: packet PUBLISH to send to the server
-                 * @param onPublishCompletionCallback: callback on publish complete, default to NULL
+                 * @param publishOptions packet PUBLISH to send to the server
+                 * @param onPublishCompletionCallback callback on publish complete, default to NULL
                  *
                  * @return true if the publish operation succeed otherwise false
                  */
@@ -75,8 +75,8 @@ namespace Aws
                 /**
                  * Tells the client to attempt to subscribe to one or more topic filters.
                  *
-                 * @param subscribeOptions: SUBSCRIBE packet to send to the server
-                 * @param onSubscribeCompletionCallback: callback on subscribe complete, default to NULL
+                 * @param subscribeOptions SUBSCRIBE packet to send to the server
+                 * @param onSubscribeCompletionCallback callback on subscribe complete, default to NULL
                  *
                  * @return true if the subscription operation succeed otherwise false
                  */
@@ -87,8 +87,8 @@ namespace Aws
                 /**
                  * Tells the client to attempt to unsubscribe to one or more topic filters.
                  *
-                 * @param unsubscribeOptions: UNSUBSCRIBE packet to send to the server
-                 * @param onUnsubscribeCompletionCallback: callback on unsubscribe complete, default to NULL
+                 * @param unsubscribeOptions UNSUBSCRIBE packet to send to the server
+                 * @param onUnsubscribeCompletionCallback callback on unsubscribe complete, default to NULL
                  *
                  * @return true if the unsubscription operation succeed otherwise false
                  */
@@ -167,32 +167,32 @@ namespace Aws
                 /* The handler is set by clientoptions */
                 OnWebSocketHandshakeIntercept websocketInterceptor;
                 /**
-                 * Callback handler trigged when client successfully establishes an MQTT connection
+                 * Callback handler triggered when client successfully establishes an MQTT connection
                  */
                 OnConnectionSuccessHandler onConnectionSuccess;
 
                 /**
-                 * Callback handler trigged when client fails to establish an MQTT connection
+                 * Callback handler triggered when client fails to establish an MQTT connection
                  */
                 OnConnectionFailureHandler onConnectionFailure;
 
                 /**
-                 * Callback handler trigged when client's current MQTT connection is closed
+                 * Callback handler triggered when client's current MQTT connection is closed
                  */
                 OnDisconnectionHandler onDisconnection;
 
                 /**
-                 * Callback handler trigged when client reaches the "Stopped" state
+                 * Callback handler triggered when client reaches the "Stopped" state
                  */
                 OnStoppedHandler onStopped;
 
                 /**
-                 * Callback handler trigged when client begins an attempt to connect to the remote endpoint.
+                 * Callback handler triggered when client begins an attempt to connect to the remote endpoint.
                  */
                 OnAttemptingConnectHandler onAttemptingConnect;
 
                 /**
-                 * Callback handler trigged when an MQTT PUBLISH packet is received by the client
+                 * Callback handler triggered when an MQTT PUBLISH packet is received by the client
                  */
                 OnPublishReceivedHandler onPublishReceived;
 

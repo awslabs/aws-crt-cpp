@@ -17,8 +17,7 @@ namespace Aws
         {
             InputStream::~InputStream()
             {
-                // DO NOTHING: for now. But keep this here because it has to be virtual, and we may have
-                // resources to clean up in the future.
+                // Intentionally empty.
             }
 
             int InputStream::s_Seek(aws_input_stream *stream, int64_t offset, enum aws_stream_seek_basis basis)

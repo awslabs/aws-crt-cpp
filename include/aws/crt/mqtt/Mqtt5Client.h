@@ -372,7 +372,7 @@ namespace Aws
                 /**
                  * Factory function for mqtt5 client
                  *
-                 * @param options: Mqtt5 Client Options
+                 * @param options Mqtt5 Client Options
                  * @param allocator allocator to use
                  * @return a new mqtt5 client
                  */
@@ -381,7 +381,7 @@ namespace Aws
                     Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
-                 * Get shared poitner of the Mqtt5Client. Mqtt5Client is inherited to enable_shared_from_this to help
+                 * Get shared pointer of the Mqtt5Client. Mqtt5Client inherits from enable_shared_from_this to help
                  * with memory safety.
                  *
                  * @return shared_ptr for the Mqtt5Client
@@ -429,8 +429,8 @@ namespace Aws
                 /**
                  * Tells the client to attempt to send a PUBLISH packet
                  *
-                 * @param publishPacket: packet PUBLISH to send to the server
-                 * @param onPublishCompletionCallback: callback on publish complete, default to NULL
+                 * @param publishPacket packet PUBLISH to send to the server
+                 * @param onPublishCompletionCallback callback on publish complete, default to NULL
                  *
                  * @return true if the publish operation succeed otherwise false
                  */
@@ -441,8 +441,8 @@ namespace Aws
                 /**
                  * Tells the client to attempt to subscribe to one or more topic filters.
                  *
-                 * @param subscribePacket: SUBSCRIBE packet to send to the server
-                 * @param onSubscribeCompletionCallback: callback on subscribe complete, default to NULL
+                 * @param subscribePacket SUBSCRIBE packet to send to the server
+                 * @param onSubscribeCompletionCallback callback on subscribe complete, default to NULL
                  *
                  * @return true if the subscription operation succeed otherwise false
                  */
@@ -453,8 +453,8 @@ namespace Aws
                 /**
                  * Tells the client to attempt to unsubscribe to one or more topic filters.
                  *
-                 * @param unsubscribePacket: UNSUBSCRIBE packet to send to the server
-                 * @param onUnsubscribeCompletionCallback: callback on unsubscribe complete, default to NULL
+                 * @param unsubscribePacket UNSUBSCRIBE packet to send to the server
+                 * @param onUnsubscribeCompletionCallback callback on unsubscribe complete, default to NULL
                  *
                  * @return true if the unsubscription operation succeed otherwise false
                  */
@@ -507,7 +507,7 @@ namespace Aws
 
               public:
                 /**
-                 * Default constructior of Mqtt5ClientOptions
+                 * Default constructor of Mqtt5ClientOptions
                  */
                 Mqtt5ClientOptions(Crt::Allocator *allocator = ApiAllocator()) noexcept;
 
@@ -530,7 +530,7 @@ namespace Aws
                 Mqtt5ClientOptions &WithPort(uint32_t port) noexcept;
 
                 /**
-                 * Set booststrap for mqtt5 client
+                 * Set bootstrap for mqtt5 client
                  *
                  * @param bootStrap bootstrap used for mqtt5 client. The default ClientBootstrap see
                  * Aws::Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap.
@@ -695,7 +695,7 @@ namespace Aws
                     OnWebSocketHandshakeIntercept callback) noexcept;
 
                 /**
-                 * Sets callback trigged when client successfully establishes an MQTT connection
+                 * Sets callback triggered when client successfully establishes an MQTT connection
                  *
                  * @param callback
                  *
@@ -704,7 +704,7 @@ namespace Aws
                 Mqtt5ClientOptions &WithClientConnectionSuccessCallback(OnConnectionSuccessHandler callback) noexcept;
 
                 /**
-                 * Sets callback trigged when client fails to establish an MQTT connection
+                 * Sets callback triggered when client fails to establish an MQTT connection
                  *
                  * @param callback
                  *
@@ -713,7 +713,7 @@ namespace Aws
                 Mqtt5ClientOptions &WithClientConnectionFailureCallback(OnConnectionFailureHandler callback) noexcept;
 
                 /**
-                 * Sets callback trigged when client's current MQTT connection is closed
+                 * Sets callback triggered when client's current MQTT connection is closed
                  *
                  * @param callback
                  *
@@ -722,7 +722,7 @@ namespace Aws
                 Mqtt5ClientOptions &WithClientDisconnectionCallback(OnDisconnectionHandler callback) noexcept;
 
                 /**
-                 * Sets callback trigged when client reaches the "Stopped" state
+                 * Sets callback triggered when client reaches the "Stopped" state
                  *
                  * @param callback
                  *
@@ -731,7 +731,7 @@ namespace Aws
                 Mqtt5ClientOptions &WithClientStoppedCallback(OnStoppedHandler callback) noexcept;
 
                 /**
-                 * Sets callback trigged when client begins an attempt to connect to the remote endpoint.
+                 * Sets callback triggered when client begins an attempt to connect to the remote endpoint.
                  *
                  * @param callback
                  *
@@ -740,7 +740,7 @@ namespace Aws
                 Mqtt5ClientOptions &WithClientAttemptingConnectCallback(OnAttemptingConnectHandler callback) noexcept;
 
                 /**
-                 * Sets callback trigged when a PUBLISH packet is received by the client
+                 * Sets callback triggered when a PUBLISH packet is received by the client
                  *
                  * @param callback
                  *
@@ -790,39 +790,32 @@ namespace Aws
                 OnWebSocketHandshakeIntercept websocketHandshakeTransform;
 
                 /**
-                 * Callback handler trigged when client successfully establishes an MQTT connection
+                 * Callback handler triggered when client successfully establishes an MQTT connection
                  */
                 OnConnectionSuccessHandler onConnectionSuccess;
 
                 /**
-                 * Callback handler trigged when client fails to establish an MQTT connection
+                 * Callback handler triggered when client fails to establish an MQTT connection
                  */
                 OnConnectionFailureHandler onConnectionFailure;
 
                 /**
-                 * Callback handler trigged when client's current MQTT connection is closed
+                 * Callback handler triggered when client's current MQTT connection is closed
                  */
                 OnDisconnectionHandler onDisconnection;
 
                 /**
-                 * Callback handler trigged when client reaches the "Stopped" state
-                 *
-                 * @param Mqtt5Client: The shared client
+                 * Callback handler triggered when client reaches the "Stopped" state
                  */
                 OnStoppedHandler onStopped;
 
                 /**
-                 * Callback handler trigged when client begins an attempt to connect to the remote endpoint.
-                 *
-                 * @param Mqtt5Client: The shared client
+                 * Callback handler triggered when client begins an attempt to connect to the remote endpoint.
                  */
                 OnAttemptingConnectHandler onAttemptingConnect;
 
                 /**
-                 * Callback handler trigged when an MQTT PUBLISH packet is received by the client
-                 *
-                 * @param Mqtt5Client: The shared client
-                 * @param PublishPacket: received Publish Packet
+                 * Callback handler triggered when an MQTT PUBLISH packet is received by the client
                  */
                 OnPublishReceivedHandler onPublishReceived;
 

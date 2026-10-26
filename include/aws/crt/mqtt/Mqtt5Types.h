@@ -241,7 +241,7 @@ namespace Aws
              */
             using ExponentialBackoffJitterMode = aws_exponential_backoff_jitter_mode;
 
-            /** @deprecated JitterMode is deprecated, please use  Aws::Crt::Mqtt5::ExponentialBackoffJitterMode */
+            /** @deprecated JitterMode is deprecated, please use Aws::Crt::Mqtt5::ExponentialBackoffJitterMode */
             using JitterMode = ExponentialBackoffJitterMode;
 
             /**
