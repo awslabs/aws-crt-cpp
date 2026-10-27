@@ -22,6 +22,7 @@ add_test_case(EventLoopScheduleDoubleCancel)
 add_test_case(EventLoopScheduleDefaultHandleCancelIsNoop)
 add_test_case(ClientBootstrapResourceSafety)
 add_test_case(S3MetaRequestShutdownCallbackFires)
+add_test_case(S3MetaRequestDroppedWhileRunning)
 
 if(NOT BYO_CRYPTO)
     add_net_test_case(MqttClientResourceSafety)

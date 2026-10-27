@@ -15,8 +15,9 @@
 using namespace Aws::Crt;
 
 /* A meta request's ShutdownCallback must fire once it finishes and the caller drops it, and the client must then
- * shut down. The request is cancelled right away, so no network or credentials are needed. */
-static int s_TestS3MetaRequestShutdownCallbackFires(Allocator *allocator, void *)
+ * shut down. The request is cancelled right away, so no network or credentials are needed. With dropWhileRunning, the
+ * caller drops its pointer before the request finishes: the request must still finish and shut down. */
+static int s_CancelAndCheckShutdown(Allocator *allocator, bool dropWhileRunning)
 {
     ApiHandle apiHandle(allocator);
     {
@@ -53,6 +54,11 @@ static int s_TestS3MetaRequestShutdownCallbackFires(Allocator *allocator, void *
         auto metaRequest = client->MakeMetaRequest(*options);
         ASSERT_NOT_NULL(metaRequest.get());
         metaRequest->Cancel();
+        if (dropWhileRunning)
+        {
+            metaRequest.reset();
+            options.reset();
+        }
 
         auto finishedFuture = finished.get_future();
         ASSERT_TRUE(finishedFuture.wait_for(std::chrono::seconds(60)) == std::future_status::ready);
@@ -71,4 +77,15 @@ static int s_TestS3MetaRequestShutdownCallbackFires(Allocator *allocator, void *
     }
     return AWS_OP_SUCCESS;
 }
+
+static int s_TestS3MetaRequestShutdownCallbackFires(Allocator *allocator, void *)
+{
+    return s_CancelAndCheckShutdown(allocator, false);
+}
 AWS_TEST_CASE(S3MetaRequestShutdownCallbackFires, s_TestS3MetaRequestShutdownCallbackFires)
+
+static int s_TestS3MetaRequestDroppedWhileRunning(Allocator *allocator, void *)
+{
+    return s_CancelAndCheckShutdown(allocator, true);
+}
+AWS_TEST_CASE(S3MetaRequestDroppedWhileRunning, s_TestS3MetaRequestDroppedWhileRunning)

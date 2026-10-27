@@ -702,7 +702,6 @@ namespace Aws
 
             struct S3MetaRequestCallbackData
             {
-                std::shared_ptr<S3MetaRequest> wrapper;
                 S3MetaRequestOptions::BodyCallback bodyCb;
                 S3MetaRequestOptions::BodyCallbackEx bodyCbEx;
                 S3MetaRequestOptions::HeadersCallback headersCb;
@@ -857,10 +856,6 @@ namespace Aws
                     }
                     data->finishCb(cppResult);
                 }
-                // The wrapper keeps the request alive while it runs. Holding it past finish would be a cycle: it
-                // owns the C meta request, whose shutdown is what frees this data, so shutdown would never come.
-                // The client still holds its own reference here, so this can't release the last one.
-                data->wrapper.reset();
             }
 
             static void s_onShutdown(void *user_data)
@@ -1078,7 +1073,6 @@ namespace Aws
                 callbackData->shutdownCb = options.GetShutdownCallback();
 
                 auto wrapper = Aws::Crt::MakeShared<S3MetaRequest>(allocator);
-                callbackData->wrapper = wrapper;
 
                 struct aws_s3_meta_request_options *rawOptions = options.GetUnderlyingHandle();
                 rawOptions->user_data = callbackData;
