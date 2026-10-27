@@ -28,7 +28,7 @@ namespace Aws
                 RequestContext(Allocator *allocator = ApiAllocator()) noexcept;
                 ~RequestContext();
 
-                /* TODO: move/copy semantics */
+                /* Non-copyable and non-movable. */
                 RequestContext(const RequestContext &) = delete;
                 RequestContext &operator=(const RequestContext &) = delete;
                 RequestContext(RequestContext &&) = delete;
@@ -88,7 +88,6 @@ namespace Aws
               public:
                 ~ResolutionOutcome();
 
-                /* TODO: move/copy semantics */
                 ResolutionOutcome(const ResolutionOutcome &) = delete;
                 ResolutionOutcome &operator=(const ResolutionOutcome &) = delete;
                 ResolutionOutcome(ResolutionOutcome &&toMove) noexcept;

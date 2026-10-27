@@ -6,7 +6,6 @@
 #include <aws/crt/http/HttpConnectionManager.h>
 #include <aws/crt/http/HttpProxyStrategy.h>
 
-#include <algorithm>
 #include <aws/http/connection.h>
 #include <aws/http/connection_manager.h>
 
