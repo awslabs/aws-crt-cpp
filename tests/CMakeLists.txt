@@ -32,6 +32,7 @@ if(NOT BYO_CRYPTO)
     add_net_test_case(IoTMqtt311ConnectWithNoSigningCustomAuth)
 
     add_test_case(S3BufferUploadContentLength)
+    add_test_case(S3BufferDownloadCancelled)
     add_net_test_case(S3BufferRoundTrip)
     add_net_test_case(S3BufferRange)
     add_net_test_case(S3BufferTooSmall)

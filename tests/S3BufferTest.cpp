@@ -19,6 +19,7 @@
 #include <aws/common/environment.h>
 #include <aws/testing/aws_test_harness.h>
 
+#include <chrono>
 #include <cstdio>
 #include <cstring>
 #include <future>
@@ -347,3 +348,63 @@ static int s_TestS3BufferUploadContentLength(Allocator *allocator, void *)
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(S3BufferUploadContentLength, s_TestS3BufferUploadContentLength)
+
+/* No network: a buffer download that's cancelled right away. The options are destroyed right after MakeMetaRequest,
+ * the FinishCallback reports an error with bytesReceived 0, nothing is written to the buffer, and the request and the
+ * client both shut down (the leak check also covers the aws_byte_buf held in the per-request data). */
+static int s_TestS3BufferDownloadCancelled(Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    {
+        Auth::CredentialsProviderStaticConfig credentialsConfig;
+        credentialsConfig.AccessKeyId = ByteCursorFromCString("AKIDEXAMPLE");
+        credentialsConfig.SecretAccessKey = ByteCursorFromCString("wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY");
+        auto provider = Auth::CredentialsProvider::CreateCredentialsProviderStatic(credentialsConfig, allocator);
+        ASSERT_NOT_NULL(provider.get());
+
+        std::promise<void> clientShutdown;
+        S3::S3ClientConfig config(provider);
+        config.SetRegion("us-east-1")
+            .SetTlsMode(S3::S3TlsMode::Disabled)
+            .SetClientShutdownCallback([&clientShutdown]() { clientShutdown.set_value(); });
+        auto client = MakeShared<S3::S3Client>(allocator, config);
+        ASSERT_TRUE(client && *client);
+
+        auto request = MakeShared<Http::HttpRequest>(allocator, allocator);
+        request->SetMethod(ByteCursorFromCString("GET"));
+        request->SetPath(ByteCursorFromCString("/key"));
+        Http::HttpHeader host = {};
+        host.name = ByteCursorFromCString("Host");
+        host.value = ByteCursorFromCString("localhost");
+        request->AddHeader(host);
+
+        GuardedBuffer destination(1024 * 1024);
+        auto options = S3::S3GetObjectMetaRequestOptions::Create(request, destination.Cursor());
+        ASSERT_NOT_NULL(options.get());
+        std::promise<std::pair<int, uint64_t>> finished;
+        std::promise<void> shutdown;
+        options->SetFinishCallback([&finished](const S3::S3MetaRequestResult &result)
+                                   { finished.set_value(std::make_pair(result.errorCode, result.bytesReceived)); });
+        options->SetShutdownCallback([&shutdown]() { shutdown.set_value(); });
+
+        auto metaRequest = client->MakeMetaRequest(*options);
+        ASSERT_NOT_NULL(metaRequest.get());
+        metaRequest->Cancel();
+        options.reset();
+
+        auto finishedFuture = finished.get_future();
+        ASSERT_TRUE(finishedFuture.wait_for(std::chrono::seconds(60)) == std::future_status::ready);
+        std::pair<int, uint64_t> result = finishedFuture.get();
+        ASSERT_FALSE(result.first == AWS_ERROR_SUCCESS);
+        ASSERT_UINT_EQUALS(0, result.second);
+
+        metaRequest.reset();
+        ASSERT_TRUE(shutdown.get_future().wait_for(std::chrono::seconds(30)) == std::future_status::ready);
+        ASSERT_TRUE(destination.UntouchedFrom(0));
+
+        client.reset();
+        ASSERT_TRUE(clientShutdown.get_future().wait_for(std::chrono::seconds(30)) == std::future_status::ready);
+    }
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(S3BufferDownloadCancelled, s_TestS3BufferDownloadCancelled)
