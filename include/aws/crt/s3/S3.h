@@ -255,6 +255,12 @@ namespace Aws
 
                 /** Algorithm used for checksum validation, when didValidateChecksum is true. */
                 S3ChecksumAlgorithm validationAlgorithm;
+
+                /**
+                 * For a GetObject built with Create(request, ByteCursor destination): the number of
+                 * bytes written into the destination, on success. 0 otherwise.
+                 */
+                uint64_t bytesReceived;
             };
 
             /**
@@ -910,6 +916,8 @@ namespace Aws
                 const FinishCallback &GetFinishCallback() const noexcept { return m_finishCb; }
                 /** @return the installed shutdown callback, or an empty function if unset. */
                 const ShutdownCallback &GetShutdownCallback() const noexcept { return m_shutdownCb; }
+                /** @return the caller-owned download destination, or nullptr if this isn't a buffer download. */
+                const ByteCursor *GetRecvBuffer() const noexcept { return m_hasRecvBuffer ? &m_recvBuffer : nullptr; }
 
                 /**
                  * @return a validation error recorded by a Set* setter (ex. an
@@ -954,6 +962,11 @@ namespace Aws
                 bool m_endpointInit;
                 // Backs the borrowed pointer the CRT holds via object_size_hint.
                 Optional<uint64_t> m_objectSizeHint;
+                // Caller-owned download destination. The aws_byte_buf the CRT keeps a pointer to isn't
+                // stored here: the options may be destroyed before the request finishes, so
+                // MakeMetaRequest builds it in the per-request callback data instead.
+                ByteCursor m_recvBuffer = {0, nullptr};
+                bool m_hasRecvBuffer = false;
                 BodyCallback m_bodyCb;
                 BodyCallbackEx m_bodyCbEx;
                 HeadersCallback m_headersCb;
@@ -967,11 +980,11 @@ namespace Aws
 
             /**
              * Options for a GetObject meta request. Every download must land
-             * somewhere; the three Create overloads pin the delivery path at
+             * somewhere; the four Create overloads pin the delivery path at
              * construction and make it impossible to submit a GetObject that
              * silently drops the body. Which sink is used is determined by
-             * the argument type: a BodyCallback, a BodyCallbackEx, or a
-             * destination file path.
+             * the argument type: a BodyCallback, a BodyCallbackEx, a
+             * destination file path, or caller-owned memory (ByteCursor).
              */
             class AWS_CRT_CPP_API S3GetObjectMetaRequestOptions final : public S3MetaRequestOptions
             {
@@ -1019,6 +1032,45 @@ namespace Aws
                     const std::shared_ptr<Http::HttpRequest> &request,
                     const Crt::String &recvFilepath) noexcept;
 
+                /**
+                 * Build options that download the object (or the requested Range)
+                 * straight into caller-owned memory, with no copy. Each part is
+                 * written by its network thread at its offset; destination.ptr[0]
+                 * receives the first byte of the requested range. Neither
+                 * BodyCallback nor BodyCallbackEx fires.
+                 *
+                 * On success, S3MetaRequestResult::bytesReceived is the number of
+                 * bytes written, so the data is [destination.ptr, destination.ptr +
+                 * bytesReceived) and the rest of the memory is untouched. On
+                 * failure, the memory's contents are undefined.
+                 *
+                 * Checked by aws-c-s3:
+                 * - destination.len (the capacity) must hold the whole requested
+                 *   range, otherwise the request fails with AWS_ERROR_SHORT_BUFFER.
+                 * - Don't call SetObjectSizeHint; the capacity is used as the hint
+                 *   when needed. If set, it must equal the capacity.
+                 * - The client's buffer pool must support pre-allocated buffers
+                 *   (the default pool does), otherwise MakeMetaRequest fails with
+                 *   AWS_ERROR_UNSUPPORTED_OPERATION.
+                 *
+                 * The caller's responsibility (not checked):
+                 * - The memory must stay valid and in place until the
+                 *   FinishCallback fires.
+                 * - Don't give the same or overlapping memory to two requests in
+                 *   flight at once.
+                 *
+                 * For repeated large downloads, reuse the same memory or back it
+                 * with huge pages: fresh memory is faulted in page by page, and
+                 * freeing tens of GiB afterwards can take seconds.
+                 *
+                 * @param request the prepared HTTP request.
+                 * @param destination caller-owned memory to download into.
+                 * @return a unique_ptr to the base type, or nullptr on failure.
+                 */
+                static ScopedResource<S3MetaRequestOptions> Create(
+                    const std::shared_ptr<Http::HttpRequest> &request,
+                    ByteCursor destination) noexcept;
+
                 /// @private Prefer the Create factories; direct construction
                 /// leaves the body sink unset and produces an incomplete object.
                 explicit S3GetObjectMetaRequestOptions(const std::shared_ptr<Http::HttpRequest> &request) noexcept;
@@ -1061,6 +1113,25 @@ namespace Aws
                 static ScopedResource<S3MetaRequestOptions> Create(
                     const std::shared_ptr<Http::HttpRequest> &request,
                     const Crt::String &sendFilepath) noexcept;
+
+                /**
+                 * Build options for a PUT whose body is sent straight from
+                 * caller-owned memory, with no copy. Above the multipart threshold,
+                 * parts are sent from the memory in parallel, with no 5 GiB cap. If
+                 * the HTTP request has no Content-Length header, it is set to
+                 * body.len. Do NOT also attach a body to the HTTP request - aws-c-s3
+                 * rejects requests with more than one body source.
+                 *
+                 * The caller's responsibility (not checked): the memory must stay
+                 * valid and unchanged until the FinishCallback fires.
+                 *
+                 * @param request the prepared HTTP request (no body attached).
+                 * @param body caller-owned memory to upload.
+                 * @return a unique_ptr to the base type, or nullptr on failure.
+                 */
+                static ScopedResource<S3MetaRequestOptions> Create(
+                    const std::shared_ptr<Http::HttpRequest> &request,
+                    ByteCursor body) noexcept;
 
                 /**
                  * Build options for a PUT whose body is supplied incrementally via
