@@ -17,6 +17,8 @@
 #include <aws/io/uri.h>
 #include <aws/s3/s3_client.h>
 
+#include <cstdio>
+
 namespace Aws
 {
     namespace Crt
@@ -624,6 +626,20 @@ namespace Aws
                     });
             }
 
+            ScopedResource<S3MetaRequestOptions> S3GetObjectMetaRequestOptions::Create(
+                const std::shared_ptr<Http::HttpRequest> &request,
+                ByteCursor destination) noexcept
+            {
+                // Only the cursor is kept here; MakeMetaRequest builds the aws_byte_buf the CRT points at.
+                return s_makeConfiguredOptions<S3GetObjectMetaRequestOptions>(
+                    request,
+                    [&](S3GetObjectMetaRequestOptions *self)
+                    {
+                        self->m_recvBuffer = destination;
+                        self->m_hasRecvBuffer = true;
+                    });
+            }
+
             /*****************************************************
              *
              * S3PutObjectMetaRequestOptions
@@ -651,6 +667,34 @@ namespace Aws
                     {
                         self->m_sendFilepath = sendFilepath;
                         self->m_impl->options.send_filepath = ByteCursorFromString(self->m_sendFilepath);
+                    });
+            }
+
+            ScopedResource<S3MetaRequestOptions> S3PutObjectMetaRequestOptions::Create(
+                const std::shared_ptr<Http::HttpRequest> &request,
+                ByteCursor body) noexcept
+            {
+                return s_makeConfiguredOptions<S3PutObjectMetaRequestOptions>(
+                    request,
+                    [&](S3PutObjectMetaRequestOptions *self)
+                    {
+                        // aws-c-s3 copies the cursor, so only the memory it views has to outlive the request.
+                        self->m_impl->options.request_body = body;
+
+                        // The body's size is known, so fill in Content-Length if the caller didn't.
+                        // aws_http_message_add_header copies the value.
+                        struct aws_http_message *message = request ? request->GetUnderlyingMessage() : nullptr;
+                        struct aws_byte_cursor contentLengthName = aws_byte_cursor_from_c_str("Content-Length");
+                        if (message != nullptr &&
+                            !aws_http_headers_has(aws_http_message_get_headers(message), contentLengthName))
+                        {
+                            char contentLength[32] = "";
+                            snprintf(contentLength, sizeof(contentLength), "%zu", body.len);
+                            struct aws_http_header header = {};
+                            header.name = contentLengthName;
+                            header.value = aws_byte_cursor_from_c_str(contentLength);
+                            aws_http_message_add_header(message, header);
+                        }
                     });
             }
 
@@ -702,13 +746,16 @@ namespace Aws
 
             struct S3MetaRequestCallbackData
             {
-                std::shared_ptr<S3MetaRequest> wrapper;
                 S3MetaRequestOptions::BodyCallback bodyCb;
                 S3MetaRequestOptions::BodyCallbackEx bodyCbEx;
                 S3MetaRequestOptions::HeadersCallback headersCb;
                 S3MetaRequestOptions::ProgressCallback progressCb;
                 S3MetaRequestOptions::FinishCallback finishCb;
                 S3MetaRequestOptions::ShutdownCallback shutdownCb;
+                // For a buffer download: the aws_byte_buf the CRT points recv_buffer at. It lives here,
+                // not in the options, because the CRT writes its len at finish and the options may be gone.
+                aws_byte_buf recvBuffer = {};
+                bool hasRecvBuffer = false;
             };
 
             static Vector<Http::HttpHeader> s_materializeHeaders(const struct aws_http_headers *headers) noexcept
@@ -855,6 +902,8 @@ namespace Aws
                             cppResult.validationAlgorithm = S3ChecksumAlgorithm::None;
                             break;
                     }
+                    // The CRT sets len just before this callback, and only on success.
+                    cppResult.bytesReceived = data->hasRecvBuffer ? data->recvBuffer.len : 0;
                     data->finishCb(cppResult);
                 }
             }
@@ -1072,12 +1121,18 @@ namespace Aws
                 callbackData->progressCb = options.GetProgressCallback();
                 callbackData->finishCb = options.GetFinishCallback();
                 callbackData->shutdownCb = options.GetShutdownCallback();
+                if (const ByteCursor *recvBuffer = options.GetRecvBuffer())
+                {
+                    callbackData->recvBuffer = aws_byte_buf_from_empty_array(recvBuffer->ptr, recvBuffer->len);
+                    callbackData->hasRecvBuffer = true;
+                }
 
                 auto wrapper = Aws::Crt::MakeShared<S3MetaRequest>(allocator);
-                callbackData->wrapper = wrapper;
 
                 struct aws_s3_meta_request_options *rawOptions = options.GetUnderlyingHandle();
                 rawOptions->user_data = callbackData;
+                // Set (or cleared) on every call, since the options may be reused for another request.
+                rawOptions->recv_buffer = callbackData->hasRecvBuffer ? &callbackData->recvBuffer : nullptr;
                 rawOptions->headers_callback = s_onHeaders;
                 rawOptions->body_callback = callbackData->bodyCb ? s_onBody : nullptr;
                 rawOptions->body_callback_ex = callbackData->bodyCbEx ? s_onBodyEx : nullptr;
