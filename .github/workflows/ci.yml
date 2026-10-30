@@ -290,7 +290,7 @@ jobs:
         python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DUSE_CPU_EXTENSIONS=OFF
 
   macos:
-    runs-on: macos-14 # latest
+    runs-on: macos-15 # latest
     steps:
     - uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -303,7 +303,7 @@ jobs:
         ./builder build -p ${{ env.PACKAGE_NAME }} --spec=downstream
 
   macos-x64:
-    runs-on: macos-14-large # latest
+    runs-on: macos-15-large # latest
     steps:
     - uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -316,7 +316,7 @@ jobs:
         ./builder build -p ${{ env.PACKAGE_NAME }} --spec=downstream
 
   macos-s2n:
-    runs-on: macos-14 # latest
+    runs-on: macos-15 # latest
     env:
       AWS_CRT_USE_NON_FIPS_TLS_13: 1
     steps:
@@ -331,7 +331,7 @@ jobs:
         ./builder build -p ${{ env.PACKAGE_NAME }} --spec=downstream
 
   macos-x64-s2n:
-    runs-on: macos-14-large # latest
+    runs-on: macos-15-large # latest
     env:
       AWS_CRT_USE_NON_FIPS_TLS_13: 1
     steps:
@@ -349,7 +349,7 @@ jobs:
   # Skip signing the code on iOS.
   # Otherwise it will not compile with error that Bundle identifier is missing.
   ios-cross-compile:
-    runs-on: macos-14 # latest
+    runs-on: macos-15 # latest
     steps:
     - uses: aws-actions/configure-aws-credentials@v4
       with:
