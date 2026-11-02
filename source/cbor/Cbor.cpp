@@ -74,6 +74,16 @@ namespace Aws
                 aws_cbor_encoder_write_tag(m_encoder, tag_number);
             }
 
+            void CborEncoder::WriteBigInteger(const BigInteger &value) noexcept
+            {
+                aws_cbor_encoder_write_big_integer(m_encoder, value.GetUnderlyingHandle());
+            }
+
+            void CborEncoder::WriteBigDecimal(const BigDecimal &value) noexcept
+            {
+                aws_cbor_encoder_write_big_decimal(m_encoder, value.GetUnderlyingHandle());
+            }
+
             void CborEncoder::WriteNull() noexcept
             {
                 aws_cbor_encoder_write_null(m_encoder);
@@ -262,6 +272,28 @@ namespace Aws
                     return Optional<uint64_t>();
                 }
                 return Optional<uint64_t>(out_tag_val);
+            }
+
+            Optional<BigInteger> CborDecoder::PopNextBigIntegerVal() noexcept
+            {
+                aws_big_integer *out = nullptr;
+                if (aws_cbor_decoder_pop_next_big_integer_val(m_decoder, &out) != AWS_OP_SUCCESS)
+                {
+                    m_lastError = aws_last_error();
+                    return Optional<BigInteger>();
+                }
+                return BigInteger(out);
+            }
+
+            Optional<BigDecimal> CborDecoder::PopNextBigDecimalVal() noexcept
+            {
+                aws_big_decimal *out = nullptr;
+                if (aws_cbor_decoder_pop_next_big_decimal_val(m_decoder, &out) != AWS_OP_SUCCESS)
+                {
+                    m_lastError = aws_last_error();
+                    return Optional<BigDecimal>();
+                }
+                return BigDecimal(out);
             }
 
         } // namespace Cbor
