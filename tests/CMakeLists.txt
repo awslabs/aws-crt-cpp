@@ -30,12 +30,6 @@ if(NOT BYO_CRYPTO)
     add_test_case(Sigv4aSigningTestCredentials)
 
     add_net_test_case(IoTMqtt311ConnectWithNoSigningCustomAuth)
-
-    add_test_case(S3BufferUploadContentLength)
-    add_test_case(S3BufferDownloadCancelled)
-    add_net_test_case(S3BufferRoundTrip)
-    add_net_test_case(S3BufferRange)
-    add_net_test_case(S3BufferTooSmall)
     add_net_test_case(IoTMqtt311ConnectWithSigningCustomAuth)
     add_net_test_case(IoTMqtt311ConnectWithSigningCustomAuthUnencoded)
     add_net_test_case(IoTMqtt311ConnectWithSigningCustomAuthWebsockets)
@@ -165,6 +159,14 @@ if(NOT BYO_CRYPTO)
     add_test_case(Sigv4SigningTestSimple)
     add_test_case(Sigv4SigningTestCredentials)
     add_test_case(Sigv4SigningTestUnsignedPayload)
+endif()
+
+# S3 downloads into, and uploads from, caller-owned memory
+if(NOT BYO_CRYPTO)
+    add_test_case(S3BufferDownloadCancelled)
+    add_net_test_case(S3BufferRoundTrip)
+    add_net_test_case(S3BufferRange)
+    add_net_test_case(S3BufferTooSmall)
 endif()
 
 add_test_case(UUIDToString)

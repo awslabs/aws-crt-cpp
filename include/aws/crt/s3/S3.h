@@ -255,12 +255,6 @@ namespace Aws
 
                 /** Algorithm used for checksum validation, when didValidateChecksum is true. */
                 S3ChecksumAlgorithm validationAlgorithm;
-
-                /**
-                 * For a GetObject built with Create(request, ByteCursor destination): the number of
-                 * bytes written into the destination, on success. 0 otherwise.
-                 */
-                uint64_t bytesReceived;
             };
 
             /**
@@ -916,8 +910,6 @@ namespace Aws
                 const FinishCallback &GetFinishCallback() const noexcept { return m_finishCb; }
                 /** @return the installed shutdown callback, or an empty function if unset. */
                 const ShutdownCallback &GetShutdownCallback() const noexcept { return m_shutdownCb; }
-                /** @return the caller-owned download destination, or nullptr if this isn't a buffer download. */
-                const ByteCursor *GetRecvBuffer() const noexcept { return m_hasRecvBuffer ? &m_recvBuffer : nullptr; }
 
                 /**
                  * @return a validation error recorded by a Set* setter (ex. an
@@ -962,11 +954,6 @@ namespace Aws
                 bool m_endpointInit;
                 // Backs the borrowed pointer the CRT holds via object_size_hint.
                 Optional<uint64_t> m_objectSizeHint;
-                // Caller-owned download destination. The aws_byte_buf the CRT keeps a pointer to isn't
-                // stored here: the options may be destroyed before the request finishes, so
-                // MakeMetaRequest builds it in the per-request callback data instead.
-                ByteCursor m_recvBuffer = {0, nullptr};
-                bool m_hasRecvBuffer = false;
                 BodyCallback m_bodyCb;
                 BodyCallbackEx m_bodyCbEx;
                 HeadersCallback m_headersCb;
@@ -984,7 +971,7 @@ namespace Aws
              * construction and make it impossible to submit a GetObject that
              * silently drops the body. Which sink is used is determined by
              * the argument type: a BodyCallback, a BodyCallbackEx, a
-             * destination file path, or caller-owned memory (ByteCursor).
+             * destination file path, or caller-owned memory (ByteBuf).
              */
             class AWS_CRT_CPP_API S3GetObjectMetaRequestOptions final : public S3MetaRequestOptions
             {
@@ -1034,19 +1021,24 @@ namespace Aws
 
                 /**
                  * Build options that download the object (or the requested Range)
-                 * straight into caller-owned memory, with no copy. Each part is
-                 * written by its network thread at its offset; destination.ptr[0]
-                 * receives the first byte of the requested range. Neither
-                 * BodyCallback nor BodyCallbackEx fires.
+                 * straight into caller-owned memory, with no copy, the way aws-c-s3's
+                 * recv_buffer works. Each part is written by its network thread at
+                 * its offset; destination.buffer[0] receives the first byte of the
+                 * requested range. Neither BodyCallback nor BodyCallbackEx fires.
                  *
-                 * On success, S3MetaRequestResult::bytesReceived is the number of
-                 * bytes written, so the data is [destination.ptr, destination.ptr +
-                 * bytesReceived) and the rest of the memory is untouched. On
-                 * failure, the memory's contents are undefined.
+                 *     ByteBuf destination = ByteBufFromEmptyArray(memory, capacity);
+                 *     auto options = S3GetObjectMetaRequestOptions::Create(request, destination);
+                 *
+                 * On success, destination.len is set to the number of bytes
+                 * written, so the data is [destination.buffer, destination.buffer +
+                 * destination.len) and the rest of the memory is untouched. On
+                 * failure, len stays 0 and the memory's contents are undefined.
                  *
                  * Checked by aws-c-s3:
-                 * - destination.len (the capacity) must hold the whole requested
-                 *   range, otherwise the request fails with AWS_ERROR_SHORT_BUFFER.
+                 * - destination.len must be 0 (reset it to reuse a ByteBuf),
+                 *   otherwise MakeMetaRequest fails with AWS_ERROR_INVALID_ARGUMENT.
+                 * - destination.capacity must hold the whole requested range,
+                 *   otherwise the request fails with AWS_ERROR_SHORT_BUFFER.
                  * - Don't call SetObjectSizeHint; the capacity is used as the hint
                  *   when needed. If set, it must equal the capacity.
                  * - The client's buffer pool must support pre-allocated buffers
@@ -1054,8 +1046,10 @@ namespace Aws
                  *   AWS_ERROR_UNSUPPORTED_OPERATION.
                  *
                  * The caller's responsibility (not checked):
-                 * - The memory must stay valid and in place until the
-                 *   FinishCallback fires.
+                 * - The ByteBuf itself, not just the memory it points to, must stay
+                 *   alive and in place until the FinishCallback fires: aws-c-s3
+                 *   keeps a pointer to it and sets its len at finish. The options
+                 *   may be destroyed after MakeMetaRequest.
                  * - Don't give the same or overlapping memory to two requests in
                  *   flight at once.
                  *
@@ -1064,12 +1058,13 @@ namespace Aws
                  * freeing tens of GiB afterwards can take seconds.
                  *
                  * @param request the prepared HTTP request.
-                 * @param destination caller-owned memory to download into.
+                 * @param destination caller-owned ByteBuf, with len 0, viewing the
+                 *        memory to download into.
                  * @return a unique_ptr to the base type, or nullptr on failure.
                  */
                 static ScopedResource<S3MetaRequestOptions> Create(
                     const std::shared_ptr<Http::HttpRequest> &request,
-                    ByteCursor destination) noexcept;
+                    ByteBuf &destination) noexcept;
 
                 /// @private Prefer the Create factories; direct construction
                 /// leaves the body sink unset and produces an incomplete object.
@@ -1117,10 +1112,12 @@ namespace Aws
                 /**
                  * Build options for a PUT whose body is sent straight from
                  * caller-owned memory, with no copy. Above the multipart threshold,
-                 * parts are sent from the memory in parallel, with no 5 GiB cap. If
-                 * the HTTP request has no Content-Length header, it is set to
-                 * body.len. Do NOT also attach a body to the HTTP request - aws-c-s3
-                 * rejects requests with more than one body source.
+                 * parts are sent from the memory in parallel, with no 5 GiB cap. The
+                 * HTTP request doesn't need a Content-Length header: aws-c-s3 uses
+                 * body.len, and rejects a header that doesn't match it with
+                 * AWS_ERROR_S3_INCORRECT_CONTENT_LENGTH. Do NOT also attach a body to
+                 * the HTTP request - aws-c-s3 rejects requests with more than one
+                 * body source.
                  *
                  * The caller's responsibility (not checked): the memory must stay
                  * valid and unchanged until the FinishCallback fires.
