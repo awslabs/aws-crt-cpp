@@ -35,7 +35,7 @@ namespace Aws
             auto cap = aws_big_decimal_max_strlen(m_value.get());
             str.resize(cap);
 
-            auto buf = aws_byte_buf_from_empty_array(str.data(), cap);
+            auto buf = aws_byte_buf_from_empty_array(&str[0], cap);
             if (aws_byte_buf_append_big_decimal(&buf, m_value.get()) != AWS_OP_SUCCESS)
             {
                 return {};
