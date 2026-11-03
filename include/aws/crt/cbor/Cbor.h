@@ -6,6 +6,8 @@
 
 #include <aws/common/cbor.h>
 
+#include <aws/crt/BigDecimal.h>
+#include <aws/crt/BigInteger.h>
 #include <aws/crt/Types.h>
 
 namespace Aws
@@ -153,6 +155,24 @@ namespace Aws
                  * @param tag_number The tag value to encode.
                  */
                 void WriteTag(uint64_t tag_number) noexcept;
+
+                /**
+                 * Encode an arbitrary-precision integer. Values in [-2^64, 2^64 - 1] are encoded as UInt or NegInt,
+                 * anything else as a bignum (tag 2 or 3, RFC8949 section 3.4.3). See
+                 * aws_cbor_encoder_write_big_integer().
+                 *
+                 * @param value value to encode.
+                 */
+                void WriteBigInteger(const BigInteger &value) noexcept;
+
+                /**
+                 * Encode an arbitrary-precision decimal as a decimal fraction (tag 4, RFC8949 section 3.4.4): a
+                 * 2-element array of the exponent and the mantissa. The scale is preserved, 150e-2 is not reduced
+                 * to 15e-1. See aws_cbor_encoder_write_big_decimal().
+                 *
+                 * @param value value to encode.
+                 */
+                void WriteBigDecimal(const BigDecimal &value) noexcept;
 
                 /**
                  * Encode a simple value Null
@@ -350,6 +370,29 @@ namespace Aws
                  *          used to retrieve CRT error code.
                  */
                 Optional<uint64_t> PopNextTagVal() noexcept;
+
+                /**
+                 * Get the next data item as an arbitrary-precision integer. Accepts UInt, NegInt, and bignums (tag 2
+                 * or 3). On failure the decoder is left where it was, except for a malformed data item. See
+                 * aws_cbor_decoder_pop_next_big_integer_val().
+                 *
+                 * @return If successful, return the value
+                 *         If not, return will be none and LastError() can be
+                 *          used to retrieve CRT error code.
+                 */
+                Optional<BigInteger> PopNextBigIntegerVal() noexcept;
+
+                /**
+                 * Get the next data item as an arbitrary-precision decimal. Accepts a decimal fraction (tag 4,
+                 * RFC8949 section 3.4.4), as a definite or indefinite-length array, whose exponent fits in an int64_t
+                 * and whose mantissa is accepted as in PopNextBigIntegerVal(). See
+                 * aws_cbor_decoder_pop_next_big_decimal_val().
+                 *
+                 * @return If successful, return the value
+                 *         If not, return will be none and LastError() can be
+                 *          used to retrieve CRT error code.
+                 */
+                Optional<BigDecimal> PopNextBigDecimalVal() noexcept;
 
                 /**
                  * @return the value of the last aws error encountered by operations on this instance.
