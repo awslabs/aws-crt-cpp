@@ -624,6 +624,17 @@ namespace Aws
                     });
             }
 
+            ScopedResource<S3MetaRequestOptions> S3GetObjectMetaRequestOptions::Create(
+                const std::shared_ptr<Http::HttpRequest> &request,
+                ByteBuf &destination) noexcept
+            {
+                // aws-c-s3 keeps this pointer and sets destination.len at finish, so the caller's ByteBuf
+                // must outlive the request (see the header).
+                return s_makeConfiguredOptions<S3GetObjectMetaRequestOptions>(
+                    request,
+                    [&](S3GetObjectMetaRequestOptions *self) { self->m_impl->options.recv_buffer = &destination; });
+            }
+
             /*****************************************************
              *
              * S3PutObjectMetaRequestOptions
@@ -652,6 +663,16 @@ namespace Aws
                         self->m_sendFilepath = sendFilepath;
                         self->m_impl->options.send_filepath = ByteCursorFromString(self->m_sendFilepath);
                     });
+            }
+
+            ScopedResource<S3MetaRequestOptions> S3PutObjectMetaRequestOptions::Create(
+                const std::shared_ptr<Http::HttpRequest> &request,
+                ByteCursor body) noexcept
+            {
+                return s_makeConfiguredOptions<S3PutObjectMetaRequestOptions>(
+                    request,
+                    // aws-c-s3 copies the cursor, so only the memory it views has to outlive the request.
+                    [&](S3PutObjectMetaRequestOptions *self) { self->m_impl->options.request_body = body; });
             }
 
             ScopedResource<S3MetaRequestOptions> S3PutObjectMetaRequestOptions::CreateWithAsyncWrites(
@@ -702,7 +723,6 @@ namespace Aws
 
             struct S3MetaRequestCallbackData
             {
-                std::shared_ptr<S3MetaRequest> wrapper;
                 S3MetaRequestOptions::BodyCallback bodyCb;
                 S3MetaRequestOptions::BodyCallbackEx bodyCbEx;
                 S3MetaRequestOptions::HeadersCallback headersCb;
@@ -1074,7 +1094,6 @@ namespace Aws
                 callbackData->shutdownCb = options.GetShutdownCallback();
 
                 auto wrapper = Aws::Crt::MakeShared<S3MetaRequest>(allocator);
-                callbackData->wrapper = wrapper;
 
                 struct aws_s3_meta_request_options *rawOptions = options.GetUnderlyingHandle();
                 rawOptions->user_data = callbackData;
