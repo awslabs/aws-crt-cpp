@@ -28,7 +28,7 @@ namespace Aws
             {
                 /**
                  * Standard AWS Sigv4 signing using a symmetric secret, per
-                 * https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html
+                 * https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_aws-signing.html
                  */
                 SigV4 = AWS_SIGNING_ALGORITHM_V4,
 
@@ -99,13 +99,17 @@ namespace Aws
                  */
                 AWS_CRT_CPP_API const char *StreamingAws4HmacSha256EventsStr();
 
-                /** @deprecated to avoid issues with /DELAYLOAD on Windows. */
+                /** @deprecated Use UnsignedPayloadStr() instead (avoids /DELAYLOAD issues on Windows). */
                 AWS_CRT_CPP_API extern const char *UnsignedPayload;
-                /** @deprecated to avoid issues with /DELAYLOAD on Windows. */
+                /** @deprecated Use EmptySha256Str() instead (avoids /DELAYLOAD issues on Windows). */
                 AWS_CRT_CPP_API extern const char *EmptySha256;
-                /** @deprecated to avoid issues with /DELAYLOAD on Windows. */
+                /**
+                 * @deprecated Use StreamingAws4HmacSha256PayloadStr() instead (avoids /DELAYLOAD issues on Windows).
+                 */
                 AWS_CRT_CPP_API extern const char *StreamingAws4HmacSha256Payload;
-                /** @deprecated to avoid issues with /DELAYLOAD on Windows. */
+                /**
+                 * @deprecated Use StreamingAws4HmacSha256EventsStr() instead (avoids /DELAYLOAD issues on Windows).
+                 */
                 AWS_CRT_CPP_API extern const char *StreamingAws4HmacSha256Events;
             } // namespace SignedBodyValue
 

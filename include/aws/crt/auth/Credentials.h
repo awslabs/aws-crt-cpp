@@ -205,8 +205,8 @@ namespace Aws
                  * (for example, a profile that uses assume-role will need to query STS).
                  *
                  * If a TLS context is needed, and you did not pass one in, the content of TlsConnectionOptions will be
-                 * used which may be default contructed. However, you are encouraged to pass in a shared one since these
-                 * are expensive objects. If using BYO_CRYPTO, you must provide the TLS context since it cannot be
+                 * used which may be default constructed. However, you are encouraged to pass in a shared one since
+                 * these are expensive objects. If using BYO_CRYPTO, you must provide the TLS context since it cannot be
                  * created automatically.
                  */
                 Io::TlsContext *TlsContext;

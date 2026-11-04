@@ -1027,8 +1027,8 @@ namespace Aws
                 const Crt::Vector<UserProperty> &getUserProperties() const noexcept;
 
                 /**
-                 * Intended for internal use only.  Initializes the C aws_mqtt5_packet_connack_view
-                 * from PacketConnect
+                 * Intended for internal use only.  Initializes the C aws_mqtt5_packet_connect_view
+                 * from ConnectPacket
                  *
                  * @param raw_options - output parameter containing low level client options to be passed to the C
                  * @param allocator - memory Allocator
@@ -1909,7 +1909,7 @@ namespace Aws
                  * Options](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901169)
                  *
                  * @param topicFilter string
-                 * @return The Subscription Object after setting the reason string.
+                 * @return The Subscription Object after setting the topic filter.
                  */
                 Subscription &WithTopicFilter(Crt::String topicFilter) noexcept;
 
@@ -1921,7 +1921,7 @@ namespace Aws
                  * Options](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901169)
                  *
                  * @param QOS
-                 * @return The Subscription Object after setting the reason string.
+                 * @return The Subscription Object after setting the QoS.
                  */
                 Subscription &WithQOS(Mqtt5::QOS QOS) noexcept;
 
@@ -1933,35 +1933,9 @@ namespace Aws
                  * Options](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901169)
                  *
                  * @param noLocal bool
-                 * @return The Subscription Object after setting the reason string.
+                 * @return The Subscription Object after setting the no local flag.
                  */
                 Subscription &WithNoLocal(bool noLocal) noexcept;
-
-                /**
-                 * Sets should the server not send publishes to a client when that client was the one who sent the
-                 * publish? The value will be default to false.
-                 *
-                 * See [MQTT5 Subscription
-                 * Options](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901169)
-                 *
-                 * @param retain bool
-                 * @return The Subscription Object after setting the reason string.
-                 */
-                Subscription &WithRetainAsPublished(bool retain) noexcept;
-
-                /**
-                 * @deprecated The function is deprecated, please use `Subscription::WithRetainAsPublished(bool)`.
-                 *
-                 * Sets should the server not send publishes to a client when that client was the one who sent the
-                 * publish? The value will be default to false.
-                 *
-                 * See [MQTT5 Subscription
-                 * Options](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901169)
-                 *
-                 * @param retain bool
-                 * @return The Subscription Object after setting the reason string.
-                 */
-                Subscription &WithRetain(bool retain) noexcept;
 
                 /**
                  * Sets should messages sent due to this subscription keep the retain flag preserved on the message?
@@ -1970,8 +1944,34 @@ namespace Aws
                  * See [MQTT5 Subscription
                  * Options](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901169)
                  *
+                 * @param retain bool
+                 * @return The Subscription Object after setting the retain as published flag.
+                 */
+                Subscription &WithRetainAsPublished(bool retain) noexcept;
+
+                /**
+                 * @deprecated The function is deprecated, please use `Subscription::WithRetainAsPublished(bool)`.
+                 *
+                 * Sets should messages sent due to this subscription keep the retain flag preserved on the message?
+                 * The value will be default to false.
+                 *
+                 * See [MQTT5 Subscription
+                 * Options](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901169)
+                 *
+                 * @param retain bool
+                 * @return The Subscription Object after setting the retain as published flag.
+                 */
+                Subscription &WithRetain(bool retain) noexcept;
+
+                /**
+                 * Sets whether retained messages on matching topics should be sent in reaction to this subscription.
+                 * Defaults to AWS_MQTT5_RHT_SEND_ON_SUBSCRIBE.
+                 *
+                 * See [MQTT5 Subscription
+                 * Options](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901169)
+                 *
                  * @param retainHandlingType
-                 * @return The Subscription Object after setting the reason string.
+                 * @return The Subscription Object after setting the retain handling type.
                  */
                 Subscription &WithRetainHandlingType(RetainHandlingType retainHandlingType) noexcept;
 
@@ -2049,7 +2049,7 @@ namespace Aws
                  * Property](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901116)
                  *
                  * @param userProperties List of MQTT5 user properties included with the packet.
-                 * @return the SubscribePacket Object after setting the reason string.
+                 * @return the SubscribePacket Object after setting the user properties.
                  */
                 SubscribePacket &WithUserProperties(const Vector<UserProperty> &userProperties) noexcept;
 
@@ -2060,7 +2060,7 @@ namespace Aws
                  * Property](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901116)
                  *
                  * @param userProperties List of MQTT5 user properties included with the packet.
-                 * @return the SubscribePacket Object after setting the reason string.
+                 * @return the SubscribePacket Object after setting the user properties.
                  */
                 SubscribePacket &WithUserProperties(Vector<UserProperty> &&userProperties) noexcept;
 

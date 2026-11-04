@@ -298,7 +298,7 @@ namespace Aws
                     OnSubAckHandler &&onSubAck) noexcept;
 
                 /**
-                 * @deprecated Use alternate Subscribe()
+                 * @deprecated Use the Subscribe() overload that takes an OnMessageReceivedHandler
                  */
                 uint16_t Subscribe(
                     const char *topicFilter,
@@ -324,7 +324,7 @@ namespace Aws
                     OnMultiSubAckHandler &&onOpComplete) noexcept;
 
                 /**
-                 * @deprecated Use alternate Subscribe()
+                 * @deprecated Use the Subscribe() overload that takes OnMessageReceivedHandler topic filter pairs
                  */
                 uint16_t Subscribe(
                     const Vector<std::pair<const char *, OnPublishReceivedHandler>> &topicFilters,
@@ -341,7 +341,7 @@ namespace Aws
                 bool SetOnMessageHandler(OnMessageReceivedHandler &&onMessage) noexcept;
 
                 /**
-                 * @deprecated Use alternate SetOnMessageHandler()
+                 * @deprecated Use the SetOnMessageHandler() overload that takes an OnMessageReceivedHandler
                  */
                 bool SetOnMessageHandler(OnPublishReceivedHandler &&onPublish) noexcept;
 

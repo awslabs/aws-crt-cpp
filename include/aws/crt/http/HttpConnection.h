@@ -257,7 +257,7 @@ namespace Aws
              * @deprecated enum that designates what kind of authentication, if any, to use when connecting to a
              * proxy server.
              *
-             * Here for backwards compatibility.  Has been superceded by proxy strategies.
+             * Here for backwards compatibility.  Has been superseded by proxy strategies.
              */
             enum class AwsHttpProxyAuthenticationType
             {
