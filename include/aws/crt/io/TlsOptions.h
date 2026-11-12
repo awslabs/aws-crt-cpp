@@ -69,8 +69,8 @@ namespace Aws
                  *
                  * NOTE: This is unsupported on iOS.
                  *
-                 * @param cert_path: Path to certificate file.
-                 * @param pkey_path: Path to private key file.
+                 * @param cert_path Path to certificate file.
+                 * @param pkey_path Path to private key file.
                  * @param allocator Memory allocator to use.
                  */
                 static TlsContextOptions InitClientWithMtls(
@@ -85,8 +85,8 @@ namespace Aws
                  *
                  * NOTE: This is unsupported on iOS.
                  *
-                 * @param cert: Certificate contents in memory.
-                 * @param pkey: Private key contents in memory.
+                 * @param cert Certificate contents in memory.
+                 * @param pkey Private key contents in memory.
                  * @param allocator Memory allocator to use.
                  */
                 static TlsContextOptions InitClientWithMtls(
@@ -113,9 +113,9 @@ namespace Aws
                  *
                  * NOTE: This only works on Apple devices.
                  *
-                 * @param pkcs12_path: Path to PKCS #12 file. The file is loaded from disk and stored internally. It
+                 * @param pkcs12_path Path to PKCS #12 file. The file is loaded from disk and stored internally. It
                  * must remain in memory for the lifetime of the returned object.
-                 * @param pkcs12_pwd: Password to PKCS #12 file. It must remain in memory for the lifetime of the
+                 * @param pkcs12_pwd Password to PKCS #12 file. It must remain in memory for the lifetime of the
                  * returned object.
                  * @param allocator Memory allocator to use.
                  */
@@ -125,7 +125,8 @@ namespace Aws
                     Allocator *allocator = ApiAllocator()) noexcept;
 
                 /**
-                 * @deprecated Custom keychain management is deprecated.
+                 * @deprecated Custom keychain management is deprecated. There is no replacement; the default keychain
+                 * is used.
                  *
                  * By default the certificates and private keys are stored in the default keychain
                  * of the account of the process. If you instead wish to provide your own keychain
@@ -159,7 +160,7 @@ namespace Aws
 
                 /**
                  * Sets the list of alpn protocols.
-                 * @param alpnList: List of protocol names, delimited by ';'. This string must remain in memory for the
+                 * @param alpnList List of protocol names, delimited by ';'. This string must remain in memory for the
                  * lifetime of this object.
                  */
                 bool SetAlpnList(const char *alpnList) noexcept;
@@ -185,35 +186,35 @@ namespace Aws
                  *
                  * On Apple platforms, this is a no-op as revocation checking is not enabled by default.
                  *
-                 * @param noCertificateRevocation: Set true to disable revocation checking.
+                 * @param noCertificateRevocation Set true to disable revocation checking.
                  */
                 void SetNoCertificateRevocation(bool noCertificateRevocation) noexcept;
 
                 /**
                  * Sets the minimum TLS version allowed.
-                 * @param minimumTlsVersion: The minimum TLS version.
+                 * @param minimumTlsVersion The minimum TLS version.
                  */
                 void SetMinimumTlsVersion(aws_tls_versions minimumTlsVersion);
 
                 /**
                  * Sets the preferred TLS Cipher List
-                 * @param cipher_pref: The preferred TLS cipher list.
+                 * @param cipher_pref The preferred TLS cipher list.
                  */
                 void SetTlsCipherPreference(aws_tls_cipher_pref cipher_pref);
 
                 /**
                  * Overrides the default system trust store.
-                 * @param caPath: Path to directory containing trusted certificates, which will overrides the
+                 * @param caPath Path to directory containing trusted certificates, which will overrides the
                  * default trust store. Only useful on Unix style systems where all anchors are stored in a directory
                  * (like /etc/ssl/certs). This string must remain in memory for the lifetime of this object.
-                 * @param caFile: Path to file containing PEM armored chain of trusted CA certificates. This
+                 * @param caFile Path to file containing PEM armored chain of trusted CA certificates. This
                  * string must remain in memory for the lifetime of this object.
                  */
                 bool OverrideDefaultTrustStore(const char *caPath, const char *caFile) noexcept;
 
                 /**
                  * Overrides the default system trust store.
-                 * @param ca: PEM armored chain of trusted CA certificates.
+                 * @param ca PEM armored chain of trusted CA certificates.
                  */
                 bool OverrideDefaultTrustStore(const ByteCursor &ca) noexcept;
 

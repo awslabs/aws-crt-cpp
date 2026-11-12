@@ -5,7 +5,7 @@
  */
 
 /**
- * To keep ABI compatability, we use CRT's own string view implementation even for C++ 17.
+ * To keep ABI compatibility, we use CRT's own string view implementation even for C++ 17.
  */
 
 #include <algorithm>
