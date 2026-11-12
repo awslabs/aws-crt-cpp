@@ -16,6 +16,8 @@ env:
   CRT_CI_ROLE: ${{ secrets.CRT_CI_ROLE_ARN }}
   AWS_DEFAULT_REGION: us-east-1
   MACOS_OLD: macos-15
+  MACOS_OLD_INTEL: macos-15-intel
+  MACOS_NEW_INTEL: macos-26-intel
 
 permissions:
   id-token: write # This is required for requesting the JWT
@@ -31,7 +33,8 @@ jobs:
     runs-on: ubuntu-24.04 # latest
     outputs:
       macos_old: ${{ env.MACOS_OLD }}
-      macos_old_large: ${{ env.MACOS_OLD }}-large
+      macos_old_intel: ${{ env.MACOS_OLD_INTEL }}
+      macos_new_intel: ${{ env.MACOS_NEW_INTEL }}
     steps:
     - run: echo "macOS runners set"
 
@@ -323,7 +326,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: ["${{ needs.runners.outputs.macos_old_large }}", macos-latest-large]
+        runner: ["${{ needs.runners.outputs.macos_old_intel }}", "${{ needs.runners.outputs.macos_new_intel }}"]
     steps:
     - uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -361,7 +364,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: ["${{ needs.runners.outputs.macos_old_large }}", macos-latest-large]
+        runner: ["${{ needs.runners.outputs.macos_old_intel }}", "${{ needs.runners.outputs.macos_new_intel }}"]
     env:
       AWS_CRT_USE_NON_FIPS_TLS_13: 1
     steps:
