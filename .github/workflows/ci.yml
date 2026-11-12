@@ -15,6 +15,9 @@ env:
   RUN: ${{ github.run_id }}-${{ github.run_number }}
   CRT_CI_ROLE: ${{ secrets.CRT_CI_ROLE_ARN }}
   AWS_DEFAULT_REGION: us-east-1
+  MACOS_OLD: macos-15
+  MACOS_OLD_INTEL: macos-15-intel
+  MACOS_NEW_INTEL: macos-26-intel
 
 permissions:
   id-token: write # This is required for requesting the JWT
@@ -25,6 +28,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # runs-on and matrix cannot read env, so publish the macOS runner names as outputs
+  runners:
+    runs-on: ubuntu-24.04 # latest
+    outputs:
+      macos_old: ${{ env.MACOS_OLD }}
+      macos_old_intel: ${{ env.MACOS_OLD_INTEL }}
+      macos_new_intel: ${{ env.MACOS_NEW_INTEL }}
+    steps:
+    - run: echo "macOS runners set"
+
   linux-compat-use-openssl:
     runs-on: ubuntu-24.04 # latest
     strategy:
@@ -290,7 +303,12 @@ jobs:
         python builder.pyz build -p ${{ env.PACKAGE_NAME }} --cmake-extra=-DUSE_CPU_EXTENSIONS=OFF
 
   macos:
-    runs-on: macos-14 # latest
+    needs: runners
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: ["${{ needs.runners.outputs.macos_old }}", macos-latest]
     steps:
     - uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -303,7 +321,12 @@ jobs:
         ./builder build -p ${{ env.PACKAGE_NAME }} --spec=downstream
 
   macos-x64:
-    runs-on: macos-14-large # latest
+    needs: runners
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: ["${{ needs.runners.outputs.macos_old_intel }}", "${{ needs.runners.outputs.macos_new_intel }}"]
     steps:
     - uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -316,7 +339,12 @@ jobs:
         ./builder build -p ${{ env.PACKAGE_NAME }} --spec=downstream
 
   macos-s2n:
-    runs-on: macos-14 # latest
+    needs: runners
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: ["${{ needs.runners.outputs.macos_old }}", macos-latest]
     env:
       AWS_CRT_USE_NON_FIPS_TLS_13: 1
     steps:
@@ -331,7 +359,12 @@ jobs:
         ./builder build -p ${{ env.PACKAGE_NAME }} --spec=downstream
 
   macos-x64-s2n:
-    runs-on: macos-14-large # latest
+    needs: runners
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: ["${{ needs.runners.outputs.macos_old_intel }}", "${{ needs.runners.outputs.macos_new_intel }}"]
     env:
       AWS_CRT_USE_NON_FIPS_TLS_13: 1
     steps:
@@ -349,7 +382,12 @@ jobs:
   # Skip signing the code on iOS.
   # Otherwise it will not compile with error that Bundle identifier is missing.
   ios-cross-compile:
-    runs-on: macos-14 # latest
+    needs: runners
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: ["${{ needs.runners.outputs.macos_old }}", macos-latest]
     steps:
     - uses: aws-actions/configure-aws-credentials@v4
       with:
