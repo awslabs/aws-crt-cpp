@@ -388,6 +388,16 @@ namespace Aws
                 S3ClientConfig &SetThroughputTargetGbps(double gbps) noexcept;
 
                 /**
+                 * Cap the number of active connections the client will use. The cap
+                 * only applies when it is lower than the count derived from the
+                 * throughput target. 0 (the default) means no cap.
+                 *
+                 * @param maxConnections maximum number of active connections.
+                 * @return this object, to allow chaining.
+                 */
+                S3ClientConfig &SetMaxActiveConnectionsOverride(uint32_t maxConnections) noexcept;
+
+                /**
                  * Set the target part size for multipart transfers (downloads and
                  * uploads). For uploads, the CRT may increase the effective part size
                  * if the target would require more than 10,000 parts (the S3 service
@@ -589,6 +599,11 @@ namespace Aws
                  * @return the target throughput in Gbps, or 0 if unset.
                  */
                 double GetThroughputTargetGbps() const noexcept;
+
+                /**
+                 * @return the active connection cap, or 0 if unset.
+                 */
+                uint32_t GetMaxActiveConnectionsOverride() const noexcept;
 
                 /**
                  * @return the configured retry-strategy flavor (Default if unset).
@@ -892,6 +907,16 @@ namespace Aws
                  * @return this object, to allow chaining.
                  */
                 S3MetaRequestOptions &SetMultipartUploadThreshold(uint64_t bytes) noexcept;
+
+                /**
+                 * Cap the number of active connections for just this meta
+                 * request. Only applies when lower than the client-level cap.
+                 * 0 means inherit from the client.
+                 *
+                 * @param maxConnections maximum number of active connections.
+                 * @return this object, to allow chaining.
+                 */
+                S3MetaRequestOptions &SetMaxActiveConnectionsOverride(uint32_t maxConnections) noexcept;
 
                 /// @private
                 /// Raw handle for the C layer (aws_s3_client_make_meta_request); not
@@ -1311,6 +1336,11 @@ namespace Aws
                 double GetThroughputTargetGbps() const noexcept { return m_throughputTargetGbps; }
 
                 /**
+                 * @return the active connection cap, or 0 if unset.
+                 */
+                uint32_t GetMaxActiveConnectionsOverride() const noexcept { return m_maxActiveConnectionsOverride; }
+
+                /**
                  * @return the credentials provider this client signs with.
                  */
                 std::shared_ptr<Auth::ICredentialsProvider> GetCredentialsProvider() const noexcept
@@ -1325,6 +1355,7 @@ namespace Aws
                 uint64_t m_partSize = 0;
                 uint64_t m_multipartUploadThreshold = 0;
                 double m_throughputTargetGbps = 0.0;
+                uint32_t m_maxActiveConnectionsOverride = 0;
                 std::shared_ptr<Auth::ICredentialsProvider> m_credentialsProvider;
             };
 
