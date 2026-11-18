@@ -3,7 +3,7 @@ name: Release
 # This workflow cuts a new release:
 #   1. Finds the previous vMAJOR.MINOR.PATCH tag and computes the next version
 #      (patch -> {major}.{minor}.{patch+1}, minor -> {major}.{minor+1}.0).
-#   2. Updates CRTVersion in Source/AwsCommonRuntimeKit/CommonRuntimeKit.swift.
+#   2. Updates CRTVersion
 #   3. Commits and pushes the change to main using the deploy key.
 #   4. Tags that commit as v<version> and pushes the tag (tags are never moved).
 #   5. Creates the GitHub release with the given title and notes since the previous tag.
@@ -110,14 +110,7 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          sed -i "s/public static let CRTVersion = \".*\"/public static let CRTVersion = \"$VERSION\"/" "$VERSION_FILE"
-
-          if grep -q "public static let CRTVersion = \"$VERSION\"" "$VERSION_FILE"; then
-            echo "CRTVersion updated to $VERSION"
-          else
-            echo "Failed to update CRTVersion"
-            exit 1
-          fi
+          echo $VERSION > $VERSION_FILE
 
       - name: Commit CRTVersion
         env:
