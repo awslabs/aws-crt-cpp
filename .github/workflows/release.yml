@@ -110,7 +110,7 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          echo $VERSION > $VERSION_FILE
+          echo "$VERSION" > "$VERSION_FILE"
 
       - name: Commit CRTVersion
         env:
