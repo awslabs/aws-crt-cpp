@@ -139,6 +139,12 @@ namespace Aws
                 return *this;
             }
 
+            S3ClientConfig &S3ClientConfig::SetMaxActiveConnectionsOverride(uint32_t maxConnections) noexcept
+            {
+                m_impl->config.max_active_connections_override = maxConnections;
+                return *this;
+            }
+
             S3ClientConfig &S3ClientConfig::SetPartSize(uint64_t bytes) noexcept
             {
                 m_impl->config.part_size = bytes;
