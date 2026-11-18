@@ -388,6 +388,16 @@ namespace Aws
                 S3ClientConfig &SetThroughputTargetGbps(double gbps) noexcept;
 
                 /**
+                 * Cap the number of active connections the client will use. The cap
+                 * only applies when it is lower than the count derived from the
+                 * throughput target. 0 (the default) means no cap.
+                 *
+                 * @param maxConnections maximum number of active connections.
+                 * @return this object, to allow chaining.
+                 */
+                S3ClientConfig &SetMaxActiveConnectionsOverride(uint32_t maxConnections) noexcept;
+
+                /**
                  * Set the target part size for multipart transfers (downloads and
                  * uploads). For uploads, the CRT may increase the effective part size
                  * if the target would require more than 10,000 parts (the S3 service
