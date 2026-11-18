@@ -1,20 +1,163 @@
 name: Release
 
+# This workflow cuts a new release:
+#   1. Finds the previous vMAJOR.MINOR.PATCH tag and computes the next version
+#      (patch -> {major}.{minor}.{patch+1}, minor -> {major}.{minor+1}.0).
+#   2. Updates CRTVersion in Source/AwsCommonRuntimeKit/CommonRuntimeKit.swift.
+#   3. Commits and pushes the change to main using the deploy key.
+#   4. Tags that commit as v<version> and pushes the tag (tags are never moved).
+#   5. Creates the GitHub release with the given title and notes since the previous tag.
+
 on:
-  release:
-    types: [created]
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+      release_title:
+        description: 'The title of the release'
+        required: true
+        type: string
+      dry_run:
+        description: 'Dry run: compute the version and commit locally, but do not push, tag, or release'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  id-token: write   # Required for OIDC authentication with AWS
+  contents: write   # Required to checkout and create the release
+
+env:
+  AWS_REGION: us-east-1
+  GH_TOKEN: ${{github.token}}
+  VERSION_FILE: VERSION
+  DEPLOY_KEY_SECRET_ID: github-deploy-key/${{ github.repository }}
 
 jobs:
-  update-version:
-    runs-on: ubuntu-24.04 # latest
-    permissions:
-      contents: write # allow push
-
+  release:
+    runs-on: ubuntu-latest
     steps:
-    - name: Checkout Sources
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.CRT_CI_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
-    - name: Update Version
-      run: ./update-version.sh ${{ secrets.GITHUB_TOKEN }} ${{ secrets.TAG_PR_TOKEN }}
+      - name: Retrieve deploy key and setup SSH
+        run: |
+          # Retrieve the private key from Secrets Manager
+          DEPLOY_KEY=$(aws secretsmanager get-secret-value --secret-id "$DEPLOY_KEY_SECRET_ID" --query SecretString --output text | jq -r '.private_key')
+          # Set up SSH configuration
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          # Add GitHub to known hosts to avoid host verification prompt
+          ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+
+          # Configure SSH to use the key for GitHub
+          cat > ~/.ssh/config << EOF
+          Host github.com
+            HostName github.com
+            User git
+            IdentityFile ~/.ssh/deploy_key
+          EOF
+          chmod 600 ~/.ssh/config
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Configure git to use SSH with deploy key
+        run: |
+          git remote set-url origin git@github.com:${{ github.repository }}.git
+          git config --local user.email "aws-sdk-common-runtime@amazon.com"
+          git config --local user.name "aws-crt-bot"
+
+      - name: Compute next version from previous tag
+        id: version
+        env:
+          RELEASE_TYPE: ${{ inputs.release_type }}
+        run: |
+          # Highest vMAJOR.MINOR.PATCH tag; skips beta/rc tags.
+          PREV_TAG=$(git tag --list 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
+          if [ -z "$PREV_TAG" ]; then
+            echo " No previous vMAJOR.MINOR.PATCH tag found"
+            exit 1
+          fi
+
+          IFS=. read -r MAJOR MINOR PATCH <<< "${PREV_TAG#v}"
+          case "$RELEASE_TYPE" in
+            patch) PATCH=$((PATCH + 1)) ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+          esac
+          VERSION="${MAJOR}.${MINOR}.${PATCH}"
+
+          echo "Previous tag: $PREV_TAG -> new version: $VERSION"
+          echo "prev_tag=$PREV_TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Update CRTVersion
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          sed -i "s/public static let CRTVersion = \".*\"/public static let CRTVersion = \"$VERSION\"/" "$VERSION_FILE"
+
+          if grep -q "public static let CRTVersion = \"$VERSION\"" "$VERSION_FILE"; then
+            echo "CRTVersion updated to $VERSION"
+          else
+            echo "Failed to update CRTVersion"
+            exit 1
+          fi
+
+      - name: Commit CRTVersion
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git add "$VERSION_FILE"
+          git commit -m "chore: update CRTVersion to $VERSION"
+
+      - name: Push to main
+        if: ${{ !inputs.dry_run }}
+        run: git push origin main
+
+      - name: Tag the version commit
+        if: ${{ !inputs.dry_run }}
+        env:
+          TAG_NAME: ${{ steps.version.outputs.tag }}
+        run: |
+          git tag "$TAG_NAME"
+          git push origin "refs/tags/$TAG_NAME"
+
+      - name: Create GitHub release
+        if: ${{ !inputs.dry_run }}
+        env:
+          TAG_NAME: ${{ steps.version.outputs.tag }}
+          PREV_TAG: ${{ steps.version.outputs.prev_tag }}
+          RELEASE_TITLE: ${{ inputs.release_title }}
+        run: |
+          gh release create "$TAG_NAME" \
+            --repo "${{ github.repository }}" \
+            --title "$RELEASE_TITLE" \
+            --generate-notes \
+            --notes-start-tag "$PREV_TAG" \
+            --verify-tag
+
+      - name: Dry run summary
+        if: ${{ inputs.dry_run }}
+        env:
+          TAG_NAME: ${{ steps.version.outputs.tag }}
+          PREV_TAG: ${{ steps.version.outputs.prev_tag }}
+          RELEASE_TITLE: ${{ inputs.release_title }}
+        run: |
+          git show --stat HEAD
+          echo "Dry run: skipped push to main, tag $TAG_NAME, and release '$RELEASE_TITLE' (notes since $PREV_TAG)"
