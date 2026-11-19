@@ -78,7 +78,7 @@ namespace Aws
 
                 /**
                  * Set socket type
-                 * @param type: SocketType object.
+                 * @param type SocketType object.
                  */
                 void SetSocketType(SocketType type) { options.type = (enum aws_socket_type)type; }
 
@@ -89,7 +89,7 @@ namespace Aws
 
                 /**
                  * Set socket domain
-                 * @param domain: SocketDomain object.
+                 * @param domain SocketDomain object.
                  */
                 void SetSocketDomain(SocketDomain domain) { options.domain = (enum aws_socket_domain)domain; }
 
@@ -100,7 +100,7 @@ namespace Aws
 
                 /**
                  * Set connection timeout
-                 * @param timeout: connection timeout in milliseconds.
+                 * @param timeout connection timeout in milliseconds.
                  */
                 void SetConnectTimeoutMs(uint32_t timeout) { options.connect_timeout_ms = timeout; }
 
@@ -111,7 +111,7 @@ namespace Aws
 
                 /**
                  * Set keep alive interval seconds.
-                 * @param keepAliveInterval: Duration, in seconds, between keepalive probes. If 0, then a default value
+                 * @param keepAliveInterval Duration, in seconds, between keepalive probes. If 0, then a default value
                  * is used.
                  */
                 void SetKeepAliveIntervalSec(uint16_t keepAliveInterval)
@@ -126,7 +126,7 @@ namespace Aws
 
                 /**
                  * Set keep alive time out seconds.
-                 * @param keepAliveTimeout: interval, in seconds, that a connection must be idle for before keep alive
+                 * @param keepAliveTimeout interval, in seconds, that a connection must be idle for before keep alive
                  * probes begin to get sent out
                  */
                 void SetKeepAliveTimeoutSec(uint16_t keepAliveTimeout)
@@ -142,7 +142,7 @@ namespace Aws
 
                 /**
                  * Set keep alive max failed probes.
-                 * @param maxProbes: The number of keepalive probes allowed to fail before a connection is considered
+                 * @param maxProbes The number of keepalive probes allowed to fail before a connection is considered
                  * lost.
                  */
                 void SetKeepAliveMaxFailedProbes(uint16_t maxProbes)
@@ -157,7 +157,7 @@ namespace Aws
 
                 /**
                  * Set keep alive option.
-                 * @param keepAlive: True, periodically transmit keepalive messages for detecting a disconnected peer.
+                 * @param keepAlive True, periodically transmit keepalive messages for detecting a disconnected peer.
                  */
                 void SetKeepAlive(bool keepAlive) { options.keepalive = keepAlive; }
 
@@ -169,7 +169,7 @@ namespace Aws
                 /**
                  * Set the TCP_NODELAY option (Nagle's algorithm). TCP only, ignored for Dgram sockets and the
                  * Local socket domain. Defaults to On.
-                 * @param tcpNodelay: Default leaves the OS default in place, On disables Nagle's algorithm so
+                 * @param tcpNodelay Default leaves the OS default in place, On disables Nagle's algorithm so
                  * small writes are sent immediately, Off explicitly (re)enables it.
                  */
                 void SetTcpNodelay(SocketTcpNodelay tcpNodelay)

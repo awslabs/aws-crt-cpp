@@ -183,7 +183,7 @@ namespace Aws
             inline bool WasParseSuccessful() const { return m_value != nullptr; }
 
             /**
-             * @deprecated
+             * @deprecated Use WasParseSuccessful() instead; this only returns a fixed error or success string.
              */
             const String &GetErrorMessage() const;
 

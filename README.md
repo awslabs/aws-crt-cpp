@@ -10,13 +10,16 @@ https://awslabs.github.io/aws-crt-cpp/
 
 * aws-c-common: Cross-platform primitives and data structures.
 * aws-c-io: Cross-platform event-loops, non-blocking I/O, and TLS implementations.
-* aws-c-mqtt: MQTT client.
+* aws-c-cal: Cross-platform cryptographic primitives.
+* aws-c-compression: Compression primitives (e.g. HPACK for HTTP/2).
+* aws-c-mqtt: MQTT 3.1.1 and MQTT 5 clients.
 * aws-c-auth: Auth signers such as Aws-auth sigv4
-* aws-c-http: HTTP 1.1 client, and websockets (H2 coming soon)
+* aws-c-http: HTTP/1.1 and HTTP/2 client, and websockets
+* aws-c-s3: High-performance Amazon S3 client.
+* aws-c-sdkutils: Utilities for AWS SDKs, such as endpoint resolution.
 * aws-checksums: Cross-Platform HW accelerated CRC32c and CRC32 with fallback to efficient SW implementations.
 * aws-c-event-stream: C99 implementation of the vnd.amazon.event-stream content-type.
-
-More protocols and utilities are coming soon, so stay tuned.
+* s2n-tls and aws-lc: TLS and libcrypto on Linux (and optionally macOS).
 
 ## Building
 
@@ -77,22 +80,16 @@ To do anything with IO, you'll need to create a few objects that will be used by
 For example:
 
 ````
-    Aws::Crt::LoadErrorStrings();
-````
-
-Will load error strings for debugging purposes. Since the C libraries use error codes, this will allow you to print the corresponding
-error string for each error code.
-
-````
     Aws::Crt::ApiHandle apiHandle;
 ````
-This performs one-time static initialization of the library. You'll need it to do anything, so don't forget to create one.
+This performs one-time static initialization of the library, including loading error strings. You'll need it to do anything,
+so don't forget to create one. Use `Aws::Crt::ErrorDebugString(Aws::Crt::LastError())` to get a printable string for an error code.
 
 ````
     Aws::Crt::Io::EventLoopGroup eventLoopGroup(<number of threads you want>);
 ````
 To use any of our APIs that perform IO you'll need at least one event-loop. An event-loop group is a collection of event-loops that
-protocol implementations will load balance across. If you won't have very many connections (say, more than 100 or so), then you
+protocol implementations will load balance across. If you won't have very many connections (say, fewer than 100 or so), then you
 most likely only want 1 thread. In this case, you want to pass a single instance of this to every client or server implementation of a protocol
 you use in your application. In some advanced use cases, you may want to reserve a thread for different types of IO tasks. In that case, you can have an
 instance of this class for each reservation.
@@ -109,7 +106,7 @@ instance of this class for each reservation.
     }
 
     uint32_t port = 8883;
-    if (Io::TlsContextOptions::IsAlpnSupported())
+    if (Aws::Crt::Io::TlsContextOptions::IsAlpnSupported())
     {
         /*
         * Use ALPN to negotiate the mqtt protocol on a normal
@@ -119,7 +116,7 @@ instance of this class for each reservation.
         port = 443;
     }
 
-    Aws::Crt::Io::TlsContext tlsCtx(tlsCtxOptions, Io::TlsMode::CLIENT);
+    Aws::Crt::Io::TlsContext tlsCtx(tlsCtxOptions, Aws::Crt::Io::TlsMode::CLIENT);
 ````
 
 If you plan on using TLS, you will need a TlsContext. These are NOT CHEAP, so use as few as possible to perform your task.
@@ -127,7 +124,8 @@ If you're in client mode and not doing anything fancy (e.g. mutual TLS), then yo
 instance for the entire application.
 
 ````
-Aws::Crt::Io::ClientBootstrap bootstrap(eventLoopGroup);
+    Aws::Crt::Io::DefaultHostResolver hostResolver(eventLoopGroup, 8, 30);
+    Aws::Crt::Io::ClientBootstrap bootstrap(eventLoopGroup, hostResolver);
 ````
 
 Lastly, you will need a client or server bootstrap to use a client or server protocol implementation. Since everything is
@@ -160,7 +158,7 @@ the environment variable selects which one is used.
 
 ### Keychain Behavior
 
-Please note that on Mac, once a private key is used with a certificate, that certificate-key pair is imported into the Mac Keychain.  All subsequent uses of that certificate will use the stored private key and ignore anything passed in programmatically.  Beginning in v0.8.10, when a stored private key from the Keychain is used, the following will be logged at the "info" log level:
+Please note that on Mac, once a private key is used with a certificate, that certificate-key pair is imported into the Mac Keychain.  All subsequent uses of that certificate will use the stored private key and ignore anything passed in programmatically.  When a stored private key from the Keychain is used, the following will be logged at the "info" log level:
 
 ```
 static: certificate has an existing certificate-key pair that was previously imported into the Keychain.  Using key from Keychain instead of the one provided.

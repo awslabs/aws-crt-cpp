@@ -273,7 +273,7 @@ namespace Aws
             Mqtt5ClientBuilder &WithPort(uint32_t port) noexcept;
 
             /**
-             * Set booststrap for mqtt5 client
+             * Set bootstrap for mqtt5 client
              *
              * @param bootStrap bootstrap used for mqtt5 client. The default ClientBootstrap see
              * Aws::Crt::ApiHandle::GetOrCreateStaticDefaultClientBootstrap.
@@ -513,7 +513,7 @@ namespace Aws
             Mqtt5ClientBuilder &operator=(Mqtt5ClientBuilder &&) = delete;
 
             /**
-             * Setup callback trigged when client successfully establishes an MQTT connection
+             * Setup callback triggered when client successfully establishes an MQTT connection
              *
              * @param callback
              *
@@ -522,7 +522,7 @@ namespace Aws
             Mqtt5ClientBuilder &WithClientConnectionSuccessCallback(OnConnectionSuccessHandler callback) noexcept;
 
             /**
-             * Setup callback trigged when client fails to establish an MQTT connection
+             * Setup callback triggered when client fails to establish an MQTT connection
              *
              * @param callback
              *
@@ -531,7 +531,7 @@ namespace Aws
             Mqtt5ClientBuilder &WithClientConnectionFailureCallback(OnConnectionFailureHandler callback) noexcept;
 
             /**
-             * Setup callback handler trigged when client's current MQTT connection is closed
+             * Setup callback handler triggered when client's current MQTT connection is closed
              *
              * @param callback
              *
@@ -540,7 +540,7 @@ namespace Aws
             Mqtt5ClientBuilder &WithClientDisconnectionCallback(OnDisconnectionHandler callback) noexcept;
 
             /**
-             * Setup callback handler trigged when client reaches the "Stopped" state
+             * Setup callback handler triggered when client reaches the "Stopped" state
              *
              * @param callback
              *
@@ -549,7 +549,7 @@ namespace Aws
             Mqtt5ClientBuilder &WithClientStoppedCallback(OnStoppedHandler callback) noexcept;
 
             /**
-             * Setup callback handler trigged when client begins an attempt to connect to the remote endpoint.
+             * Setup callback handler triggered when client begins an attempt to connect to the remote endpoint.
              *
              * @param callback
              *
@@ -558,7 +558,7 @@ namespace Aws
             Mqtt5ClientBuilder &WithClientAttemptingConnectCallback(OnAttemptingConnectHandler callback) noexcept;
 
             /**
-             * Setup callback handler trigged when an MQTT PUBLISH packet is received by the client
+             * Setup callback handler triggered when an MQTT PUBLISH packet is received by the client
              *
              * @param callback
              *
@@ -666,7 +666,7 @@ namespace Aws
             std::shared_ptr<Aws::Crt::Io::L4ProxyConfig> m_l4ProxyOptions;
 
             /**
-             * Websocket related options. The clinet with use websocket for connection when set.
+             * Websocket related options. The client will use websocket for connection when set.
              */
             Crt::Optional<WebsocketConfig> m_websocketConfig;
 
@@ -686,7 +686,7 @@ namespace Aws
             /* Error */
             int m_lastError;
 
-            /** Enable AWS IoT Metrics Collection. This is always set to true for now. */
+            /** Enable AWS IoT Metrics Collection. Always set to true by the constructor. */
             bool m_enableMetricsCollection;
             Crt::String m_sdkName;
 #    ifdef AWS_IOT_SDK_VERSION

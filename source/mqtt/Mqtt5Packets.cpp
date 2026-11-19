@@ -198,7 +198,6 @@ namespace Aws
             ConnectPacket::ConnectPacket(Allocator *allocator) noexcept
                 : m_allocator(allocator), m_keepAliveIntervalSec(1200), m_userPropertiesStorage(nullptr)
             {
-                // m_clientId.clear();
                 AWS_ZERO_STRUCT(m_usernameCursor);
                 AWS_ZERO_STRUCT(m_passowrdStorage);
                 AWS_ZERO_STRUCT(m_willStorage);

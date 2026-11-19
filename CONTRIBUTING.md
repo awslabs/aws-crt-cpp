@@ -37,8 +37,8 @@ To send us a pull request, please:
 6. Wait for a repository collaborator to look at your pull request, run the automated tests, and review. If additional changes or discussion is needed, a collaborator will get back to you, so please stay involved in the conversation.
     * Note: pull requests from forks will not run the automated tests without collaborator involvement for security reasons. If you make a pull request and see that the tests are pending, this is normal and expected.
 
-GitHub provides additional document on [forking a repository](https://help.github.com/articles/fork-a-repo/) and
-[creating a pull request](https://help.github.com/articles/creating-a-pull-request/).
+GitHub provides additional document on [forking a repository](https://docs.github.com/en/pull-requests/how-tos/work-with-forks/fork-a-repo) and
+[creating a pull request](https://docs.github.com/en/pull-requests/how-tos/create-pull-requests/creating-a-pull-request).
 
 
 ## Finding contributions to work on

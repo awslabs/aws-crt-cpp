@@ -16,8 +16,6 @@
 #include <aws/mqtt/mqtt.h>
 #include <aws/s3/s3.h>
 
-#include <thread>
-
 namespace Aws
 {
     namespace Crt

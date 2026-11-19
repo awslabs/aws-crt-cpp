@@ -7,7 +7,6 @@
 #include <aws/common/task_scheduler.h>
 
 #include <atomic>
-#include <iostream>
 
 namespace Aws
 {
