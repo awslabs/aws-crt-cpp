@@ -314,6 +314,37 @@ static int s_TestS3BufferTooSmall(Allocator *allocator, void *)
 }
 AWS_TEST_CASE(S3BufferTooSmall, s_TestS3BufferTooSmall)
 
+/* A client that never reaches S3 (static credentials, no TLS), for tests that need no network. */
+static std::shared_ptr<S3::S3Client> s_NewOfflineClient(Allocator *allocator, std::promise<void> &clientShutdown)
+{
+    Auth::CredentialsProviderStaticConfig credentialsConfig;
+    credentialsConfig.AccessKeyId = ByteCursorFromCString("AKIDEXAMPLE");
+    credentialsConfig.SecretAccessKey = ByteCursorFromCString("wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY");
+    auto provider = Auth::CredentialsProvider::CreateCredentialsProviderStatic(credentialsConfig, allocator);
+    if (!provider)
+    {
+        return nullptr;
+    }
+
+    S3::S3ClientConfig config(provider);
+    config.SetRegion("us-east-1")
+        .SetTlsMode(S3::S3TlsMode::Disabled)
+        .SetClientShutdownCallback([&clientShutdown]() { clientShutdown.set_value(); });
+    return MakeShared<S3::S3Client>(allocator, config);
+}
+
+static std::shared_ptr<Http::HttpRequest> s_NewOfflineGet(Allocator *allocator)
+{
+    auto request = MakeShared<Http::HttpRequest>(allocator, allocator);
+    request->SetMethod(ByteCursorFromCString("GET"));
+    request->SetPath(ByteCursorFromCString("/key"));
+    Http::HttpHeader host = {};
+    host.name = ByteCursorFromCString("Host");
+    host.value = ByteCursorFromCString("localhost");
+    request->AddHeader(host);
+    return request;
+}
+
 /* No network: a buffer download that's cancelled right away. The options are destroyed right after MakeMetaRequest,
  * the FinishCallback reports an error, len stays 0, nothing is written to the buffer, and the request and the client
  * both shut down. */
@@ -321,28 +352,11 @@ static int s_TestS3BufferDownloadCancelled(Allocator *allocator, void *)
 {
     ApiHandle apiHandle(allocator);
     {
-        Auth::CredentialsProviderStaticConfig credentialsConfig;
-        credentialsConfig.AccessKeyId = ByteCursorFromCString("AKIDEXAMPLE");
-        credentialsConfig.SecretAccessKey = ByteCursorFromCString("wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY");
-        auto provider = Auth::CredentialsProvider::CreateCredentialsProviderStatic(credentialsConfig, allocator);
-        ASSERT_NOT_NULL(provider.get());
-
         std::promise<void> clientShutdown;
-        S3::S3ClientConfig config(provider);
-        config.SetRegion("us-east-1")
-            .SetTlsMode(S3::S3TlsMode::Disabled)
-            .SetClientShutdownCallback([&clientShutdown]() { clientShutdown.set_value(); });
-        auto client = MakeShared<S3::S3Client>(allocator, config);
+        auto client = s_NewOfflineClient(allocator, clientShutdown);
         ASSERT_TRUE(client && *client);
 
-        auto request = MakeShared<Http::HttpRequest>(allocator, allocator);
-        request->SetMethod(ByteCursorFromCString("GET"));
-        request->SetPath(ByteCursorFromCString("/key"));
-        Http::HttpHeader host = {};
-        host.name = ByteCursorFromCString("Host");
-        host.value = ByteCursorFromCString("localhost");
-        request->AddHeader(host);
-
+        auto request = s_NewOfflineGet(allocator);
         GuardedBuffer destination(1024 * 1024);
         auto options = S3::S3GetObjectMetaRequestOptions::Create(request, destination.buf);
         ASSERT_NOT_NULL(options.get());
@@ -372,3 +386,32 @@ static int s_TestS3BufferDownloadCancelled(Allocator *allocator, void *)
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(S3BufferDownloadCancelled, s_TestS3BufferDownloadCancelled)
+
+/* No network: a ByteBuf that already holds data (len != 0) is rejected by MakeMetaRequest with
+ * AWS_ERROR_INVALID_ARGUMENT, and nothing is written to the buffer. */
+static int s_TestS3BufferNonEmptyRejected(Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    {
+        std::promise<void> clientShutdown;
+        auto client = s_NewOfflineClient(allocator, clientShutdown);
+        ASSERT_TRUE(client && *client);
+
+        GuardedBuffer destination(1024 * 1024);
+        destination.buf.len = 1;
+        auto options = S3::S3GetObjectMetaRequestOptions::Create(s_NewOfflineGet(allocator), destination.buf);
+        ASSERT_NOT_NULL(options.get());
+
+        auto metaRequest = client->MakeMetaRequest(*options);
+        ASSERT_NULL(metaRequest.get());
+        ASSERT_INT_EQUALS(AWS_ERROR_INVALID_ARGUMENT, client->LastError());
+        ASSERT_UINT_EQUALS(1, destination.buf.len);
+        ASSERT_TRUE(destination.HoldsDataUpTo(0));
+
+        options.reset();
+        client.reset();
+        ASSERT_TRUE(clientShutdown.get_future().wait_for(std::chrono::seconds(30)) == std::future_status::ready);
+    }
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(S3BufferNonEmptyRejected, s_TestS3BufferNonEmptyRejected)

@@ -1020,6 +1020,9 @@ namespace Aws
                     const Crt::String &recvFilepath) noexcept;
 
                 /**
+                 * Lifetime: the ByteBuf itself, not just the memory it views, must stay
+                 * alive and in place until the FinishCallback fires.
+                 *
                  * Build options that download the object (or the requested Range)
                  * straight into caller-owned memory, with no copy, the way aws-c-s3's
                  * recv_buffer works. Each part is written by its network thread at
@@ -1046,8 +1049,7 @@ namespace Aws
                  *   AWS_ERROR_UNSUPPORTED_OPERATION.
                  *
                  * The caller's responsibility (not checked):
-                 * - The ByteBuf itself, not just the memory it points to, must stay
-                 *   alive and in place until the FinishCallback fires: aws-c-s3
+                 * - The ByteBuf must outlive the request (see Lifetime above): aws-c-s3
                  *   keeps a pointer to it and sets its len at finish. The options
                  *   may be destroyed after MakeMetaRequest.
                  * - Don't give the same or overlapping memory to two requests in
@@ -1110,6 +1112,9 @@ namespace Aws
                     const Crt::String &sendFilepath) noexcept;
 
                 /**
+                 * Lifetime: the memory body views must stay valid and unchanged until
+                 * the FinishCallback fires.
+                 *
                  * Build options for a PUT whose body is sent straight from
                  * caller-owned memory, with no copy. Above the multipart threshold,
                  * parts are sent from the memory in parallel, with no 5 GiB cap. The
@@ -1119,16 +1124,13 @@ namespace Aws
                  * the HTTP request - aws-c-s3 rejects requests with more than one
                  * body source.
                  *
-                 * The caller's responsibility (not checked): the memory must stay
-                 * valid and unchanged until the FinishCallback fires.
-                 *
                  * @param request the prepared HTTP request (no body attached).
                  * @param body caller-owned memory to upload.
                  * @return a unique_ptr to the base type, or nullptr on failure.
                  */
                 static ScopedResource<S3MetaRequestOptions> Create(
                     const std::shared_ptr<Http::HttpRequest> &request,
-                    ByteCursor body) noexcept;
+                    const ByteCursor &body) noexcept;
 
                 /**
                  * Build options for a PUT whose body is supplied incrementally via

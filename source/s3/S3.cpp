@@ -667,7 +667,7 @@ namespace Aws
 
             ScopedResource<S3MetaRequestOptions> S3PutObjectMetaRequestOptions::Create(
                 const std::shared_ptr<Http::HttpRequest> &request,
-                ByteCursor body) noexcept
+                const ByteCursor &body) noexcept
             {
                 return s_makeConfiguredOptions<S3PutObjectMetaRequestOptions>(
                     request,

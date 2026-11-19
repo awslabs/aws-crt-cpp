@@ -164,6 +164,7 @@ endif()
 # S3 downloads into, and uploads from, caller-owned memory
 if(NOT BYO_CRYPTO)
     add_test_case(S3BufferDownloadCancelled)
+    add_test_case(S3BufferNonEmptyRejected)
     add_net_test_case(S3BufferRoundTrip)
     add_net_test_case(S3BufferRange)
     add_net_test_case(S3BufferTooSmall)
