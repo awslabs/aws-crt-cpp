@@ -702,7 +702,6 @@ namespace Aws
 
             struct S3MetaRequestCallbackData
             {
-                std::shared_ptr<S3MetaRequest> wrapper;
                 S3MetaRequestOptions::BodyCallback bodyCb;
                 S3MetaRequestOptions::BodyCallbackEx bodyCbEx;
                 S3MetaRequestOptions::HeadersCallback headersCb;
@@ -1074,7 +1073,6 @@ namespace Aws
                 callbackData->shutdownCb = options.GetShutdownCallback();
 
                 auto wrapper = Aws::Crt::MakeShared<S3MetaRequest>(allocator);
-                callbackData->wrapper = wrapper;
 
                 struct aws_s3_meta_request_options *rawOptions = options.GetUnderlyingHandle();
                 rawOptions->user_data = callbackData;
