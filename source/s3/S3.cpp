@@ -671,8 +671,19 @@ namespace Aws
             {
                 return s_makeConfiguredOptions<S3PutObjectMetaRequestOptions>(
                     request,
-                    // aws-c-s3 copies the cursor, so only the memory it views has to outlive the request.
-                    [&](S3PutObjectMetaRequestOptions *self) { self->m_impl->options.request_body = body; });
+                    [&](S3PutObjectMetaRequestOptions *self)
+                    {
+                        // aws-c-s3 copies the cursor, so only the memory it views has to outlive the request.
+                        self->m_impl->options.request_body = body;
+                        // aws-c-s3 treats request_body as unset when ptr is NULL, so an empty body with no memory
+                        // behind it (e.g. an empty vector's data()) would fail. Point it at a static byte instead,
+                        // so it uploads an empty object the way an empty file does.
+                        if (body.len == 0 && body.ptr == nullptr)
+                        {
+                            static uint8_t s_emptyBody = 0;
+                            self->m_impl->options.request_body = ByteCursorFromArray(&s_emptyBody, 0);
+                        }
+                    });
             }
 
             ScopedResource<S3MetaRequestOptions> S3PutObjectMetaRequestOptions::CreateWithAsyncWrites(

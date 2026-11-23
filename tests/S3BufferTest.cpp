@@ -5,10 +5,12 @@
 
 /* Tests for downloading into, and uploading from, caller-owned memory:
  * S3GetObjectMetaRequestOptions::Create(request, ByteBuf &) and
- * S3PutObjectMetaRequestOptions::Create(request, ByteCursor).
+ * S3PutObjectMetaRequestOptions::Create(request, const ByteCursor &).
  *
- * The network tests need a bucket the default credentials can write to. They are skipped unless
- * CRT_S3_TEST_BUCKET_NAME is set; CRT_S3_TEST_REGION defaults to us-west-2. Each one deletes the object it uploads. */
+ * The network tests need a bucket the default credentials can write to: CRT_S3_TEST_BUCKET_NAME if set, otherwise
+ * aws-c-s3-test-bucket when running in CI (AWS_TEST_IS_CI is set), like aws-c-s3's tests. Without either they are
+ * skipped. CRT_S3_TEST_REGION defaults to us-west-2. Objects go under upload/, which that bucket expires after a day,
+ * and each test deletes the object it uploads. */
 
 #include <aws/crt/Api.h>
 #include <aws/crt/UUID.h>
@@ -28,6 +30,8 @@ using namespace Aws::Crt;
 
 AWS_STATIC_STRING_FROM_LITERAL(s_bucketEnvName, "CRT_S3_TEST_BUCKET_NAME");
 AWS_STATIC_STRING_FROM_LITERAL(s_regionEnvName, "CRT_S3_TEST_REGION");
+AWS_STATIC_STRING_FROM_LITERAL(s_isCiEnvName, "AWS_TEST_IS_CI");
+static const char *s_ciBucket = "aws-c-s3-test-bucket"; /* aws-c-s3's CI bucket, in us-west-2 */
 
 static const uint64_t s_partSize = 8 * 1024 * 1024;
 static const size_t s_objectSize = 20 * 1024 * 1024; /* more than two parts, so the upload is multipart */
@@ -50,6 +54,21 @@ static Optional<String> s_GetEnv(Allocator *allocator, const aws_string *name)
 /* A client plus the bucket, region and a unique key to use. */
 struct S3TestEnv
 {
+    S3TestEnv() = default;
+    S3TestEnv(const S3TestEnv &) = delete;
+    S3TestEnv &operator=(const S3TestEnv &) = delete;
+
+    /* If an ASSERT returns before s_CleanUpEnv, the client must finish shutting down before clientShutdown is
+     * destroyed, since its shutdown callback sets it. */
+    ~S3TestEnv()
+    {
+        if (client)
+        {
+            client.reset();
+            clientShutdown.get_future().wait();
+        }
+    }
+
     String bucket;
     String region;
     String key;
@@ -62,15 +81,19 @@ struct S3TestEnv
 static int s_InitEnv(Allocator *allocator, S3TestEnv &env)
 {
     Optional<String> bucket = s_GetEnv(allocator, s_bucketEnvName);
+    if (!bucket.has_value() && s_GetEnv(allocator, s_isCiEnvName).has_value())
+    {
+        bucket = String(s_ciBucket);
+    }
     if (!bucket.has_value())
     {
-        printf("CRT_S3_TEST_BUCKET_NAME is not set, skipping\n");
+        printf("CRT_S3_TEST_BUCKET_NAME is not set and not running in CI, skipping\n");
         return AWS_OP_SKIP;
     }
     Optional<String> region = s_GetEnv(allocator, s_regionEnvName);
     env.bucket = bucket.value();
     env.region = region.has_value() ? region.value() : String("us-west-2");
-    env.key = String("crt-cpp-zero-copy-test/") + String(UUID());
+    env.key = String("upload/crt-cpp-zero-copy-test/") + String(UUID());
     env.host = env.bucket + ".s3." + env.region + ".amazonaws.com";
 
     Auth::CredentialsProviderChainDefaultConfig credentialsConfig;
@@ -286,6 +309,40 @@ static int s_TestS3BufferRange(Allocator *allocator, void *)
     return AWS_OP_SUCCESS;
 }
 AWS_TEST_CASE(S3BufferRange, s_TestS3BufferRange)
+
+/* An empty body with a null pointer (as from an empty vector's data()) uploads an empty object, and downloading it
+ * into a buffer succeeds with len 0 and nothing written. */
+static int s_TestS3BufferEmptyUpload(Allocator *allocator, void *)
+{
+    ApiHandle apiHandle(allocator);
+    {
+        S3TestEnv env;
+        int init = s_InitEnv(allocator, env);
+        if (init != AWS_OP_SUCCESS)
+        {
+            return init;
+        }
+
+        ByteCursor empty = {};
+        auto putRequest = s_NewRequest(allocator, env, "PUT", nullptr);
+        S3::S3MetaRequestResult result = {};
+        ASSERT_SUCCESS(s_Run(env, S3::S3PutObjectMetaRequestOptions::Create(putRequest, empty), false, result));
+        ASSERT_INT_EQUALS(AWS_ERROR_SUCCESS, result.errorCode);
+        env.uploaded = true;
+
+        GuardedBuffer destination(1024);
+        auto getRequest = s_NewRequest(allocator, env, "GET", nullptr);
+        ASSERT_SUCCESS(
+            s_Run(env, S3::S3GetObjectMetaRequestOptions::Create(getRequest, destination.buf), false, result));
+        ASSERT_INT_EQUALS(AWS_ERROR_SUCCESS, result.errorCode);
+        ASSERT_UINT_EQUALS(0, destination.buf.len);
+        ASSERT_TRUE(destination.HoldsDataUpTo(0));
+
+        ASSERT_SUCCESS(s_CleanUpEnv(allocator, env));
+    }
+    return AWS_OP_SUCCESS;
+}
+AWS_TEST_CASE(S3BufferEmptyUpload, s_TestS3BufferEmptyUpload)
 
 /* A buffer too small for the object fails with AWS_ERROR_SHORT_BUFFER and leaves len at 0. */
 static int s_TestS3BufferTooSmall(Allocator *allocator, void *)

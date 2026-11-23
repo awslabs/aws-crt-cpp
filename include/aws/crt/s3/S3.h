@@ -1031,9 +1031,12 @@ namespace Aws
                  *
                  *     ByteBuf destination = ByteBufFromEmptyArray(memory, capacity);
                  *     auto options = S3GetObjectMetaRequestOptions::Create(request, destination);
+                 *     options->SetFinishCallback(onFinished);
                  *
-                 * On success, destination.len is set to the number of bytes
-                 * written, so the data is [destination.buffer, destination.buffer +
+                 * The FinishCallback is the only signal that the download is done;
+                 * set it before MakeMetaRequest. When it fires with
+                 * AWS_ERROR_SUCCESS, destination.len is the number of bytes written,
+                 * so the data is [destination.buffer, destination.buffer +
                  * destination.len) and the rest of the memory is untouched. On
                  * failure, len stays 0 and the memory's contents are undefined.
                  *
@@ -1075,10 +1078,11 @@ namespace Aws
 
             /**
              * Options for a PutObject meta request. The body source is pinned
-             * at construction: either the HTTP request already carries a body
-             * stream (via HttpRequest::SetBody), or a source file path is
-             * supplied. aws-c-s3 rejects a PUT with no source. Which source
-             * is used is determined by whether a source file path is passed.
+             * at construction: the HTTP request already carries a body stream
+             * (via HttpRequest::SetBody), a source file path is supplied, or
+             * caller-owned memory (ByteCursor) is supplied. aws-c-s3 rejects a
+             * PUT with no source. Which source is used is determined by the
+             * Create overload: none, a source file path, or a ByteCursor.
              */
             class AWS_CRT_CPP_API S3PutObjectMetaRequestOptions final : public S3MetaRequestOptions
             {
@@ -1122,7 +1126,8 @@ namespace Aws
                  * body.len, and rejects a header that doesn't match it with
                  * AWS_ERROR_S3_INCORRECT_CONTENT_LENGTH. Do NOT also attach a body to
                  * the HTTP request - aws-c-s3 rejects requests with more than one
-                 * body source.
+                 * body source. An empty body (len 0, even with a null pointer)
+                 * uploads an empty object.
                  *
                  * @param request the prepared HTTP request (no body attached).
                  * @param body caller-owned memory to upload.
