@@ -9,8 +9,9 @@
  *
  * The network tests need a bucket the default credentials can write to: CRT_S3_TEST_BUCKET_NAME if set, otherwise
  * aws-c-s3-test-bucket when running in CI (AWS_TEST_IS_CI is set), like aws-c-s3's tests. Without either they are
- * skipped. CRT_S3_TEST_REGION defaults to us-west-2. Objects go under upload/, which that bucket expires after a day,
- * and each test deletes the object it uploads. */
+ * skipped. CRT_S3_TEST_REGION defaults to us-west-2. Objects go under upload/. In a bucket from CRT_S3_TEST_BUCKET_NAME
+ * each test deletes the object it uploads; aws-c-s3-test-bucket expires upload/ objects after a day, and CI's role can't
+ * delete objects there, so on it they're left for the expiry, as aws-c-s3's tests do. */
 
 #include <aws/crt/Api.h>
 #include <aws/crt/UUID.h>
@@ -73,6 +74,7 @@ struct S3TestEnv
     String region;
     String key;
     String host;
+    bool deleteUploads = true; /* false on the CI bucket, which expires upload/ objects instead */
     bool uploaded = false;
     std::promise<void> clientShutdown;
     std::shared_ptr<S3::S3Client> client;
@@ -84,6 +86,7 @@ static int s_InitEnv(Allocator *allocator, S3TestEnv &env)
     if (!bucket.has_value() && s_GetEnv(allocator, s_isCiEnvName).has_value())
     {
         bucket = String(s_ciBucket);
+        env.deleteUploads = false;
     }
     if (!bucket.has_value())
     {
@@ -164,14 +167,14 @@ static int s_Run(
     return AWS_OP_SUCCESS;
 }
 
-/* Deletes the uploaded object, if any, then shuts the client down. */
+/* Deletes the uploaded object, if any (unless it's left for the bucket's expiry), then shuts the client down. */
 static int s_CleanUpEnv(Allocator *allocator, S3TestEnv &env)
 {
     if (!env.client)
     {
         return AWS_OP_SUCCESS;
     }
-    if (env.uploaded)
+    if (env.uploaded && env.deleteUploads)
     {
         auto request = s_NewRequest(allocator, env, "DELETE", nullptr);
         S3::S3MetaRequestResult result = {};
