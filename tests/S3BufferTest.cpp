@@ -9,9 +9,9 @@
  *
  * The network tests need a bucket the default credentials can write to: CRT_S3_TEST_BUCKET_NAME if set, otherwise
  * aws-c-s3-test-bucket when running in CI (AWS_TEST_IS_CI is set), like aws-c-s3's tests. Without either they are
- * skipped. CRT_S3_TEST_REGION defaults to us-west-2. Objects go under upload/. In a bucket from CRT_S3_TEST_BUCKET_NAME
- * each test deletes the object it uploads; aws-c-s3-test-bucket expires upload/ objects after a day, and CI's role can't
- * delete objects there, so on it they're left for the expiry, as aws-c-s3's tests do. */
+ * skipped. CRT_S3_TEST_REGION defaults to us-west-2. Objects go under upload/. In a bucket from
+ * CRT_S3_TEST_BUCKET_NAME each test deletes the object it uploads; aws-c-s3-test-bucket expires upload/ objects after a
+ * day, and CI's role can't delete objects there, so on it they're left for the expiry, as aws-c-s3's tests do. */
 
 #include <aws/crt/Api.h>
 #include <aws/crt/UUID.h>
@@ -85,7 +85,8 @@ static int s_InitEnv(Allocator *allocator, S3TestEnv &env)
     Optional<String> bucket = s_GetEnv(allocator, s_bucketEnvName);
     if (!bucket.has_value() && s_GetEnv(allocator, s_isCiEnvName).has_value())
     {
-        bucket = String(s_ciBucket);
+        /* Constructed in place: GCC 11 on 32-bit x86 flags moving a temporary String in (-Wstringop-overread). */
+        bucket.emplace(s_ciBucket);
         env.deleteUploads = false;
     }
     if (!bucket.has_value())
