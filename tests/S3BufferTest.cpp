@@ -97,7 +97,8 @@ static int s_InitEnv(Allocator *allocator, S3TestEnv &env)
     Optional<String> region = s_GetEnv(allocator, s_regionEnvName);
     env.bucket = bucket.value();
     env.region = region.has_value() ? region.value() : String("us-west-2");
-    env.key = String("upload/crt-cpp-zero-copy-test/") + String(UUID());
+    /* Qualified: on Windows, the SDK's global UUID type makes a bare UUID ambiguous. */
+    env.key = String("upload/crt-cpp-zero-copy-test/") + String(Aws::Crt::UUID());
     env.host = env.bucket + ".s3." + env.region + ".amazonaws.com";
 
     Auth::CredentialsProviderChainDefaultConfig credentialsConfig;
