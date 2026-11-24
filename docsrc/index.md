@@ -1,4 +1,4 @@
-## Welcome to awscrt's documentation!
+## Welcome to aws-crt-cpp's documentation!
 
 C++ bindings for the AWS Common Runtime.
 

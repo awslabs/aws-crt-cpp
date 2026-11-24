@@ -51,7 +51,7 @@ namespace Aws
              * currently synchronous but invoked potentially from within event loop threads.  This is not optimal
              * but transitioning to fully async hasn't been a need yet.
              *
-             * The adapative strategy will skip an authentication method whose callbacks are not supplied, so you
+             * The adaptive strategy will skip an authentication method whose callbacks are not supplied, so you
              * can use this for purely kerberos or ntlm as well.
              */
             struct AWS_CRT_CPP_API HttpProxyStrategyAdaptiveConfig

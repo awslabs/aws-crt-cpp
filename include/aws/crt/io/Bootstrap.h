@@ -35,8 +35,8 @@ namespace Aws
             {
               public:
                 /**
-                 * @param elGroup: EventLoopGroup to use.
-                 * @param resolver: DNS host resolver to use.
+                 * @param elGroup EventLoopGroup to use.
+                 * @param resolver DNS host resolver to use.
                  * @param allocator memory allocator to use
                  */
                 ClientBootstrap(

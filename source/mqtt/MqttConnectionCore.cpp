@@ -425,7 +425,7 @@ namespace Aws
                             aws_array_list_get_at(topicSubacks, &subscription, i);
                             topics.emplace_back(
                                 reinterpret_cast<char *>(subscription->topic.ptr), subscription->topic.len);
-                            // TODO Is only the last one needed?
+                            // Note: only the QoS of the last subscription is reported to the callback.
                             qos = subscription->qos;
                         }
 

@@ -7,9 +7,6 @@
 
 #include <aws/common/json.h>
 
-#include <algorithm>
-#include <iterator>
-
 namespace Aws
 {
     namespace Crt
