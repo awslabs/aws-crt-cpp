@@ -1020,8 +1020,9 @@ namespace Aws
                     const Crt::String &recvFilepath) noexcept;
 
                 /**
-                 * Lifetime: the ByteBuf itself, not just the memory it views, must stay
-                 * alive and in place until the FinishCallback fires.
+                 * Lifetime: the data is ready when the FinishCallback fires, but the
+                 * ByteBuf itself, not just the memory it views, must stay alive and in
+                 * place until the ShutdownCallback fires.
                  *
                  * Build options that download the object (or the requested Range)
                  * straight into caller-owned memory, with no copy, the way aws-c-s3's
@@ -1117,7 +1118,8 @@ namespace Aws
 
                 /**
                  * Lifetime: the memory body views must stay valid and unchanged until
-                 * the FinishCallback fires.
+                 * the ShutdownCallback fires, after the request and all its retries
+                 * are done.
                  *
                  * Build options for a PUT whose body is sent straight from
                  * caller-owned memory, with no copy. Above the multipart threshold,
