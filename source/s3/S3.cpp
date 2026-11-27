@@ -139,6 +139,12 @@ namespace Aws
                 return *this;
             }
 
+            S3ClientConfig &S3ClientConfig::SetMaxActiveConnectionsOverride(uint32_t maxConnections) noexcept
+            {
+                m_impl->config.max_active_connections_override = maxConnections;
+                return *this;
+            }
+
             S3ClientConfig &S3ClientConfig::SetPartSize(uint64_t bytes) noexcept
             {
                 m_impl->config.part_size = bytes;
@@ -164,6 +170,11 @@ namespace Aws
             double S3ClientConfig::GetThroughputTargetGbps() const noexcept
             {
                 return m_impl->config.throughput_target_gbps;
+            }
+
+            uint32_t S3ClientConfig::GetMaxActiveConnectionsOverride() const noexcept
+            {
+                return m_impl->config.max_active_connections_override;
             }
 
             S3ClientConfig &S3ClientConfig::SetMemoryLimit(uint64_t bytes) noexcept
@@ -548,6 +559,13 @@ namespace Aws
                 return *this;
             }
 
+            S3MetaRequestOptions &S3MetaRequestOptions::SetMaxActiveConnectionsOverride(
+                uint32_t maxConnections) noexcept
+            {
+                m_impl->options.max_active_connections_override = maxConnections;
+                return *this;
+            }
+
             /*****************************************************
              *
              * S3GetObjectMetaRequestOptions
@@ -922,6 +940,7 @@ namespace Aws
                 : m_lastError(AWS_ERROR_SUCCESS), m_region(config.GetRegion()), m_partSize(config.GetPartSize()),
                   m_multipartUploadThreshold(config.GetMultipartUploadThreshold()),
                   m_throughputTargetGbps(config.GetThroughputTargetGbps()),
+                  m_maxActiveConnectionsOverride(config.GetMaxActiveConnectionsOverride()),
                   m_credentialsProvider(config.GetCredentialsProvider())
             {
                 Allocator *allocator = ApiAllocator();
